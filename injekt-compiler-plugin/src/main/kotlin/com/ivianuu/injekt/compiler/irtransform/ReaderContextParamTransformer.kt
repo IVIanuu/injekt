@@ -17,7 +17,10 @@
 package com.ivianuu.injekt.compiler.irtransform
 
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.checkers.isMarkedAsReader
 import com.ivianuu.injekt.compiler.getContextName
+import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
@@ -25,7 +28,6 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlockBody
-import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -52,7 +54,6 @@ import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.util.constructedClass
-import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
@@ -60,6 +61,7 @@ import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.load.java.JvmAbi
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -78,9 +80,13 @@ class ReaderContextParamTransformer : IrLowering {
                     if (expression.symbol.descriptor.fqNameSafe.asString() ==
                         "com.ivianuu.injekt.runReader"
                     ) {
-                        (expression.getValueArgument(0) as IrFunctionExpression)
-                            .function.annotations += expression.symbol.irBuilder()
-                            .irCall(injektSymbols.reader.constructors.single())
+                        given<BindingTrace>()
+                            .record(
+                                InjektWritableSlices.IS_RUN_READER_FUNCTION,
+                                (expression.getValueArgument(0) as IrFunctionExpression).function
+                                    .attributeOwnerId,
+                                true
+                            )
                     }
                     return super.visitCall(expression)
                 }
@@ -103,11 +109,17 @@ class ReaderContextParamTransformer : IrLowering {
 
         val readerConstructor = clazz.getReaderConstructor()
 
-        if (!clazz.isMarkedAsReader() && readerConstructor == null) return clazz
+        if (!clazz.descriptor.isMarkedAsReader(given()) && readerConstructor == null) return clazz
 
         if (readerConstructor == null) return clazz
 
         if (readerConstructor.getContext() != null) return clazz
+
+        given<BindingTrace>().record(
+            InjektWritableSlices.IS_TRANSFORMED_READER,
+            clazz,
+            true
+        )
 
         transformedClasses += clazz
 
@@ -157,7 +169,12 @@ class ReaderContextParamTransformer : IrLowering {
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
 
-        if (!function.canUseReaders()) return function
+        function as IrSimpleFunction
+
+        if (!function.canUseReaders() &&
+            given<BindingTrace>()[InjektWritableSlices.IS_RUN_READER_FUNCTION, function.attributeOwnerId] != true
+        )
+            return function
 
         if (function.getContext() != null) return function
 
@@ -167,6 +184,11 @@ class ReaderContextParamTransformer : IrLowering {
             .map { it.symbol }
             .zip(function.typeParameters.map { it.symbol })
         transformedFunctions[function] = transformedFunction
+        given<BindingTrace>().record(
+            InjektWritableSlices.IS_TRANSFORMED_READER,
+            (transformedFunction as IrSimpleFunction).attributeOwnerId,
+            true
+        )
         transformedFunction.addValueParameter(
             "_context",
             context.typeWith(transformedFunction.typeParameters.map { it.defaultType })

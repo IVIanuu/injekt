@@ -20,6 +20,7 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektAttributes
 import com.ivianuu.injekt.compiler.InjektAttributes.ContextFactoryKey
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.generator.toTypeRef
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import com.ivianuu.injekt.given
@@ -36,11 +37,13 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.impl.IrExternalPackageFragmentImpl
 import org.jetbrains.kotlin.ir.declarations.path
@@ -60,6 +63,7 @@ import org.jetbrains.kotlin.ir.symbols.impl.IrExternalPackageFragmentSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
+import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
@@ -70,12 +74,19 @@ import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 @Given
 class ReaderCallTransformer : IrLowering {
 
     private val transformedDeclarations = mutableListOf<IrDeclaration>()
+    private val readerContextParamTransformer = given<ReaderContextParamTransformer>()
+
+    private fun IrDeclaration.isTransformedReader(): Boolean =
+        (this is IrSimpleFunction && given<BindingTrace>()[InjektWritableSlices.IS_TRANSFORMED_READER, attributeOwnerId] == true) ||
+                (this is IrClass && given<BindingTrace>()[InjektWritableSlices.IS_TRANSFORMED_READER, attributeOwnerId] == true) ||
+                (this is IrConstructor && constructedClass.isTransformedReader())
 
     override fun lower() {
         irModule.transformChildrenVoid(
@@ -160,7 +171,7 @@ class ReaderCallTransformer : IrLowering {
     private fun transformClassIfNeeded(
         declaration: IrClass
     ) {
-        if (!declaration.canUseReaders() &&
+        if (!declaration.isTransformedReader() &&
             !declaration.hasAnnotation(InjektFqNames.ContextImplMarker)
         ) return
 
@@ -203,7 +214,10 @@ class ReaderCallTransformer : IrLowering {
     private fun transformFunctionIfNeeded(
         declaration: IrFunction
     ) {
-        if (!declaration.canUseReaders()) return
+        if (declaration !is IrSimpleFunction ||
+            given<BindingTrace>()[InjektWritableSlices.IS_TRANSFORMED_READER,
+                    declaration.attributeOwnerId] != true
+        ) return
 
         transformDeclarationIfNeeded(
             declaration = declaration,
@@ -227,7 +241,7 @@ class ReaderCallTransformer : IrLowering {
 
         val scope = ReaderScope(
             declaration,
-            given<ReaderContextParamTransformer>().transformedTypeParametersToOriginalTypeParameters,
+            readerContextParamTransformer.transformedTypeParametersToOriginalTypeParameters,
             context
         )
 
@@ -241,7 +255,10 @@ class ReaderCallTransformer : IrLowering {
 
                 if (allScopes
                         .mapNotNull { it.irElement as? IrDeclarationWithName }
-                        .last { it.canUseReaders() || it.hasAnnotation(InjektFqNames.ContextImplMarker) }
+                        .last {
+                            it.isTransformedReader() ||
+                                    (it is IrClass && it.hasAnnotation(InjektFqNames.ContextImplMarker))
+                        }
                         .let { it != declaration && it != declarationFunction }
                 ) {
                     return expression
@@ -262,7 +279,7 @@ class ReaderCallTransformer : IrLowering {
                     expression is IrCall &&
                             expression.symbol.owner.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runReader" ->
                         transformRunReaderCall(expression)
-                    expression.symbol.owner.canUseReaders() ->
+                    expression.symbol.owner.isTransformedReader() ->
                         transformReaderCall(scope, expression) {
                             contextExpression(allScopes)
                         }

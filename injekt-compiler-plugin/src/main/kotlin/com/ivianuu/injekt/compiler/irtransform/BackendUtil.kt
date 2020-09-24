@@ -18,7 +18,10 @@ package com.ivianuu.injekt.compiler.irtransform
 
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.checkers.isMarkedAsReader
+import com.ivianuu.injekt.compiler.checkers.isReader
 import com.ivianuu.injekt.compiler.removeIllegalChars
+import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
@@ -39,7 +42,6 @@ import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irString
-import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
@@ -83,7 +85,6 @@ import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
-import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -129,10 +130,6 @@ fun IrSymbol.irBuilder() = DeclarationIrBuilder(pluginContext, this)
 
 @Reader
 fun IrSymbolOwner.irBuilder() = symbol.irBuilder()
-
-fun IrAnnotationContainer.hasAnnotatedAnnotations(
-    annotation: FqName
-): Boolean = annotations.any { it.type.classOrNull!!.owner.hasAnnotation(annotation) }
 
 val IrType.typeArguments: List<IrTypeArgument>
     get() = (this as? IrSimpleType)?.arguments?.map { it } ?: emptyList()
@@ -343,12 +340,13 @@ fun IrElement.toConstantValue(): ConstantValue<*> {
 
 fun String.asNameId(): Name = Name.identifier(this)
 
+@Reader
 fun IrClass.getReaderConstructor(): IrConstructor? {
     constructors
         .firstOrNull {
-            it.isMarkedAsReader()
+            it.descriptor.isMarkedAsReader(given())
         }?.let { return it }
-    if (!isMarkedAsReader()) return null
+    if (!descriptor.isMarkedAsReader(given())) return null
     return primaryConstructor
 }
 
@@ -468,19 +466,9 @@ fun IrFunction.copy(): IrSimpleFunction {
     }
 }
 
-fun IrDeclarationWithName.isMarkedAsReader(): Boolean =
-    hasAnnotation(InjektFqNames.Reader) ||
-            hasAnnotation(InjektFqNames.Given) ||
-            hasAnnotation(InjektFqNames.GivenMapEntries) ||
-            hasAnnotation(InjektFqNames.GivenSetElements) ||
-            hasAnnotatedAnnotations(InjektFqNames.Effect)
-
 @Reader
 fun IrDeclarationWithName.canUseReaders(): Boolean =
-    isMarkedAsReader() ||
-            (this is IrClass && constructors.any { it.isMarkedAsReader() }) ||
-            (this is IrConstructor && constructedClass.isMarkedAsReader()) ||
-            (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsReader() == true)
+    descriptor.isReader(given())
 
 @Reader
 fun IrBuilderWithScope.jvmNameAnnotation(

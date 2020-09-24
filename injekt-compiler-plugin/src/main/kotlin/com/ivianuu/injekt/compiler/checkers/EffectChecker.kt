@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
@@ -39,6 +40,8 @@ class EffectChecker : DeclarationChecker {
             checkEffect(descriptor, declaration, context)
             checkEffectUsage(descriptor, declaration, context)
         } else if (descriptor is FunctionDescriptor) {
+            checkEffectUsage(descriptor, declaration, context)
+        } else if (descriptor is PropertyDescriptor) {
             checkEffectUsage(descriptor, declaration, context)
         }
     }

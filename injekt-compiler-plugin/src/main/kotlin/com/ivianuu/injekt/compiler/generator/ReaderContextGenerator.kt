@@ -184,7 +184,7 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
         typeParameters: List<TypeParameterDescriptor>,
         block: () -> R
     ): R {
-        val isReader = owner.isReader()
+        val isReader = owner.isReader(given())
         if (isReader) capturedTypeParameters += typeParameters
         val result = block()
         if (isReader) capturedTypeParameters -= typeParameters
@@ -220,7 +220,7 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
         fromRunReaderCall: Boolean = false
     ) {
         val declarationStore = given<DeclarationStore>()
-        if (!declaration.isReader() && !fromRunReaderCall) return
+        if (!declaration.isReader(given()) && !fromRunReaderCall) return
         if (declarationStore
                 .getReaderContextForDeclaration(declaration) != null
         ) return
@@ -314,7 +314,7 @@ class ReaderContextGivensCollector(
 
     override fun visitClass(klass: KtClass) {
         val descriptor = klass.descriptor<ClassDescriptor>()
-        if (descriptor.isReader()) {
+        if (descriptor.isReader(given())) {
             withReaderScope(ReaderScope(descriptor, contextProvider(descriptor)!!)) {
                 super.visitClass(klass)
             }
@@ -325,7 +325,7 @@ class ReaderContextGivensCollector(
 
     override fun visitNamedFunction(function: KtNamedFunction) {
         val descriptor = function.descriptor<FunctionDescriptor>()
-        if (descriptor.isReader()) {
+        if (descriptor.isReader(given())) {
             withReaderScope(ReaderScope(descriptor, contextProvider(descriptor)!!)) {
                 super.visitNamedFunction(function)
             }
@@ -336,7 +336,7 @@ class ReaderContextGivensCollector(
 
     override fun visitProperty(property: KtProperty) {
         val descriptor = property.descriptor<VariableDescriptor>()
-        if (descriptor.isReader()) {
+        if (descriptor.isReader(given())) {
             withReaderScope(ReaderScope(descriptor, contextProvider(descriptor)!!)) {
                 super.visitProperty(property)
             }
@@ -363,7 +363,7 @@ class ReaderContextGivensCollector(
             ?: return
         val resulting = resolvedCall.resultingDescriptor
             .let { if (it is ClassConstructorDescriptor) it.constructedClass else it }
-        if (!resulting.isReader()) return
+        if (!resulting.isReader(given())) return
         val givenType = when {
             resulting.fqNameSafe.asString() == "com.ivianuu.injekt.given" -> {
                 val arguments = resolvedCall.valueArguments.values

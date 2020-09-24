@@ -27,12 +27,15 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
+import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 
 @Given
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        childContext<IrContext>(moduleFragment, pluginContext).runReader {
+        val trace: BindingTrace = DelegatingBindingTrace(pluginContext.bindingContext, "injekt")
+        childContext<IrContext>(moduleFragment, pluginContext, trace).runReader {
             given<ReaderContextParamTransformer>().lower()
             given<ReaderCallTransformer>().lower()
             generateSymbols()

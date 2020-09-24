@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.IntersectionTypeConstructor
@@ -102,11 +103,11 @@ fun DeclarationDescriptor.hasAnnotatedAnnotationsWithPropertyAndClass(
         )) ||
         (this is ConstructorDescriptor && constructedClass.hasAnnotatedAnnotations(fqName))
 
-fun ClassDescriptor.getReaderConstructor(): ConstructorDescriptor? {
+fun ClassDescriptor.getReaderConstructor(trace: BindingTrace): ConstructorDescriptor? {
     constructors
         .firstOrNull {
-            it.isMarkedAsReader()
+            it.isMarkedAsReader(trace)
         }?.let { return it }
-    if (!isMarkedAsReader()) return null
+    if (!isMarkedAsReader(trace)) return null
     return unsubstitutedPrimaryConstructor
 }

@@ -6,7 +6,6 @@ import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
@@ -25,9 +24,12 @@ class GivenIndexingGenerator : Generator {
         files.forEach { file ->
             file.accept(
                 object : KtTreeVisitorVoid() {
+                    private var inGivenSet = false
                     override fun visitClass(klass: KtClass) {
-                        super.visitClass(klass)
+                        val previousInGivenSet = inGivenSet
                         val descriptor = klass.descriptor<ClassDescriptor>()
+                        inGivenSet = descriptor.hasAnnotation(InjektFqNames.GivenSet)
+                        super.visitClass(klass)
                         if ((descriptor.hasAnnotation(InjektFqNames.Given) ||
                                     descriptor.hasAnnotatedAnnotations(InjektFqNames.Effect)) ||
                             descriptor.constructors
@@ -39,51 +41,43 @@ class GivenIndexingGenerator : Generator {
                             indexer.index(descriptor)
                             given<DeclarationStore>()
                                 .addInternalGiven(
-                                    descriptor.getReaderConstructor()!!.toCallableRef()
+                                    descriptor.getReaderConstructor(given())!!.toCallableRef()
                                 )
                         }
+                        inGivenSet = previousInGivenSet
                     }
 
                     override fun visitNamedFunction(function: KtNamedFunction) {
                         super.visitNamedFunction(function)
-                        val descriptor = function.descriptor<FunctionDescriptor>()
-                        if (!descriptor.isInGivenSet() &&
-                            (descriptor.hasAnnotation(InjektFqNames.Given) ||
-                                    descriptor.hasAnnotation(InjektFqNames.GivenMapEntries) ||
-                                    descriptor.hasAnnotation(InjektFqNames.GivenSetElements))
-                        ) {
-                            indexer.index(descriptor)
-                            given<DeclarationStore>()
-                                .addInternalGiven(descriptor.toCallableRef())
+                        if (!inGivenSet) {
+                            val descriptor = function.descriptor<FunctionDescriptor>()
+                            if (descriptor.hasAnnotation(InjektFqNames.Given) ||
+                                descriptor.hasAnnotation(InjektFqNames.GivenMapEntries) ||
+                                descriptor.hasAnnotation(InjektFqNames.GivenSetElements)
+                            ) {
+                                indexer.index(descriptor)
+                                given<DeclarationStore>()
+                                    .addInternalGiven(descriptor.toCallableRef())
+                            }
                         }
                     }
 
                     override fun visitProperty(property: KtProperty) {
                         super.visitProperty(property)
-                        val descriptor = property.descriptor<VariableDescriptor>()
-                        if (descriptor is PropertyDescriptor &&
-                            descriptor.hasAnnotation(InjektFqNames.Given) &&
-                            !descriptor.isInGivenSet()
-                        ) {
-                            indexer.index(descriptor)
-                            given<DeclarationStore>()
-                                .addInternalGiven(descriptor.getter!!.toCallableRef())
+                        if (!inGivenSet) {
+                            val descriptor = property.descriptor<VariableDescriptor>()
+                            if (descriptor is PropertyDescriptor &&
+                                descriptor.hasAnnotation(InjektFqNames.Given)
+                            ) {
+                                indexer.index(descriptor)
+                                given<DeclarationStore>()
+                                    .addInternalGiven(descriptor.getter!!.toCallableRef())
+                            }
                         }
                     }
                 }
             )
         }
-    }
-
-    private fun DeclarationDescriptor.isInGivenSet(): Boolean {
-        var current: DeclarationDescriptor? = containingDeclaration
-
-        while (current != null) {
-            if (current.hasAnnotation(InjektFqNames.GivenSet)) return true
-            current = current.containingDeclaration
-        }
-
-        return false
     }
 
 }

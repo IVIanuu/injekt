@@ -50,11 +50,32 @@ class ReaderChecker : CallChecker, DeclarationChecker {
         context: DeclarationCheckerContext
     ) {
         when (descriptor) {
-            is ClassDescriptor -> checkClass(declaration, descriptor, context)
-            is FunctionDescriptor -> checkFunction(declaration, descriptor, context)
-            is PropertyDescriptor -> checkProperty(declaration, descriptor, context)
+            is ClassDescriptor -> {
+                if (descriptor.isReader(context.trace)) {
+                    checkReaderAnnotations(declaration, descriptor, context)
+                    checkClass(declaration, descriptor, context)
+                }
+            }
+            is FunctionDescriptor -> {
+                if (descriptor.isReader(context.trace)) {
+                    checkReaderAnnotations(declaration, descriptor, context)
+                    checkFunction(declaration, descriptor, context)
+                }
+            }
+            is PropertyDescriptor -> {
+                if (declaration is KtProperty && descriptor.isReader(context.trace)) {
+                    checkReaderAnnotations(declaration, descriptor, context)
+                    checkProperty(declaration, descriptor, context)
+                }
+            }
         }
+    }
 
+    private fun checkReaderAnnotations(
+        declaration: KtDeclaration,
+        descriptor: DeclarationDescriptor,
+        context: DeclarationCheckerContext
+    ) {
         var readerAnnotations = 0
         if (descriptor.hasAnnotation(InjektFqNames.Given)) readerAnnotations += 1
         if (descriptor.hasAnnotation(InjektFqNames.Reader)) readerAnnotations += 1
@@ -77,8 +98,6 @@ class ReaderChecker : CallChecker, DeclarationChecker {
         descriptor: ClassDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (!descriptor.isReader()) return
-
         if (descriptor.kind == ClassKind.INTERFACE) {
             context.trace.report(
                 InjektErrors.READER_CLASS_CANNOT_BE_INTERFACE
@@ -99,7 +118,6 @@ class ReaderChecker : CallChecker, DeclarationChecker {
         descriptor: FunctionDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (!descriptor.isReader()) return
         if (descriptor.modality != Modality.FINAL) {
             context.trace.report(
                 InjektErrors.READER_FUNCTION_MUST_BE_FINAL
@@ -109,13 +127,10 @@ class ReaderChecker : CallChecker, DeclarationChecker {
     }
 
     private fun checkProperty(
-        declaration: KtDeclaration,
+        declaration: KtProperty,
         descriptor: PropertyDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (declaration !is KtProperty) return
-        if (!descriptor.isReader()) return
-
         if (declaration.initializer != null) {
             context.trace.report(
                 InjektErrors.READER_PROPERTY_WITH_BACKING_FIELD
@@ -133,7 +148,7 @@ class ReaderChecker : CallChecker, DeclarationChecker {
 
         if (resulting !is FunctionDescriptor) return
 
-        if (resulting.isReader()) {
+        if (resulting.isReader(context.trace)) {
             checkCalls(reportOn, context, resolvedCall)
         }
     }
@@ -151,7 +166,7 @@ class ReaderChecker : CallChecker, DeclarationChecker {
                     ?.safeAs<KtCallExpression>()?.calleeExpression?.text
                 if (name == "runReader") return@findEnclosingContext true
             }
-            it.isReader() || it.hasAnnotation(InjektFqNames.ContextImplMarker)
+            it.isReader(context.trace) || it.hasAnnotation(InjektFqNames.ContextImplMarker)
         }
 
         if (enclosingReaderContext == null) {
