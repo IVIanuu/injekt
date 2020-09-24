@@ -95,13 +95,11 @@ class GivenStatements(private val owner: ContextImpl) {
         return {
             emit("run ")
             braced {
-                emitLine("@OptIn(kotlin.ExperimentalStdlibApi::class)")
-                emit("buildMap<${given.type.typeArguments[0].render()}, ${given.type.typeArguments[1].render()}> ")
-                braced {
-                    given.entries.forEach {
-                        emitLine("this += ${it.fqName}() as ${given.type.render()}")
-                    }
+                emitLine("val result = mutableMapOf<Any?, Any?>()")
+                given.entries.forEach {
+                    emitLine("result.putAll(${it.fqName}())")
                 }
+                emitLine("result as ${given.type.render()}")
             }
         }
     }
@@ -110,13 +108,11 @@ class GivenStatements(private val owner: ContextImpl) {
         return {
             emit("run ")
             braced {
-                emitLine("@OptIn(kotlin.ExperimentalStdlibApi::class)")
-                emit("buildSet<${given.type.typeArguments[0].render()}> ")
-                braced {
-                    given.elements.forEach {
-                        emitLine("this += ${it.fqName}() as ${given.type.render()}")
-                    }
+                emitLine("val result = mutableSetOf<Any?>()")
+                given.elements.forEach {
+                    emitLine("result.addAll(${it.fqName}())")
                 }
+                emitLine("result as ${given.type.render()}")
             }
         }
     }
