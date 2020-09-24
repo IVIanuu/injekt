@@ -258,6 +258,22 @@ class ReaderContextTest {
     }
 
     @Test
+    fun testScopedGivenClass() = codegen(
+        """
+        @Given(TestContext::class)
+        class Dep
+        
+        val context = rootContext<TestContext>()
+        
+        fun invoke(): Dep {
+            return context.runReader { given<Dep>() }
+        }
+    """
+    ) {
+        assertSame(invokeSingleFile(), invokeSingleFile())
+    }
+
+    @Test
     fun testParentScopedGiven() = codegen(
         """
         @Given
