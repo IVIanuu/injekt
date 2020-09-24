@@ -64,9 +64,9 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
 
         files as List<KtFile>
 
-        val context = analysisContext.runReader { childContext<GenerationContext>() }
+        val generationContext = analysisContext.runReader { childContext<GenerationContext>() }
 
-        context.runReader {
+        generationContext.runReader {
             given<GivenIndexingGenerator>().generate(files)
             given<EffectGenerator>().generate(files)
             given<ContextFactoryGenerator>().generate(files)
