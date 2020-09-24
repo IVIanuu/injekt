@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.backend.asNameId
+import com.ivianuu.injekt.compiler.irtransform.asNameId
 import org.jetbrains.kotlin.name.FqName
 
 object InjektFqNames {
@@ -33,6 +33,7 @@ object InjektFqNames {
     val InternalPackage = InjektPackage.child("internal".asNameId())
     val ChildContextFactory = InternalPackage.child("ChildContextFactory".asNameId())
     val ContextMarker = InternalPackage.child("ContextMarker".asNameId())
+    val ContextImplMarker = InternalPackage.child("ContextImplMarker".asNameId())
     val Index = InternalPackage.child("Index".asNameId())
     val Origin = InternalPackage.child("Origin".asNameId())
     val Qualifier = InternalPackage.child("Qualifier".asNameId())
@@ -40,4 +41,6 @@ object InjektFqNames {
     val RunReaderCall = InternalPackage.child("RunReaderCall".asNameId())
 
     val IndexPackage = InternalPackage.child("index".asNameId())
+
+    val Composable = FqName("androidx.compose.runtime.Composable")
 }

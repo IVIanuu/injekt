@@ -35,6 +35,11 @@ annotation class GivenAppService {
             given<T>()
         )
     }
+
+    object Defaults {
+        @GivenSetElements
+        fun defaultSet(): AppServices = emptySet()
+    }
 }
 
 @Reader
@@ -45,7 +50,7 @@ fun startAppServices() {
     }
 }
 
-@GivenAppService
+//@GivenAppService
 suspend fun userAppService() {
     println("run")
 }

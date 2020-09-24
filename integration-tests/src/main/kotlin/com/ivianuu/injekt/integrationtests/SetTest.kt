@@ -57,9 +57,9 @@ class SetTest {
     ) {
         val set = invokeSingleFile<Set<Command>>().toList()
         assertEquals(3, set.size)
-        assertTrue(set[0] is CommandA)
-        assertTrue(set[1] is CommandB)
-        assertTrue(set[2] is CommandC)
+        assertTrue(set.any { it is CommandA })
+        assertTrue(set.any { it is CommandB })
+        assertTrue(set.any { it is CommandC })
     }
 
     @Test
@@ -90,9 +90,9 @@ class SetTest {
     ) {
         val set = invokeSingleFile<Set<(String) -> Command>>().toList()
         assertEquals(3, set.size)
-        assertTrue(set[0]("a") is CommandA)
-        assertTrue(set[1]("b") is CommandB)
-        assertTrue(set[2]("c") is CommandC)
+        assertTrue(set.any { it("a") is CommandA })
+        assertTrue(set.any { it("b") is CommandB })
+        assertTrue(set.any { it("c") is CommandA })
     }
 
 

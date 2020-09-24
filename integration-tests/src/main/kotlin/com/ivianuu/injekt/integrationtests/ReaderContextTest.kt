@@ -67,7 +67,7 @@ class ReaderContextTest {
     }
 
     @Test
-    fun testWithMultiChild() = codegen(
+    fun testMultiChild() = codegen(
         """
             @Given
             fun foo() = Foo()
@@ -258,6 +258,22 @@ class ReaderContextTest {
     }
 
     @Test
+    fun testScopedGivenClass() = codegen(
+        """
+        @Given(TestContext::class)
+        class Dep
+        
+        val context = rootContext<TestContext>()
+        
+        fun invoke(): Dep {
+            return context.runReader { given<Dep>() }
+        }
+    """
+    ) {
+        assertSame(invokeSingleFile(), invokeSingleFile())
+    }
+
+    @Test
     fun testParentScopedGiven() = codegen(
         """
         @Given
@@ -298,6 +314,34 @@ class ReaderContextTest {
         
         fun invoke(): Bar {
             return childContext.runReader { given<Bar>() }
+        }
+    """
+    ) {
+        assertSame(
+            invokeSingleFile(),
+            invokeSingleFile()
+        )
+    }
+
+    @Test
+    fun testParentScopedGiven3() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+
+        @Given(TestParentContext::class)
+        fun bar() = Bar(given())
+        
+        @Reader
+        fun barGetter() = given<Bar>()
+        
+        val parentContext = rootContext<TestParentContext>()
+        val childContext = parentContext.runReader {
+            childContext<TestChildContext>()
+        }
+        
+        fun invoke(): Bar {
+            return childContext.runReader { barGetter() }
         }
     """
     ) {
@@ -415,7 +459,7 @@ class ReaderContextTest {
     }
 
     @Test
-    fun testWithGivenSet() = codegen(
+    fun testGivenSet() = codegen(
         """
         @GivenSet
         class FooGivens {
@@ -435,7 +479,7 @@ class ReaderContextTest {
     }
 
     @Test
-    fun testWithNestedGivenSets() = codegen(
+    fun testNestedGivenSets() = codegen(
         """
         @GivenSet
         class FooGivens {
@@ -454,26 +498,6 @@ class ReaderContextTest {
         
         fun invoke(): Bar {
             return rootContext<TestContext>(FooGivens()).runReader { given<Bar>() }
-        }
-    """
-    ) {
-        assertTrue(invokeSingleFile() is Bar)
-    }
-
-    // todo @Test
-    fun testWithGivenRef() = codegen(
-        """
-        @Module
-        class FooBarGivens {
-            @Given
-            fun foo() = Foo()
-        }
-        
-        @Given
-        fun bar() = Bar(given())
-        
-        fun invoke(): Bar {
-            return rootContext<TestContext>(FooBarModule()).runReader { given<Bar>() }
         }
     """
     ) {

@@ -1,8 +1,12 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.Given
 import java.io.File
 
+@Given
 class IncrementalFileCache(private val cacheFile: File) {
+
+    val deletedFiles = mutableSetOf<String>()
 
     private val cache = (if (cacheFile.exists()) cacheFile.readText() else "")
         .split("\n")
@@ -15,6 +19,7 @@ class IncrementalFileCache(private val cacheFile: File) {
         .mapValues {
             it.value
                 .map { it.second }
+                .filter { it.exists() }
                 .toMutableSet()
         }
         .toMutableMap()
@@ -24,16 +29,32 @@ class IncrementalFileCache(private val cacheFile: File) {
         dependency: File
     ) {
         cache.getOrPut(dependency) { mutableSetOf() } += dependent
+        log { "$dependency record dependent $dependent" }
     }
 
     fun deleteDependents(dependency: File) {
         cache.remove(dependency)?.forEach {
             deleteDependents(it)
             it.delete()
+            log { "$dependency delete dependents $it" }
+            deletedFiles += it.absolutePath
         }
     }
 
+    fun deleteDependentsOfDeletedFiles() {
+        val deletedDependencies = cache
+            .filterKeys { !it.exists() }
+            .keys
+        deletedDependencies
+            .forEach { dependency ->
+                deleteDependents(dependency)
+                dependency.delete()
+                deletedFiles += dependency.absolutePath
+            }
+    }
+
     fun flush() {
+        deletedFiles.clear()
         if (cache.isNotEmpty()) {
             cacheFile.parentFile.mkdirs()
             cacheFile.createNewFile()
