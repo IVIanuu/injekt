@@ -477,8 +477,7 @@ fun IrDeclarationWithName.isMarkedAsReader(): Boolean =
 
 @Reader
 fun IrDeclarationWithName.canUseReaders(): Boolean =
-    (this is IrFunction && !isExternalDeclaration() && getContext() != null) ||
-            isMarkedAsReader() ||
+    isMarkedAsReader() ||
             (this is IrClass && constructors.any { it.isMarkedAsReader() }) ||
             (this is IrConstructor && constructedClass.isMarkedAsReader()) ||
             (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsReader() == true)

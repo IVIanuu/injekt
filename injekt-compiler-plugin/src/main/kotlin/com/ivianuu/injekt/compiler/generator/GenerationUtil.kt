@@ -22,7 +22,6 @@ import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
@@ -97,12 +96,11 @@ fun DeclarationDescriptor.hasAnnotationWithPropertyAndClass(
 
 fun DeclarationDescriptor.hasAnnotatedAnnotationsWithPropertyAndClass(
     fqName: FqName
-): Boolean = hasAnnotatedAnnotations(fqName, module) ||
+): Boolean = hasAnnotatedAnnotations(fqName) ||
         (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotatedAnnotations(
-            fqName,
-            module
+            fqName
         )) ||
-        (this is ConstructorDescriptor && constructedClass.hasAnnotatedAnnotations(fqName, module))
+        (this is ConstructorDescriptor && constructedClass.hasAnnotatedAnnotations(fqName))
 
 fun ClassDescriptor.getReaderConstructor(): ConstructorDescriptor? {
     constructors

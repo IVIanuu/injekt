@@ -69,7 +69,7 @@ class EffectGenerator : Generator {
 
     private fun generateEffectsForDeclaration(declaration: DeclarationDescriptor) {
         val effects = declaration
-            .getAnnotatedAnnotations(InjektFqNames.Effect, given())
+            .getAnnotatedAnnotations(InjektFqNames.Effect)
             .map { it.type.constructor.declarationDescriptor as ClassDescriptor }
 
         val packageName = declaration.findPackage().fqName

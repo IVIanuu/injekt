@@ -24,7 +24,6 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 
@@ -90,7 +89,8 @@ class EffectChecker : DeclarationChecker {
         declaration: KtDeclaration,
         context: DeclarationCheckerContext
     ) {
-        if (!descriptor.hasAnnotatedAnnotations(InjektFqNames.Effect, descriptor.module)) return
+        val effectAnnotations = descriptor.getAnnotatedAnnotations(InjektFqNames.Effect)
+        if (effectAnnotations.isEmpty()) return
 
         if ((descriptor is ClassDescriptor && descriptor.declaredTypeParameters.isNotEmpty()) ||
             (descriptor is FunctionDescriptor && descriptor.typeParameters.isNotEmpty())
@@ -100,11 +100,6 @@ class EffectChecker : DeclarationChecker {
                     .on(declaration)
             )
         }
-
-        val effectAnnotations = listOfNotNull(
-            descriptor.getAnnotatedAnnotations(InjektFqNames.Effect, descriptor.module)
-                .singleOrNull()
-        )
 
         val upperBounds = effectAnnotations
             .mapNotNull { effectAnnotation ->

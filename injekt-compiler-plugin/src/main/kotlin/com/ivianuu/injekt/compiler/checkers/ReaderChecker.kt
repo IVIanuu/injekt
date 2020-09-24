@@ -36,7 +36,6 @@ import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -64,8 +63,7 @@ class ReaderChecker : CallChecker, DeclarationChecker {
 
         if (readerAnnotations > 1 || (readerAnnotations == 1 &&
                     descriptor.hasAnnotation(InjektFqNames.Reader) &&
-                    descriptor.getAnnotatedAnnotations(InjektFqNames.Effect, descriptor.module)
-                        .isNotEmpty())
+                    descriptor.hasAnnotatedAnnotations(InjektFqNames.Effect))
         ) {
             context.trace.report(
                 InjektErrors.MULTIPLE_READER_ANNOTATIONS

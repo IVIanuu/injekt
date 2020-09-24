@@ -16,22 +16,16 @@
 
 package com.ivianuu.injekt.compiler.checkers
 
-import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
-import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
@@ -40,37 +34,22 @@ fun Annotated.hasAnnotation(fqName: FqName): Boolean {
     return annotations.hasAnnotation(fqName)
 }
 
-fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescriptor): Boolean {
-    val thisFqName = this.fqName ?: return false
-    val descriptor =
-        module.findClassAcrossModuleDependencies(ClassId.topLevel(thisFqName)) ?: return false
-    return descriptor.hasAnnotation(annotation)
-}
+fun AnnotationDescriptor.hasAnnotation(annotation: FqName): Boolean =
+    type.constructor.declarationDescriptor!!.hasAnnotation(annotation)
 
-fun Annotated.hasAnnotatedAnnotations(
-    annotation: FqName,
-    module: ModuleDescriptor
-): Boolean = annotations.any { it.hasAnnotation(annotation, module) }
-
-@Reader
 fun Annotated.hasAnnotatedAnnotations(
     annotation: FqName
-): Boolean = hasAnnotatedAnnotations(annotation, given())
+): Boolean = annotations.any { it.hasAnnotation(annotation) }
 
-fun Annotated.getAnnotatedAnnotations(
-    annotation: FqName,
-    module: ModuleDescriptor
-): List<AnnotationDescriptor> =
-    annotations.filter {
-        it.hasAnnotation(annotation, module)
-    }
+fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescriptor> =
+    annotations.filter { it.hasAnnotation(annotation) }
 
 fun DeclarationDescriptor.isMarkedAsReader(): Boolean =
     hasAnnotation(InjektFqNames.Reader) ||
             hasAnnotation(InjektFqNames.Given) ||
             hasAnnotation(InjektFqNames.GivenMapEntries) ||
             hasAnnotation(InjektFqNames.GivenSetElements) ||
-            hasAnnotatedAnnotations(InjektFqNames.Effect, module)
+            hasAnnotatedAnnotations(InjektFqNames.Effect)
 
 fun DeclarationDescriptor.isReader(): Boolean =
     isMarkedAsReader() ||
