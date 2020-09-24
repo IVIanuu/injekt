@@ -38,7 +38,7 @@ class Benchmark {
                 """
                     fun invoke() {
                         val context = rootContext<TestContext>()
-                        context.runReader { given<Fib4>() }
+                        context.runReader { given<Fib30>() }
                     }
             """
             )

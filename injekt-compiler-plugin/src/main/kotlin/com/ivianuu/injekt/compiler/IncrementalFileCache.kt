@@ -1,7 +1,9 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.Reader
 import java.io.File
 
+@Reader
 class IncrementalFileCache(private val cacheFile: File) {
 
     val deletedFiles = mutableSetOf<String>()
@@ -27,14 +29,14 @@ class IncrementalFileCache(private val cacheFile: File) {
         dependency: File
     ) {
         cache.getOrPut(dependency) { mutableSetOf() } += dependent
-        println("$dependency record dependent $dependent")
+        log { "$dependency record dependent $dependent" }
     }
 
     fun deleteDependents(dependency: File) {
         cache.remove(dependency)?.forEach {
             deleteDependents(it)
             it.delete()
-            println("$dependency delete dependents $it")
+            log { "$dependency delete dependents $it" }
             deletedFiles += it.absolutePath
         }
     }

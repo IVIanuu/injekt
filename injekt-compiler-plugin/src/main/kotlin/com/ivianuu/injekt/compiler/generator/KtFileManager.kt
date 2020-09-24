@@ -5,6 +5,7 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.CacheDir
 import com.ivianuu.injekt.compiler.IncrementalFileCache
 import com.ivianuu.injekt.compiler.SrcDir
+import com.ivianuu.injekt.compiler.log
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 import org.jetbrains.kotlin.name.FqName
@@ -23,15 +24,15 @@ class KtFileManager {
     val newFiles = mutableSetOf<File>()
 
     fun onPreCompile(files: List<KtFile>): List<KtFile> {
-        println("pre compile $files")
+        log { "pre compile $files" }
         fileCache.deleteDependentsOfDeletedFiles()
         files.forEach { fileCache.deleteDependents(File(it.virtualFilePath)) }
-        println("pre compile deleted files ${fileCache.deletedFiles}")
+        log { "pre compile deleted files ${fileCache.deletedFiles}" }
         return files.filterNot { it.virtualFilePath in fileCache.deletedFiles }
     }
 
     fun onPostCompile(files: List<KtFile>) {
-        println("post compile $files")
+        log { "post compile $files" }
         fileCache.flush()
     }
 
@@ -55,7 +56,7 @@ class KtFileManager {
             "Already generated file $newFile"
         }
 
-        println("generated file $packageFqName.$fileName")
+        log { "generated file $packageFqName.$fileName" }
 
         return newFile
             .also { it.createNewFile() }
