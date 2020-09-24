@@ -17,6 +17,7 @@ class IncrementalFileCache(private val cacheFile: File) {
         .mapValues {
             it.value
                 .map { it.second }
+                .filter { it.exists() }
                 .toMutableSet()
         }
         .toMutableMap()
@@ -36,6 +37,18 @@ class IncrementalFileCache(private val cacheFile: File) {
             println("$dependency delete dependents $it")
             deletedFiles += it.absolutePath
         }
+    }
+
+    fun deleteDependentsOfDeletedFiles() {
+        val deletedDependencies = cache
+            .filterKeys { !it.exists() }
+            .keys
+        deletedDependencies
+            .forEach { dependency ->
+                deleteDependents(dependency)
+                dependency.delete()
+                deletedFiles += dependency.absolutePath
+            }
     }
 
     fun flush() {

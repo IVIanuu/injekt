@@ -24,6 +24,7 @@ class KtFileManager {
 
     fun onPreCompile(files: List<KtFile>): List<KtFile> {
         println("pre compile $files")
+        fileCache.deleteDependentsOfDeletedFiles()
         files.forEach { fileCache.deleteDependents(File(it.virtualFilePath)) }
         println("pre compile deleted files ${fileCache.deletedFiles}")
         return files.filterNot { it.virtualFilePath in fileCache.deletedFiles }
