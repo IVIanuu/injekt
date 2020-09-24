@@ -308,6 +308,34 @@ class ReaderContextTest {
     }
 
     @Test
+    fun testParentScopedGiven3() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+
+        @Given(TestParentContext::class)
+        fun bar() = Bar(given())
+        
+        @Reader
+        fun barGetter() = given<Bar>()
+        
+        val parentContext = rootContext<TestParentContext>()
+        val childContext = parentContext.runReader {
+            childContext<TestChildContext>()
+        }
+        
+        fun invoke(): Bar {
+            return childContext.runReader { barGetter() }
+        }
+    """
+    ) {
+        assertSame(
+            invokeSingleFile(),
+            invokeSingleFile()
+        )
+    }
+
+    @Test
     fun testGivenClass() = codegen(
         """
         @Given

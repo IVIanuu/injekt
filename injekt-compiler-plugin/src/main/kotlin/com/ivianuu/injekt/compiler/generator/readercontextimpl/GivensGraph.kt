@@ -125,25 +125,22 @@ class GivensGraph(private val owner: ContextImpl) {
         entryPoints.forEach { check(it) }
     }
 
-    private fun check(type: TypeRef) {
-        if (type in checkedTypes) return
-        chain.push(ChainElement.Given(type))
-        check(getGiven(type))
-        chain.pop()
-    }
-
     private fun check(given: GivenNode) {
         if (given in checkedGivens) return
+        chain.push(ChainElement.Given(given.type))
         checkedGivens += given
         given
             .contexts
-            .forEach { check(it) }
+            .forEach {
+                check(it)
+                getGiven(it.type)
+            }
+        chain.pop()
     }
 
     private fun check(context: ReaderContextDescriptor) {
         if (context.type in checkedTypes) return
         checkedTypes += context.type
-
         chain.push(ChainElement.Call(context.origin))
         context.givenTypes.forEach { givenType ->
             val existingFunction = owner.members.singleOrNull {
@@ -153,7 +150,7 @@ class GivensGraph(private val owner: ContextImpl) {
                 existingFunction.isOverride = true
                 return@forEach
             }
-            check(givenType)
+            check(getGiven(givenType))
         }
         chain.pop()
     }
@@ -391,6 +388,7 @@ class GivensGraph(private val owner: ContextImpl) {
 
         givenSetGivens[type]?.let { this += it }
         this += declarationStore.givens(type)
+            .filter { it.targetContext == null || it.targetContext == contextId }
             .map { callable ->
                 CallableGivenNode(
                     type = type,
@@ -403,9 +401,9 @@ class GivensGraph(private val owner: ContextImpl) {
                     givenSetAccessStatement = null
                 )
             }
-            .filter { it.targetContext == null || it.targetContext == contextId }
 
         ((givenSetMapEntries[type] ?: emptyList()) + declarationStore.givenMapEntries(type))
+            .filter { it.targetContext == null || it.targetContext == contextId }
             .takeIf { it.isNotEmpty() }
             ?.let { entries ->
                 MapGivenNode(
@@ -422,6 +420,7 @@ class GivensGraph(private val owner: ContextImpl) {
             ?.let { this += it }
 
         ((givenSetSetElements[type] ?: emptyList()) + declarationStore.givenSetElements(type))
+            .filter { it.targetContext == null || it.targetContext == contextId }
             .takeIf { it.isNotEmpty() }
             ?.let { elements ->
                 SetGivenNode(
