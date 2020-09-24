@@ -730,6 +730,33 @@ class ReaderTest {
     }
 
     @Test
+    fun testAssistedGivenAsExtensionInDifferentPackage() = codegen(
+        source(
+            """ 
+                package other
+                import com.ivianuu.injekt.Given
+                import com.ivianuu.injekt.test.Foo 
+                import com.ivianuu.injekt.test.Bar
+
+                @Given
+                fun Foo.bar() = Bar(this)
+            """,
+            injektImports = false,
+            initializeInjekt = false
+        ),
+        source(
+            """
+                fun invoke(): Bar {
+                    return rootContext<TestContext>().runReader { given<Bar>(Foo()) }
+                }
+        """,
+            name = "File.kt"
+        )
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
+    }
+
+    @Test
     fun testAssistedGivenAsExtensionAndParams() = codegen(
         """
         @Given

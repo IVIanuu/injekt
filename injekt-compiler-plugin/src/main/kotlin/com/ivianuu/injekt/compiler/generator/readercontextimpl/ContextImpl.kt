@@ -32,6 +32,7 @@ class ContextFactoryImpl(
 
     fun initialize() {
         parent?.members?.add(this)
+        parent?.children?.add(this)
         context.initialize()
     }
 
@@ -77,6 +78,8 @@ class ContextImpl(
 
     val statements = GivenStatements(this)
     val graph = GivensGraph(this)
+
+    val children = mutableListOf<ContextFactoryImpl>()
 
     val members = mutableListOf<ContextMember>()
 
