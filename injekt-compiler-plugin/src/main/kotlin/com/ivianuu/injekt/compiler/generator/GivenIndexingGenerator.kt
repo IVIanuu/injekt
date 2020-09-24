@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.psi.KtClass
+import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
@@ -25,11 +26,17 @@ class GivenIndexingGenerator : Generator {
             file.accept(
                 object : KtTreeVisitorVoid() {
                     private var inGivenSet = false
-                    override fun visitClass(klass: KtClass) {
+                    override fun visitClassOrObject(classOrObject: KtClassOrObject) {
                         val previousInGivenSet = inGivenSet
-                        val descriptor = klass.descriptor<ClassDescriptor>()
+                        val descriptor = classOrObject.descriptor<ClassDescriptor>()
                         inGivenSet = descriptor.hasAnnotation(InjektFqNames.GivenSet)
+                        super.visitClassOrObject(classOrObject)
+                        inGivenSet = previousInGivenSet
+                    }
+
+                    override fun visitClass(klass: KtClass) {
                         super.visitClass(klass)
+                        val descriptor = klass.descriptor<ClassDescriptor>()
                         if ((descriptor.hasAnnotation(InjektFqNames.Given) ||
                                     descriptor.hasAnnotatedAnnotations(InjektFqNames.Effect)) ||
                             descriptor.constructors
@@ -44,7 +51,6 @@ class GivenIndexingGenerator : Generator {
                                     descriptor.getReaderConstructor(given())!!.toCallableRef()
                                 )
                         }
-                        inGivenSet = previousInGivenSet
                     }
 
                     override fun visitNamedFunction(function: KtNamedFunction) {
