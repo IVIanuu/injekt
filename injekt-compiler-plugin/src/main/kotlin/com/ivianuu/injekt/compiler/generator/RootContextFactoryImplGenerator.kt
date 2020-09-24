@@ -56,7 +56,7 @@ class RootContextFactoryImplGenerator : Generator {
             imports += context.graph.resolvedGivens.values
                 .filterIsInstance<CallableGivenNode>()
                 .filter {
-                    it.callable.parameters.firstOrNull()
+                    it.callable.valueParameters.firstOrNull()
                         ?.isExtensionReceiver == true
                 }
                 .map { it.callable.fqName }

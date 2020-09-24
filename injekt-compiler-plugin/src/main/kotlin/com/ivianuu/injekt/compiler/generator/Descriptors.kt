@@ -35,7 +35,8 @@ data class CallableRef(
     val uniqueKey: String,
     val type: TypeRef,
     val receiver: TypeRef?,
-    val parameters: List<ParameterRef>,
+    val typeParameters: List<ClassifierRef>,
+    val valueParameters: List<ValueParameterRef>,
     val targetContext: TypeRef?,
     val givenKind: GivenKind,
     val isExternal: Boolean,
@@ -75,20 +76,21 @@ fun FunctionDescriptor.toCallableRef(): CallableRef {
             hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSet) -> CallableRef.GivenKind.GIVEN_SET
             else -> error("Unexpected callable $this")
         },
-        parameters = listOfNotNull(
+        typeParameters = typeParameters.map { it.toClassifierRef() },
+        valueParameters = listOfNotNull(
             extensionReceiverParameter?.type?.let {
-                ParameterRef(
+                ValueParameterRef(
                     KotlinTypeRef(it),
                     true
                 )
             }
-        ) + valueParameters.map { ParameterRef(it.type.toTypeRef()) },
+        ) + valueParameters.map { ValueParameterRef(it.type.toTypeRef()) },
         isPropertyAccessor = owner is PropertyDescriptor,
         uniqueKey = owner.uniqueKey()
     )
 }
 
-data class ParameterRef(
+data class ValueParameterRef(
     val typeRef: TypeRef,
     val isExtensionReceiver: Boolean = false
 )

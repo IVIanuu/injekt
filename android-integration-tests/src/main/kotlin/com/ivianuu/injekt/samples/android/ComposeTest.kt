@@ -32,6 +32,7 @@ class ComposeTest {
 
         @Effect
         annotation class GivenAppUi {
+            @GivenSet
             companion object {
                 @Given
                 operator fun <T : @androidx.compose.runtime.Composable () -> Unit> invoke(): AppUi =
@@ -65,6 +66,7 @@ class ComposeTest {
         
                 @Effect
                 annotation class GivenAppUi {
+                    @GivenSet
                     companion object {
                         @Given
                         operator fun <T : @androidx.compose.runtime.Composable () -> Unit> invoke(): AppUi =

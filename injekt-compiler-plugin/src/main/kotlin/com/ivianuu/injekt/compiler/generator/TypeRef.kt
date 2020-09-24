@@ -26,8 +26,8 @@ data class ClassifierRef(
 
 fun ClassifierDescriptor.toClassifierRef(): ClassifierRef {
     return ClassifierRef(
-        fqNameSafe,
-        (this as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
+        original.fqNameSafe,
+        (original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
             ?.map { it.toClassifierRef() } ?: emptyList(),
         this is TypeParameterDescriptor
     )
@@ -53,35 +53,37 @@ class KotlinTypeRef(
     val kotlinType: KotlinType,
     override val variance: Variance = Variance.INVARIANT
 ) : TypeRef() {
-    override val classifier: ClassifierRef
-    init {
-        val declarationDescriptor = kotlinType.prepare()
-            .getAbbreviation()?.constructor?.declarationDescriptor
-            ?: kotlinType.prepare().constructor.declarationDescriptor!!
-        classifier = declarationDescriptor.toClassifierRef()
+    private val finalType by unsafeLazy { kotlinType.getAbbreviation() ?: kotlinType.prepare() }
+    override val classifier: ClassifierRef by unsafeLazy {
+        finalType.constructor.declarationDescriptor!!.toClassifierRef()
     }
-    override val isComposable: Boolean
-        get() = kotlinType.hasAnnotation(InjektFqNames.Composable)
-    override val isReader: Boolean
-        get() = kotlinType.hasAnnotation(InjektFqNames.Reader)
-    override val qualifier: String?
-        get() = kotlinType.annotations.findAnnotation(InjektFqNames.Qualifier)
+
+    override val isComposable: Boolean by unsafeLazy {
+        val r = finalType.hasAnnotation(InjektFqNames.Composable)
+        r
+    }
+    override val isReader: Boolean by unsafeLazy {
+        finalType.hasAnnotation(InjektFqNames.Reader)
+    }
+    override val qualifier: String? by unsafeLazy {
+        finalType.annotations.findAnnotation(InjektFqNames.Qualifier)
             ?.allValueArguments?.values?.singleOrNull()?.value as? String
-    override val isContext: Boolean
-        get() = kotlinType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ContextMarker)
-    override val isChildContextFactory: Boolean
-        get() = kotlinType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ChildContextFactory)
-    override val isGivenSet: Boolean
-        get() = kotlinType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.GivenSet)
-    override val isMarkedNullable: Boolean
-        get() = kotlinType.isMarkedNullable
-    override val typeArguments: List<TypeRef>
-        get() {
-            val finalType = kotlinType.prepare()
-                .getAbbreviation()
-                ?: kotlinType
-            return finalType.arguments.map { it.type.toTypeRef(it.projectionKind) }
-        }
+    }
+    override val isContext: Boolean by unsafeLazy {
+        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ContextMarker)
+    }
+    override val isChildContextFactory: Boolean by unsafeLazy {
+        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ChildContextFactory)
+    }
+    override val isGivenSet: Boolean by unsafeLazy {
+        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.GivenSet)
+    }
+    override val isMarkedNullable: Boolean by unsafeLazy {
+        kotlinType.isMarkedNullable
+    }
+    override val typeArguments: List<TypeRef> by unsafeLazy {
+        finalType.arguments.map { it.type.toTypeRef(it.projectionKind) }
+    }
 }
 
 fun KotlinType.toTypeRef(variance: Variance = Variance.INVARIANT) = KotlinTypeRef(this, variance)

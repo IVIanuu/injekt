@@ -83,8 +83,6 @@ fun uniqueFunctionKeyOf(
     if (visibility == Visibilities.LOCAL && fqName.shortName().isSpecial) startOffset ?: "" else ""
 }__function${parameterTypes.hashCode().absoluteValue}"
 
-fun KotlinType.render() = toTypeRef().render()
-
 fun DeclarationDescriptor.hasAnnotationWithPropertyAndClass(
     fqName: FqName
 ): Boolean = hasAnnotation(fqName) ||

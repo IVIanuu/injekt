@@ -10,28 +10,19 @@ import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
-import org.jetbrains.kotlin.builtins.getValueParameterTypesFromFunctionType
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
-import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
-import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
-import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
-import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.TypeSubstitutor
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import java.io.File
@@ -90,7 +81,8 @@ class EffectGenerator : Generator {
                     emit("@Given fun function(): ${givenType.render()} ")
                     braced {
                         emit("return { ")
-                        val valueParameters = givenType.getValueParameterTypesFromFunctionType()
+                        val valueParameters = givenType.typeArguments
+                            .dropLast(1)
                         valueParameters.forEachIndexed { index, _ ->
                             emit("p1$index")
                             if (index != valueParameters.lastIndex) emit(", ") else emit("-> ")
@@ -149,9 +141,10 @@ class EffectGenerator : Generator {
                             fqName = functionFqName,
                             name = functionFqName.shortName(),
                             uniqueKey = functionUniqueKey,
-                            type = givenType.toTypeRef(),
+                            type = givenType,
                             receiver = null,
-                            parameters = emptyList(),
+                            typeParameters = emptyList(),
+                            valueParameters = emptyList(),
                             targetContext = null,
                             givenKind = CallableRef.GivenKind.GIVEN,
                             isExternal = false,
@@ -177,14 +170,14 @@ class EffectGenerator : Generator {
                             effectFunction.findPackage().fqName,
                             effectFunction.fqNameSafe
                         )
-                        val returnType = TypeSubstitutor.create(
-                            effectFunction.typeParameters
-                                .map { it.defaultType.constructor }
-                                .zip(listOf(givenType.asTypeProjection()))
-                                .toMap()
-                        ).substitute(effectFunction.returnType!!.asTypeProjection())!!.type
-
                         val effectCallableRef = effectFunction.toCallableRef()
+
+                        val returnType = effectCallableRef.type
+                            .substitute(
+                                effectCallableRef.typeParameters
+                                    .zip(listOf(givenType))
+                                    .toMap()
+                            )
 
                         when (effectCallableRef.givenKind) {
                             CallableRef.GivenKind.GIVEN -> {
@@ -245,7 +238,7 @@ class EffectGenerator : Generator {
                                     isContext = true
                                 ),
                                 callee = effectFunction,
-                                calleeTypeArguments = listOf(givenType.toTypeRef()),
+                                calleeTypeArguments = listOf(givenType),
                                 origin = effectFunctionFqName,
                                 originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
                             )
@@ -256,9 +249,10 @@ class EffectGenerator : Generator {
                                 fqName = effectFunctionFqName,
                                 name = effectFunctionFqName.shortName(),
                                 uniqueKey = effectFunctionUniqueKey,
-                                type = returnType.toTypeRef(),
+                                type = returnType,
                                 receiver = null,
-                                parameters = emptyList(),
+                                typeParameters = emptyList(),
+                                valueParameters = emptyList(),
                                 targetContext = effectCallableRef.targetContext,
                                 givenKind = effectCallableRef.givenKind,
                                 isExternal = false,
@@ -279,12 +273,12 @@ class EffectGenerator : Generator {
         )
     }
 
-    private fun DeclarationDescriptor.getGivenType(): KotlinType {
+    private fun DeclarationDescriptor.getGivenType(): TypeRef {
         return when (this) {
-            is ClassDescriptor -> defaultType
+            is ClassDescriptor -> defaultType.toTypeRef()
             is FunctionDescriptor -> {
                 if (hasAnnotation(InjektFqNames.Given)) {
-                    returnType!!
+                    returnType!!.toTypeRef()
                 } else {
                     val parametersSize = valueParameters.size
                     (if (isSuspend) moduleDescriptor.builtIns.getSuspendFunction(parametersSize)
@@ -296,54 +290,15 @@ class EffectGenerator : Generator {
                                 .map { it.type } + returnType!!)
                                 .map { it.asTypeProjection() }
                         )
-                        .let {
-                            if (hasAnnotation(InjektFqNames.Composable)) {
-                                it.replaceAnnotations(
-                                    Annotations.create(
-                                        it.annotations + AnnotationDescriptorImpl(
-                                            moduleDescriptor.findClassAcrossModuleDependencies(
-                                                ClassId.topLevel(InjektFqNames.Composable)
-                                            )!!.defaultType,
-                                            emptyMap(),
-                                            SourceElement.NO_SOURCE
-                                        )
-                                    )
-                                )
-                            } else it
-                        }
-                        .let {
-                            if (hasAnnotation(InjektFqNames.Reader)) {
-                                it.replaceAnnotations(
-                                    Annotations.create(
-                                        it.annotations + AnnotationDescriptorImpl(
-                                            moduleDescriptor.findClassAcrossModuleDependencies(
-                                                ClassId.topLevel(InjektFqNames.Reader)
-                                            )!!.defaultType,
-                                            emptyMap(),
-                                            SourceElement.NO_SOURCE
-                                        )
-                                    )
-                                )
-                            } else it
-                        }
-                        .let {
-                            it.replaceAnnotations(
-                                Annotations.create(
-                                    it.annotations + AnnotationDescriptorImpl(
-                                        moduleDescriptor.findClassAcrossModuleDependencies(
-                                            ClassId.topLevel(InjektFqNames.Qualifier)
-                                        )!!.defaultType,
-                                        mapOf(
-                                            "value".asNameId() to StringValue(uniqueKey())
-                                        ),
-                                        SourceElement.NO_SOURCE
-                                    )
-                                )
-                            )
-                        }
+                        .toTypeRef()
+                        .copy(
+                            isComposable = hasAnnotation(InjektFqNames.Composable),
+                            isReader = hasAnnotation(InjektFqNames.Reader),
+                            qualifier = uniqueKey()
+                        )
                 }
             }
-            is PropertyDescriptor -> getter!!.returnType!!
+            is PropertyDescriptor -> getter!!.returnType!!.toTypeRef()
             else -> error("Unexpected given declaration $this")
         }
     }

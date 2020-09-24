@@ -44,7 +44,7 @@ class RunReaderCallIndexingGenerator : Generator {
         val callElement = call.call.callElement
         val file = callElement.containingKtFile
 
-        val contextType = call.extensionReceiver!!.type
+        val contextType = call.extensionReceiver!!.type.toTypeRef()
         val blockContextType = call.valueArguments.values.single()
             .arguments
             .single()
@@ -56,10 +56,7 @@ class RunReaderCallIndexingGenerator : Generator {
             .type
 
         given<DeclarationStore>()
-            .addInternalRunReaderContext(
-                SimpleTypeRef(contextType.constructor.declarationDescriptor!!.toClassifierRef()),
-                blockContextType
-            )
+            .addInternalRunReaderContext(contextType, blockContextType)
 
         indexer.index(
             fqName = file.packageFqName.child(

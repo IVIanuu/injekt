@@ -130,7 +130,7 @@ class GivenStatements(private val owner: ContextImpl) {
                     given.callable.receiver != null -> {
                         emit("${given.callable.receiver.render()}.${given.callable.name}")
                     }
-                    given.callable.parameters.any { it.isExtensionReceiver } -> {
+                    given.callable.valueParameters.any { it.isExtensionReceiver } -> {
                         parameters.first()()
                         emit(".${given.callable.name}")
                     }
@@ -139,7 +139,7 @@ class GivenStatements(private val owner: ContextImpl) {
                 if (!given.callable.isPropertyAccessor) {
                     emit("(")
                     parameters
-                        .drop(if (given.callable.parameters.firstOrNull()?.isExtensionReceiver == true) 1 else 0)
+                        .drop(if (given.callable.valueParameters.firstOrNull()?.isExtensionReceiver == true) 1 else 0)
                         .forEachIndexed { index, parameter ->
                             parameter()
                             if (index != parameters.lastIndex) emit(", ")
@@ -149,15 +149,15 @@ class GivenStatements(private val owner: ContextImpl) {
             }
         }
 
-        return if (given.callable.parameters.isNotEmpty()) {
+        return if (given.callable.valueParameters.isNotEmpty()) {
             val statement: ContextStatement = {
                 emit("{ ")
-                given.callable.parameters.forEachIndexed { index, parameter ->
+                given.callable.valueParameters.forEachIndexed { index, parameter ->
                     emit("p$index: ${parameter.typeRef.render()}")
-                    if (index != given.callable.parameters.lastIndex) emit(", ")
+                    if (index != given.callable.valueParameters.lastIndex) emit(", ")
                 }
                 emitLine(" ->")
-                createExpression(given.callable.parameters.mapIndexed { index, _ ->
+                createExpression(given.callable.valueParameters.mapIndexed { index, _ ->
                     { emit("p$index") }
                 }).invoke(this)
                 emitLine()
