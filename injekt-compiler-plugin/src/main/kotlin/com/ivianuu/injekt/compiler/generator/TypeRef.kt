@@ -99,40 +99,45 @@ class SimpleTypeRef(
     override val qualifier: String? = null
 ) : TypeRef()
 
-fun TypeRef.typeWith(arguments: List<TypeRef>): TypeRef {
-    check(arguments.size == classifier.typeParameters.size) {
+fun TypeRef.makeNullable() = copy(isMarkedNullable = true)
+fun TypeRef.makeNotNull() = copy(isMarkedNullable = false)
+
+fun TypeRef.typeWith(typeArguments: List<TypeRef>): TypeRef {
+    check(typeArguments.size == classifier.typeParameters.size) {
         "Argument size mismatch ${classifier.fqName} " +
                 "params: ${classifier.typeParameters.map { it.fqName }} " +
-                "args: ${arguments.map { it.render() }}"
+                "args: ${typeArguments.map { it.render() }}"
     }
-    return SimpleTypeRef(
-        classifier,
-        isMarkedNullable,
-        isContext,
-        isChildContextFactory,
-        isGivenSet,
-        arguments,
-        variance,
-        isComposable,
-        isReader,
-        qualifier
-    )
+    return copy(typeArguments = typeArguments)
 }
+
+fun TypeRef.copy(
+    classifier: ClassifierRef = this.classifier,
+    isMarkedNullable: Boolean = this.isMarkedNullable,
+    isContext: Boolean = this.isContext,
+    isChildContextFactory: Boolean = this.isChildContextFactory,
+    isGivenSet: Boolean = this.isGivenSet,
+    typeArguments: List<TypeRef> = this.typeArguments,
+    variance: Variance = this.variance,
+    isComposable: Boolean = this.isComposable,
+    isReader: Boolean = this.isReader,
+    qualifier: String? = this.qualifier
+) = SimpleTypeRef(
+    classifier = classifier,
+    isMarkedNullable = isMarkedNullable,
+    isContext = isContext,
+    isChildContextFactory = isChildContextFactory,
+    isGivenSet = isGivenSet,
+    typeArguments = typeArguments,
+    variance = variance,
+    isComposable = isComposable,
+    isReader = isReader,
+    qualifier = qualifier
+)
 
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
     map[classifier]?.let { return it }
-    return SimpleTypeRef(
-        classifier,
-        isMarkedNullable,
-        isContext,
-        isChildContextFactory,
-        isGivenSet,
-        typeArguments.map { it.substitute(map) },
-        variance,
-        isComposable,
-        isReader,
-        qualifier
-    )
+    return copy(typeArguments = typeArguments.map { it.substitute(map) })
 }
 
 fun TypeRef.render(): String {

@@ -43,18 +43,19 @@ class ContextFactoryGenerator : Generator {
     private fun generateContextFactoryFor(call: ResolvedCall<*>) {
         val isChild = call.resultingDescriptor.name.asString() == "childContext"
 
-        val contextType = call.typeArguments.values.single()
+        val contextType = call.typeArguments.values.single().toTypeRef()
+            .makeNotNull()
 
         val inputs = call.valueArguments.values.singleOrNull()
             ?.let { it as VarargValueArgument }
             ?.arguments
-            ?.map { it.getArgumentExpression()?.getType(given())!! }
+            ?.map { it.getArgumentExpression()?.getType(given())!!.toTypeRef() }
             ?: emptyList()
 
         val containingFile = call.call.callElement.containingKtFile
 
         val callElement = call.call.callElement
-        val factoryName = (contextType.constructor.declarationDescriptor!!.fqNameSafe.pathSegments()
+        val factoryName = (contextType.classifier.fqName.pathSegments()
             .joinToString("_") + "_${callElement.containingKtFile.name.removeSuffix(".kt")}${callElement.startOffset}Factory")
             .removeIllegalChars()
             .asNameId()
@@ -103,8 +104,8 @@ class ContextFactoryGenerator : Generator {
                 classifier = ClassifierRef(containingFile.packageFqName.child(factoryName)),
                 isChildContextFactory = true
             ),
-            contextType = contextType.toTypeRef(),
-            inputTypes = inputs.map { it.toTypeRef() }
+            contextType = contextType,
+            inputTypes = inputs
         )
         given<DeclarationStore>()
             .addInternalContextFactory(factoryDescriptor)
