@@ -19,6 +19,7 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.assertInternalError
+import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
@@ -860,6 +861,26 @@ class ReaderTest {
         )
     ) {
         it.last().invokeSingleFile()
+    }
+
+    @Test
+    fun testGenericCallsGenericWithSameName() = codegen(
+        """
+        class Intent
+        @Reader
+        suspend fun startActivityForResult(intent: Intent): Boolean =
+            startActivityForResult(Contract(), intent)
+        
+        class Contract<I, O>
+        
+        @Reader
+        suspend fun <I, O> startActivityForResult(
+            contract: Contract<I, O>,
+            input: I
+        ): O = error("")
+    """
+    ) {
+        assertOk()
     }
 
 }
