@@ -40,14 +40,13 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
 
-    private lateinit var applicationContext: ApplicationContext
-
     override fun registerProjectComponents(
         project: MockProject,
         configuration: CompilerConfiguration
     ) {
-        applicationContext = rootContext(project as Project, configuration)
-        applicationContext.runReader { registerExtensions(project) }
+        rootContext<ApplicationContext>(project as Project, configuration).runReader {
+            registerExtensions(project)
+        }
     }
 
     @Reader
