@@ -25,7 +25,9 @@ import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.compiler.unsafeLazy
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -220,12 +222,8 @@ class DeclarationStore {
         }
     }
 
-    private val readerContextsByDeclaration =
-        mutableMapOf<DeclarationDescriptor, ReaderContextDescriptor>()
     val internalReaderContextsByType = mutableMapOf<ClassifierRef, ReaderContextDescriptor>()
     private val readerContextsByType = mutableMapOf<ClassifierRef, ReaderContextDescriptor>()
-    private val externalReaderContexts =
-        mutableMapOf<DeclarationDescriptor, ReaderContextDescriptor>()
 
     fun getReaderContextForCallable(callableRef: CallableRef): ReaderContextDescriptor? {
         return getReaderContextByType(
@@ -244,9 +242,9 @@ class DeclarationStore {
         )
     }
 
-    fun addReaderContextForType(type: TypeRef, context: ReaderContextDescriptor) {
-        readerContextsByType[type.classifier] = context
-        internalReaderContextsByType[type.classifier] = context
+    fun addInternalReaderContext(context: ReaderContextDescriptor) {
+        readerContextsByType[context.type.classifier] = context
+        internalReaderContextsByType[context.type.classifier] = context
     }
 
     fun getReaderContextByType(type: TypeRef): ReaderContextDescriptor? {
@@ -279,48 +277,35 @@ class DeclarationStore {
         }?.also { readerContextsByType[type.classifier] = it }
     }
 
-    fun addReaderContextForDeclaration(
-        declaration: DeclarationDescriptor,
-        context: ReaderContextDescriptor
-    ) {
-        readerContextsByDeclaration[declaration.original] = context
-        readerContextsByType[context.type.classifier] = context
-        internalReaderContextsByType[context.type.classifier] = context
-    }
-
     fun getReaderContextForDeclaration(declaration: DeclarationDescriptor): ReaderContextDescriptor? {
-        return readerContextsByDeclaration[declaration.original]
-            ?: externalReaderContexts[declaration.original]
-            ?: declaration.findPackage()
-                .getMemberScope()
-                .getContributedClassifier(
-                    declaration.getContextName(),
-                    NoLookupLocation.FROM_BACKEND
-                )
-                ?.let { it as ClassDescriptor }
-                ?.let { classDescriptor ->
-                    ReaderContextDescriptor(
-                        SimpleTypeRef(classDescriptor.toClassifierRef(), isContext = true),
-                        classDescriptor.declaredTypeParameters
-                            .map { typeParameter ->
-                                ReaderContextTypeParameter(
-                                    typeParameter.name,
-                                    typeParameter.upperBounds
-                                        .map { it.toTypeRef() }
+        val contextFqName = declaration.findPackage().fqName.child(
+            declaration.getContextName()
+        )
+        return getReaderContextByType(
+            SimpleTypeRef(
+                classifier = ClassifierRef(
+                    fqName = contextFqName,
+                    typeParameters = when (declaration) {
+                        is ClassifierDescriptorWithTypeParameters -> declaration.declaredTypeParameters
+                            .map {
+                                ClassifierRef(
+                                    contextFqName.child(it.name),
+                                    isTypeParameter = true
                                 )
-                            },
-                        declaration.fqNameSafe,
-                        emptyList()
-                    ).apply {
-                        givenTypes += classDescriptor.unsubstitutedMemberScope
-                            .getContributedDescriptors()
-                            .filterIsInstance<FunctionDescriptor>()
-                            .filter { it.dispatchReceiverParameter?.type == classDescriptor.defaultType }
-                            .map { it.returnType!!.toTypeRef() }
+                            }
+                        is CallableDescriptor -> declaration.typeParameters
+                            .map {
+                                ClassifierRef(
+                                    contextFqName.child(it.name),
+                                    isTypeParameter = true
+                                )
+                            }
+                        else -> emptyList()
                     }
-                }
-                ?.also { externalReaderContexts[declaration.original] = it }
-                ?.also { readerContextsByType[it.type.classifier] = it }
+                ),
+                isContext = true
+            )
+        )
     }
 
     private val givenSetsByType = mutableMapOf<TypeRef, GivenSetDescriptor>()

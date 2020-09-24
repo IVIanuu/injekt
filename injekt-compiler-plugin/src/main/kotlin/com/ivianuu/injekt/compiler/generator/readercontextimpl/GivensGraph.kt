@@ -392,8 +392,6 @@ class GivensGraph(private val owner: ContextImpl) {
         givenSetGivens[type]?.let { this += it }
         this += declarationStore.givens(type)
             .map { callable ->
-                val targetContext = callable.targetContext
-
                 CallableGivenNode(
                     type = type,
                     owner = owner,
@@ -401,7 +399,7 @@ class GivensGraph(private val owner: ContextImpl) {
                     external = callable.isExternal,
                     origin = callable.fqName,
                     callable = callable,
-                    targetContext = targetContext,
+                    targetContext = callable.targetContext,
                     givenSetAccessStatement = null
                 )
             }

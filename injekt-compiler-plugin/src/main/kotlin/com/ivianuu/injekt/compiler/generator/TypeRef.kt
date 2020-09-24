@@ -19,7 +19,10 @@ data class ClassifierRef(
     val fqName: FqName,
     val typeParameters: List<ClassifierRef> = emptyList(),
     val isTypeParameter: Boolean = false
-)
+) {
+    override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
+    override fun hashCode(): Int = fqName.hashCode()
+}
 
 fun ClassifierDescriptor.toClassifierRef(): ClassifierRef {
     return ClassifierRef(

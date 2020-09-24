@@ -62,7 +62,7 @@ class ReaderContextGenerator : Generator {
                     promised.origin,
                     promised.originatingFiles
                 ).apply {
-                    declarationStore.addReaderContextForType(promised.type, this)
+                    declarationStore.addInternalReaderContext(this)
                     givenTypes +=
                         SimpleTypeRef(
                             classifier = declarationStore.getReaderContextForDeclaration(promised.callee)!!
@@ -219,16 +219,15 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
         declaration: DeclarationDescriptor,
         fromRunReaderCall: Boolean = false
     ) {
-        if (!declaration.isReader() && !fromRunReaderCall) return
         val declarationStore = given<DeclarationStore>()
+        if (!declaration.isReader() && !fromRunReaderCall) return
         if (declarationStore
                 .getReaderContextForDeclaration(declaration) != null
         ) return
         val contextName = declaration.getContextName()
         val contextFqName = declaration.findPackage().fqName.child(contextName)
         declarationStore
-            .addReaderContextForDeclaration(
-                declaration,
+            .addInternalReaderContext(
                 ReaderContextDescriptor(
                     type = SimpleTypeRef(
                         classifier = ClassifierRef(
