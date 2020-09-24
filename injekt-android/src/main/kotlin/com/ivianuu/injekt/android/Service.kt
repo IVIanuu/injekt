@@ -14,19 +14,34 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.samples.android
+package com.ivianuu.injekt.android
 
-import androidx.activity.ComponentActivity
+import android.app.Service
+import android.content.res.Resources
 import com.ivianuu.injekt.Context
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.childContext
+import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
 @Context
-interface RetainedActivityContext
+interface ServiceContext
 
-val ComponentActivity.retainedActivityContext: RetainedActivityContext
-    get() = viewModelStore.singleton {
-        application.applicationReaderContext.runReader {
-            childContext()
-        }
+fun Service.createServiceContext(): ServiceContext =
+    application.applicationReaderContext.runReader {
+        childContext(this)
     }
+
+typealias AndroidServiceContext = android.content.Context
+
+typealias ServiceResources = Resources
+
+object ServiceGivens {
+
+    @Given
+    fun context(): AndroidServiceContext = given<Service>()
+
+    @Given
+    fun resources(): ServiceResources = given<Service>().resources
+
+}

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.samples.android
+package com.ivianuu.injekt.android
 
 import android.accounts.AccountManager
 import android.app.ActivityManager

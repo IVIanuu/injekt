@@ -14,30 +14,19 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.samples.android
+package com.ivianuu.injekt.android
 
-import android.app.Application
-import android.content.BroadcastReceiver
-import android.content.Intent
+import androidx.activity.ComponentActivity
 import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.runReader
 
 @Context
-interface ReceiverContext
+interface RetainedActivityContext
 
-fun BroadcastReceiver.createReceiverContext(
-    context: android.content.Context,
-    intent: Intent
-): ReceiverContext =
-    (context.applicationContext as Application).applicationReaderContext.runReader {
-        childContext(
-            this,
-            context as AndroidReceiverContext,
-            intent as ReceiverIntent
-        )
+val ComponentActivity.retainedActivityContext: RetainedActivityContext
+    get() = viewModelStore.singleton {
+        application.applicationReaderContext.runReader {
+            childContext()
+        }
     }
-
-typealias AndroidReceiverContext = android.content.Context
-
-typealias ReceiverIntent = Intent

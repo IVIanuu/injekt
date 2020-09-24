@@ -1,11 +1,13 @@
 package com.ivianuu.injekt.compiler.generator
 
+import com.ivianuu.injekt.ApplicationContext
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.CacheDir
 import com.ivianuu.injekt.compiler.IncrementalFileCache
 import com.ivianuu.injekt.compiler.SrcDir
 import com.ivianuu.injekt.compiler.log
 import com.ivianuu.injekt.given
+import com.ivianuu.injekt.runReader
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
@@ -14,7 +16,9 @@ import java.io.File
 class KtFileManager {
 
     private val fileCache = given<IncrementalFileCache>(
-        given<CacheDir>().resolve("file-cache")
+        // todo temporary workaround because requesting 2 givens with the same expanded type is not working
+        given<ApplicationContext>().runReader { given<CacheDir>() }
+            .resolve("file-cache")
     )
 
     val newFiles = mutableSetOf<File>()

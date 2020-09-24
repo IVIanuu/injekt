@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.samples.android
+package com.ivianuu.injekt.android
 
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver

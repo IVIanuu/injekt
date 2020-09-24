@@ -18,6 +18,7 @@ package com.ivianuu.injekt.samples.android
 
 import android.app.Application
 import com.ivianuu.injekt.InitializeInjekt
+import com.ivianuu.injekt.android.applicationReaderContext
 import com.ivianuu.injekt.runReader
 
 @InitializeInjekt

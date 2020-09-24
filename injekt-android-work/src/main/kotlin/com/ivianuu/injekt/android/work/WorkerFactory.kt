@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.samples.android.work
+package com.ivianuu.injekt.android.work
 
 import android.content.Context
 import androidx.work.ListenableWorker

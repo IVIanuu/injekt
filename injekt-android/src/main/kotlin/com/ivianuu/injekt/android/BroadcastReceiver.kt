@@ -14,34 +14,30 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.samples.android
+package com.ivianuu.injekt.android
 
-import android.app.Service
-import android.content.res.Resources
+import android.app.Application
+import android.content.BroadcastReceiver
+import android.content.Intent
 import com.ivianuu.injekt.Context
-import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.childContext
-import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
 @Context
-interface ServiceContext
+interface ReceiverContext
 
-fun Service.createServiceContext(): ServiceContext =
-    application.applicationReaderContext.runReader {
-        childContext(this)
+fun BroadcastReceiver.createReceiverContext(
+    context: android.content.Context,
+    intent: Intent
+): ReceiverContext =
+    (context.applicationContext as Application).applicationReaderContext.runReader {
+        childContext(
+            this,
+            context as AndroidReceiverContext,
+            intent as ReceiverIntent
+        )
     }
 
-typealias AndroidServiceContext = android.content.Context
+typealias AndroidReceiverContext = android.content.Context
 
-typealias ServiceResources = Resources
-
-object ServiceGivens {
-
-    @Given
-    fun context(): AndroidServiceContext = given<Service>()
-
-    @Given
-    fun resources(): ServiceResources = given<Service>().resources
-
-}
+typealias ReceiverIntent = Intent

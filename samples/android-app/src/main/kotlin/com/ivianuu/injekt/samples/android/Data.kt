@@ -19,6 +19,7 @@ package com.ivianuu.injekt.samples.android
 import com.ivianuu.injekt.ApplicationContext
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.android.AndroidApplicationContext
 import com.ivianuu.injekt.given
 import java.io.File
 

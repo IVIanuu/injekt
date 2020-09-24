@@ -22,8 +22,9 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.android.AndroidApplicationContext
+import com.ivianuu.injekt.android.work.GivenWorker
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.samples.android.work.GivenWorker
 
 @GivenWorker
 class TestWorker(
