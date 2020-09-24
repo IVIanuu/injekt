@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.Variance
+import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.types.getAbbreviation
 
 data class ClassifierRef(
@@ -59,11 +60,12 @@ class KotlinTypeRef(
     }
 
     override val isComposable: Boolean by unsafeLazy {
-        val r = finalType.hasAnnotation(InjektFqNames.Composable)
-        r
+        kotlinType.hasAnnotation(InjektFqNames.Composable) &&
+                kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
     }
     override val isReader: Boolean by unsafeLazy {
-        finalType.hasAnnotation(InjektFqNames.Reader)
+        kotlinType.hasAnnotation(InjektFqNames.Reader) &&
+                kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Reader) != true
     }
     override val qualifier: String? by unsafeLazy {
         finalType.annotations.findAnnotation(InjektFqNames.Qualifier)
