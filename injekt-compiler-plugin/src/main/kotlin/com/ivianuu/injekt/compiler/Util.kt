@@ -14,9 +14,9 @@ fun <T> unsafeLazy(init: () -> T) = lazy(LazyThreadSafetyMode.NONE, init)
 
 fun DeclarationDescriptor.getContextName(): Name {
     val owner = when (this) {
-        is ConstructorDescriptor -> constructedClass
-        is PropertyAccessorDescriptor -> correspondingProperty
-        else -> this
+        is ConstructorDescriptor -> constructedClass.original
+        is PropertyAccessorDescriptor -> correspondingProperty.original
+        else -> original
     }
     return contextNameOf(
         owner.findPackage().fqName,

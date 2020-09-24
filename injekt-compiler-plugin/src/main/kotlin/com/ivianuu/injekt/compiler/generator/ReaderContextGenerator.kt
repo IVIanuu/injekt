@@ -226,47 +226,47 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
         ) return
         val contextName = declaration.getContextName()
         val contextFqName = declaration.findPackage().fqName.child(contextName)
-        declarationStore
-            .addInternalReaderContext(
-                ReaderContextDescriptor(
-                    type = SimpleTypeRef(
-                        classifier = ClassifierRef(
-                            fqName = contextFqName,
-                            typeParameters = when (declaration) {
-                                is ClassifierDescriptorWithTypeParameters -> declaration.declaredTypeParameters
-                                    .map {
-                                        ClassifierRef(
-                                            contextFqName.child(it.name),
-                                            isTypeParameter = true
-                                        )
-                                    }
-                                is CallableDescriptor -> declaration.typeParameters
-                                    .map {
-                                        ClassifierRef(
-                                            contextFqName.child(it.name),
-                                            isTypeParameter = true
-                                        )
-                                    }
-                                else -> emptyList()
+
+        val context = ReaderContextDescriptor(
+            type = SimpleTypeRef(
+                classifier = ClassifierRef(
+                    fqName = contextFqName,
+                    typeParameters = when (declaration) {
+                        is ClassifierDescriptorWithTypeParameters -> declaration.declaredTypeParameters
+                            .map {
+                                ClassifierRef(
+                                    contextFqName.child(it.name),
+                                    isTypeParameter = true
+                                )
                             }
-                        ),
-                        isContext = true
-                    ),
-                    typeParameters = (when (declaration) {
-                        is ClassDescriptor -> declaration.declaredTypeParameters
-                        is FunctionDescriptor -> declaration.typeParameters
-                        is PropertyDescriptor -> declaration.typeParameters
+                        is CallableDescriptor -> declaration.typeParameters
+                            .map {
+                                ClassifierRef(
+                                    contextFqName.child(it.name),
+                                    isTypeParameter = true
+                                )
+                            }
                         else -> emptyList()
-                    } + capturedTypeParameters).map { typeParameter ->
-                        ReaderContextTypeParameter(
-                            typeParameter.name,
-                            typeParameter.upperBounds.map { it.toTypeRef() }
-                        )
-                    },
-                    origin = declaration.fqNameSafe,
-                    originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
+                    }
+                ),
+                isContext = true
+            ),
+            typeParameters = (when (declaration) {
+                is ClassDescriptor -> declaration.declaredTypeParameters
+                is FunctionDescriptor -> declaration.typeParameters
+                is PropertyDescriptor -> declaration.typeParameters
+                else -> emptyList()
+            } + capturedTypeParameters).map { typeParameter ->
+                ReaderContextTypeParameter(
+                    typeParameter.name,
+                    typeParameter.upperBounds.map { it.toTypeRef() }
                 )
-            )
+            },
+            origin = declaration.fqNameSafe,
+            originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
+        )
+
+        declarationStore.addInternalReaderContext(context)
     }
 
 }
