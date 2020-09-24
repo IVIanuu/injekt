@@ -1,9 +1,9 @@
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.Given
 import java.io.File
 
-@Reader
+@Given
 class IncrementalFileCache(private val cacheFile: File) {
 
     val deletedFiles = mutableSetOf<String>()
