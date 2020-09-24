@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 import org.jetbrains.kotlin.types.typeUtil.supertypes
 
@@ -73,7 +74,9 @@ class ReaderContextChecker : CallChecker, DeclarationChecker {
     private fun ClassDescriptor.getAllDeclarations(): Set<DeclarationDescriptor> {
         val declarations = mutableSetOf<DeclarationDescriptor>()
         fun ClassDescriptor.collect() {
-            declarations += unsubstitutedMemberScope.getContributedDescriptors()
+            declarations += unsubstitutedMemberScope.getContributedDescriptors(
+                DescriptorKindFilter.CALLABLES
+            )
                 .filter {
                     (it is FunctionDescriptor
                             && it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() != true)

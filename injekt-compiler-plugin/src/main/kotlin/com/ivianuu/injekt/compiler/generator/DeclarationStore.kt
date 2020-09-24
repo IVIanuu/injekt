@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 
 @Given(GenerationContext::class)
 class DeclarationStore {
@@ -269,7 +270,7 @@ class DeclarationStore {
                 )
             ).apply {
                 givenTypes += classDescriptor.unsubstitutedMemberScope
-                    .getContributedDescriptors()
+                    .getContributedDescriptors(DescriptorKindFilter.FUNCTIONS)
                     .filterIsInstance<FunctionDescriptor>()
                     .filter { it.dispatchReceiverParameter?.type == classDescriptor.defaultType }
                     .map { it.returnType!!.toTypeRef() }
@@ -316,7 +317,9 @@ class DeclarationStore {
                     type.classifier.fqName.shortName(),
                     NoLookupLocation.FROM_BACKEND
                 )!! as ClassDescriptor
-            val members = descriptor.unsubstitutedMemberScope.getContributedDescriptors()
+            val members = descriptor.unsubstitutedMemberScope.getContributedDescriptors(
+                DescriptorKindFilter.CALLABLES
+            )
             GivenSetDescriptor(
                 type = type,
                 callables = members

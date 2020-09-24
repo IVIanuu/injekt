@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 
 @Given
@@ -62,7 +63,7 @@ class EffectChecker : DeclarationChecker {
         }
 
         companion.unsubstitutedMemberScope
-            .getContributedDescriptors()
+            .getContributedDescriptors(DescriptorKindFilter.FUNCTIONS)
             .filterIsInstance<FunctionDescriptor>()
             .filter { it.dispatchReceiverParameter?.value?.type == companion.defaultType }
             .forEach { effectFunction ->
@@ -113,7 +114,7 @@ class EffectChecker : DeclarationChecker {
                     .let { it as ClassDescriptor }
                     .companionObjectDescriptor
                     ?.unsubstitutedMemberScope
-                    ?.getContributedDescriptors()
+                    ?.getContributedDescriptors(DescriptorKindFilter.FUNCTIONS)
                     ?.filterIsInstance<FunctionDescriptor>()
                     ?.firstOrNull()
                     ?.typeParameters

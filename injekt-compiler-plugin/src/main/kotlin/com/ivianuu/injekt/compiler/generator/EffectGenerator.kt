@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeSubstitutor
 import org.jetbrains.kotlin.types.replace
@@ -163,13 +164,13 @@ class EffectGenerator : Generator {
                     .map { it.companionObjectDescriptor!! }
                     .flatMap { effectGivenSet ->
                         effectGivenSet.unsubstitutedMemberScope
-                            .getContributedDescriptors()
+                            .getContributedDescriptors(DescriptorKindFilter.FUNCTIONS)
+                            .filterIsInstance<FunctionDescriptor>()
                             .filter {
                                 it.hasAnnotation(InjektFqNames.Given) ||
                                         it.hasAnnotation(InjektFqNames.GivenMapEntries) ||
                                         it.hasAnnotation(InjektFqNames.GivenSetElements)
                             }
-                            .filterIsInstance<FunctionDescriptor>()
                     }
                     .map { effectFunction ->
                         val name = getJoinedName(
