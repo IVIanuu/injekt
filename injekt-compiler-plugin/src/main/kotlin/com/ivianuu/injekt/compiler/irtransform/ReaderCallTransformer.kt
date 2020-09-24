@@ -74,6 +74,7 @@ import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -163,6 +164,20 @@ class ReaderCallTransformer : IrLowering {
                     irCall(function).apply {
                         dispatchReceiver = contextExpression()
                     }
+                }
+            }
+        }
+
+        fun givenExpressionForName(
+            name: Name,
+            contextExpression: () -> IrExpression
+        ): IrExpression {
+            val function =
+                context.functions.singleOrNull { it.name == name }
+                    ?: error("Nothing found for $name in ${context.dump()}")
+            return function.irBuilder().run {
+                irCall(function).apply {
+                    dispatchReceiver = contextExpression()
                 }
             }
         }
@@ -372,13 +387,12 @@ class ReaderCallTransformer : IrLowering {
         val arguments = (call.getValueArgument(0) as? IrVarargImpl)
             ?.elements
             ?.map { it as IrExpression } ?: emptyList()
-        val realType = when {
-            arguments.isNotEmpty() -> pluginContext.tmpFunction(arguments.size)
-                .owner
-                .typeWith(arguments.map { it.type } + call.getTypeArgument(0)!!)
-            else -> call.getTypeArgument(0)!!
-        }
-        val rawExpression = scope.givenExpressionForType(realType, contextExpression)
+        val rawExpression = scope.givenExpressionForName(
+            given<InjektAttributes>()[InjektAttributes.GivenFunctionName(
+                scope.declaration.file.path, call.startOffset
+            )]!!,
+            contextExpression
+        )
         return call.symbol.irBuilder().run {
             when {
                 arguments.isNotEmpty() -> call.symbol.irBuilder().irCall(

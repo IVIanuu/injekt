@@ -148,7 +148,6 @@ class GivensGraph(private val owner: ContextImpl) {
         context.givenTypes
             .map { it.substitute(substitutionMap) }
             .forEach { givenType ->
-                println("check type ${givenType.render()} subs $substitutionMap")
                 val existingFunction = owner.members.singleOrNull {
                     it is ContextFunction && it.name == givenType.uniqueTypeName()
                 } as? ContextFunction
@@ -331,7 +330,7 @@ class GivensGraph(private val owner: ContextImpl) {
                             .map { (originalType, substitutedType) ->
                                 val statement = statements.getGivenStatement(
                                     getGiven(substitutedType),
-                                    false
+                                    null
                                 )
                                 GivenTypeWithStatement(
                                     substitutedType,
@@ -357,7 +356,7 @@ class GivensGraph(private val owner: ContextImpl) {
                         owner.superTypes += type
                         declarationStore.getReaderContextByFqName(type.classifier.fqName)!!
                             .givenTypes
-                            .forEach { statements.getGivenStatement(getGiven(it), true) }
+                            .forEach { statements.getGivenStatement(getGiven(it), it) }
                         return@CalleeContextGivenNode {
                             emit("this@${owner.name}")
                         }

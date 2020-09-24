@@ -147,10 +147,11 @@ data class ReaderContextDescriptor(
     val givenTypes: MutableSet<TypeRef> = mutableSetOf()
 )
 
-@Given
+@Given(GenerationContext::class)
 class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
 
     private val capturedTypeParameters = mutableListOf<TypeParameterDescriptor>()
+    val contextTypeParametersToOrigin = mutableMapOf<ClassifierRef, ClassifierRef>()
 
     override fun visitReferenceExpression(expression: KtReferenceExpression) {
         super.visitReferenceExpression(expression)
@@ -219,28 +220,28 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
 
         val typeParameters = when (declaration) {
             is ClassifierDescriptorWithTypeParameters -> declaration.declaredTypeParameters
-                .map {
+                .map { typeParameter ->
                     ClassifierRef(
-                        contextFqName.child(it.name),
-                        upperBounds = it.upperBounds.map { it.toTypeRef() },
+                        contextFqName.child(typeParameter.name),
+                        upperBounds = typeParameter.upperBounds.map { it.toTypeRef() },
                         isTypeParameter = true
-                    )
+                    ).also { contextTypeParametersToOrigin[it] = typeParameter.toClassifierRef() }
                 }
             is CallableDescriptor -> declaration.typeParameters
-                .map {
+                .map { typeParameter ->
                     ClassifierRef(
-                        contextFqName.child(it.name),
-                        upperBounds = it.upperBounds.map { it.toTypeRef() },
+                        contextFqName.child(typeParameter.name),
+                        upperBounds = typeParameter.upperBounds.map { it.toTypeRef() },
                         isTypeParameter = true
-                    )
+                    ).also { contextTypeParametersToOrigin[it] = typeParameter.toClassifierRef() }
                 }
             else -> emptyList()
-        } + capturedTypeParameters.map {
+        } + capturedTypeParameters.map { typeParameter ->
             ClassifierRef(
-                contextFqName.child(it.name),
-                upperBounds = it.upperBounds.map { it.toTypeRef() },
+                contextFqName.child(typeParameter.name),
+                upperBounds = typeParameter.upperBounds.map { it.toTypeRef() },
                 isTypeParameter = true
-            )
+            ).also { contextTypeParametersToOrigin[it] = typeParameter.toClassifierRef() }
         }
 
         val context = ReaderContextDescriptor(
@@ -270,19 +271,12 @@ class ReaderContextGivensCollector(
         val declaration: DeclarationDescriptor,
         val contextDescriptor: ReaderContextDescriptor
     ) {
-        private val substitutionMap = when (declaration) {
-            is ClassifierDescriptorWithTypeParameters -> declaration.declaredTypeParameters
-            is CallableDescriptor -> declaration.typeParameters
-            else -> emptyList()
-        }.map { it.toClassifierRef() }
-            .zip(contextDescriptor.type.classifier.typeParameters.map {
-                SimpleTypeRef(
-                    ClassifierRef(
-                        contextDescriptor.type.classifier.fqName.child(it.fqName.shortName()),
-                        isTypeParameter = true
-                    )
-                )
-            }).toMap()
+        val substitutionMap = contextDescriptor.type.classifier.typeParameters
+            .map {
+                given<ReaderContextDescriptorCollector>()
+                    .contextTypeParametersToOrigin[it]!! to it.defaultType
+            }
+            .toMap()
 
         fun recordGivenType(type: TypeRef) {
             contextDescriptor.givenTypes += type
@@ -371,7 +365,12 @@ class ReaderContextGivensCollector(
                         )
                     else -> rawType
                 }
-                KotlinTypeRef(realType)
+                val typeRef = KotlinTypeRef(realType).substitute(readerScope!!.substitutionMap)
+                given<InjektAttributes>()[InjektAttributes.GivenFunctionName(
+                    expression.containingKtFile.virtualFilePath,
+                    expression.startOffset
+                )] = typeRef.uniqueTypeName()
+                typeRef
             }
             resulting.fqNameSafe.asString() == "com.ivianuu.injekt.childContext" -> {
                 val factoryDescriptor =

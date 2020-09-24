@@ -7,6 +7,7 @@ import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 
 @Given
 class GivenStatements(private val owner: ContextImpl) {
@@ -14,14 +15,45 @@ class GivenStatements(private val owner: ContextImpl) {
     private val parent = owner.factoryImpl.parent?.statements
     private val statementsByType = mutableMapOf<TypeRef, ContextStatement>()
 
+    private fun getFunction(
+        type: TypeRef,
+        name: Name,
+        isOverride: Boolean,
+        statement: ContextStatement
+    ): ContextFunction {
+        val existing = owner.members.firstOrNull {
+            it is ContextFunction && it.name == name
+        } as? ContextFunction
+        existing?.let {
+            if (isOverride) it.isOverride = true
+            return it
+        }
+        val function = ContextFunction(
+            name = name,
+            isOverride = isOverride,
+            type = type,
+            statement = statement
+        )
+        owner.members += function
+        return function
+    }
+
     fun getGivenStatement(
         given: GivenNode,
-        isOverride: Boolean
+        overriddenCallableType: TypeRef?
     ): ContextStatement {
-        statementsByType[given.type]?.let { return it }
+        statementsByType[given.type]?.let {
+            getFunction(
+                type = given.type,
+                name = overriddenCallableType?.uniqueTypeName() ?: given.type.uniqueTypeName(),
+                isOverride = overriddenCallableType != null,
+                statement = it
+            )
+            return it
+        }
 
         val rawStatement = if (given.owner != owner) {
-            parent!!.getGivenStatement(given, false)
+            parent!!.getGivenStatement(given, null)
         } else {
             when (given) {
                 is CalleeContextGivenNode -> calleeContextExpression(given)
@@ -62,19 +94,27 @@ class GivenStatements(private val owner: ContextImpl) {
             }
         })
 
-        val functionByTypeName = given.type.uniqueTypeName()
-        val functionByType = ContextFunction(
-            name = functionByTypeName,
-            isOverride = isOverride,
+        val functionName =
+            overriddenCallableType?.uniqueTypeName() ?: given.type.uniqueTypeName()
+
+        getFunction(
             type = given.type,
+            name = functionName,
+            isOverride = overriddenCallableType != null,
             statement = finalStatement
         )
-
-        owner.members += functionByType
-
-        val statement: ContextStatement = {
-            emit("this@${owner.name}.${functionByType.name}()")
+        if (overriddenCallableType != null &&
+            overriddenCallableType != given.type
+        ) {
+            getFunction(
+                type = given.type,
+                name = given.type.uniqueTypeName(),
+                isOverride = false,
+                statement = finalStatement
+            )
         }
+
+        val statement: ContextStatement = { emit("this@${owner.name}.${functionName}()") }
 
         statementsByType[given.type] = statement
 

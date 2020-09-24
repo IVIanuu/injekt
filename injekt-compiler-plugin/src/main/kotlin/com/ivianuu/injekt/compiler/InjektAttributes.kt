@@ -3,6 +3,7 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.ApplicationContext
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.generator.ContextFactoryDescriptor
+import org.jetbrains.kotlin.name.Name
 
 @Given(ApplicationContext::class)
 class InjektAttributes {
@@ -16,4 +17,6 @@ class InjektAttributes {
 
     data class ContextFactoryKey(val filePath: String, val startOffset: Int) :
         Key<ContextFactoryDescriptor>
+
+    data class GivenFunctionName(val filePath: String, val startOffset: Int) : Key<Name>
 }

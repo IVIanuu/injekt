@@ -6,8 +6,8 @@ import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.render
+import com.ivianuu.injekt.compiler.generator.substitute
 import com.ivianuu.injekt.compiler.generator.typeWith
-import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.name.Name
@@ -111,16 +111,17 @@ class ContextImpl(
             .filterNot { it.type in superTypes }
             .forEach { context ->
                 superTypes += context.type
-                context.givenTypes.forEach { givenType ->
-                    val existingDeclaration = members.singleOrNull {
-                        it is ContextFunction && it.name == givenType.uniqueTypeName()
-                    } as? ContextFunction
-                    if (existingDeclaration != null) {
-                        existingDeclaration.isOverride = true
-                        return@forEach
+                val substitutionMap = context.type.classifier.typeParameters
+                    .zip(context.type.typeArguments)
+                    .toMap()
+                context.givenTypes
+                    .map { it to it.substitute(substitutionMap) }
+                    .forEach { (originalType, substitutedType) ->
+                        statements.getGivenStatement(
+                            graph.getGiven(substitutedType),
+                            originalType
+                        )
                     }
-                    statements.getGivenStatement(graph.getGiven(givenType), true)
-                }
             }
     }
 
