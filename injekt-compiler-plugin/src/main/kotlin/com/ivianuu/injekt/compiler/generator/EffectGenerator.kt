@@ -6,8 +6,8 @@ import com.ivianuu.injekt.compiler.checkers.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import com.ivianuu.injekt.compiler.contextNameOf
-import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.irtransform.asNameId
+import com.ivianuu.injekt.compiler.joinedNameOf
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -64,7 +64,7 @@ class EffectGenerator : Generator {
             .map { it.type.constructor.declarationDescriptor as ClassDescriptor }
 
         val packageName = declaration.findPackage().fqName
-        val effectsName = getJoinedName(
+        val effectsName = joinedNameOf(
             declaration.fqNameSafe,
             FqName(declaration.fqNameSafe.asString() + "Effects")
         )
@@ -166,7 +166,7 @@ class EffectGenerator : Generator {
                             }
                     }
                     .map { effectFunction ->
-                        val name = getJoinedName(
+                        val name = joinedNameOf(
                             effectFunction.findPackage().fqName,
                             effectFunction.fqNameSafe
                         )

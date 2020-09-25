@@ -1,11 +1,12 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.compiler.InjektAttributes
-import com.ivianuu.injekt.compiler.InjektAttributes.ContextFactoryKey
+import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.checkers.isReader
+import com.ivianuu.injekt.compiler.filePositionOf
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.compiler.removeIllegalChars
+import com.ivianuu.injekt.compiler.tmp
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -187,19 +188,20 @@ class ContextFactoryGenerator : Generator {
             contextType = contextType,
             inputTypes = inputs
         )
-        given<DeclarationStore>()
-            .addInternalContextFactory(factoryDescriptor)
-        given<InjektAttributes>()[ContextFactoryKey(
-            callElement.containingKtFile.virtualFilePath,
-            callElement.startOffset
-        )] = factoryDescriptor
+        val declarationStore = given<DeclarationStore>()
+        declarationStore.addInternalContextFactory(factoryDescriptor)
+        tmp.record(
+            InjektWritableSlices.CONTEXT_FACTORY,
+            filePositionOf(callElement.containingKtFile.virtualFilePath, callElement.startOffset),
+            factoryDescriptor
+        )
         if (!isChild) {
             given<Indexer>().index(
                 fqName = containingFile.packageFqName.child(factoryName),
                 type = "class",
                 originatingFiles = listOf(factoryFile)
             )
-            given<DeclarationStore>()
+            declarationStore
                 .addInternalRootFactory(
                     ContextFactoryImplDescriptor(
                         factoryImplFqName = implFqName!!,

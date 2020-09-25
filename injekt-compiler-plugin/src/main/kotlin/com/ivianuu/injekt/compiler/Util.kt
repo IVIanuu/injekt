@@ -29,11 +29,16 @@ fun contextNameOf(
     packageFqName: FqName,
     fqName: FqName,
     uniqueKey: String
-) = (getJoinedName(packageFqName, fqName).asString() + "${uniqueKey.hashCode()}__Context")
+) = (joinedNameOf(packageFqName, fqName).asString() + "${uniqueKey.hashCode()}__Context")
     .removeIllegalChars()
     .asNameId()
 
-fun getJoinedName(
+fun filePositionOf(
+    filePath: String,
+    startOffset: Int
+) = "$filePath:$startOffset"
+
+fun joinedNameOf(
     packageFqName: FqName,
     fqName: FqName
 ): Name {

@@ -17,12 +17,13 @@
 package com.ivianuu.injekt.compiler.irtransform
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.compiler.InjektAttributes
-import com.ivianuu.injekt.compiler.InjektAttributes.ContextFactoryKey
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.filePositionOf
 import com.ivianuu.injekt.compiler.generator.toTypeRef
+import com.ivianuu.injekt.compiler.generator.uniqueKey
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
+import com.ivianuu.injekt.compiler.tmp
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
@@ -44,6 +45,7 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.impl.IrExternalPackageFragmentImpl
 import org.jetbrains.kotlin.ir.declarations.path
@@ -58,7 +60,6 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
-import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrExternalPackageFragmentSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -74,7 +75,6 @@ import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -83,6 +83,19 @@ class ReaderCallTransformer : IrLowering {
 
     private val transformedDeclarations = mutableListOf<IrDeclaration>()
     private val readerContextParamTransformer = given<ReaderContextParamTransformer>()
+    private val capturedTypeParameters = mutableListOf<IrTypeParameter>()
+
+    private inline fun <R> withCapturedTypeParametersIfNeeded(
+        owner: IrDeclaration,
+        typeParameters: List<IrTypeParameter>,
+        block: () -> R
+    ): R {
+        val isReader = owner.isTransformedReader()
+        if (isReader) capturedTypeParameters += typeParameters
+        val result = block()
+        if (isReader) capturedTypeParameters -= typeParameters
+        return result
+    }
 
     private fun IrDeclaration.isTransformedReader(): Boolean =
         (this is IrSimpleFunction && given<BindingTrace>()[InjektWritableSlices.IS_TRANSFORMED_READER, attributeOwnerId] == true) ||
@@ -93,13 +106,23 @@ class ReaderCallTransformer : IrLowering {
         irModule.transformChildrenVoid(
             object : IrElementTransformerVoidWithContext() {
                 override fun visitClassNew(declaration: IrClass): IrStatement {
-                    transformClassIfNeeded(declaration)
-                    return super.visitClassNew(declaration)
+                    return withCapturedTypeParametersIfNeeded(
+                        declaration,
+                        declaration.typeParameters
+                    ) {
+                        transformClassIfNeeded(declaration)
+                        super.visitClassNew(declaration)
+                    }
                 }
 
                 override fun visitFunctionNew(declaration: IrFunction): IrStatement {
-                    transformFunctionIfNeeded(declaration)
-                    return super.visitFunctionNew(declaration)
+                    return withCapturedTypeParametersIfNeeded(
+                        declaration,
+                        declaration.typeParameters
+                    ) {
+                        transformFunctionIfNeeded(declaration)
+                        super.visitFunctionNew(declaration)
+                    }
                 }
 
                 override fun visitCall(expression: IrCall): IrExpression {
@@ -129,25 +152,36 @@ class ReaderCallTransformer : IrLowering {
 
     inner class ReaderScope(
         val declaration: IrDeclaration,
-        val originalToDeclarationSubstitutionMap: Map<IrTypeParameterSymbol, IrTypeParameterSymbol>,
         val context: IrClass,
     ) {
 
-        private val declarationToContextSubstitutionMap = (declaration as IrTypeParametersContainer)
-            .typeParameters
-            .map { it.symbol }
-            .zip(context.typeParameters.map { it.defaultType })
-            .toMap() + declaration.typeParameters
-            .map { originalToDeclarationSubstitutionMap[it.symbol] ?: it.symbol }
-            .zip(context.typeParameters.map { it.defaultType })
-            .toMap()
+        private val substitutionMap: Map<FqName, IrType> = run {
+            val contextTypeParametersWithOrigin = tmp[
+                    InjektWritableSlices.CONTEXT_TYPE_PARAMETERS_WITH_ORIGIN,
+                    declaration.descriptor.uniqueKey()
+            ]?.mapKeys { (key, _) ->
+                context.typeParameters.singleOrNull {
+                    it.descriptor.fqNameSafe == key.fqName
+                }?.symbol
+                    ?: error("Wtf search for ${key.fqName} only have ${context.typeParameters.map { it.descriptor.fqNameSafe }}")
+            }
+                ?.mapValues { it.value.fqNameSafe }
+                ?.map { it.value to it.key }
+                ?.toMap()
+
+            capturedTypeParameters
+                .map { it.descriptor.fqNameSafe }
+                .zip(context.typeParameters.map { it.defaultType })
+                .toMap()
+                .toMap() + (contextTypeParametersWithOrigin
+                ?.mapValues { it.value.defaultType } ?: emptyMap())
+        }
 
         fun givenExpressionForType(
             type: IrType,
             contextExpression: () -> IrExpression
         ): IrExpression {
-            val finalType = type
-                .substitute(declarationToContextSubstitutionMap)
+            val finalType = type.substituteByFqName(substitutionMap)
             return if (finalType in context.superTypes) {
                 contextExpression()
             } else {
@@ -164,20 +198,6 @@ class ReaderCallTransformer : IrLowering {
                     irCall(function).apply {
                         dispatchReceiver = contextExpression()
                     }
-                }
-            }
-        }
-
-        fun givenExpressionForName(
-            name: Name,
-            contextExpression: () -> IrExpression
-        ): IrExpression {
-            val function =
-                context.functions.singleOrNull { it.name == name }
-                    ?: error("Nothing found for $name in ${context.dump()}")
-            return function.irBuilder().run {
-                irCall(function).apply {
-                    dispatchReceiver = contextExpression()
                 }
             }
         }
@@ -254,11 +274,7 @@ class ReaderCallTransformer : IrLowering {
         if (declaration in transformedDeclarations) return
         transformedDeclarations += declaration
 
-        val scope = ReaderScope(
-            declaration,
-            readerContextParamTransformer.transformedTypeParametersToOriginalTypeParameters,
-            context
-        )
+        val scope = ReaderScope(declaration, context)
 
         declaration.transform(object : IrElementTransformerVoidWithContext() {
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
@@ -318,8 +334,9 @@ class ReaderCallTransformer : IrLowering {
                 "com.ivianuu.injekt.childContext"
 
         val contextFactory = pluginContext.referenceClass(
-            given<InjektAttributes>()[ContextFactoryKey(file.path, call.startOffset)]!!
-                .factoryType.classifier.fqName
+            tmp[InjektWritableSlices.CONTEXT_FACTORY, filePositionOf(
+                file.path, call.startOffset
+            )]!!.factoryType.classifier.fqName
         )!!.owner
 
         return call.symbol.irBuilder().run {
@@ -387,10 +404,14 @@ class ReaderCallTransformer : IrLowering {
         val arguments = (call.getValueArgument(0) as? IrVarargImpl)
             ?.elements
             ?.map { it as IrExpression } ?: emptyList()
-        val rawExpression = scope.givenExpressionForName(
-            given<InjektAttributes>()[InjektAttributes.GivenFunctionName(
-                scope.declaration.file.path, call.startOffset
-            )]!!,
+        val realType = when {
+            arguments.isNotEmpty() -> pluginContext.tmpFunction(arguments.size)
+                .owner
+                .typeWith(arguments.map { it.type } + call.getTypeArgument(0)!!)
+            else -> call.getTypeArgument(0)!!
+        }
+        val rawExpression = scope.givenExpressionForType(
+            realType,
             contextExpression
         )
         return call.symbol.irBuilder().run {
