@@ -64,6 +64,7 @@ import org.jetbrains.kotlin.ir.symbols.impl.IrExternalPackageFragmentSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
+import org.jetbrains.kotlin.ir.types.isAny
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -178,7 +179,7 @@ class ReaderCallTransformer : IrLowering {
             contextExpression: () -> IrExpression
         ): IrExpression {
             val finalType = type.substituteByFqName(substitutionMap)
-            return if (finalType in context.superTypes) {
+            return if (!finalType.isAny() && finalType in context.superTypes) {
                 contextExpression()
             } else {
                 val typeName = finalType
