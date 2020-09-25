@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.psi.namedDeclarationRecursiveVisitor
 @Given(GenerationContext::class)
 class RootContextFactoryImplGenerator : Generator {
 
+    private val declarationStore = given<DeclarationStore>()
     private val fileManager = given<KtFileManager>()
 
     override fun generate(files: List<KtFile>) {
@@ -32,7 +33,7 @@ class RootContextFactoryImplGenerator : Generator {
 
         if (initTrigger == null) return
 
-        given<DeclarationStore>().allRootFactories
+        declarationStore.allRootFactories
             .forEach { generateRootFactory(it) }
     }
 

@@ -373,7 +373,7 @@ class GivensGraph(private val owner: ContextImpl) {
                 currentContext = currentContext.factoryImpl.parent
             }
             if (type !in existingFactories) {
-                val factoryDescriptor = given<DeclarationStore>()
+                val factoryDescriptor = declarationStore
                     .getContextFactoryForFqName(type.classifier.fqName)
                 val factoryImpl = ContextFactoryImpl(
                     name = owner.factoryImpl.contextTreeNameProvider("F").asNameId(),

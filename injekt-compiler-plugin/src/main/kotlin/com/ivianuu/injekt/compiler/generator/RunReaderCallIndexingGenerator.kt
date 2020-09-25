@@ -18,6 +18,7 @@ import java.io.File
 @Given
 class RunReaderCallIndexingGenerator : Generator {
 
+    private val declarationStore = given<DeclarationStore>()
     private val indexer = given<Indexer>()
 
     override fun generate(files: List<KtFile>) {
@@ -52,10 +53,10 @@ class RunReaderCallIndexingGenerator : Generator {
             .let { it as KtLambdaExpression }
             .functionLiteral
             .descriptor<FunctionDescriptor>()
-            .let { given<DeclarationStore>().getReaderContextForDeclaration(it)!! }
+            .let { declarationStore.getReaderContextForDeclaration(it)!! }
             .type
 
-        given<DeclarationStore>()
+        declarationStore
             .addInternalRunReaderContext(
                 contextType.classifier.fqName,
                 blockContextType.classifier.fqName

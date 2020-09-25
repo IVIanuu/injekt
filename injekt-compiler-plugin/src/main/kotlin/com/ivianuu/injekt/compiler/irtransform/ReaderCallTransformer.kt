@@ -75,11 +75,12 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 @Given
 class ReaderCallTransformer : IrLowering {
+
+    private val injektTrace = given<InjektTrace>()
 
     private val transformedDeclarations = mutableListOf<IrDeclaration>()
     private val capturedTypeParameters = mutableListOf<IrTypeParameter>()
@@ -97,8 +98,8 @@ class ReaderCallTransformer : IrLowering {
     }
 
     private fun IrDeclaration.isTransformedReader(): Boolean =
-        (this is IrSimpleFunction && given<BindingTrace>()[InjektWritableSlices.IS_TRANSFORMED_READER, attributeOwnerId] == true) ||
-                (this is IrClass && given<BindingTrace>()[InjektWritableSlices.IS_TRANSFORMED_READER, attributeOwnerId] == true) ||
+        (this is IrSimpleFunction && injektTrace[InjektWritableSlices.IS_TRANSFORMED_READER, attributeOwnerId] == true) ||
+                (this is IrClass && injektTrace[InjektWritableSlices.IS_TRANSFORMED_READER, attributeOwnerId] == true) ||
                 (this is IrConstructor && constructedClass.isTransformedReader())
 
     override fun lower() {
@@ -155,7 +156,7 @@ class ReaderCallTransformer : IrLowering {
     ) {
 
         private val substitutionMap: Map<FqName, IrType> = run {
-            val contextTypeParametersWithOrigin = given<InjektTrace>()[
+            val contextTypeParametersWithOrigin = injektTrace[
                     InjektWritableSlices.CONTEXT_TYPE_PARAMETERS_WITH_ORIGIN,
                     declaration.descriptor.uniqueKey()
             ]?.mapKeys { (key, _) ->
@@ -245,7 +246,7 @@ class ReaderCallTransformer : IrLowering {
 
     private fun transformFunctionIfNeeded(declaration: IrFunction) {
         if (declaration !is IrSimpleFunction ||
-            given<BindingTrace>()[InjektWritableSlices.IS_TRANSFORMED_READER,
+            injektTrace[InjektWritableSlices.IS_TRANSFORMED_READER,
                     declaration.attributeOwnerId] != true
         ) return
 
@@ -329,7 +330,7 @@ class ReaderCallTransformer : IrLowering {
                 "com.ivianuu.injekt.childContext"
 
         val contextFactory = pluginContext.referenceClass(
-            given<InjektTrace>()[InjektWritableSlices.CONTEXT_FACTORY, filePositionOf(
+            injektTrace[InjektWritableSlices.CONTEXT_FACTORY, filePositionOf(
                 file.path, call.startOffset
             )]!!.factoryType.classifier.fqName
         )!!.owner

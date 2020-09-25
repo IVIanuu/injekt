@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 @Given
 class GivenIndexingGenerator : Generator {
 
+    private val declarationStore = given<DeclarationStore>()
     private val indexer = given<Indexer>()
 
     override fun generate(files: List<KtFile>) {
@@ -46,7 +47,7 @@ class GivenIndexingGenerator : Generator {
                                 }
                         ) {
                             indexer.index(descriptor)
-                            given<DeclarationStore>()
+                            declarationStore
                                 .addInternalGiven(
                                     descriptor.getReaderConstructor(given())!!.toCallableRef()
                                 )
@@ -62,7 +63,7 @@ class GivenIndexingGenerator : Generator {
                                 descriptor.hasAnnotation(InjektFqNames.GivenSetElements)
                             ) {
                                 indexer.index(descriptor)
-                                given<DeclarationStore>()
+                                declarationStore
                                     .addInternalGiven(descriptor.toCallableRef())
                             }
                         }
@@ -76,7 +77,7 @@ class GivenIndexingGenerator : Generator {
                                 descriptor.hasAnnotation(InjektFqNames.Given)
                             ) {
                                 indexer.index(descriptor)
-                                given<DeclarationStore>()
+                                declarationStore
                                     .addInternalGiven(descriptor.getter!!.toCallableRef())
                             }
                         }

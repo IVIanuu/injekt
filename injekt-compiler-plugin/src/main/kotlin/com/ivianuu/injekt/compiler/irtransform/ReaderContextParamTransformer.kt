@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.irtransform
 
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.compiler.InjektTrace
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.checkers.isMarkedAsReader
 import com.ivianuu.injekt.compiler.getContextName
@@ -60,12 +61,13 @@ import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.load.java.JvmAbi
-import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 @Given(IrContext::class)
 class ReaderContextParamTransformer : IrLowering {
+
+    private val injektTrace = given<InjektTrace>()
 
     private val transformedClasses = mutableSetOf<IrClass>()
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
@@ -77,7 +79,7 @@ class ReaderContextParamTransformer : IrLowering {
                     if (expression.symbol.descriptor.fqNameSafe.asString() ==
                         "com.ivianuu.injekt.runReader"
                     ) {
-                        given<BindingTrace>()
+                        injektTrace
                             .record(
                                 InjektWritableSlices.IS_RUN_READER_FUNCTION,
                                 (expression.getValueArgument(0) as IrFunctionExpression).function
@@ -112,7 +114,7 @@ class ReaderContextParamTransformer : IrLowering {
 
         if (readerConstructor.getContext() != null) return clazz
 
-        given<BindingTrace>().record(
+        injektTrace.record(
             InjektWritableSlices.IS_TRANSFORMED_READER,
             clazz,
             true
@@ -169,7 +171,7 @@ class ReaderContextParamTransformer : IrLowering {
         function as IrSimpleFunction
 
         if (!function.canUseReaders() &&
-            given<BindingTrace>()[InjektWritableSlices.IS_RUN_READER_FUNCTION, function.attributeOwnerId] != true
+            injektTrace[InjektWritableSlices.IS_RUN_READER_FUNCTION, function.attributeOwnerId] != true
         )
             return function
 
@@ -178,7 +180,7 @@ class ReaderContextParamTransformer : IrLowering {
         val context = getContextForDeclaration(function)!!
         val transformedFunction = function.copyAsReader()
         transformedFunctions[function] = transformedFunction
-        given<BindingTrace>().record(
+        injektTrace.record(
             InjektWritableSlices.IS_TRANSFORMED_READER,
             (transformedFunction as IrSimpleFunction).attributeOwnerId,
             true

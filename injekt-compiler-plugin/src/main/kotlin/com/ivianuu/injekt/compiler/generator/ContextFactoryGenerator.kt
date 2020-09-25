@@ -32,6 +32,8 @@ class ContextFactoryGenerator : Generator {
 
     private val fileManager = given<KtFileManager>()
     private val capturedTypeParameters = mutableListOf<TypeParameterDescriptor>()
+    private val declarationStore = given<DeclarationStore>()
+    private val injektTrace = given<InjektTrace>()
 
     override fun generate(files: List<KtFile>) {
         files.forEach { file ->
@@ -188,9 +190,8 @@ class ContextFactoryGenerator : Generator {
             contextType = contextType,
             inputTypes = inputs
         )
-        val declarationStore = given<DeclarationStore>()
         declarationStore.addInternalContextFactory(factoryDescriptor)
-        given<InjektTrace>().record(
+        injektTrace.record(
             InjektWritableSlices.CONTEXT_FACTORY,
             filePositionOf(callElement.containingKtFile.virtualFilePath, callElement.startOffset),
             factoryDescriptor

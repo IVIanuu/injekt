@@ -152,7 +152,9 @@ data class ReaderContextDescriptor(
 @Given
 class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
 
+    private val declarationStore = given<DeclarationStore>()
     private val capturedTypeParameters = mutableListOf<TypeParameterDescriptor>()
+    private val injektTrace = given<InjektTrace>()
 
     override fun visitReferenceExpression(expression: KtReferenceExpression) {
         super.visitReferenceExpression(expression)
@@ -211,7 +213,6 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
         declaration: DeclarationDescriptor,
         fromRunReaderCall: Boolean = false
     ) {
-        val declarationStore = given<DeclarationStore>()
         if (!declaration.isReader(given()) && !fromRunReaderCall) return
         if (declarationStore
                 .getReaderContextForDeclaration(declaration) != null
@@ -232,7 +233,7 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
                 ) to typeParameter
             }
 
-        given<InjektTrace>().record(
+        injektTrace.record(
             InjektWritableSlices.CONTEXT_TYPE_PARAMETERS_WITH_ORIGIN,
             declaration.uniqueKey(),
             typeParametersWithOrigin.toMap()
@@ -263,12 +264,14 @@ class ReaderContextGivensCollector(
     private val contextProvider: (DeclarationDescriptor) -> ReaderContextDescriptor?
 ) : KtTreeVisitorVoid() {
 
+    private val injektTrace = given<InjektTrace>()
+
     inner class ReaderScope(
         val declaration: DeclarationDescriptor,
         val contextDescriptor: ReaderContextDescriptor
     ) {
         private val substitutionMap = run {
-            val typeParametersWithOrigin = given<InjektTrace>()[
+            val typeParametersWithOrigin = injektTrace[
                     InjektWritableSlices.CONTEXT_TYPE_PARAMETERS_WITH_ORIGIN,
                     declaration.uniqueKey()
             ]!!
@@ -370,7 +373,7 @@ class ReaderContextGivensCollector(
                 realType.toTypeRef()
             }
             resulting.fqNameSafe.asString() == "com.ivianuu.injekt.childContext" -> {
-                val factoryDescriptor = given<InjektTrace>()[
+                val factoryDescriptor = injektTrace[
                         InjektWritableSlices.CONTEXT_FACTORY,
                         filePositionOf(
                             expression.containingKtFile.virtualFilePath,

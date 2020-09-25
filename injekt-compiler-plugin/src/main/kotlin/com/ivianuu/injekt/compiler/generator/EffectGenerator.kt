@@ -30,6 +30,7 @@ import java.io.File
 @Given
 class EffectGenerator : Generator {
 
+    private val declarationStore = given<DeclarationStore>()
     private val fileManager = given<KtFileManager>()
     private val indexer = given<Indexer>()
     private val readerContextGenerator = given<ReaderContextGenerator>()
@@ -135,7 +136,7 @@ class EffectGenerator : Generator {
                         )
                     )
 
-                    given<DeclarationStore>().addInternalGiven(
+                    declarationStore.addInternalGiven(
                         CallableRef(
                             packageFqName = packageName,
                             fqName = functionFqName,
@@ -243,7 +244,7 @@ class EffectGenerator : Generator {
                                 originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
                             )
                         )
-                        given<DeclarationStore>().addInternalGiven(
+                        declarationStore.addInternalGiven(
                             CallableRef(
                                 packageFqName = packageName,
                                 fqName = effectFunctionFqName,
