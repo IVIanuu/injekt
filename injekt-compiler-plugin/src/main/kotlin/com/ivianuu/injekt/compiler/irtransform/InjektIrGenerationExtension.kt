@@ -36,12 +36,23 @@ class InjektIrGenerationExtension : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val trace: BindingTrace = DelegatingBindingTrace(pluginContext.bindingContext, "injekt")
         childContext<IrContext>(moduleFragment, pluginContext, trace).runReader {
+            bindFunctions()
             given<ReaderContextParamTransformer>().lower()
             given<ReaderCallTransformer>().lower()
             generateSymbols()
         }
     }
 
+}
+
+// this is a temporary fix because the kotlin compiler sometimes crashes
+// when this lib is used with the Compose compiler plugin
+// binding all function types before we run fixes the issue
+@Reader
+private fun bindFunctions() {
+    (0..22).forEach { arity ->
+        pluginContext.irBuiltIns.function(arity)
+    }
 }
 
 private val SymbolTable.allUnbound: List<IrSymbol>
