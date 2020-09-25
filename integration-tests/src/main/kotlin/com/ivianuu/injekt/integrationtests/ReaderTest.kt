@@ -25,6 +25,8 @@ import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
 import com.tschuchort.compiletesting.SourceFile
+import junit.framework.Assert.assertNotSame
+import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -921,6 +923,30 @@ class ReaderTest {
         )
     ) {
         assertOk()
+    }
+
+    @Test
+    fun testTwoTypeAliasesWithTheSameExpandedType() = codegen(
+        """
+        typealias TypeA = Any
+        @Given(TestContext::class) fun givenA(): TypeA = Any()
+        
+        typealias TypeB = Any
+        @Given(TestContext::class) fun givenB(): TypeB = Any()
+
+        val context = rootContext<TestContext>()
+        fun invoke(): Pair<Any, Any> {
+            return context.runReader {
+                given<TypeA>() to given<TypeB>()
+            }
+        }
+    """
+    ) {
+        val (a1, b1) = invokeSingleFile<Pair<Any, Any>>()
+        val (a2, b2) = invokeSingleFile<Pair<Any, Any>>()
+        assertNotSame(a1, b1)
+        assertSame(a1, a2)
+        assertSame(b1, b2)
     }
 
 }
