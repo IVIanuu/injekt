@@ -18,7 +18,7 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 @Given
 class InjektKtGenerationExtension : AnalysisHandlerExtension {
 
-    private lateinit var analysisContext: AnalysisContext
+    private var analysisContext: AnalysisContext? = null
 
     private var generatedCode = false
 
@@ -40,7 +40,7 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
             files as ArrayList<KtFile>
             val copy = files.toList()
             files.clear()
-            files += analysisContext.runReader {
+            files += analysisContext!!.runReader {
                 given<KtFileManager>().onPreCompile(copy)
             }
         }
@@ -53,18 +53,19 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
         bindingTrace: BindingTrace,
         files: Collection<KtFile>
     ): AnalysisResult? {
-        if (bindingTrace.bindingContext.diagnostics.any {
+        if (generatedCode || bindingTrace.bindingContext.diagnostics.any {
                 it.severity == Severity.ERROR
-            }) return null
-        if (generatedCode) {
-            analysisContext.runReader { given<KtFileManager>().onPostCompile(files as ArrayList) }
+            }
+        ) {
+            analysisContext!!.runReader { given<KtFileManager>().onPostCompile(files as ArrayList) }
+            analysisContext = null
             return null
         }
         generatedCode = true
 
         files as List<KtFile>
 
-        val generationContext = analysisContext.runReader { childContext<GenerationContext>() }
+        val generationContext = analysisContext!!.runReader { childContext<GenerationContext>() }
 
         generationContext.runReader {
             given<GivenIndexingGenerator>().generate(files)
@@ -76,7 +77,7 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
         }
 
         return AnalysisResult.RetryWithAdditionalRoots(
-            bindingTrace.bindingContext, module, emptyList(), analysisContext.runReader {
+            bindingTrace.bindingContext, module, emptyList(), analysisContext!!.runReader {
                 given<KtFileManager>()
                     .newFiles.toList()
             }, true
