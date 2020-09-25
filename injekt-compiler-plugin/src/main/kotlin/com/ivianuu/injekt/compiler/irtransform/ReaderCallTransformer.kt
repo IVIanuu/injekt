@@ -72,7 +72,6 @@ import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -82,7 +81,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class ReaderCallTransformer : IrLowering {
 
     private val transformedDeclarations = mutableListOf<IrDeclaration>()
-    private val readerContextParamTransformer = given<ReaderContextParamTransformer>()
     private val capturedTypeParameters = mutableListOf<IrTypeParameter>()
 
     private inline fun <R> withCapturedTypeParametersIfNeeded(
@@ -171,7 +169,6 @@ class ReaderCallTransformer : IrLowering {
             capturedTypeParameters
                 .map { it.descriptor.fqNameSafe }
                 .zip(context.typeParameters.map { it.defaultType })
-                .toMap()
                 .toMap() + (contextTypeParametersWithOrigin
                 ?.mapValues { it.value.defaultType } ?: emptyMap())
         }
@@ -245,9 +242,7 @@ class ReaderCallTransformer : IrLowering {
         }
     }
 
-    private fun transformFunctionIfNeeded(
-        declaration: IrFunction
-    ) {
+    private fun transformFunctionIfNeeded(declaration: IrFunction) {
         if (declaration !is IrSimpleFunction ||
             given<BindingTrace>()[InjektWritableSlices.IS_TRANSFORMED_READER,
                     declaration.attributeOwnerId] != true
@@ -256,7 +251,7 @@ class ReaderCallTransformer : IrLowering {
         transformDeclarationIfNeeded(
             declaration = declaration,
             declarationFunction = declaration,
-            context = declaration.getContext() ?: error("Wtf ${declaration.render()}"),
+            context = declaration.getContext()!!,
             contextExpression = {
                 declaration.irBuilder()
                     .irGet(declaration.getContextValueParameter()!!)
@@ -437,7 +432,6 @@ class ReaderCallTransformer : IrLowering {
         contextExpression: () -> IrExpression
     ): IrExpression {
         val callee = call.symbol.owner
-        transformFunctionIfNeeded(callee)
 
         // todo remove once kotlin compiler fixed IrConstructorCallImpl constructor
         val transformedCall = when (call) {
