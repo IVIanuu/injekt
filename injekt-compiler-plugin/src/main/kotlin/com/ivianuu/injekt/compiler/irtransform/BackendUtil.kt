@@ -23,7 +23,6 @@ import com.ivianuu.injekt.compiler.checkers.isReader
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.copyBodyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -68,7 +67,6 @@ import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrSpreadElement
 import org.jetbrains.kotlin.ir.expressions.IrVararg
-import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
@@ -363,18 +361,12 @@ fun IrDeclaration.isExternalDeclaration() = origin ==
         IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
         origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
 
-fun IrPluginContext.tmpFunction(n: Int): IrClassSymbol =
-    referenceClass(builtIns.getFunction(n).fqNameSafe)!!
-
-fun IrPluginContext.tmpSuspendFunction(n: Int): IrClassSymbol =
-    referenceClass(builtIns.getSuspendFunction(n).fqNameSafe)!!
-
 @Reader
 fun IrFunction.getFunctionType(skipContext: Boolean = false): IrType {
     val valueParameters = listOfNotNull(extensionReceiverParameter) + valueParameters
         .filter { !skipContext || it.name.asString() != "_context" }
-    return (if (isSuspend) pluginContext.tmpSuspendFunction(valueParameters.size)
-    else pluginContext.tmpFunction(valueParameters.size))
+    return (if (isSuspend) pluginContext.irBuiltIns.suspendFunction(valueParameters.size)
+    else pluginContext.irBuiltIns.function(valueParameters.size))
         .owner
         .typeWith(valueParameters.map { it.type } + returnType)
 }

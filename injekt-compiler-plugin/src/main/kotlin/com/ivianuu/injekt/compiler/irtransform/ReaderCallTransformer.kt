@@ -399,7 +399,7 @@ class ReaderCallTransformer : IrLowering {
             ?.elements
             ?.map { it as IrExpression } ?: emptyList()
         val realType = when {
-            arguments.isNotEmpty() -> pluginContext.tmpFunction(arguments.size)
+            arguments.isNotEmpty() -> pluginContext.irBuiltIns.function(arguments.size)
                 .owner
                 .typeWith(arguments.map { it.type } + call.getTypeArgument(0)!!)
             else -> call.getTypeArgument(0)!!
