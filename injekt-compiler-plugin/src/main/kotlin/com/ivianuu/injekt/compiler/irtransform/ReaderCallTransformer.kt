@@ -18,12 +18,12 @@ package com.ivianuu.injekt.compiler.irtransform
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektTrace
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.filePositionOf
 import com.ivianuu.injekt.compiler.generator.toTypeRef
 import com.ivianuu.injekt.compiler.generator.uniqueKey
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
-import com.ivianuu.injekt.compiler.tmp
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
@@ -155,7 +155,7 @@ class ReaderCallTransformer : IrLowering {
     ) {
 
         private val substitutionMap: Map<FqName, IrType> = run {
-            val contextTypeParametersWithOrigin = tmp[
+            val contextTypeParametersWithOrigin = given<InjektTrace>()[
                     InjektWritableSlices.CONTEXT_TYPE_PARAMETERS_WITH_ORIGIN,
                     declaration.descriptor.uniqueKey()
             ]?.mapKeys { (key, _) ->
@@ -329,7 +329,7 @@ class ReaderCallTransformer : IrLowering {
                 "com.ivianuu.injekt.childContext"
 
         val contextFactory = pluginContext.referenceClass(
-            tmp[InjektWritableSlices.CONTEXT_FACTORY, filePositionOf(
+            given<InjektTrace>()[InjektWritableSlices.CONTEXT_FACTORY, filePositionOf(
                 file.path, call.startOffset
             )]!!.factoryType.classifier.fqName
         )!!.owner

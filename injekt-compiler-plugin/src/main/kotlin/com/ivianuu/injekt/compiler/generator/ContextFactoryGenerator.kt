@@ -1,12 +1,12 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.compiler.InjektTrace
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.checkers.isReader
 import com.ivianuu.injekt.compiler.filePositionOf
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.compiler.removeIllegalChars
-import com.ivianuu.injekt.compiler.tmp
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -190,7 +190,7 @@ class ContextFactoryGenerator : Generator {
         )
         val declarationStore = given<DeclarationStore>()
         declarationStore.addInternalContextFactory(factoryDescriptor)
-        tmp.record(
+        given<InjektTrace>().record(
             InjektWritableSlices.CONTEXT_FACTORY,
             filePositionOf(callElement.containingKtFile.virtualFilePath, callElement.startOffset),
             factoryDescriptor

@@ -1,11 +1,11 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.compiler.InjektTrace
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.checkers.isReader
 import com.ivianuu.injekt.compiler.filePositionOf
 import com.ivianuu.injekt.compiler.getContextName
-import com.ivianuu.injekt.compiler.tmp
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -232,7 +232,7 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
                 ) to typeParameter
             }
 
-        tmp.record(
+        given<InjektTrace>().record(
             InjektWritableSlices.CONTEXT_TYPE_PARAMETERS_WITH_ORIGIN,
             declaration.uniqueKey(),
             typeParametersWithOrigin.toMap()
@@ -268,7 +268,7 @@ class ReaderContextGivensCollector(
         val contextDescriptor: ReaderContextDescriptor
     ) {
         private val substitutionMap = run {
-            val typeParametersWithOrigin = tmp[
+            val typeParametersWithOrigin = given<InjektTrace>()[
                     InjektWritableSlices.CONTEXT_TYPE_PARAMETERS_WITH_ORIGIN,
                     declaration.uniqueKey()
             ]!!
@@ -370,7 +370,7 @@ class ReaderContextGivensCollector(
                 realType.toTypeRef()
             }
             resulting.fqNameSafe.asString() == "com.ivianuu.injekt.childContext" -> {
-                val factoryDescriptor = tmp[
+                val factoryDescriptor = given<InjektTrace>()[
                         InjektWritableSlices.CONTEXT_FACTORY,
                         filePositionOf(
                             expression.containingKtFile.virtualFilePath,
