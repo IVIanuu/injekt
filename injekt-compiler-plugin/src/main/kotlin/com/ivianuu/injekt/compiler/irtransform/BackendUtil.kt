@@ -71,7 +71,6 @@ import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
-import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrStarProjection
@@ -83,7 +82,6 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
-import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
@@ -207,33 +205,6 @@ fun IrType.remapTypeParametersByName(parametersMap: Map<FqName, IrTypeParameter>
         }
         else -> this
     }
-
-
-fun IrType.substitute(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
-    if (this !is IrSimpleType) return this
-
-    substitutionMap[classifier]?.let {
-        return it
-    }
-
-    val newArguments = arguments.map {
-        if (it is IrTypeProjection) {
-            makeTypeProjection(it.type.substitute(substitutionMap), it.variance)
-        } else {
-            it
-        }
-    }
-
-    val newAnnotations = annotations.map { it.deepCopyWithSymbols() }
-    return IrSimpleTypeImpl(
-        makeKotlinType(classifier, arguments, hasQuestionMark, annotations, abbreviation),
-        classifier,
-        hasQuestionMark,
-        newArguments,
-        newAnnotations,
-        abbreviation
-    )
-}
 
 fun IrType.substituteByFqName(substitutionMap: Map<FqName, IrType>): IrType {
     if (this !is IrSimpleType) return this

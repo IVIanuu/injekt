@@ -18,6 +18,7 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertSame
@@ -163,6 +164,27 @@ class ReaderContextTest {
         """
     ) {
         invokeSingleFile()
+    }
+
+    @Test
+    fun testEssentialsRememberStore() = codegen(
+        """
+            interface CoroutineScope
+            interface Store<S, A>
+            
+            @Reader
+            fun <S, A> rememberStore(): Store<S, A> = rememberStore {
+                given(this)
+            }
+
+            @Reader
+            fun <S, A> rememberStore(init: CoroutineScope.() -> Store<S, A>): Store<S, A> {
+                val scope: CoroutineScope = error("")
+                return init(scope)
+            }
+        """
+    ) {
+        assertOk()
     }
 
     // todo @Test

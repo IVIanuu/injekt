@@ -162,8 +162,7 @@ class ReaderCallTransformer : IrLowering {
             ]?.mapKeys { (key, _) ->
                 context.typeParameters.singleOrNull {
                     it.descriptor.fqNameSafe == key.fqName
-                }?.symbol
-                    ?: error("Wtf search for ${key.fqName} only have ${context.typeParameters.map { it.descriptor.fqNameSafe }}")
+                }!!.symbol
             }
                 ?.mapValues { it.value.fqNameSafe }
                 ?.map { it.value to it.key }
