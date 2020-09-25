@@ -184,7 +184,7 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
             if (isComposable) append("composable_")
             if (isReader) append("reader_")
             if (qualifier != null) append("${qualifier}_")
-            if (includeNullability && isMarkedNullable) append("nullable_")
+            //if (includeNullability && isMarkedNullable) append("nullable_")
             append(classifier.fqName.pathSegments().joinToString("_") { it.asString() })
             if (includeArguments) {
                 typeArguments.forEachIndexed { index, typeArgument ->

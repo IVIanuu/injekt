@@ -24,6 +24,7 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
+import com.tschuchort.compiletesting.SourceFile
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -879,6 +880,45 @@ class ReaderTest {
             input: I
         ): O = error("")
     """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testEssentialsStartActivityForResultIssue() = codegen(
+        SourceFile.java(
+            "GenericJavaClass.java",
+            """
+                package com.ivianuu.injekt.integrationtests;
+
+                public class GenericJavaClass<K, V> {
+                }
+            """
+        ),
+        SourceFile.java(
+            "JavaClassWithGenericSuperType.java",
+            """
+                package com.ivianuu.injekt.integrationtests;
+                
+                public class JavaClassWithGenericSuperType extends GenericJavaClass<String, String> {
+                }
+            """
+        ),
+        source(
+            """
+                @Reader
+                suspend fun startActivityForResult(uuid: String): String =
+                    startActivityForResult(JavaClassWithGenericSuperType(), uuid)
+                
+                class Contract<I, O>
+                
+                @Reader
+                suspend fun <I, O> startActivityForResult(
+                    contract: GenericJavaClass<I, O>,
+                    input: I
+                ): O = error("")
+            """
+        )
     ) {
         assertOk()
     }
