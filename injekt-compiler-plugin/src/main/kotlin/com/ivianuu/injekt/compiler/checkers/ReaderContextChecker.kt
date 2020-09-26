@@ -29,14 +29,14 @@ class ReaderContextChecker : CallChecker, DeclarationChecker {
     ) {
         if (descriptor !is ClassDescriptor) return
 
-        if (!descriptor.hasAnnotation(InjektFqNames.Context))
+        if (!descriptor.hasAnnotation(InjektFqNames.Context)) return
 
-            if (descriptor.kind != ClassKind.INTERFACE) {
-                context.trace.report(
-                    InjektErrors.CONTEXT_MUST_BE_AN_INTERFACE
-                        .on(declaration)
-                )
-            }
+        if (descriptor.kind != ClassKind.INTERFACE) {
+            context.trace.report(
+                InjektErrors.CONTEXT_MUST_BE_AN_INTERFACE
+                    .on(declaration)
+            )
+        }
 
         if (descriptor.declaredTypeParameters.isNotEmpty()) {
             context.trace.report(
