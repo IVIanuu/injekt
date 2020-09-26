@@ -213,9 +213,9 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
         declaration: DeclarationDescriptor,
         fromRunReaderCall: Boolean = false
     ) {
-        if (!declaration.isReader(given()) && !fromRunReaderCall) return
+        if (!fromRunReaderCall && !declaration.isReader(given())) return
         if (declarationStore
-                .getReaderContextForDeclaration(declaration) != null
+                .getInternalReaderContext(declaration) != null
         ) return
         val contextName = declaration.getContextName()
         val contextFqName = declaration.findPackage().fqName.child(contextName)

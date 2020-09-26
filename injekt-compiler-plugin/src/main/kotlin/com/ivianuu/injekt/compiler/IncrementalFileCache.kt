@@ -32,6 +32,13 @@ class IncrementalFileCache(private val cacheFile: File) {
         log { "$dependency record dependent $dependent" }
     }
 
+    fun deleteFileAndDependents(file: File) {
+        deleteDependents(file)
+        file.delete()
+        deletedFiles += file.absolutePath
+        log { "delete $file" }
+    }
+
     fun deleteDependents(dependency: File) {
         cache.remove(dependency)?.forEach {
             deleteDependents(it)

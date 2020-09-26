@@ -249,6 +249,13 @@ class DeclarationStore {
         internalReaderContextsByFqName[context.type.classifier.fqName] = context
     }
 
+    fun getInternalReaderContext(declaration: DeclarationDescriptor): ReaderContextDescriptor? {
+        val contextFqName = declaration.findPackage().fqName.child(
+            declaration.getContextName()
+        )
+        return internalReaderContextsByFqName[contextFqName]
+    }
+
     fun getReaderContextByFqName(fqName: FqName): ReaderContextDescriptor? {
         readerContextsByFqName[fqName]?.let { return it }
 

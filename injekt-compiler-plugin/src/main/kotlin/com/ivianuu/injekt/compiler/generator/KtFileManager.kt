@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler.generator
 
+import com.ivianuu.injekt.ApplicationContext
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.CacheDir
 import com.ivianuu.injekt.compiler.IncrementalFileCache
@@ -10,19 +11,31 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
-@Given(AnalysisContext::class)
+@Given(ApplicationContext::class)
 class KtFileManager {
 
-    private val fileCache = given<IncrementalFileCache>(
+    val fileCache = given<IncrementalFileCache>(
         given<CacheDir>().resolve("file-cache")
     )
 
     val newFiles = mutableSetOf<File>()
+    val factoriesToGenerate = mutableListOf<FqName>()
+    val deletedFiles get() = fileCache.deletedFiles
 
     fun onPreCompile(files: List<KtFile>): List<KtFile> {
         log { "pre compile $files" }
         fileCache.deleteDependentsOfDeletedFiles()
         files.forEach { fileCache.deleteDependents(File(it.virtualFilePath)) }
+        files
+            .filter { it.text.contains("@com.ivianuu.injekt.internal.ContextImplMarker") }
+            .forEach {
+                factoriesToGenerate += it.text
+                    .lines()
+                    .first()
+                    .split("context-impl:")[1]
+                    .let { FqName(it) }
+                fileCache.deleteFileAndDependents(File(it.virtualFilePath))
+            }
         log { "pre compile deleted files ${fileCache.deletedFiles}" }
         return files.filterNot { it.virtualFilePath in fileCache.deletedFiles }
     }

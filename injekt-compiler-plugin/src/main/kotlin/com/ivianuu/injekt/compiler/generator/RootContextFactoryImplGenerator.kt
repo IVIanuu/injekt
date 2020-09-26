@@ -31,10 +31,19 @@ class RootContextFactoryImplGenerator : Generator {
             )
         }
 
-        if (initTrigger == null) return
-
-        declarationStore.allRootFactories
-            .forEach { generateRootFactory(it) }
+        if (initTrigger != null) {
+            declarationStore.allRootFactories
+                .forEach { generateRootFactory(it) }
+        } else {
+            fileManager.factoriesToGenerate
+                .map {
+                    ContextFactoryImplDescriptor(
+                        FqName(it.asString() + "Impl"),
+                        declarationStore.getContextFactoryForFqName(it)
+                    )
+                }
+                .forEach { generateRootFactory(it) }
+        }
     }
 
     private fun generateRootFactory(
@@ -67,7 +76,7 @@ class RootContextFactoryImplGenerator : Generator {
         factoryImpl.collectImports()
 
         val code = buildCodeString {
-            emitLine("// injekt-generated")
+            emitLine("// injekt-generated context-impl:${descriptor.factory.factoryType.classifier.fqName}")
             emitLine("package ${descriptor.factoryImplFqName.parent()}")
             imports.forEach { emitLine("import $it") }
             with(factoryImpl) { emit() }

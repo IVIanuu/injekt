@@ -8,11 +8,15 @@ import com.ivianuu.injekt.runReader
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.container.ComponentProvider
+import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
+import org.jetbrains.kotlin.resolve.TopDownAnalysisMode
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 
 @Given
@@ -30,6 +34,7 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
         bindingTrace: BindingTrace,
         componentProvider: ComponentProvider
     ): AnalysisResult? {
+        println("do analysis $generatedCode $files")
         if (!generatedCode) {
             analysisContext = childContext(
                 module,
@@ -43,8 +48,31 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
             files += analysisContext!!.runReader {
                 given<KtFileManager>().onPreCompile(copy)
             }
+        } else {
+            forceResolveContents(componentProvider, files.toList())
         }
         return null
+    }
+
+    private fun forceResolveContents(
+        componentProvider: ComponentProvider,
+        files: List<KtFile>
+    ) {
+        println("force resolve contents")
+        componentProvider.get<LazyTopDownAnalyzer>().apply {
+            files.forEach {
+                try {
+                    analyzeDeclarations(TopDownAnalysisMode.TopLevelDeclarations, listOf(it))
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                }
+                try {
+                    analyzeDeclarations(TopDownAnalysisMode.LocalDeclarations, listOf(it))
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                }
+            }
+        }
     }
 
     override fun analysisCompleted(
@@ -53,10 +81,9 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
         bindingTrace: BindingTrace,
         files: Collection<KtFile>
     ): AnalysisResult? {
-        if (generatedCode || bindingTrace.bindingContext.diagnostics.any {
-                it.severity == Severity.ERROR
-            }
-        ) {
+        val hasErrors =
+            bindingTrace.bindingContext.diagnostics.any { it.severity == Severity.ERROR }
+        if (generatedCode || hasErrors) {
             analysisContext!!.runReader { given<KtFileManager>().onPostCompile(files as ArrayList) }
             analysisContext = null
             return null
@@ -77,9 +104,12 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
         }
 
         return AnalysisResult.RetryWithAdditionalRoots(
-            bindingTrace.bindingContext, module, emptyList(), analysisContext!!.runReader {
+            BindingContext.EMPTY, module, emptyList(), analysisContext!!.runReader {
                 given<KtFileManager>()
                     .newFiles.toList()
+                    .also {
+                        println("retry with additional roots ${it}")
+                    }
             }, true
         )
     }
