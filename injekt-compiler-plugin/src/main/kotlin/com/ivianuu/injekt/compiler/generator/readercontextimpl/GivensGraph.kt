@@ -369,7 +369,7 @@ class GivensGraph(private val owner: ContextImpl) {
             val existingFactories = mutableSetOf<TypeRef>()
             var currentContext: ContextImpl? = owner
             while (currentContext != null) {
-                existingFactories += currentContext.contextId
+                existingFactories += currentContext.factoryImpl.factoryType
                 currentContext = currentContext.factoryImpl.parent
             }
             if (type !in existingFactories) {

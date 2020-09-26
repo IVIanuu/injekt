@@ -524,4 +524,61 @@ class ReaderContextTest {
         assertTrue(invokeSingleFile() is Bar)
     }
 
+    @Test
+    fun testCircularChildContextsByContextId() = codegen(
+        """
+            @Reader
+            fun childContextA(foo: Foo): Foo {
+                return childContext<TestChildContext>(foo).runReader {
+                    childContextB()
+                }
+            }
+            
+            @Reader
+            fun childContextB(): Foo {
+                return childContext<TestChildContext>(Foo()).runReader {
+                    given<Foo>()
+                }
+            }
+
+            fun invoke() {
+                rootContext<TestParentContext>()
+                    .runReader { childContextA(Foo()) }
+            }
+        """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testCircularChildContextsByContextFactory() = codegen(
+        """
+            @Reader
+            fun childContextA() { 
+                childContext<TestChildContext>().runReader {
+                    childContextB()
+                }
+            }
+            
+            private var called = false
+            
+            @Reader
+            fun childContextB() {
+                childContext<TestChildContext2>().runReader {
+                    if (!called) {
+                        called = true
+                        childContextA()
+                    }
+                }
+            }
+
+            fun invoke() {
+                rootContext<TestParentContext>()
+                    .runReader { childContextA() }
+            }
+        """
+    ) {
+        invokeSingleFile()
+    }
+
 }
