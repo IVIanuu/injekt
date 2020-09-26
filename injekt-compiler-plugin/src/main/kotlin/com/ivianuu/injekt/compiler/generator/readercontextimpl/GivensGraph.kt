@@ -65,7 +65,6 @@ class GivensGraph(private val owner: ContextImpl) {
     }
 
     private val chain = mutableListOf<ChainElement>()
-    private val checkedTypes = mutableSetOf<TypeRef>()
     private val checkedGivens = mutableSetOf<GivenNode>()
 
     init {
@@ -139,23 +138,19 @@ class GivensGraph(private val owner: ContextImpl) {
     }
 
     private fun check(context: ReaderContextDescriptor) {
-        if (context.type in checkedTypes) return
-        checkedTypes += context.type
+        if (context.type in owner.superTypes) return
+        owner.superTypes += context.type
         chain.push(ChainElement.Call(context.origin))
         val substitutionMap = context.type.classifier.typeParameters
             .zip(context.type.typeArguments)
             .toMap()
         context.givenTypes
-            .map { it.substitute(substitutionMap) }
-            .forEach { givenType ->
-                val existingFunction = owner.members.singleOrNull {
-                    it is ContextFunction && it.name == givenType.uniqueTypeName()
-                } as? ContextFunction
-                if (existingFunction != null) {
-                    existingFunction.isOverride = true
-                    return@forEach
-                }
-                check(getGiven(givenType))
+            .map { it to it.substitute(substitutionMap) }
+            .forEach { (originalType, substitutedType) ->
+                statements.getGivenStatement(
+                    getGiven(substitutedType),
+                    originalType
+                )
             }
         chain.pop()
     }
@@ -353,10 +348,7 @@ class GivensGraph(private val owner: ContextImpl) {
                             }
                         }
                     } else {
-                        owner.superTypes += type
-                        declarationStore.getReaderContextByFqName(type.classifier.fqName)!!
-                            .givenTypes
-                            .forEach { statements.getGivenStatement(getGiven(it), it) }
+                        check(declarationStore.getReaderContextByFqName(type.classifier.fqName)!!)
                         return@CalleeContextGivenNode {
                             emit("this@${owner.name}")
                         }

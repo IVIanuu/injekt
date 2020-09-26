@@ -6,7 +6,6 @@ import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.render
-import com.ivianuu.injekt.compiler.generator.substitute
 import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.given
@@ -84,7 +83,7 @@ class ContextImpl(
 
     val members = mutableListOf<ContextMember>()
 
-    val superTypes = mutableListOf<TypeRef>()
+    val superTypes = mutableSetOf<TypeRef>()
 
     fun initialize() {
         val declarationStore = given<DeclarationStore>()
@@ -106,23 +105,6 @@ class ContextImpl(
             }
 
         graph.checkEntryPoints(entryPoints)
-
-        (entryPoints + graph.resolvedGivens.flatMap { it.value.contexts })
-            .filterNot { it.type in superTypes }
-            .forEach { context ->
-                superTypes += context.type
-                val substitutionMap = context.type.classifier.typeParameters
-                    .zip(context.type.typeArguments)
-                    .toMap()
-                context.givenTypes
-                    .map { it to it.substitute(substitutionMap) }
-                    .forEach { (originalType, substitutedType) ->
-                        statements.getGivenStatement(
-                            graph.getGiven(substitutedType),
-                            originalType
-                        )
-                    }
-            }
     }
 
     fun CodeBuilder.emit() {
@@ -144,7 +126,7 @@ class ContextImpl(
             emit(", ")
             superTypes.forEachIndexed { index, superType ->
                 emit(superType.render())
-                if (index != superTypes.lastIndex) emit(", ")
+                if (index != superTypes.size - 1) emit(", ")
             }
         }
         emitSpace()
