@@ -63,6 +63,7 @@ class RunReaderCallIndexingGenerator : Generator {
             )
 
         indexer.index(
+            path = runReaderPathOf(contextType.classifier.fqName),
             fqName = file.packageFqName.child(
                 "runReaderCall${callElement.startOffset}".asNameId()
             ),

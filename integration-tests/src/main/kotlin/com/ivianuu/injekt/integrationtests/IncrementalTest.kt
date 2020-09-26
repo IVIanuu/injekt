@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.incremental.IncrementalModuleInfo
 import org.jetbrains.kotlin.incremental.multiproject.ModulesApiHistoryJvm
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Test
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileInputStream
@@ -36,7 +35,7 @@ import java.util.jar.Manifest
 
 class IncrementalTest {
 
-    @Test
+    //@Test
     fun test() {
         val projectRoot = Files.createTempDirectory("root")
             .toFile().also { it.mkdirs() }
@@ -212,7 +211,7 @@ class IncrementalTest {
         }
     }
 
-    @Test
+    //@Test
     fun testMulti() {
         val projectRoot = Files.createTempDirectory("root")
             .toFile().also { it.mkdirs() }

@@ -99,6 +99,7 @@ class EffectGenerator : Generator {
                         emitLine("}")
                     }
                     indexer.index(
+                        givensPathOf(givenType),
                         packageName.child(effectsName)
                             .child("function".asNameId()),
                         "function",
@@ -208,6 +209,15 @@ class EffectGenerator : Generator {
                             emitLine(")")
                         }
                         indexer.index(
+                            when (effectCallableRef.givenKind) {
+                                CallableRef.GivenKind.GIVEN ->
+                                    givensPathOf(returnType)
+                                CallableRef.GivenKind.GIVEN_MAP_ENTRIES ->
+                                    givenMapEntriesPathOf(returnType)
+                                CallableRef.GivenKind.GIVEN_SET_ELEMENTS ->
+                                    givenSetElementsPathOf(returnType)
+                                CallableRef.GivenKind.GIVEN_SET -> error("Unexpected given kind")
+                            },
                             packageName.child(effectsName)
                                 .child(name),
                             "function",

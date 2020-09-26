@@ -198,6 +198,7 @@ class ContextFactoryGenerator : Generator {
         )
         if (!isChild) {
             given<Indexer>().index(
+                path = rootFactoriesPath,
                 fqName = containingFile.packageFqName.child(factoryName),
                 type = "class",
                 originatingFiles = listOf(factoryFile)

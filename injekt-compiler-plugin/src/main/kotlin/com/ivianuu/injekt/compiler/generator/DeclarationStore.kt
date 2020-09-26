@@ -44,13 +44,11 @@ class DeclarationStore {
     private val indexer = given<Indexer>()
 
     private val internalContextFactories = mutableMapOf<FqName, ContextFactoryDescriptor>()
-
     fun addInternalContextFactory(factory: ContextFactoryDescriptor) {
         internalContextFactories[factory.factoryType.classifier.fqName] = factory
     }
 
     private val externalContextFactories = mutableMapOf<FqName, ContextFactoryDescriptor>()
-
     fun getContextFactoryForFqName(fqName: FqName): ContextFactoryDescriptor {
         return internalContextFactories[fqName] ?: externalContextFactories[fqName] ?: kotlin.run {
             val descriptor = moduleDescriptor.findClassAcrossModuleDependencies(
@@ -69,7 +67,7 @@ class DeclarationStore {
                 contextType = createFunction.returnType!!.toTypeRef(),
                 inputTypes = createFunction.valueParameters
                     .map { it.type.toTypeRef() }
-            )
+            ).also { externalContextFactories[fqName] = it }
         }
     }
 
@@ -79,7 +77,7 @@ class DeclarationStore {
     }
 
     val allRootFactories by unsafeLazy {
-        internalRootFactories + moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
+        internalRootFactories + moduleDescriptor.getPackage(rootFactoriesPath.fqName)
             .memberScope
             .let { memberScope ->
                 (memberScope.getClassifierNames() ?: emptySet())
@@ -127,17 +125,20 @@ class DeclarationStore {
             }
     }
 
-    private val internalCallableRefs = mutableListOf<CallableRef>()
+    private val internalCallableRefsByType = mutableMapOf<TypeRef, MutableList<CallableRef>>()
     fun addInternalGiven(callableRef: CallableRef) {
-        internalCallableRefs += callableRef
+        internalCallableRefsByType.getOrPut(callableRef.type) { mutableListOf() } += callableRef
     }
 
-    private val allGivens by unsafeLazy {
-        internalCallableRefs
-            .filter { it.givenKind == CallableRef.GivenKind.GIVEN } + (indexer.functionIndices +
-                indexer.classIndices
+    private val givensByType = mutableMapOf<TypeRef, List<CallableRef>>()
+    fun givens(type: TypeRef) = givensByType.getOrPut(type) {
+        val path = givensPathOf(type)
+        (internalCallableRefsByType[type]
+            ?.filter { it.givenKind == CallableRef.GivenKind.GIVEN }
+            ?: emptyList()) + (indexer.functionIndices(path) +
+                indexer.classIndices(path)
                     .flatMap { it.constructors.toList() } +
-                indexer.propertyIndices
+                indexer.propertyIndices(path)
                     .mapNotNull { it.getter }
                 )
             .filter {
@@ -152,16 +153,13 @@ class DeclarationStore {
             .map { it.toCallableRef() }
     }
 
-    private val givensByType = mutableMapOf<TypeRef, List<CallableRef>>()
-    fun givens(type: TypeRef) = givensByType.getOrPut(type) {
-        allGivens.filter { it.type == type }
-    }
-
-    private val allGivenMapEntries by unsafeLazy {
-        internalCallableRefs
+    private val givenMapEntriesByType = mutableMapOf<TypeRef, List<CallableRef>>()
+    fun givenMapEntries(type: TypeRef) = givenMapEntriesByType.getOrPut(type) {
+        val path = givenMapEntriesPathOf(type)
+        (internalCallableRefsByType[type] ?: emptyList())
             .filter { it.givenKind == CallableRef.GivenKind.GIVEN_MAP_ENTRIES } +
-                (indexer.functionIndices +
-                        indexer.propertyIndices.mapNotNull { it.getter })
+                (indexer.functionIndices(path) +
+                        indexer.propertyIndices(path).mapNotNull { it.getter })
                     .filter { it.hasAnnotation(InjektFqNames.GivenMapEntries) }
                     .filter {
                         isInjektCompiler ||
@@ -170,17 +168,14 @@ class DeclarationStore {
                     }.map { it.toCallableRef() }
     }
 
-    private val givenMapEntriesByKey = mutableMapOf<TypeRef, List<CallableRef>>()
-    fun givenMapEntries(type: TypeRef) = givenMapEntriesByKey.getOrPut(type) {
-        // TODO if (key.type.classOrNull != mapSymbol) return@getOrPut emptyList()
-        allGivenMapEntries
-            .filter { it.type == type }
-    }
-
-    private val allGivenSetElements by unsafeLazy {
-        internalCallableRefs
-            .filter { it.givenKind == CallableRef.GivenKind.GIVEN_SET_ELEMENTS } + (indexer.functionIndices +
-                indexer.propertyIndices.mapNotNull { it.getter })
+    private val givenSetElementsByType = mutableMapOf<TypeRef, List<CallableRef>>()
+    fun givenSetElements(type: TypeRef) = givenSetElementsByType.getOrPut(type) {
+        val path = givenSetElementsPathOf(type)
+        (internalCallableRefsByType[type] ?: emptyList())
+            .filter { it.givenKind == CallableRef.GivenKind.GIVEN_SET_ELEMENTS } + (indexer.functionIndices(
+            path
+        ) +
+                indexer.propertyIndices(path).mapNotNull { it.getter })
             .filter { it.hasAnnotation(InjektFqNames.GivenSetElements) }
             .filter {
                 isInjektCompiler ||
@@ -188,13 +183,6 @@ class DeclarationStore {
                             .startsWith("com.ivianuu.injekt.compiler")
             }
             .map { it.toCallableRef() }
-    }
-
-    private val givenSetElementsByKey = mutableMapOf<TypeRef, List<CallableRef>>()
-    fun givenSetElements(type: TypeRef) = givenSetElementsByKey.getOrPut(type) {
-        // todo if (key.type.classOrNull != setSymbol) return@getOrPut emptyList()
-        allGivenSetElements
-            .filter { it.type == type }
     }
 
     private val internalRunReaderContexts = mutableMapOf<FqName, MutableSet<FqName>>()
@@ -208,30 +196,23 @@ class DeclarationStore {
     private val runReaderContexts = mutableMapOf<FqName, Set<FqName>>()
     fun getRunReaderContexts(contextId: FqName): Set<FqName> {
         return runReaderContexts.getOrPut(contextId) {
-            internalRunReaderContexts.getOrElse(contextId) { emptySet() } + indexer.classIndices
-                .mapNotNull {
-                    val runReaderCallAnnotation =
-                        it.annotations.findAnnotation(InjektFqNames.RunReaderCall)
-                            ?: return@mapNotNull null
-                    runReaderCallAnnotation.allValueArguments["calleeContext".asNameId()]
-                        .let { it as KClassValue }
-                        .getArgumentType(moduleDescriptor)
-                        .toTypeRef()
-                        .classifier.fqName to runReaderCallAnnotation.allValueArguments["blockContext".asNameId()]
-                        .let { it as KClassValue }
-                        .getArgumentType(moduleDescriptor)
-                        .toTypeRef()
-                        .classifier
-                        .fqName
-                }
-                .filter { it.first == contextId }
-                .map { it.second }
+            internalRunReaderContexts.getOrElse(contextId) { emptySet() } +
+                    indexer.classIndices(runReaderPathOf(contextId))
+                        .map {
+                            val runReaderCallAnnotation =
+                                it.annotations.findAnnotation(InjektFqNames.RunReaderCall)!!
+                            runReaderCallAnnotation.allValueArguments["blockContext".asNameId()]
+                                .let { it as KClassValue }
+                                .getArgumentType(moduleDescriptor)
+                                .toTypeRef()
+                                .classifier
+                                .fqName
+                        }
         }
     }
 
     val internalReaderContextsByFqName = mutableMapOf<FqName, ReaderContextDescriptor>()
     private val readerContextsByFqName = mutableMapOf<FqName, ReaderContextDescriptor>()
-
     fun getReaderContextForCallable(callableRef: CallableRef): ReaderContextDescriptor? {
         return getReaderContextByFqName(
             callableRef.packageFqName.child(

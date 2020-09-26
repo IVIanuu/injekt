@@ -46,7 +46,10 @@ class GivenIndexingGenerator : Generator {
                                             it.hasAnnotatedAnnotations(InjektFqNames.Effect)
                                 }
                         ) {
-                            indexer.index(descriptor)
+                            indexer.index(
+                                givensPathOf(descriptor.defaultType.toTypeRef()),
+                                descriptor
+                            )
                             declarationStore
                                 .addInternalGiven(
                                     descriptor.getReaderConstructor(given())!!.toCallableRef()
@@ -58,13 +61,34 @@ class GivenIndexingGenerator : Generator {
                         super.visitNamedFunction(function)
                         if (!inGivenSet) {
                             val descriptor = function.descriptor<FunctionDescriptor>()
-                            if (descriptor.hasAnnotation(InjektFqNames.Given) ||
-                                descriptor.hasAnnotation(InjektFqNames.GivenMapEntries) ||
-                                descriptor.hasAnnotation(InjektFqNames.GivenSetElements)
-                            ) {
-                                indexer.index(descriptor)
-                                declarationStore
-                                    .addInternalGiven(descriptor.toCallableRef())
+                            when {
+                                descriptor.hasAnnotation(InjektFqNames.Given) -> {
+                                    val returnType = descriptor.toCallableRef().type
+                                    indexer.index(
+                                        givensPathOf(returnType),
+                                        descriptor
+                                    )
+                                    declarationStore
+                                        .addInternalGiven(descriptor.toCallableRef())
+                                }
+                                descriptor.hasAnnotation(InjektFqNames.GivenMapEntries) -> {
+                                    val returnType = descriptor.toCallableRef().type
+                                    indexer.index(
+                                        givenMapEntriesPathOf(returnType),
+                                        descriptor
+                                    )
+                                    declarationStore
+                                        .addInternalGiven(descriptor.toCallableRef())
+                                }
+                                descriptor.hasAnnotation(InjektFqNames.GivenSetElements) -> {
+                                    val returnType = descriptor.toCallableRef().type
+                                    indexer.index(
+                                        givenSetElementsPathOf(returnType),
+                                        descriptor
+                                    )
+                                    declarationStore
+                                        .addInternalGiven(descriptor.toCallableRef())
+                                }
                             }
                         }
                     }
@@ -76,7 +100,10 @@ class GivenIndexingGenerator : Generator {
                             if (descriptor is PropertyDescriptor &&
                                 descriptor.hasAnnotation(InjektFqNames.Given)
                             ) {
-                                indexer.index(descriptor)
+                                indexer.index(
+                                    givensPathOf(descriptor.type.toTypeRef()),
+                                    descriptor
+                                )
                                 declarationStore
                                     .addInternalGiven(descriptor.getter!!.toCallableRef())
                             }
