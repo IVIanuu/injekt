@@ -1,3 +1,10 @@
+import com.android.build.gradle.api.BaseVariant
+import com.ivianuu.injekt.gradle.UpdateCacheTask
+import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmAndroidCompilation
+import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -25,6 +32,36 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/ja
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-source-sets-android.gradle")
+
+tasks.withType<KotlinCompile> {
+    val updateCacheTask = tasks.create<UpdateCacheTask>("updateCache$name")
+    val baseSrcDir = buildDir.resolve("generated/source/injekt")
+    val cacheDir = buildDir.resolve("injekt/cache")
+    val compilation = AbstractKotlinCompile::class.java
+        .getDeclaredMethod("getTaskData\$kotlin_gradle_plugin")
+        .invoke(this)
+        .let { taskData ->
+            taskData.javaClass
+                .getDeclaredMethod("getCompilation")
+                .invoke(taskData) as KotlinCompilation<*>
+        }
+    val androidVariantData: BaseVariant? =
+        (compilation as? KotlinJvmAndroidCompilation)?.androidVariant
+
+    val sourceSetName = androidVariantData?.name ?: compilation.compilationName
+
+    val resourcesDir = (if (androidVariantData != null) {
+        buildDir.resolve("tmp/kotlin-classes/$sourceSetName")
+    } else {
+        compilation.output.resourcesDir
+    }).also { it.mkdirs() }.absolutePath
+
+    updateCacheTask.srcFiles = source.filter { it.name.endsWith(".kt") }
+    updateCacheTask.cacheFile = cacheDir.resolve("file-cache")
+        .also { if (!it.exists()) it.createNewFile() }
+
+    afterEvaluate { dependsOn(updateCacheTask) }
+}
 
 dependencies {
     implementation(Deps.AndroidX.appCompat)
