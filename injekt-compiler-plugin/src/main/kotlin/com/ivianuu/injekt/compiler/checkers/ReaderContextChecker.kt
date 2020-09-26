@@ -29,7 +29,8 @@ class ReaderContextChecker : CallChecker, DeclarationChecker {
     ) {
         if (descriptor !is ClassDescriptor) return
 
-        if (descriptor.hasAnnotation(InjektFqNames.Context)) {
+        if (!descriptor.hasAnnotation(InjektFqNames.Context))
+
             if (descriptor.kind != ClassKind.INTERFACE) {
                 context.trace.report(
                     InjektErrors.CONTEXT_MUST_BE_AN_INTERFACE
@@ -37,19 +38,18 @@ class ReaderContextChecker : CallChecker, DeclarationChecker {
                 )
             }
 
-            if (descriptor.declaredTypeParameters.isNotEmpty()) {
-                context.trace.report(
-                    InjektErrors.CONTEXT_WITH_TYPE_PARAMETERS
-                        .on(declaration)
-                )
-            }
+        if (descriptor.declaredTypeParameters.isNotEmpty()) {
+            context.trace.report(
+                InjektErrors.CONTEXT_WITH_TYPE_PARAMETERS
+                    .on(declaration)
+            )
+        }
 
-            if (descriptor.getAllDeclarations().isNotEmpty()) {
-                context.trace.report(
-                    InjektErrors.CONTEXT_WITH_TYPE_PARAMETERS
-                        .on(declaration)
-                )
-            }
+        if (descriptor.getAllDeclarations().isNotEmpty()) {
+            context.trace.report(
+                InjektErrors.CONTEXT_WITH_TYPE_PARAMETERS
+                    .on(declaration)
+            )
         }
     }
 
