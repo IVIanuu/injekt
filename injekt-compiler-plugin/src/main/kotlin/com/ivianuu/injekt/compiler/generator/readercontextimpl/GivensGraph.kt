@@ -200,22 +200,6 @@ class GivensGraph(private val owner: ContextImpl) {
         var given = resolvedGivens[type]
         if (given != null) return given
 
-        fun GivenNode.check(): GivenNode? {
-            if (targetContext != null && targetContext != contextId) {
-                if (parent == null) {
-                    error(
-                        "Context mismatch, given '${type.render()}' " +
-                                "is scoped to '${targetContext!!.render()}' but actual context is " +
-                                contextId.render()
-                    )
-                } else {
-                    return null
-                }
-            }
-
-            return this
-        }
-
         val allGivens = givensForKey(type)
 
         val instanceAndGivenSetGivens = allGivens
@@ -232,7 +216,7 @@ class GivensGraph(private val owner: ContextImpl) {
         }
 
         given = instanceAndGivenSetGivens.singleOrNull()
-        given?.check()?.let {
+        given?.let {
             resolvedGivens[type] = it
             check(it)
             return it
@@ -254,7 +238,7 @@ class GivensGraph(private val owner: ContextImpl) {
         }
 
         given = internalGlobalGivens.singleOrNull()
-        given?.check()?.let {
+        given?.let {
             resolvedGivens[type] = it
             check(it)
             (it as? ChildContextGivenNode)?.childFactoryImpl?.initialize()
@@ -272,7 +256,7 @@ class GivensGraph(private val owner: ContextImpl) {
         }
 
         given = externalGlobalGivens.singleOrNull()
-        given?.check()?.let {
+        given?.let {
             resolvedGivens[type] = it
             check(it)
             return it
