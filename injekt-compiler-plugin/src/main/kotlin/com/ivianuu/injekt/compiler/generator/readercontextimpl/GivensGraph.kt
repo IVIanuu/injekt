@@ -17,11 +17,13 @@
 package com.ivianuu.injekt.compiler.generator.readercontextimpl
 
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.generator.CallableRef
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.GivenSetDescriptor
 import com.ivianuu.injekt.compiler.generator.ReaderContextDescriptor
 import com.ivianuu.injekt.compiler.generator.TypeRef
+import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.substitute
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
@@ -79,9 +81,13 @@ class GivensGraph(private val owner: ContextImpl) {
             val thisAccessStatement: ContextStatement = {
                 parentAccessStatement()
                 emit(".")
-                emit("${parentCallable!!.name}")
-                if (!parentCallable.isPropertyAccessor) {
-                    emit("()")
+                if (parentCallable != null) {
+                    emit("${parentCallable!!.name}")
+                    if (!parentCallable.isPropertyAccessor) {
+                        emit("()")
+                    }
+                } else {
+                    emit("p${inputs.indexOf(type)}")
                 }
             }
 
@@ -125,13 +131,13 @@ class GivensGraph(private val owner: ContextImpl) {
 
         givenSets.forEach {
             it.collectGivens(null) {
-                emit("this@${owner.name}.p${inputs.indexOf(it.type)}")
+                emit("this@${owner.name}")
             }
         }
     }
 
     fun checkEntryPoints(entryPoints: List<ReaderContextDescriptor>) {
-        entryPoints.forEach { check(it) }
+        entryPoints.forEach { check(it, true) }
     }
 
     private fun check(given: GivenNode) {
@@ -141,15 +147,19 @@ class GivensGraph(private val owner: ContextImpl) {
         given
             .contexts
             .forEach {
-                check(it)
+                check(it, false)
                 getGiven(it.type)
             }
         chain.pop()
     }
 
-    private fun check(context: ReaderContextDescriptor) {
+    private fun check(
+        context: ReaderContextDescriptor,
+        isEntryPoint: Boolean
+    ) {
         if (context.type in owner.superTypes) return
-        owner.superTypes += context.type
+        if (isEntryPoint || context.type.classifier.typeParameters.isEmpty())
+            owner.superTypes += context.type
         chain.push(ChainElement.Call(context.origin))
         val substitutionMap = context.type.classifier.typeParameters
             .zip(context.type.typeArguments)
@@ -159,9 +169,13 @@ class GivensGraph(private val owner: ContextImpl) {
             .forEach { (originalType, substitutedType) ->
                 statements.getGivenStatement(
                     getGiven(substitutedType),
-                    originalType
+                    if (isEntryPoint || context.type.classifier.typeParameters.isEmpty()) originalType
+                    else null
                 )
             }
+        if (!isEntryPoint && context.type.classifier.typeParameters.isNotEmpty()) {
+            statements.getGivenStatement(getGiven(context.type), null)
+        }
         chain.pop()
     }
 
@@ -342,7 +356,10 @@ class GivensGraph(private val owner: ContextImpl) {
                             }
                         }
                     } else {
-                        check(declarationStore.getReaderContextByFqName(type.classifier.fqName)!!)
+                        check(
+                            declarationStore.getReaderContextByFqName(type.classifier.fqName)!!,
+                            false
+                        )
                         return@CalleeContextGivenNode {
                             emit("this@${owner.name}")
                         }
@@ -379,15 +396,12 @@ class GivensGraph(private val owner: ContextImpl) {
 
         givenSetGivens[type]?.let { this += it }
         this += declarationStore.givens(type)
-            .onEach {
-                println("found ${it.name} with ${it.targetContext?.render()}")
-            }
             .filter { it.targetContext == null || it.targetContext == contextId }
             .map { callable ->
                 CallableGivenNode(
                     type = type,
                     owner = owner,
-                    contexts = listOf(declarationStore.getReaderContextForCallable(callable)!!),
+                    contexts = listOf(callable.getContextWithCorrectType(type)),
                     external = callable.isExternal,
                     origin = callable.fqName,
                     callable = callable,
@@ -452,8 +466,7 @@ class GivenCollections(
                         type = type,
                         owner = owner,
                         contexts = entries.map {
-                            declarationStore
-                                .getReaderContextForCallable(it.callable)!!
+                            it.callable.getContextWithCorrectType(type)
                         },
                         entries = entries
                     )
@@ -465,12 +478,27 @@ class GivenCollections(
                         type = type,
                         owner = owner,
                         contexts = elements.map {
-                            declarationStore
-                                .getReaderContextForCallable(it.callable)!!
+                            it.callable.getContextWithCorrectType(type)
                         },
                         elements = elements
                     )
                 }
         )
     }
+}
+
+@Reader
+private fun CallableRef.getContextWithCorrectType(type: TypeRef): ReaderContextDescriptor {
+    val tmpContext = given<DeclarationStore>().getReaderContextForCallable(this)!!
+    return tmpContext.copy(
+        type = tmpContext.type
+            .substitute(
+                tmpContext.type.classifier.typeParameters
+                    .zip(
+                        type.getSubstitutionMap(this.type)
+                            .values
+                    )
+                    .toMap()
+            )
+    )
 }

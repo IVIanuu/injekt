@@ -104,7 +104,7 @@ class ReaderContextGenerator : Generator {
                 emit("where ")
                 val typeParametersWithUpperBounds = descriptor.type.classifier.typeParameters
                     .flatMap { typeParameter ->
-                        typeParameter.upperBounds.map { typeParameter to it }
+                        typeParameter.superTypes.map { typeParameter to it }
                     }
 
                 typeParametersWithUpperBounds.forEachIndexed { index, (typeParameter, upperBound) ->
@@ -228,7 +228,7 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
             .map { typeParameter ->
                 ClassifierRef(
                     contextFqName.child(typeParameter.name),
-                    upperBounds = typeParameter.upperBounds.map { it.toTypeRef() },
+                    superTypes = typeParameter.upperBounds.map { it.toTypeRef() },
                     isTypeParameter = true
                 ) to typeParameter
             }

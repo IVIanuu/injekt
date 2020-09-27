@@ -125,17 +125,16 @@ class DeclarationStore {
             }
     }
 
-    private val internalCallableRefsByType = mutableMapOf<TypeRef, MutableList<CallableRef>>()
+    private val internalCallables = mutableListOf<CallableRef>()
     fun addInternalGiven(callableRef: CallableRef) {
-        internalCallableRefsByType.getOrPut(callableRef.type) { mutableListOf() } += callableRef
+        internalCallables += callableRef
     }
 
     private val givensByType = mutableMapOf<TypeRef, List<CallableRef>>()
     fun givens(type: TypeRef) = givensByType.getOrPut(type) {
         val path = givensPathOf(type)
-        (internalCallableRefsByType[type]
-            ?.filter { it.givenKind == CallableRef.GivenKind.GIVEN }
-            ?: emptyList()) + (indexer.functionIndices(path) +
+        (internalCallables
+            .filter { it.givenKind == CallableRef.GivenKind.GIVEN } + (indexer.functionIndices(path) +
                 indexer.classIndices(path)
                     .flatMap { it.constructors.toList() } +
                 indexer.propertyIndices(path)
@@ -150,13 +149,14 @@ class DeclarationStore {
                         !it.fqNameSafe.asString().startsWith("com.ivianuu.injekt.compiler")
             }
             .distinct()
-            .map { it.toCallableRef() }
+            .map { it.toCallableRef() })
+            .filter { type.isAssignable(it.type) }
     }
 
     private val givenMapEntriesByType = mutableMapOf<TypeRef, List<CallableRef>>()
     fun givenMapEntries(type: TypeRef) = givenMapEntriesByType.getOrPut(type) {
         val path = givenMapEntriesPathOf(type)
-        (internalCallableRefsByType[type] ?: emptyList())
+        (internalCallables
             .filter { it.givenKind == CallableRef.GivenKind.GIVEN_MAP_ENTRIES } +
                 (indexer.functionIndices(path) +
                         indexer.propertyIndices(path).mapNotNull { it.getter })
@@ -165,13 +165,14 @@ class DeclarationStore {
                         isInjektCompiler ||
                                 !it.fqNameSafe.asString()
                                     .startsWith("com.ivianuu.injekt.compiler")
-                    }.map { it.toCallableRef() }
+                    }.map { it.toCallableRef() })
+            .filter { type.isAssignable(it.type) }
     }
 
     private val givenSetElementsByType = mutableMapOf<TypeRef, List<CallableRef>>()
     fun givenSetElements(type: TypeRef) = givenSetElementsByType.getOrPut(type) {
         val path = givenSetElementsPathOf(type)
-        (internalCallableRefsByType[type] ?: emptyList())
+        (internalCallables
             .filter { it.givenKind == CallableRef.GivenKind.GIVEN_SET_ELEMENTS } + (indexer.functionIndices(
             path
         ) +
@@ -182,7 +183,8 @@ class DeclarationStore {
                         !it.fqNameSafe.asString()
                             .startsWith("com.ivianuu.injekt.compiler")
             }
-            .map { it.toCallableRef() }
+            .map { it.toCallableRef() })
+            .filter { type.isAssignable(it.type) }
     }
 
     private val internalRunReaderContexts = mutableMapOf<FqName, MutableSet<FqName>>()

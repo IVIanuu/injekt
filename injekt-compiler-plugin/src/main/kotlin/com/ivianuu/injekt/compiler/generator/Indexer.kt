@@ -200,7 +200,7 @@ fun pathOf(vararg slices: String) = Path(
 )
 
 fun givensPathOf(type: TypeRef) = pathOf(
-    "givens", type.uniqueTypeName().asString()
+    "givens"
 )
 
 fun givenMapEntriesPathOf(type: TypeRef) = pathOf(

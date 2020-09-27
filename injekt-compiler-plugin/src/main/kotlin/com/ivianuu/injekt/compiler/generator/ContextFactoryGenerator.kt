@@ -117,7 +117,7 @@ class ContextFactoryGenerator : Generator {
         else capturedTypeParameters.map {
             ClassifierRef(
                 fqName = factoryFqName.child(it.name),
-                upperBounds = it.upperBounds.map { it.toTypeRef() },
+                superTypes = it.upperBounds.map { it.toTypeRef() },
                 isTypeParameter = true
             )
         }
@@ -150,7 +150,7 @@ class ContextFactoryGenerator : Generator {
                 emit("where ")
                 val typeParametersWithUpperBounds = typeParameters
                     .flatMap { typeParameter ->
-                        typeParameter.upperBounds.map { typeParameter to it }
+                        typeParameter.superTypes.map { typeParameter to it }
                     }
 
                 typeParametersWithUpperBounds.forEachIndexed { index, (typeParameter, upperBound) ->

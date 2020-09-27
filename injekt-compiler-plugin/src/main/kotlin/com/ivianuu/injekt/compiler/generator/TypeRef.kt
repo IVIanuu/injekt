@@ -5,6 +5,7 @@ import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.compiler.unsafeLazy
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
@@ -19,7 +20,7 @@ import org.jetbrains.kotlin.types.getAbbreviation
 data class ClassifierRef(
     val fqName: FqName,
     val typeParameters: List<ClassifierRef> = emptyList(),
-    val upperBounds: List<TypeRef> = emptyList(),
+    val superTypes: List<TypeRef> = emptyList(),
     val isTypeParameter: Boolean = false
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
@@ -48,6 +49,7 @@ sealed class TypeRef {
     abstract val variance: Variance
     abstract val isReader: Boolean
     abstract val isComposable: Boolean
+    abstract val superTypes: List<TypeRef>
     private val typeName by unsafeLazy { uniqueTypeName(includeNullability = false) }
     override fun equals(other: Any?) = other is TypeRef && typeName == other.typeName
     override fun hashCode() = typeName.hashCode()
@@ -65,6 +67,9 @@ class KotlinTypeRef(
     override val isComposable: Boolean by unsafeLazy {
         kotlinType.hasAnnotation(InjektFqNames.Composable) &&
                 kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
+    }
+    override val superTypes: List<TypeRef> by unsafeLazy {
+        kotlinType.constructor.supertypes.map { it.toTypeRef() }
     }
     override val isReader: Boolean by unsafeLazy {
         kotlinType.hasAnnotation(InjektFqNames.Reader) &&
@@ -98,6 +103,7 @@ class SimpleTypeRef(
     override val typeArguments: List<TypeRef> = emptyList(),
     override val variance: Variance = Variance.INVARIANT,
     override val isComposable: Boolean = false,
+    override val superTypes: List<TypeRef> = emptyList(),
     override val isReader: Boolean = false
 ) : TypeRef() {
     init {
@@ -193,4 +199,48 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
     else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}"))
         .removeIllegalChars()
         .asNameId()
+}
+
+fun TypeRef.getSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRef> {
+    val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
+
+    fun visitType(
+        thisType: TypeRef,
+        baseType: TypeRef
+    ) {
+        if (baseType.classifier.isTypeParameter) {
+            substitutionMap[baseType.classifier] = thisType
+        } else {
+            thisType.typeArguments.zip(baseType.classifier.typeParameters).forEach {
+                visitType(it.first, it.second.defaultType)
+            }
+        }
+    }
+
+    visitType(this, baseType)
+
+    return substitutionMap
+}
+
+fun TypeRef.isAssignable(superType: TypeRef): Boolean {
+    if (this == superType) return true
+
+    if (superType.classifier.isTypeParameter) {
+        return superType.classifier.superTypes.all { upperBound ->
+            isSubTypeOf(upperBound)
+        }
+    }
+
+    if (classifier.fqName != superType.classifier.fqName) return false
+
+    return typeArguments.zip(superType.typeArguments).all { (a, b) ->
+        a.isAssignable(b)
+    }
+}
+
+fun TypeRef.isSubTypeOf(superType: TypeRef): Boolean {
+    if (classifier.fqName == superType.classifier.fqName) return true
+    if (superType.classifier.fqName.asString() == KotlinBuiltIns.FQ_NAMES.any.asString() && superType.isMarkedNullable)
+        return true
+    return superTypes.any { it.isSubTypeOf(superType) }
 }

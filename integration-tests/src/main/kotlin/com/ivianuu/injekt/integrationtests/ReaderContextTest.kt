@@ -431,7 +431,7 @@ class ReaderContextTest {
         invokeSingleFile(Foo())
     }
 
-    // todo @Test
+    @Test
     fun testGenericGivenClass() = codegen(
         """
         @Given class Dep<T> {
@@ -441,25 +441,42 @@ class ReaderContextTest {
         @Given fun foo() = Foo() 
         
         fun invoke() {
-            runReader {
+            rootContext<TestContext>().runReader {
                 given<Dep<Foo>>()
             }
         }
     """
     )
 
-    // todo @Test
+    @Test
     fun testGenericGivenFunction() = codegen(
         """    
-        @Given class Dep<T> { val value: T = given() }
+        class Dep<T>(val value: T)
         
-        @Given fun <T> dep() = Dep<T>()
+        @Given fun <T> dep() = Dep<T>(given())
         
         @Given fun foo() = Foo() 
 
         fun invoke() {
-            runReader {
+            rootContext<TestContext>().runReader {
                 given<Dep<Foo>>()
+            }
+        }
+    """
+    )
+
+    @Test
+    fun testComplexGenericGivenFunction() = codegen(
+        """    
+        class Dep<A, B, C>(val value: A)
+        
+        @Given fun <A, B : A, C : B> dep() = Dep<A, A, A>(given())
+        
+        @Given fun foo() = Foo() 
+
+        fun invoke() {
+            rootContext<TestContext>().runReader {
+                given<Dep<Foo, Foo, Foo>>()
             }
         }
     """
