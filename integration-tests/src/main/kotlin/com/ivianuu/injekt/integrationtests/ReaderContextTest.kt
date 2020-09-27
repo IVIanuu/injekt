@@ -598,4 +598,23 @@ class ReaderContextTest {
         invokeSingleFile()
     }
 
+    @Test
+    fun testGenericTypeAlias() = codegen(
+        """
+            interface Comparator<T> {
+                fun compare(a: T, b: T): Int
+            }
+            typealias AliasComparator<T> = Comparator<T>
+            @Reader
+            fun callMax() {
+                compare(1, 2)
+            }
+
+            @Reader
+            fun <T> compare(a: T, b: T): Int = given<AliasComparator<T>>()
+                .compare(a, b)
+
+        """
+    )
+
 }

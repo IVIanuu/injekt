@@ -81,6 +81,7 @@ import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
+import org.jetbrains.kotlin.ir.types.impl.IrTypeAbbreviationImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructors
@@ -221,15 +222,35 @@ fun IrType.substituteByFqName(substitutionMap: Map<FqName, IrType>): IrType {
             it
         }
     }
-
     val newAnnotations = annotations.map { it.deepCopyWithSymbols() }
+
+    val newAbbreviation = abbreviation?.substituteByFqName(substitutionMap)
+
     return IrSimpleTypeImpl(
-        makeKotlinType(classifier, arguments, hasQuestionMark, annotations, abbreviation),
+        makeKotlinType(classifier, newArguments, hasQuestionMark, annotations, newAbbreviation),
         classifier,
         hasQuestionMark,
         newArguments,
         newAnnotations,
-        abbreviation
+        newAbbreviation
+    )
+}
+
+fun IrTypeAbbreviation.substituteByFqName(substitutionMap: Map<FqName, IrType>): IrTypeAbbreviation {
+    val newArguments = arguments.map {
+        if (it is IrTypeProjection) {
+            makeTypeProjection(it.type.substituteByFqName(substitutionMap), it.variance)
+        } else {
+            it
+        }
+    }
+    val newAnnotations = annotations.map { it.deepCopyWithSymbols() }
+
+    return IrTypeAbbreviationImpl(
+        typeAlias,
+        hasQuestionMark,
+        newArguments,
+        newAnnotations
     )
 }
 
