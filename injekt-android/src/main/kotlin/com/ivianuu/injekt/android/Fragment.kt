@@ -27,8 +27,7 @@ import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
-@Context
-interface FragmentContext
+interface FragmentContext : Context
 
 val Fragment.fragmentContext: FragmentContext
     get() = lifecycle.singleton {

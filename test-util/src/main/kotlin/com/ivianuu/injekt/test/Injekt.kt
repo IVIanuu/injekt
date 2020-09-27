@@ -24,23 +24,17 @@ class Bar(val foo: Foo)
 
 class Baz(val bar: Bar, val foo: Foo)
 
-@Context
-interface TestContext
+interface TestContext : Context
 
-@Context
-interface TestContext2
+interface TestContext2 : Context
 
-@Context
-interface TestParentContext
+interface TestParentContext : Context
 
-@Context
-interface TestParentContext2
+interface TestParentContext2 : Context
 
-@Context
-interface TestChildContext
+interface TestChildContext : Context
 
-@Context
-interface TestChildContext2
+interface TestChildContext2 : Context
 
 interface Command
 

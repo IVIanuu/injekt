@@ -27,8 +27,7 @@ import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
-@Context
-interface ActivityContext
+interface ActivityContext : Context
 
 val ComponentActivity.activityContext: ActivityContext
     get() = lifecycle.singleton {

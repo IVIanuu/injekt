@@ -24,8 +24,7 @@ import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
-@Context
-interface ServiceContext
+interface ServiceContext : Context
 
 fun Service.createServiceContext(): ServiceContext =
     application.applicationReaderContext.runReader {

@@ -369,6 +369,9 @@ class GivensGraph(private val owner: ContextImpl) {
 
         givenSetGivens[type]?.let { this += it }
         this += declarationStore.givens(type)
+            .onEach {
+                println("found ${it.name} with ${it.targetContext?.render()}")
+            }
             .filter { it.targetContext == null || it.targetContext == contextId }
             .map { callable ->
                 CallableGivenNode(

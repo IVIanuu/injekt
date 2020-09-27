@@ -16,5 +16,4 @@
 
 package com.ivianuu.injekt
 
-@Context
-interface ApplicationContext
+interface ApplicationContext : Context

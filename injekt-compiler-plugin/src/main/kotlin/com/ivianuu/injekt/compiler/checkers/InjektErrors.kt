@@ -38,18 +38,8 @@ interface InjektErrors {
         )
 
         @JvmField
-        val CONTEXT_MUST_BE_AN_INTERFACE = error(
-            "@Context must be an interface"
-        )
-
-        @JvmField
-        val NOT_A_CONTEXT = error(
-            "Must be a @Context type"
-        )
-
-        @JvmField
-        val CONTEXT_WITH_TYPE_PARAMETERS = error(
-            "@Context cannot have type parameters"
+        val MUST_BE_A_CONCRETE_CONTEXT_TYPE = error(
+            "Must be a concrete context type"
         )
 
         @JvmField
