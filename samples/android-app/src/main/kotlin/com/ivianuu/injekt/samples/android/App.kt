@@ -28,7 +28,6 @@ class App : Application() {
         super.onCreate()
         applicationReaderContext.runReader {
             initializeWorkers()
-            startAppServices()
             refreshRepo()
         }
     }
