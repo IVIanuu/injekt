@@ -34,7 +34,7 @@ data class CallableRef(
     val name: Name,
     val uniqueKey: String,
     val type: TypeRef,
-    val receiver: TypeRef?,
+    val staticReceiver: TypeRef?,
     val typeParameters: List<ClassifierRef>,
     val valueParameters: List<ValueParameterRef>,
     val targetContext: TypeRef?,
@@ -59,12 +59,18 @@ fun FunctionDescriptor.toCallableRef(): CallableRef {
         fqName = owner.fqNameSafe,
         type = (if (extensionReceiverParameter != null || valueParameters.isNotEmpty()) getFunctionType() else returnType!!)
             .toTypeRef(),
-        receiver = dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
+        staticReceiver = dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
             ?.takeIf { it is ClassDescriptor && it.kind == ClassKind.OBJECT }?.defaultType?.toTypeRef(),
         isExternal = owner is DeserializedDescriptor,
-        targetContext = owner.annotations.findAnnotation(InjektFqNames.Given)
+        targetContext = (owner.annotations.findAnnotation(InjektFqNames.Given)
             ?.allValueArguments
             ?.get("scopeContext".asNameId())
+            ?: owner.annotations.findAnnotation(InjektFqNames.GivenMapEntries)
+                ?.allValueArguments
+                ?.get("targetContext".asNameId())
+            ?: owner.annotations.findAnnotation(InjektFqNames.GivenSetElements)
+                ?.allValueArguments
+                ?.get("targetContext".asNameId()))
             ?.let { it as KClassValue }
             ?.getArgumentType(module)
             ?.toTypeRef(),

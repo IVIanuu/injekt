@@ -49,8 +49,8 @@ class GivensGraph(private val owner: ContextImpl) {
         .groupBy { it.type }
 
     private val givenSetGivens = mutableMapOf<TypeRef, MutableList<GivenNode>>()
-    private val givenSetMapEntries = mutableMapOf<TypeRef, MutableList<CallableRef>>()
-    private val givenSetSetElements = mutableMapOf<TypeRef, MutableList<CallableRef>>()
+
+    private val collections: GivenCollections = given(owner, parent?.collections)
 
     val resolvedGivens = mutableMapOf<TypeRef, GivenNode>()
 
@@ -73,19 +73,15 @@ class GivensGraph(private val owner: ContextImpl) {
             .map { declarationStore.getGivenSetForType(it) }
 
         fun GivenSetDescriptor.collectGivens(
-            parentAccessStatement: ContextStatement?,
-            parentCallable: CallableRef?
+            parentCallable: CallableRef?,
+            parentAccessStatement: ContextStatement
         ) {
             val thisAccessStatement: ContextStatement = {
-                if (parentAccessStatement == null) {
-                    emit("p${inputs.indexOf(type)}")
-                } else {
-                    parentAccessStatement()
-                    emit(".")
-                    emit("${parentCallable!!.name}")
-                    if (!parentCallable.isPropertyAccessor) {
-                        emit("()")
-                    }
+                parentAccessStatement()
+                emit(".")
+                emit("${parentCallable!!.name}")
+                if (!parentCallable.isPropertyAccessor) {
+                    emit("()")
                 }
             }
 
@@ -104,20 +100,34 @@ class GivensGraph(private val owner: ContextImpl) {
                         )
                     }
                     CallableRef.GivenKind.GIVEN_MAP_ENTRIES -> {
-                        givenSetMapEntries.getOrPut(callable.type) { mutableListOf() } += callable
+                        collections.addMapEntries(
+                            CallableWithReceiver(
+                                callable,
+                                thisAccessStatement
+                            )
+                        )
                     }
                     CallableRef.GivenKind.GIVEN_SET_ELEMENTS -> {
-                        givenSetSetElements.getOrPut(callable.type) { mutableListOf() } += callable
+                        collections.addSetElements(
+                            CallableWithReceiver(
+                                callable,
+                                thisAccessStatement
+                            )
+                        )
                     }
                     CallableRef.GivenKind.GIVEN_SET -> {
                         declarationStore.getGivenSetForType(callable.type)
-                            .collectGivens(thisAccessStatement, callable)
+                            .collectGivens(callable, thisAccessStatement)
                     }
                 }.let {}
             }
         }
 
-        givenSets.forEach { it.collectGivens(null, null) }
+        givenSets.forEach {
+            it.collectGivens(null) {
+                emit("this@${owner.name}.p${inputs.indexOf(it.type)}")
+            }
+        }
     }
 
     fun checkEntryPoints(entryPoints: List<ReaderContextDescriptor>) {
@@ -155,7 +165,7 @@ class GivensGraph(private val owner: ContextImpl) {
         chain.pop()
     }
 
-    fun getGiven(type: TypeRef): GivenNode {
+    private fun getGiven(type: TypeRef): GivenNode {
         var given = getGivenOrNull(type)
         if (given != null) return given
 
@@ -386,41 +396,81 @@ class GivensGraph(private val owner: ContextImpl) {
                 )
             }
 
-        ((givenSetMapEntries[type] ?: emptyList()) + declarationStore.givenMapEntries(type))
-            .filter { it.targetContext == null || it.targetContext == contextId }
-            .takeIf { it.isNotEmpty() }
-            ?.let { entries ->
-                MapGivenNode(
-                    type = type,
-                    owner = owner,
-                    contexts = entries.map {
-                        declarationStore
-                            .getReaderContextForCallable(it)!!
-                    },
-                    givenSetAccessStatement = null,
-                    entries = entries
-                )
-            }
-            ?.let { this += it }
-
-        ((givenSetSetElements[type] ?: emptyList()) + declarationStore.givenSetElements(type))
-            .filter { it.targetContext == null || it.targetContext == contextId }
-            .takeIf { it.isNotEmpty() }
-            ?.let { elements ->
-                SetGivenNode(
-                    type = type,
-                    owner = owner,
-                    contexts = elements.map {
-                        declarationStore
-                            .getReaderContextForCallable(it)!!
-                    },
-                    givenSetAccessStatement = null,
-                    elements = elements
-                )
-            }
-            ?.let { this += it }
+        this += collections.getNodes(type)
     }
 
 }
 
 private fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"
+
+@Given
+class GivenCollections(
+    private val owner: ContextImpl,
+    private val parent: GivenCollections?
+) {
+
+    private val declarationStore = given<DeclarationStore>()
+    private val givenSetMapEntries = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
+    private val givenSetSetElements = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
+
+    fun addMapEntries(entries: CallableWithReceiver) {
+        givenSetMapEntries.getOrPut(entries.callable.type) { mutableListOf() } += entries
+    }
+
+    fun addSetElements(elements: CallableWithReceiver) {
+        givenSetSetElements.getOrPut(elements.callable.type) { mutableListOf() } += elements
+    }
+
+    private val mapEntriesByType = mutableMapOf<TypeRef, List<CallableWithReceiver>>()
+    private fun getMapEntries(type: TypeRef): List<CallableWithReceiver> {
+        return mapEntriesByType.getOrPut(type) {
+            (parent?.getMapEntries(type) ?: emptyList()) +
+                    declarationStore.givenMapEntries(type)
+                        .filter { it.targetContext == null || it.targetContext == owner.contextId }
+                        .map { CallableWithReceiver(it, null) } +
+                    (givenSetMapEntries[type] ?: emptyList())
+        }
+    }
+
+    private val setElementsByType = mutableMapOf<TypeRef, List<CallableWithReceiver>>()
+    private fun getSetElements(type: TypeRef): List<CallableWithReceiver> {
+        return setElementsByType.getOrPut(type) {
+            (parent?.getSetElements(type) ?: emptyList()) +
+                    declarationStore.givenSetElements(type)
+                        .filter { it.targetContext == null || it.targetContext == owner.contextId }
+                        .map { CallableWithReceiver(it, null) } +
+                    (givenSetSetElements[type] ?: emptyList())
+        }
+    }
+
+    fun getNodes(type: TypeRef): List<GivenNode> {
+        return listOfNotNull(
+            getMapEntries(type)
+                .takeIf { it.isNotEmpty() }
+                ?.let { entries ->
+                    MapGivenNode(
+                        type = type,
+                        owner = owner,
+                        contexts = entries.map {
+                            declarationStore
+                                .getReaderContextForCallable(it.callable)!!
+                        },
+                        entries = entries
+                    )
+                },
+            getSetElements(type)
+                .takeIf { it.isNotEmpty() }
+                ?.let { elements ->
+                    SetGivenNode(
+                        type = type,
+                        owner = owner,
+                        contexts = elements.map {
+                            declarationStore
+                                .getReaderContextForCallable(it.callable)!!
+                        },
+                        elements = elements
+                    )
+                }
+        )
+    }
+}

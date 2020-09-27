@@ -155,14 +155,15 @@ class MapGivenNode(
     override val type: TypeRef,
     override val owner: ContextImpl,
     override val contexts: List<ReaderContextDescriptor>,
-    override val givenSetAccessStatement: ContextStatement?,
-    val entries: List<CallableRef>
+    val entries: List<CallableWithReceiver>
 ) : GivenNode() {
     override val external: Boolean
         get() = false
     override val origin: FqName?
         get() = null
     override val targetContext: TypeRef?
+        get() = null
+    override val givenSetAccessStatement: ContextStatement?
         get() = null
 }
 
@@ -170,8 +171,7 @@ class SetGivenNode(
     override val type: TypeRef,
     override val owner: ContextImpl,
     override val contexts: List<ReaderContextDescriptor>,
-    override val givenSetAccessStatement: ContextStatement?,
-    val elements: List<CallableRef>
+    val elements: List<CallableWithReceiver>
 ) : GivenNode() {
     override val external: Boolean
         get() = false
@@ -179,7 +179,14 @@ class SetGivenNode(
         get() = null
     override val targetContext: TypeRef?
         get() = null
+    override val givenSetAccessStatement: ContextStatement?
+        get() = null
 }
+
+data class CallableWithReceiver(
+    val callable: CallableRef,
+    val receiver: ContextStatement?
+)
 
 class NullGivenNode(
     override val type: TypeRef,

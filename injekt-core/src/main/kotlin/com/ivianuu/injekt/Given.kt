@@ -38,7 +38,7 @@ fun <T> given(vararg arguments: Any?): T = injektIntrinsic()
 annotation class GivenSet
 
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
-annotation class GivenMapEntries
+annotation class GivenMapEntries(val targetContext: KClass<out Context> = Nothing::class)
 
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
-annotation class GivenSetElements
+annotation class GivenSetElements(val targetContext: KClass<out Context> = Nothing::class)

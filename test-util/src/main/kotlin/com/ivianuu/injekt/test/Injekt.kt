@@ -41,5 +41,3 @@ interface Command
 class CommandA : Command
 
 class CommandB : Command
-
-class CommandC : Command

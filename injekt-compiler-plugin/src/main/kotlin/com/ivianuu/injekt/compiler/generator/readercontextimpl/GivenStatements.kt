@@ -1,7 +1,9 @@
 package com.ivianuu.injekt.compiler.generator.readercontextimpl
 
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.compiler.generator.CallableRef
 import com.ivianuu.injekt.compiler.generator.ClassifierRef
+import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.render
@@ -136,8 +138,10 @@ class GivenStatements(private val owner: ContextImpl) {
             emit("run ")
             braced {
                 emitLine("val result = mutableMapOf<Any?, Any?>()")
-                given.entries.forEach {
-                    emitLine("result.putAll(${it.fqName}())")
+                given.entries.forEach { (callable, receiver) ->
+                    emit("result.putAll(")
+                    emitCallableInvocation(callable, receiver, emptyList())
+                    emitLine(")")
                 }
                 emitLine("result as ${given.type.render()}")
             }
@@ -149,8 +153,10 @@ class GivenStatements(private val owner: ContextImpl) {
             emit("run ")
             braced {
                 emitLine("val result = mutableSetOf<Any?>()")
-                given.elements.forEach {
-                    emitLine("result.addAll(${it.fqName}())")
+                given.elements.forEach { (callable, receiver) ->
+                    emit("result.addAll(")
+                    emitCallableInvocation(callable, receiver, emptyList())
+                    emitLine(")")
                 }
                 emitLine("result as ${given.type.render()}")
             }
@@ -160,56 +166,65 @@ class GivenStatements(private val owner: ContextImpl) {
     private fun nullExpression(): ContextStatement = { emit("null") }
 
     private fun callableExpression(given: CallableGivenNode): ContextStatement {
-        fun createExpression(parameters: List<ContextStatement>): ContextStatement {
-            return {
-                when {
-                    given.givenSetAccessStatement != null -> {
-                        given.givenSetAccessStatement!!()
-                        emit(".${given.callable.name}")
-                    }
-                    given.callable.receiver != null -> {
-                        emit("${given.callable.receiver.render()}.${given.callable.name}")
-                    }
-                    given.callable.valueParameters.any { it.isExtensionReceiver } -> {
-                        parameters.first()()
-                        emit(".${given.callable.name}")
-                    }
-                    else -> emit(given.callable.fqName)
-                }
-                if (!given.callable.isPropertyAccessor) {
-                    emit("(")
-                    parameters
-                        .drop(if (given.callable.valueParameters.firstOrNull()?.isExtensionReceiver == true) 1 else 0)
-                        .forEachIndexed { index, parameter ->
-                            parameter()
-                            if (index != parameters.lastIndex) emit(", ")
-                        }
-                    emit(")")
-                }
-            }
-        }
-
-        return if (given.callable.valueParameters.isNotEmpty()) {
-            val statement: ContextStatement = {
+        return {
+            if (given.callable.valueParameters.isNotEmpty()) {
                 emit("{ ")
                 given.callable.valueParameters.forEachIndexed { index, parameter ->
                     emit("p$index: ${parameter.typeRef.render()}")
                     if (index != given.callable.valueParameters.lastIndex) emit(", ")
                 }
                 emitLine(" ->")
-                createExpression(given.callable.valueParameters.mapIndexed { index, _ ->
-                    { emit("p$index") }
-                }).invoke(this)
+                emitCallableInvocation(
+                    given.callable,
+                    given.givenSetAccessStatement,
+                    given.callable.valueParameters.mapIndexed { index, _ ->
+                        { emit("p$index") }
+                    }
+                )
                 emitLine()
                 emitLine("}")
+            } else {
+                emitCallableInvocation(
+                    given.callable,
+                    given.givenSetAccessStatement,
+                    emptyList()
+                )
             }
-            statement
-        } else {
-            createExpression(emptyList())
         }
     }
 
     private fun selfContextExpression(given: SelfGivenNode): ContextStatement =
         { emit("this@${given.context.name}") }
 
+}
+
+private fun CodeBuilder.emitCallableInvocation(
+    callable: CallableRef,
+    receiver: ContextStatement?,
+    parameters: List<ContextStatement>
+) {
+    when {
+        receiver != null -> {
+            receiver()
+            emit(".${callable.name}")
+        }
+        callable.staticReceiver != null -> {
+            emit("${callable.staticReceiver.render()}.${callable.name}")
+        }
+        callable.valueParameters.any { it.isExtensionReceiver } -> {
+            parameters.first()()
+            emit(".${callable.name}")
+        }
+        else -> emit(callable.fqName)
+    }
+    if (!callable.isPropertyAccessor) {
+        emit("(")
+        parameters
+            .drop(if (callable.valueParameters.firstOrNull()?.isExtensionReceiver == true) 1 else 0)
+            .forEachIndexed { index, parameter ->
+                parameter()
+                if (index != parameters.lastIndex) emit(", ")
+            }
+        emit(")")
+    }
 }
