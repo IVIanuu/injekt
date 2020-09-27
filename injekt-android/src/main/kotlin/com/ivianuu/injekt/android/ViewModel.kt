@@ -11,16 +11,6 @@ import com.ivianuu.injekt.given
 import kotlin.reflect.KClass
 
 @Effect
-annotation class GivenViewModel {
-    @GivenSet
-    companion object {
-        @Given
-        inline fun <reified VM : S, reified S : ViewModel> viewModel(): S =
-            getViewModel<VM, S, ActivityViewModelStoreOwner>(S::class)
-    }
-}
-
-@Effect
 annotation class GivenActivityViewModel {
     @GivenSet
     companion object {
