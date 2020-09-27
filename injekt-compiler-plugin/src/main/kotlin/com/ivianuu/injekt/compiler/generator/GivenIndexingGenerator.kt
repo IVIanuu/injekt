@@ -2,7 +2,6 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -38,12 +37,10 @@ class GivenIndexingGenerator : Generator {
                     override fun visitClass(klass: KtClass) {
                         super.visitClass(klass)
                         val descriptor = klass.descriptor<ClassDescriptor>()
-                        if ((descriptor.hasAnnotation(InjektFqNames.Given) ||
-                                    descriptor.hasAnnotatedAnnotations(InjektFqNames.Effect)) ||
+                        if (descriptor.hasAnnotation(InjektFqNames.Given) ||
                             descriptor.constructors
                                 .any {
-                                    it.hasAnnotation(InjektFqNames.Given) ||
-                                            it.hasAnnotatedAnnotations(InjektFqNames.Effect)
+                                    it.hasAnnotation(InjektFqNames.Given)
                                 }
                         ) {
                             indexer.index(

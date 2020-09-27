@@ -113,8 +113,8 @@ interface InjektErrors {
         )
 
         @JvmField
-        val EFFECT_FUNCTION_NEEDS_ONE_TYPE_PARAMETER = error(
-            "@Effect functions must have 1 type parameter"
+        val EFFECT_FUNCTION_INVALID_TYPE_PARAMETERS = error(
+            "@Effect function must have one of the following type parameter signatures <T> or <T : S, S>"
         )
 
         @JvmField
@@ -123,7 +123,7 @@ interface InjektErrors {
         )
 
         @JvmField
-        val EFFECT_WITH_TYPE_PARAMETERS = error(
+        val EFFECT_USAGE_WITH_TYPE_PARAMETERS = error(
             "@Effect annotated declaration cannot have type parameters"
         )
 

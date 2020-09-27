@@ -26,15 +26,18 @@ import com.ivianuu.injekt.GivenMapEntries
 import com.ivianuu.injekt.GivenSet
 import com.ivianuu.injekt.given
 import kotlin.reflect.KClass
+import kotlin.reflect.typeOf
 
 @Effect
 annotation class GivenWorker {
     @GivenSet
     companion object {
         @GivenMapEntries
-        inline operator fun <reified T : ListenableWorker> invoke(): Workers = mapOf(
-            T::class to given<(Context, WorkerParameters) -> T>()
-        )
+        inline operator fun <reified T : (Context, WorkerParameters) -> ListenableWorker> invoke(): Workers {
+            val workerClass =
+                typeOf<T>().arguments.last().type!!.classifier as KClass<out ListenableWorker>
+            return mapOf(workerClass to given<T>())
+        }
     }
 }
 
@@ -42,7 +45,6 @@ typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters
 
 @Given
 class InjektWorkerFactory : WorkerFactory() {
-
     override fun createWorker(
         appContext: Context,
         workerClassName: String,
@@ -53,9 +55,9 @@ class InjektWorkerFactory : WorkerFactory() {
             workerParameters
         )
     }
-}
 
-object WorkerInjectionGivens {
-    @Given
-    fun workerFactory(): WorkerFactory = given<InjektWorkerFactory>()
+    companion object {
+        @Given
+        fun workerFactory(): WorkerFactory = given<InjektWorkerFactory>()
+    }
 }

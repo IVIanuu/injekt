@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.checkers
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.generator.getReaderConstructor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -73,12 +74,25 @@ class EffectChecker : DeclarationChecker {
             .filterIsInstance<FunctionDescriptor>()
             .filter { it.dispatchReceiverParameter?.value?.type == companion.defaultType }
             .forEach { effectFunction ->
-                if (effectFunction.typeParameters.size != 1) {
-                    context.trace.report(
-                        InjektErrors.EFFECT_FUNCTION_NEEDS_ONE_TYPE_PARAMETER
-                            .on(declaration)
-                    )
-                    return
+                when {
+                    effectFunction.typeParameters.size == 2 -> {
+                        val firstTypeParameter = effectFunction.typeParameters[0]
+                        val secondTypeParameter = effectFunction.typeParameters[1]
+                        if (!firstTypeParameter.defaultType.isSubtypeOf(secondTypeParameter.defaultType)) {
+                            context.trace.report(
+                                InjektErrors.EFFECT_FUNCTION_INVALID_TYPE_PARAMETERS
+                                    .on(declaration)
+                            )
+                            return
+                        }
+                    }
+                    effectFunction.typeParameters.size != 1 -> {
+                        context.trace.report(
+                            InjektErrors.EFFECT_FUNCTION_INVALID_TYPE_PARAMETERS
+                                .on(declaration)
+                        )
+                        return
+                    }
                 }
 
                 if (effectFunction.valueParameters.isNotEmpty()) {
@@ -103,7 +117,7 @@ class EffectChecker : DeclarationChecker {
             (descriptor is FunctionDescriptor && descriptor.typeParameters.isNotEmpty())
         ) {
             context.trace.report(
-                InjektErrors.EFFECT_WITH_TYPE_PARAMETERS
+                InjektErrors.EFFECT_USAGE_WITH_TYPE_PARAMETERS
                     .on(declaration)
             )
         }
@@ -126,7 +140,7 @@ class EffectChecker : DeclarationChecker {
             }
 
         val declarationType = when (descriptor) {
-            is ClassDescriptor -> descriptor.defaultType
+            is ClassDescriptor -> descriptor.getReaderConstructor(context.trace)!!.getFunctionType()
             is FunctionDescriptor -> descriptor.getFunctionType()
             else -> error("Unexpected descriptor $descriptor")
         }

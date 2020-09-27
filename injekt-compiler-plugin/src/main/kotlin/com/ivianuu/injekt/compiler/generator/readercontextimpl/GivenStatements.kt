@@ -58,7 +58,7 @@ class GivenStatements(private val owner: ContextImpl) {
             when (given) {
                 is CalleeContextGivenNode -> calleeContextExpression(given)
                 is ChildContextGivenNode -> childContextExpression(given)
-                is CallableGivenNode -> functionExpression(given)
+                is CallableGivenNode -> callableExpression(given)
                 is InputGivenNode -> inputExpression(given)
                 is MapGivenNode -> mapExpression(given)
                 is NullGivenNode -> nullExpression()
@@ -159,7 +159,7 @@ class GivenStatements(private val owner: ContextImpl) {
 
     private fun nullExpression(): ContextStatement = { emit("null") }
 
-    private fun functionExpression(given: CallableGivenNode): ContextStatement {
+    private fun callableExpression(given: CallableGivenNode): ContextStatement {
         fun createExpression(parameters: List<ContextStatement>): ContextStatement {
             return {
                 when {

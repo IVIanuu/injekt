@@ -48,6 +48,7 @@ class EffectTest {
             }
         }
         
+        @Given
         @Effect1
         @Effect2
         class Dep
@@ -72,17 +73,48 @@ class EffectTest {
             @GivenSet
             companion object {
                 @Given
-                fun <T> bind() = given<(String) -> T>().toString()
+                fun <T : (String) -> Any> bind() = given<T>().toString()
             }
         }
         
         @Effect1
+        @Given
         class Dep(arg: String)
         
         fun invoke() {
             rootContext<TestContext>().runReader { 
                 given<Dep>("a") 
                 given<String>()
+            }
+        }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testWithTwoTypeParameters() = codegen(
+        """
+        @Effect
+        annotation class Memoized {
+            @GivenSet
+            companion object {
+                @PublishedApi
+                internal val instances = mutableMapOf<KClass<*>, Any?>()
+                @Given
+                inline fun <reified T : S, reified S> memoized(): S = instances.getOrPut(S::class) {
+                    given<T>()
+                } as S
+            }
+        }
+
+        @Memoized
+        class Dep
+        
+        fun invoke() {
+            rootContext<TestContext>().runReader {
+                val a = given<Dep>()
+                val b = given<Dep>()
             }
         }
     """
@@ -118,7 +150,24 @@ class EffectTest {
     }
 
     @Test
-    fun testEffectWithMultipleTypeParameters() = codegen(
+    fun testEffectWithToManyTypeParameters() = codegen(
+        """
+        @Effect
+        annotation class MyEffect {
+            @GivenSet
+            companion object {
+                @Given
+                operator fun <A, B, C> invoke() {
+                }
+            }
+        }
+    """
+    ) {
+        assertCompileError("type parameter")
+    }
+
+    @Test
+    fun testEffectWithInvalidTypeParameterSignature() = codegen(
         """
         @Effect
         annotation class MyEffect {

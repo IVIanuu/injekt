@@ -48,7 +48,6 @@ sealed class TypeRef {
     abstract val variance: Variance
     abstract val isReader: Boolean
     abstract val isComposable: Boolean
-    abstract val qualifier: String?
     private val typeName by unsafeLazy { uniqueTypeName(includeNullability = false) }
     override fun equals(other: Any?) = other is TypeRef && typeName == other.typeName
     override fun hashCode() = typeName.hashCode()
@@ -70,10 +69,6 @@ class KotlinTypeRef(
     override val isReader: Boolean by unsafeLazy {
         kotlinType.hasAnnotation(InjektFqNames.Reader) &&
                 kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Reader) != true
-    }
-    override val qualifier: String? by unsafeLazy {
-        finalType.annotations.findAnnotation(InjektFqNames.Qualifier)
-            ?.allValueArguments?.values?.singleOrNull()?.value as? String
     }
     override val isContext: Boolean by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ContextMarker)
@@ -103,8 +98,7 @@ class SimpleTypeRef(
     override val typeArguments: List<TypeRef> = emptyList(),
     override val variance: Variance = Variance.INVARIANT,
     override val isComposable: Boolean = false,
-    override val isReader: Boolean = false,
-    override val qualifier: String? = null
+    override val isReader: Boolean = false
 ) : TypeRef() {
     init {
         check(typeArguments.size == classifier.typeParameters.size) {
@@ -129,8 +123,7 @@ fun TypeRef.copy(
     typeArguments: List<TypeRef> = this.typeArguments,
     variance: Variance = this.variance,
     isComposable: Boolean = this.isComposable,
-    isReader: Boolean = this.isReader,
-    qualifier: String? = this.qualifier
+    isReader: Boolean = this.isReader
 ) = SimpleTypeRef(
     classifier = classifier,
     isMarkedNullable = isMarkedNullable,
@@ -140,8 +133,7 @@ fun TypeRef.copy(
     typeArguments = typeArguments,
     variance = variance,
     isComposable = isComposable,
-    isReader = isReader,
-    qualifier = qualifier
+    isReader = isReader
 )
 
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
@@ -154,7 +146,6 @@ fun TypeRef.render(): String {
         val annotations = listOfNotNull(
             if (isReader) "@com.ivianuu.injekt.Reader" else null,
             if (isComposable) "@androidx.compose.runtime.Composable" else null,
-            qualifier?.let { "@com.ivianuu.injekt.internal.Qualifier(\"$it\")" }
         )
         if (annotations.isNotEmpty()) {
             annotations.forEach { annotation ->
@@ -183,7 +174,6 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
         return buildString {
             if (isComposable) append("composable_")
             if (isReader) append("reader_")
-            if (qualifier != null) append("${qualifier}_")
             //if (includeNullability && isMarkedNullable) append("nullable_")
             append(classifier.fqName.pathSegments().joinToString("_") { it.asString() })
             if (includeArguments) {

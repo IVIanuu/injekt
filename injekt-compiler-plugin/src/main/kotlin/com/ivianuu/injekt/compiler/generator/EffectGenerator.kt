@@ -66,8 +66,15 @@ class EffectGenerator : Generator {
 
         val packageName = declaration.findPackage().fqName
         val effectsName = joinedNameOf(
-            declaration.fqNameSafe,
-            FqName(declaration.fqNameSafe.asString() + "Effects")
+            packageName,
+            FqName("${declaration.fqNameSafe.asString()}${declaration.uniqueKey()}Effects")
+        )
+
+        val rawGivenType = declaration.getGivenType()
+        val aliasedType = SimpleTypeRef(
+            classifier = ClassifierRef(
+                fqName = packageName.child("${effectsName}Alias".asNameId())
+            )
         )
 
         val code = buildCodeString {
@@ -75,86 +82,112 @@ class EffectGenerator : Generator {
             emitLine("package $packageName")
             emitLine("import ${InjektFqNames.Given}")
             emitLine("import ${declaration.fqNameSafe}")
+            emitLine()
+            emitLine("typealias ${aliasedType.classifier.fqName.shortName()} = ${rawGivenType.render()}")
+            emitLine()
             emit("object $effectsName ")
             braced {
-                val givenType = declaration.getGivenType()
-                if (declaration is FunctionDescriptor && !declaration.hasAnnotation(InjektFqNames.Given)) {
-                    emit("@Given fun function(): ${givenType.render()} ")
-                    braced {
+                emit("@Given fun aliasedGiven(): ${aliasedType.render()} ")
+                braced {
+                    if (declaration is FunctionDescriptor) {
                         emit("return { ")
-                        val valueParameters = givenType.typeArguments
+                        val valueParameters = rawGivenType.typeArguments
                             .dropLast(1)
                         valueParameters.forEachIndexed { index, _ ->
-                            emit("p1$index")
-                            if (index != valueParameters.lastIndex) emit(", ") else emit("-> ")
+                            emit("p$index")
+                            if (index != valueParameters.lastIndex) emit(", ") else emit(" -> ")
                         }
                         indented {
                             emit("${declaration.name}(")
                             valueParameters.indices.forEach { index ->
-                                emit("p1$index")
+                                emit("p$index")
                                 if (index != valueParameters.lastIndex) emit(", ")
                             }
                             emit(")")
                         }
-                        emitLine("}")
+                        emitLine(" }")
+                    } else {
+                        declaration as ClassDescriptor
+                        val constructorCallable =
+                            declaration.getReaderConstructor(given())!!.toCallableRef()
+                        if (constructorCallable.valueParameters.isNotEmpty()) {
+                            emit("return { ")
+                            val valueParameters = rawGivenType.typeArguments
+                                .dropLast(1)
+                            valueParameters.forEachIndexed { index, _ ->
+                                emit("p$index")
+                                if (index != valueParameters.lastIndex) emit(", ") else emit(" -> ")
+                            }
+                            indented {
+                                emit("${declaration.name}(")
+                                valueParameters.indices.forEach { index ->
+                                    emit("p$index")
+                                    if (index != valueParameters.lastIndex) emit(", ")
+                                }
+                                emit(")")
+                            }
+                            emitLine(" }")
+                        } else {
+                            emit("return ${rawGivenType.classifier.fqName}()")
+                        }
                     }
-                    indexer.index(
-                        givensPathOf(givenType),
-                        packageName.child(effectsName)
-                            .child("function".asNameId()),
-                        "function",
+                }
+                indexer.index(
+                    givensPathOf(aliasedType),
+                    packageName.child(effectsName)
+                        .child("aliasedGiven".asNameId()),
+                    "function",
+                    originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
+                )
+                val aliasedGivenFqName =
+                    packageName.child(effectsName).child("aliasedGiven".asNameId())
+                val aliasedGivenUniqueKey = uniqueFunctionKeyOf(
+                    fqName = aliasedGivenFqName,
+                    visibility = Visibilities.PUBLIC,
+                    startOffset = null,
+                    parameterTypes = listOf(
+                        packageName.child(
+                            effectsName
+                        )
+                    )
+                )
+                readerContextGenerator.addPromisedReaderContextDescriptor(
+                    PromisedReaderContextDescriptor(
+                        type = SimpleTypeRef(
+                            classifier = ClassifierRef(
+                                packageName.child(
+                                    contextNameOf(
+                                        packageFqName = packageName,
+                                        fqName = aliasedGivenFqName,
+                                        uniqueKey = aliasedGivenUniqueKey
+                                    )
+                                )
+                            ),
+                            isContext = true
+                        ),
+                        callee = declaration,
+                        calleeTypeArguments = emptyList(),
+                        origin = aliasedGivenFqName,
                         originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
                     )
-                    val functionFqName = packageName.child(effectsName).child("function".asNameId())
-                    val functionUniqueKey = uniqueFunctionKeyOf(
-                        fqName = functionFqName,
-                        visibility = Visibilities.PUBLIC,
-                        startOffset = null,
-                        parameterTypes = listOf(
-                            packageName.child(
-                                effectsName
-                            )
-                        )
-                    )
-                    readerContextGenerator.addPromisedReaderContextDescriptor(
-                        PromisedReaderContextDescriptor(
-                            type = SimpleTypeRef(
-                                classifier = ClassifierRef(
-                                    packageName.child(
-                                        contextNameOf(
-                                            packageFqName = packageName,
-                                            fqName = functionFqName,
-                                            uniqueKey = functionUniqueKey
-                                        )
-                                    )
-                                ),
-                                isContext = true
-                            ),
-                            callee = declaration,
-                            calleeTypeArguments = emptyList(),
-                            origin = functionFqName,
-                            originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
-                        )
-                    )
+                )
 
-                    declarationStore.addInternalGiven(
-                        CallableRef(
-                            packageFqName = packageName,
-                            fqName = functionFqName,
-                            name = functionFqName.shortName(),
-                            uniqueKey = functionUniqueKey,
-                            type = givenType,
-                            receiver = null,
-                            typeParameters = emptyList(),
-                            valueParameters = emptyList(),
-                            targetContext = null,
-                            givenKind = CallableRef.GivenKind.GIVEN,
-                            isExternal = false,
-                            isPropertyAccessor = false
-                        )
+                declarationStore.addInternalGiven(
+                    CallableRef(
+                        packageFqName = packageName,
+                        fqName = aliasedGivenFqName,
+                        name = aliasedGivenFqName.shortName(),
+                        uniqueKey = aliasedGivenUniqueKey,
+                        type = aliasedType,
+                        receiver = null,
+                        typeParameters = emptyList(),
+                        valueParameters = emptyList(),
+                        targetContext = null,
+                        givenKind = CallableRef.GivenKind.GIVEN,
+                        isExternal = false,
+                        isPropertyAccessor = false
                     )
-                }
-
+                )
                 effects
                     .map { it.companionObjectDescriptor!! }
                     .flatMap { effectGivenSet ->
@@ -177,7 +210,11 @@ class EffectGenerator : Generator {
                         val returnType = effectCallableRef.type
                             .substitute(
                                 effectCallableRef.typeParameters
-                                    .zip(listOf(givenType))
+                                    .zip(
+                                        if (effectCallableRef.typeParameters.size == 1)
+                                            listOf(aliasedType)
+                                        else listOf(aliasedType, rawGivenType)
+                                    )
                                     .toMap()
                             )
 
@@ -201,9 +238,11 @@ class EffectGenerator : Generator {
 
                         emit("fun $name(): ${returnType.render()} ")
                         braced {
-                            emit("return ${effectFunction.fqNameSafe}<${givenType.render()}>(")
+                            emit("return ${effectFunction.fqNameSafe}<${aliasedType.render()}")
+                            if (effectCallableRef.typeParameters.size == 2) emit(", ${rawGivenType.render()}")
+                            emit(">(")
                             effectFunction.valueParameters.indices.forEach { index ->
-                                emit("p1$index")
+                                emit("p$index")
                                 if (index != effectFunction.valueParameters.lastIndex) emit(", ")
                             }
                             emitLine(")")
@@ -249,7 +288,8 @@ class EffectGenerator : Generator {
                                     isContext = true
                                 ),
                                 callee = effectFunction,
-                                calleeTypeArguments = listOf(givenType),
+                                calleeTypeArguments = if (effectFunction.typeParameters.size == 1)
+                                    listOf(aliasedType) else listOf(aliasedType, rawGivenType),
                                 origin = effectFunctionFqName,
                                 originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
                             )
@@ -286,7 +326,9 @@ class EffectGenerator : Generator {
 
     private fun DeclarationDescriptor.getGivenType(): TypeRef {
         return when (this) {
-            is ClassDescriptor -> defaultType.toTypeRef()
+            is ClassDescriptor -> {
+                getReaderConstructor(given())!!.toCallableRef().type
+            }
             is FunctionDescriptor -> {
                 if (hasAnnotation(InjektFqNames.Given)) {
                     returnType!!.toTypeRef()
@@ -304,12 +346,11 @@ class EffectGenerator : Generator {
                         .toTypeRef()
                         .copy(
                             isComposable = hasAnnotation(InjektFqNames.Composable),
-                            isReader = hasAnnotation(InjektFqNames.Reader),
-                            qualifier = uniqueKey()
+                            isReader = hasAnnotation(InjektFqNames.Reader)
                         )
                 }
             }
-            is PropertyDescriptor -> getter!!.returnType!!.toTypeRef()
+            is PropertyDescriptor -> getter!!.toCallableRef().type
             else -> error("Unexpected given declaration $this")
         }
     }
