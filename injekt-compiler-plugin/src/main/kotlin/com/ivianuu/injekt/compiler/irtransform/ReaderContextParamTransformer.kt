@@ -77,12 +77,16 @@ class ReaderContextParamTransformer : IrLowering {
             object : IrElementTransformerVoidWithContext() {
                 override fun visitCall(expression: IrCall): IrExpression {
                     if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                        "com.ivianuu.injekt.runReader"
+                        "com.ivianuu.injekt.runReader" || expression.symbol.descriptor.fqNameSafe.asString() ==
+                        "com.ivianuu.injekt.runChildReader"
                     ) {
                         injektTrace
                             .record(
                                 InjektWritableSlices.IS_RUN_READER_FUNCTION,
-                                (expression.getValueArgument(0) as IrFunctionExpression).function
+                                (expression.getValueArgument(
+                                    if (expression.symbol.owner.extensionReceiverParameter != null) 0
+                                    else 1
+                                ) as IrFunctionExpression).function
                                     .attributeOwnerId,
                                 true
                             )
@@ -155,7 +159,8 @@ class ReaderContextParamTransformer : IrLowering {
 
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
         if (function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given" ||
-            function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.childContext"
+            function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.childContext" ||
+            function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runChildReader"
         ) return function
 
         if (function is IrConstructor) {

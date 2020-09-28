@@ -949,4 +949,42 @@ class ReaderTest {
         assertSame(b1, b2)
     }
 
+    @Test
+    fun testTopLevelRunReader() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+        
+        @Reader
+        fun func(): Foo = given<Foo>()
+        
+        fun invoke(): Foo { 
+            return runReader("") { func() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testTopLevelChildRunReader() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+        
+        @Reader
+        fun func(): Foo = given<Foo>()
+        
+        fun invoke(): Foo { 
+            return rootContext<TestParentContext>().runReader { 
+                runChildReader("") {
+                    func()
+                }
+            }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
 }

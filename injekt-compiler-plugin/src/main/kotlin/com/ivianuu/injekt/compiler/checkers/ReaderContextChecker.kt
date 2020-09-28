@@ -19,7 +19,7 @@ class ReaderContextChecker : CallChecker {
         if (resolvedCall.resultingDescriptor.fqNameSafe.asString() != "com.ivianuu.injekt.runReader")
             return
 
-        if (resolvedCall.extensionReceiver!!.type.constructor.declarationDescriptor!!.fqNameSafe ==
+        if (resolvedCall.extensionReceiver?.type?.constructor?.declarationDescriptor?.fqNameSafe ==
             InjektFqNames.Context
         ) {
             context.trace.report(

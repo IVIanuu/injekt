@@ -159,9 +159,15 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
     override fun visitReferenceExpression(expression: KtReferenceExpression) {
         super.visitReferenceExpression(expression)
         val resolvedCall = expression.getResolvedCall(given()) ?: return
-        if (resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runReader") {
+        if (resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runReader" ||
+            resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runChildReader"
+        ) {
+            println(resolvedCall.valueArguments)
             generateContextIfNeeded(
-                resolvedCall.valueArguments.values.single()
+                resolvedCall.valueArguments
+                    .entries
+                    .single { it.key.name.asString() == "block" }
+                    .value
                     .arguments
                     .single()
                     .getArgumentExpression()!!
@@ -372,7 +378,8 @@ class ReaderContextGivensCollector(
                 }
                 realType.toTypeRef()
             }
-            resulting.fqNameSafe.asString() == "com.ivianuu.injekt.childContext" -> {
+            resulting.fqNameSafe.asString() == "com.ivianuu.injekt.childContext" ||
+                    resulting.fqNameSafe.asString() == "com.ivianuu.injekt.runChildReader" -> {
                 val factoryDescriptor = injektTrace[
                         InjektWritableSlices.CONTEXT_FACTORY,
                         filePositionOf(

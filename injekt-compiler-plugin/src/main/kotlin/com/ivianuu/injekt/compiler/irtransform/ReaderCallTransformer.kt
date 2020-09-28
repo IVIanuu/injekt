@@ -138,8 +138,9 @@ class ReaderCallTransformer : IrLowering {
                             )
                         }
                         expression.symbol.descriptor.fqNameSafe.asString() ==
-                                "com.ivianuu.injekt.runReader" -> {
-                            transformRunReaderCall(result)
+                                "com.ivianuu.injekt.runReader" || expression.symbol.descriptor.fqNameSafe.asString() ==
+                                "com.ivianuu.injekt.runChildReader" -> {
+                            transformRunReaderCall(result, currentFile, null, null)
                         }
                         else -> {
                             result
@@ -304,8 +305,11 @@ class ReaderCallTransformer : IrLowering {
                             contextExpression(allScopes)
                         }
                     expression is IrCall &&
-                            expression.symbol.owner.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runReader" ->
-                        transformRunReaderCall(expression)
+                            (expression.symbol.owner.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runReader" ||
+                                    expression.symbol.owner.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runChildReader") ->
+                        transformRunReaderCall(expression, scope.declaration.file, scope) {
+                            contextExpression(allScopes)
+                        }
                     expression.symbol.owner.isTransformedReader() ->
                         transformReaderCall(scope, expression) {
                             contextExpression(allScopes)
@@ -375,9 +379,69 @@ class ReaderCallTransformer : IrLowering {
         }
     }
 
-    private fun transformRunReaderCall(call: IrCall): IrExpression {
-        val runReaderCallContextExpression = call.extensionReceiver!!
-        val lambdaExpression = call.getValueArgument(0)!! as IrFunctionExpression
+    private fun transformRunReaderCall(
+        call: IrCall,
+        file: IrFile,
+        scope: ReaderScope?,
+        contextExpression: (() -> IrExpression)?
+    ): IrExpression {
+        val runReaderCallContextExpression = call.extensionReceiver ?: run {
+            val inputs = (call.getValueArgument(0) as? IrVarargImpl)
+                ?.elements
+                ?.map { it as IrExpression } ?: emptyList()
+
+            val isChild = call.symbol.descriptor.fqNameSafe.asString() ==
+                    "com.ivianuu.injekt.runChildReader"
+
+            val contextFactory = pluginContext.referenceClass(
+                injektTrace[InjektWritableSlices.CONTEXT_FACTORY, filePositionOf(
+                    file.path, call.startOffset
+                )]!!.factoryType.classifier.fqName
+            )!!.owner
+
+            call.symbol.irBuilder().run {
+                irCall(contextFactory.functions.single { it.name.asString() == "create" }).apply {
+                    dispatchReceiver = if (isChild) {
+                        scope!!.givenExpressionForType(
+                            if (scope.declaration is IrTypeParametersContainer)
+                                contextFactory.typeWith(
+                                    scope.declaration.typeParameters
+                                        .map { it.defaultType }
+                                )
+                            else contextFactory.defaultType,
+                            contextExpression!!
+                        )
+                    } else {
+                        val contextFactoryImplStub = buildClass {
+                            this.name = (contextFactory.name.asString() + "Impl").asNameId()
+                            origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
+                            kind = ClassKind.OBJECT
+                            visibility = Visibilities.INTERNAL
+                        }.apply clazz@{
+                            createImplicitParameterDeclarationWithWrappedDescriptor()
+                            parent = IrExternalPackageFragmentImpl(
+                                IrExternalPackageFragmentSymbolImpl(
+                                    EmptyPackageFragmentDescriptor(
+                                        pluginContext.moduleDescriptor,
+                                        file.fqName
+                                    )
+                                ),
+                                file.fqName
+                            )
+                        }
+                        irGetObject(contextFactoryImplStub.symbol)
+                    }
+
+                    inputs.forEachIndexed { index, input ->
+                        putValueArgument(index, input)
+                    }
+                }
+            }
+        }
+        val lambdaExpression = call.getValueArgument(
+            if (call.symbol.owner.extensionReceiverParameter != null) 0
+            else 1
+        )!! as IrFunctionExpression
         return call.symbol.irBuilder().run {
             irCall(
                 pluginContext.referenceFunctions(

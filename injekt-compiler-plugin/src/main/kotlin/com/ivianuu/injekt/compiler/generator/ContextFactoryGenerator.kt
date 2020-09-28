@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektTrace
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.checkers.isReader
@@ -13,11 +14,13 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
-import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
@@ -30,10 +33,19 @@ import java.io.File
 @Given(GenerationContext::class)
 class ContextFactoryGenerator : Generator {
 
-    private val fileManager = given<KtFileManager>()
     private val capturedTypeParameters = mutableListOf<TypeParameterDescriptor>()
-    private val declarationStore = given<DeclarationStore>()
-    private val injektTrace = given<InjektTrace>()
+
+    private inline fun <R> withCapturedTypeParametersIfNeeded(
+        owner: DeclarationDescriptor,
+        typeParameters: List<TypeParameterDescriptor>,
+        block: () -> R
+    ): R {
+        val isReader = owner.isReader(given())
+        if (isReader) capturedTypeParameters += typeParameters
+        val result = block()
+        if (isReader) capturedTypeParameters -= typeParameters
+        return result
+    }
 
     override fun generate(files: List<KtFile>) {
         files.forEach { file ->
@@ -63,13 +75,16 @@ class ContextFactoryGenerator : Generator {
                         }
                     }
 
-                    override fun visitCallExpression(expression: KtCallExpression) {
-                        super.visitCallExpression(expression)
+                    override fun visitReferenceExpression(expression: KtReferenceExpression) {
+                        super.visitReferenceExpression(expression)
                         val resolvedCall = expression.getResolvedCall(given()) ?: return
                         if (resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.rootContext" ||
-                            resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.childContext"
+                            resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.childContext" ||
+                            (resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runReader" &&
+                                    resolvedCall.extensionReceiver == null) ||
+                            resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runChildReader"
                         ) {
-                            generateContextFactoryFor(resolvedCall)
+                            generateContextFactory(resolvedCall)
                         }
                     }
                 }
@@ -77,54 +92,94 @@ class ContextFactoryGenerator : Generator {
         }
     }
 
-    private inline fun <R> withCapturedTypeParametersIfNeeded(
-        owner: DeclarationDescriptor,
-        typeParameters: List<TypeParameterDescriptor>,
-        block: () -> R
-    ): R {
-        val isReader = owner.isReader(given())
-        if (isReader) capturedTypeParameters += typeParameters
-        val result = block()
-        if (isReader) capturedTypeParameters -= typeParameters
-        return result
-    }
+    private fun generateContextFactory(call: ResolvedCall<*>) {
+        val callElement = call.call.callElement
+        val file = callElement.containingKtFile
 
-    private fun generateContextFactoryFor(call: ResolvedCall<*>) {
-        val isChild = call.resultingDescriptor.name.asString() == "childContext"
+        val isChild = call.resultingDescriptor.name.asString() == "childContext" ||
+                call.resultingDescriptor.name.asString() == "runChildReader"
 
-        val contextType = call.typeArguments.values.single().toTypeRef()
-            .makeNotNull()
+        val contextType = if (call.resultingDescriptor.name.asString() == "rootContext" ||
+            call.resultingDescriptor.name.asString() == "childContext"
+        ) {
+            call.typeArguments.values.single().toTypeRef()
+        } else {
+            val contextName = "${callElement.containingKtFile.name.removeSuffix(".kt")}" +
+                    "${callElement.startOffset}" +
+                    "RunReaderContext"
+                        .removeIllegalChars()
+                        .asNameId()
+            val fileManager = given<KtFileManager>()
+            if (fileManager.exists(
+                    file.packageFqName, "$contextName.kt"
+                )
+            ) return
+            given<KtFileManager>().generateFile(
+                packageFqName = file.packageFqName,
+                fileName = "$contextName.kt",
+                code = buildCodeString {
+                    emitLine("// injekt-generated")
+                    emitLine("package ${file.packageFqName}")
+                    emitLine("import com.ivianuu.injekt.Context")
+                    emitLine("interface $contextName : Context")
+                },
+                originatingFiles = listOf(
+                    File(file.virtualFilePath)
+                )
+            )
 
-        val inputs = call.valueArguments.values.singleOrNull()
+            SimpleTypeRef(
+                classifier = ClassifierRef(
+                    fqName = file.packageFqName.child(contextName.asNameId()),
+                    superTypes = listOf(
+                        moduleDescriptor.findClassAcrossModuleDependencies(
+                            ClassId.topLevel(InjektFqNames.Context)
+                        )!!.defaultType.toTypeRef()
+                    )
+                ),
+                isContext = true
+            )
+        }
+
+        val factoryName = (contextType.classifier.fqName.pathSegments()
+            .joinToString("_") + "_${file.name.removeSuffix(".kt")}" +
+                "${callElement.startOffset}Factory")
+            .removeIllegalChars()
+            .asNameId()
+
+        val packageFqName = file.packageFqName
+
+        if (given<KtFileManager>().exists(
+                packageFqName, "$factoryName.kt"
+            )
+        ) return
+
+        val factoryFqName = packageFqName.child(factoryName)
+
+        val implFqName = if (isChild) null else
+            packageFqName.child((factoryName.asString() + "Impl").asNameId())
+
+        val typeParameters = if (!isChild) emptyList<ClassifierRef>()
+        else capturedTypeParameters.map { capturedTypeParameter ->
+            ClassifierRef(
+                fqName = factoryFqName.child(capturedTypeParameter.name),
+                superTypes = capturedTypeParameter.upperBounds.map { it.toTypeRef() },
+                isTypeParameter = true
+            )
+        }
+
+        val inputs = call.valueArguments
+            .entries
+            .single { it.key.name.asString() == "inputs" }
+            .value
             ?.let { it as VarargValueArgument }
             ?.arguments
             ?.map { it.getArgumentExpression()?.getType(given())!!.toTypeRef() }
             ?: emptyList()
 
-        val containingFile = call.call.callElement.containingKtFile
-
-        val callElement = call.call.callElement
-        val factoryName = (contextType.classifier.fqName.pathSegments()
-            .joinToString("_") + "_${callElement.containingKtFile.name.removeSuffix(".kt")}${callElement.startOffset}Factory")
-            .removeIllegalChars()
-            .asNameId()
-        val factoryFqName = containingFile.packageFqName.child(factoryName)
-
-        val implFqName = if (isChild) null else
-            containingFile.packageFqName.child((factoryName.asString() + "Impl").asNameId())
-
-        val typeParameters = if (!isChild) emptyList<ClassifierRef>()
-        else capturedTypeParameters.map {
-            ClassifierRef(
-                fqName = factoryFqName.child(it.name),
-                superTypes = it.upperBounds.map { it.toTypeRef() },
-                isTypeParameter = true
-            )
-        }
-
         val code = buildCodeString {
             emitLine("// injekt-generated")
-            emitLine("package ${containingFile.packageFqName}")
+            emitLine("package $packageFqName")
 
             if (isChild) {
                 emitLine("import com.ivianuu.injekt.internal.ChildContextFactory")
@@ -171,17 +226,19 @@ class ContextFactoryGenerator : Generator {
             }
         }
 
-        val factoryFile = fileManager.generateFile(
-            packageFqName = containingFile.packageFqName,
+        val factoryFile = given<KtFileManager>().generateFile(
+            packageFqName = packageFqName,
             fileName = "$factoryName.kt",
             code = code,
-            originatingFiles = listOf(File(callElement.containingKtFile.virtualFilePath))
+            originatingFiles = listOf(
+                File(file.virtualFilePath)
+            )
         )
 
         val factoryDescriptor = ContextFactoryDescriptor(
             factoryType = SimpleTypeRef(
                 classifier = ClassifierRef(
-                    containingFile.packageFqName.child(factoryName),
+                    packageFqName.child(factoryName),
                     typeParameters = typeParameters
                 ),
                 typeArguments = typeParameters.map { it.defaultType },
@@ -190,16 +247,20 @@ class ContextFactoryGenerator : Generator {
             contextType = contextType,
             inputTypes = inputs
         )
+        val declarationStore = given<DeclarationStore>()
         declarationStore.addInternalContextFactory(factoryDescriptor)
-        injektTrace.record(
+        given<InjektTrace>().record(
             InjektWritableSlices.CONTEXT_FACTORY,
-            filePositionOf(callElement.containingKtFile.virtualFilePath, callElement.startOffset),
+            filePositionOf(
+                file.virtualFilePath,
+                callElement.startOffset
+            ),
             factoryDescriptor
         )
         if (!isChild) {
             given<Indexer>().index(
                 path = rootFactoriesPath,
-                fqName = containingFile.packageFqName.child(factoryName),
+                fqName = packageFqName.child(factoryName),
                 type = "class",
                 originatingFiles = listOf(factoryFile)
             )
