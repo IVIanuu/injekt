@@ -23,16 +23,12 @@ import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.GivenSetDescriptor
 import com.ivianuu.injekt.compiler.generator.ReaderContextDescriptor
 import com.ivianuu.injekt.compiler.generator.TypeRef
-import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.render
-import com.ivianuu.injekt.compiler.generator.substitute
-import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 
 @Given
 class GivensGraph(private val owner: ContextImpl) {
@@ -50,8 +46,6 @@ class GivensGraph(private val owner: ContextImpl) {
         .mapIndexed { index, inputType -> InputGivenNode(inputType, "p$index", owner) }
         .groupBy { it.type }
 
-    private val givenSetGivens = mutableMapOf<TypeRef, MutableList<GivenNode>>()
-
     private val collections: GivenCollections = given(owner, parent?.collections)
 
     val resolvedGivens = mutableMapOf<TypeRef, GivenNode>()
@@ -68,74 +62,6 @@ class GivensGraph(private val owner: ContextImpl) {
 
     private val chain = mutableListOf<ChainElement>()
     private val checkedGivens = mutableSetOf<GivenNode>()
-
-    init {
-        val givenSets = inputs
-            .filter { it.isGivenSet }
-            .map { declarationStore.getGivenSetForType(it) }
-
-        fun GivenSetDescriptor.collectGivens(
-            parentCallable: CallableRef?,
-            parentAccessStatement: ContextStatement
-        ) {
-            val thisAccessStatement: ContextStatement = {
-                parentAccessStatement()
-                emit(".")
-                if (parentCallable != null) {
-                    emit("${parentCallable!!.name}")
-                    if (!parentCallable.isPropertyAccessor) {
-                        emit("()")
-                    }
-                } else {
-                    emit("p${inputs.indexOf(type)}")
-                }
-            }
-
-            for (callable in callables) {
-                when (callable.givenKind) {
-                    CallableRef.GivenKind.GIVEN -> {
-                        givenSetGivens.getOrPut(callable.type) { mutableListOf() } += CallableGivenNode(
-                            type = callable.type,
-                            rawType = callable.type,
-                            owner = owner,
-                            contexts = listOf(declarationStore.getReaderContextForCallable(callable)!!),
-                            origin = callable.fqName,
-                            external = callable.isExternal,
-                            targetContext = callable.targetContext,
-                            givenSetAccessStatement = thisAccessStatement,
-                            callable = callable
-                        )
-                    }
-                    CallableRef.GivenKind.GIVEN_MAP_ENTRIES -> {
-                        collections.addMapEntries(
-                            CallableWithReceiver(
-                                callable,
-                                thisAccessStatement
-                            )
-                        )
-                    }
-                    CallableRef.GivenKind.GIVEN_SET_ELEMENTS -> {
-                        collections.addSetElements(
-                            CallableWithReceiver(
-                                callable,
-                                thisAccessStatement
-                            )
-                        )
-                    }
-                    CallableRef.GivenKind.GIVEN_SET -> {
-                        declarationStore.getGivenSetForType(callable.type)
-                            .collectGivens(callable, thisAccessStatement)
-                    }
-                }.let {}
-            }
-        }
-
-        givenSets.forEach {
-            it.collectGivens(null) {
-                emit("this@${owner.name}")
-            }
-        }
-    }
 
     fun checkEntryPoints(entryPoints: List<ReaderContextDescriptor>) {
         entryPoints.forEach { check(it, true) }
@@ -325,7 +251,7 @@ class GivensGraph(private val owner: ContextImpl) {
             )
         }
 
-        if (type.isContext) {
+        /*if (type.isContext) {
             val contexts = mutableListOf<ReaderContextDescriptor>()
             this += CalleeContextGivenNode(
                 type = type,
@@ -341,7 +267,7 @@ class GivensGraph(private val owner: ContextImpl) {
                         )
 
                         val givenTypesWithStatements = declarationStore
-                            .getReaderContextByFqName(type.classifier.fqName)!!
+                            .getReaderInfoByFqName(type.classifier.fqName)!!
                             .givenTypes
                             .map {
                                 it to it.substitute(
@@ -378,7 +304,7 @@ class GivensGraph(private val owner: ContextImpl) {
                         }
                     } else {
                         check(
-                            declarationStore.getReaderContextByFqName(type.classifier.fqName)!!,
+                            declarationStore.getReaderInfoByFqName(type.classifier.fqName)!!,
                             false
                         )
                         return@CalleeContextGivenNode {
@@ -387,7 +313,7 @@ class GivensGraph(private val owner: ContextImpl) {
                     }
                 }
             )
-        }
+        }*/
 
         if (type.isChildContextFactory) {
             val existingFactories = mutableSetOf<TypeRef>()
@@ -415,7 +341,6 @@ class GivensGraph(private val owner: ContextImpl) {
             }
         }
 
-        givenSetGivens[type]?.let { this += it }
         this += declarationStore.givens(type)
             .filter { it.targetContext == null || it.targetContext == contextId }
             .map { callable ->
@@ -451,14 +376,6 @@ class GivenCollections(
     private val declarationStore = given<DeclarationStore>()
     private val givenSetMapEntries = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
     private val givenSetSetElements = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
-
-    fun addMapEntries(entries: CallableWithReceiver) {
-        givenSetMapEntries.getOrPut(entries.callable.type) { mutableListOf() } += entries
-    }
-
-    fun addSetElements(elements: CallableWithReceiver) {
-        givenSetSetElements.getOrPut(elements.callable.type) { mutableListOf() } += elements
-    }
 
     private val mapEntriesByType = mutableMapOf<TypeRef, List<CallableWithReceiver>>()
     private fun getMapEntries(type: TypeRef): List<CallableWithReceiver> {
@@ -514,7 +431,8 @@ class GivenCollections(
 
 @Reader
 private fun CallableRef.getContextWithCorrectType(type: TypeRef): ReaderContextDescriptor {
-    val tmpContext = given<DeclarationStore>().getReaderContextForCallable(this)!!
+    error("")
+    /*val tmpContext = given<DeclarationStore>().getReaderContextForCallable(this)!!
     return tmpContext.copy(
         type = tmpContext.type
             .substitute(
@@ -525,5 +443,5 @@ private fun CallableRef.getContextWithCorrectType(type: TypeRef): ReaderContextD
                     )
                     .toMap()
             )
-    )
+    )*/
 }

@@ -25,6 +25,11 @@ fun DeclarationDescriptor.getContextName(): Name {
     )
 }
 
+fun readerOverloadNameOf(
+    packageFqName: FqName,
+    fqName: FqName
+) = joinedNameOf(packageFqName, fqName)
+
 fun contextNameOf(
     packageFqName: FqName,
     fqName: FqName,

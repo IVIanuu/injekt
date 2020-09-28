@@ -40,11 +40,23 @@ data class CallableRef(
     val targetContext: TypeRef?,
     val givenKind: GivenKind,
     val isExternal: Boolean,
-    val isPropertyAccessor: Boolean
+    val isPropertyAccessor: Boolean,
+    val isSuspend: Boolean,
+    val isReader: Boolean,
+    val isComposable: Boolean,
+    val isInline: Boolean
 ) {
     enum class GivenKind {
-        GIVEN, GIVEN_MAP_ENTRIES, GIVEN_SET_ELEMENTS, GIVEN_SET
+        GIVEN, GIVEN_MAP_ENTRIES, GIVEN_SET_ELEMENTS
     }
+}
+
+enum class Modifier {
+    Inline,
+    Vararg,
+    Private,
+    Internal,
+    Protected
 }
 
 fun FunctionDescriptor.toCallableRef(): CallableRef {
@@ -79,7 +91,6 @@ fun FunctionDescriptor.toCallableRef(): CallableRef {
             hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect) -> CallableRef.GivenKind.GIVEN
             hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) -> CallableRef.GivenKind.GIVEN_MAP_ENTRIES
             hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) -> CallableRef.GivenKind.GIVEN_SET_ELEMENTS
-            hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSet) -> CallableRef.GivenKind.GIVEN_SET
             else -> error("Unexpected callable $this")
         },
         typeParameters = typeParameters.map { it.toClassifierRef() },
@@ -97,11 +108,9 @@ fun FunctionDescriptor.toCallableRef(): CallableRef {
 }
 
 data class ValueParameterRef(
+    val name: Name,
+    val isCrossline: Boolean,
+    val isNoinline: Boolean,
     val typeRef: TypeRef,
     val isExtensionReceiver: Boolean = false
-)
-
-data class GivenSetDescriptor(
-    val type: TypeRef,
-    val callables: List<CallableRef>
 )

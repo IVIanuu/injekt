@@ -25,9 +25,6 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
-import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
-import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.calls.callUtil.isCallableReference
@@ -39,7 +36,6 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 import org.jetbrains.kotlin.utils.addToStdlib.cast
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 @Given
 class ReaderChecker : CallChecker, DeclarationChecker {
@@ -161,12 +157,7 @@ class ReaderChecker : CallChecker, DeclarationChecker {
         if (resolvedCall.call.isCallableReference()) return
 
         val enclosingReaderContext = findEnclosingContext(context) {
-            if (it is AnonymousFunctionDescriptor) {
-                val name = it.findPsi()?.parent?.parent?.parent
-                    ?.safeAs<KtCallExpression>()?.calleeExpression?.text
-                if (name == "runReader") return@findEnclosingContext true
-            }
-            it.isReader(context.trace) || it.hasAnnotation(InjektFqNames.ContextImplMarker)
+            it.isReader(context.trace)
         }
 
         if (enclosingReaderContext == null) {

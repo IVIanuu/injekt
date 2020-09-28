@@ -9,7 +9,6 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.psi.KtClass
-import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
@@ -25,15 +24,6 @@ class GivenIndexingGenerator : Generator {
         files.forEach { file ->
             file.accept(
                 object : KtTreeVisitorVoid() {
-                    private var inGivenSet = false
-                    override fun visitClassOrObject(classOrObject: KtClassOrObject) {
-                        val previousInGivenSet = inGivenSet
-                        val descriptor = classOrObject.descriptor<ClassDescriptor>()
-                        inGivenSet = descriptor.hasAnnotation(InjektFqNames.GivenSet)
-                        super.visitClassOrObject(classOrObject)
-                        inGivenSet = previousInGivenSet
-                    }
-
                     override fun visitClass(klass: KtClass) {
                         super.visitClass(klass)
                         val descriptor = klass.descriptor<ClassDescriptor>()
@@ -56,54 +46,50 @@ class GivenIndexingGenerator : Generator {
 
                     override fun visitNamedFunction(function: KtNamedFunction) {
                         super.visitNamedFunction(function)
-                        if (!inGivenSet) {
-                            val descriptor = function.descriptor<FunctionDescriptor>()
-                            when {
-                                descriptor.hasAnnotation(InjektFqNames.Given) -> {
-                                    val returnType = descriptor.toCallableRef().type
-                                    indexer.index(
-                                        givensPathOf(returnType),
-                                        descriptor
-                                    )
-                                    declarationStore
-                                        .addInternalGiven(descriptor.toCallableRef())
-                                }
-                                descriptor.hasAnnotation(InjektFqNames.GivenMapEntries) -> {
-                                    val returnType = descriptor.toCallableRef().type
-                                    indexer.index(
-                                        givenMapEntriesPathOf(returnType),
-                                        descriptor
-                                    )
-                                    declarationStore
-                                        .addInternalGiven(descriptor.toCallableRef())
-                                }
-                                descriptor.hasAnnotation(InjektFqNames.GivenSetElements) -> {
-                                    val returnType = descriptor.toCallableRef().type
-                                    indexer.index(
-                                        givenSetElementsPathOf(returnType),
-                                        descriptor
-                                    )
-                                    declarationStore
-                                        .addInternalGiven(descriptor.toCallableRef())
-                                }
+                        val descriptor = function.descriptor<FunctionDescriptor>()
+                        when {
+                            descriptor.hasAnnotation(InjektFqNames.Given) -> {
+                                val returnType = descriptor.toCallableRef().type
+                                indexer.index(
+                                    givensPathOf(returnType),
+                                    descriptor
+                                )
+                                declarationStore
+                                    .addInternalGiven(descriptor.toCallableRef())
+                            }
+                            descriptor.hasAnnotation(InjektFqNames.GivenMapEntries) -> {
+                                val returnType = descriptor.toCallableRef().type
+                                indexer.index(
+                                    givenMapEntriesPathOf(returnType),
+                                    descriptor
+                                )
+                                declarationStore
+                                    .addInternalGiven(descriptor.toCallableRef())
+                            }
+                            descriptor.hasAnnotation(InjektFqNames.GivenSetElements) -> {
+                                val returnType = descriptor.toCallableRef().type
+                                indexer.index(
+                                    givenSetElementsPathOf(returnType),
+                                    descriptor
+                                )
+                                declarationStore
+                                    .addInternalGiven(descriptor.toCallableRef())
                             }
                         }
                     }
 
                     override fun visitProperty(property: KtProperty) {
                         super.visitProperty(property)
-                        if (!inGivenSet) {
-                            val descriptor = property.descriptor<VariableDescriptor>()
-                            if (descriptor is PropertyDescriptor &&
-                                descriptor.hasAnnotation(InjektFqNames.Given)
-                            ) {
-                                indexer.index(
-                                    givensPathOf(descriptor.type.toTypeRef()),
-                                    descriptor
-                                )
-                                declarationStore
-                                    .addInternalGiven(descriptor.getter!!.toCallableRef())
-                            }
+                        val descriptor = property.descriptor<VariableDescriptor>()
+                        if (descriptor is PropertyDescriptor &&
+                            descriptor.hasAnnotation(InjektFqNames.Given)
+                        ) {
+                            indexer.index(
+                                givensPathOf(descriptor.type.toTypeRef()),
+                                descriptor
+                            )
+                            declarationStore
+                                .addInternalGiven(descriptor.getter!!.toCallableRef())
                         }
                     }
                 }

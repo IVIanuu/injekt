@@ -19,16 +19,12 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
-import com.ivianuu.injekt.compiler.contextNameOf
-import com.ivianuu.injekt.compiler.getContextName
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.compiler.unsafeLazy
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.ClassId
@@ -36,7 +32,6 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 
 @Given(GenerationContext::class)
 class DeclarationStore {
@@ -187,23 +182,23 @@ class DeclarationStore {
             .filter { type.isAssignable(it.type) }
     }
 
-    private val internalRunReaderContexts = mutableMapOf<FqName, MutableSet<FqName>>()
-    fun addInternalRunReaderContext(
+    private val internalEntryPointsByContext = mutableMapOf<FqName, MutableSet<FqName>>()
+    fun addInternalEntryPoint(
         contextId: FqName,
-        blockContext: FqName
+        entryPoint: FqName
     ) {
-        internalRunReaderContexts.getOrPut(contextId) { mutableSetOf() } += blockContext
+        internalEntryPointsByContext.getOrPut(contextId) { mutableSetOf() } += entryPoint
     }
 
-    private val runReaderContexts = mutableMapOf<FqName, Set<FqName>>()
-    fun getRunReaderContexts(contextId: FqName): Set<FqName> {
-        return runReaderContexts.getOrPut(contextId) {
-            internalRunReaderContexts.getOrElse(contextId) { emptySet() } +
-                    indexer.classIndices(runReaderPathOf(contextId))
+    private val entryPointsByContext = mutableMapOf<FqName, Set<FqName>>()
+    fun getEntryPoints(contextId: FqName): Set<FqName> {
+        return entryPointsByContext.getOrPut(contextId) {
+            internalEntryPointsByContext.getOrElse(contextId) { emptySet() } +
+                    indexer.classIndices(entryPointPathOf(contextId))
                         .map {
-                            val runReaderCallAnnotation =
-                                it.annotations.findAnnotation(InjektFqNames.RunReaderCall)!!
-                            runReaderCallAnnotation.allValueArguments["blockContext".asNameId()]
+                            val entryPointAnnotation =
+                                it.annotations.findAnnotation(InjektFqNames.EntryPoint)!!
+                            entryPointAnnotation.allValueArguments["entryPoint".asNameId()]
                                 .let { it as KClassValue }
                                 .getArgumentType(moduleDescriptor)
                                 .toTypeRef()
@@ -213,27 +208,35 @@ class DeclarationStore {
         }
     }
 
-    val internalReaderContextsByFqName = mutableMapOf<FqName, ReaderContextDescriptor>()
-    private val readerContextsByFqName = mutableMapOf<FqName, ReaderContextDescriptor>()
-    fun getReaderContextForCallable(callableRef: CallableRef): ReaderContextDescriptor? {
-        return getReaderContextByFqName(
-            callableRef.packageFqName.child(
-                contextNameOf(
-                    packageFqName = callableRef.packageFqName,
-                    fqName = callableRef.fqName,
-                    uniqueKey = callableRef.uniqueKey
-                )
-            )
+    val internalInfosByFqName = mutableMapOf<FqName, ReaderInfo>()
+    private val readerContextsByFqName = mutableMapOf<FqName, ReaderInfo>()
+    fun getReaderContextForCallable(callableRef: CallableRef): ReaderInfo? {
+        return getReaderInfoByFqName(
+            callableRef.packageFqName,
+            callableRef.fqName
         )
     }
 
-    fun addInternalReaderContext(context: ReaderContextDescriptor) {
-        readerContextsByFqName[context.type.classifier.fqName] = context
-        internalReaderContextsByFqName[context.type.classifier.fqName] = context
+    fun addInternalReaderInfo(info: ReaderInfo) {
+        readerContextsByFqName[info.callable.fqName] = info
+        internalInfosByFqName[info.callable.fqName] = info
     }
 
-    fun getReaderContextByFqName(fqName: FqName): ReaderContextDescriptor? {
+    fun getReaderInfoByFqName(
+        packageFqName: FqName,
+        fqName: FqName
+    ): ReaderInfo? {
         readerContextsByFqName[fqName]?.let { return it }
+
+        val memberScope = indexer.getMemberScope(fqName.parent())!!
+
+        return null
+
+        /*return memberScope.getContributedDescriptors(DescriptorKindFilter.FUNCTIONS)
+            .filter { it.hasAnnotation(InjektFqNames.ReaderOverload) }
+            .filter {
+
+            }
 
         return moduleDescriptor.findClassAcrossModuleDependencies(
             ClassId.topLevel(fqName)
@@ -257,47 +260,14 @@ class DeclarationStore {
                     .filter { it.dispatchReceiverParameter?.type == classDescriptor.defaultType }
                     .map { it.returnType!!.toTypeRef() }
             }
-        }?.also { readerContextsByFqName[fqName] = it }
+        }?.also { readerContextsByFqName[fqName] = it }*/
     }
 
-    fun getReaderContextForDeclaration(declaration: DeclarationDescriptor): ReaderContextDescriptor? {
-        val contextFqName = declaration.findPackage().fqName.child(
-            declaration.getContextName()
+    fun getReaderInfoForDeclaration(declaration: DeclarationDescriptor): ReaderInfo? {
+        return getReaderInfoByFqName(
+            declaration.findPackage()!!.fqName,
+            declaration.fqNameSafe
         )
-        return getReaderContextByFqName(contextFqName)
-    }
-
-    private val givenSetsByType = mutableMapOf<TypeRef, GivenSetDescriptor>()
-    fun getGivenSetForType(type: TypeRef): GivenSetDescriptor {
-        return givenSetsByType.getOrPut(type) {
-            val descriptor = indexer.getMemberScope(type.classifier.fqName.parent())!!
-                .getContributedClassifier(
-                    type.classifier.fqName.shortName(),
-                    NoLookupLocation.FROM_BACKEND
-                )!! as ClassDescriptor
-            val members = descriptor.unsubstitutedMemberScope.getContributedDescriptors(
-                DescriptorKindFilter.CALLABLES
-            )
-            GivenSetDescriptor(
-                type = type,
-                callables = members
-                    .filter {
-                        it.hasAnnotationWithPropertyAndClass(
-                            InjektFqNames.Given
-                        ) || it.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) ||
-                                it.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) ||
-                                it.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSet)
-                    }
-                    .mapNotNull {
-                        when (it) {
-                            is PropertyDescriptor -> it.getter!!
-                            is FunctionDescriptor -> it
-                            else -> null
-                        }
-                    }
-                    .map { it.toCallableRef() }
-            )
-        }
     }
 
 }

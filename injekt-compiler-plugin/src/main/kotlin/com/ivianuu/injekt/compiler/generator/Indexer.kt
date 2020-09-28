@@ -211,8 +211,8 @@ fun givenSetElementsPathOf(type: TypeRef) = pathOf(
     "givensetelements", type.uniqueTypeName().asString()
 )
 
-fun runReaderPathOf(contextId: FqName) = pathOf(
-    "runreader", contextId.asString()
+fun entryPointPathOf(contextId: FqName) = pathOf(
+    "entrypoint", contextId.asString()
 )
 
 val rootFactoriesPath = pathOf("rootfactories")

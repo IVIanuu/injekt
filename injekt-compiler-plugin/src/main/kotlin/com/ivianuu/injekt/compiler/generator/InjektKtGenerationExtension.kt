@@ -68,12 +68,13 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
         val generationContext = analysisContext!!.runReader { childContext<GenerationContext>() }
 
         generationContext.runReader {
-            given<GivenIndexingGenerator>().generate(files)
+            given<ReaderOverloadGenerator>()
+            /*given<GivenIndexingGenerator>().generate(files)
             given<EffectGenerator>().generate(files)
             given<ContextFactoryGenerator>().generate(files)
             given<ReaderContextGenerator>().generate(files)
             given<RunReaderCallIndexingGenerator>().generate(files)
-            given<RootContextFactoryImplGenerator>().generate(files)
+            given<RootContextFactoryImplGenerator>().generate(files)*/
         }
 
         return AnalysisResult.RetryWithAdditionalRoots(

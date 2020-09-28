@@ -231,9 +231,6 @@ class EffectGenerator : Generator {
                                 emitLine("@com.ivianuu.injekt.GivenMapEntries")
                             CallableRef.GivenKind.GIVEN_SET_ELEMENTS ->
                                 emitLine("@com.ivianuu.injekt.GivenSetElements")
-                            CallableRef.GivenKind.GIVEN_SET -> {
-                                // todo
-                            }
                         }.let {}
 
                         emit("fun $name(): ${returnType.render()} ")
@@ -255,7 +252,6 @@ class EffectGenerator : Generator {
                                     givenMapEntriesPathOf(returnType)
                                 CallableRef.GivenKind.GIVEN_SET_ELEMENTS ->
                                     givenSetElementsPathOf(returnType)
-                                CallableRef.GivenKind.GIVEN_SET -> error("Unexpected given kind")
                             },
                             packageName.child(effectsName)
                                 .child(name),

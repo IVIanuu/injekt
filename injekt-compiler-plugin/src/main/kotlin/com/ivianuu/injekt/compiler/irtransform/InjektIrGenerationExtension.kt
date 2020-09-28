@@ -18,29 +18,24 @@ package com.ivianuu.injekt.compiler.irtransform
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.childContext
-import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runReader
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
-import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 
 @Given
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val trace: BindingTrace = DelegatingBindingTrace(pluginContext.bindingContext, "injekt")
+        /*val trace: BindingTrace = DelegatingBindingTrace(pluginContext.bindingContext, "injekt")
         childContext<IrContext>(moduleFragment, pluginContext, trace).runReader {
             bindFunctions()
             given<ReaderContextParamTransformer>().lower()
             given<ReaderCallTransformer>().lower()
             generateSymbols()
-        }
+        }*/
     }
 
 }

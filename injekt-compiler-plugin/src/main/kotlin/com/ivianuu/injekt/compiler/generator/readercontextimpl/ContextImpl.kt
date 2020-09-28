@@ -6,7 +6,6 @@ import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.render
-import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.name.Name
@@ -87,8 +86,8 @@ class ContextImpl(
 
     fun initialize() {
         val declarationStore = given<DeclarationStore>()
-        val entryPoints = declarationStore.getRunReaderContexts(contextId.classifier.fqName)
-            .map { declarationStore.getReaderContextByFqName(it)!! }
+        /*val entryPoints = declarationStore.getEntryPoints(contextId.classifier.fqName)
+            .map { declarationStore.getReaderInfoByFqName(it)!! }
             .map { entryPoint ->
                 // this is really naive and probably error prone
                 entryPoint.copy(
@@ -104,7 +103,7 @@ class ContextImpl(
                 )
             }
 
-        graph.checkEntryPoints(entryPoints)
+        graph.checkEntryPoints(entryPoints)*/
     }
 
     fun CodeBuilder.emit() {

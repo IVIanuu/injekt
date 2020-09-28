@@ -88,18 +88,13 @@ interface InjektErrors {
         )
 
         @JvmField
-        val EFFECT_WITHOUT_GIVEN_SET_COMPANION = error(
+        val EFFECT_WITHOUT_COMPANION = error(
             "@Effect annotated class needs a @GivenSet companion object"
         )
 
         @JvmField
         val EFFECT_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS = error(
             "@Effect functions cannot have value parameters"
-        )
-
-        @JvmField
-        val NOT_A_GIVEN_SET = error(
-            "Not a @GivenSet"
         )
 
         @JvmField

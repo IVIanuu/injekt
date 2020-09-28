@@ -30,13 +30,6 @@ annotation class Given(val scopeContext: KClass<out Context> = Nothing::class)
 @Reader
 fun <T> given(vararg arguments: Any?): T = injektIntrinsic()
 
-@Target(
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.CLASS,
-    AnnotationTarget.PROPERTY
-)
-annotation class GivenSet
-
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class GivenMapEntries(val targetContext: KClass<out Context> = Nothing::class)
 

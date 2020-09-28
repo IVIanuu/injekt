@@ -118,17 +118,17 @@ class RunReaderCallIndexingGenerator : Generator {
             .let { it as KtLambdaExpression }
             .functionLiteral
             .descriptor<FunctionDescriptor>()
-            .let { declarationStore.getReaderContextForDeclaration(it)!! }
+            .let { declarationStore.getReaderInfoForDeclaration(it)!! }
             .type
 
         declarationStore
-            .addInternalRunReaderContext(
+            .addInternalEntryPoint(
                 contextType.classifier.fqName,
                 blockContextType.classifier.fqName
             )
 
         indexer.index(
-            path = runReaderPathOf(contextType.classifier.fqName),
+            path = entryPointPathOf(contextType.classifier.fqName),
             fqName = file.packageFqName.child(
                 "runReaderCall${callElement.startOffset}".asNameId()
             ),
