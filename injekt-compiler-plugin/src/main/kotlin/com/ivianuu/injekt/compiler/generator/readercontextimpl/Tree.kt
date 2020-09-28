@@ -63,6 +63,7 @@ class ContextProperty(
 
 sealed class GivenNode {
     abstract val type: TypeRef
+    abstract val rawType: TypeRef
     abstract val owner: ContextImpl
     abstract val external: Boolean
     abstract val origin: FqName?
@@ -75,6 +76,8 @@ class SelfGivenNode(
     override val type: TypeRef,
     val context: ContextImpl
 ) : GivenNode() {
+    override val rawType: TypeRef
+        get() = type
     override val owner: ContextImpl get() = context
     override val external: Boolean get() = false
     override val origin: FqName? get() = null
@@ -89,6 +92,8 @@ class ChildContextGivenNode(
     override val origin: FqName?,
     val childFactoryImpl: ContextFactoryImpl
 ) : GivenNode() {
+    override val rawType: TypeRef
+        get() = type
     override val contexts: List<ReaderContextDescriptor>
         get() = emptyList()
     override val external: Boolean
@@ -106,6 +111,8 @@ class CalleeContextGivenNode(
     lazyCalleeContextStatement: () -> ContextStatement,
     private val lazyContexts: () -> List<ReaderContextDescriptor>
 ) : GivenNode() {
+    override val rawType: TypeRef
+        get() = type
     val calleeContextStatement by unsafeLazy(lazyCalleeContextStatement)
     override val contexts by unsafeLazy {
         calleeContextStatement
@@ -121,6 +128,7 @@ class CalleeContextGivenNode(
 
 class CallableGivenNode(
     override val type: TypeRef,
+    override val rawType: TypeRef,
     override val owner: ContextImpl,
     override val contexts: List<ReaderContextDescriptor>,
     override val origin: FqName?,
@@ -139,6 +147,8 @@ class InputGivenNode(
     val name: String,
     override val owner: ContextImpl
 ) : GivenNode() {
+    override val rawType: TypeRef
+        get() = type
     override val contexts: List<ReaderContextDescriptor>
         get() = emptyList()
     override val external: Boolean
@@ -157,6 +167,8 @@ class MapGivenNode(
     override val contexts: List<ReaderContextDescriptor>,
     val entries: List<CallableWithReceiver>
 ) : GivenNode() {
+    override val rawType: TypeRef
+        get() = type
     override val external: Boolean
         get() = false
     override val origin: FqName?
@@ -173,6 +185,8 @@ class SetGivenNode(
     override val contexts: List<ReaderContextDescriptor>,
     val elements: List<CallableWithReceiver>
 ) : GivenNode() {
+    override val rawType: TypeRef
+        get() = type
     override val external: Boolean
         get() = false
     override val origin: FqName?
@@ -192,6 +206,8 @@ class NullGivenNode(
     override val type: TypeRef,
     override val owner: ContextImpl
 ) : GivenNode() {
+    override val rawType: TypeRef
+        get() = type
     override val contexts: List<ReaderContextDescriptor>
         get() = emptyList()
     override val external: Boolean

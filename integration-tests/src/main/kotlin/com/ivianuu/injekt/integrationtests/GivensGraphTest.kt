@@ -221,7 +221,6 @@ class GivensGraphTest {
         listOf(
             source(
                 """
-                    // todo remove once reader vars are supported
                     var externalFooField: Foo? = null
                     @Given
                     val externalFoo: Foo get() = externalFooField!!
@@ -231,7 +230,6 @@ class GivensGraphTest {
         listOf(
             source(
                 """
-                    // todo remove once reader vars are supported
                     var internalFooField: Foo? = null
                     @Given
                     val internalFoo: Foo get() = internalFooField!!
@@ -338,4 +336,27 @@ class GivensGraphTest {
         val (context1, context2) = invokeSingleFile<Pair<TestContext, TestContext>>()
         assertSame(context1, context2)
     }
+
+    @Test
+    fun testPrefersMostSpecificType() = codegen(
+        """
+            class Dep<T>(val value: T)
+            
+            @Given
+            fun <T> genericDep(): Dep<T> = Dep(given())
+            
+            @Given
+            fun fooDep(): Dep<Foo> = Dep(given())
+            
+            @Given
+            fun foo() = Foo()
+            
+            fun invoke() {
+                runReader {
+                    given<Dep<Foo>>()
+                }
+            }
+        """
+    )
+
 }

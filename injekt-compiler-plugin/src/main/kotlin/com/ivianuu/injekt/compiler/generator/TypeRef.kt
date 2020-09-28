@@ -37,7 +37,11 @@ fun ClassifierDescriptor.toClassifierRef(): ClassifierRef {
     )
 }
 
-val ClassifierRef.defaultType: TypeRef get() = SimpleTypeRef(this)
+val ClassifierRef.defaultType: TypeRef
+    get() = SimpleTypeRef(
+        this,
+        typeArguments = typeParameters.map { it.defaultType }
+    )
 
 sealed class TypeRef {
     abstract val classifier: ClassifierRef

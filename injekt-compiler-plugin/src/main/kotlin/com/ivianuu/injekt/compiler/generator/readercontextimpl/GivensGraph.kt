@@ -96,6 +96,7 @@ class GivensGraph(private val owner: ContextImpl) {
                     CallableRef.GivenKind.GIVEN -> {
                         givenSetGivens.getOrPut(callable.type) { mutableListOf() } += CallableGivenNode(
                             type = callable.type,
+                            rawType = callable.type,
                             owner = owner,
                             contexts = listOf(declarationStore.getReaderContextForCallable(callable)!!),
                             origin = callable.fqName,
@@ -233,15 +234,21 @@ class GivensGraph(private val owner: ContextImpl) {
             .filter { it is InputGivenNode || it.givenSetAccessStatement != null }
 
         if (instanceAndGivenSetGivens.size > 1) {
-            error(
-                "Multiple givens found in inputs for '${type.render()}' at:\n${
-                    instanceAndGivenSetGivens
-                        .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
-                }"
-            )
+            val mostSpecific = instanceAndGivenSetGivens.mostSpecific(type)
+            if (mostSpecific != null) {
+                given = mostSpecific
+            } else {
+                error(
+                    "Multiple givens found in inputs for '${type.render()}' at:\n${
+                        instanceAndGivenSetGivens
+                            .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
+                    }"
+                )
+            }
+        } else {
+            given = instanceAndGivenSetGivens.singleOrNull()
         }
 
-        given = instanceAndGivenSetGivens.singleOrNull()
         given?.let {
             resolvedGivens[type] = it
             check(it)
@@ -255,15 +262,21 @@ class GivensGraph(private val owner: ContextImpl) {
             .partition { !it.external }
 
         if (internalGlobalGivens.size > 1) {
-            error(
-                "Multiple internal givens found for '${type.render()}' at:\n${
-                    internalGlobalGivens
-                        .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
-                }"
-            )
+            val mostSpecific = internalGlobalGivens.mostSpecific(type)
+            if (mostSpecific != null) {
+                given = mostSpecific
+            } else {
+                error(
+                    "Multiple internal givens found for '${type.render()}' at:\n${
+                        internalGlobalGivens
+                            .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
+                    }"
+                )
+            }
+        } else {
+            given = internalGlobalGivens.singleOrNull()
         }
 
-        given = internalGlobalGivens.singleOrNull()
         given?.let {
             resolvedGivens[type] = it
             check(it)
@@ -273,15 +286,21 @@ class GivensGraph(private val owner: ContextImpl) {
         }
 
         if (externalGlobalGivens.size > 1) {
-            error(
-                "Multiple external givens found for '${type.render()}' at:\n${
-                    externalGlobalGivens
-                        .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
-                }.\nPlease specify a given for the requested type in this project."
-            )
+            val mostSpecific = internalGlobalGivens.mostSpecific(type)
+            if (mostSpecific != null) {
+                given = mostSpecific
+            } else {
+                error(
+                    "Multiple external givens found for '${type.render()}' at:\n${
+                        externalGlobalGivens
+                            .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
+                    }.\nPlease specify a given for the requested type in this project."
+                )
+            }
+        } else {
+            given = externalGlobalGivens.singleOrNull()
         }
 
-        given = externalGlobalGivens.singleOrNull()
         given?.let {
             resolvedGivens[type] = it
             check(it)
@@ -402,6 +421,7 @@ class GivensGraph(private val owner: ContextImpl) {
             .map { callable ->
                 CallableGivenNode(
                     type = type,
+                    rawType = callable.type,
                     owner = owner,
                     contexts = listOf(callable.getContextWithCorrectType(type)),
                     external = callable.isExternal,
@@ -414,6 +434,9 @@ class GivensGraph(private val owner: ContextImpl) {
 
         this += collections.getNodes(type)
     }
+
+    private fun List<GivenNode>.mostSpecific(requested: TypeRef): GivenNode? =
+        singleOrNull { it.rawType == requested }
 
 }
 
