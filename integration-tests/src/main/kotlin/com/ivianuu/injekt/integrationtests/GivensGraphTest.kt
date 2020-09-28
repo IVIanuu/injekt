@@ -338,7 +338,7 @@ class GivensGraphTest {
     }
 
     @Test
-    fun testPrefersMostSpecificType() = codegen(
+    fun testPrefersExactType() = codegen(
         """
             class Dep<T>(val value: T)
             

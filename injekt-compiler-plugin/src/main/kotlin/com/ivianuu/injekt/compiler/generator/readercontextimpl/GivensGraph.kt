@@ -234,7 +234,7 @@ class GivensGraph(private val owner: ContextImpl) {
             .filter { it is InputGivenNode || it.givenSetAccessStatement != null }
 
         if (instanceAndGivenSetGivens.size > 1) {
-            val mostSpecific = instanceAndGivenSetGivens.mostSpecific(type)
+            val mostSpecific = instanceAndGivenSetGivens.getExact(type)
             if (mostSpecific != null) {
                 given = mostSpecific
             } else {
@@ -262,7 +262,7 @@ class GivensGraph(private val owner: ContextImpl) {
             .partition { !it.external }
 
         if (internalGlobalGivens.size > 1) {
-            val mostSpecific = internalGlobalGivens.mostSpecific(type)
+            val mostSpecific = internalGlobalGivens.getExact(type)
             if (mostSpecific != null) {
                 given = mostSpecific
             } else {
@@ -286,7 +286,7 @@ class GivensGraph(private val owner: ContextImpl) {
         }
 
         if (externalGlobalGivens.size > 1) {
-            val mostSpecific = internalGlobalGivens.mostSpecific(type)
+            val mostSpecific = internalGlobalGivens.getExact(type)
             if (mostSpecific != null) {
                 given = mostSpecific
             } else {
@@ -435,7 +435,7 @@ class GivensGraph(private val owner: ContextImpl) {
         this += collections.getNodes(type)
     }
 
-    private fun List<GivenNode>.mostSpecific(requested: TypeRef): GivenNode? =
+    private fun List<GivenNode>.getExact(requested: TypeRef): GivenNode? =
         singleOrNull { it.rawType == requested }
 
 }
