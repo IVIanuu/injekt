@@ -16,7 +16,3 @@ inline val pluginContext: IrPluginContext
 @Reader
 inline val irModule: IrModuleFragment
     get() = given()
-
-@Reader
-inline val injektSymbols: InjektSymbols
-    get() = given()

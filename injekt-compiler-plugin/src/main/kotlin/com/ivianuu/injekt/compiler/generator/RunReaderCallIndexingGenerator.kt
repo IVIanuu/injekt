@@ -24,7 +24,6 @@ import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import java.io.File
 
 @Given
 class RunReaderCallIndexingGenerator : Generator {
@@ -99,14 +98,7 @@ class RunReaderCallIndexingGenerator : Generator {
                         file.virtualFilePath,
                         callElement.startOffset
                     )
-            ]?.contextType ?: error(
-                "testtt access ${
-                    filePositionOf(
-                        file.virtualFilePath,
-                        callElement.startOffset
-                    )
-                }"
-            )
+            ]!!.contextType
         }
         val blockContextType = call.valueArguments
             .entries
@@ -137,8 +129,7 @@ class RunReaderCallIndexingGenerator : Generator {
             annotations = listOf(
                 InjektFqNames.RunReaderCall to
                         "@RunReaderCall(calleeContext = ${contextType.classifier.fqName}::class, blockContext = ${blockContextType.classifier.fqName}::class)"
-            ),
-            originatingFiles = listOf(File(file.virtualFilePath))
+            )
         )
     }
 

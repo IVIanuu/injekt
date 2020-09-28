@@ -1,9 +1,11 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.compiler.SrcDir
 import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import com.ivianuu.injekt.compiler.checkers.isMarkedAsReader
+import com.ivianuu.injekt.compiler.log
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -27,6 +29,7 @@ import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.upperIfFlexible
+import java.io.File
 import kotlin.math.absoluteValue
 
 @Reader
@@ -104,4 +107,22 @@ fun ClassDescriptor.getReaderConstructor(trace: BindingTrace): ConstructorDescri
         }?.let { return it }
     if (!isMarkedAsReader(trace)) return null
     return unsubstitutedPrimaryConstructor
+}
+
+@Reader
+fun generateFile(
+    packageFqName: FqName,
+    fileName: String,
+    code: String
+): File {
+    val newFile = given<SrcDir>()
+        .resolve(packageFqName.asString().replace(".", "/"))
+        .also { it.mkdirs() }
+        .resolve(fileName)
+
+    log { "generated file $packageFqName.$fileName $code" }
+
+    return newFile
+        .also { it.createNewFile() }
+        .also { it.writeText(code) }
 }

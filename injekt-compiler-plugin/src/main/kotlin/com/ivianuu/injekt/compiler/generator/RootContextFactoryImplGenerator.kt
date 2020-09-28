@@ -16,7 +16,6 @@ import org.jetbrains.kotlin.psi.namedDeclarationRecursiveVisitor
 class RootContextFactoryImplGenerator : Generator {
 
     private val declarationStore = given<DeclarationStore>()
-    private val fileManager = given<KtFileManager>()
 
     override fun generate(files: List<KtFile>) {
         var initTrigger: KtDeclaration? = null
@@ -73,11 +72,10 @@ class RootContextFactoryImplGenerator : Generator {
             with(factoryImpl) { emit() }
         }
 
-        fileManager.generateFile(
+        generateFile(
             packageFqName = descriptor.factoryImplFqName.parent(),
             fileName = "${descriptor.factoryImplFqName.shortName()}.kt",
-            code = code,
-            originatingFiles = emptyList()
+            code = code
         )
     }
 

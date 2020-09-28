@@ -50,30 +50,14 @@ open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
             kotlinCompilation.compilationName
         }
 
-        val baseSrcDir = project.buildDir.resolve("generated/source/injekt")
-        val cacheDir = project.buildDir.resolve("injekt/cache")
-        val resourcesDir = (if (variantData != null) {
-            project.buildDir.resolve("tmp/kotlin-classes/$sourceSetName")
-        } else {
-            project.buildDir.resolve("classes/kotlin/$sourceSetName")
-        }).also { it.mkdirs() }.absolutePath
+        val srcDir = project.buildDir.resolve("generated/source/injekt/$sourceSetName")
+            .also { it.mkdirs() }
+            .absolutePath
 
         return listOf(
             SubpluginOption(
                 key = "srcDir",
-                value = baseSrcDir.resolve(sourceSetName)
-                    .also { it.mkdirs() }
-                    .absolutePath
-            ),
-            SubpluginOption(
-                key = "resourcesDir",
-                value = resourcesDir
-            ),
-            SubpluginOption(
-                key = "cacheDir",
-                value = cacheDir.resolve(sourceSetName)
-                    .also { it.mkdirs() }
-                    .absolutePath
+                value = srcDir
             )
         )
     }

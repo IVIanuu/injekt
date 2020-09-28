@@ -4,25 +4,19 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.compiler.removeIllegalChars
-import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
-import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
-import java.io.File
 
-@Given(AnalysisContext::class)
+@Given(GenerationContext::class)
 class Indexer {
-
-    private val fileManager = given<KtFileManager>()
 
     private val classIndicesByPath = mutableMapOf<Path, List<ClassDescriptor>>()
     fun classIndices(path: Path) = classIndicesByPath.getOrPut(path) {
@@ -130,30 +124,26 @@ class Indexer {
         fqName: FqName,
         type: String,
         indexIsDeclaration: Boolean = false,
-        annotations: List<Pair<FqName, String>> = emptyList(),
-        originatingFiles: List<File>
+        annotations: List<Pair<FqName, String>> = emptyList()
     ) {
         val indexName = "${
             fqName.pathSegments()
                 .joinToString("_")
         }Index"
         val fileName = "$indexName.kt"
-        if (!fileManager.exists(path.fqName, fileName)) {
-            fileManager.generateFile(
-                path.fqName,
-                fileName,
-                buildCodeString {
-                    emitLine("// injekt-generated")
-                    emitLine("package ${path.fqName}")
-                    emitLine("import com.ivianuu.injekt.internal.Index")
-                    annotations.forEach { emitLine("import ${it.first}") }
-                    emitLine("@Index(type = \"$type\", fqName = \"$fqName\", indexIsDeclaration = $indexIsDeclaration)")
-                    annotations.forEach { emitLine(it.second) }
-                    emitLine("internal object $indexName")
-                },
-                originatingFiles
-            )
-        }
+        generateFile(
+            path.fqName,
+            fileName,
+            buildCodeString {
+                emitLine("// injekt-generated")
+                emitLine("package ${path.fqName}")
+                emitLine("import com.ivianuu.injekt.internal.Index")
+                annotations.forEach { emitLine("import ${it.first}") }
+                emitLine("@Index(type = \"$type\", fqName = \"$fqName\", indexIsDeclaration = $indexIsDeclaration)")
+                annotations.forEach { emitLine(it.second) }
+                emitLine("internal object $indexName")
+            }
+        )
     }
 
     fun index(
@@ -165,25 +155,22 @@ class Indexer {
                 .joinToString("_")
         }Index"
         val fileName = "$indexName.kt"
-        if (!fileManager.exists(path.fqName, fileName)) {
-            val type = when (declaration) {
-                is ClassDescriptor -> "class"
-                is FunctionDescriptor -> "function"
-                is PropertyDescriptor -> "property"
-                else -> error("Unsupported descriptor $declaration")
-            }
-            fileManager.generateFile(
-                path.fqName, fileName,
-                buildCodeString {
-                    emitLine("// injekt-generated")
-                    emitLine("package ${path.fqName}")
-                    emitLine("import com.ivianuu.injekt.internal.Index")
-                    emitLine("@Index(type = \"$type\", fqName = \"${declaration.fqNameSafe}\", indexIsDeclaration = false)")
-                    emitLine("internal object $indexName")
-                },
-                listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
-            )
+        val type = when (declaration) {
+            is ClassDescriptor -> "class"
+            is FunctionDescriptor -> "function"
+            is PropertyDescriptor -> "property"
+            else -> error("Unsupported descriptor $declaration")
         }
+        generateFile(
+            path.fqName, fileName,
+            buildCodeString {
+                emitLine("// injekt-generated")
+                emitLine("package ${path.fqName}")
+                emitLine("import com.ivianuu.injekt.internal.Index")
+                emitLine("@Index(type = \"$type\", fqName = \"${declaration.fqNameSafe}\", indexIsDeclaration = false)")
+                emitLine("internal object $indexName")
+            }
+        )
     }
 
 }

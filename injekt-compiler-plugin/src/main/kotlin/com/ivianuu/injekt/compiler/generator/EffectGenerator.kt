@@ -15,7 +15,6 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
@@ -25,13 +24,11 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
-import java.io.File
 
 @Given
 class EffectGenerator : Generator {
 
     private val declarationStore = given<DeclarationStore>()
-    private val fileManager = given<KtFileManager>()
     private val indexer = given<Indexer>()
     private val readerContextGenerator = given<ReaderContextGenerator>()
 
@@ -136,8 +133,7 @@ class EffectGenerator : Generator {
                     givensPathOf(aliasedType),
                     packageName.child(effectsName)
                         .child("aliasedGiven".asNameId()),
-                    "function",
-                    originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
+                    "function"
                 )
                 val aliasedGivenFqName =
                     packageName.child(effectsName).child("aliasedGiven".asNameId())
@@ -167,8 +163,7 @@ class EffectGenerator : Generator {
                         ),
                         callee = declaration,
                         calleeTypeArguments = emptyList(),
-                        origin = aliasedGivenFqName,
-                        originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
+                        origin = aliasedGivenFqName
                     )
                 )
 
@@ -259,8 +254,7 @@ class EffectGenerator : Generator {
                             },
                             packageName.child(effectsName)
                                 .child(name),
-                            "function",
-                            originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
+                            "function"
                         )
                         val effectFunctionFqName = packageName.child(effectsName).child(name)
                         val effectFunctionUniqueKey = uniqueFunctionKeyOf(
@@ -290,8 +284,7 @@ class EffectGenerator : Generator {
                                 callee = effectFunction,
                                 calleeTypeArguments = if (effectFunction.typeParameters.size == 1)
                                     listOf(aliasedType) else listOf(aliasedType, rawGivenType),
-                                origin = effectFunctionFqName,
-                                originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
+                                origin = effectFunctionFqName
                             )
                         )
                         declarationStore.addInternalGiven(
@@ -314,13 +307,10 @@ class EffectGenerator : Generator {
             }
         }
 
-        fileManager.generateFile(
+        generateFile(
             packageFqName = declaration.findPackage().fqName,
             fileName = "$effectsName.kt",
-            code = code,
-            originatingFiles = listOf(
-                File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath)
-            )
+            code = code
         )
     }
 

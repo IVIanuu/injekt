@@ -43,7 +43,7 @@ class DeclarationStore {
 
     private val indexer = given<Indexer>()
 
-    private val internalContextFactories = mutableMapOf<FqName, ContextFactoryDescriptor>()
+    val internalContextFactories = mutableMapOf<FqName, ContextFactoryDescriptor>()
     fun addInternalContextFactory(factory: ContextFactoryDescriptor) {
         internalContextFactories[factory.factoryType.classifier.fqName] = factory
     }
@@ -245,7 +245,6 @@ class DeclarationStore {
                     typeArguments = classDescriptor.defaultType
                         .arguments.map { it.type.toTypeRef(it.projectionKind) }
                 ),
-                originatingFiles = emptyList(),
                 origin = FqName(
                     classDescriptor.annotations.findAnnotation(InjektFqNames.Origin)!!
                         .allValueArguments["fqName".asNameId()]!!.value as String

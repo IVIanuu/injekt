@@ -19,16 +19,6 @@ class InjektCommandLineProcessor : CommandLineProcessor {
             optionName = "srcDir",
             valueDescription = "srcDir",
             description = "srcDir"
-        ),
-        CliOption(
-            optionName = "resourcesDir",
-            valueDescription = "resourcesDir",
-            description = "resourcesDir"
-        ),
-        CliOption(
-            optionName = "cacheDir",
-            valueDescription = "cacheDir",
-            description = "cacheDir"
         )
     )
 
@@ -39,31 +29,16 @@ class InjektCommandLineProcessor : CommandLineProcessor {
     ) {
         when (option.optionName) {
             "srcDir" -> configuration.put(SrcDirKey, value)
-            "resourcesDir" -> configuration.put(ResourcesDirKey, value)
-            "cacheDir" -> configuration.put(CacheDirKey, value)
         }
     }
 }
 
 val SrcDirKey = CompilerConfigurationKey<String>("srcDir")
-val ResourcesDirKey = CompilerConfigurationKey<String>("resourcesDir")
-val CacheDirKey = CompilerConfigurationKey<String>("cacheDir")
 
 typealias SrcDir = File
-typealias ResourcesDir = File
-typealias CacheDir = File
 
 object ConfigurationGivens {
     @Given(ApplicationContext::class)
     fun srcDir(): SrcDir = File(given<CompilerConfiguration>().getNotNull(SrcDirKey))
-        .also { it.mkdirs() }
-
-    @Given(ApplicationContext::class)
-    fun resourcesDir(): ResourcesDir =
-        File(given<CompilerConfiguration>().getNotNull(ResourcesDirKey))
-            .also { it.mkdirs() }
-
-    @Given(ApplicationContext::class)
-    fun cacheDir(): CacheDir = File(given<CompilerConfiguration>().getNotNull(CacheDirKey))
         .also { it.mkdirs() }
 }

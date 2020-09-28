@@ -16,7 +16,6 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
-import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
@@ -32,13 +31,11 @@ import org.jetbrains.kotlin.resolve.calls.model.VarargValueArgument
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
-import java.io.File
 
 @Given(GenerationContext::class)
 class ReaderContextGenerator : Generator {
 
     private val declarationStore = given<DeclarationStore>()
-    private val fileManager = given<KtFileManager>()
     private val promisedReaderContextDescriptor = mutableSetOf<PromisedReaderContextDescriptor>()
 
     override fun generate(files: List<KtFile>) {
@@ -58,8 +55,7 @@ class ReaderContextGenerator : Generator {
             .map { promised ->
                 ReaderContextDescriptor(
                     promised.type,
-                    promised.origin,
-                    promised.originatingFiles
+                    promised.origin
                 ).apply {
                     declarationStore.addInternalReaderContext(this)
                     givenTypes +=
@@ -124,11 +120,10 @@ class ReaderContextGenerator : Generator {
             }
         }
 
-        fileManager.generateFile(
+        generateFile(
             packageFqName = descriptor.type.classifier.fqName.parent(),
             fileName = "${descriptor.type.classifier.fqName.shortName()}.kt",
-            code = code,
-            originatingFiles = descriptor.originatingFiles
+            code = code
         )
     }
 
@@ -138,14 +133,12 @@ data class PromisedReaderContextDescriptor(
     val type: TypeRef,
     val callee: DeclarationDescriptor,
     val calleeTypeArguments: List<TypeRef>,
-    val origin: FqName,
-    val originatingFiles: List<File>
+    val origin: FqName
 )
 
 data class ReaderContextDescriptor(
     val type: TypeRef,
     val origin: FqName,
-    val originatingFiles: List<File>,
     val givenTypes: MutableSet<TypeRef> = mutableSetOf()
 )
 
@@ -256,8 +249,7 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
                 typeArguments = typeParameters.map { it.defaultType },
                 isContext = true
             ),
-            origin = declaration.fqNameSafe,
-            originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
+            origin = declaration.fqNameSafe
         )
 
         declarationStore.addInternalReaderContext(context)
