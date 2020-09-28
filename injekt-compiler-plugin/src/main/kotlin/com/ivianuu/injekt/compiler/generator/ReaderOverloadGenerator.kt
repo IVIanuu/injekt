@@ -22,11 +22,7 @@ import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
-import org.jetbrains.kotlin.resolve.calls.callUtil.getType
-import org.jetbrains.kotlin.resolve.calls.model.VarargValueArgument
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.replace
-import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import java.io.File
 
 @Given(GenerationContext::class)
@@ -193,7 +189,7 @@ class ReaderInfoCollector : KtTreeVisitorVoid() {
                 is PropertyDescriptor -> declaration.getter!!.toCallableRef()
                 else -> error("Unexpected declaration $declaration")
             },
-            originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
+            originatingFile = File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath)
         )
 
         declarationStore.addInternalReaderInfo(info)
@@ -283,22 +279,9 @@ class ReaderInfoGivensCollector(
         if (!resulting.isReader(given())) return
         when {
             resulting.fqNameSafe.asString() == "com.ivianuu.injekt.given" -> {
-                val arguments = resolvedCall.valueArguments.values
-                    .singleOrNull()
-                    ?.let { it as VarargValueArgument }
-                    ?.arguments
-                    ?.mapNotNull { it.getArgumentExpression()?.getType(given()) }
-                    ?: emptyList()
-                val rawType = resolvedCall.typeArguments.values.single()
-                val realType = when {
-                    arguments.isNotEmpty() -> moduleDescriptor.builtIns.getFunction(arguments.size)
-                        .defaultType
-                        .replace(
-                            newArguments = arguments.map { it.asTypeProjection() } + rawType.asTypeProjection()
-                        )
-                    else -> rawType
-                }
-                readerScope!!.recordGivenType(realType.toTypeRef())
+                readerScope!!.recordGivenType(
+                    resolvedCall.typeArguments.values.single().toTypeRef()
+                )
             }
             resulting.fqNameSafe.asString() == "com.ivianuu.injekt.childContext" -> {
                 val factoryDescriptor = injektTrace[

@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkers.getFunctionType
+import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -95,16 +96,30 @@ fun FunctionDescriptor.toCallableRef(): CallableRef {
         },
         typeParameters = typeParameters.map { it.toClassifierRef() },
         valueParameters = listOfNotNull(
-            extensionReceiverParameter?.type?.let {
+            extensionReceiverParameter?.let {
                 ValueParameterRef(
-                    KotlinTypeRef(it),
-                    true
+                    name = it.name,
+                    isCrossline = false,
+                    isNoinline = false,
+                    typeRef = it.type.toTypeRef(),
+                    isExtensionReceiver = true
                 )
             }
-        ) + valueParameters.map { ValueParameterRef(it.type.toTypeRef()) },
+        ) + valueParameters.map {
+            ValueParameterRef(
+                name = it.name,
+                isCrossline = false,
+                isNoinline = false,
+                typeRef = it.type.toTypeRef(),
+                isExtensionReceiver = true
+            )
+        },
         isPropertyAccessor = owner is PropertyDescriptor,
-        uniqueKey = owner.uniqueKey()
-    )
+        uniqueKey = owner.uniqueKey(),
+        isSuspend = isSuspend,
+        isReader = hasAnnotation(InjektFqNames.Reader),
+
+        )
 }
 
 data class ValueParameterRef(
