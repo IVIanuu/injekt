@@ -182,7 +182,7 @@ class ReaderContextParamTransformer : IrLowering {
 
         if (function.getContext() != null) return function
 
-        val context = getContextForDeclaration(function)!!
+        val context = getContextForDeclaration(function) ?: error("Null for $function")
         val transformedFunction = function.copyAsReader()
         transformedFunctions[function] = transformedFunction
         injektTrace.record(

@@ -213,11 +213,9 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
         fromRunReaderCall: Boolean = false
     ) {
         if (!declaration.isReader(given()) && !fromRunReaderCall) return
-        if (declarationStore
-                .getReaderContextForDeclaration(declaration) != null
-        ) return
         val contextName = declaration.getContextName()
         val contextFqName = declaration.findPackage().fqName.child(contextName)
+        if (declarationStore.internalReaderContextsByFqName[contextFqName] != null) return
 
         val typeParametersWithOrigin = (when (declaration) {
             is ClassifierDescriptorWithTypeParameters -> declaration.declaredTypeParameters
@@ -396,7 +394,8 @@ class ReaderContextGivensCollector(
             }
         }
 
-        readerScope!!.recordGivenType(givenType)
+        readerScope?.recordGivenType(givenType)
+            ?: error("Wtf $resolvedCall $resulting")
     }
 
 }

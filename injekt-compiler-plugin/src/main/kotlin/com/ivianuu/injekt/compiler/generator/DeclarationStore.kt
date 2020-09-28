@@ -233,11 +233,13 @@ class DeclarationStore {
     }
 
     fun getReaderContextByFqName(fqName: FqName): ReaderContextDescriptor? {
+        println("reader c by fq name $fqName have ? $readerContextsByFqName")
         readerContextsByFqName[fqName]?.let { return it }
 
         return moduleDescriptor.findClassAcrossModuleDependencies(
             ClassId.topLevel(fqName)
         )?.let { classDescriptor ->
+            println("got $classDescriptor ${classDescriptor.javaClass}")
             ReaderContextDescriptor(
                 type = SimpleTypeRef(
                     classifier = classDescriptor.toClassifierRef(),
@@ -254,7 +256,13 @@ class DeclarationStore {
                     .getContributedDescriptors(DescriptorKindFilter.FUNCTIONS)
                     .filterIsInstance<FunctionDescriptor>()
                     .filter { it.dispatchReceiverParameter?.type == classDescriptor.defaultType }
-                    .map { it.returnType!!.toTypeRef() }
+                    .map {
+                        internalReaderContextsByFqName[it.returnType!!.constructor.declarationDescriptor!!.fqNameSafe]
+                            ?.type
+                            ?: internalContextFactories[it.returnType!!.constructor.declarationDescriptor!!.fqNameSafe]
+                                ?.factoryType
+                            ?: it.returnType!!.toTypeRef()
+                    }
             }
         }?.also { readerContextsByFqName[fqName] = it }
     }

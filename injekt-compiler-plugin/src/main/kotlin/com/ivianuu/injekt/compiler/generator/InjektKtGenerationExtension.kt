@@ -7,16 +7,35 @@ import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
+import org.jetbrains.kotlin.container.ComponentProvider
+import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
+import java.io.File
 
 @Given
 class InjektKtGenerationExtension : AnalysisHandlerExtension {
 
     private var generatedCode = false
+
+    override fun doAnalysis(
+        project: Project,
+        module: ModuleDescriptor,
+        projectContext: ProjectContext,
+        files: Collection<KtFile>,
+        bindingTrace: BindingTrace,
+        componentProvider: ComponentProvider
+    ): AnalysisResult? {
+        files as ArrayList<KtFile>
+        if (!generatedCode) {
+            given<SrcDir>().deleteRecursively()
+            files.removeAll { !File(it.virtualFilePath).exists() }
+        }
+        return null
+    }
 
     override fun analysisCompleted(
         project: Project,
@@ -29,9 +48,6 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
             }
         ) return null
         generatedCode = true
-
-        given<SrcDir>()
-            .deleteRecursively()
 
         files as List<KtFile>
 

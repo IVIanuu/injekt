@@ -229,6 +229,8 @@ class GivensGraph(private val owner: ContextImpl) {
 
         val allGivens = givensForKey(type)
 
+        println("get given or null ${type.render()} ${type.isContext}")
+
         val instanceAndGivenSetGivens = allGivens
             .filter { it.type == type }
             .filter { it is InputGivenNode || it.givenSetAccessStatement != null }

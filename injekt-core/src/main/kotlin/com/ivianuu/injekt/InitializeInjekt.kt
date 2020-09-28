@@ -16,4 +16,5 @@
 
 package com.ivianuu.injekt
 
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class InitializeInjekt

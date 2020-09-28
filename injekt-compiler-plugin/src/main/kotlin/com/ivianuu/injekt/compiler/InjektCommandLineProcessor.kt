@@ -19,6 +19,11 @@ class InjektCommandLineProcessor : CommandLineProcessor {
             optionName = "srcDir",
             valueDescription = "srcDir",
             description = "srcDir"
+        ),
+        CliOption(
+            optionName = "cacheDir",
+            valueDescription = "cacheDir",
+            description = "cacheDir"
         )
     )
 
@@ -29,16 +34,23 @@ class InjektCommandLineProcessor : CommandLineProcessor {
     ) {
         when (option.optionName) {
             "srcDir" -> configuration.put(SrcDirKey, value)
+            "cacheDir" -> configuration.put(CacheDirKey, value)
         }
     }
 }
 
 val SrcDirKey = CompilerConfigurationKey<String>("srcDir")
+val CacheDirKey = CompilerConfigurationKey<String>("cacheDir")
 
 typealias SrcDir = File
+typealias CacheDir = File
 
 object ConfigurationGivens {
     @Given(ApplicationContext::class)
     fun srcDir(): SrcDir = File(given<CompilerConfiguration>().getNotNull(SrcDirKey))
+        .also { it.mkdirs() }
+
+    @Given(ApplicationContext::class)
+    fun cacheDir(): CacheDir = File(given<CompilerConfiguration>().getNotNull(CacheDirKey))
         .also { it.mkdirs() }
 }
