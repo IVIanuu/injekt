@@ -119,9 +119,6 @@ class SimpleTypeRef(
     }
 }
 
-fun TypeRef.makeNullable() = copy(isMarkedNullable = true)
-fun TypeRef.makeNotNull() = copy(isMarkedNullable = false)
-
 fun TypeRef.typeWith(typeArguments: List<TypeRef>): TypeRef = copy(typeArguments = typeArguments)
 
 fun TypeRef.copy(
