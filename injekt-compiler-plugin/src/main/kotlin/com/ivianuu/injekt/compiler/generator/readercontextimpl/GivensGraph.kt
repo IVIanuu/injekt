@@ -197,6 +197,7 @@ class GivensGraph(private val owner: ContextImpl) {
                 }
                 appendLine("No given found for '${type.render()}' in '${contextId.render()}':")
 
+                chain.push(ChainElement.Given(type))
                 chain.forEachIndexed { index, element ->
                     if (index == 0) {
                         appendLine("${indendation}runReader call '${element}'")
@@ -216,6 +217,7 @@ class GivensGraph(private val owner: ContextImpl) {
                     }
                     indent()
                 }
+                chain.pop()
             }
         )
     }
