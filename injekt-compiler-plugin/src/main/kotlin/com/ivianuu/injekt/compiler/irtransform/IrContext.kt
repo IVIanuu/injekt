@@ -6,8 +6,7 @@ import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 
-@Context
-interface IrContext
+interface IrContext : Context
 
 @Reader
 inline val pluginContext: IrPluginContext

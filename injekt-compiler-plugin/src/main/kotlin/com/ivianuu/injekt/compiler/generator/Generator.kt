@@ -7,5 +7,4 @@ interface Generator {
     fun generate(files: List<KtFile>)
 }
 
-@Context
-interface GenerationContext
+interface GenerationContext : Context
