@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.samples.android
 
-import android.app.Application
 import android.content.Context
 import androidx.work.Configuration
 import androidx.work.CoroutineWorker
@@ -26,7 +25,6 @@ import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.AndroidApplicationContext
 import com.ivianuu.injekt.android.work.GivenWorker
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runChildReader
 
 @GivenWorker
 class TestWorker(
@@ -40,13 +38,6 @@ class TestWorker(
 
     override suspend fun doWork(): Result = Result.success()
 
-}
-
-@Reader
-fun test(app: Application) {
-    runChildReader {
-        initializeWorkers()
-    }
 }
 
 @Reader
