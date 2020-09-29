@@ -37,7 +37,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         val trace: BindingTrace = DelegatingBindingTrace(pluginContext.bindingContext, "injekt")
         childContext<IrContext>(moduleFragment, pluginContext, trace).runReader {
             bindFunctions()
-            given<ReaderContextParamTransformer>().lower()
+            given<ReaderParamTransformer>().lower()
             given<ReaderCallTransformer>().lower()
             generateSymbols()
         }

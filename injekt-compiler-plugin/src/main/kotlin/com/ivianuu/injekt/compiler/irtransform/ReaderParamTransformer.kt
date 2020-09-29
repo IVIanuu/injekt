@@ -20,7 +20,7 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektTrace
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.checkers.isMarkedAsReader
-import com.ivianuu.injekt.compiler.getContextName
+import com.ivianuu.injekt.compiler.getSignatureName
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
@@ -65,7 +65,7 @@ import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 @Given(IrContext::class)
-class ReaderContextParamTransformer : IrLowering {
+class ReaderParamTransformer : IrLowering {
 
     private val injektTrace = given<InjektTrace>()
 
@@ -126,7 +126,7 @@ class ReaderContextParamTransformer : IrLowering {
 
         transformedClasses += clazz
 
-        val context = getContextForDeclaration(clazz)!!
+        val context = getSignatureForDeclaration(clazz)!!
         val contextParameter = readerConstructor.addValueParameter(
             "_context",
             context.typeWith(readerConstructor.typeParameters.map { it.defaultType })
@@ -182,7 +182,7 @@ class ReaderContextParamTransformer : IrLowering {
 
         if (function.getContext() != null) return function
 
-        val context = getContextForDeclaration(function)!!
+        val context = getSignatureForDeclaration(function)!!
         val transformedFunction = function.copyAsReader()
         transformedFunctions[function] = transformedFunction
         injektTrace.record(
@@ -274,9 +274,9 @@ class ReaderContextParamTransformer : IrLowering {
         }
     }
 
-    private fun getContextForDeclaration(owner: IrDeclarationWithName): IrClass? {
+    private fun getSignatureForDeclaration(owner: IrDeclarationWithName): IrClass? {
         return pluginContext.referenceClass(
-            owner.getPackageFragment()!!.fqName.child(owner.descriptor.getContextName())
+            owner.getPackageFragment()!!.fqName.child(owner.descriptor.getSignatureName())
         )?.owner
     }
 

@@ -5,9 +5,9 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkers.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
-import com.ivianuu.injekt.compiler.contextNameOf
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.compiler.joinedNameOf
+import com.ivianuu.injekt.compiler.signatureNameOf
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -152,7 +152,7 @@ class EffectGenerator : Generator {
                         type = SimpleTypeRef(
                             classifier = ClassifierRef(
                                 packageName.child(
-                                    contextNameOf(
+                                    signatureNameOf(
                                         packageFqName = packageName,
                                         fqName = aliasedGivenFqName,
                                         uniqueKey = aliasedGivenUniqueKey
@@ -272,7 +272,7 @@ class EffectGenerator : Generator {
                                 type = SimpleTypeRef(
                                     classifier = ClassifierRef(
                                         packageName.child(
-                                            contextNameOf(
+                                            signatureNameOf(
                                                 packageFqName = packageName,
                                                 fqName = effectFunctionFqName,
                                                 uniqueKey = effectFunctionUniqueKey

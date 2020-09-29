@@ -12,24 +12,24 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 fun <T> unsafeLazy(init: () -> T) = lazy(LazyThreadSafetyMode.NONE, init)
 
-fun DeclarationDescriptor.getContextName(): Name {
+fun DeclarationDescriptor.getSignatureName(): Name {
     val owner = when (this) {
         is ConstructorDescriptor -> constructedClass.original
         is PropertyAccessorDescriptor -> correspondingProperty.original
         else -> original
     }
-    return contextNameOf(
+    return signatureNameOf(
         owner.findPackage().fqName,
         owner.fqNameSafe,
         owner.uniqueKey()
     )
 }
 
-fun contextNameOf(
+fun signatureNameOf(
     packageFqName: FqName,
     fqName: FqName,
     uniqueKey: String
-) = (joinedNameOf(packageFqName, fqName).asString() + "${uniqueKey.hashCode()}__Context")
+) = (joinedNameOf(packageFqName, fqName).asString() + "${uniqueKey.hashCode()}__Signature")
     .removeIllegalChars()
     .asNameId()
 

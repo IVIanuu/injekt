@@ -5,7 +5,7 @@ import com.ivianuu.injekt.compiler.InjektTrace
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.checkers.isReader
 import com.ivianuu.injekt.compiler.filePositionOf
-import com.ivianuu.injekt.compiler.getContextName
+import com.ivianuu.injekt.compiler.getSignatureName
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -216,7 +216,7 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
         if (declarationStore
                 .getReaderContextForDeclaration(declaration) != null
         ) return
-        val contextName = declaration.getContextName()
+        val contextName = declaration.getSignatureName()
         val contextFqName = declaration.findPackage().fqName.child(contextName)
 
         val typeParametersWithOrigin = (when (declaration) {

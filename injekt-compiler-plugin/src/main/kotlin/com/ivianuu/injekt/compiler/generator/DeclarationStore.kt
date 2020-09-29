@@ -19,9 +19,9 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
-import com.ivianuu.injekt.compiler.contextNameOf
-import com.ivianuu.injekt.compiler.getContextName
+import com.ivianuu.injekt.compiler.getSignatureName
 import com.ivianuu.injekt.compiler.irtransform.asNameId
+import com.ivianuu.injekt.compiler.signatureNameOf
 import com.ivianuu.injekt.compiler.unsafeLazy
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
@@ -218,7 +218,7 @@ class DeclarationStore {
     fun getReaderContextForCallable(callableRef: CallableRef): ReaderContextDescriptor? {
         return getReaderContextByFqName(
             callableRef.packageFqName.child(
-                contextNameOf(
+                signatureNameOf(
                     packageFqName = callableRef.packageFqName,
                     fqName = callableRef.fqName,
                     uniqueKey = callableRef.uniqueKey
@@ -261,7 +261,7 @@ class DeclarationStore {
 
     fun getReaderContextForDeclaration(declaration: DeclarationDescriptor): ReaderContextDescriptor? {
         val contextFqName = declaration.findPackage().fqName.child(
-            declaration.getContextName()
+            declaration.getSignatureName()
         )
         return getReaderContextByFqName(contextFqName)
     }
