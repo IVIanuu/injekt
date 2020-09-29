@@ -170,6 +170,7 @@ class GivenStatements(
                     }
                 emitLine(" ->")
                 var assistedIndex = 0
+                var nonAssistedIndex = 0
                 emitCallableInvocation(
                     given.callable,
                     given.moduleAccessStatement,
@@ -180,7 +181,7 @@ class GivenStatements(
                             getGivenStatement(
                                 owner.graph.getGiven(
                                     GivenRequest(
-                                        parameter.type,
+                                        given.dependencies[nonAssistedIndex++].type,
                                         given.callable.fqName.child(parameter.name)
                                     )
                                 )
