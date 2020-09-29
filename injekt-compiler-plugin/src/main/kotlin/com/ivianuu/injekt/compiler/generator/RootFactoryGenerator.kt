@@ -4,6 +4,7 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentFactoryImpl
+import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.psi.KtFile
@@ -44,7 +45,7 @@ class RootFactoryGenerator : Generator {
             with(factoryImpl) { emit() }
         }
 
-        generateFile(
+        given<FileManager>().generateFile(
             packageFqName = descriptor.factoryType.classifier.fqName.parent(),
             fileName = "${factoryImplFqName.shortName()}.kt",
             code = code

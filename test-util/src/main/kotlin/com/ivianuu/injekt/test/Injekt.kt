@@ -24,47 +24,22 @@ class Baz(val bar: Bar, val foo: Foo)
 
 interface TestComponent
 
-/*
-@Component
-interface TestComponent2 {
-    @Component.Factory
-    interface Factory {
-        fun create(): TestComponent2
-    }
+interface TestComponent1<A> {
+    val a: A
 }
 
-@Component
-interface TestParentComponent {
-    @Component.Factory
-    interface Factory {
-        fun create(): TestParentComponent
-    }
+interface TestComponent2<A, B> {
+    val a: A
+    val b: B
 }
 
-@Component
-interface TestParentComponent2 {
-    @Component.Factory
-    interface Factory {
-        fun create(): TestParentComponent2
-    }
+interface TestParentComponent1<A> {
+    val a: A
 }
 
-@ChildComponent
-interface TestChildComponent {
-    @ChildComponent.Factory
-    interface Factory {
-        fun create(): TestChildComponent
-    }
+interface TestChildComponent2<A> {
+    val a: A
 }
-
-@ChildComponent
-interface TestChildComponent2 {
-    @ChildComponent.Factory
-    interface Factory {
-        fun create(): TestChildComponent2
-    }
-}
-*/
 
 interface Command
 

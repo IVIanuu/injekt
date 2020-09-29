@@ -48,12 +48,13 @@ class InjektKtGenerationExtension : PartialAnalysisHandlerExtension() {
                 bindingTrace.bindingContext
             ).runReader {
                 given<((FqName, String, String) -> Unit) -> FunctionAliasGenerator>().invoke { fqName, fileName, code ->
-                    val file = generateFile(fqName, fileName, code)
+                    val file = given<FileManager>().generateFile(fqName, fileName, code)
                     files += KtFile(
                         SingleRootFileViewProvider(
                             PsiManager.getInstance(project),
                             CoreLocalVirtualFile(
-                                CoreLocalFileSystem(), file
+                                CoreLocalFileSystem(),
+                                file
                             )
                         ),
                         false
@@ -81,16 +82,17 @@ class InjektKtGenerationExtension : PartialAnalysisHandlerExtension() {
 
         files as List<KtFile>
 
-        childContext<GenerationContext>(
+        val newFiles = childContext<GenerationContext>(
             module,
             bindingTrace,
             bindingTrace.bindingContext
         ).runReader {
             given<RootFactoryGenerator>().generate(files)
+            given<FileManager>().newFiles
         }
 
         return AnalysisResult.RetryWithAdditionalRoots(
-            bindingTrace.bindingContext, module, emptyList(), emptyList(), true
+            bindingTrace.bindingContext, module, emptyList(), newFiles, true
         )
     }
 

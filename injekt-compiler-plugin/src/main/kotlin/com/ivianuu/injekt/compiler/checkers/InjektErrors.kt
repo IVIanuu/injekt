@@ -45,6 +45,11 @@ InjektErrors {
         )
 
         @JvmField
+        val ABSTRACT_GIVEN_CLASS = error(
+            "@Given class cannot be abstract"
+        )
+
+        @JvmField
         val EITHER_CLASS_OR_CONSTRUCTOR_GIVEN = error(
             "Either the class or 1 constructor may be annotated with @Given"
         )

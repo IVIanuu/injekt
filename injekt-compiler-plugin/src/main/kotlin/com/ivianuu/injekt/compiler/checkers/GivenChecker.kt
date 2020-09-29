@@ -20,6 +20,7 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
@@ -27,7 +28,7 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 @Given
 class GivenChecker : DeclarationChecker {
 
-    // todo check top level || in object || in module
+    // todo check top level || in module
 
     override fun check(
         declaration: KtDeclaration,
@@ -65,6 +66,13 @@ class GivenChecker : DeclarationChecker {
         ) {
             context.trace.report(
                 InjektErrors.EITHER_CLASS_OR_CONSTRUCTOR_GIVEN
+                    .on(declaration)
+            )
+        }
+
+        if (descriptor.modality == Modality.ABSTRACT) {
+            context.trace.report(
+                InjektErrors.ABSTRACT_GIVEN_CLASS
                     .on(declaration)
             )
         }

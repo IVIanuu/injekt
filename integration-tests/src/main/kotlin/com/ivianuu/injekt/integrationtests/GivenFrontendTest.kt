@@ -44,7 +44,7 @@ class GivenFrontendTest {
         @Given interface Dep
     """
     ) {
-        assertCompileError("interface")
+        assertCompileError("abstract")
     }
 
     @Test

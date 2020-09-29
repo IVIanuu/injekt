@@ -18,9 +18,7 @@ import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
-data class FactoryDescriptor(
-    val factoryType: TypeRef,
-) {
+data class FactoryDescriptor(val factoryType: TypeRef) {
     val contextType = factoryType.expandedType!!.typeArguments.last()
     val inputTypes = factoryType.expandedType!!.typeArguments.dropLast(1)
 }
@@ -55,15 +53,9 @@ fun FunctionDescriptor.toCallableRef(): Callable {
         type = (if (allParameters.any { it.hasAnnotation(InjektFqNames.Assisted) })
             getGivenFunctionType() else returnType!!)
             .toTypeRef(),
-        targetComponent = (owner.annotations.findAnnotation(InjektFqNames.Given)
+        targetComponent = owner.annotations.findAnnotation(InjektFqNames.Given)
             ?.allValueArguments
-            ?.get("scopeContext".asNameId())
-            ?: owner.annotations.findAnnotation(InjektFqNames.GivenMapEntries)
-                ?.allValueArguments
-                ?.get("targetContext".asNameId())
-            ?: owner.annotations.findAnnotation(InjektFqNames.GivenSetElements)
-                ?.allValueArguments
-                ?.get("targetContext".asNameId()))
+            ?.get("scopeComponent".asNameId())
             ?.let { it as KClassValue }
             ?.getArgumentType(module)
             ?.toTypeRef(),

@@ -94,8 +94,9 @@ class KotlinTypeRef(
         finalType.arguments.map { it.type.toTypeRef(it.projectionKind) }
     }
     override val expandedType: TypeRef? by unsafeLazy {
-        (kotlinType.constructor?.declarationDescriptor as? TypeAliasDescriptor)
+        (kotlinType.constructor.declarationDescriptor as? TypeAliasDescriptor)
             ?.expandedType?.toTypeRef()
+            ?: kotlinType.getAbbreviatedType()?.expandedType?.toTypeRef()
     }
 }
 

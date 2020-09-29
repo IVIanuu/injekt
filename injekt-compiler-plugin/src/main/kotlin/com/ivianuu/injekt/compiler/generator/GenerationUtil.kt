@@ -2,10 +2,8 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.SrcDir
 import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
-import com.ivianuu.injekt.compiler.log
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -28,7 +26,6 @@ import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 import org.jetbrains.kotlin.types.upperIfFlexible
-import java.io.File
 
 @Reader
 fun <D : DeclarationDescriptor> KtDeclaration.descriptor() =
@@ -72,24 +69,6 @@ fun String.asNameId() = Name.identifier(this)
 
 fun FqName.toFactoryImplFqName() =
     FqName("${asString()}Impl")
-
-@Reader
-fun generateFile(
-    packageFqName: FqName,
-    fileName: String,
-    code: String,
-): File {
-    val newFile = given<SrcDir>()
-        .resolve(packageFqName.asString().replace(".", "/"))
-        .also { it.mkdirs() }
-        .resolve(fileName)
-
-    log { "generated file $packageFqName.$fileName $code" }
-
-    return newFile
-        .also { it.createNewFile() }
-        .also { it.writeText(code) }
-}
 
 fun <T> unsafeLazy(init: () -> T) = lazy(LazyThreadSafetyMode.NONE, init)
 
@@ -159,6 +138,14 @@ fun TypeRef.getAllCallables(): List<Callable> {
                     else -> null
                 }
             }
+            .map { callable ->
+                callable.copy(
+                    type = callable.type.substitute(substitutionMap),
+                    valueParameters = callable.valueParameters.map {
+                        it.copy(type = it.type.substitute(substitutionMap))
+                    }
+                )
+            }
 
         superTypes
             .map { it.substitute(substitutionMap) }
@@ -171,7 +158,10 @@ fun TypeRef.getAllCallables(): List<Callable> {
 }
 
 @Reader
-fun getFactoryForType(type: TypeRef): FactoryDescriptor = FactoryDescriptor(type)
+fun getFactoryForType(type: TypeRef): FactoryDescriptor {
+    println("factory for type ${type.render()} ${type.javaClass}")
+    return FactoryDescriptor(type)
+}
 
 @Reader
 fun getModuleForType(type: TypeRef): com.ivianuu.injekt.compiler.generator.ModuleDescriptor {

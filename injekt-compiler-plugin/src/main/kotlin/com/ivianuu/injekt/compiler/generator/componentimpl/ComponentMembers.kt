@@ -6,6 +6,7 @@ import com.ivianuu.injekt.compiler.generator.ClassifierRef
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
 import com.ivianuu.injekt.compiler.generator.TypeRef
+import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.name.FqName
@@ -53,6 +54,8 @@ class GivenStatements(private val owner: ComponentImpl) {
             return it
         }
 
+        println("given ${given.type.render()} ${given.targetComponent?.render()}")
+
         val rawStatement = if (given.owner != owner) {
             parent!!.getGivenStatement(given)
         } else {
@@ -71,7 +74,7 @@ class GivenStatements(private val owner: ComponentImpl) {
             given.owner != owner
         ) rawStatement else ({
             val property = ComponentProperty(
-                name = given.type.uniqueTypeName(),
+                name = "_${given.type.uniqueTypeName()}".asNameId(),
                 type = SimpleTypeRef(ClassifierRef(FqName("kotlin.Any")), isMarkedNullable = true),
                 initializer = { emit("this") },
                 isMutable = true,

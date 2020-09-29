@@ -231,6 +231,7 @@ class GivensGraph(private val owner: ComponentImpl) {
         given?.let {
             resolvedGivens[type] = it
             check(it)
+            (it as? ChildFactoryGivenNode)?.childFactoryImpl?.initialize()
             return it
         }
 

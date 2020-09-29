@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.TestComponent
 import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
@@ -34,10 +33,10 @@ class ComponentTest {
     @Test
     fun testMissingGivenFails() = codegen(
         """
-        class Dep()
-        fun invoke() {
-            rootContext<TestContext>().runReader { given<Dep>() }
-        }
+        class Dep
+        
+        @RootFactory
+        typealias MyFactory = () -> TestComponent1<Dep>
         """
     ) {
         assertInternalError("no given")
@@ -46,16 +45,17 @@ class ComponentTest {
     @Test
     fun testDeeplyMissingGivenFails() = codegen(
         """
+        @Module
+        object MyModule {
+            @Given
+            fun bar() = Bar(given())
     
-        @Given
-        fun bar() = Bar(given())
-    
-        @Given
-        fun baz() = Baz(given(), given())
-
-        fun invoke() {
-            rootContext<TestContext>().runReader { given<Baz>() }
+            @Given
+            fun baz() = Baz(given(), given())
         }
+        
+        @RootFactory
+        typealias MyFactory = (MyModule) -> TestComponent1<Baz>
         """
     ) {
         assertInternalError("no given")
@@ -259,16 +259,24 @@ class ComponentTest {
         assertNotSame(foo1, foo2)
     }
 
+    interface SelfComponent {
+        val self: SelfComponent
+    }
+
     @Test
-    fun testInjectingContext() = codegen(
+    fun testInjectingComponent() = codegen(
         """
-            fun invoke(): Pair<TestContext, TestContext> {
-                val context = rootContext<TestContext>()
-                return context to context.runReader { given<TestContext>() }
+            import com.ivianuu.injekt.integrationtests.ComponentTest.SelfComponent
+            
+            @RootFactory
+            typealias MyFactory = () -> SelfComponent
+            fun invoke(): Pair<SelfComponent, SelfComponent> {
+                val component = rootFactory<MyFactory>()()
+                return component to component.self
             }
         """
     ) {
-        val (context1, context2) = invokeSingleFile<Pair<TestComponent, TestComponent>>()
+        val (context1, context2) = invokeSingleFile<Pair<SelfComponent, SelfComponent>>()
         assertSame(context1, context2)
     }
 
