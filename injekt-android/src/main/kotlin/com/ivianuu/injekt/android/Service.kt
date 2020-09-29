@@ -17,30 +17,48 @@
 package com.ivianuu.injekt.android
 
 import android.app.Service
+import android.content.Context
 import android.content.res.Resources
-import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.childContext
-import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.merge.ApplicationComponent
+import com.ivianuu.injekt.merge.EntryPoint
+import com.ivianuu.injekt.merge.MergeComponent
+import com.ivianuu.injekt.merge.entryPoint
 
-interface ServiceContext : Context
+fun Service.createServiceComponent(): ServiceComponent {
+    return application.applicationComponent
+        .entryPoint<ServiceComponentEntryPoint>()
+        .serviceComponentFactory
+        .create(this)
+}
 
-fun Service.createServiceContext(): ServiceContext =
-    application.applicationReaderContext.runReader {
-        childContext(this)
+@MergeComponent
+interface ServiceComponent {
+    @MergeComponent.Factory
+    interface Factory {
+        fun create(service: Service): ServiceComponent
     }
+}
 
-typealias AndroidServiceContext = android.content.Context
+typealias ServiceContext = Context
 
 typealias ServiceResources = Resources
 
-object ServiceGivens {
+@Module(ServiceComponent::class)
+object ServiceModule {
 
     @Given
-    fun context(): AndroidServiceContext = given<Service>()
+    val Service.serviceContext: ServiceContext
+        get() = this
 
     @Given
-    fun resources(): ServiceResources = given<Service>().resources
+    val Service.serviceResources: ServiceResources
+        get() = resources
 
+}
+
+@EntryPoint(ApplicationComponent::class)
+interface ServiceComponentEntryPoint {
+    val serviceComponentFactory: ServiceComponent.Factory
 }

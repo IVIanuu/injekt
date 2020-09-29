@@ -17,15 +17,27 @@
 package com.ivianuu.injekt.android
 
 import androidx.activity.ComponentActivity
-import com.ivianuu.injekt.Context
-import com.ivianuu.injekt.childContext
-import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.merge.ApplicationComponent
+import com.ivianuu.injekt.merge.EntryPoint
+import com.ivianuu.injekt.merge.MergeComponent
+import com.ivianuu.injekt.merge.entryPoint
 
-interface RetainedActivityContext : Context
-
-val ComponentActivity.retainedActivityContext: RetainedActivityContext
+val ComponentActivity.retainedActivityComponent: RetainedActivityComponent
     get() = viewModelStore.singleton {
-        application.applicationReaderContext.runReader {
-            childContext()
-        }
+        application.applicationComponent.entryPoint<RetainedActivityComponentEntryPoint>()
+            .retainedActivityComponentFactory
+            .create()
     }
+
+@MergeComponent
+interface RetainedActivityComponent {
+    @MergeComponent.Factory
+    interface Factory {
+        fun create(): RetainedActivityComponent
+    }
+}
+
+@EntryPoint(ApplicationComponent::class)
+interface RetainedActivityComponentEntryPoint {
+    val retainedActivityComponentFactory: RetainedActivityComponent.Factory
+}

@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.TestContext
+import com.ivianuu.injekt.test.TestComponent
 import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
@@ -333,7 +333,7 @@ class GivensGraphTest {
             }
         """
     ) {
-        val (context1, context2) = invokeSingleFile<Pair<TestContext, TestContext>>()
+        val (context1, context2) = invokeSingleFile<Pair<TestComponent, TestComponent>>()
         assertSame(context1, context2)
     }
 

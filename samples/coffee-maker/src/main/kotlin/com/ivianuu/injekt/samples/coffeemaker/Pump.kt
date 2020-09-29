@@ -1,7 +1,6 @@
 package com.ivianuu.injekt.samples.coffeemaker
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.given
 
 interface Pump {
     fun pump()

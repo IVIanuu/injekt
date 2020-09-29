@@ -16,7 +16,8 @@
 
 package com.ivianuu.injekt.test
 
-import com.ivianuu.injekt.Context
+import com.ivianuu.injekt.ChildComponent
+import com.ivianuu.injekt.Component
 
 class Foo
 
@@ -24,17 +25,54 @@ class Bar(val foo: Foo)
 
 class Baz(val bar: Bar, val foo: Foo)
 
-interface TestContext : Context
+@Component
+interface TestComponent {
+    @Component.Factory
+    interface Factory {
+        fun create(): TestComponent
+    }
+}
 
-interface TestContext2 : Context
+@Component
+interface TestComponent2 {
+    @Component.Factory
+    interface Factory {
+        fun create(): TestComponent2
+    }
+}
 
-interface TestParentContext : Context
+@Component
+interface TestParentComponent {
+    @Component.Factory
+    interface Factory {
+        fun create(): TestParentComponent
+    }
+}
 
-interface TestParentContext2 : Context
+@Component
+interface TestParentComponent2 {
+    @Component.Factory
+    interface Factory {
+        fun create(): TestParentComponent2
+    }
+}
 
-interface TestChildContext : Context
+@ChildComponent
+interface TestChildComponent {
+    @ChildComponent.Factory
+    interface Factory {
+        fun create(): TestChildComponent
+    }
+}
 
-interface TestChildContext2 : Context
+@ChildComponent
+interface TestChildComponent2 {
+    @ChildComponent.Factory
+    interface Factory {
+        fun create(): TestChildComponent2
+    }
+}
+
 
 interface Command
 

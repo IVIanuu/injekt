@@ -23,6 +23,6 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
 
 dependencies {
-    api(project(":injekt-common"))
+    api(project(":injekt-core"))
     kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
 }

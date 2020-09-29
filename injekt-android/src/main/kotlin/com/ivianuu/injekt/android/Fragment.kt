@@ -21,22 +21,29 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
-import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.childContext
-import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.merge.EntryPoint
+import com.ivianuu.injekt.merge.MergeComponent
+import com.ivianuu.injekt.merge.entryPoint
 
-interface FragmentContext : Context
-
-val Fragment.fragmentContext: FragmentContext
+val Fragment.fragmentComponent: FragmentComponent
     get() = lifecycle.singleton {
-        activity!!.activityContext.runReader {
-            childContext(this)
-        }
+        activity!!.activityComponent
+            .entryPoint<FragmentComponentEntryPoint>()
+            .fragmentComponentFactory
+            .create(this)
     }
 
-typealias AndroidFragmentContext = android.content.Context
+@MergeComponent
+interface FragmentComponent {
+    @MergeComponent.Factory
+    interface Factory {
+        fun create(fragment: Fragment): FragmentComponent
+    }
+}
+
+typealias FragmentContext = android.content.Context
 
 typealias FragmentResources = Resources
 
@@ -46,21 +53,32 @@ typealias FragmentSavedStateRegistryOwner = SavedStateRegistryOwner
 
 typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
 
-object FragmentGivens {
+@Module(FragmentComponent::class)
+object FragmentModule {
 
     @Given
-    fun context(): AndroidFragmentContext = given<Fragment>().requireContext()
+    val Fragment.fragmentContext: FragmentContext
+        get() = requireContext()
 
     @Given
-    fun resources(): FragmentResources = given<AndroidFragmentContext>().resources
+    val FragmentContext.fragmentResources: FragmentResources
+        get() = resources
 
     @Given
-    fun lifecycleOwner(): FragmentLifecycleOwner = given<Fragment>()
+    val Fragment.fragmentLifecycleOwner: FragmentLifecycleOwner
+        get() = this
 
     @Given
-    fun savedStateRegistryOwner(): FragmentSavedStateRegistryOwner = given<Fragment>()
+    val Fragment.fragmentSavedStateRegistryOwner: FragmentSavedStateRegistryOwner
+        get() = this
 
     @Given
-    fun viewModelStoreOwner(): FragmentViewModelStoreOwner = given<Fragment>()
+    val Fragment.fragmentViewModelStoreOwner: FragmentViewModelStoreOwner
+        get() = this
 
+}
+
+@EntryPoint(FragmentComponent::class)
+interface FragmentComponentEntryPoint {
+    val fragmentComponentFactory: FragmentComponent.Factory
 }

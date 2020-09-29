@@ -3,43 +3,46 @@ package com.ivianuu.injekt.android
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
-import com.ivianuu.injekt.Effect
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenSet
-import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.given
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.merge.Effect
 import kotlin.reflect.KClass
 
 @Effect
 annotation class GivenActivityViewModel {
-    @GivenSet
+    @Module(ActivityComponent::class)
     companion object {
         @Given
-        inline fun <reified VM : S, reified S : ViewModel> viewModel(): S =
-            getViewModel<VM, S, ActivityViewModelStoreOwner>(S::class)
+        inline fun <reified VM : S, reified S : ViewModel> viewModel(
+            viewModelStoreOwner: FragmentViewModelStoreOwner,
+            noinline viewModelFactory: () -> VM,
+        ): S = getViewModel(viewModelStoreOwner, VM::class, viewModelFactory)
     }
 }
 
 @Effect
 annotation class GivenFragmentViewModel {
-    @GivenSet
+    @Module(FragmentComponent::class)
     companion object {
         @Given
-        inline fun <reified VM : S, reified S : ViewModel> viewModel(): S =
-            getViewModel<VM, S, FragmentViewModelStoreOwner>(S::class)
+        inline fun <reified VM : S, reified S : ViewModel> viewModel(
+            viewModelStoreOwner: ActivityViewModelStoreOwner,
+            noinline viewModelFactory: () -> VM,
+        ): S = getViewModel(viewModelStoreOwner, VM::class, viewModelFactory)
     }
 }
 
 @PublishedApi
-@Reader
-internal fun <VM : S, S : ViewModel, VMS : ViewModelStoreOwner> getViewModel(
-    viewModelClass: KClass<S>
+internal fun <VM : S, S : ViewModel> getViewModel(
+    viewModelStoreOwner: ViewModelStoreOwner,
+    viewModelClass: KClass<S>,
+    viewModelFactory: () -> S,
 ): S {
     return ViewModelProvider(
-        given<VMS>(),
+        viewModelStoreOwner,
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel?> create(modelClass: Class<T>): T {
-                return given<VM>() as T
+                return viewModelFactory() as T
             }
         }
     )[viewModelClass.java]

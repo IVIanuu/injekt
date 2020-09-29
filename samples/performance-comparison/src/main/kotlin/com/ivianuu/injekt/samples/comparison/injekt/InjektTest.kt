@@ -16,31 +16,24 @@
 
 package com.ivianuu.injekt.samples.comparison.injekt
 
-import com.ivianuu.injekt.ApplicationContext
-import com.ivianuu.injekt.InitializeInjekt
-import com.ivianuu.injekt.given
-import com.ivianuu.injekt.rootContext
-import com.ivianuu.injekt.runReader
 import com.ivianuu.injekt.samples.comparison.base.InjectionTest
-import com.ivianuu.injekt.samples.comparison.fibonacci.Fib8
 
-@InitializeInjekt
 object InjektTest : InjectionTest {
 
     override val name = "Injekt"
 
-    private var context: ApplicationContext? = null
+    private var component: InjektComponent? = null
 
     override fun setup() {
-        context = rootContext()
+        component = InjektComponentFactoryImpl.create()
     }
 
     override fun inject() {
-        context!!.runReader { given<Fib8>() }
+        component!!.fib8
     }
 
     override fun shutdown() {
-        context = null
+        component = null
     }
 
 }

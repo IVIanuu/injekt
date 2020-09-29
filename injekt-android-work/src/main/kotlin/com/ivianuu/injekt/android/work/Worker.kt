@@ -20,23 +20,25 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.Effect
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenMapEntries
-import com.ivianuu.injekt.GivenSet
-import com.ivianuu.injekt.given
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.merge.ApplicationComponent
+import com.ivianuu.injekt.merge.Effect
 import kotlin.reflect.KClass
 import kotlin.reflect.typeOf
 
 @Effect
 annotation class GivenWorker {
-    @GivenSet
+    @Module(ApplicationComponent::class)
     companion object {
         @GivenMapEntries
-        inline operator fun <reified T : (Context, WorkerParameters) -> ListenableWorker> invoke(): Workers {
+        inline operator fun <reified T : (Context, WorkerParameters) -> ListenableWorker> invoke(
+            factory: T,
+        ): Workers {
             val workerClass =
                 typeOf<T>().arguments.last().type!!.classifier as KClass<out ListenableWorker>
-            return mapOf(workerClass to given<T>())
+            return mapOf(workerClass to factory)
         }
     }
 }
@@ -44,13 +46,13 @@ annotation class GivenWorker {
 typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
 
 @Given
-class InjektWorkerFactory : WorkerFactory() {
+class InjektWorkerFactory(private val workers: Workers) : WorkerFactory() {
     override fun createWorker(
         appContext: Context,
         workerClassName: String,
-        workerParameters: WorkerParameters
+        workerParameters: WorkerParameters,
     ): ListenableWorker? {
-        return given<Workers>()[Class.forName(workerClassName).kotlin]?.invoke(
+        return workers[Class.forName(workerClassName).kotlin]?.invoke(
             appContext,
             workerParameters
         )
@@ -58,6 +60,7 @@ class InjektWorkerFactory : WorkerFactory() {
 
     companion object {
         @Given
-        fun workerFactory(): WorkerFactory = given<InjektWorkerFactory>()
+        val InjektWorkerFactory.workerFactory: WorkerFactory
+            get() = this
     }
 }

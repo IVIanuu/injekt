@@ -24,12 +24,14 @@ import androidx.compose.ui.platform.setContent
 import androidx.lifecycle.ViewModel
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.android.AndroidActivityContext
+import com.ivianuu.injekt.Assisted
+import com.ivianuu.injekt.GivenFun
+import com.ivianuu.injekt.android.ActivityComponent
+import com.ivianuu.injekt.android.ActivityContext
 import com.ivianuu.injekt.android.GivenActivityViewModel
-import com.ivianuu.injekt.android.activityContext
-import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.android.activityComponent
+import com.ivianuu.injekt.merge.EntryPoint
+import com.ivianuu.injekt.merge.entryPoint
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
@@ -38,7 +40,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            activityContext.runReader {
+            with(activityComponent.entryPoint<MainActivityDependencies>()) {
                 WithMainViewModel {
                     GlobalScope.launch {
                         enqueueWork()
@@ -50,15 +52,28 @@ class MainActivity : AppCompatActivity() {
 
 }
 
-@Reader
+@EntryPoint(ActivityComponent::class)
+interface MainActivityDependencies {
+    val WithMainViewModel: WithMainViewModel
+    val enqueueWork: enqueueWork
+}
+
+typealias WithMainViewModel = @Composable (@Composable (MainViewModel) -> Unit) -> Unit
+
+@GivenFun
 @Composable
-fun WithMainViewModel(children: @Composable (MainViewModel) -> Unit) {
-    val viewModel = remember { given<MainViewModel>() }
+fun WithMainViewModel(
+    viewModelFactory: () -> MainViewModel,
+    @Assisted children: @Composable (MainViewModel) -> Unit,
+) {
+    val viewModel = remember { viewModelFactory() }
     children(viewModel)
 }
 
-@Reader
-private fun enqueueWork(context: AndroidActivityContext = given()) {
+typealias enqueueWork = () -> Unit
+
+@GivenFun
+fun enqueueWork(context: ActivityContext) {
     WorkManager.getInstance(context)
         .enqueue(
             OneTimeWorkRequestBuilder<TestWorker>()

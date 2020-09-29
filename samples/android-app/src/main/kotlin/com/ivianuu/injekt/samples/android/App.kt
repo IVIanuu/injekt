@@ -17,18 +17,26 @@
 package com.ivianuu.injekt.samples.android
 
 import android.app.Application
-import com.ivianuu.injekt.InitializeInjekt
-import com.ivianuu.injekt.android.applicationReaderContext
-import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.android.applicationComponent
+import com.ivianuu.injekt.merge.ApplicationComponent
+import com.ivianuu.injekt.merge.EntryPoint
+import com.ivianuu.injekt.merge.GenerateMergeComponents
+import com.ivianuu.injekt.merge.entryPoint
 
-@InitializeInjekt
+@GenerateMergeComponents
 class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        applicationReaderContext.runReader {
+        with(applicationComponent.entryPoint<ApplicationDependencies>()) {
             initializeWorkers()
             refreshRepo()
         }
     }
+}
+
+@EntryPoint(ApplicationComponent::class)
+interface ApplicationDependencies {
+    val initializeWorkers: initializeWorkers
+    val refreshRepo: refreshRepo
 }

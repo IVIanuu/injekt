@@ -17,15 +17,12 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
-import com.ivianuu.injekt.ApplicationContext
 import com.ivianuu.injekt.InitializeInjekt
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.checkers.InjektStorageContainerContributor
 import com.ivianuu.injekt.compiler.generator.InjektKtGenerationExtension
 import com.ivianuu.injekt.compiler.irtransform.InjektIrGenerationExtension
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.rootContext
-import com.ivianuu.injekt.runReader
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.ExtensionPointName
@@ -44,9 +41,9 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project: MockProject,
         configuration: CompilerConfiguration
     ) {
-        rootContext<ApplicationContext>(project as Project, configuration).runReader {
+        /*rootContext<ApplicationContext>(project as Project, configuration).runReader {
             registerExtensions(project)
-        }
+        }*/
     }
 
     @Reader

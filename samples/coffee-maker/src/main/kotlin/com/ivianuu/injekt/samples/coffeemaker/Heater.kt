@@ -1,6 +1,6 @@
 package com.ivianuu.injekt.samples.coffeemaker
 
-import com.ivianuu.injekt.ApplicationContext
+import com.ivianuu.injekt.ApplicationContainer
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.given
 
@@ -10,7 +10,7 @@ interface Heater {
     val isHot: Boolean
 }
 
-@Given(ApplicationContext::class)
+@Given(ApplicationContainer::class)
 class ElectricHeater : Heater {
     private var heating: Boolean = false
 
