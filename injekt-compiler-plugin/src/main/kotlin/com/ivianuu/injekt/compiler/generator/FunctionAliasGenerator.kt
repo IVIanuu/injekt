@@ -62,7 +62,7 @@ class FunctionAliasGenerator(
                     .map { it.typeReference!!.text }
                 val returnType = function.typeReference?.text
                     ?: if (function.hasBlockBody()) "Unit" else error(
-                        "@Given function must have a block body"
+                        "@Given function must have a block body ${function.text}"
                     )
 
                 emitLine("@com.ivianuu.injekt.internal.FunctionAlias")

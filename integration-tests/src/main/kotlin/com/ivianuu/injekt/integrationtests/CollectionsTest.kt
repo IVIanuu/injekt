@@ -119,9 +119,8 @@ class CollectionsTest {
     @Test
     fun testUndeclaredMap() = codegen(
         """
-        fun invoke(): Map<KClass<out Command>, Command> {
-            return rootContext<TestContext>().runReader { given<Map<KClass<out Command>, Command>>() }
-        }
+            @RootFactory
+            typealias MyFactory = () -> TestComponent1<Map<KClass<out Command>, Command>>
         """
     ) {
         assertInternalError("no given")
@@ -215,9 +214,8 @@ class CollectionsTest {
     @Test
     fun testUndeclaredSet() = codegen(
         """
-        fun invoke(): Set<Command> {
-            return rootContext<TestContext>().runReader { given<Set<Command>>() }
-        }
+            @RootFactory
+            typealias MyFactory = () -> TestComponent1<Set<Command>>
         """
     ) {
         assertInternalError("no given")

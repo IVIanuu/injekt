@@ -48,40 +48,14 @@ class ComponentTest {
         @Module
         object MyModule {
             @Given
-            fun bar() = Bar(given())
+            fun bar(foo: Foo) = Bar(foo)
     
             @Given
-            fun baz() = Baz(given(), given())
+            fun baz(bar: Bar, foo: Foo) = Baz(bar, foo)
         }
         
         @RootFactory
         typealias MyFactory = (MyModule) -> TestComponent1<Baz>
-        """
-    ) {
-        assertInternalError("no given")
-    }
-
-    @Test
-    fun testMissingGivenFails2() = codegen(
-        """
-        @Reader
-        fun a() {
-            b()
-        }
-        
-        @Reader
-        fun b() {
-            c()
-        }
-        
-        @Reader
-        fun c() {
-            given<Any>()
-        }
-        
-        fun invoke() {
-            rootContext<TestContext>().runReader { a() }
-        }
         """
     ) {
         assertInternalError("no given")
@@ -155,12 +129,14 @@ class ComponentTest {
     @Test
     fun testIgnoresNullability() = codegen(
         """
-        @Given fun foo(): Foo = Foo()
-        @Given fun nullableFoo(): Foo? = null
-
-        fun invoke() { 
-            rootContext<TestContext>().runReader { given<Foo>() to given<Foo?>() }
-        }
+            @Module
+            object FooModule { 
+                @Given fun foo(): Foo = Foo()
+                @Given fun nullableFoo(): Foo? = null
+            }
+            
+            @RootFactory
+            typealias MyFactory = (FooModule) -> TestComponent1<Foo>
     """
     ) {
         assertInternalError("multiple")
@@ -192,12 +168,9 @@ class ComponentTest {
 
     @Test
     fun testTypeWithStarProjectedArg() = codegen(
-        """
-        @Given fun list(): List<*> = emptyList<Any?>()
-        
-        fun invoke() { 
-            rootContext<TestContext>().runReader { given<List<*>>() }
-        }
+        """ 
+            @RootFactory
+            typealias MyFactory = (List<*>) -> TestComponent1<List<*>>
     """
     )
 
@@ -230,12 +203,14 @@ class ComponentTest {
     @Test
     fun testDuplicatedGivensFails() = codegen(
         """
-        @Given fun foo1() = Foo()
-        @Given fun foo2() = Foo()
-        
-        fun invoke() {
-            rootContext<TestContext>().runReader { given<Foo>() }
-        }
+            @Module
+            object FooModule {
+                @Given fun foo1() = Foo()
+                @Given fun foo2() = Foo()
+            }
+            
+            @RootFactory
+            typealias MyFactory = (FooModule) -> TestComponent1<Foo>
         """
     ) {
         assertInternalError("multiple internal givens")
