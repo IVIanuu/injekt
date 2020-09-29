@@ -201,9 +201,9 @@ class ReaderContextTest {
             class AnnotatedBar(@Assisted foo: Foo)
             
             @RootFactory
-            typealias MyFactory = (BarModule) -> TestComponent1<(Foo) -> AnnotatedBar>
+            typealias MyFactory = () -> TestComponent1<(Foo) -> AnnotatedBar>
 
-            fun invoke(foo: Foo): Bar = rootFactory<MyFactory>()().a(foo)
+            fun invoke(foo: Foo): AnnotatedBar = rootFactory<MyFactory>()().a(foo)
     """
     ) {
         invokeSingleFile(Foo())

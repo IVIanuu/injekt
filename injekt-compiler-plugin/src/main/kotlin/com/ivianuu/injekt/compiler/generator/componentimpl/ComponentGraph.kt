@@ -235,8 +235,9 @@ class GivensGraph(private val owner: ComponentImpl) {
             return it
         }
 
-        if (type.isGiven) {
-            given = type.classifier.fqName.asClassDescriptor()!!
+        if (type.isGiven || type.typeArguments.lastOrNull()?.isGiven == true) {
+            val givenType = if (type.isGiven) type else type.typeArguments.last()
+            given = givenType.classifier.fqName.asClassDescriptor()!!
                 .getGivenConstructor()!!
                 .toCallableRef()
                 .let { callable ->
