@@ -68,7 +68,7 @@ class ComponentTest {
         @GivenSetElements fun setB() = setOf(0)
         
         fun invoke(): Pair<Set<String>, Set<Int>> {
-            return rootContext<TestContext>().runReader { given<Set<String>>() to given<Set<Int>>() }
+            return rootFactory<TestContext>().runReader { given<Set<String>>() to given<Set<Int>>() }
         }
     """
     ) {
@@ -86,7 +86,7 @@ class ComponentTest {
         @Given fun foo2(): Foo2 = Foo()
         
         fun invoke(): Pair<Foo, Foo> {
-            return rootContext<TestContext>().runReader { given<Foo1>() to given<Foo2>() }
+            return rootFactory<TestContext>().runReader { given<Foo1>() to given<Foo2>() }
         }
     """
     ) {
@@ -116,7 +116,7 @@ class ComponentTest {
             source(
                 """
                 fun invoke(): Pair<Foo, Foo> {
-                    return rootContext<TestContext>().runReader { given<Foo1>() to given<Foo2>() }
+                    return rootFactory<TestContext>().runReader { given<Foo1>() to given<Foo2>() }
                 } 
             """, name = "File.kt"
             )
@@ -148,7 +148,7 @@ class ComponentTest {
         @Given fun foo(): Foo = Foo()
 
         fun invoke(): Foo? { 
-            return rootContext<TestContext>().runReader { given<Foo?>() }
+            return rootFactory<TestContext>().runReader { given<Foo?>() }
         }
         """
     ) {
@@ -159,7 +159,7 @@ class ComponentTest {
     fun testReturnsNullOnMissingNullableGiven() = codegen(
         """
         fun invoke(): Foo? { 
-            return rootContext<TestContext>().runReader { given<Foo?>() }
+            return rootFactory<TestContext>().runReader { given<Foo?>() }
         }
         """
     ) {
@@ -181,7 +181,7 @@ class ComponentTest {
             fun provideFoo() = Foo()
             
             fun invoke(foo: Foo): Foo {
-                return rootContext<TestContext>(foo).runReader { given() }
+                return rootFactory<TestContext>(foo).runReader { given() }
             }
         """
     ) {
@@ -193,7 +193,7 @@ class ComponentTest {
     fun testDuplicatedInputsFails() = codegen(
         """
         fun invoke() {
-            rootContext<TestContext>(Foo(), Foo()).runReader { given<Foo>() }
+            rootFactory<TestContext>(Foo(), Foo()).runReader { given<Foo>() }
         }
         """
     ) {
@@ -222,7 +222,7 @@ class ComponentTest {
         @Given(TestParentContext::class) fun parentFoo() = Foo()
         @Given(TestChildContext::class) fun childFoo() = Foo()
         fun invoke(): Pair<Foo, Foo> {
-            return rootContext<TestParentContext>().runReader {
+            return rootFactory<TestParentContext>().runReader {
                 given<Foo>() to childContext<TestChildContext>().runReader {
                     given<Foo>()
                 }

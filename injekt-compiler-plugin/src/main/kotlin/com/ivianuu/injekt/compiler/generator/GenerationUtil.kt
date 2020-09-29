@@ -149,7 +149,6 @@ fun TypeRef.getAllCallables(module: ModuleDescriptor): List<Callable> {
 }
 
 fun getFactoryForType(type: TypeRef): FactoryDescriptor {
-    println("factory for type ${type.render()} ${type.javaClass}")
     return FactoryDescriptor(type)
 }
 

@@ -57,8 +57,6 @@ class GivenStatements(
             return it
         }
 
-        println("given ${given.type.render()} ${given.targetComponent?.render()}")
-
         val rawStatement = if (given.owner != owner) {
             parent!!.getGivenStatement(given)
         } else {

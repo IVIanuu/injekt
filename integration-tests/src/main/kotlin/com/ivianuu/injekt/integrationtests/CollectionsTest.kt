@@ -45,7 +45,7 @@ class CollectionsTest {
         fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
      
         fun invoke(): Map<KClass<out Command>, Command> {
-            return rootContext<TestContext>().runReader { given<Map<KClass<out Command>, Command>>() }
+            return rootFactory<TestContext>().runReader { given<Map<KClass<out Command>, Command>>() }
         }
         """
     ) {
@@ -72,7 +72,7 @@ class CollectionsTest {
         fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
      
         fun invoke(): Pair<Map<KClass<out Command>, Command>, Map<KClass<out Command>, Command>> {
-            return rootContext<TestParentContext>().runReader { 
+            return rootFactory<TestParentContext>().runReader { 
                 given<Map<KClass<out Command>, Command>>() to childContext<TestChildContext>().runReader {
                     given<Map<KClass<out Command>, Command>>()
                 }
@@ -105,7 +105,7 @@ class CollectionsTest {
         fun commandBIntoMap(): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandB::class to given<(String) -> CommandB>())
 
         fun invoke(): Map<KClass<out Command>, (String) -> Command> {
-            return rootContext<TestContext>().runReader { given<Map<KClass<out Command>, (String) -> Command>>() }
+            return rootFactory<TestContext>().runReader { given<Map<KClass<out Command>, (String) -> Command>>() }
         }
         """
     ) {
@@ -142,7 +142,7 @@ class CollectionsTest {
         fun commandBIntoSet(): Set<Command> = setOf(given<CommandB>())
 
         fun invoke(): Set<Command> {
-            return rootContext<TestContext>().runReader { given<Set<Command>>() }
+            return rootFactory<TestContext>().runReader { given<Set<Command>>() }
         }
         """
     ) {
@@ -168,7 +168,7 @@ class CollectionsTest {
         fun commandBIntoSet(): Set<Command> = setOf(given<CommandB>())
 
         fun invoke(): Pair<Set<Command>, Set<Command>> {
-            return rootContext<TestParentContext>().runReader { 
+            return rootFactory<TestParentContext>().runReader { 
                 given<Set<Command>>() to childContext<TestChildContext>().runReader {
                     given<Set<Command>>()
                 }
@@ -200,7 +200,7 @@ class CollectionsTest {
         fun commandBIntoSet(): Set<(String) -> Command> = setOf(given<(String) -> CommandB>())
 
         fun invoke(): Set<(String) -> Command> {
-            return rootContext<TestContext>().runReader { given<Set<(String) -> Command>>() }
+            return rootFactory<TestContext>().runReader { given<Set<(String) -> Command>>() }
         }
         """
     ) {

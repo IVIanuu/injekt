@@ -37,7 +37,7 @@ interface TestParentComponent1<A> {
     val a: A
 }
 
-interface TestChildComponent2<A> {
+interface TestChildComponent1<A> {
     val a: A
 }
 

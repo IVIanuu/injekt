@@ -62,6 +62,7 @@ fun FunctionDescriptor.toCallableRef(): Callable {
             owner.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect) -> Callable.GivenKind.GIVEN
             owner.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) -> Callable.GivenKind.GIVEN_MAP_ENTRIES
             owner.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) -> Callable.GivenKind.GIVEN_SET_ELEMENTS
+            owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) -> Callable.GivenKind.MODULE
             else -> null
         },
         typeParameters = typeParameters.map { it.toClassifierRef() },

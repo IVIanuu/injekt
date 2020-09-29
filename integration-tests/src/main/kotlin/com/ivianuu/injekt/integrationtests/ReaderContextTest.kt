@@ -95,12 +95,12 @@ class ReaderContextTest {
                 fun foo() = Foo()
                 
                 @Given(TestParentComponent1::class)
-                fun bar() = Bar(given())
+                fun bar(foo: Foo) = Bar(foo)
             }
             
             @RootFactory
             typealias MyParentFactory = (MyModule) -> TestParentComponent1<Foo>
-            val parentComponent = rootFactory<MyFactory>()(MyModule)
+            val parentComponent = rootFactory<MyParentFactory>()(MyModule)
             
             @ChildFactory
             typealias MyChildFactory = () -> TestChildComponent1<Bar>
@@ -261,7 +261,7 @@ class ReaderContextTest {
         @Given fun foo() = Foo() 
 
         fun invoke() {
-            rootContext<TestContext>().runReader {
+            rootFactory<TestContext>().runReader {
                 given<Dep<Foo>>()
             }
         }
@@ -278,7 +278,7 @@ class ReaderContextTest {
         @Given fun foo() = Foo() 
 
         fun invoke() {
-            rootContext<TestContext>().runReader {
+            rootFactory<TestContext>().runReader {
                 given<Dep<Foo, Foo, Foo>>()
             }
         }
@@ -288,10 +288,12 @@ class ReaderContextTest {
     @Test
     fun testInput() = codegen(
         """
-        fun invoke(): Pair<Foo, Foo> {
-            val foo = Foo()
-            return foo to rootContext<TestContext>(foo).runReader { given<Foo>() }
-        }
+            @RootFactory
+            typealias MyFactory = (Foo) -> TestComponent1<Foo>
+            fun invoke(): Pair<Foo, Foo> {
+                val foo = Foo()
+                return foo to rootFactory<MyFactory>()(foo).a
+            }
     """
     ) {
         val (a, b) = invokeSingleFile<Pair<Foo, Foo>>()
@@ -299,45 +301,28 @@ class ReaderContextTest {
     }
 
     @Test
-    fun testModule() = codegen(
-        """
-        @GivenSet
-        class FooGivens {
-            @Given
-            fun foo() = Foo()
-        }
-        
-        @Given
-        fun bar() = Bar(given())
-        
-        fun invoke(): Bar {
-            return rootContext<TestContext>(FooGivens()).runReader { given<Bar>() }
-        }
-    """
-    ) {
-        assertTrue(invokeSingleFile() is Bar)
-    }
-
-    @Test
     fun testNestedModule() = codegen(
         """
-        @GivenSet
-        class FooGivens {
+        @Module
+        class FooModule {
             @Given
             fun foo() = Foo()
             
-            @GivenSet
-            val barGivens = BarGivens()
+            @Module
+            val barModule = BarModule()
             
-            @GivenSet
-            class BarGivens {
+            @Module
+            class BarModule {
                 @Given
-                fun bar() = Bar(given())
+                fun bar(foo: Foo) = Bar(foo)
             }
         }
         
+        @RootFactory
+        typealias MyFactory = (FooModule) -> TestComponent1<Bar>
+        
         fun invoke(): Bar {
-            return rootContext<TestContext>(FooGivens()).runReader { given<Bar>() }
+            return rootFactory<MyFactory>()(FooModule()).a
         }
     """
     ) {

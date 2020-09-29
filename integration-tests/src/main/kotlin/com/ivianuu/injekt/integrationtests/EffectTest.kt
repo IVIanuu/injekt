@@ -54,7 +54,7 @@ class EffectTest {
         class Dep
         
         fun invoke() {
-            rootContext<TestContext>().runReader { 
+            rootFactory<TestContext>().runReader { 
                 given<Dep>() 
                 given<String>()
                 given<Any>()
@@ -82,7 +82,7 @@ class EffectTest {
         class Dep(arg: String)
         
         fun invoke() {
-            rootContext<TestContext>().runReader { 
+            rootFactory<TestContext>().runReader { 
                 given<Dep>("a") 
                 given<String>()
             }
@@ -112,7 +112,7 @@ class EffectTest {
         class Dep
         
         fun invoke() {
-            rootContext<TestContext>().runReader {
+            rootFactory<TestContext>().runReader {
                 val a = given<Dep>()
                 val b = given<Dep>()
             }
@@ -267,7 +267,7 @@ class EffectTest {
         }
         
         fun invoke(): Foo { 
-            return rootContext<TestContext>().runReader { given<FooFactory>()() }
+            return rootFactory<TestContext>().runReader { given<FooFactory>()() }
         }
     """
     ) {
@@ -306,7 +306,7 @@ class EffectTest {
             source(
                 """
                 fun invoke(): Foo { 
-                    return rootContext<TestContext>().runReader { given<FooFactory>()() }
+                    return rootFactory<TestContext>().runReader { given<FooFactory>()() }
                 }
             """,
                 name = "File.kt"
@@ -336,7 +336,7 @@ class EffectTest {
         }
         
         fun invoke(): Foo { 
-            return rootContext<TestContext>().runReader { 
+            return rootFactory<TestContext>().runReader { 
                 runBlocking { 
                     delay(1)
                     given<FooFactory>()() 

@@ -89,9 +89,7 @@ class GivensGraph(
                 emit(".")
                 if (parentCallable != null) {
                     emit("${parentCallable!!.name}")
-                    if (!parentCallable.isCall) {
-                        emit("()")
-                    }
+                    if (parentCallable.isCall) emit("()")
                 } else {
                     emit("p${inputs.indexOf(type)}")
                 }

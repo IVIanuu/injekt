@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.com.intellij.psi.SingleRootFileViewProvider
 import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtension
@@ -77,7 +78,9 @@ class InjektKtGenerationExtension(
         bindingTrace: BindingTrace,
         files: Collection<KtFile>,
     ): AnalysisResult? {
-        if (generatedCode) return null
+        if (generatedCode || bindingTrace.bindingContext.diagnostics.any {
+                it.severity == Severity.ERROR
+            }) return null
         generatedCode = true
 
         files as List<KtFile>
