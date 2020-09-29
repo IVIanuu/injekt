@@ -43,7 +43,7 @@ class ComponentFactoryImpl(
         emit(name)
         emit(" : ${factoryType.render()} ")
         braced {
-            emit("override fun create(")
+            emit("override fun invoke(")
             inputTypes.forEachIndexed { index, inputType ->
                 emit("p$index: ${inputType.render()}")
                 if (index != inputTypes.lastIndex) emit(", ")
@@ -81,13 +81,13 @@ class ComponentImpl(
 
     fun initialize() {
         val requests = contextType.getAllCallables()
-        graph.checkRequests(requests.map { it.type })
+        graph.checkRequests(requests.map { GivenRequest(it.type, it.fqName) })
         requests.forEach {
-            statements.getFunction(
+            statements.getProperty(
                 type = it.type,
                 name = it.name,
                 isOverride = true,
-                statement = statements.getGivenStatement(graph.resolvedGivens[it.type]!!)
+                getter = statements.getGivenStatement(graph.resolvedGivens[it.type]!!)
             )
         }
     }

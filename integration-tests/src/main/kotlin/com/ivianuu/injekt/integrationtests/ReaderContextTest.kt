@@ -35,17 +35,18 @@ class ReaderContextTest {
                 fun foo() = Foo()
                 
                 @Given
-                fun bar() = Bar(given())
+                fun bar(foo: Foo) = Bar(foo)
             }
             
             interface TestComponent {
                 val bar: Bar
             }
-
+            
+            @RootFactory
             typealias TestComponentFactory = (TestModule) -> TestComponent
             
             fun invoke(): Bar {
-                return rootFactory<TestComponentFactory>()(TestModule)
+                return rootFactory<TestComponentFactory>()(TestModule).bar
             }
     """
     ) {

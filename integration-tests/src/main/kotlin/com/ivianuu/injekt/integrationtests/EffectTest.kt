@@ -289,8 +289,7 @@ class EffectTest {
                         operator fun <T : FooFactory> invoke(): FooFactory = given<T>()
                     }
                 }
-            """,
-                initializeInjekt = false
+            """
             ),
         ),
         listOf(
@@ -300,8 +299,7 @@ class EffectTest {
                 fun fooFactory(): Foo {
                     return Foo()
                 }
-            """,
-                initializeInjekt = false
+            """
             )
         ),
         listOf(

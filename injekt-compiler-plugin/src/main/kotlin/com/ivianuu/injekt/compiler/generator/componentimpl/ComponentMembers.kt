@@ -17,36 +17,38 @@ class GivenStatements(private val owner: ComponentImpl) {
     private val parent = owner.factoryImpl.parent?.statements
     private val statementsByType = mutableMapOf<Type, ComponentStatement>()
 
-    fun getFunction(
+    fun getProperty(
         type: Type,
         name: Name,
         isOverride: Boolean,
-        statement: ComponentStatement,
-    ): ComponentFunction {
+        getter: ComponentStatement,
+    ): ComponentProperty {
         val existing = owner.members.firstOrNull {
-            it is ComponentFunction && it.name == name
-        } as? ComponentFunction
+            it is ComponentProperty && it.name == name
+        } as? ComponentProperty
         existing?.let {
             if (isOverride) it.isOverride = true
             return it
         }
-        val function = ComponentFunction(
+        val property = ComponentProperty(
             name = name,
             isOverride = isOverride,
             type = type,
-            statement = statement
+            getter = getter,
+            initializer = null,
+            isMutable = false
         )
-        owner.members += function
-        return function
+        owner.members += property
+        return property
     }
 
     fun getGivenStatement(given: GivenNode): ComponentStatement {
         statementsByType[given.type]?.let {
-            getFunction(
+            getProperty(
                 type = given.type,
                 name = given.type.uniqueTypeName(),
                 isOverride = false,
-                statement = it
+                getter = it
             )
             return it
         }
@@ -72,7 +74,9 @@ class GivenStatements(private val owner: ComponentImpl) {
                 name = given.type.uniqueTypeName(),
                 type = SimpleType(ClassifierRef(FqName("kotlin.Any")), isMarkedNullable = true),
                 initializer = { emit("this") },
-                isMutable = true
+                isMutable = true,
+                getter = null,
+                isOverride = false
             ).also { owner.members += it }
 
             emit("run ")
@@ -92,16 +96,16 @@ class GivenStatements(private val owner: ComponentImpl) {
             }
         })
 
-        val functionName = given.type.uniqueTypeName()
+        val propertyName = given.type.uniqueTypeName()
 
-        getFunction(
+        getProperty(
             type = given.type,
-            name = functionName,
+            name = propertyName,
             isOverride = false,
-            statement = finalStatement
+            getter = finalStatement
         )
 
-        val statement: ComponentStatement = { emit("this@${owner.name}.${functionName}()") }
+        val statement: ComponentStatement = { emit("this@${owner.name}.${propertyName}") }
 
         statementsByType[given.type] = statement
 
@@ -149,18 +153,32 @@ class GivenStatements(private val owner: ComponentImpl) {
 
     private fun callableExpression(given: CallableGivenNode): ComponentStatement {
         return {
-            if (given.callable.valueParameters.isNotEmpty()) {
+            if (given.callable.valueParameters.any { it.isAssisted }) {
                 emit("{ ")
-                given.callable.valueParameters.forEachIndexed { index, parameter ->
-                    emit("p$index: ${parameter.type.render()}")
-                    if (index != given.callable.valueParameters.lastIndex) emit(", ")
-                }
+                given.callable.valueParameters
+                    .filter { it.isAssisted }
+                    .forEachIndexed { index, parameter ->
+                        emit("p$index: ${parameter.type.render()}")
+                        if (index != given.callable.valueParameters.lastIndex) emit(", ")
+                    }
                 emitLine(" ->")
+                var assistedIndex = 0
                 emitCallableInvocation(
                     given.callable,
                     given.moduleAccessStatement,
-                    given.callable.valueParameters.mapIndexed { index, _ ->
-                        { emit("p$index") }
+                    given.callable.valueParameters.map { parameter ->
+                        if (parameter.isAssisted) {
+                            { emit("p${assistedIndex++}") }
+                        } else {
+                            getGivenStatement(
+                                owner.graph.getGiven(
+                                    GivenRequest(
+                                        parameter.type,
+                                        given.callable.fqName.child(parameter.name)
+                                    )
+                                )
+                            )
+                        }
                     }
                 )
                 emitLine()
@@ -169,7 +187,7 @@ class GivenStatements(private val owner: ComponentImpl) {
                 emitCallableInvocation(
                     given.callable,
                     given.moduleAccessStatement,
-                    emptyList()
+                    given.dependencies.map { getGivenStatement(owner.graph.getGiven(it)) }
                 )
             }
         }

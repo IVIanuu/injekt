@@ -7,6 +7,7 @@ import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import com.ivianuu.injekt.compiler.log
 import com.ivianuu.injekt.given
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -25,12 +26,13 @@ import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 import org.jetbrains.kotlin.types.upperIfFlexible
 import java.io.File
 
 @Reader
 fun <D : DeclarationDescriptor> KtDeclaration.descriptor() =
-    given<BindingContext>()[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as D
+    given<BindingContext>()[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
 
 @Reader
 val moduleDescriptor: ModuleDescriptor
@@ -67,6 +69,9 @@ fun ClassDescriptor.getGivenConstructor(): ConstructorDescriptor? {
 }
 
 fun String.asNameId() = Name.identifier(this)
+
+fun FqName.toFactoryImplFqName() =
+    FqName("${asString()}Impl")
 
 @Reader
 fun generateFile(
@@ -110,6 +115,7 @@ fun String.removeIllegalChars() =
         .replace(" ", "")
         .replace("-", "")
 
+@Reader
 fun FqName.toMemberScope(): MemberScope? {
     val pkg = moduleDescriptor.getPackage(this)
 
@@ -132,6 +138,7 @@ fun FqName.asClassDescriptor(): ClassDescriptor {
         shortName(), NoLookupLocation.FROM_BACKEND) as ClassDescriptor
 }
 
+@Reader
 fun Type.getAllCallables(): List<Callable> {
     val callables = mutableListOf<Callable>()
 
@@ -143,6 +150,10 @@ fun Type.getAllCallables(): List<Callable> {
         callables += classifier.fqName.asClassDescriptor()
             .unsubstitutedMemberScope
             .getContributedDescriptors(DescriptorKindFilter.CALLABLES)
+            .filterIsInstance<CallableDescriptor>()
+            .filter {
+                it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() != true
+            }
             .mapNotNull {
                 when (it) {
                     is FunctionDescriptor -> it.toCallableRef()
@@ -161,8 +172,10 @@ fun Type.getAllCallables(): List<Callable> {
     return callables
 }
 
+@Reader
 fun getFactoryForType(type: Type): FactoryDescriptor = FactoryDescriptor(type)
 
+@Reader
 fun getModuleForType(type: Type): com.ivianuu.injekt.compiler.generator.ModuleDescriptor {
     val descriptor = type.classifier.fqName.asClassDescriptor()
     val substitutionMap = type.classifier.typeParameters

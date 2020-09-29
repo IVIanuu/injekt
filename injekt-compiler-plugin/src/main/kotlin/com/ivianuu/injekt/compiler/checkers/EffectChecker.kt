@@ -138,8 +138,8 @@ class EffectChecker : DeclarationChecker {
             }
 
         val declarationType = when (descriptor) {
-            is ClassDescriptor -> descriptor.getGivenConstructor()!!.getFunctionType()
-            is FunctionDescriptor -> descriptor.getFunctionType()
+            is ClassDescriptor -> descriptor.getGivenConstructor()!!.getGivenFunctionType()
+            is FunctionDescriptor -> descriptor.getGivenFunctionType()
             else -> error("Unexpected descriptor $descriptor")
         }
 

@@ -20,11 +20,14 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.ModuleDescriptor
 import com.ivianuu.injekt.compiler.generator.Type
+import com.ivianuu.injekt.compiler.generator.asClassDescriptor
 import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.getFactoryForType
+import com.ivianuu.injekt.compiler.generator.getGivenConstructor
 import com.ivianuu.injekt.compiler.generator.getModuleForType
 import com.ivianuu.injekt.compiler.generator.isAssignable
 import com.ivianuu.injekt.compiler.generator.render
+import com.ivianuu.injekt.compiler.generator.toCallableRef
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
@@ -35,7 +38,6 @@ class GivensGraph(private val owner: ComponentImpl) {
 
     private val parent = owner.factoryImpl.parent?.graph
 
-    private val statements = owner.statements
     private val inputs = owner.inputTypes
 
     private val contextType = owner.contextType
@@ -64,7 +66,7 @@ class GivensGraph(private val owner: ComponentImpl) {
     private val checkedGivens = mutableSetOf<GivenNode>()
 
     init {
-        val givenSets = inputs
+        val modules = inputs
             .filter { it.isModule }
             .map { getModuleForType(it) }
 
@@ -86,6 +88,7 @@ class GivensGraph(private val owner: ComponentImpl) {
             }
 
             for (callable in callables) {
+                if (callable.givenKind == null) continue
                 when (callable.givenKind) {
                     Callable.GivenKind.GIVEN -> {
                         givens += CallableGivenNode(
@@ -94,7 +97,12 @@ class GivensGraph(private val owner: ComponentImpl) {
                             owner = owner,
                             dependencies = callable.valueParameters
                                 .filterNot { it.isAssisted }
-                                .map { it.type },
+                                .map {
+                                    GivenRequest(
+                                        it.type,
+                                        callable.fqName.child(it.name)
+                                    )
+                                },
                             origin = callable.fqName,
                             targetComponent = callable.targetComponent,
                             moduleAccessStatement = thisAccessStatement,
@@ -125,14 +133,14 @@ class GivensGraph(private val owner: ComponentImpl) {
             }
         }
 
-        givenSets.forEach {
+        modules.forEach {
             it.collectGivens(null) {
                 emit("this@${owner.name}")
             }
         }
     }
 
-    fun checkRequests(requests: List<Type>) {
+    fun checkRequests(requests: List<GivenRequest>) {
         requests.forEach { check(it) }
     }
 
@@ -146,17 +154,17 @@ class GivensGraph(private val owner: ComponentImpl) {
         chain.pop()
     }
 
-    private fun check(type: Type) {
-        getGiven(type)
+    private fun check(request: GivenRequest) {
+        getGiven(request)
     }
 
-    private fun getGiven(type: Type): GivenNode {
-        var given = getGivenOrNull(type)
+    fun getGiven(request: GivenRequest): GivenNode {
+        var given = getGivenOrNull(request.type)
         if (given != null) return given
 
-        if (type.isMarkedNullable) {
-            given = NullGivenNode(type, owner)
-            resolvedGivens[type] = given
+        if (request.type.isMarkedNullable) {
+            given = NullGivenNode(request.type, owner)
+            resolvedGivens[request.type] = given
             return given
         }
 
@@ -166,9 +174,8 @@ class GivensGraph(private val owner: ComponentImpl) {
                 fun indent() {
                     indendation = "$indendation    "
                 }
-                appendLine("No given found for '${type.render()}' in '${contextType.render()}':")
-
-                chain.push(ChainElement.Given(type))
+                appendLine("No given found for '${request.type.render()}' in '${contextType.render()}':")
+                /*chain.push(ChainElement.Given(type))
                 chain.forEachIndexed { index, element ->
                     if (index == 0) {
                         appendLine("${indendation}runReader call '${element}'")
@@ -188,7 +195,8 @@ class GivensGraph(private val owner: ComponentImpl) {
                     }
                     indent()
                 }
-                chain.pop()
+                chain.pop()*/
+                // todo
             }
         )
     }
@@ -222,6 +230,37 @@ class GivensGraph(private val owner: ComponentImpl) {
             resolvedGivens[type] = it
             check(it)
             return it
+        }
+
+        if (type.isGiven) {
+            given = type.classifier.fqName.asClassDescriptor()!!
+                .getGivenConstructor()!!
+                .toCallableRef()
+                .let { callable ->
+                    CallableGivenNode(
+                        type = type,
+                        rawType = callable.type,
+                        owner = owner,
+                        dependencies = callable.valueParameters
+                            .filterNot { it.isAssisted }
+                            .map {
+                                GivenRequest(
+                                    it.type,
+                                    callable.fqName.child(it.name)
+                                )
+                            },
+                        origin = callable.fqName,
+                        targetComponent = callable.targetComponent,
+                        moduleAccessStatement = null,
+                        callable = callable
+                    )
+                }
+
+            given?.let {
+                resolvedGivens[type] = it
+                check(it)
+                return it
+            }
         }
 
         parent?.getGivenOrNull(type)?.let {
@@ -267,7 +306,7 @@ class GivensGraph(private val owner: ComponentImpl) {
             }
         }
 
-        givens
+        this += givens
             .filter { it.type.isAssignable(type) }
 
         this += collections.getNodes(type)
@@ -321,10 +360,15 @@ class GivenCollections(
                     MapGivenNode(
                         type = type,
                         owner = owner,
-                        dependencies = entries.flatMap {
-                            it.callable.valueParameters
+                        dependencies = entries.flatMap { (entry) ->
+                            entry.valueParameters
                                 .filterNot { it.isAssisted }
-                                .map { it.type }
+                                .map {
+                                    GivenRequest(
+                                        entry.type,
+                                        entry.fqName.child(it.name)
+                                    )
+                                }
                         },
                         entries = entries
                     )
@@ -335,10 +379,15 @@ class GivenCollections(
                     SetGivenNode(
                         type = type,
                         owner = owner,
-                        dependencies = elements.flatMap {
-                            it.callable.valueParameters
+                        dependencies = elements.flatMap { (element) ->
+                            element.valueParameters
                                 .filterNot { it.isAssisted }
-                                .map { it.type }
+                                .map {
+                                    GivenRequest(
+                                        element.type,
+                                        element.fqName.child(it.name)
+                                    )
+                                }
                         },
                         elements = elements
                     )

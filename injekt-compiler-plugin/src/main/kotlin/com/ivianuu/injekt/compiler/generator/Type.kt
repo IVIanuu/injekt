@@ -3,8 +3,10 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
+import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -45,10 +47,12 @@ sealed class Type {
     abstract val isMarkedNullable: Boolean
     abstract val typeArguments: List<Type>
     abstract val variance: Variance
+    abstract val isGiven: Boolean
     abstract val isModule: Boolean
     abstract val isChildFactory: Boolean
     abstract val isComposable: Boolean
     abstract val superTypes: List<Type>
+    abstract val expandedType: Type?
     private val typeName by unsafeLazy { uniqueTypeName(includeNullability = false) }
     override fun equals(other: Any?) = other is Type && typeName == other.typeName
     override fun hashCode() = typeName.hashCode()
@@ -62,11 +66,15 @@ class KotlinType(
     override val classifier: ClassifierRef by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.toClassifierRef()
     }
+    override val isGiven: Boolean by unsafeLazy {
+        (kotlinType.constructor.declarationDescriptor!! as? ClassDescriptor)
+            ?.getGivenConstructor() != null
+    }
     override val isModule: Boolean by unsafeLazy {
-        kotlinType.hasAnnotation(InjektFqNames.Module)
+        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.Module)
     }
     override val isChildFactory: Boolean by unsafeLazy {
-        kotlinType.hasAnnotation(InjektFqNames.ChildFactory)
+        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ChildFactory)
     }
     override val isComposable: Boolean by unsafeLazy {
         kotlinType.hasAnnotation(InjektFqNames.Composable) &&
@@ -81,6 +89,10 @@ class KotlinType(
     override val typeArguments: List<Type> by unsafeLazy {
         finalType.arguments.map { it.type.toTypeRef(it.projectionKind) }
     }
+    override val expandedType: Type? by unsafeLazy {
+        (kotlinType.constructor?.declarationDescriptor as? TypeAliasDescriptor)
+            ?.expandedType?.toTypeRef()
+    }
 }
 
 fun KotlinType.toTypeRef(variance: Variance = Variance.INVARIANT) =
@@ -91,10 +103,12 @@ class SimpleType(
     override val isMarkedNullable: Boolean = false,
     override val typeArguments: List<Type> = emptyList(),
     override val variance: Variance = Variance.INVARIANT,
+    override val isGiven: Boolean = false,
     override val isModule: Boolean = false,
     override val isChildFactory: Boolean = false,
     override val isComposable: Boolean = false,
     override val superTypes: List<Type> = emptyList(),
+    override val expandedType: Type? = null,
 ) : Type() {
     init {
         check(typeArguments.size == classifier.typeParameters.size) {

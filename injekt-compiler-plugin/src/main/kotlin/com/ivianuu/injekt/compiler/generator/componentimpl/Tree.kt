@@ -29,39 +29,32 @@ interface ComponentMember {
     fun CodeBuilder.emit()
 }
 
-class ComponentFunction(
-    val name: Name,
-    var isOverride: Boolean,
-    val type: Type,
-    val statement: ComponentStatement,
-) : ComponentMember {
-    override fun CodeBuilder.emit() {
-        if (isOverride) emit("override ")
-        emit("fun $name(): ${type.render()} ")
-        braced {
-            emit("return ")
-            statement()
-            emitLine()
-        }
-    }
-}
-
 class ComponentProperty(
     val name: Name,
     val type: Type,
-    val initializer: ComponentStatement,
+    val initializer: ComponentStatement?,
+    val getter: ComponentStatement?,
     val isMutable: Boolean,
+    var isOverride: Boolean,
 ) : ComponentMember {
     override fun CodeBuilder.emit() {
+        if (isOverride) emit("override ")
         if (isMutable) emit("var ") else emit("val ")
-        emit("$name: ${type.render()} = ")
-        initializer()
+        emit("$name: ${type.render()}")
+        if (initializer != null) {
+            emit(" = ")
+            initializer!!()
+        } else {
+            emitLine()
+            emit("    get() = ")
+            getter!!()
+        }
     }
 }
 
 sealed class GivenNode {
     abstract val type: Type
-    abstract val dependencies: List<Type>
+    abstract val dependencies: List<GivenRequest>
     abstract val rawType: Type
     abstract val owner: ComponentImpl
     abstract val origin: FqName?
@@ -73,7 +66,7 @@ class SelfGivenNode(
     override val type: Type,
     val component: ComponentImpl,
 ) : GivenNode() {
-    override val dependencies: List<Type>
+    override val dependencies: List<GivenRequest>
         get() = emptyList()
     override val rawType: Type
         get() = type
@@ -89,7 +82,7 @@ class ChildFactoryGivenNode(
     override val origin: FqName?,
     val childFactoryImpl: ComponentFactoryImpl,
 ) : GivenNode() {
-    override val dependencies: List<Type>
+    override val dependencies: List<GivenRequest>
         get() = emptyList()
     override val rawType: Type
         get() = type
@@ -103,7 +96,7 @@ class CallableGivenNode(
     override val type: Type,
     override val rawType: Type,
     override val owner: ComponentImpl,
-    override val dependencies: List<Type>,
+    override val dependencies: List<GivenRequest>,
     override val origin: FqName?,
     override val targetComponent: Type?,
     override val moduleAccessStatement: ComponentStatement?,
@@ -119,7 +112,7 @@ class InputGivenNode(
 ) : GivenNode() {
     override val rawType: Type
         get() = type
-    override val dependencies: List<Type>
+    override val dependencies: List<GivenRequest>
         get() = emptyList()
     override val moduleAccessStatement: ComponentStatement?
         get() = null
@@ -132,7 +125,7 @@ class InputGivenNode(
 class MapGivenNode(
     override val type: Type,
     override val owner: ComponentImpl,
-    override val dependencies: List<Type>,
+    override val dependencies: List<GivenRequest>,
     val entries: List<CallableWithReceiver>,
 ) : GivenNode() {
     override val rawType: Type
@@ -148,7 +141,7 @@ class MapGivenNode(
 class SetGivenNode(
     override val type: Type,
     override val owner: ComponentImpl,
-    override val dependencies: List<Type>,
+    override val dependencies: List<GivenRequest>,
     val elements: List<CallableWithReceiver>,
 ) : GivenNode() {
     override val rawType: Type
@@ -172,7 +165,7 @@ class NullGivenNode(
 ) : GivenNode() {
     override val rawType: Type
         get() = type
-    override val dependencies: List<Type>
+    override val dependencies: List<GivenRequest>
         get() = emptyList()
     override val moduleAccessStatement: ComponentStatement?
         get() = null
@@ -181,3 +174,5 @@ class NullGivenNode(
     override val targetComponent: Type?
         get() = null
 }
+
+data class GivenRequest(val type: Type, val origin: FqName)

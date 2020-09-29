@@ -39,15 +39,6 @@ fun Annotated.hasAnnotatedAnnotations(
 fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescriptor> =
     annotations.filter { it.hasAnnotation(annotation) }
 
-fun FunctionDescriptor.getFunctionType(): KotlinType {
-    val parameters =
-        listOfNotNull(extensionReceiverParameter?.type) + valueParameters.map { it.type }
-    return (if (isSuspend) builtIns.getSuspendFunction(parameters.size)
-    else builtIns.getFunction(parameters.size))
-        .defaultType
-        .replace(newArguments = parameters.map { it.asTypeProjection() } + returnType!!.asTypeProjection())
-}
-
 fun FunctionDescriptor.getGivenFunctionType(): KotlinType {
     val assistedParameters =
         listOfNotNull(extensionReceiverParameter?.type) + valueParameters.map { it.type }

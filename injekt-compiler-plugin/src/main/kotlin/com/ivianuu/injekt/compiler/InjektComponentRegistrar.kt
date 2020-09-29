@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.generator.InjektKtGenerationExtension
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.rootContext
 import com.ivianuu.injekt.runReader
+import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
@@ -48,6 +49,11 @@ class InjektComponentRegistrar : ComponentRegistrar {
             AnalysisHandlerExtension.registerExtension(
                 project,
                 given<InjektKtGenerationExtension>()
+            )
+
+            IrGenerationExtension.registerExtension(
+                project,
+                given<InjektIntrinsicIrExtension>()
             )
         }
     }

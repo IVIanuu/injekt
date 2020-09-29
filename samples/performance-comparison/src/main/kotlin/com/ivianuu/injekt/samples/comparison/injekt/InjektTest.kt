@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.samples.comparison.injekt
 
+import com.ivianuu.injekt.rootFactory
 import com.ivianuu.injekt.samples.comparison.base.InjectionTest
 
 object InjektTest : InjectionTest {
@@ -25,7 +26,7 @@ object InjektTest : InjectionTest {
     private var component: InjektComponent? = null
 
     override fun setup() {
-        component = InjektComponentFactoryImpl()
+        component = rootFactory<InjektComponentFactory>()()
     }
 
     override fun inject() {

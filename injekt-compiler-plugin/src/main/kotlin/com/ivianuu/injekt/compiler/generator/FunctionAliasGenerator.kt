@@ -18,6 +18,7 @@ class FunctionAliasGenerator : Generator {
             file.accept(
                 namedFunctionRecursiveVisitor { declaration ->
                     val descriptor = declaration.descriptor<FunctionDescriptor>()
+                        ?: return@namedFunctionRecursiveVisitor
                     if (descriptor.hasAnnotation(InjektFqNames.Given) ||
                         descriptor.hasAnnotatedAnnotations(InjektFqNames.Effect)
                     ) {

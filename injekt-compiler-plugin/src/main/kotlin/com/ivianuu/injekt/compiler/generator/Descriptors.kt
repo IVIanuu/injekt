@@ -1,7 +1,9 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.checkers.getFunctionType
+import com.ivianuu.injekt.compiler.checkers.getGivenFunctionType
+import com.ivianuu.injekt.compiler.checkers.hasAnnotation
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -18,8 +20,8 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.module
 data class FactoryDescriptor(
     val factoryType: Type,
 ) {
-    val contextType = factoryType.typeArguments.last()
-    val inputTypes = factoryType.typeArguments.dropLast(1)
+    val contextType = factoryType.expandedType!!.typeArguments.last()
+    val inputTypes = factoryType.expandedType!!.typeArguments.dropLast(1)
 }
 
 data class Callable(
@@ -31,7 +33,7 @@ data class Callable(
     val typeParameters: List<ClassifierRef>,
     val valueParameters: List<ValueParameterRef>,
     val targetComponent: Type?,
-    val givenKind: GivenKind,
+    val givenKind: GivenKind?,
     val isCall: Boolean,
 ) {
     enum class GivenKind {
@@ -49,7 +51,8 @@ fun FunctionDescriptor.toCallableRef(): Callable {
         name = owner.name,
         packageFqName = findPackage().fqName,
         fqName = owner.fqNameSafe,
-        type = (if (extensionReceiverParameter != null || valueParameters.isNotEmpty()) getFunctionType() else returnType!!)
+        type = (if (allParameters.any { it.hasAnnotation(InjektFqNames.Assisted) })
+            getGivenFunctionType() else returnType!!)
             .toTypeRef(),
         objectReceiver = dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
             ?.takeIf { it is ClassDescriptor && it.kind == ClassKind.OBJECT }?.defaultType?.toTypeRef(),
@@ -66,22 +69,32 @@ fun FunctionDescriptor.toCallableRef(): Callable {
             ?.getArgumentType(module)
             ?.toTypeRef(),
         givenKind = when {
-            hasAnnotationWithPropertyAndClass(InjektFqNames.Given) -> Callable.GivenKind.GIVEN
-            hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect) -> Callable.GivenKind.GIVEN
-            hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) -> Callable.GivenKind.GIVEN_MAP_ENTRIES
-            hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) -> Callable.GivenKind.GIVEN_SET_ELEMENTS
-            else -> error("Unexpected callable $this")
+            owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Given) -> Callable.GivenKind.GIVEN
+            owner.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect) -> Callable.GivenKind.GIVEN
+            owner.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) -> Callable.GivenKind.GIVEN_MAP_ENTRIES
+            owner.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) -> Callable.GivenKind.GIVEN_SET_ELEMENTS
+            else -> null
         },
         typeParameters = typeParameters.map { it.toClassifierRef() },
         valueParameters = listOfNotNull(
             extensionReceiverParameter?.type?.let {
                 ValueParameterRef(
-                    KotlinType(it),
-                    true
+                    type = it.toTypeRef(),
+                    isExtensionReceiver = true,
+                    isAssisted = it.hasAnnotation(InjektFqNames.Assisted),
+                    name = "receiver".asNameId()
                 )
             }
-        ) + valueParameters.map { ValueParameterRef(it.type.toTypeRef()) },
-        isCall = owner is PropertyDescriptor || (owner is ClassDescriptor && owner.kind == ClassKind.OBJECT)
+        ) + valueParameters.map {
+            ValueParameterRef(
+                type = it.type.toTypeRef(),
+                isExtensionReceiver = false,
+                isAssisted = it.hasAnnotation(InjektFqNames.Assisted),
+                name = it.name
+            )
+        },
+        isCall = owner !is PropertyDescriptor &&
+                (owner !is ClassDescriptor || owner.kind != ClassKind.OBJECT)
     )
 }
 
@@ -89,6 +102,7 @@ data class ValueParameterRef(
     val type: Type,
     val isExtensionReceiver: Boolean = false,
     val isAssisted: Boolean = false,
+    val name: Name,
 )
 
 data class ModuleDescriptor(

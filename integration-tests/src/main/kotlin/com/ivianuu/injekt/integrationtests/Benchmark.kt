@@ -25,8 +25,7 @@ class Benchmark {
                                     val fibM2: Fib${index - 1} = given()
                                 }
                         """
-                        },
-                        initializeInjekt = false
+                        }
                     )
                 )
             }
@@ -64,8 +63,7 @@ class Benchmark {
                                     val fibM2: Fib${index - 1} = given()
                                 }
                         """
-                        },
-                        initializeInjekt = false
+                        }
                     )
                 )
             }

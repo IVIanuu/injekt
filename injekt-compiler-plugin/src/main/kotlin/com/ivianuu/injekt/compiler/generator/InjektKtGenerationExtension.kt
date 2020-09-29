@@ -43,7 +43,7 @@ class InjektKtGenerationExtension : PartialAnalysisHandlerExtension() {
             bindingTrace.bindingContext
         ).runReader {
             given<FunctionAliasGenerator>().generate(files)
-            given<RootComponentFactoryGenerator>().generate(files)
+            given<RootFactoryGenerator>().generate(files)
         }
 
         return AnalysisResult.RetryWithAdditionalRoots(
