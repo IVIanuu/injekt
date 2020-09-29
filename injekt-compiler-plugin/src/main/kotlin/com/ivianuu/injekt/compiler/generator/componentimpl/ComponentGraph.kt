@@ -245,7 +245,7 @@ class GivensGraph(
 
         if (type.isGiven || type.typeArguments.lastOrNull()?.isGiven == true) {
             val givenType = if (type.isGiven) type else type.typeArguments.last()
-            given = givenType.classifier.fqName.asClassDescriptor()!!
+            given = givenType.classifier.fqName.asClassDescriptor(module)!!
                 .getGivenConstructor()!!
                 .toCallableRef()
                 .let { callable ->

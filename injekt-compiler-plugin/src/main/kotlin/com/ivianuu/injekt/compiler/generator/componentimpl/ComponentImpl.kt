@@ -18,28 +18,22 @@ class ComponentFactoryImpl(
     @Assisted val inputTypes: List<TypeRef>,
     @Assisted val contextType: TypeRef,
     @Assisted val parent: ComponentImpl?,
-    /*componentFactory: (
+    componentFactory: (
         ComponentFactoryImpl,
         TypeRef,
         Name,
         List<TypeRef>
-    ) -> ComponentImpl*/ // todo
-    val module: ModuleDescriptor,
-    statementsFactory: (ComponentImpl) -> GivenStatements,
-    graphFactory: (ComponentImpl) -> GivensGraph,
+    ) -> ComponentImpl
 ) : ComponentMember {
 
     val contextTreeNameProvider: UniqueNameProvider =
         parent?.factoryImpl?.contextTreeNameProvider ?: UniqueNameProvider()
 
-    val component = ComponentImpl(
+    val component = componentFactory(
         this,
         contextType,
         contextTreeNameProvider("C").asNameId(),
-        inputTypes,
-        module,
-        statementsFactory,
-        graphFactory
+        inputTypes
     )
 
     fun initialize() {

@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler.generator
 
+import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Given
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
@@ -8,10 +9,9 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
 
 @Given
-class FunctionAliasGenerator : Generator {
-
-    // todo should be assisted
-    lateinit var generateFile: (FqName, String, String) -> Unit
+class FunctionAliasGenerator(
+    @Assisted private val generateFile: (FqName, String, String) -> Unit
+) : Generator {
 
     override fun generate(files: List<KtFile>) {
         files.forEach { file ->

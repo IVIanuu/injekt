@@ -48,7 +48,7 @@ class InjektKtGenerationExtension(
             )
             val fileManager = generationComponent.fileManager
 
-            generationComponent.functionAliasGenerator.generateFile = { fqName, fileName, code ->
+            generationComponent.functionAliasGeneratorFactory.invoke { fqName, fileName, code ->
                 val file = fileManager.generateFile(fqName, fileName, code)
                 files += KtFile(
                     SingleRootFileViewProvider(
@@ -60,8 +60,7 @@ class InjektKtGenerationExtension(
                     ),
                     false
                 )
-            }
-            generationComponent.functionAliasGenerator.generate(files.toList())
+            }.generate(files.toList())
         }
 
         return super.doAnalysis(project,

@@ -15,7 +15,7 @@ import org.jetbrains.kotlin.name.Name
 
 @Given
 class GivenStatements(
-    @Assisted private val owner: ComponentImpl,
+    @Assisted private val owner: ComponentImpl
 ) {
 
     private val parent = owner.factoryImpl.parent?.statements
