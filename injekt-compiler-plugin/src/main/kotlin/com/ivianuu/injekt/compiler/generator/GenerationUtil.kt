@@ -1,10 +1,8 @@
 package com.ivianuu.injekt.compiler.generator
 
-import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
-import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -27,13 +25,9 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 import org.jetbrains.kotlin.types.upperIfFlexible
 
-@Reader
-fun <D : DeclarationDescriptor> KtDeclaration.descriptor() =
-    given<BindingContext>()[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
-
-@Reader
-val moduleDescriptor: ModuleDescriptor
-    get() = given()
+fun <D : DeclarationDescriptor> KtDeclaration.descriptor(
+    bindingContext: BindingContext,
+) = bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
 
 fun KotlinType.prepare(): KotlinType {
     var tmp = refineType()
@@ -94,13 +88,12 @@ fun String.removeIllegalChars() =
         .replace(" ", "")
         .replace("-", "")
 
-@Reader
-fun FqName.toMemberScope(): MemberScope? {
-    val pkg = moduleDescriptor.getPackage(this)
+fun FqName.toMemberScope(module: ModuleDescriptor): MemberScope? {
+    val pkg = module.getPackage(this)
 
     if (isRoot || pkg.fragments.isNotEmpty()) return pkg.memberScope
 
-    val parentMemberScope = parent().toMemberScope() ?: return null
+    val parentMemberScope = parent().toMemberScope(module) ?: return null
 
     val classDescriptor =
         parentMemberScope.getContributedClassifier(
@@ -111,14 +104,12 @@ fun FqName.toMemberScope(): MemberScope? {
     return classDescriptor.unsubstitutedMemberScope
 }
 
-@Reader
-fun FqName.asClassDescriptor(): ClassDescriptor {
-    return parent().toMemberScope()!!.getContributedClassifier(
+fun FqName.asClassDescriptor(module: ModuleDescriptor): ClassDescriptor {
+    return parent().toMemberScope(module)!!.getContributedClassifier(
         shortName(), NoLookupLocation.FROM_BACKEND) as ClassDescriptor
 }
 
-@Reader
-fun TypeRef.getAllCallables(): List<Callable> {
+fun TypeRef.getAllCallables(module: ModuleDescriptor): List<Callable> {
     val callables = mutableListOf<Callable>()
 
     fun TypeRef.collect(typeArguments: List<TypeRef>) {
@@ -126,7 +117,7 @@ fun TypeRef.getAllCallables(): List<Callable> {
             .zip(typeArguments)
             .toMap()
 
-        callables += classifier.fqName.asClassDescriptor()
+        callables += classifier.fqName.asClassDescriptor(module)
             .unsubstitutedMemberScope
             .getContributedDescriptors(DescriptorKindFilter.CALLABLES)
             .filterIsInstance<CallableDescriptor>()
@@ -157,15 +148,16 @@ fun TypeRef.getAllCallables(): List<Callable> {
     return callables
 }
 
-@Reader
 fun getFactoryForType(type: TypeRef): FactoryDescriptor {
     println("factory for type ${type.render()} ${type.javaClass}")
     return FactoryDescriptor(type)
 }
 
-@Reader
-fun getModuleForType(type: TypeRef): com.ivianuu.injekt.compiler.generator.ModuleDescriptor {
-    val descriptor = type.classifier.fqName.asClassDescriptor()
+fun getModuleForType(
+    type: TypeRef,
+    module: ModuleDescriptor,
+): com.ivianuu.injekt.compiler.generator.ModuleDescriptor {
+    val descriptor = type.classifier.fqName.asClassDescriptor(module)
     val substitutionMap = type.classifier.typeParameters
         .zip(type.typeArguments)
         .toMap()
@@ -191,9 +183,8 @@ fun getModuleForType(type: TypeRef): com.ivianuu.injekt.compiler.generator.Modul
     )
 }
 
-@Reader
-fun getFunctionForAlias(aliasType: TypeRef): Callable {
-    return aliasType.classifier.fqName.parent().toMemberScope()!!
+fun getFunctionForAlias(aliasType: TypeRef, module: ModuleDescriptor): Callable {
+    return aliasType.classifier.fqName.parent().toMemberScope(module)!!
         .getContributedFunctions(aliasType.classifier.fqName.shortName(),
             NoLookupLocation.FROM_BACKEND)
         .single()

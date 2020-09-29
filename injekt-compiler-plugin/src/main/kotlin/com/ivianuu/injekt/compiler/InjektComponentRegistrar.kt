@@ -17,13 +17,12 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
-import com.ivianuu.injekt.ApplicationContext
-import com.ivianuu.injekt.InitializeInjekt
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.RootFactory
 import com.ivianuu.injekt.compiler.checkers.InjektStorageContainerContributor
 import com.ivianuu.injekt.compiler.generator.InjektKtGenerationExtension
-import com.ivianuu.injekt.given
-import com.ivianuu.injekt.rootContext
-import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.rootFactory
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -31,8 +30,8 @@ import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
+import java.io.File
 
-@InitializeInjekt
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
 
@@ -40,22 +39,44 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project: MockProject,
         configuration: CompilerConfiguration
     ) {
-        rootContext<ApplicationContext>(project as Project, configuration).runReader {
+        rootFactory<ApplicationComponentFactory>()(project, configuration, ApplicationModule).run {
             StorageComponentContainerContributor.registerExtension(
                 project,
-                given<InjektStorageContainerContributor>()
+                injektStorageContainerContributor
             )
 
             AnalysisHandlerExtension.registerExtension(
                 project,
-                given<InjektKtGenerationExtension>()
+                injektKtGenerationExtension
             )
 
             IrGenerationExtension.registerExtension(
                 project,
-                given<InjektIntrinsicIrExtension>()
+                injektIntrinsicIrExtension
             )
         }
     }
 
+}
+
+interface ApplicationComponent {
+    val injektStorageContainerContributor: InjektStorageContainerContributor
+    val injektKtGenerationExtension: InjektKtGenerationExtension
+    val injektIntrinsicIrExtension: InjektIntrinsicIrExtension
+}
+
+@RootFactory
+typealias ApplicationComponentFactory = (
+    Project, CompilerConfiguration, ApplicationModule,
+) -> ApplicationComponent
+
+@Module
+object ApplicationModule {
+    @Given(ApplicationComponent::class)
+    fun srcDir(configuration: CompilerConfiguration): SrcDir =
+        File(configuration.getNotNull(SrcDirKey))
+            .also { it.mkdirs() }
+
+    @Given
+    fun logger(): Logger? = if (loggingEnabled) LoggerImpl else null
 }

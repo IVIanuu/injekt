@@ -26,7 +26,6 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mv
 
 dependencies {
     implementation(Deps.Injekt.core)
-    implementation(Deps.Injekt.common)
     kotlinCompilerPluginClasspath(Deps.Injekt.compilerPlugin)
     implementation(Deps.processingX)
     kapt(Deps.processingX)

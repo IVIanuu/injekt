@@ -23,8 +23,7 @@ import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.diagnostics.rendering.DefaultErrorMessages
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 
-interface
-InjektErrors {
+interface InjektErrors {
     companion object {
         @JvmField
         val MAP = DiagnosticFactoryToRendererMap("Injekt")

@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.generator.componentimpl
 
+import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.ModuleDescriptor
@@ -30,13 +31,20 @@ import com.ivianuu.injekt.compiler.generator.isAssignable
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.substitute
 import com.ivianuu.injekt.compiler.generator.toCallableRef
-import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 
 @Given
-class GivensGraph(private val owner: ComponentImpl) {
+class GivensGraph(
+    @Assisted private val owner: ComponentImpl,
+    collectionsFactory: (ComponentImpl, GivenCollections?) -> GivenCollections,
+    private val module: org.jetbrains.kotlin.descriptors.ModuleDescriptor,
+    private val componentFactoryImplFactory: (
+        Name, TypeRef, List<TypeRef>, TypeRef, ComponentImpl?,
+    ) -> ComponentFactoryImpl,
+) {
 
     private val parent = owner.factoryImpl.parent?.graph
 
@@ -50,7 +58,7 @@ class GivensGraph(private val owner: ComponentImpl) {
 
     private val givens = mutableListOf<GivenNode>()
 
-    private val collections: GivenCollections = given(owner, parent?.collections)
+    private val collections: GivenCollections = collectionsFactory(owner, parent?.collections)
 
     val resolvedGivens = mutableMapOf<TypeRef, GivenNode>()
 
@@ -70,7 +78,7 @@ class GivensGraph(private val owner: ComponentImpl) {
     init {
         val modules = inputs
             .filter { it.isModule }
-            .map { getModuleForType(it) }
+            .map { getModuleForType(it, module) }
 
         fun ModuleDescriptor.collectGivens(
             parentCallable: Callable?,
@@ -128,7 +136,7 @@ class GivensGraph(private val owner: ComponentImpl) {
                         )
                     }
                     Callable.GivenKind.MODULE -> {
-                        getModuleForType(callable.type)
+                        getModuleForType(callable.type, module)
                             .collectGivens(callable, thisAccessStatement)
                     }
                 }.let {}
@@ -294,12 +302,12 @@ class GivensGraph(private val owner: ComponentImpl) {
             }
             if (type !in existingFactories) {
                 val factoryDescriptor = getFactoryForType(type)
-                val factoryImpl = ComponentFactoryImpl(
-                    name = owner.factoryImpl.contextTreeNameProvider("F").asNameId(),
-                    factoryType = type,
-                    inputTypes = factoryDescriptor.inputTypes,
-                    contextType = factoryDescriptor.contextType,
-                    parent = owner
+                val factoryImpl = componentFactoryImplFactory(
+                    owner.factoryImpl.contextTreeNameProvider("F").asNameId(),
+                    type,
+                    factoryDescriptor.inputTypes,
+                    factoryDescriptor.contextType,
+                    owner
                 )
                 this += ChildFactoryGivenNode(
                     type = type,
@@ -311,7 +319,7 @@ class GivensGraph(private val owner: ComponentImpl) {
         }
 
         if (type.isFunctionAlias) {
-            val callable = getFunctionForAlias(type)
+            val callable = getFunctionForAlias(type, module)
             val substitutionMap = callable.typeParameters
                 .zip(type.typeArguments)
                 .toMap()
@@ -349,8 +357,8 @@ private fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"
 
 @Given
 class GivenCollections(
-    private val owner: ComponentImpl,
-    private val parent: GivenCollections?,
+    @Assisted private val owner: ComponentImpl,
+    @Assisted private val parent: GivenCollections?,
 ) {
 
     private val thisMapEntries = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
