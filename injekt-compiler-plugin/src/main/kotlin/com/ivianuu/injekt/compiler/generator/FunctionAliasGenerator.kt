@@ -8,9 +8,10 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
 
 @Given
-class FunctionAliasGenerator(
-    private val generateFile: (FqName, String, String) -> Unit,
-) : Generator {
+class FunctionAliasGenerator : Generator {
+
+    // todo should be assisted
+    lateinit var generateFile: (FqName, String, String) -> Unit
 
     override fun generate(files: List<KtFile>) {
         files.forEach { file ->

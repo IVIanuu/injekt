@@ -1,8 +1,7 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.given
 
 var loggingEnabled = true
 
@@ -16,10 +15,10 @@ object LoggerImpl : Logger {
     }
 }
 
-@Reader
-inline fun log(msg: () -> String) {
-    given<Logger?>()?.log(msg())
-}
-
 @Given
-fun givenLogger(): Logger? = if (loggingEnabled) LoggerImpl else null
+fun log(
+    logger: Logger?,
+    @Assisted msg: () -> String,
+) {
+    logger?.log(msg())
+}

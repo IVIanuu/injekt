@@ -71,19 +71,17 @@ allprojects {
         val srcDir = buildDir.resolve("generated/source/injekt/$sourceSetName")
             .also { it.mkdirs() }.absolutePath
 
-        if (project.name != "injekt-compiler-plugin") {
-            if (androidVariantData != null) {
-                project.extensions.findByType(com.android.build.gradle.BaseExtension::class.java)
-                    ?.sourceSets
-                    ?.findByName(sourceSetName)
-                    ?.java
-                    ?.srcDir(srcDir)
-            } else {
-                project.extensions.findByType(SourceSetContainer::class.java)
-                    ?.findByName(sourceSetName)
-                    ?.java
-                    ?.srcDir(srcDir)
-            }
+        if (androidVariantData != null) {
+            project.extensions.findByType(com.android.build.gradle.BaseExtension::class.java)
+                ?.sourceSets
+                ?.findByName(sourceSetName)
+                ?.java
+                ?.srcDir(srcDir)
+        } else {
+            project.extensions.findByType(SourceSetContainer::class.java)
+                ?.findByName(sourceSetName)
+                ?.java
+                ?.srcDir(srcDir)
         }
 
         kotlinOptions {

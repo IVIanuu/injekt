@@ -1,9 +1,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
-import com.ivianuu.injekt.ApplicationContext
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
@@ -37,8 +34,3 @@ val SrcDirKey = CompilerConfigurationKey<String>("srcDir")
 
 typealias SrcDir = File
 
-object ConfigurationGivens {
-    @Given(ApplicationContext::class)
-    fun srcDir(): SrcDir = File(given<CompilerConfiguration>().getNotNull(SrcDirKey))
-        .also { it.mkdirs() }
-}

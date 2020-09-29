@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler.generator.componentimpl
 
+import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.ClassifierRef
@@ -13,7 +14,9 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 @Given
-class GivenStatements(private val owner: ComponentImpl) {
+class GivenStatements(
+    @Assisted private val owner: ComponentImpl,
+) {
 
     private val parent = owner.factoryImpl.parent?.statements
     private val statementsByType = mutableMapOf<TypeRef, ComponentStatement>()

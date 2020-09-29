@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler.generator
 
-import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkers.getGivenFunctionType
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
@@ -39,7 +38,6 @@ data class Callable(
     }
 }
 
-@Reader
 fun FunctionDescriptor.toCallableRef(): Callable {
     val owner = when (this) {
         is ConstructorDescriptor -> constructedClass

@@ -16,25 +16,26 @@
 
 package com.ivianuu.injekt.compiler.checkers
 
-import com.ivianuu.injekt.ApplicationContext
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.given
+import com.ivianuu.injekt.compiler.ApplicationComponent
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.platform.TargetPlatform
 
-@Given(ApplicationContext::class)
-class InjektStorageContainerContributor : StorageComponentContainerContributor {
+@Given(ApplicationComponent::class)
+class InjektStorageContainerContributor(
+    private val givenChecker: GivenChecker,
+) : StorageComponentContainerContributor {
 
     override fun registerModuleComponents(
         container: StorageComponentContainer,
         platform: TargetPlatform,
-        moduleDescriptor: ModuleDescriptor
+        moduleDescriptor: ModuleDescriptor,
     ) {
         // todo only if merge is in classpath container.useInstance(given<EffectChecker>())
-        container.useInstance(given<GivenChecker>())
+        container.useInstance(givenChecker)
     }
 
 }
