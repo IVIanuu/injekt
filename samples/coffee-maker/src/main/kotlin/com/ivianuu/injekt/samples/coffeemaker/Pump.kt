@@ -14,6 +14,3 @@ class Thermosiphon(private val heater: Heater) : Pump {
         }
     }
 }
-
-@Given
-fun givenPump(): Pump = given<Thermosiphon>()

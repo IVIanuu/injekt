@@ -62,6 +62,36 @@ class InjektIntrinsicIrExtension : IrGenerationExtension {
                         }
                         DeclarationIrBuilder(pluginContext, result.symbol)
                             .irGetObject(rootFactoryStub.symbol)
+                    } else if (expression.symbol.descriptor.fqNameSafe ==
+                        InjektFqNames.mergeFactoryFun
+                    ) {
+                        val mergeFactoryType = result.getTypeArgument(0)!!
+                            .let { it as IrSimpleType }
+                            .abbreviation!!.typeAlias.descriptor.defaultType
+                        val mergeFactoryStub = rootFactoryStubByType.getOrPut(mergeFactoryType) {
+                            val mergeFactoryImplFqName =
+                                mergeFactoryType.constructor.declarationDescriptor!!
+                                    .fqNameSafe.toFactoryImplFqName()
+                            buildClass {
+                                this.name = mergeFactoryImplFqName.shortName()
+                                origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
+                                kind = ClassKind.OBJECT
+                                visibility = Visibilities.INTERNAL
+                            }.apply clazz@{
+                                createImplicitParameterDeclarationWithWrappedDescriptor()
+                                parent = IrExternalPackageFragmentImpl(
+                                    IrExternalPackageFragmentSymbolImpl(
+                                        EmptyPackageFragmentDescriptor(
+                                            pluginContext.moduleDescriptor,
+                                            mergeFactoryImplFqName.parent()
+                                        )
+                                    ),
+                                    mergeFactoryImplFqName.parent()
+                                )
+                            }
+                        }
+                        DeclarationIrBuilder(pluginContext, result.symbol)
+                            .irGetObject(mergeFactoryStub.symbol)
                     } else {
                         result
                     }
