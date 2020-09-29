@@ -175,6 +175,26 @@ class ReaderContextTest {
     }
 
     @Test
+    fun testProvider() = codegen(
+        """
+            @Module
+            object FooModule {
+                @Given
+                fun foo() = Foo()
+            }
+            
+            @RootFactory
+            typealias MyFactory = (FooModule) -> TestComponent1<() -> Foo>
+            
+            fun invoke() {
+                rootFactory<MyFactory>()(FooModule).a()
+            }
+        """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
     fun testAssistedGivenFunction() = codegen(
         """
             @Module

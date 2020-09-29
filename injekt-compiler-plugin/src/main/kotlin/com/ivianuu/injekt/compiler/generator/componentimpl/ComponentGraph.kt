@@ -342,6 +342,20 @@ class GivensGraph(
             )
         }
 
+        if (type.classifier.fqName.asString() == "kotlin.Function0") {
+            this += ProviderGivenNode(
+                type = type,
+                owner = owner,
+                dependencies = listOf(
+                    GivenRequest(
+                        type.typeArguments.single(),
+                        FqName.ROOT // todo
+                    )
+                ),
+                FqName.ROOT // todo
+            )
+        }
+
         this += givens
             .filter { it.type.isAssignable(type) }
 

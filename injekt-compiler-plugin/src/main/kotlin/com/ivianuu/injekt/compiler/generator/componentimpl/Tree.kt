@@ -138,6 +138,20 @@ class MapGivenNode(
         get() = null
 }
 
+class ProviderGivenNode(
+    override val type: TypeRef,
+    override val owner: ComponentImpl,
+    override val dependencies: List<GivenRequest>,
+    override val origin: FqName?,
+) : GivenNode() {
+    override val moduleAccessStatement: ComponentStatement?
+        get() = null
+    override val rawType: TypeRef
+        get() = type
+    override val targetComponent: TypeRef?
+        get() = null
+}
+
 class SetGivenNode(
     override val type: TypeRef,
     override val owner: ComponentImpl,

@@ -68,6 +68,7 @@ class GivenStatements(
                 is InputGivenNode -> inputExpression(given)
                 is MapGivenNode -> mapExpression(given)
                 is NullGivenNode -> nullExpression()
+                is ProviderGivenNode -> providerExpression(given)
                 is SelfGivenNode -> selfContextExpression(given)
                 is SetGivenNode -> setExpression(given)
             }
@@ -200,6 +201,11 @@ class GivenStatements(
             }
         }
     }
+
+    private fun providerExpression(given: ProviderGivenNode): ComponentStatement =
+        {
+            braced { getGivenStatement(owner.graph.getGiven(given.dependencies.single()))() }
+        }
 
     private fun selfContextExpression(given: SelfGivenNode): ComponentStatement =
         { emit("this@${given.component.name}") }
