@@ -18,7 +18,7 @@ package com.ivianuu.injekt.compiler.checkers
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.generator.getReaderConstructor
+import com.ivianuu.injekt.compiler.generator.getGivenConstructor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -59,9 +59,7 @@ class EffectChecker : DeclarationChecker {
         if (!descriptor.hasAnnotation(InjektFqNames.Effect)) return
 
         val companion = descriptor.companionObjectDescriptor
-        if (companion == null ||
-            !companion.hasAnnotation(InjektFqNames.GivenSet)
-        ) {
+        if (companion == null) {
             context.trace.report(
                 InjektErrors.EFFECT_WITHOUT_GIVEN_SET_COMPANION
                     .on(declaration)
@@ -140,7 +138,7 @@ class EffectChecker : DeclarationChecker {
             }
 
         val declarationType = when (descriptor) {
-            is ClassDescriptor -> descriptor.getReaderConstructor(context.trace)!!.getFunctionType()
+            is ClassDescriptor -> descriptor.getGivenConstructor()!!.getFunctionType()
             is FunctionDescriptor -> descriptor.getFunctionType()
             else -> error("Unexpected descriptor $descriptor")
         }

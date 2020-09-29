@@ -16,17 +16,10 @@
 
 package com.ivianuu.injekt.compiler.checkers
 
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektWritableSlices
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.replace
@@ -44,27 +37,6 @@ fun Annotated.hasAnnotatedAnnotations(
 
 fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescriptor> =
     annotations.filter { it.hasAnnotation(annotation) }
-
-fun DeclarationDescriptor.isMarkedAsReader(trace: BindingTrace): Boolean {
-    trace[InjektWritableSlices.IS_READER, this]?.let { return it }
-    val result = hasAnnotation(InjektFqNames.Reader) ||
-            hasAnnotation(InjektFqNames.Given) ||
-            hasAnnotation(InjektFqNames.GivenMapEntries) ||
-            hasAnnotation(InjektFqNames.GivenSetElements) ||
-            hasAnnotatedAnnotations(InjektFqNames.Effect)
-    trace.record(InjektWritableSlices.IS_READER, this, result)
-    return result
-}
-
-fun DeclarationDescriptor.isReader(trace: BindingTrace): Boolean {
-    trace[InjektWritableSlices.IS_READER, this]?.let { return it }
-    val result = isMarkedAsReader(trace) ||
-            (this is PropertyAccessorDescriptor && correspondingProperty.isReader(trace)) ||
-            (this is ClassDescriptor && constructors.any { it.isReader(trace) }) ||
-            (this is ConstructorDescriptor && constructedClass.isMarkedAsReader(trace))
-    trace.record(InjektWritableSlices.IS_READER, this, result)
-    return result
-}
 
 fun FunctionDescriptor.getFunctionType(): KotlinType {
     val parameters =

@@ -33,16 +33,6 @@ interface InjektErrors {
                 .also { MAP.put(it, message) }
 
         @JvmField
-        val FORBIDDEN_READER_CALL = error(
-            "@Reader functions can only be invoked inside a enclosing @Reader scope"
-        )
-
-        @JvmField
-        val MUST_BE_A_CONCRETE_CONTEXT_TYPE = error(
-            "Must be a concrete context type"
-        )
-
-        @JvmField
         val GIVEN_CLASS_CANNOT_BE_ABSTRACT = error(
             "@Given class cannot be an interface or abstract"
         )
@@ -63,31 +53,6 @@ interface InjektErrors {
         )
 
         @JvmField
-        val READER_FUNCTION_MUST_BE_FINAL = error(
-            "@Reader function must be final"
-        )
-
-        @JvmField
-        val READER_CLASS_CANNOT_BE_INTERFACE = error(
-            "@Reader class cannot be an interface"
-        )
-
-        @JvmField
-        val READER_CLASS_CANNOT_BE_OBJECT = error(
-            "@Reader class cannot be an object"
-        )
-
-        @JvmField
-        val READER_PROPERTY_WITH_BACKING_FIELD = error(
-            "@Reader property cannot have a backing field"
-        )
-
-        @JvmField
-        val MULTIPLE_READER_ANNOTATIONS = error(
-            "A declaration can only be annotated with one of @Reader, @Given, @GivenMapEntries, @GivenSetElements or @Effect annotated annotations"
-        )
-
-        @JvmField
         val EFFECT_WITHOUT_GIVEN_SET_COMPANION = error(
             "@Effect annotated class needs a @GivenSet companion object"
         )
@@ -95,11 +60,6 @@ interface InjektErrors {
         @JvmField
         val EFFECT_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS = error(
             "@Effect functions cannot have value parameters"
-        )
-
-        @JvmField
-        val NOT_A_GIVEN_SET = error(
-            "Not a @GivenSet"
         )
 
         @JvmField

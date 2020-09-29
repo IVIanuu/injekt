@@ -1,40 +1,27 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.SrcDir
 import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
-import com.ivianuu.injekt.compiler.checkers.isMarkedAsReader
 import com.ivianuu.injekt.compiler.log
 import com.ivianuu.injekt.given
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.descriptors.Visibility
-import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.js.translate.utils.refineType
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.upperIfFlexible
 import java.io.File
-import kotlin.math.absoluteValue
-
-@Reader
-val isInjektCompiler: Boolean
-    get() = moduleDescriptor.name.asString() == "<injekt-compiler-plugin>"
 
 @Reader
 fun <D : DeclarationDescriptor> KtDeclaration.descriptor() =
@@ -44,30 +31,6 @@ fun <D : DeclarationDescriptor> KtDeclaration.descriptor() =
 val moduleDescriptor: ModuleDescriptor
     get() = given()
 
-fun DeclarationDescriptor.uniqueKey() = when (this) {
-    is ClassDescriptor -> "${fqNameSafe}${
-        if (visibility == Visibilities.LOCAL &&
-            name.isSpecial
-        ) findPsi()?.startOffset else ""
-    }__class"
-    is FunctionDescriptor -> uniqueFunctionKeyOf(
-        fqNameSafe,
-        visibility,
-        findPsi()?.startOffset,
-        allParameters.map { it.type.prepare().constructor.declarationDescriptor!!.fqNameSafe })
-    is PropertyDescriptor -> "${fqNameSafe}${
-        if (visibility == Visibilities.LOCAL &&
-            name.isSpecial
-        ) findPsi()?.startOffset else ""
-    }__property${
-        listOfNotNull(
-            dispatchReceiverParameter?.type?.prepare(),
-            extensionReceiverParameter?.type?.prepare()
-        ).map { it.constructor.declarationDescriptor!!.fqNameSafe }.hashCode().absoluteValue
-    }"
-    else -> error("Unsupported declaration $this")
-}
-
 fun KotlinType.prepare(): KotlinType {
     var tmp = refineType()
     if (constructor is IntersectionTypeConstructor) {
@@ -76,15 +39,6 @@ fun KotlinType.prepare(): KotlinType {
     tmp = tmp.upperIfFlexible()
     return tmp
 }
-
-fun uniqueFunctionKeyOf(
-    fqName: FqName,
-    visibility: Visibility,
-    startOffset: Int? = null,
-    parameterTypes: List<FqName>
-) = "$fqName${
-    if (visibility == Visibilities.LOCAL && fqName.shortName().isSpecial) startOffset ?: "" else ""
-}__function${parameterTypes.hashCode().absoluteValue}"
 
 fun DeclarationDescriptor.hasAnnotationWithPropertyAndClass(
     fqName: FqName
@@ -100,20 +54,20 @@ fun DeclarationDescriptor.hasAnnotatedAnnotationsWithPropertyAndClass(
         )) ||
         (this is ConstructorDescriptor && constructedClass.hasAnnotatedAnnotations(fqName))
 
-fun ClassDescriptor.getReaderConstructor(trace: BindingTrace): ConstructorDescriptor? {
+fun ClassDescriptor.getGivenConstructor(): ConstructorDescriptor? {
     constructors
-        .firstOrNull {
-            it.isMarkedAsReader(trace)
-        }?.let { return it }
-    if (!isMarkedAsReader(trace)) return null
+        .firstOrNull { it.hasAnnotation(InjektFqNames.Given) }?.let { return it }
+    if (!hasAnnotation(InjektFqNames.Given)) return null
     return unsubstitutedPrimaryConstructor
 }
+
+fun String.asNameId() = Name.identifier(this)
 
 @Reader
 fun generateFile(
     packageFqName: FqName,
     fileName: String,
-    code: String
+    code: String,
 ): File {
     val newFile = given<SrcDir>()
         .resolve(packageFqName.asString().replace(".", "/"))
@@ -126,3 +80,27 @@ fun generateFile(
         .also { it.createNewFile() }
         .also { it.writeText(code) }
 }
+
+fun <T> unsafeLazy(init: () -> T) = lazy(LazyThreadSafetyMode.NONE, init)
+
+fun joinedNameOf(
+    packageFqName: FqName,
+    fqName: FqName,
+): Name {
+    val joinedSegments = fqName.asString()
+        .removePrefix(packageFqName.asString() + ".")
+        .split(".")
+    return joinedSegments.joinToString("_").asNameId()
+}
+
+fun String.removeIllegalChars() =
+    replace(".", "")
+        .replace("<", "")
+        .replace(">", "")
+        .replace(" ", "")
+        .replace("[", "")
+        .replace("]", "")
+        .replace("@", "")
+        .replace(",", "")
+        .replace(" ", "")
+        .replace("-", "")

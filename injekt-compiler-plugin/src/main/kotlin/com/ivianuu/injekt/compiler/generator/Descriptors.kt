@@ -2,7 +2,6 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkers.getFunctionType
-import com.ivianuu.injekt.compiler.irtransform.asNameId
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -32,7 +31,6 @@ data class CallableRef(
     val packageFqName: FqName,
     val fqName: FqName,
     val name: Name,
-    val uniqueKey: String,
     val type: TypeRef,
     val staticReceiver: TypeRef?,
     val typeParameters: List<ClassifierRef>,
@@ -79,7 +77,6 @@ fun FunctionDescriptor.toCallableRef(): CallableRef {
             hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect) -> CallableRef.GivenKind.GIVEN
             hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) -> CallableRef.GivenKind.GIVEN_MAP_ENTRIES
             hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) -> CallableRef.GivenKind.GIVEN_SET_ELEMENTS
-            hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSet) -> CallableRef.GivenKind.GIVEN_SET
             else -> error("Unexpected callable $this")
         },
         typeParameters = typeParameters.map { it.toClassifierRef() },
@@ -91,8 +88,7 @@ fun FunctionDescriptor.toCallableRef(): CallableRef {
                 )
             }
         ) + valueParameters.map { ValueParameterRef(it.type.toTypeRef()) },
-        isPropertyAccessor = owner is PropertyDescriptor,
-        uniqueKey = owner.uniqueKey()
+        isPropertyAccessor = owner is PropertyDescriptor
     )
 }
 
