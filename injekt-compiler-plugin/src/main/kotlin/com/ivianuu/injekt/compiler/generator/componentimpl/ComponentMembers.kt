@@ -156,7 +156,9 @@ class GivenStatements(private val owner: ComponentImpl) {
 
     private fun callableExpression(given: CallableGivenNode): ComponentStatement {
         return {
-            if (given.callable.valueParameters.any { it.isAssisted }) {
+            if (given.type.isFunctionAlias ||
+                given.callable.valueParameters.any { it.isAssisted }
+            ) {
                 emit("{ ")
                 given.callable.valueParameters
                     .filter { it.isAssisted }

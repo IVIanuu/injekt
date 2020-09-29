@@ -5,8 +5,7 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.RootFactory
 
 interface CoffeeComponent {
-    val pump: Pump
-    val heater: Heater
+    val brewCoffee: brewCoffee
 }
 
 @RootFactory
