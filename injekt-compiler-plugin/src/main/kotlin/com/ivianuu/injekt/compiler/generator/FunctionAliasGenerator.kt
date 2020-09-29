@@ -1,28 +1,26 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.checkers.getGivenFunctionType
-import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.checkers.hasAnnotation
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
 
 @Given
-class FunctionAliasGenerator : Generator {
+class FunctionAliasGenerator(
+    private val generateFile: (FqName, String, String) -> Unit,
+) : Generator {
 
     override fun generate(files: List<KtFile>) {
         files.forEach { file ->
-            val givenFunctions = mutableListOf<FunctionDescriptor>()
+            val givenFunctions = mutableListOf<KtNamedFunction>()
             file.accept(
                 namedFunctionRecursiveVisitor { declaration ->
-                    val descriptor = declaration.descriptor<FunctionDescriptor>()
-                        ?: return@namedFunctionRecursiveVisitor
-                    if (descriptor.hasAnnotation(InjektFqNames.Given) ||
-                        descriptor.hasAnnotatedAnnotations(InjektFqNames.Effect)
-                    ) {
-                        givenFunctions += descriptor
+                    if (declaration.isTopLevel && declaration.annotationEntries.any {
+                            it.text.contains("Given")
+                        }) {
+                        givenFunctions += declaration
                     }
                 }
             )
@@ -35,24 +33,63 @@ class FunctionAliasGenerator : Generator {
 
     private fun generateFunctionAliases(
         file: KtFile,
-        givenFunctions: List<FunctionDescriptor>,
+        givenFunctions: List<KtNamedFunction>,
     ) {
         val fileName = "${file.name.removeSuffix(".kt")}FunctionAliases.kt"
         val code = buildCodeString {
             emitLine("package ${file.packageFqName}")
-            emitLine("import ${InjektFqNames.FunctionAlias}")
+            file.importDirectives.forEach {
+                emitLine(it.text)
+            }
             emitLine()
             givenFunctions.forEach { function ->
-                val aliasType = function.getGivenFunctionType().toTypeRef()
-                emitLine("typealias ${function.name} = ${aliasType.render()}")
+                val isSuspend = function.hasModifier(KtTokens.SUSPEND_KEYWORD)
+                val isComposable = function.annotationEntries.any {
+                    it.text.contains("Composable")
+                }
+                val assistedParameters = listOfNotNull(
+                    function.receiverTypeReference
+                        ?.takeIf {
+                            it.annotationEntries
+                                .any { it.text.contains("Assisted") }
+                        }?.text
+                ) + function.valueParameters
+                    .filter {
+                        it.annotationEntries
+                            .any { it.text.contains("Assisted") }
+                    }
+                    .map { it.typeReference!!.text }
+                val returnType = function.typeReference?.text
+                    ?: if (function.hasBlockBody()) "Unit" else error(
+                        "@Given function must have a block body"
+                    )
+
+                emitLine("@com.ivianuu.injekt.internal.FunctionAlias")
+                emit("typealias ${function.name}")
+                function.typeParameterList?.parameters
+                    ?.mapNotNull { it.name }
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { typeParameters ->
+                        emit("<")
+                        typeParameters.forEachIndexed { index, name ->
+                            emit(name)
+                            if (index != typeParameters.lastIndex) emit(", ")
+                        }
+                        emit(">")
+                    }
+                emit(" = ")
+                if (isComposable) emit("@androidx.compose.runtime.Composable ")
+                if (isSuspend) emit("suspend ")
+                emit("(")
+                assistedParameters.forEachIndexed { index, param ->
+                    emit(param)
+                    if (index != assistedParameters.lastIndex) emit(", ")
+                }
+                emitLine(") -> $returnType")
             }
         }
 
-        generateFile(
-            packageFqName = file.packageFqName,
-            fileName = fileName,
-            code = code
-        )
+        generateFile(file.packageFqName, fileName, code)
     }
 
 }

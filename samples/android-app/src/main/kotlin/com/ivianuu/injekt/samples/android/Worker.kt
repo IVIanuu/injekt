@@ -42,8 +42,6 @@ class TestWorker(
 
 }
 
-typealias initializeWorkers = () -> Unit
-
 @Given
 fun initializeWorkers(
     applicationContext: ApplicationContext,

@@ -139,10 +139,10 @@ fun FqName.asClassDescriptor(): ClassDescriptor {
 }
 
 @Reader
-fun Type.getAllCallables(): List<Callable> {
+fun TypeRef.getAllCallables(): List<Callable> {
     val callables = mutableListOf<Callable>()
 
-    fun Type.collect(typeArguments: List<Type>) {
+    fun TypeRef.collect(typeArguments: List<TypeRef>) {
         val substitutionMap = classifier.typeParameters
             .zip(typeArguments)
             .toMap()
@@ -151,9 +151,7 @@ fun Type.getAllCallables(): List<Callable> {
             .unsubstitutedMemberScope
             .getContributedDescriptors(DescriptorKindFilter.CALLABLES)
             .filterIsInstance<CallableDescriptor>()
-            .filter {
-                it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() != true
-            }
+            .filter { it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() != true }
             .mapNotNull {
                 when (it) {
                     is FunctionDescriptor -> it.toCallableRef()
@@ -173,10 +171,10 @@ fun Type.getAllCallables(): List<Callable> {
 }
 
 @Reader
-fun getFactoryForType(type: Type): FactoryDescriptor = FactoryDescriptor(type)
+fun getFactoryForType(type: TypeRef): FactoryDescriptor = FactoryDescriptor(type)
 
 @Reader
-fun getModuleForType(type: Type): com.ivianuu.injekt.compiler.generator.ModuleDescriptor {
+fun getModuleForType(type: TypeRef): com.ivianuu.injekt.compiler.generator.ModuleDescriptor {
     val descriptor = type.classifier.fqName.asClassDescriptor()
     val substitutionMap = type.classifier.typeParameters
         .zip(type.typeArguments)
@@ -201,4 +199,13 @@ fun getModuleForType(type: Type): com.ivianuu.injekt.compiler.generator.ModuleDe
             }
             .map { it.toCallableRef() }
     )
+}
+
+@Reader
+fun getFunctionForAlias(aliasType: TypeRef): Callable {
+    return aliasType.classifier.fqName.parent().toMemberScope()!!
+        .getContributedFunctions(aliasType.classifier.fqName.shortName(),
+            NoLookupLocation.FROM_BACKEND)
+        .single()
+        .toCallableRef()
 }

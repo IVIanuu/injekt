@@ -17,12 +17,14 @@
 package com.ivianuu.injekt.samples.android
 
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.merge.ApplicationComponent
 import java.io.File
 
 typealias DatabaseFile = File
 
+@Module(ApplicationComponent::class)
 object DataModule {
     @Given
     fun databaseFile(applicationContext: ApplicationContext): DatabaseFile =
@@ -42,8 +44,6 @@ class Repo(
     fun refresh() {
     }
 }
-
-typealias refreshRepo = () -> Unit
 
 @Given
 fun refreshRepo(repo: Repo) {

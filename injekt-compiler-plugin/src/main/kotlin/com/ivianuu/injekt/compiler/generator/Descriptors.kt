@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler.generator
 
+import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkers.getGivenFunctionType
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
@@ -18,7 +19,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 data class FactoryDescriptor(
-    val factoryType: Type,
+    val factoryType: TypeRef,
 ) {
     val contextType = factoryType.expandedType!!.typeArguments.last()
     val inputTypes = factoryType.expandedType!!.typeArguments.dropLast(1)
@@ -28,11 +29,10 @@ data class Callable(
     val packageFqName: FqName,
     val fqName: FqName,
     val name: Name,
-    val type: Type,
-    val objectReceiver: Type?,
+    val type: TypeRef,
     val typeParameters: List<ClassifierRef>,
     val valueParameters: List<ValueParameterRef>,
-    val targetComponent: Type?,
+    val targetComponent: TypeRef?,
     val givenKind: GivenKind?,
     val isCall: Boolean,
 ) {
@@ -41,6 +41,7 @@ data class Callable(
     }
 }
 
+@Reader
 fun FunctionDescriptor.toCallableRef(): Callable {
     val owner = when (this) {
         is ConstructorDescriptor -> constructedClass
@@ -54,8 +55,6 @@ fun FunctionDescriptor.toCallableRef(): Callable {
         type = (if (allParameters.any { it.hasAnnotation(InjektFqNames.Assisted) })
             getGivenFunctionType() else returnType!!)
             .toTypeRef(),
-        objectReceiver = dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
-            ?.takeIf { it is ClassDescriptor && it.kind == ClassKind.OBJECT }?.defaultType?.toTypeRef(),
         targetComponent = (owner.annotations.findAnnotation(InjektFqNames.Given)
             ?.allValueArguments
             ?.get("scopeContext".asNameId())
@@ -77,9 +76,9 @@ fun FunctionDescriptor.toCallableRef(): Callable {
         },
         typeParameters = typeParameters.map { it.toClassifierRef() },
         valueParameters = listOfNotNull(
-            extensionReceiverParameter?.type?.let {
+            extensionReceiverParameter?.let {
                 ValueParameterRef(
-                    type = it.toTypeRef(),
+                    type = it.type.toTypeRef(),
                     isExtensionReceiver = true,
                     isAssisted = it.hasAnnotation(InjektFqNames.Assisted),
                     name = "receiver".asNameId()
@@ -99,13 +98,13 @@ fun FunctionDescriptor.toCallableRef(): Callable {
 }
 
 data class ValueParameterRef(
-    val type: Type,
+    val type: TypeRef,
     val isExtensionReceiver: Boolean = false,
     val isAssisted: Boolean = false,
     val name: Name,
 )
 
 data class ModuleDescriptor(
-    val type: Type,
+    val type: TypeRef,
     val callables: List<Callable>,
 )

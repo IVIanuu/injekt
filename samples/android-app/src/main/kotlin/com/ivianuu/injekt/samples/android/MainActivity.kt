@@ -58,8 +58,6 @@ interface MainActivityDependencies {
     val enqueueWork: enqueueWork
 }
 
-typealias WithMainViewModel = @Composable (@Composable (MainViewModel) -> Unit) -> Unit
-
 @Given
 @Composable
 fun WithMainViewModel(
@@ -69,8 +67,6 @@ fun WithMainViewModel(
     val viewModel = remember { viewModelFactory() }
     children(viewModel)
 }
-
-typealias enqueueWork = () -> Unit
 
 @Given
 fun enqueueWork(context: ActivityContext) {

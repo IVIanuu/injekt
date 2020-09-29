@@ -23,7 +23,8 @@ import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.diagnostics.rendering.DefaultErrorMessages
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 
-interface InjektErrors {
+interface
+InjektErrors {
     companion object {
         @JvmField
         val MAP = DiagnosticFactoryToRendererMap("Injekt")
@@ -31,6 +32,17 @@ interface InjektErrors {
         private fun error(message: String) =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also { MAP.put(it, message) }
+
+
+        @JvmField
+        val FACTORY_EXPANDED_TYPE_MUST_BE_FUNCTION = error(
+            "@RootFactory, @ChildFactory and @MergeFactory must be a function type"
+        )
+
+        @JvmField
+        val ROOT_FACTORY_WITH_TYPE_PARAMETERS = error(
+            "@RootFactory cannot have type parameters"
+        )
 
         @JvmField
         val EITHER_CLASS_OR_CONSTRUCTOR_GIVEN = error(

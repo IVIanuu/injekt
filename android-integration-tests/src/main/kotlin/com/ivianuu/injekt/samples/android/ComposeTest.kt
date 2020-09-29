@@ -74,7 +74,6 @@ class ComposeTest {
                     }
                 }
                 """,
-                initializeInjekt = false
             )
         ),
         listOf(

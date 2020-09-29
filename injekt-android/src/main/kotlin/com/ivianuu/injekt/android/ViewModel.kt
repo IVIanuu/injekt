@@ -8,7 +8,7 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.merge.Effect
 import kotlin.reflect.KClass
 
-@Effect
+@Effect(ActivityComponent::class)
 annotation class GivenActivityViewModel {
     @Module(ActivityComponent::class)
     companion object {
@@ -20,7 +20,7 @@ annotation class GivenActivityViewModel {
     }
 }
 
-@Effect
+@Effect(FragmentComponent::class)
 annotation class GivenFragmentViewModel {
     @Module(FragmentComponent::class)
     companion object {

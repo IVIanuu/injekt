@@ -3,7 +3,7 @@ package com.ivianuu.injekt.compiler.generator.componentimpl
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
-import com.ivianuu.injekt.compiler.generator.Type
+import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.getAllCallables
 import com.ivianuu.injekt.compiler.generator.render
@@ -12,9 +12,9 @@ import org.jetbrains.kotlin.name.Name
 @Reader
 class ComponentFactoryImpl(
     val name: Name,
-    val factoryType: Type,
-    val inputTypes: List<Type>,
-    val contextType: Type,
+    val factoryType: TypeRef,
+    val inputTypes: List<TypeRef>,
+    val contextType: TypeRef,
     val parent: ComponentImpl?,
 ) : ComponentMember {
 
@@ -67,9 +67,9 @@ class ComponentFactoryImpl(
 @Reader
 class ComponentImpl(
     val factoryImpl: ComponentFactoryImpl,
-    val contextType: Type,
+    val contextType: TypeRef,
     val name: Name,
-    val inputTypes: List<Type>,
+    val inputTypes: List<TypeRef>,
 ) {
 
     val statements = GivenStatements(this)

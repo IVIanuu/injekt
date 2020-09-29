@@ -7,11 +7,18 @@ import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
+import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalFileSystem
+import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalVirtualFile
+import org.jetbrains.kotlin.com.intellij.psi.PsiManager
+import org.jetbrains.kotlin.com.intellij.psi.SingleRootFileViewProvider
+import org.jetbrains.kotlin.container.ComponentProvider
+import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.diagnostics.Severity
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtension
+import java.io.File
 
 @Given
 class InjektKtGenerationExtension : PartialAnalysisHandlerExtension() {
@@ -20,6 +27,48 @@ class InjektKtGenerationExtension : PartialAnalysisHandlerExtension() {
         get() = !generatedCode
 
     private var generatedCode = false
+    private var generatedFunctionAlias = false
+
+    override fun doAnalysis(
+        project: Project,
+        module: ModuleDescriptor,
+        projectContext: ProjectContext,
+        files: Collection<KtFile>,
+        bindingTrace: BindingTrace,
+        componentProvider: ComponentProvider,
+    ): AnalysisResult? {
+        if (!generatedFunctionAlias) {
+            generatedFunctionAlias = true
+            files as MutableList<KtFile>
+            given<SrcDir>().deleteRecursively()
+            files.removeAll { !File(it.virtualFilePath).exists() }
+            childContext<GenerationContext>(
+                module,
+                bindingTrace,
+                bindingTrace.bindingContext
+            ).runReader {
+                given<((FqName, String, String) -> Unit) -> FunctionAliasGenerator>().invoke { fqName, fileName, code ->
+                    val file = generateFile(fqName, fileName, code)
+                    files += KtFile(
+                        SingleRootFileViewProvider(
+                            PsiManager.getInstance(project),
+                            CoreLocalVirtualFile(
+                                CoreLocalFileSystem(), file
+                            )
+                        ),
+                        false
+                    )
+                }.generate(files.toList())
+            }
+        }
+
+        return super.doAnalysis(project,
+            module,
+            projectContext,
+            files,
+            bindingTrace,
+            componentProvider)
+    }
 
     override fun analysisCompleted(
         project: Project,
@@ -27,13 +76,8 @@ class InjektKtGenerationExtension : PartialAnalysisHandlerExtension() {
         bindingTrace: BindingTrace,
         files: Collection<KtFile>,
     ): AnalysisResult? {
-        if (generatedCode || bindingTrace.bindingContext.diagnostics.any {
-                it.severity == Severity.ERROR
-            }
-        ) return null
+        if (generatedCode) return null
         generatedCode = true
-
-        given<SrcDir>().deleteRecursively()
 
         files as List<KtFile>
 
@@ -42,12 +86,11 @@ class InjektKtGenerationExtension : PartialAnalysisHandlerExtension() {
             bindingTrace,
             bindingTrace.bindingContext
         ).runReader {
-            given<FunctionAliasGenerator>().generate(files)
             given<RootFactoryGenerator>().generate(files)
         }
 
         return AnalysisResult.RetryWithAdditionalRoots(
-            bindingTrace.bindingContext, module, emptyList(), listOf(given<SrcDir>()), true
+            bindingTrace.bindingContext, module, emptyList(), emptyList(), true
         )
     }
 

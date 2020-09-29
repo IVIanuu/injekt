@@ -19,14 +19,16 @@ package com.ivianuu.injekt.compiler.generator.componentimpl
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.ModuleDescriptor
-import com.ivianuu.injekt.compiler.generator.Type
+import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.asClassDescriptor
 import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.getFactoryForType
+import com.ivianuu.injekt.compiler.generator.getFunctionForAlias
 import com.ivianuu.injekt.compiler.generator.getGivenConstructor
 import com.ivianuu.injekt.compiler.generator.getModuleForType
 import com.ivianuu.injekt.compiler.generator.isAssignable
 import com.ivianuu.injekt.compiler.generator.render
+import com.ivianuu.injekt.compiler.generator.substitute
 import com.ivianuu.injekt.compiler.generator.toCallableRef
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.pop
@@ -50,10 +52,10 @@ class GivensGraph(private val owner: ComponentImpl) {
 
     private val collections: GivenCollections = given(owner, parent?.collections)
 
-    val resolvedGivens = mutableMapOf<Type, GivenNode>()
+    val resolvedGivens = mutableMapOf<TypeRef, GivenNode>()
 
     sealed class ChainElement {
-        class Given(val type: Type) : ChainElement() {
+        class Given(val type: TypeRef) : ChainElement() {
             override fun toString() = type.render()
         }
 
@@ -201,7 +203,7 @@ class GivensGraph(private val owner: ComponentImpl) {
         )
     }
 
-    private fun getGivenOrNull(type: Type): GivenNode? {
+    private fun getGivenOrNull(type: TypeRef): GivenNode? {
         var given = resolvedGivens[type]
         if (given != null) return given
 
@@ -256,7 +258,7 @@ class GivensGraph(private val owner: ComponentImpl) {
                     )
                 }
 
-            given?.let {
+            given.let {
                 resolvedGivens[type] = it
                 check(it)
                 return it
@@ -271,7 +273,7 @@ class GivensGraph(private val owner: ComponentImpl) {
         return null
     }
 
-    private fun givensForKey(type: Type): List<GivenNode> = buildList<GivenNode> {
+    private fun givensForKey(type: TypeRef): List<GivenNode> = buildList<GivenNode> {
         instanceNodes[type]?.let { this += it }
 
         if (type == contextType) {
@@ -282,7 +284,7 @@ class GivensGraph(private val owner: ComponentImpl) {
         }
 
         if (type.isChildFactory) {
-            val existingFactories = mutableSetOf<Type>()
+            val existingFactories = mutableSetOf<TypeRef>()
             var currentComponent: ComponentImpl? = owner
             while (currentComponent != null) {
                 existingFactories += currentComponent.factoryImpl.factoryType
@@ -306,13 +308,37 @@ class GivensGraph(private val owner: ComponentImpl) {
             }
         }
 
+        if (type.isFunctionAlias) {
+            val callable = getFunctionForAlias(type)
+            val substitutionMap = callable.typeParameters
+                .zip(type.typeArguments)
+                .toMap()
+            this += CallableGivenNode(
+                type = type,
+                rawType = callable.type,
+                owner = owner,
+                dependencies = callable.valueParameters
+                    .filterNot { it.isAssisted }
+                    .map {
+                        GivenRequest(
+                            it.type.substitute(substitutionMap),
+                            callable.fqName.child(it.name)
+                        )
+                    },
+                origin = callable.fqName,
+                targetComponent = callable.targetComponent,
+                moduleAccessStatement = null,
+                callable = callable
+            )
+        }
+
         this += givens
             .filter { it.type.isAssignable(type) }
 
         this += collections.getNodes(type)
     }
 
-    private fun List<GivenNode>.getExact(requested: Type): GivenNode? =
+    private fun List<GivenNode>.getExact(requested: TypeRef): GivenNode? =
         singleOrNull { it.rawType == requested }
 
 }
@@ -325,8 +351,8 @@ class GivenCollections(
     private val parent: GivenCollections?,
 ) {
 
-    private val thisMapEntries = mutableMapOf<Type, MutableList<CallableWithReceiver>>()
-    private val thisSetElements = mutableMapOf<Type, MutableList<CallableWithReceiver>>()
+    private val thisMapEntries = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
+    private val thisSetElements = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
 
     fun addMapEntries(entries: CallableWithReceiver) {
         thisMapEntries.getOrPut(entries.callable.type) { mutableListOf() } += entries
@@ -336,23 +362,23 @@ class GivenCollections(
         thisSetElements.getOrPut(elements.callable.type) { mutableListOf() } += elements
     }
 
-    private val mapEntriesByType = mutableMapOf<Type, List<CallableWithReceiver>>()
-    private fun getMapEntries(type: Type): List<CallableWithReceiver> {
+    private val mapEntriesByType = mutableMapOf<TypeRef, List<CallableWithReceiver>>()
+    private fun getMapEntries(type: TypeRef): List<CallableWithReceiver> {
         return mapEntriesByType.getOrPut(type) {
             (parent?.getMapEntries(type) ?: emptyList()) +
                     (thisMapEntries[type] ?: emptyList())
         }
     }
 
-    private val setElementsByType = mutableMapOf<Type, List<CallableWithReceiver>>()
-    private fun getSetElements(type: Type): List<CallableWithReceiver> {
+    private val setElementsByType = mutableMapOf<TypeRef, List<CallableWithReceiver>>()
+    private fun getSetElements(type: TypeRef): List<CallableWithReceiver> {
         return setElementsByType.getOrPut(type) {
             (parent?.getSetElements(type) ?: emptyList()) +
                     (thisSetElements[type] ?: emptyList())
         }
     }
 
-    fun getNodes(type: Type): List<GivenNode> {
+    fun getNodes(type: TypeRef): List<GivenNode> {
         return listOfNotNull(
             getMapEntries(type)
                 .takeIf { it.isNotEmpty() }

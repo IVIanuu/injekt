@@ -3,11 +3,9 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
-import com.ivianuu.injekt.compiler.generator.componentimpl.CallableGivenNode
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentFactoryImpl
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.namedDeclarationRecursiveVisitor
 
@@ -40,27 +38,9 @@ class RootFactoryGenerator : Generator {
         )
         factoryImpl.initialize()
 
-        // extensions functions cannot be called by their fully qualified name
-        // because of that we collect all extension function calls and import them
-        val imports = mutableSetOf<FqName>()
-
-        fun ComponentFactoryImpl.collectImports() {
-            imports += context.graph.resolvedGivens.values
-                .filterIsInstance<CallableGivenNode>()
-                .filter {
-                    it.callable.valueParameters.firstOrNull()
-                        ?.isExtensionReceiver == true
-                }
-                .map { it.callable.fqName }
-            context.children.forEach { it.collectImports() }
-        }
-
-        factoryImpl.collectImports()
-
         val code = buildCodeString {
             emitLine("// injekt-generated")
             emitLine("package ${factoryImplFqName.parent()}")
-            imports.forEach { emitLine("import $it") }
             with(factoryImpl) { emit() }
         }
 

@@ -16,8 +16,8 @@ class FunctionAliasTest {
             val function: function
         }
         
-        @RootComponentFactory
-        typealias Factory = () -> TestComponent
+        @RootFactory
+        typealias Factory = (String) -> TestComponent
     """) {
         assertOk()
     }
@@ -32,13 +32,38 @@ class FunctionAliasTest {
             val function: function
         }
         
-        @RootComponentFactory
-        typealias Factory = () -> TestComponent
+        @RootFactory
+        typealias Factory = (String) -> TestComponent
     """)
 
-    // todo test with assisted
+    @Test
+    fun testSuspendFunctionAlias() = codegen("""
+        @Given
+        suspend fun function(string: String, @Assisted assistedString: String) {
+        }
+        
+        interface TestComponent {
+            val function: function
+        }
+        
+        @RootFactory
+        typealias Factory = (String) -> TestComponent
+    """)
 
-    // todo test with suspend
+    @Test
+    fun testFunctionAliasWithTypeParameters() = codegen("""
+        @Given
+        fun <T : S, S> function(t: T): S {
+            return error("")
+        }
+        
+        interface TestComponent {
+            val function: function<String, String>
+        }
+        
+        @RootFactory
+        typealias Factory = (String) -> TestComponent
+    """)
 
     // todo test with composable
 

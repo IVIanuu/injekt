@@ -27,10 +27,12 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 @Given
 class GivenChecker : DeclarationChecker {
 
+    // todo check top level || in object || in module
+
     override fun check(
         declaration: KtDeclaration,
         descriptor: DeclarationDescriptor,
-        context: DeclarationCheckerContext
+        context: DeclarationCheckerContext,
     ) {
         if (descriptor is ClassDescriptor) {
             checkClass(declaration, descriptor, context)

@@ -4,8 +4,8 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.ClassifierRef
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
-import com.ivianuu.injekt.compiler.generator.SimpleType
-import com.ivianuu.injekt.compiler.generator.Type
+import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
+import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.name.FqName
@@ -15,10 +15,10 @@ import org.jetbrains.kotlin.name.Name
 class GivenStatements(private val owner: ComponentImpl) {
 
     private val parent = owner.factoryImpl.parent?.statements
-    private val statementsByType = mutableMapOf<Type, ComponentStatement>()
+    private val statementsByType = mutableMapOf<TypeRef, ComponentStatement>()
 
     fun getProperty(
-        type: Type,
+        type: TypeRef,
         name: Name,
         isOverride: Boolean,
         getter: ComponentStatement,
@@ -72,7 +72,7 @@ class GivenStatements(private val owner: ComponentImpl) {
         ) rawStatement else ({
             val property = ComponentProperty(
                 name = given.type.uniqueTypeName(),
-                type = SimpleType(ClassifierRef(FqName("kotlin.Any")), isMarkedNullable = true),
+                type = SimpleTypeRef(ClassifierRef(FqName("kotlin.Any")), isMarkedNullable = true),
                 initializer = { emit("this") },
                 isMutable = true,
                 getter = null,
@@ -201,30 +201,40 @@ class GivenStatements(private val owner: ComponentImpl) {
 private fun CodeBuilder.emitCallableInvocation(
     callable: Callable,
     receiver: ComponentStatement?,
-    parameters: List<ComponentStatement>,
+    arguments: List<ComponentStatement>,
 ) {
-    when {
-        receiver != null -> {
-            receiver()
-            emit(".${callable.name}")
+    fun emitArguments() {
+        if (callable.isCall) {
+            emit("(")
+            arguments
+                .drop(if (callable.valueParameters.firstOrNull()?.isExtensionReceiver == true) 1 else 0)
+                .forEachIndexed { index, parameter ->
+                    parameter()
+                    if (index != arguments.lastIndex) emit(", ")
+                }
+            emit(")")
         }
-        callable.objectReceiver != null -> {
-            emit("${callable.objectReceiver.render()}.${callable.name}")
-        }
-        callable.valueParameters.any { it.isExtensionReceiver } -> {
-            parameters.first()()
-            emit(".${callable.name}")
-        }
-        else -> emit(callable.fqName)
     }
-    if (callable.isCall) {
-        emit("(")
-        parameters
-            .drop(if (callable.valueParameters.firstOrNull()?.isExtensionReceiver == true) 1 else 0)
-            .forEachIndexed { index, parameter ->
-                parameter()
-                if (index != parameters.lastIndex) emit(", ")
+    if (receiver != null) {
+        emit("with(")
+        receiver()
+        emit(") ")
+        braced {
+            if (callable.valueParameters.any { it.isExtensionReceiver }) {
+                emit("with(")
+                arguments.first()()
+                emit(") ")
+                braced {
+                    emit(callable.name)
+                    emitArguments()
+                }
+            } else {
+                emit(callable.name)
+                emitArguments()
             }
-        emit(")")
+        }
+    } else {
+        emit(callable.fqName)
+        emitArguments()
     }
 }

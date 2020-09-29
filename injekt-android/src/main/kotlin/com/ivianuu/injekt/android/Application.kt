@@ -23,7 +23,6 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.merge.ApplicationComponent
 import com.ivianuu.injekt.merge.MergeFactory
-import com.ivianuu.injekt.merge.mergeComponentFactory
 import com.ivianuu.injekt.merge.mergeFactory
 
 val Application.applicationComponent: ApplicationComponent
