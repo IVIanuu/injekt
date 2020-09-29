@@ -25,7 +25,7 @@ import androidx.lifecycle.ViewModel
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.ivianuu.injekt.Assisted
-import com.ivianuu.injekt.GivenFun
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityContext
 import com.ivianuu.injekt.android.GivenActivityViewModel
@@ -60,7 +60,7 @@ interface MainActivityDependencies {
 
 typealias WithMainViewModel = @Composable (@Composable (MainViewModel) -> Unit) -> Unit
 
-@GivenFun
+@Given
 @Composable
 fun WithMainViewModel(
     viewModelFactory: () -> MainViewModel,
@@ -72,7 +72,7 @@ fun WithMainViewModel(
 
 typealias enqueueWork = () -> Unit
 
-@GivenFun
+@Given
 fun enqueueWork(context: ActivityContext) {
     WorkManager.getInstance(context)
         .enqueue(

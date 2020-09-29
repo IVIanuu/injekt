@@ -10,9 +10,6 @@ import kotlin.reflect.KClass
 )
 annotation class Given(val scopeComponent: KClass<*> = Nothing::class)
 
-@Target(AnnotationTarget.FUNCTION)
-annotation class GivenFun
-
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class GivenMapEntries
 

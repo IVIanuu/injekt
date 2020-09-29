@@ -14,7 +14,7 @@ annotation class MergeChildComponent {
 
 annotation class GenerateMergeComponents
 
+fun <T> mergeComponentFactory(): T = error("Must be compiled with the injekt compiler")
+
 @MergeComponent
 interface ApplicationComponent
-
-fun <T> mergeComponentFactory(): T = error("Must be compiled with the injekt compiler")

@@ -23,7 +23,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Assisted
-import com.ivianuu.injekt.GivenFun
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.android.work.GivenWorker
 
@@ -44,7 +44,7 @@ class TestWorker(
 
 typealias initializeWorkers = () -> Unit
 
-@GivenFun
+@Given
 fun initializeWorkers(
     applicationContext: ApplicationContext,
     workerFactory: WorkerFactory,
