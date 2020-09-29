@@ -33,8 +33,7 @@ class InjektStorageContainerContributor : StorageComponentContainerContributor {
         platform: TargetPlatform,
         moduleDescriptor: ModuleDescriptor
     ) {
-        container.useInstance(given<ComponentChecker>())
-        container.useInstance(given<EffectChecker>())
+        // todo only if merge is in classpath container.useInstance(given<EffectChecker>())
         container.useInstance(given<GivenChecker>())
     }
 

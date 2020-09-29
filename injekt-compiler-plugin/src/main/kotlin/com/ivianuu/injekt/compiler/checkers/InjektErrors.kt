@@ -33,18 +33,8 @@ interface InjektErrors {
                 .also { MAP.put(it, message) }
 
         @JvmField
-        val GIVEN_CLASS_CANNOT_BE_ABSTRACT = error(
-            "@Given class cannot be an interface or abstract"
-        )
-
-        @JvmField
         val EITHER_CLASS_OR_CONSTRUCTOR_GIVEN = error(
-            "Either the class or a constructor may be annotated with @Given"
-        )
-
-        @JvmField
-        val MULTIPLE_GIVEN_ANNOTATED_CONSTRUCTORS = error(
-            "Only 1 one constructor may be annotated with @Given"
+            "Either the class or 1 constructor may be annotated with @Given"
         )
 
         @JvmField
@@ -53,8 +43,8 @@ interface InjektErrors {
         )
 
         @JvmField
-        val EFFECT_WITHOUT_GIVEN_SET_COMPANION = error(
-            "@Effect annotated class needs a @GivenSet companion object"
+        val EFFECT_WITHOUT_COMPANION = error(
+            "@Effect annotated class needs a companion object"
         )
 
         @JvmField

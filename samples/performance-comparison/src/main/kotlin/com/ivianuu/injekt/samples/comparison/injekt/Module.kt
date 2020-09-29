@@ -1,6 +1,6 @@
 package com.ivianuu.injekt.samples.comparison.injekt
 
-import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.RootFactory
 import com.ivianuu.injekt.samples.comparison.fibonacci.Fib1
 import com.ivianuu.injekt.samples.comparison.fibonacci.Fib2
 import com.ivianuu.injekt.samples.comparison.fibonacci.Fib3
@@ -10,17 +10,15 @@ import com.ivianuu.injekt.samples.comparison.fibonacci.Fib6
 import com.ivianuu.injekt.samples.comparison.fibonacci.Fib7
 import com.ivianuu.injekt.samples.comparison.fibonacci.Fib8
 
-@Component
 interface InjektComponent {
     val fib8: Fib8
-
-    interface Factory {
-        fun create(): InjektComponent
-    }
 }
 
-object InjektComponentFactoryImpl : InjektComponent.Factory {
-    override fun create(): InjektComponent {
+@RootFactory
+typealias InjektComponentFactory = () -> InjektComponent
+
+object InjektComponentFactoryImpl : InjektComponentFactory {
+    override fun invoke(): InjektComponent {
         return object : InjektComponent {
             override val fib8 get() = Fib8(fib7, fib6)
             private val fib7 get() = Fib7(fib6, fib5)

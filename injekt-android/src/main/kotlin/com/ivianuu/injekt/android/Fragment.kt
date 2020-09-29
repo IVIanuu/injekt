@@ -25,23 +25,21 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.merge.EntryPoint
 import com.ivianuu.injekt.merge.MergeComponent
+import com.ivianuu.injekt.merge.MergeFactory
 import com.ivianuu.injekt.merge.entryPoint
 
 val Fragment.fragmentComponent: FragmentComponent
     get() = lifecycle.singleton {
         activity!!.activityComponent
             .entryPoint<FragmentComponentEntryPoint>()
-            .fragmentComponentFactory
-            .create(this)
+            .fragmentComponentFactory(this)
     }
 
 @MergeComponent
-interface FragmentComponent {
-    @MergeComponent.Factory
-    interface Factory {
-        fun create(fragment: Fragment): FragmentComponent
-    }
-}
+interface FragmentComponent
+
+@MergeFactory
+typealias FragmentComponentFactory = (Fragment) -> FragmentComponent
 
 typealias FragmentContext = android.content.Context
 
@@ -80,5 +78,5 @@ object FragmentModule {
 
 @EntryPoint(FragmentComponent::class)
 interface FragmentComponentEntryPoint {
-    val fragmentComponentFactory: FragmentComponent.Factory
+    val fragmentComponentFactory: FragmentComponentFactory
 }

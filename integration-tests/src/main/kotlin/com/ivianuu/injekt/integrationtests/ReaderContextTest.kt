@@ -18,7 +18,6 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertSame
@@ -30,13 +29,23 @@ class ReaderContextTest {
     @Test
     fun testSimple() = codegen(
         """
-            @Given
-            fun foo() = Foo()
-            @Given
-            fun bar() = Bar(given())
+            @Module
+            object TestModule {
+                @Given
+                fun foo() = Foo()
+                
+                @Given
+                fun bar() = Bar(given())
+            }
+            
+            interface TestComponent {
+                val bar: Bar
+            }
+
+            typealias TestComponentFactory = (TestModule) -> TestComponent
             
             fun invoke(): Bar {
-                return rootContext<TestContext>().runReader { given<Bar>() }
+                return rootFactory<TestComponentFactory>()(TestModule)
             }
     """
     ) {
@@ -146,122 +155,6 @@ class ReaderContextTest {
     }
 
     @Test
-    fun testGenericRequestInChildContext() = codegen(
-        """
-            val parentContext = rootContext<TestParentContext>()
-            
-            @Given
-            fun foo() = Foo()
-            
-            fun invoke() {
-                parentContext.runReader {
-                    val foo = diyGiven<Foo>()
-                }
-            }
-            
-            @Reader
-            fun <T> diyGiven() = childContext<TestChildContext>().runReader { given<T>() }
-        """
-    ) {
-        invokeSingleFile()
-    }
-
-    @Test
-    fun testEssentialsRememberStore() = codegen(
-        """
-            interface CoroutineScope
-            interface Store<S, A>
-            
-            @Reader
-            fun <S, A> rememberStore(): Store<S, A> = rememberStore {
-                given(this)
-            }
-
-            @Reader
-            fun <S, A> rememberStore(init: CoroutineScope.() -> Store<S, A>): Store<S, A> {
-                val scope: CoroutineScope = error("")
-                return init(scope)
-            }
-        """
-    ) {
-        assertOk()
-    }
-
-    // todo @Test
-    fun testGenericRequestInNestedChildContext() = codegen(
-        """
-            val parentContext = rootContext<TestParentContext>()
-            
-            @Given
-            fun foo() = Foo()
-            
-            fun invoke() {
-                parentContext.runReader {
-                    val foo = diyGiven<Foo>()
-                }
-            }
-            
-            @Reader
-            fun <T> diyGiven() = childContext<TestChildContext>().runReader { 
-                childContext<TestChildContext2>().runReader { 
-                    given<T>() 
-                }
-            }
-        """
-    ) {
-        invokeSingleFile()
-    }
-
-    @Test
-    fun testRunChildReaderWithEffect() = codegen(
-        """ 
-            @Effect
-            annotation class GivenFooFactory {
-                @GivenSet
-                companion object {
-                    @Given
-                    fun <T : () -> Foo> invoke(): FooFactoryMarker = given<T>()
-                }
-            }
-
-            typealias FooFactoryMarker = () -> Foo
-            
-            @GivenFooFactory
-            fun FooFactoryImpl() = childContext<TestChildContext>().runReader { given<Foo>() }
-            
-            fun invoke(foo: Foo): Foo {
-                return rootContext<TestParentContext>(foo).runReader {
-                    given<FooFactoryMarker>()()
-                }
-            }
-        """
-    ) {
-        val foo = Foo()
-        assertSame(foo, invokeSingleFile(foo))
-    }
-
-    @Test
-    fun testRunReaderInsideSuspend() = codegen(
-        """
-        @Given
-        fun foo() = Foo()
-        @Given
-        fun bar() = Bar(given())
-        
-        fun invoke(): Bar {
-            return runBlocking {
-                rootContext<TestContext>().runReader { 
-                    delay(1)
-                    given<Bar>()
-                }
-            }
-        }
-    """
-    ) {
-        assertTrue(invokeSingleFile() is Bar)
-    }
-
-    @Test
     fun testScopedGiven() = codegen(
         """
         @Given(TestContext::class)
@@ -271,22 +164,6 @@ class ReaderContextTest {
         
         fun invoke(): Foo {
             return context.runReader { given<Foo>() }
-        }
-    """
-    ) {
-        assertSame(invokeSingleFile(), invokeSingleFile())
-    }
-
-    @Test
-    fun testScopedGivenClass() = codegen(
-        """
-        @Given(TestContext::class)
-        class Dep
-        
-        val context = rootContext<TestContext>()
-        
-        fun invoke(): Dep {
-            return context.runReader { given<Dep>() }
         }
     """
     ) {
@@ -319,59 +196,6 @@ class ReaderContextTest {
     }
 
     @Test
-    fun testParentScopedGiven2() = codegen(
-        """
-        @Given
-        fun foo() = Foo()
-
-        @Given(TestParentContext::class)
-        fun bar() = Bar(given())
-        
-        val parentContext = rootContext<TestParentContext>()
-        val childContext = parentContext.runReader {
-            childContext<TestChildContext>()
-        }
-        
-        fun invoke(): Bar {
-            return childContext.runReader { given<Bar>() }
-        }
-    """
-    ) {
-        assertSame(
-            invokeSingleFile(),
-            invokeSingleFile()
-        )
-    }
-
-    @Test
-    fun testParentScopedGiven3() = codegen(
-        """
-        @Given
-        fun foo() = Foo()
-
-        @Given(TestParentContext::class)
-        fun bar() = Bar(given())
-        
-        @Reader
-        fun barGetter() = given<Bar>()
-        
-        val parentContext = rootContext<TestParentContext>()
-        val childContext = parentContext.runReader {
-            childContext<TestChildContext>()
-        }
-        
-        fun invoke(): Bar {
-            return childContext.runReader { barGetter() }
-        }
-    """
-    ) {
-        assertSame(
-            invokeSingleFile(),
-            invokeSingleFile()
-        )
-    }
-
-    @Test
     fun testGivenClass() = codegen(
         """
         @Given
@@ -381,6 +205,20 @@ class ReaderContextTest {
         
         @Given
         fun foo(): Foo = Foo()
+
+        fun invoke(): Any { 
+            return rootContext<TestContext>().runReader { given<AnnotatedBar>() }
+        }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testGivenObject() = codegen(
+        """
+        @Given
+        object AnnotatedBar
 
         fun invoke(): Any { 
             return rootContext<TestContext>().runReader { given<AnnotatedBar>() }
@@ -483,7 +321,7 @@ class ReaderContextTest {
     )
 
     @Test
-    fun testRunReaderInput() = codegen(
+    fun testInput() = codegen(
         """
         fun invoke(): Pair<Foo, Foo> {
             val foo = Foo()
@@ -496,7 +334,7 @@ class ReaderContextTest {
     }
 
     @Test
-    fun testGivenSet() = codegen(
+    fun testModule() = codegen(
         """
         @GivenSet
         class FooGivens {
@@ -516,7 +354,7 @@ class ReaderContextTest {
     }
 
     @Test
-    fun testNestedGivenSets() = codegen(
+    fun testNestedModule() = codegen(
         """
         @GivenSet
         class FooGivens {
@@ -540,81 +378,5 @@ class ReaderContextTest {
     ) {
         assertTrue(invokeSingleFile() is Bar)
     }
-
-    @Test
-    fun testCircularChildContextsByContextId() = codegen(
-        """
-            @Reader
-            fun childContextA(foo: Foo): Foo {
-                return childContext<TestChildContext>(foo).runReader {
-                    childContextB()
-                }
-            }
-            
-            @Reader
-            fun childContextB(): Foo {
-                return childContext<TestChildContext>(Foo()).runReader {
-                    given<Foo>()
-                }
-            }
-
-            fun invoke() {
-                rootContext<TestParentContext>()
-                    .runReader { childContextA(Foo()) }
-            }
-        """
-    ) {
-        invokeSingleFile()
-    }
-
-    @Test
-    fun testCircularChildContextsByContextFactory() = codegen(
-        """
-            @Reader
-            fun childContextA() { 
-                childContext<TestChildContext>().runReader {
-                    childContextB()
-                }
-            }
-            
-            private var called = false
-            
-            @Reader
-            fun childContextB() {
-                childContext<TestChildContext2>().runReader {
-                    if (!called) {
-                        called = true
-                        childContextA()
-                    }
-                }
-            }
-
-            fun invoke() {
-                rootContext<TestParentContext>()
-                    .runReader { childContextA() }
-            }
-        """
-    ) {
-        invokeSingleFile()
-    }
-
-    @Test
-    fun testGenericTypeAlias() = codegen(
-        """
-            interface Comparator<T> {
-                fun compare(a: T, b: T): Int
-            }
-            typealias AliasComparator<T> = Comparator<T>
-            @Reader
-            fun callMax() {
-                compare(1, 2)
-            }
-
-            @Reader
-            fun <T> compare(a: T, b: T): Int = given<AliasComparator<T>>()
-                .compare(a, b)
-
-        """
-    )
 
 }

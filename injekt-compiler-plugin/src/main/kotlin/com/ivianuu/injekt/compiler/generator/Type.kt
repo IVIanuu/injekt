@@ -17,8 +17,8 @@ import org.jetbrains.kotlin.types.getAbbreviation
 data class ClassifierRef(
     val fqName: FqName,
     val typeParameters: List<ClassifierRef> = emptyList(),
-    val superTypes: List<TypeRef> = emptyList(),
-    val isTypeParameter: Boolean = false
+    val superTypes: List<Type> = emptyList(),
+    val isTypeParameter: Boolean = false,
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
     override fun hashCode(): Int = fqName.hashCode()
@@ -34,57 +34,68 @@ fun ClassifierDescriptor.toClassifierRef(): ClassifierRef {
     )
 }
 
-val ClassifierRef.defaultType: TypeRef
-    get() = SimpleTypeRef(
+val ClassifierRef.defaultType: Type
+    get() = SimpleType(
         this,
         typeArguments = typeParameters.map { it.defaultType }
     )
 
-sealed class TypeRef {
+sealed class Type {
     abstract val classifier: ClassifierRef
     abstract val isMarkedNullable: Boolean
-    abstract val typeArguments: List<TypeRef>
+    abstract val typeArguments: List<Type>
     abstract val variance: Variance
+    abstract val isModule: Boolean
+    abstract val isChildFactory: Boolean
     abstract val isComposable: Boolean
-    abstract val superTypes: List<TypeRef>
+    abstract val superTypes: List<Type>
     private val typeName by unsafeLazy { uniqueTypeName(includeNullability = false) }
-    override fun equals(other: Any?) = other is TypeRef && typeName == other.typeName
+    override fun equals(other: Any?) = other is Type && typeName == other.typeName
     override fun hashCode() = typeName.hashCode()
 }
 
-class KotlinTypeRef(
+class KotlinType(
     val kotlinType: KotlinType,
-    override val variance: Variance = Variance.INVARIANT
-) : TypeRef() {
+    override val variance: Variance = Variance.INVARIANT,
+) : Type() {
     private val finalType by unsafeLazy { kotlinType.getAbbreviation() ?: kotlinType.prepare() }
     override val classifier: ClassifierRef by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.toClassifierRef()
+    }
+    override val isModule: Boolean by unsafeLazy {
+        kotlinType.hasAnnotation(InjektFqNames.Module)
+    }
+    override val isChildFactory: Boolean by unsafeLazy {
+        kotlinType.hasAnnotation(InjektFqNames.ChildFactory)
     }
     override val isComposable: Boolean by unsafeLazy {
         kotlinType.hasAnnotation(InjektFqNames.Composable) &&
                 kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
     }
-    override val superTypes: List<TypeRef> by unsafeLazy {
+    override val superTypes: List<Type> by unsafeLazy {
         kotlinType.constructor.supertypes.map { it.toTypeRef() }
     }
     override val isMarkedNullable: Boolean by unsafeLazy {
         kotlinType.isMarkedNullable
     }
-    override val typeArguments: List<TypeRef> by unsafeLazy {
+    override val typeArguments: List<Type> by unsafeLazy {
         finalType.arguments.map { it.type.toTypeRef(it.projectionKind) }
     }
 }
 
-fun KotlinType.toTypeRef(variance: Variance = Variance.INVARIANT) = KotlinTypeRef(this, variance)
+fun KotlinType.toTypeRef(variance: Variance = Variance.INVARIANT) =
+    KotlinType(this, variance)
 
-class SimpleTypeRef(
+class SimpleType(
     override val classifier: ClassifierRef,
     override val isMarkedNullable: Boolean = false,
-    override val typeArguments: List<TypeRef> = emptyList(),
+    override val typeArguments: List<Type> = emptyList(),
     override val variance: Variance = Variance.INVARIANT,
+    override val isModule: Boolean = false,
+    override val isChildFactory: Boolean = false,
     override val isComposable: Boolean = false,
-    override val superTypes: List<TypeRef> = emptyList(),
-) : TypeRef() {
+    override val superTypes: List<Type> = emptyList(),
+) : Type() {
     init {
         check(typeArguments.size == classifier.typeParameters.size) {
             "Argument size mismatch ${classifier.fqName} " +
@@ -94,15 +105,15 @@ class SimpleTypeRef(
     }
 }
 
-fun TypeRef.typeWith(typeArguments: List<TypeRef>): TypeRef = copy(typeArguments = typeArguments)
+fun Type.typeWith(typeArguments: List<Type>): Type = copy(typeArguments = typeArguments)
 
-fun TypeRef.copy(
+fun Type.copy(
     classifier: ClassifierRef = this.classifier,
     isMarkedNullable: Boolean = this.isMarkedNullable,
-    typeArguments: List<TypeRef> = this.typeArguments,
+    typeArguments: List<Type> = this.typeArguments,
     variance: Variance = this.variance,
     isComposable: Boolean = this.isComposable,
-) = SimpleTypeRef(
+) = SimpleType(
     classifier = classifier,
     isMarkedNullable = isMarkedNullable,
     typeArguments = typeArguments,
@@ -110,12 +121,12 @@ fun TypeRef.copy(
     isComposable = isComposable
 )
 
-fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
+fun Type.substitute(map: Map<ClassifierRef, Type>): Type {
     map[classifier]?.let { return it }
     return copy(typeArguments = typeArguments.map { it.substitute(map) })
 }
 
-fun TypeRef.render(): String {
+fun Type.render(): String {
     return buildString {
         val annotations = listOfNotNull(
             if (isComposable) "@androidx.compose.runtime.Composable" else null,
@@ -142,8 +153,8 @@ fun TypeRef.render(): String {
     }
 }
 
-fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
-    fun TypeRef.renderName(includeArguments: Boolean = true): String {
+fun Type.uniqueTypeName(includeNullability: Boolean = true): Name {
+    fun Type.renderName(includeArguments: Boolean = true): String {
         return buildString {
             if (isComposable) append("composable_")
             //if (includeNullability && isMarkedNullable) append("nullable_")
@@ -167,12 +178,12 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
         .asNameId()
 }
 
-fun TypeRef.getSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRef> {
-    val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
+fun Type.getSubstitutionMap(baseType: Type): Map<ClassifierRef, Type> {
+    val substitutionMap = mutableMapOf<ClassifierRef, Type>()
 
     fun visitType(
-        thisType: TypeRef,
-        baseType: TypeRef
+        thisType: Type,
+        baseType: Type,
     ) {
         if (baseType.classifier.isTypeParameter) {
             substitutionMap[baseType.classifier] = thisType
@@ -188,7 +199,7 @@ fun TypeRef.getSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRef> {
     return substitutionMap
 }
 
-fun TypeRef.isAssignable(superType: TypeRef): Boolean {
+fun Type.isAssignable(superType: Type): Boolean {
     if (this == superType) return true
 
     if (superType.classifier.isTypeParameter) {
@@ -204,7 +215,7 @@ fun TypeRef.isAssignable(superType: TypeRef): Boolean {
     }
 }
 
-fun TypeRef.isSubTypeOf(superType: TypeRef): Boolean {
+fun Type.isSubTypeOf(superType: Type): Boolean {
     if (classifier.fqName == superType.classifier.fqName) return true
     if (superType.classifier.fqName.asString() == KotlinBuiltIns.FQ_NAMES.any.asString() && superType.isMarkedNullable)
         return true

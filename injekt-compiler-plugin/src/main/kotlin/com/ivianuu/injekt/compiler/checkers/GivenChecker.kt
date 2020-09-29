@@ -19,9 +19,7 @@ package com.ivianuu.injekt.compiler.checkers
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
@@ -60,24 +58,13 @@ class GivenChecker : DeclarationChecker {
             )
         }
 
-        if (classHasAnnotation && annotatedConstructors.isNotEmpty()) {
+        if ((classHasAnnotation && annotatedConstructors.isNotEmpty()) ||
+            annotatedConstructors.size > 1
+        ) {
             context.trace.report(
                 InjektErrors.EITHER_CLASS_OR_CONSTRUCTOR_GIVEN
                     .on(declaration)
             )
-        }
-
-        if (annotatedConstructors.size > 1) {
-            context.trace.report(
-                InjektErrors.MULTIPLE_GIVEN_ANNOTATED_CONSTRUCTORS
-                    .on(declaration)
-            )
-        }
-
-        if ((descriptor.kind != ClassKind.CLASS && descriptor.kind != ClassKind.OBJECT) ||
-            descriptor.modality == Modality.ABSTRACT
-        ) {
-            context.trace.report(InjektErrors.GIVEN_CLASS_CANNOT_BE_ABSTRACT.on(declaration))
         }
     }
 

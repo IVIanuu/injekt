@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.checkers
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
@@ -45,4 +46,14 @@ fun FunctionDescriptor.getFunctionType(): KotlinType {
     else builtIns.getFunction(parameters.size))
         .defaultType
         .replace(newArguments = parameters.map { it.asTypeProjection() } + returnType!!.asTypeProjection())
+}
+
+fun FunctionDescriptor.getGivenFunctionType(): KotlinType {
+    val assistedParameters =
+        listOfNotNull(extensionReceiverParameter?.type) + valueParameters.map { it.type }
+            .filter { it.hasAnnotation(InjektFqNames.Assisted) }
+    return (if (isSuspend) builtIns.getSuspendFunction(assistedParameters.size)
+    else builtIns.getFunction(assistedParameters.size))
+        .defaultType
+        .replace(newArguments = assistedParameters.map { it.asTypeProjection() } + returnType!!.asTypeProjection())
 }

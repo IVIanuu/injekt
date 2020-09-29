@@ -16,207 +16,168 @@
 
 package com.ivianuu.injekt.compiler.generator.componentimpl
 
-/**
-import com.ivianuu.injekt.compiler.generator.CallableRef
+import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
-import com.ivianuu.injekt.compiler.generator.TypeRef
+import com.ivianuu.injekt.compiler.generator.Type
 import com.ivianuu.injekt.compiler.generator.render
-import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
-typealias ContextStatement = CodeBuilder.() -> Unit
+typealias ComponentStatement = CodeBuilder.() -> Unit
 
-interface ContextMember {
-fun CodeBuilder.emit()
-}
-
-class ContextFunction(
-val name: Name,
-var isOverride: Boolean,
-val type: TypeRef,
-val statement: ContextStatement
-) : ContextMember {
-override fun CodeBuilder.emit() {
-if (isOverride) emit("override ")
-emit("fun $name(): ${type.render()} ")
-braced {
-emit("return ")
-statement()
-emitLine()
-}
-}
+interface ComponentMember {
+    fun CodeBuilder.emit()
 }
 
-class ContextProperty(
-val name: Name,
-val type: TypeRef,
-val initializer: ContextStatement,
-val isMutable: Boolean
-) : ContextMember {
-override fun CodeBuilder.emit() {
-if (isMutable) emit("var ") else emit("val ")
-emit("$name: ${type.render()} = ")
-initializer()
+class ComponentFunction(
+    val name: Name,
+    var isOverride: Boolean,
+    val type: Type,
+    val statement: ComponentStatement,
+) : ComponentMember {
+    override fun CodeBuilder.emit() {
+        if (isOverride) emit("override ")
+        emit("fun $name(): ${type.render()} ")
+        braced {
+            emit("return ")
+            statement()
+            emitLine()
+        }
+    }
 }
+
+class ComponentProperty(
+    val name: Name,
+    val type: Type,
+    val initializer: ComponentStatement,
+    val isMutable: Boolean,
+) : ComponentMember {
+    override fun CodeBuilder.emit() {
+        if (isMutable) emit("var ") else emit("val ")
+        emit("$name: ${type.render()} = ")
+        initializer()
+    }
 }
 
 sealed class GivenNode {
-abstract val type: TypeRef
-abstract val rawType: TypeRef
-abstract val owner: ComponentImpl
-abstract val external: Boolean
-abstract val origin: FqName?
-abstract val targetContext: TypeRef?
-abstract val givenSetAccessStatement: ContextStatement?
-abstract val contexts: List<ReaderContextDescriptor>
+    abstract val type: Type
+    abstract val dependencies: List<Type>
+    abstract val rawType: Type
+    abstract val owner: ComponentImpl
+    abstract val origin: FqName?
+    abstract val targetComponent: Type?
+    abstract val moduleAccessStatement: ComponentStatement?
 }
 
 class SelfGivenNode(
-override val type: TypeRef,
-val component: ComponentImpl
+    override val type: Type,
+    val component: ComponentImpl,
 ) : GivenNode() {
-override val rawType: TypeRef
-get() = type
-override val owner: ComponentImpl get() = component
-override val external: Boolean get() = false
-override val origin: FqName? get() = null
-override val targetContext: TypeRef? get() = null
-override val givenSetAccessStatement: ContextStatement? get() = null
-override val contexts: List<ReaderContextDescriptor> get() = emptyList()
+    override val dependencies: List<Type>
+        get() = emptyList()
+    override val rawType: Type
+        get() = type
+    override val owner: ComponentImpl get() = component
+    override val origin: FqName? get() = null
+    override val targetComponent: Type? get() = null
+    override val moduleAccessStatement: ComponentStatement? get() = null
 }
 
-class ChildContextGivenNode(
-override val type: TypeRef,
-override val owner: ComponentImpl,
-override val origin: FqName?,
-val childFactoryImpl: ComponentFactoryImpl
+class ChildFactoryGivenNode(
+    override val type: Type,
+    override val owner: ComponentImpl,
+    override val origin: FqName?,
+    val childFactoryImpl: ComponentFactoryImpl,
 ) : GivenNode() {
-override val rawType: TypeRef
-get() = type
-override val contexts: List<ReaderContextDescriptor>
-get() = emptyList()
-override val external: Boolean
-get() = false
-override val givenSetAccessStatement: ContextStatement?
-get() = null
-override val targetContext: TypeRef?
-get() = null// todo owner.contextId
-}
-
-class CalleeContextGivenNode(
-override val type: TypeRef,
-override val owner: ComponentImpl,
-override val origin: FqName?,
-lazyCalleeContextStatement: () -> ContextStatement,
-private val lazyContexts: () -> List<ReaderContextDescriptor>
-) : GivenNode() {
-override val rawType: TypeRef
-get() = type
-val calleeContextStatement by unsafeLazy(lazyCalleeContextStatement)
-override val contexts by unsafeLazy {
-calleeContextStatement
-lazyContexts()
-}
-override val external: Boolean
-get() = false
-override val givenSetAccessStatement: ContextStatement?
-get() = null
-override val targetContext: TypeRef?
-get() = null
+    override val dependencies: List<Type>
+        get() = emptyList()
+    override val rawType: Type
+        get() = type
+    override val moduleAccessStatement: ComponentStatement?
+        get() = null
+    override val targetComponent: Type?
+        get() = owner.contextType
 }
 
 class CallableGivenNode(
-override val type: TypeRef,
-override val rawType: TypeRef,
-override val owner: ComponentImpl,
-override val contexts: List<ReaderContextDescriptor>,
-override val origin: FqName?,
-override val external: Boolean,
-override val targetContext: TypeRef?,
-override val givenSetAccessStatement: ContextStatement?,
-val callable: CallableRef
+    override val type: Type,
+    override val rawType: Type,
+    override val owner: ComponentImpl,
+    override val dependencies: List<Type>,
+    override val origin: FqName?,
+    override val targetComponent: Type?,
+    override val moduleAccessStatement: ComponentStatement?,
+    val callable: Callable,
 ) : GivenNode() {
-override fun toString(): String {
-return "Callable${callable.fqName}"
-}
+    override fun toString(): String = "Callable${callable.fqName}"
 }
 
 class InputGivenNode(
-override val type: TypeRef,
-val name: String,
-override val owner: ComponentImpl
+    override val type: Type,
+    val name: String,
+    override val owner: ComponentImpl,
 ) : GivenNode() {
-override val rawType: TypeRef
-get() = type
-override val contexts: List<ReaderContextDescriptor>
-get() = emptyList()
-override val external: Boolean
-get() = false
-override val givenSetAccessStatement: ContextStatement?
-get() = null
-override val origin: FqName?
-get() = null
-override val targetContext: TypeRef?
-get() = null
+    override val rawType: Type
+        get() = type
+    override val dependencies: List<Type>
+        get() = emptyList()
+    override val moduleAccessStatement: ComponentStatement?
+        get() = null
+    override val origin: FqName?
+        get() = null
+    override val targetComponent: Type?
+        get() = null
 }
 
 class MapGivenNode(
-override val type: TypeRef,
-override val owner: ComponentImpl,
-override val contexts: List<ReaderContextDescriptor>,
-val entries: List<CallableWithReceiver>
+    override val type: Type,
+    override val owner: ComponentImpl,
+    override val dependencies: List<Type>,
+    val entries: List<CallableWithReceiver>,
 ) : GivenNode() {
-override val rawType: TypeRef
-get() = type
-override val external: Boolean
-get() = false
-override val origin: FqName?
-get() = null
-override val targetContext: TypeRef?
-get() = null
-override val givenSetAccessStatement: ContextStatement?
-get() = null
+    override val rawType: Type
+        get() = type
+    override val origin: FqName?
+        get() = null
+    override val targetComponent: Type?
+        get() = null
+    override val moduleAccessStatement: ComponentStatement?
+        get() = null
 }
 
 class SetGivenNode(
-override val type: TypeRef,
-override val owner: ComponentImpl,
-override val contexts: List<ReaderContextDescriptor>,
-val elements: List<CallableWithReceiver>
+    override val type: Type,
+    override val owner: ComponentImpl,
+    override val dependencies: List<Type>,
+    val elements: List<CallableWithReceiver>,
 ) : GivenNode() {
-override val rawType: TypeRef
-get() = type
-override val external: Boolean
-get() = false
-override val origin: FqName?
-get() = null
-override val targetContext: TypeRef?
-get() = null
-override val givenSetAccessStatement: ContextStatement?
-get() = null
+    override val rawType: Type
+        get() = type
+    override val origin: FqName?
+        get() = null
+    override val targetComponent: Type?
+        get() = null
+    override val moduleAccessStatement: ComponentStatement?
+        get() = null
 }
 
 data class CallableWithReceiver(
-val callable: CallableRef,
-val receiver: ContextStatement?
+    val callable: Callable,
+    val receiver: ComponentStatement?,
 )
 
 class NullGivenNode(
-override val type: TypeRef,
-override val owner: ComponentImpl
+    override val type: Type,
+    override val owner: ComponentImpl,
 ) : GivenNode() {
-override val rawType: TypeRef
-get() = type
-override val contexts: List<ReaderContextDescriptor>
-get() = emptyList()
-override val external: Boolean
-get() = false
-override val givenSetAccessStatement: ContextStatement?
-get() = null
-override val origin: FqName?
-get() = null
-override val targetContext: TypeRef?
-get() = null
+    override val rawType: Type
+        get() = type
+    override val dependencies: List<Type>
+        get() = emptyList()
+    override val moduleAccessStatement: ComponentStatement?
+        get() = null
+    override val origin: FqName?
+        get() = null
+    override val targetComponent: Type?
+        get() = null
 }
- */

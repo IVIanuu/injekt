@@ -20,10 +20,10 @@ import android.app.Application
 import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.merge.ApplicationComponent
 import com.ivianuu.injekt.merge.EntryPoint
-import com.ivianuu.injekt.merge.GenerateMergeComponents
+import com.ivianuu.injekt.merge.GenerateMergeFactories
 import com.ivianuu.injekt.merge.entryPoint
 
-@GenerateMergeComponents
+@GenerateMergeFactories
 class App : Application() {
 
     override fun onCreate() {

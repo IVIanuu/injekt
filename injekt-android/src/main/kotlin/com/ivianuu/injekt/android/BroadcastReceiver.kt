@@ -20,8 +20,10 @@ import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.ivianuu.injekt.merge.ApplicationComponent
 import com.ivianuu.injekt.merge.EntryPoint
 import com.ivianuu.injekt.merge.MergeComponent
+import com.ivianuu.injekt.merge.MergeFactory
 import com.ivianuu.injekt.merge.entryPoint
 
 fun BroadcastReceiver.createReceiverComponent(
@@ -30,21 +32,14 @@ fun BroadcastReceiver.createReceiverComponent(
 ): ReceiverComponent {
     return (context.applicationContext as Application).applicationComponent
         .entryPoint<ReceiverComponentEntryPoint>()
-        .receiverComponentFactory
-        .create(this, context, intent)
+        .receiverComponentFactory(this, context, intent)
 }
 
 @MergeComponent
-interface ReceiverComponent {
-    @MergeComponent.Factory
-    interface Factory {
-        fun create(
-            receiver: BroadcastReceiver,
-            context: ReceiverContext,
-            intent: ReceiverIntent,
-        ): ReceiverComponent
-    }
-}
+interface ReceiverComponent
+
+@MergeFactory(ApplicationComponent::class)
+typealias ReceiverComponentFactory = (BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent
 
 typealias ReceiverContext = Context
 
@@ -52,5 +47,5 @@ typealias ReceiverIntent = Intent
 
 @EntryPoint(ReceiverComponent::class)
 interface ReceiverComponentEntryPoint {
-    val receiverComponentFactory: ReceiverComponent.Factory
+    val receiverComponentFactory: ReceiverComponentFactory
 }

@@ -1,20 +1,16 @@
 package com.ivianuu.injekt.merge
 
-@Target(AnnotationTarget.CLASS)
-annotation class MergeComponent {
-    @Target(AnnotationTarget.CLASS)
-    annotation class Factory
-}
+import kotlin.reflect.KClass
 
 @Target(AnnotationTarget.CLASS)
-annotation class MergeChildComponent {
-    @Target(AnnotationTarget.CLASS)
-    annotation class Factory
-}
+annotation class MergeComponent
 
-annotation class GenerateMergeComponents
+@Target(AnnotationTarget.TYPEALIAS)
+annotation class MergeFactory(val parent: KClass<*> = Nothing::class)
 
-fun <T> mergeComponentFactory(): T = error("Must be compiled with the injekt compiler")
+annotation class GenerateMergeFactories
+
+fun <T> mergeFactory(): T = error("Must be compiled with the Injekt compiler")
 
 @MergeComponent
 interface ApplicationComponent

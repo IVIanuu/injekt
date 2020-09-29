@@ -16,23 +16,15 @@
 
 package com.ivianuu.injekt.test
 
-import com.ivianuu.injekt.ChildComponent
-import com.ivianuu.injekt.Component
-
 class Foo
 
 class Bar(val foo: Foo)
 
 class Baz(val bar: Bar, val foo: Foo)
 
-@Component
-interface TestComponent {
-    @Component.Factory
-    interface Factory {
-        fun create(): TestComponent
-    }
-}
+interface TestComponent
 
+/*
 @Component
 interface TestComponent2 {
     @Component.Factory
@@ -72,7 +64,7 @@ interface TestChildComponent2 {
         fun create(): TestChildComponent2
     }
 }
-
+*/
 
 interface Command
 

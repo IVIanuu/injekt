@@ -1,16 +1,17 @@
 package com.ivianuu.injekt.samples.coffeemaker
 
-import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.RootFactory
+import com.ivianuu.injekt.rootFactory
 
 fun main() {
-    val context = rootContext<ApplicationContainer>()
-    context.given<brewCoffee>()("")
+    rootFactory<CoffeeComponentFactory>()(CoffeeModule())
 }
 
-@Component
-interface CoffeeComponent {
-    @Component.Factory
-    interface Factory {
-        fun create(): CoffeeComponent
-    }
-}
+interface CoffeeComponent
+
+@RootFactory
+typealias CoffeeComponentFactory = (CoffeeModule) -> CoffeeComponent
+
+@Module
+class CoffeeModule

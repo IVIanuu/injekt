@@ -7,29 +7,19 @@ import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.container.ComponentProvider
-import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
+import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtension
 
 @Given
-class InjektKtGenerationExtension : AnalysisHandlerExtension {
+class InjektKtGenerationExtension : PartialAnalysisHandlerExtension() {
+
+    override val analyzePartially: Boolean
+        get() = !generatedCode
 
     private var generatedCode = false
-
-    override fun doAnalysis(
-        project: Project,
-        module: ModuleDescriptor,
-        projectContext: ProjectContext,
-        files: Collection<KtFile>,
-        bindingTrace: BindingTrace,
-        componentProvider: ComponentProvider,
-    ): AnalysisResult? {
-        return if (!generatedCode) AnalysisResult.EMPTY else null
-    }
 
     override fun analysisCompleted(
         project: Project,
@@ -43,8 +33,7 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
         ) return null
         generatedCode = true
 
-        given<SrcDir>()
-            .deleteRecursively()
+        given<SrcDir>().deleteRecursively()
 
         files as List<KtFile>
 
@@ -53,6 +42,8 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
             bindingTrace,
             bindingTrace.bindingContext
         ).runReader {
+            given<FunctionAliasGenerator>().generate(files)
+            given<RootComponentFactoryGenerator>().generate(files)
         }
 
         return AnalysisResult.RetryWithAdditionalRoots(

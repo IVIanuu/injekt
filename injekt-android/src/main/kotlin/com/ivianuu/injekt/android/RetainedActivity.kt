@@ -20,24 +20,22 @@ import androidx.activity.ComponentActivity
 import com.ivianuu.injekt.merge.ApplicationComponent
 import com.ivianuu.injekt.merge.EntryPoint
 import com.ivianuu.injekt.merge.MergeComponent
+import com.ivianuu.injekt.merge.MergeFactory
 import com.ivianuu.injekt.merge.entryPoint
 
 val ComponentActivity.retainedActivityComponent: RetainedActivityComponent
     get() = viewModelStore.singleton {
         application.applicationComponent.entryPoint<RetainedActivityComponentEntryPoint>()
-            .retainedActivityComponentFactory
-            .create()
+            .retainedActivityComponentFactory()
     }
 
 @MergeComponent
-interface RetainedActivityComponent {
-    @MergeComponent.Factory
-    interface Factory {
-        fun create(): RetainedActivityComponent
-    }
-}
+interface RetainedActivityComponent
+
+@MergeFactory(ApplicationComponent::class)
+typealias RetainedActivityComponentFactory = () -> RetainedActivityComponent
 
 @EntryPoint(ApplicationComponent::class)
 interface RetainedActivityComponentEntryPoint {
-    val retainedActivityComponentFactory: RetainedActivityComponent.Factory
+    val retainedActivityComponentFactory: RetainedActivityComponentFactory
 }

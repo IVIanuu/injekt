@@ -30,15 +30,6 @@ class GivenFrontendTest {
     )
 
     @Test
-    fun testGivenObjectFails() = codegen(
-        """ 
-        @Given object Dep
-    """
-    ) {
-        assertCompileError("object")
-    }
-
-    @Test
     fun testGivenAbstractClassFails() = codegen(
         """ 
         @Given abstract class Dep

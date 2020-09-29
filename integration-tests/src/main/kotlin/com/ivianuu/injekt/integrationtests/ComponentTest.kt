@@ -29,7 +29,7 @@ import junit.framework.Assert.assertNull
 import junit.framework.Assert.assertSame
 import org.junit.Test
 
-class GivensGraphTest {
+class ComponentTest {
 
     @Test
     fun testMissingGivenFails() = codegen(
@@ -217,42 +217,6 @@ class GivensGraphTest {
     }
 
     @Test
-    fun testPrefersInternalOverExternal() = multiCodegen(
-        listOf(
-            source(
-                """
-                    var externalFooField: Foo? = null
-                    @Given
-                    val externalFoo: Foo get() = externalFooField!!
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    var internalFooField: Foo? = null
-                    @Given
-                    val internalFoo: Foo get() = internalFooField!!
-                    
-                    fun invoke(
-                        internalFoo: Foo,
-                        externalFoo: Foo
-                    ): Foo {
-                        externalFooField = externalFoo
-                        internalFooField = internalFoo
-                        return rootContext<TestContext>().runReader { given<Foo>() }
-                    }
-                """,
-                name = "File.kt"
-            )
-        )
-    ) {
-        val externalFoo = Foo()
-        val internalFoo = Foo()
-        assertSame(internalFoo, it.last().invokeSingleFile(internalFoo, externalFoo))
-    }
-
-    @Test
     fun testDuplicatedInputsFails() = codegen(
         """
         fun invoke() {
@@ -264,7 +228,7 @@ class GivensGraphTest {
     }
 
     @Test
-    fun testDuplicatedInternalGivensFails() = codegen(
+    fun testDuplicatedGivensFails() = codegen(
         """
         @Given fun foo1() = Foo()
         @Given fun foo2() = Foo()
@@ -275,35 +239,6 @@ class GivensGraphTest {
         """
     ) {
         assertInternalError("multiple internal givens")
-    }
-
-    @Test
-    fun testDuplicatedExternalGivensFails() = multiCodegen(
-        listOf(
-            source(
-                """
-                    @Given fun foo1() = Foo()
-            """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    @Given fun foo2() = Foo()
-            """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    fun invoke() { 
-                        rootContext<TestContext>().runReader { given<Foo>() }
-                    }
-                """
-            )
-        )
-    ) {
-        it.last().assertInternalError("multiple external givens")
     }
 
     @Test
@@ -356,6 +291,25 @@ class GivensGraphTest {
                     given<Dep<Foo>>()
                 }
             }
+        """
+    )
+
+    @Test
+    fun testGenericTypeAlias() = codegen(
+        """
+            interface Comparator<T> {
+                fun compare(a: T, b: T): Int
+            }
+            typealias AliasComparator<T> = Comparator<T>
+            @Reader
+            fun callMax() {
+                compare(1, 2)
+            }
+
+            @Reader
+            fun <T> compare(a: T, b: T): Int = given<AliasComparator<T>>()
+                .compare(a, b)
+
         """
     )
 

@@ -7,9 +7,9 @@ interface Pump {
 }
 
 @Given
-class Thermosiphon : Pump {
+class Thermosiphon(private val heater: Heater) : Pump {
     override fun pump() {
-        if (given<Heater>().isHot) {
+        if (heater.isHot) {
             println("=> => pumping => =>")
         }
     }

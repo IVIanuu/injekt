@@ -23,15 +23,16 @@ object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
 
     val Assisted = InjektPackage.child("Assisted".asNameId())
-    val Component = InjektPackage.child("Component".asNameId())
-    val ComponentFactory = Component.child("Factory".asNameId())
-    val ChildComponent = InjektPackage.child("ChildComponent".asNameId())
-    val ChildComponentFactory = ChildComponent.child("Factory".asNameId())
+    val ChildFactory = InjektPackage.child("ChildComponentFactory".asNameId())
+    val RootFactory = InjektPackage.child("RootComponentFactory".asNameId())
 
     val Given = InjektPackage.child("Given".asNameId())
     val GivenMapEntries = InjektPackage.child("GivenMapEntries".asNameId())
     val GivenSetElements = InjektPackage.child("GivenSetElements".asNameId())
     val Module = InjektPackage.child("Module".asNameId())
+
+    val InternalPackage = InjektPackage.child("internal".asNameId())
+    val FunctionAlias = InternalPackage.child("FunctionAlias".asNameId())
 
     val Effect = InjektPackage.child("Effect".asNameId())
 

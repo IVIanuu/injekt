@@ -24,22 +24,20 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.merge.ApplicationComponent
 import com.ivianuu.injekt.merge.EntryPoint
 import com.ivianuu.injekt.merge.MergeComponent
+import com.ivianuu.injekt.merge.MergeFactory
 import com.ivianuu.injekt.merge.entryPoint
 
 fun Service.createServiceComponent(): ServiceComponent {
     return application.applicationComponent
         .entryPoint<ServiceComponentEntryPoint>()
-        .serviceComponentFactory
-        .create(this)
+        .serviceComponentFactory(this)
 }
 
 @MergeComponent
-interface ServiceComponent {
-    @MergeComponent.Factory
-    interface Factory {
-        fun create(service: Service): ServiceComponent
-    }
-}
+interface ServiceComponent
+
+@MergeFactory(ApplicationComponent::class)
+typealias ServiceComponentFactory = (Service) -> ServiceComponent
 
 typealias ServiceContext = Context
 
@@ -60,5 +58,5 @@ object ServiceModule {
 
 @EntryPoint(ApplicationComponent::class)
 interface ServiceComponentEntryPoint {
-    val serviceComponentFactory: ServiceComponent.Factory
+    val serviceComponentFactory: ServiceComponentFactory
 }

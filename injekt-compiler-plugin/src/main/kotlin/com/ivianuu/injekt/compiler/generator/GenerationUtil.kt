@@ -10,13 +10,18 @@ import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.translate.utils.refineType
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
+import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
@@ -104,3 +109,83 @@ fun String.removeIllegalChars() =
         .replace(",", "")
         .replace(" ", "")
         .replace("-", "")
+
+fun FqName.toMemberScope(): MemberScope? {
+    val pkg = moduleDescriptor.getPackage(this)
+
+    if (isRoot || pkg.fragments.isNotEmpty()) return pkg.memberScope
+
+    val parentMemberScope = parent().toMemberScope() ?: return null
+
+    val classDescriptor =
+        parentMemberScope.getContributedClassifier(
+            shortName(),
+            NoLookupLocation.FROM_BACKEND
+        ) as? ClassDescriptor ?: return null
+
+    return classDescriptor.unsubstitutedMemberScope
+}
+
+@Reader
+fun FqName.asClassDescriptor(): ClassDescriptor {
+    return parent().toMemberScope()!!.getContributedClassifier(
+        shortName(), NoLookupLocation.FROM_BACKEND) as ClassDescriptor
+}
+
+fun Type.getAllCallables(): List<Callable> {
+    val callables = mutableListOf<Callable>()
+
+    fun Type.collect(typeArguments: List<Type>) {
+        val substitutionMap = classifier.typeParameters
+            .zip(typeArguments)
+            .toMap()
+
+        callables += classifier.fqName.asClassDescriptor()
+            .unsubstitutedMemberScope
+            .getContributedDescriptors(DescriptorKindFilter.CALLABLES)
+            .mapNotNull {
+                when (it) {
+                    is FunctionDescriptor -> it.toCallableRef()
+                    is PropertyDescriptor -> it.getter!!.toCallableRef()
+                    else -> null
+                }
+            }
+
+        superTypes
+            .map { it.substitute(substitutionMap) }
+            .forEach { it.collect(it.typeArguments) }
+    }
+
+    collect(typeArguments)
+
+    return callables
+}
+
+fun getFactoryForType(type: Type): FactoryDescriptor = FactoryDescriptor(type)
+
+fun getModuleForType(type: Type): com.ivianuu.injekt.compiler.generator.ModuleDescriptor {
+    val descriptor = type.classifier.fqName.asClassDescriptor()
+    val substitutionMap = type.classifier.typeParameters
+        .zip(type.typeArguments)
+        .toMap()
+    return ModuleDescriptor(
+        type = type,
+        callables = descriptor.unsubstitutedMemberScope.getContributedDescriptors(
+            DescriptorKindFilter.CALLABLES
+        ).filter {
+            it.hasAnnotationWithPropertyAndClass(
+                InjektFqNames.Given
+            ) || it.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) ||
+                    it.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) ||
+                    it.hasAnnotationWithPropertyAndClass(InjektFqNames.Module)
+        }
+            .mapNotNull {
+                when (it) {
+                    is PropertyDescriptor -> it.getter!!
+                    is FunctionDescriptor -> it
+                    else -> null
+                }
+            }
+            .map { it.toCallableRef() }
+    )
+}

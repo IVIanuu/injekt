@@ -25,7 +25,7 @@ object InjektTest : InjectionTest {
     private var component: InjektComponent? = null
 
     override fun setup() {
-        component = InjektComponentFactoryImpl.create()
+        component = InjektComponentFactoryImpl()
     }
 
     override fun inject() {

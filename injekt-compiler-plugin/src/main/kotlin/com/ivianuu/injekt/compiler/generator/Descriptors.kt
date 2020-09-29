@@ -6,7 +6,6 @@ import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.DeserializedDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -16,51 +15,45 @@ import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
-data class ContextFactoryDescriptor(
-    val factoryType: TypeRef,
-    val contextType: TypeRef,
-    val inputTypes: List<TypeRef>
-)
+data class FactoryDescriptor(
+    val factoryType: Type,
+) {
+    val contextType = factoryType.typeArguments.last()
+    val inputTypes = factoryType.typeArguments.dropLast(1)
+}
 
-data class ContextFactoryImplDescriptor(
-    val factoryImplFqName: FqName,
-    val factory: ContextFactoryDescriptor
-)
-
-data class CallableRef(
+data class Callable(
     val packageFqName: FqName,
     val fqName: FqName,
     val name: Name,
-    val type: TypeRef,
-    val staticReceiver: TypeRef?,
+    val type: Type,
+    val objectReceiver: Type?,
     val typeParameters: List<ClassifierRef>,
     val valueParameters: List<ValueParameterRef>,
-    val targetContext: TypeRef?,
+    val targetComponent: Type?,
     val givenKind: GivenKind,
-    val isExternal: Boolean,
-    val isPropertyAccessor: Boolean
+    val isCall: Boolean,
 ) {
     enum class GivenKind {
-        GIVEN, GIVEN_MAP_ENTRIES, GIVEN_SET_ELEMENTS, GIVEN_SET
+        GIVEN, GIVEN_MAP_ENTRIES, GIVEN_SET_ELEMENTS, MODULE
     }
 }
 
-fun FunctionDescriptor.toCallableRef(): CallableRef {
+fun FunctionDescriptor.toCallableRef(): Callable {
     val owner = when (this) {
         is ConstructorDescriptor -> constructedClass
         is PropertyAccessorDescriptor -> correspondingProperty
         else -> this
     }
-    return CallableRef(
+    return Callable(
         name = owner.name,
         packageFqName = findPackage().fqName,
         fqName = owner.fqNameSafe,
         type = (if (extensionReceiverParameter != null || valueParameters.isNotEmpty()) getFunctionType() else returnType!!)
             .toTypeRef(),
-        staticReceiver = dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
+        objectReceiver = dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
             ?.takeIf { it is ClassDescriptor && it.kind == ClassKind.OBJECT }?.defaultType?.toTypeRef(),
-        isExternal = owner is DeserializedDescriptor,
-        targetContext = (owner.annotations.findAnnotation(InjektFqNames.Given)
+        targetComponent = (owner.annotations.findAnnotation(InjektFqNames.Given)
             ?.allValueArguments
             ?.get("scopeContext".asNameId())
             ?: owner.annotations.findAnnotation(InjektFqNames.GivenMapEntries)
@@ -73,31 +66,32 @@ fun FunctionDescriptor.toCallableRef(): CallableRef {
             ?.getArgumentType(module)
             ?.toTypeRef(),
         givenKind = when {
-            hasAnnotationWithPropertyAndClass(InjektFqNames.Given) -> CallableRef.GivenKind.GIVEN
-            hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect) -> CallableRef.GivenKind.GIVEN
-            hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) -> CallableRef.GivenKind.GIVEN_MAP_ENTRIES
-            hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) -> CallableRef.GivenKind.GIVEN_SET_ELEMENTS
+            hasAnnotationWithPropertyAndClass(InjektFqNames.Given) -> Callable.GivenKind.GIVEN
+            hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect) -> Callable.GivenKind.GIVEN
+            hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) -> Callable.GivenKind.GIVEN_MAP_ENTRIES
+            hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) -> Callable.GivenKind.GIVEN_SET_ELEMENTS
             else -> error("Unexpected callable $this")
         },
         typeParameters = typeParameters.map { it.toClassifierRef() },
         valueParameters = listOfNotNull(
             extensionReceiverParameter?.type?.let {
                 ValueParameterRef(
-                    KotlinTypeRef(it),
+                    KotlinType(it),
                     true
                 )
             }
         ) + valueParameters.map { ValueParameterRef(it.type.toTypeRef()) },
-        isPropertyAccessor = owner is PropertyDescriptor
+        isCall = owner is PropertyDescriptor || (owner is ClassDescriptor && owner.kind == ClassKind.OBJECT)
     )
 }
 
 data class ValueParameterRef(
-    val typeRef: TypeRef,
-    val isExtensionReceiver: Boolean = false
+    val type: Type,
+    val isExtensionReceiver: Boolean = false,
+    val isAssisted: Boolean = false,
 )
 
-data class GivenSetDescriptor(
-    val type: TypeRef,
-    val callables: List<CallableRef>
+data class ModuleDescriptor(
+    val type: Type,
+    val callables: List<Callable>,
 )

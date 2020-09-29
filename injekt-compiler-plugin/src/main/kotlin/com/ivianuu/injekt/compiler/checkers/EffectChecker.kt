@@ -61,7 +61,7 @@ class EffectChecker : DeclarationChecker {
         val companion = descriptor.companionObjectDescriptor
         if (companion == null) {
             context.trace.report(
-                InjektErrors.EFFECT_WITHOUT_GIVEN_SET_COMPANION
+                InjektErrors.EFFECT_WITHOUT_COMPANION
                     .on(declaration)
             )
             return
