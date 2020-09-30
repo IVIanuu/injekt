@@ -90,13 +90,15 @@ class GivensGraph(
                 when (callable.givenKind) {
                     Callable.GivenKind.GIVEN -> moduleGivenCallables += CallableWithReceiver(
                         callable,
-                        thisAccessStatement
+                        thisAccessStatement,
+                        emptyMap()
                     )
                     Callable.GivenKind.GIVEN_MAP_ENTRIES -> {
                         collections.addMapEntries(
                             CallableWithReceiver(
                                 callable,
-                                thisAccessStatement
+                                thisAccessStatement,
+                                emptyMap()
                             )
                         )
                     }
@@ -104,7 +106,8 @@ class GivensGraph(
                         collections.addSetElements(
                             CallableWithReceiver(
                                 callable,
-                                thisAccessStatement
+                                thisAccessStatement,
+                                emptyMap()
                             )
                         )
                     }
@@ -421,12 +424,12 @@ class GivenCollections(
                     MapGivenNode(
                         type = type,
                         owner = owner,
-                        dependencies = entries.flatMap { (entry) ->
+                        dependencies = entries.flatMap { (entry, _, substitutionMap) ->
                             entry.valueParameters
                                 .filterNot { it.isAssisted }
                                 .map {
                                     GivenRequest(
-                                        it.type,
+                                        it.type.substitute(substitutionMap),
                                         entry.fqName.child(it.name)
                                     )
                                 }
@@ -440,12 +443,12 @@ class GivenCollections(
                     SetGivenNode(
                         type = type,
                         owner = owner,
-                        dependencies = elements.flatMap { (element) ->
+                        dependencies = elements.flatMap { (element, _, substitutionMap) ->
                             element.valueParameters
                                 .filterNot { it.isAssisted }
                                 .map {
                                     GivenRequest(
-                                        it.type,
+                                        it.type.substitute(substitutionMap),
                                         element.fqName.child(it.name)
                                     )
                                 }

@@ -21,10 +21,24 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.GivenMapEntries
 import com.ivianuu.injekt.Module
 import kotlin.reflect.KClass
 
 typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
+
+@Module
+class GivenWorkerModule<T : ListenableWorker>(private val workerClass: KClass<T>) {
+
+    @GivenMapEntries
+    fun workerIntoMap(factory: (Context, WorkerParameters) -> T): Workers =
+        mapOf(workerClass to factory)
+
+    companion object {
+        inline operator fun <reified T : ListenableWorker> invoke() =
+            GivenWorkerModule(T::class)
+    }
+}
 
 @Given
 class InjektWorkerFactory(private val workers: Workers) : WorkerFactory() {

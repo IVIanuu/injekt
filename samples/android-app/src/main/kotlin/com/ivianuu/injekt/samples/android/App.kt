@@ -19,7 +19,6 @@ package com.ivianuu.injekt.samples.android
 import android.app.Application
 import com.ivianuu.injekt.RootFactory
 import com.ivianuu.injekt.android.ApplicationModule
-import com.ivianuu.injekt.android.work.WorkerModule
 import com.ivianuu.injekt.rootFactory
 
 class App : Application() {
@@ -27,7 +26,7 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         applicationComponent = rootFactory<ApplicationComponentFactory>()(
-            this, DataModule, ApplicationModule, WorkerModule, TestWorkerModule
+            this, DataModule, ApplicationModule, SampleWorkerModule
         )
         applicationComponent.initializeWorkers()
         applicationComponent.refreshRepo()
@@ -47,6 +46,5 @@ typealias ApplicationComponentFactory = (
     Application,
     DataModule,
     ApplicationModule,
-    WorkerModule,
-    TestWorkerModule
+    SampleWorkerModule
 ) -> ApplicationComponent

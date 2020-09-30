@@ -176,7 +176,17 @@ class DeclarationStore(
                             else -> null
                         }
                     }
-                    .map { callableForDescriptor(it) }
+                    .map { callableDescriptor ->
+                        val callable = callableForDescriptor(callableDescriptor)
+                        callable.copy(
+                            type = callable.type.substitute(substitutionMap),
+                            valueParameters = callable.valueParameters.map {
+                                it.copy(
+                                    type = it.type.substitute(substitutionMap)
+                                )
+                            }
+                        )
+                    }
             )
         }
     }

@@ -24,10 +24,10 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenMapEntries
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.android.ApplicationContext
-import com.ivianuu.injekt.android.work.Workers
+import com.ivianuu.injekt.android.work.GivenWorkerModule
+import com.ivianuu.injekt.android.work.WorkerModule
 
 @Given
 class TestWorker(
@@ -43,11 +43,9 @@ class TestWorker(
 }
 
 @Module
-object TestWorkerModule {
-    @GivenMapEntries
-    fun intoMap(factory: (Context, WorkerParameters) -> TestWorker): Workers = mapOf(
-        TestWorker::class to factory
-    )
+object SampleWorkerModule {
+    @Module val injectionModule = WorkerModule
+    @Module val testWorkerModule = GivenWorkerModule<TestWorker>()
 }
 
 @Given
