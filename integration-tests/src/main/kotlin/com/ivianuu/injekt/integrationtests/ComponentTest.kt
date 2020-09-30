@@ -337,6 +337,29 @@ class ComponentTest {
     }
 
     @Test
+    fun testGenericNestedModule() = codegen(
+        """
+        @Module
+        class OuterModule {
+            @Module
+            val fooModule = InstanceModule<Foo>(Foo())
+            
+            @Module
+            class InstanceModule<T>(@Given val instance: T)
+        }
+        
+        @RootFactory
+        typealias MyFactory = (OuterModule) -> TestComponent1<Foo>
+        
+        fun invoke(): Foo {
+            return rootFactory<MyFactory>()(OuterModule()).a
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
     fun testMissingGivenFails() = codegen(
         """
             class Dep
