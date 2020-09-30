@@ -104,7 +104,7 @@ class CallableGivenNode(
     val valueParameters: List<ValueParameterRef>,
     val callable: Callable,
 ) : GivenNode() {
-    override fun toString(): String = "Callable${callable.fqName}"
+    override fun toString(): String = "Callable(${callable.fqName})"
 }
 
 class InputGivenNode(

@@ -38,7 +38,6 @@ class GivensGraph(
     @Assisted private val owner: ComponentImpl,
     collectionsFactory: (ComponentImpl, GivenCollections?) -> GivenCollections,
     private val declarationStore: DeclarationStore,
-    private val module: org.jetbrains.kotlin.descriptors.ModuleDescriptor,
     private val componentFactoryImplFactory: (
         Name,
         TypeRef,
@@ -64,18 +63,7 @@ class GivensGraph(
 
     val resolvedGivens = mutableMapOf<TypeRef, GivenNode>()
 
-    sealed class ChainElement {
-        class Given(val type: TypeRef) : ChainElement() {
-            override fun toString() = type.render()
-        }
-
-        class Call(val fqName: FqName?) : ChainElement() {
-            override fun toString() = fqName.orUnknown()
-        }
-    }
-
-    private val chain = mutableListOf<ChainElement>()
-    private val checkedGivens = mutableSetOf<GivenNode>()
+    private val chain = mutableListOf<GivenNode>()
 
     init {
         val modules = inputs
@@ -139,23 +127,26 @@ class GivensGraph(
         requests.forEach { check(it) }
     }
 
-    private fun check(
-        given: GivenNode,
-        type: TypeRef,
-    ) {
-        if (given in checkedGivens) return
-        chain.push(ChainElement.Given(given.type))
-        checkedGivens += given
-        val substitutionMap = type.getSubstitutionMap(given.rawType)
+    private fun check(given: GivenNode) {
+        if (given in chain) {
+            val relevantSubchain = chain.subList(
+                chain.indexOf(given), chain.lastIndex
+            )
+            if (relevantSubchain.any { it is ProviderGivenNode }) return
+            error(
+                "Circular dependency ${relevantSubchain.map { it.type.render() }} already contains ${given.type.render()}"
+            )
+        }
+        chain.push(given)
         given
             .dependencies
-            .map { it.copy(type = type.substitute(substitutionMap)) }
             .forEach { check(it) }
+        (given as? ChildFactoryGivenNode)?.childFactoryImpl?.initialize()
         chain.pop()
     }
 
     private fun check(request: GivenRequest) {
-        getGiven(request)
+        check(getGiven(request))
     }
 
     fun getGiven(request: GivenRequest): GivenNode {
@@ -225,8 +216,6 @@ class GivensGraph(
 
         given?.let {
             resolvedGivens[type] = it
-            check(it, type)
-            (it as? ChildFactoryGivenNode)?.childFactoryImpl?.initialize()
             return it
         }
 
@@ -264,7 +253,6 @@ class GivensGraph(
 
             given.let {
                 resolvedGivens[type] = it
-                check(it, type)
                 return it
             }
         }
@@ -438,7 +426,7 @@ class GivenCollections(
                                 .filterNot { it.isAssisted }
                                 .map {
                                     GivenRequest(
-                                        entry.type,
+                                        it.type,
                                         entry.fqName.child(it.name)
                                     )
                                 }
@@ -457,7 +445,7 @@ class GivenCollections(
                                 .filterNot { it.isAssisted }
                                 .map {
                                     GivenRequest(
-                                        element.type,
+                                        it.type,
                                         element.fqName.child(it.name)
                                     )
                                 }

@@ -16,8 +16,10 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.assertInternalError
+import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
@@ -26,9 +28,313 @@ import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertNull
 import junit.framework.Assert.assertSame
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class ComponentTest {
+
+    @Test
+    fun testSimple() = codegen(
+        """
+            @Module
+            object TestModule {
+                @Given
+                fun foo() = Foo()
+                
+                @Given
+                fun bar(foo: Foo) = Bar(foo)
+            }
+            
+            @RootFactory
+            typealias TestComponentFactory = (TestModule) -> TestComponent1<Bar>
+            
+            fun invoke(): Bar {
+                return rootFactory<TestComponentFactory>()(TestModule).a
+            }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
+    }
+
+    @Test
+    fun testWithChild() = codegen(
+        """
+            @RootFactory
+            typealias MyParentFactory = () -> TestParentComponent1<MyChildFactory>
+            
+            @ChildFactory
+            typealias MyChildFactory = (Foo) -> TestChildComponent1<Foo>
+            
+            fun invoke(foo: Foo): Foo {
+                return rootFactory<MyParentFactory>()().a(foo).a
+            }
+    """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
+    }
+
+    @Test
+    fun testScopedGiven() = codegen(
+        """
+            @Module
+            object MyModule {
+                @Given(TestComponent1::class)
+                fun foo() = Foo()
+            }
+            @RootFactory
+            typealias MyFactory = (MyModule) -> TestComponent1<Foo>
+        
+            val component = rootFactory<MyFactory>()(MyModule)
+        
+            fun invoke() = component.a
+    """
+    ) {
+        assertSame(invokeSingleFile(), invokeSingleFile())
+    }
+
+    @Test
+    fun testParentScopedGiven() = codegen(
+        """
+            @Module
+            object MyModule {
+                @Given
+                fun foo() = Foo()
+                
+                @Given(TestParentComponent1::class)
+                fun bar(foo: Foo) = Bar(foo)
+            }
+            
+            @RootFactory
+            typealias MyParentFactory = (MyModule) -> TestParentComponent1<MyChildFactory>
+            val parentComponent = rootFactory<MyParentFactory>()(MyModule)
+            
+            @ChildFactory
+            typealias MyChildFactory = () -> TestChildComponent1<Bar>
+            val childComponent = parentComponent.a()
+         
+            fun invoke(): Bar {
+                return childComponent.a
+            }
+    """
+    ) {
+        assertSame(
+            invokeSingleFile(),
+            invokeSingleFile()
+        )
+    }
+
+    @Test
+    fun testGivenClass() = codegen(
+        """
+            @Given
+            class AnnotatedBar(foo: Foo)
+            
+            @Module
+            object FooModule {
+                @Given
+                fun foo() = Foo()
+            }
+    
+            @RootFactory
+            typealias MyFactory = (FooModule) -> TestComponent1<AnnotatedBar>
+            
+            fun invoke() {
+                rootFactory<MyFactory>()(FooModule).a
+            }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testGivenObject() = codegen(
+        """
+            @Given
+            object AnnotatedBar
+    
+            @RootFactory
+            typealias MyFactory = () -> TestComponent1<AnnotatedBar>
+            
+            fun invoke() {
+                rootFactory<MyFactory>()().a
+            }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testGivenProperty() = codegen(
+        """
+            @Module
+            object FooModule {
+                @Given val foo = Foo()
+            }
+    
+            @RootFactory
+            typealias MyFactory = (FooModule) -> TestComponent1<Foo>
+            
+            fun invoke() = rootFactory<MyFactory>()(FooModule).a
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testProvider() = codegen(
+        """
+            @Module
+            object FooModule {
+                @Given
+                fun foo() = Foo()
+            }
+            
+            @RootFactory
+            typealias MyFactory = (FooModule) -> TestComponent1<() -> Foo>
+            
+            fun invoke() {
+                rootFactory<MyFactory>()(FooModule).a()
+            }
+        """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testAssistedGivenFunction() = codegen(
+        """
+            @Module
+            object BarModule {
+                @Given
+                fun bar(@Assisted foo: Foo) = Bar(foo)
+            }
+            
+            @RootFactory
+            typealias MyFactory = (BarModule) -> TestComponent1<(Foo) -> Bar>
+
+            fun invoke(foo: Foo): Bar { 
+                return rootFactory<MyFactory>()(BarModule).a(foo)
+            }
+    """
+    ) {
+        invokeSingleFile(Foo())
+    }
+
+    @Test
+    fun testAssistedGivenClass() = codegen(
+        """
+            @Given
+            class AnnotatedBar(@Assisted foo: Foo)
+            
+            @RootFactory
+            typealias MyFactory = () -> TestComponent1<(Foo) -> AnnotatedBar>
+
+            fun invoke(foo: Foo): AnnotatedBar = rootFactory<MyFactory>()().a(foo)
+    """
+    ) {
+        invokeSingleFile(Foo())
+    }
+
+    @Test
+    fun testGenericGivenClass() = codegen(
+        """
+        @Given class Dep<T>(val value: T)
+        
+        @Module
+        object FooModule {
+            @Given
+            fun foo() = Foo()
+        }
+        
+        @RootFactory
+        typealias MyFactory = (FooModule) -> TestComponent1<Dep<Foo>>
+        
+        fun invoke() {
+            rootFactory<MyFactory>()(FooModule).a
+        }
+    """
+    )
+
+    @Test
+    fun testGenericGivenFunction() = codegen(
+        """    
+            class Dep<T>(val value: T)
+            
+            @Module
+            object MyModule { 
+                @Given fun <T> dep(value: T) = Dep<T>(value)
+                @Given fun foo() = Foo() 
+            }
+            
+            @RootFactory
+            typealias MyFactory = (MyModule) -> TestComponent1<Dep<Foo>>
+    
+            fun invoke() {
+                rootFactory<MyFactory>()(MyModule).a
+            }
+    """
+    )
+
+    @Test
+    fun testComplexGenericGivenFunction() = codegen(
+        """    
+        class Dep<A, B, C>(val value: A)
+        
+        @Module
+        object MyModule { 
+            @Given fun <A, B : A, C : B> dep(a: A) = Dep<A, A, A>(a)
+            @Given fun foo() = Foo() 
+        }
+        
+        @RootFactory
+        typealias MyFactory = (MyModule) -> TestComponent1<Dep<Foo, Foo, Foo>>
+    """
+    )
+
+    @Test
+    fun testInput() = codegen(
+        """
+            @RootFactory
+            typealias MyFactory = (Foo) -> TestComponent1<Foo>
+            fun invoke(): Pair<Foo, Foo> {
+                val foo = Foo()
+                return foo to rootFactory<MyFactory>()(foo).a
+            }
+    """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Foo, Foo>>()
+        assertSame(a, b)
+    }
+
+    @Test
+    fun testNestedModule() = codegen(
+        """
+        @Module
+        class FooModule {
+            @Given
+            fun foo() = Foo()
+            
+            @Module
+            val barModule = BarModule()
+            
+            @Module
+            class BarModule {
+                @Given
+                fun bar(foo: Foo) = Bar(foo)
+            }
+        }
+        
+        @RootFactory
+        typealias MyFactory = (FooModule) -> TestComponent1<Bar>
+        
+        fun invoke(): Bar {
+            return rootFactory<MyFactory>()(FooModule()).a
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
+    }
 
     @Test
     fun testMissingGivenFails() = codegen(
@@ -348,4 +654,45 @@ class ComponentTest {
 
         """
     )
+
+    @Test
+    fun testCircularDependencyFails() = codegen(
+        """
+            @Given class A(b: B)
+            @Given class B(a: A)
+            
+            @RootFactory
+            typealias MyFactory = () -> TestComponent1<B>
+        """
+    ) {
+        assertInternalError("circular")
+    }
+
+    @Test
+    fun testProviderCanBreaksCircularDependency() = codegen(
+        """
+            @Given class A(b: B)
+            @Given(TestComponent1::class) class B(a: () -> A)
+            
+            @RootFactory
+            typealias MyFactory = () -> TestComponent1<B>
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testIrrelevantProviderInChainDoesNotBreakCircularDependecy() = codegen(
+        """
+            @Given class A(b: () -> B)
+            @Given class B(b: C)
+            @Given class C(b: B)
+            
+            @RootFactory
+            typealias MyFactory = () -> TestComponent1<C>
+        """
+    ) {
+        assertInternalError("circular")
+    }
+
 }

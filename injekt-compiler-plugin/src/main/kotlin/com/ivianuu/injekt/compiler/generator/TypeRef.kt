@@ -57,6 +57,7 @@ sealed class TypeRef {
     private val typeName by unsafeLazy { uniqueTypeName(includeNullability = false) }
     override fun equals(other: Any?) = other is TypeRef && typeName == other.typeName
     override fun hashCode() = typeName.hashCode()
+    override fun toString(): String = render()
 }
 
 class KotlinTypeRef(
