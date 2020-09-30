@@ -239,20 +239,20 @@ class ComponentTest {
     @Test
     fun testGenericGivenClass() = codegen(
         """
-        @Given class Dep<T>(val value: T)
-        
-        @Module
-        object FooModule {
-            @Given
-            fun foo() = Foo()
-        }
-        
-        @RootFactory
-        typealias MyFactory = (FooModule) -> TestComponent1<Dep<Foo>>
-        
-        fun invoke() {
-            rootFactory<MyFactory>()(FooModule).a
-        }
+            @Given class Dep<T>(val value: T)
+            
+            @Module
+            object FooModule {
+                @Given
+                fun foo() = Foo()
+            }
+            
+            @RootFactory
+            typealias MyFactory = (FooModule) -> TestComponent1<Dep<Foo>>
+            
+            fun invoke() {
+                rootFactory<MyFactory>()(FooModule).a
+            }
     """
     )
 
@@ -279,16 +279,16 @@ class ComponentTest {
     @Test
     fun testComplexGenericGivenFunction() = codegen(
         """    
-        class Dep<A, B, C>(val value: A)
-        
-        @Module
-        object MyModule { 
-            @Given fun <A, B : A, C : B> dep(a: A) = Dep<A, A, A>(a)
-            @Given fun foo() = Foo() 
-        }
-        
-        @RootFactory
-        typealias MyFactory = (MyModule) -> TestComponent1<Dep<Foo, Foo, Foo>>
+            class Dep<A, B, C>(val value: A)
+            
+            @Module
+            object MyModule { 
+                @Given fun <A, B : A, C : B> dep(a: A) = Dep<A, A, A>(a)
+                @Given fun foo() = Foo() 
+            }
+            
+            @RootFactory
+            typealias MyFactory = (MyModule) -> TestComponent1<Dep<Foo, Foo, Foo>>
     """
     )
 
@@ -310,27 +310,27 @@ class ComponentTest {
     @Test
     fun testNestedModule() = codegen(
         """
-        @Module
-        class FooModule {
-            @Given
-            fun foo() = Foo()
-            
             @Module
-            val barModule = BarModule()
-            
-            @Module
-            class BarModule {
+            class FooModule {
                 @Given
-                fun bar(foo: Foo) = Bar(foo)
+                fun foo() = Foo()
+                
+                @Module
+                val barModule = BarModule()
+                
+                @Module
+                class BarModule {
+                    @Given
+                    fun bar(foo: Foo) = Bar(foo)
+                }
             }
-        }
-        
-        @RootFactory
-        typealias MyFactory = (FooModule) -> TestComponent1<Bar>
-        
-        fun invoke(): Bar {
-            return rootFactory<MyFactory>()(FooModule()).a
-        }
+            
+            @RootFactory
+            typealias MyFactory = (FooModule) -> TestComponent1<Bar>
+            
+            fun invoke(): Bar {
+                return rootFactory<MyFactory>()(FooModule()).a
+            }
     """
     ) {
         assertTrue(invokeSingleFile() is Bar)
@@ -339,21 +339,21 @@ class ComponentTest {
     @Test
     fun testGenericNestedModule() = codegen(
         """
-        @Module
-        class OuterModule {
             @Module
-            val fooModule = InstanceModule<Foo>(Foo())
+            class OuterModule {
+                @Module
+                val fooModule = InstanceModule<Foo>(Foo())
+                
+                @Module
+                class InstanceModule<T>(@Given val instance: T)
+            }
             
-            @Module
-            class InstanceModule<T>(@Given val instance: T)
-        }
-        
-        @RootFactory
-        typealias MyFactory = (OuterModule) -> TestComponent1<Foo>
-        
-        fun invoke(): Foo {
-            return rootFactory<MyFactory>()(OuterModule()).a
-        }
+            @RootFactory
+            typealias MyFactory = (OuterModule) -> TestComponent1<Foo>
+            
+            fun invoke(): Foo {
+                return rootFactory<MyFactory>()(OuterModule()).a
+            }
     """
     ) {
         assertTrue(invokeSingleFile() is Foo)

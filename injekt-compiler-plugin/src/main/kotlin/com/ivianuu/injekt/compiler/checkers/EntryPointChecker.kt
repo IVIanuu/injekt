@@ -1,3 +1,3 @@
 package com.ivianuu.injekt.compiler.checkers
 
-class FactoryChecker
+// todo check entryPoint<T>() calls
