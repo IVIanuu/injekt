@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.namedDeclarationRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
+import java.io.File
 
 @Given
 class RootFactoryGenerator(
@@ -33,14 +34,20 @@ class RootFactoryGenerator(
                     if (descriptor is TypeAliasDescriptor &&
                         descriptor.hasAnnotation(InjektFqNames.RootFactory)
                     ) {
-                        generateRootFactory(FactoryDescriptor(descriptor.defaultType.toTypeRef()))
+                        generateRootFactory(
+                            FactoryDescriptor(descriptor.defaultType.toTypeRef()),
+                            File(declaration.containingKtFile.virtualFilePath)
+                        )
                     }
                 }
             )
         }
     }
 
-    private fun generateRootFactory(descriptor: FactoryDescriptor) {
+    private fun generateRootFactory(
+        descriptor: FactoryDescriptor,
+        file: File
+    ) {
         val factoryImplFqName = descriptor.factoryType.classifier.fqName.toFactoryImplFqName()
         val factoryImpl = componentFactoryImplFactory(
             factoryImplFqName.shortName(),
@@ -60,7 +67,8 @@ class RootFactoryGenerator(
         fileManager.generateFile(
             packageFqName = descriptor.factoryType.classifier.fqName.parent(),
             fileName = "${factoryImplFqName.shortName()}.kt",
-            code = code
+            code = code,
+            originatingFile = file
         )
     }
 }

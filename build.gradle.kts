@@ -84,6 +84,10 @@ allprojects {
                 ?.srcDir(srcDir)
         }
 
+        if (project.name == "injekt-compiler-plugin") {
+            incremental = false
+        }
+
         kotlinOptions {
             useIR = true
             freeCompilerArgs += listOf(

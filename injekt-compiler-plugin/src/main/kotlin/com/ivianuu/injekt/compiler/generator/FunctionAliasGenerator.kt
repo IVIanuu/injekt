@@ -7,10 +7,11 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
+import java.io.File
 
 @Given
 class FunctionAliasGenerator(
-    @Assisted private val generateFile: (FqName, String, String) -> Unit
+    @Assisted private val generateFile: (FqName, String, String, File) -> Unit
 ) : Generator {
 
     override fun generate(files: List<KtFile>) {
@@ -91,6 +92,6 @@ class FunctionAliasGenerator(
             }
         }
 
-        generateFile(file.packageFqName, fileName, code)
+        generateFile(file.packageFqName, fileName, code, File(file.virtualFilePath))
     }
 }
