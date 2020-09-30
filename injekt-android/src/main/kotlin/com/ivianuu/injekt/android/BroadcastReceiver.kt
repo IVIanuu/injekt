@@ -18,6 +18,7 @@ package com.ivianuu.injekt.android
 
 import android.content.Context
 import android.content.Intent
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Module
 
 typealias ReceiverContext = Context
@@ -26,6 +27,6 @@ typealias ReceiverIntent = Intent
 
 @Module
 class ReceiverModule(
-    val context: Context,
-    val intent: Intent
+    @Given val context: ReceiverContext,
+    @Given val intent: ReceiverIntent
 )

@@ -80,7 +80,7 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Module
 
 @Module
-class SystemServiceModule {
+object SystemServiceModule {
     @Given
     val Context.accessibilityManager
         get() = systemService<AccessibilityManager>()
