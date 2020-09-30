@@ -32,25 +32,34 @@ class CollectionsTest {
     @Test
     fun testSimpleMap() = codegen(
         """
-            @Given 
-            fun commandA() = CommandA()
+            @Module
+            object MapModule {
+                @Given 
+                fun commandA() = CommandA()
+                
+                @GivenMapEntries
+                fun commandAIntoMap(
+                    commandA: CommandA
+                ): Map<KClass<out Command>, Command> = mapOf(CommandA::class to commandA)
+                
+                @Given 
+                fun commandB() = CommandB()
+        
+                @GivenMapEntries 
+                fun commandBIntoMap(
+                    commandB: CommandB
+                ): Map<KClass<out Command>, Command> = mapOf(CommandB::class to commandB)
+            }
             
-            @GivenMapEntries
-            fun commandAIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandA::class to given<CommandA>())
-            
-            @Given 
-            fun commandB() = CommandB()
-    
-            @GivenMapEntries 
-            fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
+            @RootFactory
+            typealias MapFactory = (MapModule) -> TestComponent1<Map<KClass<out Command>, Command>>
          
             fun invoke(): Map<KClass<out Command>, Command> {
-                return rootFactory<TestContext>().runReader { given<Map<KClass<out Command>, Command>>() }
+                return rootFactory<MapFactory>()(MapModule).a
             }
         """
     ) {
-        val map =
-            invokeSingleFile<Map<KClass<out Command>, Command>>()
+        val map = invokeSingleFile<Map<KClass<out Command>, Command>>()
         assertEquals(2, map.size)
         assertTrue(map[CommandA::class] is CommandA)
         assertTrue(map[CommandB::class] is CommandB)
@@ -59,24 +68,35 @@ class CollectionsTest {
     @Test
     fun testNestedMap() = codegen(
         """
-            @Given 
-            fun commandA() = CommandA()
+            @Module
+            object ParentModule {
+                @Given 
+                fun commandA() = CommandA()
+                
+                @GivenMapEntries
+                fun commandAIntoMap(commandA: CommandA): Map<KClass<out Command>, Command> = 
+                    mapOf(CommandA::class to commandA)
+            }
             
-            @GivenMapEntries(TestParentContext::class)
-            fun commandAIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandA::class to given<CommandA>())
+            @Module
+            object ChildModule {
+                @Given 
+                fun commandB() = CommandB()
+        
+                @GivenMapEntries
+                fun commandBIntoMap(commandB: CommandB): Map<KClass<out Command>, Command> = 
+                    mapOf(CommandB::class to commandB)
+            }
             
-            @Given 
-            fun commandB() = CommandB()
-    
-            @GivenMapEntries(TestChildContext::class)
-            fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
+            @RootFactory
+            typealias MyParentFactory = (ParentModule) -> TestComponent2<Map<KClass<out Command>, Command>, MyChildFactory>
+            
+            @ChildFactory
+            typealias MyChildFactory = (ChildModule) -> TestComponent1<Map<KClass<out Command>, Command>>
          
             fun invoke(): Pair<Map<KClass<out Command>, Command>, Map<KClass<out Command>, Command>> {
-                return rootFactory<TestParentContext>().runReader { 
-                    given<Map<KClass<out Command>, Command>>() to childContext<TestChildContext>().runReader {
-                        given<Map<KClass<out Command>, Command>>()
-                    }
-                }
+                val parent = rootFactory<MyParentFactory>()(ParentModule)
+                return parent.a to parent.b(ChildModule).a
             }
         """
     ) {

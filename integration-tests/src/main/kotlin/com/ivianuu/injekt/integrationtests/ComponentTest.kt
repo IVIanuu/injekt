@@ -82,11 +82,18 @@ class ComponentTest {
             typealias Foo1 = Foo
             typealias Foo2 = Foo
             
-            @Given fun foo1(): Foo1 = Foo()
-            @Given fun foo2(): Foo2 = Foo()
+            @Module
+            object FooModule {
+                @Given fun foo1(): Foo1 = Foo()
+                @Given fun foo2(): Foo2 = Foo()
+            }
+            
+            @RootFactory
+            typealias MyFactory = (FooModule) -> TestComponent2<Foo1, Foo2>
             
             fun invoke(): Pair<Foo, Foo> {
-                return rootFactory<TestContext>().runReader { given<Foo1>() to given<Foo2>() }
+                val component = rootFactory<MyFactory>()(FooModule)
+                return component.a to component.b
             }
             """
     ) {
@@ -122,10 +129,11 @@ class ComponentTest {
             source(
                 """
                     @RootFactory
-                    typealias MyFactory = 
+                    typealias MyFactory = (Foo1Module, Foo2Module) -> TestComponent2<Foo1, Foo2>
         
-                    fun invoke(): Pair<Foo, Foo> {
-                        return rootFactory<TestContext>().runReader { given<Foo1>() to given<Foo2>() }
+                    fun invoke(): Pair<Foo1, Foo2> {
+                        val component = rootFactory<MyFactory>()(Foo1Module, Foo2Module)
+                        return component.a to component.b
                     }
             """,
                 name = "File.kt"
@@ -155,10 +163,16 @@ class ComponentTest {
     @Test
     fun testReturnsInstanceForNullableGiven() = codegen(
         """
-            @Given fun foo(): Foo = Foo()
+            @Module
+            object FooModule {
+                @Given fun foo(): Foo = Foo()
+            }
+            
+            @RootFactory
+            typealias MyFactory = (FooModule) -> TestComponent1<Foo?>
     
-            fun invoke(): Foo? { 
-                return rootFactory<TestContext>().runReader { given<Foo?>() }
+            fun invoke(): Foo? {
+                return rootFactory<MyFactory>()(FooModule).a
             }
         """
     ) {
@@ -168,8 +182,10 @@ class ComponentTest {
     @Test
     fun testReturnsNullOnMissingNullableGiven() = codegen(
         """
+            @RootFactory
+            typealias MyFactory = () -> TestComponent1<Foo?>
             fun invoke(): Foo? { 
-                return rootFactory<TestContext>().runReader { given<Foo?>() }
+                return rootFactory<MyFactory>()().a
             }
         """
     ) {
@@ -202,12 +218,11 @@ class ComponentTest {
     @Test
     fun testDuplicatedInputsFails() = codegen(
         """
-            fun invoke() {
-                rootFactory<TestContext>(Foo(), Foo()).runReader { given<Foo>() }
-            }
+            @RootFactory
+            typealias MyFactory = (Foo, Foo) -> TestComponent1<Foo>
         """
     ) {
-        assertInternalError("multiple givens found in inputs")
+        assertInternalError("multiple givens")
     }
 
     @Test
@@ -223,11 +238,11 @@ class ComponentTest {
             typealias MyFactory = (FooModule) -> TestComponent1<Foo>
         """
     ) {
-        assertInternalError("multiple internal givens")
+        assertInternalError("multiple givens")
     }
 
     @Test
-    fun testGivenPerContext() = codegen(
+    fun testGivenPerComponent() = codegen(
         """
             @Given(TestParentContext::class) fun parentFoo() = Foo()
             @Given(TestChildContext::class) fun childFoo() = Foo()
@@ -261,8 +276,8 @@ class ComponentTest {
             }
         """
     ) {
-        val (context1, context2) = invokeSingleFile<Pair<SelfComponent, SelfComponent>>()
-        assertSame(context1, context2)
+        val (component1, component2) = invokeSingleFile<Pair<SelfComponent, SelfComponent>>()
+        assertSame(component1, component2)
     }
 
     @Test
@@ -298,9 +313,18 @@ class ComponentTest {
             fun callMax() {
                 compare(1, 2)
             }
+            
+            @Module
+            object MyModule {
+                @Given
+                fun intComparator(): AliasComparator<Int> = error("")
+            }
+            
+            @RootFactory
+            typealias MyFactory = (MyModule) -> TestComponent<compare<Int>>
 
-            @Reader
-            fun <T> compare(a: T, b: T): Int = given<AliasComparator<T>>()
+            @Given
+            fun <T> compare(@Assisted a: T, @Assisted b: T, comparator: AliasComparator<T>): Int = aliasComparator
                 .compare(a, b)
 
         """

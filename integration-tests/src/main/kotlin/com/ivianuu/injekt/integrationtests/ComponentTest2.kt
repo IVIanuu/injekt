@@ -24,7 +24,7 @@ import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-class ReaderContextTest {
+class ComponentTest2 {
 
     @Test
     fun testSimple() = codegen(
@@ -99,7 +99,7 @@ class ReaderContextTest {
             }
             
             @RootFactory
-            typealias MyParentFactory = (MyModule) -> TestParentComponent1<Foo>
+            typealias MyParentFactory = (MyModule) -> TestParentComponent1<MyChildFactory>
             val parentComponent = rootFactory<MyParentFactory>()(MyModule)
             
             @ChildFactory
@@ -274,15 +274,14 @@ class ReaderContextTest {
         """    
         class Dep<A, B, C>(val value: A)
         
-        @Given fun <A, B : A, C : B> dep() = Dep<A, A, A>(given())
-        
-        @Given fun foo() = Foo() 
-
-        fun invoke() {
-            rootFactory<TestContext>().runReader {
-                given<Dep<Foo, Foo, Foo>>()
-            }
+        @Module
+        object MyModule { 
+            @Given fun <A, B : A, C : B> dep(a: A) = Dep<A, A, A>(a)
+            @Given fun foo() = Foo() 
         }
+        
+        @RootFactory
+        typealias MyFactory = (MyModule) -> TestComponent1<Dep<Foo, Foo, Foo>>
     """
     )
 

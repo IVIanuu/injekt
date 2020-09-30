@@ -133,7 +133,21 @@ class GivenStatements(
                 emitLine("val result = mutableMapOf<Any?, Any?>()")
                 given.entries.forEach { (callable, receiver) ->
                     emit("result.putAll(")
-                    emitCallableInvocation(callable, receiver, emptyList())
+                    emitCallableInvocation(
+                        callable,
+                        receiver,
+                        callable.valueParameters
+                            .map {
+                                getGivenStatement(
+                                    owner.graph.getGiven(
+                                        GivenRequest(
+                                            it.type,
+                                            callable.fqName.child(it.name)
+                                        )
+                                    )
+                                )
+                            }
+                    )
                     emitLine(")")
                 }
                 emitLine("result as ${given.type.render()}")
@@ -148,7 +162,21 @@ class GivenStatements(
                 emitLine("val result = mutableSetOf<Any?>()")
                 given.elements.forEach { (callable, receiver) ->
                     emit("result.addAll(")
-                    emitCallableInvocation(callable, receiver, emptyList())
+                    emitCallableInvocation(
+                        callable,
+                        receiver,
+                        callable.valueParameters
+                            .map {
+                                getGivenStatement(
+                                    owner.graph.getGiven(
+                                        GivenRequest(
+                                            it.type,
+                                            callable.fqName.child(it.name)
+                                        )
+                                    )
+                                )
+                            }
+                    )
                     emitLine(")")
                 }
                 emitLine("result as ${given.type.render()}")
