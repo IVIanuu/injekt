@@ -32,21 +32,21 @@ class CollectionsTest {
     @Test
     fun testSimpleMap() = codegen(
         """
-        @Given 
-        fun commandA() = CommandA()
-        
-        @GivenMapEntries
-        fun commandAIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandA::class to given<CommandA>())
-        
-        @Given 
-        fun commandB() = CommandB()
-
-        @GivenMapEntries 
-        fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
-     
-        fun invoke(): Map<KClass<out Command>, Command> {
-            return rootFactory<TestContext>().runReader { given<Map<KClass<out Command>, Command>>() }
-        }
+            @Given 
+            fun commandA() = CommandA()
+            
+            @GivenMapEntries
+            fun commandAIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandA::class to given<CommandA>())
+            
+            @Given 
+            fun commandB() = CommandB()
+    
+            @GivenMapEntries 
+            fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
+         
+            fun invoke(): Map<KClass<out Command>, Command> {
+                return rootFactory<TestContext>().runReader { given<Map<KClass<out Command>, Command>>() }
+            }
         """
     ) {
         val map =
@@ -59,25 +59,25 @@ class CollectionsTest {
     @Test
     fun testNestedMap() = codegen(
         """
-        @Given 
-        fun commandA() = CommandA()
-        
-        @GivenMapEntries(TestParentContext::class)
-        fun commandAIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandA::class to given<CommandA>())
-        
-        @Given 
-        fun commandB() = CommandB()
-
-        @GivenMapEntries(TestChildContext::class)
-        fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
-     
-        fun invoke(): Pair<Map<KClass<out Command>, Command>, Map<KClass<out Command>, Command>> {
-            return rootFactory<TestParentContext>().runReader { 
-                given<Map<KClass<out Command>, Command>>() to childContext<TestChildContext>().runReader {
-                    given<Map<KClass<out Command>, Command>>()
+            @Given 
+            fun commandA() = CommandA()
+            
+            @GivenMapEntries(TestParentContext::class)
+            fun commandAIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandA::class to given<CommandA>())
+            
+            @Given 
+            fun commandB() = CommandB()
+    
+            @GivenMapEntries(TestChildContext::class)
+            fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
+         
+            fun invoke(): Pair<Map<KClass<out Command>, Command>, Map<KClass<out Command>, Command>> {
+                return rootFactory<TestParentContext>().runReader { 
+                    given<Map<KClass<out Command>, Command>>() to childContext<TestChildContext>().runReader {
+                        given<Map<KClass<out Command>, Command>>()
+                    }
                 }
             }
-        }
         """
     ) {
         val (parentMap, childMap) =
@@ -92,21 +92,21 @@ class CollectionsTest {
     @Test
     fun testAssistedMap() = codegen(
         """
-        @Given 
-        fun commandA(arg: String) = CommandA()
-        
-        @GivenMapEntries
-        fun commandAIntoMap(): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandA::class to given<(String) -> CommandA>())
-        
-        @Given 
-        fun commandB(arg: String) = CommandB()
-
-        @GivenMapEntries 
-        fun commandBIntoMap(): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandB::class to given<(String) -> CommandB>())
-
-        fun invoke(): Map<KClass<out Command>, (String) -> Command> {
-            return rootFactory<TestContext>().runReader { given<Map<KClass<out Command>, (String) -> Command>>() }
-        }
+            @Given 
+            fun commandA(arg: String) = CommandA()
+            
+            @GivenMapEntries
+            fun commandAIntoMap(): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandA::class to given<(String) -> CommandA>())
+            
+            @Given 
+            fun commandB(arg: String) = CommandB()
+    
+            @GivenMapEntries 
+            fun commandBIntoMap(): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandB::class to given<(String) -> CommandB>())
+    
+            fun invoke(): Map<KClass<out Command>, (String) -> Command> {
+                return rootFactory<TestContext>().runReader { given<Map<KClass<out Command>, (String) -> Command>>() }
+            }
         """
     ) {
         val map =
@@ -129,21 +129,21 @@ class CollectionsTest {
     @Test
     fun testSimpleSet() = codegen(
         """
-        @Given 
-        fun commandA() = CommandA()
-        
-        @GivenSetElements
-        fun commandAIntoSet(): Set<Command> = setOf(given<CommandA>())
-        
-        @Given 
-        fun commandB() = CommandB()
-        
-        @GivenSetElements
-        fun commandBIntoSet(): Set<Command> = setOf(given<CommandB>())
-
-        fun invoke(): Set<Command> {
-            return rootFactory<TestContext>().runReader { given<Set<Command>>() }
-        }
+            @Given 
+            fun commandA() = CommandA()
+            
+            @GivenSetElements
+            fun commandAIntoSet(): Set<Command> = setOf(given<CommandA>())
+            
+            @Given 
+            fun commandB() = CommandB()
+            
+            @GivenSetElements
+            fun commandBIntoSet(): Set<Command> = setOf(given<CommandB>())
+    
+            fun invoke(): Set<Command> {
+                return rootFactory<TestContext>().runReader { given<Set<Command>>() }
+            }
         """
     ) {
         val set = invokeSingleFile<Set<Command>>().toList()
@@ -155,25 +155,25 @@ class CollectionsTest {
     @Test
     fun testNestedSet() = codegen(
         """
-        @Given 
-        fun commandA() = CommandA()
-        
-        @GivenSetElements(TestParentContext::class)
-        fun commandAIntoSet(): Set<Command> = setOf(given<CommandA>())
-        
-        @Given 
-        fun commandB() = CommandB()
-        
-        @GivenSetElements(TestChildContext::class)
-        fun commandBIntoSet(): Set<Command> = setOf(given<CommandB>())
-
-        fun invoke(): Pair<Set<Command>, Set<Command>> {
-            return rootFactory<TestParentContext>().runReader { 
-                given<Set<Command>>() to childContext<TestChildContext>().runReader {
-                    given<Set<Command>>()
+            @Given 
+            fun commandA() = CommandA()
+            
+            @GivenSetElements(TestParentContext::class)
+            fun commandAIntoSet(): Set<Command> = setOf(given<CommandA>())
+            
+            @Given 
+            fun commandB() = CommandB()
+            
+            @GivenSetElements(TestChildContext::class)
+            fun commandBIntoSet(): Set<Command> = setOf(given<CommandB>())
+    
+            fun invoke(): Pair<Set<Command>, Set<Command>> {
+                return rootFactory<TestParentContext>().runReader { 
+                    given<Set<Command>>() to childContext<TestChildContext>().runReader {
+                        given<Set<Command>>()
+                    }
                 }
             }
-        }
         """
     ) {
         val (parentSet, childSet) = invokeSingleFile<Pair<Set<Command>, Set<Command>>>().toList()
@@ -187,21 +187,21 @@ class CollectionsTest {
     @Test
     fun testAssistedSet() = codegen(
         """
-        @Given 
-        fun commandA(arg: String) = CommandA()
-        
-        @GivenSetElements
-        fun commandAIntoSet(): Set<(String) -> Command> = setOf(given<(String) -> CommandA>())
-        
-        @Given 
-        fun commandB(arg: String) = CommandB()
-        
-        @GivenSetElements
-        fun commandBIntoSet(): Set<(String) -> Command> = setOf(given<(String) -> CommandB>())
-
-        fun invoke(): Set<(String) -> Command> {
-            return rootFactory<TestContext>().runReader { given<Set<(String) -> Command>>() }
-        }
+            @Given 
+            fun commandA(arg: String) = CommandA()
+            
+            @GivenSetElements
+            fun commandAIntoSet(): Set<(String) -> Command> = setOf(given<(String) -> CommandA>())
+            
+            @Given 
+            fun commandB(arg: String) = CommandB()
+            
+            @GivenSetElements
+            fun commandBIntoSet(): Set<(String) -> Command> = setOf(given<(String) -> CommandB>())
+    
+            fun invoke(): Set<(String) -> Command> {
+                return rootFactory<TestContext>().runReader { given<Set<(String) -> Command>>() }
+            }
         """
     ) {
         val set = invokeSingleFile<Set<(String) -> Command>>().toList()

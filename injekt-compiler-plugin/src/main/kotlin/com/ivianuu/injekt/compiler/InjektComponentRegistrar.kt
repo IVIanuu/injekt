@@ -37,32 +37,39 @@ class InjektComponentRegistrar : ComponentRegistrar {
 
     override fun registerProjectComponents(
         project: MockProject,
-        configuration: CompilerConfiguration
+        configuration: CompilerConfiguration,
     ) {
-        rootFactory<ApplicationComponentFactory>()(project, configuration, ApplicationModule).run {
-            StorageComponentContainerContributor.registerExtension(
-                project,
-                injektStorageContainerContributor
-            )
-
-            AnalysisHandlerExtension.registerExtension(
-                project,
-                injektKtGenerationExtension
-            )
-
-            IrGenerationExtension.registerExtension(
-                project,
-                injektIntrinsicIrExtension
-            )
-        }
+        rootFactory<ApplicationComponentFactory>()(project, configuration, ApplicationModule)
+            .registerExtensions()
     }
 
 }
 
+@Given
+fun registerExtensions(
+    project: Project,
+    injektStorageContainerContributor: InjektStorageContainerContributor,
+    injektKtGenerationExtension: InjektKtGenerationExtension,
+    injektIntrinsicIrExtension: InjektIntrinsicIrExtension,
+) {
+    StorageComponentContainerContributor.registerExtension(
+        project,
+        injektStorageContainerContributor
+    )
+
+    AnalysisHandlerExtension.registerExtension(
+        project,
+        injektKtGenerationExtension
+    )
+
+    IrGenerationExtension.registerExtension(
+        project,
+        injektIntrinsicIrExtension
+    )
+}
+
 interface ApplicationComponent {
-    val injektStorageContainerContributor: InjektStorageContainerContributor
-    val injektKtGenerationExtension: InjektKtGenerationExtension
-    val injektIntrinsicIrExtension: InjektIntrinsicIrExtension
+    val registerExtensions: registerExtensions
 }
 
 @RootFactory

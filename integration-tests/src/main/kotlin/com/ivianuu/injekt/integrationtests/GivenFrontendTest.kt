@@ -25,14 +25,14 @@ class GivenFrontendTest {
     @Test
     fun testGivenClassOk() = codegen(
         """ 
-        @Given class Dep
-    """
+            @Given class Dep
+        """
     )
 
     @Test
     fun testGivenAbstractClassFails() = codegen(
         """ 
-        @Given abstract class Dep
+            @Given abstract class Dep
     """
     ) {
         assertCompileError("abstract")
@@ -41,7 +41,7 @@ class GivenFrontendTest {
     @Test
     fun testGivenInterfaceFails() = codegen(
         """ 
-        @Given interface Dep
+            @Given interface Dep
     """
     ) {
         assertCompileError("abstract")
@@ -50,7 +50,7 @@ class GivenFrontendTest {
     @Test
     fun testGivenClassAndGivenConstructorFails() = codegen(
         """
-         @Given class Dep @Given constructor()  
+            @Given class Dep @Given constructor()  
         """
     ) {
         assertCompileError("either")

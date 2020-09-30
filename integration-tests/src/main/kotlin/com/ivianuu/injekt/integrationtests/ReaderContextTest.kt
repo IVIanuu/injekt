@@ -232,9 +232,7 @@ class ReaderContextTest {
     @Test
     fun testGenericGivenClass() = codegen(
         """
-        @Given class Dep<T> {
-            val value: T = given()
-        }
+        @Given class Dep<T>(val value: T)
         
         @Module
         object FooModule {
@@ -254,17 +252,20 @@ class ReaderContextTest {
     @Test
     fun testGenericGivenFunction() = codegen(
         """    
-        class Dep<T>(val value: T)
-        
-        @Given fun <T> dep() = Dep<T>(given())
-        
-        @Given fun foo() = Foo() 
-
-        fun invoke() {
-            rootFactory<TestContext>().runReader {
-                given<Dep<Foo>>()
+            class Dep<T>(val value: T)
+            
+            @Module
+            object MyModule { 
+                @Given fun <T> dep(value: T) = Dep<T>(value)
+                @Given fun foo() = Foo() 
             }
-        }
+            
+            @RootFactory
+            typealias MyFactory = (MyModule) -> TestComponent1<Dep<Foo>>
+    
+            fun invoke() {
+                rootFactory<MyFactory>()(MyModule).a
+            }
     """
     )
 

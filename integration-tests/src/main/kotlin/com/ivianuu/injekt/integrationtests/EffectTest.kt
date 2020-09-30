@@ -30,37 +30,37 @@ class EffectTest {
     @Test
     fun testSimpleEffect() = codegen(
         """
-        @Effect
-        annotation class Effect1 {
-            @GivenSet
-            companion object {
-                @Given
-                fun <T> bind() = given<T>().toString()
+            @Effect
+            annotation class Effect1 {
+                @GivenSet
+                companion object {
+                    @Given
+                    fun <T> bind() = given<T>().toString()
+                }
             }
-        }
-        
-        @Effect
-        annotation class Effect2 {
-            @GivenSet
-            companion object {
-                @Given
-                fun <T : Any> bind(): Any = given<T>()
+            
+            @Effect
+            annotation class Effect2 {
+                @GivenSet
+                companion object {
+                    @Given
+                    fun <T : Any> bind(): Any = given<T>()
+                }
             }
-        }
-        
-        @Given
-        @Effect1
-        @Effect2
-        class Dep
-        
-        fun invoke() {
-            rootFactory<TestContext>().runReader { 
-                given<Dep>() 
-                given<String>()
-                given<Any>()
+            
+            @Given
+            @Effect1
+            @Effect2
+            class Dep
+            
+            fun invoke() {
+                rootFactory<TestContext>().runReader { 
+                    given<Dep>() 
+                    given<String>()
+                    given<Any>()
+                }
             }
-        }
-    """
+            """
     ) {
         invokeSingleFile()
     }
@@ -68,25 +68,25 @@ class EffectTest {
     @Test
     fun testAssistedEffect() = codegen(
         """
-        @Effect
-        annotation class Effect1 {
-            @GivenSet
-            companion object {
-                @Given
-                fun <T : (String) -> Any> bind() = given<T>().toString()
+            @Effect
+            annotation class Effect1 {
+                @GivenSet
+                companion object {
+                    @Given
+                    fun <T : (String) -> Any> bind() = given<T>().toString()
+                }
             }
-        }
-        
-        @Effect1
-        @Given
-        class Dep(arg: String)
-        
-        fun invoke() {
-            rootFactory<TestContext>().runReader { 
-                given<Dep>("a") 
-                given<String>()
+            
+            @Effect1
+            @Given
+            class Dep(arg: String)
+            
+            fun invoke() {
+                rootFactory<TestContext>().runReader { 
+                    given<Dep>("a") 
+                    given<String>()
+                }
             }
-        }
     """
     ) {
         invokeSingleFile()
@@ -95,28 +95,28 @@ class EffectTest {
     @Test
     fun testWithTwoTypeParameters() = codegen(
         """
-        @Effect
-        annotation class Memoized {
-            @GivenSet
-            companion object {
-                @PublishedApi
-                internal val instances = mutableMapOf<KClass<*>, Any?>()
-                @Given
-                inline fun <reified T : S, reified S> memoized(): S = instances.getOrPut(S::class) {
-                    given<T>()
-                } as S
+            @Effect
+            annotation class Memoized {
+                @GivenSet
+                companion object {
+                    @PublishedApi
+                    internal val instances = mutableMapOf<KClass<*>, Any?>()
+                    @Given
+                    inline fun <reified T : S, reified S> memoized(): S = instances.getOrPut(S::class) {
+                        given<T>()
+                    } as S
+                }
             }
-        }
-
-        @Memoized
-        class Dep
-        
-        fun invoke() {
-            rootFactory<TestContext>().runReader {
-                val a = given<Dep>()
-                val b = given<Dep>()
+    
+            @Memoized
+            class Dep
+            
+            fun invoke() {
+                rootFactory<TestContext>().runReader {
+                    val a = given<Dep>()
+                    val b = given<Dep>()
+                }
             }
-        }
     """
     ) {
         invokeSingleFile()
@@ -125,8 +125,8 @@ class EffectTest {
     @Test
     fun testEffectWithoutCompanion() = codegen(
         """
-        @Effect
-        annotation class MyEffect
+            @Effect
+            annotation class MyEffect
     """
     ) {
         assertCompileError("companion")
@@ -135,15 +135,15 @@ class EffectTest {
     @Test
     fun testEffectWithoutTypeParameters() = codegen(
         """
-        @Effect
-        annotation class MyEffect {
-            @GivenSet
-            companion object {
-                @Given
-                operator fun invoke() {
+            @Effect
+            annotation class MyEffect {
+                @GivenSet
+                companion object {
+                    @Given
+                    operator fun invoke() {
+                    }
                 }
             }
-        }
     """
     ) {
         assertCompileError("type parameter")
@@ -152,15 +152,15 @@ class EffectTest {
     @Test
     fun testEffectWithToManyTypeParameters() = codegen(
         """
-        @Effect
-        annotation class MyEffect {
-            @GivenSet
-            companion object {
-                @Given
-                operator fun <A, B, C> invoke() {
+            @Effect
+            annotation class MyEffect {
+                @GivenSet
+                companion object {
+                    @Given
+                    operator fun <A, B, C> invoke() {
+                    }
                 }
             }
-        }
     """
     ) {
         assertCompileError("type parameter")
@@ -169,15 +169,15 @@ class EffectTest {
     @Test
     fun testEffectWithInvalidTypeParameterSignature() = codegen(
         """
-        @Effect
-        annotation class MyEffect {
-            @GivenSet
-            companion object {
-                @Given
-                operator fun <A, B> invoke() {
+            @Effect
+            annotation class MyEffect {
+                @GivenSet
+                companion object {
+                    @Given
+                    operator fun <A, B> invoke() {
+                    }
                 }
             }
-        }
     """
     ) {
         assertCompileError("type parameter")
@@ -186,20 +186,20 @@ class EffectTest {
     @Test
     fun testEffectWithFunction() = codegen(
         """
-        @Effect
-        annotation class MyEffect {
-            @GivenSet 
-            companion object {
-                @EffectFunction(MyEffect::class)
-                @Given
-                fun <T> bind() {
+            @Effect
+            annotation class MyEffect {
+                @GivenSet 
+                companion object {
+                    @EffectFunction(MyEffect::class)
+                    @Given
+                    fun <T> bind() {
+                    }
                 }
             }
-        }
-        
-        @MyEffect
-        fun myFun() {
-        }
+            
+            @MyEffect
+            fun myFun() {
+            }
     """
     ) {
         assertCompileError("function")
@@ -208,20 +208,20 @@ class EffectTest {
     @Test
     fun testEffectNotInBounds() = codegen(
         """
-        @Effect
-        annotation class MyEffect {
-            @GivenSet
-            companion object { 
-                @Given
-                fun <T : UpperBound> bind() {
+            @Effect
+            annotation class MyEffect {
+                @GivenSet
+                companion object { 
+                    @Given
+                    fun <T : UpperBound> bind() {
+                    }
                 }
             }
-        }
-        
-        interface UpperBound
-        
-        @MyEffect
-        class MyClass
+            
+            interface UpperBound
+            
+            @MyEffect
+            class MyClass
     """
     ) {
         assertCompileError("bound")
@@ -230,18 +230,18 @@ class EffectTest {
     @Test
     fun testFunctionEffectNotInBounds() = codegen(
         """
-        @Effect
-        annotation class MyEffect {
-            @GivenSet
-            companion object {
-                @EffectFunction(MyEffect::class)
-                fun <T : () -> Unit> bind() {
+            @Effect
+            annotation class MyEffect {
+                @GivenSet
+                companion object {
+                    @EffectFunction(MyEffect::class)
+                    fun <T : () -> Unit> bind() {
+                    }
                 }
             }
-        }
-        @MyEffect
-        fun myFun(p0: String) {
-        }
+            @MyEffect
+            fun myFun(p0: String) {
+            }
     """
     ) {
         assertCompileError("bound")
@@ -250,25 +250,25 @@ class EffectTest {
     @Test
     fun testFunctionEffect() = codegen(
         """
-        typealias FooFactory = () -> Foo
-        
-        @Effect
-        annotation class GivenFooFactory {
-            @GivenSet
-            companion object {
-                @Given
-                operator fun <T : FooFactory> invoke(): FooFactory = given<T>()
+            typealias FooFactory = () -> Foo
+            
+            @Effect
+            annotation class GivenFooFactory {
+                @GivenSet
+                companion object {
+                    @Given
+                    operator fun <T : FooFactory> invoke(): FooFactory = given<T>()
+                }
             }
-        }
-        
-        @GivenFooFactory
-        fun fooFactory(): Foo {
-            return Foo()
-        }
-        
-        fun invoke(): Foo { 
-            return rootFactory<TestContext>().runReader { given<FooFactory>()() }
-        }
+            
+            @GivenFooFactory
+            fun fooFactory(): Foo {
+                return Foo()
+            }
+            
+            fun invoke(): Foo { 
+                return rootFactory<TestContext>().runReader { given<FooFactory>()() }
+            }
     """
     ) {
         assertTrue(invokeSingleFile() is Foo)
@@ -279,35 +279,35 @@ class EffectTest {
         listOf(
             source(
                 """
-                typealias FooFactory = () -> Foo
-        
-                @Effect
-                annotation class GivenFooFactory {
-                    @GivenSet
-                    companion object {
-                        @Given
-                        operator fun <T : FooFactory> invoke(): FooFactory = given<T>()
+                    typealias FooFactory = () -> Foo
+            
+                    @Effect
+                    annotation class GivenFooFactory {
+                        @GivenSet
+                        companion object {
+                            @Given
+                            operator fun <T : FooFactory> invoke(): FooFactory = given<T>()
+                        }
                     }
-                }
             """
             ),
         ),
         listOf(
             source(
                 """
-                @GivenFooFactory
-                fun fooFactory(): Foo {
-                    return Foo()
-                }
+                    @GivenFooFactory
+                    fun fooFactory(): Foo {
+                        return Foo()
+                    }
             """
             )
         ),
         listOf(
             source(
                 """
-                fun invoke(): Foo { 
-                    return rootFactory<TestContext>().runReader { given<FooFactory>()() }
-                }
+                    fun invoke(): Foo { 
+                        return rootFactory<TestContext>().runReader { given<FooFactory>()() }
+                    }
             """,
                 name = "File.kt"
             )
@@ -319,30 +319,30 @@ class EffectTest {
     @Test
     fun testSuspendFunctionEffect() = codegen(
         """
-        typealias FooFactory = suspend () -> Foo
-        
-        @Effect
-        annotation class GivenFooFactory {
-            @GivenSet
-            companion object {
-                @Given
-                operator fun <T : FooFactory> invoke(): FooFactory = given<T>()
-            }
-        }
-        
-        @GivenFooFactory
-        suspend fun fooFactory(): Foo {
-            return Foo()
-        }
-        
-        fun invoke(): Foo { 
-            return rootFactory<TestContext>().runReader { 
-                runBlocking { 
-                    delay(1)
-                    given<FooFactory>()() 
+            typealias FooFactory = suspend () -> Foo
+            
+            @Effect
+            annotation class GivenFooFactory {
+                @GivenSet
+                companion object {
+                    @Given
+                    operator fun <T : FooFactory> invoke(): FooFactory = given<T>()
                 }
             }
-        }
+            
+            @GivenFooFactory
+            suspend fun fooFactory(): Foo {
+                return Foo()
+            }
+            
+            fun invoke(): Foo { 
+                return rootFactory<TestContext>().runReader { 
+                    runBlocking { 
+                        delay(1)
+                        given<FooFactory>()() 
+                    }
+                }
+            }
     """
     ) {
         assertTrue(invokeSingleFile() is Foo)

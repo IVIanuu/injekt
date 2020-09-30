@@ -33,10 +33,10 @@ class ComponentTest {
     @Test
     fun testMissingGivenFails() = codegen(
         """
-        class Dep
-        
-        @RootFactory
-        typealias MyFactory = () -> TestComponent1<Dep>
+            class Dep
+            
+            @RootFactory
+            typealias MyFactory = () -> TestComponent1<Dep>
         """
     ) {
         assertInternalError("no given")
@@ -45,17 +45,17 @@ class ComponentTest {
     @Test
     fun testDeeplyMissingGivenFails() = codegen(
         """
-        @Module
-        object MyModule {
-            @Given
-            fun bar(foo: Foo) = Bar(foo)
-    
-            @Given
-            fun baz(bar: Bar, foo: Foo) = Baz(bar, foo)
-        }
+            @Module
+            object MyModule {
+                @Given
+                fun bar(foo: Foo) = Bar(foo)
         
-        @RootFactory
-        typealias MyFactory = (MyModule) -> TestComponent1<Baz>
+                @Given
+                fun baz(bar: Bar, foo: Foo) = Baz(bar, foo)
+            }
+            
+            @RootFactory
+            typealias MyFactory = (MyModule) -> TestComponent1<Baz>
         """
     ) {
         assertInternalError("no given")
@@ -64,13 +64,13 @@ class ComponentTest {
     @Test
     fun testDistinctTypeParameter() = codegen(
         """
-        @GivenSetElements fun setA() = setOf("a")
-        @GivenSetElements fun setB() = setOf(0)
-        
-        fun invoke(): Pair<Set<String>, Set<Int>> {
-            return rootFactory<TestContext>().runReader { given<Set<String>>() to given<Set<Int>>() }
-        }
-    """
+            @GivenSetElements fun setA() = setOf("a")
+            @GivenSetElements fun setB() = setOf(0)
+            
+            fun invoke(): Pair<Set<String>, Set<Int>> {
+                return rootFactory<TestContext>().runReader { given<Set<String>>() to given<Set<Int>>() }
+            }
+            """
     ) {
         val (setA, setB) = invokeSingleFile<Pair<Set<String>, Set<Int>>>()
         assertNotSame(setA, setB)
@@ -79,16 +79,16 @@ class ComponentTest {
     @Test
     fun testDistinctTypeAlias() = codegen(
         """
-        typealias Foo1 = Foo
-        typealias Foo2 = Foo
-        
-        @Given fun foo1(): Foo1 = Foo()
-        @Given fun foo2(): Foo2 = Foo()
-        
-        fun invoke(): Pair<Foo, Foo> {
-            return rootFactory<TestContext>().runReader { given<Foo1>() to given<Foo2>() }
-        }
-    """
+            typealias Foo1 = Foo
+            typealias Foo2 = Foo
+            
+            @Given fun foo1(): Foo1 = Foo()
+            @Given fun foo2(): Foo2 = Foo()
+            
+            fun invoke(): Pair<Foo, Foo> {
+                return rootFactory<TestContext>().runReader { given<Foo1>() to given<Foo2>() }
+            }
+            """
     ) {
         val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
         assertNotSame(foo1, foo2)
@@ -99,25 +99,34 @@ class ComponentTest {
         listOf(
             source(
                 """
-                typealias Foo1 = Foo
-                @Given fun foo1(): Foo1 = Foo()
+                    typealias Foo1 = Foo
+                    @Module
+                    object Foo1Module {
+                        @Given fun foo1(): Foo1 = Foo()
+                    }
             """
             )
         ),
         listOf(
             source(
                 """
-                typealias Foo2 = Foo
-                @Given fun foo2(): Foo2 = Foo() 
+                    typealias Foo2 = Foo
+                    @Module
+                    object Foo2Module {
+                        @Given fun foo2(): Foo2 = Foo()
+                    }
             """
             )
         ),
         listOf(
             source(
                 """
-                fun invoke(): Pair<Foo, Foo> {
-                    return rootFactory<TestContext>().runReader { given<Foo1>() to given<Foo2>() }
-                } 
+                    @RootFactory
+                    typealias MyFactory = 
+        
+                    fun invoke(): Pair<Foo, Foo> {
+                        return rootFactory<TestContext>().runReader { given<Foo1>() to given<Foo2>() }
+                    }
             """, name = "File.kt"
             )
         )
@@ -137,7 +146,7 @@ class ComponentTest {
             
             @RootFactory
             typealias MyFactory = (FooModule) -> TestComponent1<Foo>
-    """
+            """
     ) {
         assertInternalError("multiple")
     }
@@ -145,11 +154,11 @@ class ComponentTest {
     @Test
     fun testReturnsInstanceForNullableGiven() = codegen(
         """
-        @Given fun foo(): Foo = Foo()
-
-        fun invoke(): Foo? { 
-            return rootFactory<TestContext>().runReader { given<Foo?>() }
-        }
+            @Given fun foo(): Foo = Foo()
+    
+            fun invoke(): Foo? { 
+                return rootFactory<TestContext>().runReader { given<Foo?>() }
+            }
         """
     ) {
         assertNotNull(invokeSingleFile())
@@ -158,9 +167,9 @@ class ComponentTest {
     @Test
     fun testReturnsNullOnMissingNullableGiven() = codegen(
         """
-        fun invoke(): Foo? { 
-            return rootFactory<TestContext>().runReader { given<Foo?>() }
-        }
+            fun invoke(): Foo? { 
+                return rootFactory<TestContext>().runReader { given<Foo?>() }
+            }
         """
     ) {
         assertNull(invokeSingleFile())
@@ -171,7 +180,7 @@ class ComponentTest {
         """ 
             @RootFactory
             typealias MyFactory = (List<*>) -> TestComponent1<List<*>>
-    """
+        """
     )
 
     @Test
@@ -192,9 +201,9 @@ class ComponentTest {
     @Test
     fun testDuplicatedInputsFails() = codegen(
         """
-        fun invoke() {
-            rootFactory<TestContext>(Foo(), Foo()).runReader { given<Foo>() }
-        }
+            fun invoke() {
+                rootFactory<TestContext>(Foo(), Foo()).runReader { given<Foo>() }
+            }
         """
     ) {
         assertInternalError("multiple givens found in inputs")
@@ -219,16 +228,16 @@ class ComponentTest {
     @Test
     fun testGivenPerContext() = codegen(
         """
-        @Given(TestParentContext::class) fun parentFoo() = Foo()
-        @Given(TestChildContext::class) fun childFoo() = Foo()
-        fun invoke(): Pair<Foo, Foo> {
-            return rootFactory<TestParentContext>().runReader {
-                given<Foo>() to childContext<TestChildContext>().runReader {
-                    given<Foo>()
+            @Given(TestParentContext::class) fun parentFoo() = Foo()
+            @Given(TestChildContext::class) fun childFoo() = Foo()
+            fun invoke(): Pair<Foo, Foo> {
+                return rootFactory<TestParentContext>().runReader {
+                    given<Foo>() to childContext<TestChildContext>().runReader {
+                        given<Foo>()
+                    }
                 }
             }
-        }
-    """
+        """
     ) {
         val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
         assertNotSame(foo1, foo2)

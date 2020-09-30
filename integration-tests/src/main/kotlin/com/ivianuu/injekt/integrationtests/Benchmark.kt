@@ -80,16 +80,16 @@ class Benchmark {
             listOf(
                 source(
                     """
-                    interface TestComponent {
-                        val fib30: Fib30
-                    }
-                    
-                    @RootFactory
-                    typealias TestComponentFactory = () -> TestComponent
-                    
-                    fun invoke() {
-                        rootFactory<TestComponentFactory>()().fib30
-                    }
+                        interface TestComponent {
+                            val fib30: Fib30
+                        }
+                        
+                        @RootFactory
+                        typealias TestComponentFactory = () -> TestComponent
+                        
+                        fun invoke() {
+                            rootFactory<TestComponentFactory>()().fib30
+                        }
                     """
                 )
             )

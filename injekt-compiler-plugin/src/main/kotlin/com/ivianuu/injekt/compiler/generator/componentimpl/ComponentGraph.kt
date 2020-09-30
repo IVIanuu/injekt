@@ -27,6 +27,7 @@ import com.ivianuu.injekt.compiler.generator.getFactoryForType
 import com.ivianuu.injekt.compiler.generator.getFunctionForAlias
 import com.ivianuu.injekt.compiler.generator.getGivenConstructor
 import com.ivianuu.injekt.compiler.generator.getModuleForType
+import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.isAssignable
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.substitute
@@ -152,12 +153,17 @@ class GivensGraph(
         requests.forEach { check(it) }
     }
 
-    private fun check(given: GivenNode) {
+    private fun check(
+        given: GivenNode,
+        type: TypeRef,
+    ) {
         if (given in checkedGivens) return
         chain.push(ChainElement.Given(given.type))
         checkedGivens += given
+        val substitutionMap = type.getSubstitutionMap(given.rawType)
         given
             .dependencies
+            .map { it.copy(type = type.substitute(substitutionMap)) }
             .forEach { check(it) }
         chain.pop()
     }
@@ -213,10 +219,7 @@ class GivensGraph(
         var given = resolvedGivens[type]
         if (given != null) return given
 
-        val allGivens = givensForKey(type)
-
-        val givens = allGivens
-            .filter { it.type == type }
+        val givens = givensForKey(type)
 
         if (givens.size > 1) {
             val mostSpecific = givens.getExact(type)
@@ -236,7 +239,7 @@ class GivensGraph(
 
         given?.let {
             resolvedGivens[type] = it
-            check(it)
+            check(it, type)
             (it as? ChildFactoryGivenNode)?.childFactoryImpl?.initialize()
             return it
         }
@@ -247,15 +250,16 @@ class GivensGraph(
                 .getGivenConstructor()!!
                 .toCallableRef()
                 .let { callable ->
+                    val substitutionMap = type.getSubstitutionMap(callable.type)
                     CallableGivenNode(
                         type = type,
-                        rawType = callable.type,
+                        rawType = callable.type.substitute(substitutionMap),
                         owner = owner,
                         dependencies = callable.valueParameters
                             .filterNot { it.isAssisted }
                             .map {
                                 GivenRequest(
-                                    it.type,
+                                    it.type.substitute(substitutionMap),
                                     callable.fqName.child(it.name)
                                 )
                             },
@@ -268,7 +272,7 @@ class GivensGraph(
 
             given.let {
                 resolvedGivens[type] = it
-                check(it)
+                check(it, type)
                 return it
             }
         }
@@ -355,7 +359,7 @@ class GivensGraph(
         }
 
         this += givens
-            .filter { it.type.isAssignable(type) }
+            .filter { type.isAssignable(it.type) }
 
         this += collections.getNodes(type)
     }
