@@ -135,9 +135,12 @@ class GivensGraph(
             val relevantSubchain = chain.subList(
                 chain.indexOf(given), chain.lastIndex
             )
-            if (relevantSubchain.any { it is ProviderGivenNode }) return
+            if (relevantSubchain.any {
+                    it is ProviderGivenNode ||
+                            it.type.classifier.fqName.asString().startsWith("kotlin.Function")
+                }) return
             error(
-                "Circular dependency ${relevantSubchain.map { it.type.render() }} already contains ${given.type.render()}"
+                "Circular dependency ${relevantSubchain.map { it.type.render() }} already contains ${given.type.render()} $chain"
             )
         }
         chain.push(given)

@@ -728,7 +728,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testProviderCanBreaksCircularDependency() = codegen(
+    fun testProviderBreaksCircularDependency() = codegen(
         """
             @Given class A(b: B)
             @Given(TestComponent1::class) class B(a: () -> A)
@@ -752,6 +752,19 @@ class ComponentTest {
         """
     ) {
         assertInternalError("circular")
+    }
+
+    @Test
+    fun testAssistedBreaksCircularDependency() = codegen(
+        """
+            @Given class A(@Assisted b: B)
+            @Given(TestComponent1::class) class B(a: (B) -> A)
+            
+            @RootFactory
+            typealias MyFactory = () -> TestComponent1<B>
+        """
+    ) {
+        assertOk()
     }
 
 }
