@@ -70,6 +70,7 @@ class GivenStatements(
             when (given) {
                 is ChildFactoryGivenNode -> childFactoryExpression(given)
                 is CallableGivenNode -> callableExpression(given)
+                is FunctionAliasGivenNode -> functionAliasExpression(given)
                 is InputGivenNode -> inputExpression(given)
                 is MapGivenNode -> mapExpression(given)
                 is NullGivenNode -> nullExpression()
@@ -202,9 +203,7 @@ class GivenStatements(
 
     private fun callableExpression(given: CallableGivenNode): ComponentStatement {
         return {
-            if (given.type.isFunctionAlias ||
-                given.valueParameters.any { it.isAssisted }
-            ) {
+            if (given.valueParameters.any { it.isAssisted }) {
                 emit("{ ")
                 given.valueParameters
                     .filter { it.isAssisted }
@@ -242,6 +241,41 @@ class GivenStatements(
                     given.dependencies.map { getGivenStatement(owner.graph.getGiven(it)) }
                 )
             }
+        }
+    }
+
+    private fun functionAliasExpression(given: FunctionAliasGivenNode): ComponentStatement {
+        return {
+            emit("{ ")
+            given.valueParameters
+                .filter { it.isAssisted }
+                .forEachIndexed { index, parameter ->
+                    emit("p$index: ${parameter.type.render()}")
+                    if (index != given.valueParameters.lastIndex) emit(", ")
+                }
+            emitLine(" ->")
+            var assistedIndex = 0
+            var nonAssistedIndex = 0
+            emitCallableInvocation(
+                given.callable,
+                given.receiver,
+                given.valueParameters.map { parameter ->
+                    if (parameter.isAssisted) {
+                        { emit("p${assistedIndex++}") }
+                    } else {
+                        getGivenStatement(
+                            owner.graph.getGiven(
+                                GivenRequest(
+                                    given.dependencies[nonAssistedIndex++].type,
+                                    given.callable.fqName.child(parameter.name)
+                                )
+                            )
+                        )
+                    }
+                }
+            )
+            emitLine()
+            emitLine("}")
         }
     }
 

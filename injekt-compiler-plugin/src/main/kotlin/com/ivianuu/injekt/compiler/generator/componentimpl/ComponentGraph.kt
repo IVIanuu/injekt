@@ -305,7 +305,7 @@ class GivensGraph(
             val substitutionMap = callable.typeParameters
                 .zip(type.typeArguments)
                 .toMap()
-            this += CallableGivenNode(
+            this += FunctionAliasGivenNode(
                 type = type,
                 rawType = callable.type,
                 owner = owner,

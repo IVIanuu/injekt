@@ -124,6 +124,18 @@ class CallableGivenNode(
     override fun toString(): String = "Callable(${callable.fqName})"
 }
 
+class FunctionAliasGivenNode(
+    override val type: TypeRef,
+    override val rawType: TypeRef,
+    override val owner: ComponentImpl,
+    override val dependencies: List<GivenRequest>,
+    override val origin: FqName?,
+    override val targetComponent: TypeRef?,
+    override val receiver: ComponentStatement?,
+    val valueParameters: List<ValueParameterRef>,
+    val callable: Callable,
+) : GivenNode()
+
 class InputGivenNode(
     override val type: TypeRef,
     val name: String,
