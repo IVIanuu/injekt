@@ -8,6 +8,8 @@ annotation class RootFactory
 @Target(AnnotationTarget.TYPEALIAS)
 annotation class ChildFactory
 
+fun <T> rootFactory(): T = error("Must be compiled with the Injekt compiler")
+
 @Target(AnnotationTarget.CLASS, AnnotationTarget.PROPERTY, AnnotationTarget.FUNCTION)
 annotation class Module
 
