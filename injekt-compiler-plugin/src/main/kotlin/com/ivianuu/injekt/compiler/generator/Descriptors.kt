@@ -18,6 +18,7 @@ data class Callable(
     val targetComponent: TypeRef?,
     val givenKind: GivenKind?,
     val isCall: Boolean,
+    val isSuspend: Boolean
 ) {
     enum class GivenKind {
         GIVEN, GIVEN_MAP_ENTRIES, GIVEN_SET_ELEMENTS, MODULE

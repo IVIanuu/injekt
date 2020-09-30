@@ -93,11 +93,13 @@ class ComponentImpl(
         val requests = declarationStore.allCallablesForType(contextType)
         graph.checkRequests(requests.map { GivenRequest(it.type, it.fqName) })
         requests.forEach {
-            statements.getProperty(
+            statements.getCallable(
                 type = it.type,
                 name = it.name,
                 isOverride = true,
-                getter = statements.getGivenStatement(graph.resolvedGivens[it.type]!!)
+                body = statements.getGivenStatement(graph.resolvedGivens[it.type]!!),
+                isProperty = !it.isCall,
+                isSuspend = it.isSuspend
             )
         }
     }

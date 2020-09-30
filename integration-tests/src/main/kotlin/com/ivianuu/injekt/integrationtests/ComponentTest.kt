@@ -293,6 +293,42 @@ class ComponentTest {
     )
 
     @Test
+    fun testComponentFunction() = codegen(
+        """
+            @Module
+            object FunctionModule {
+                @Given
+                fun foo() = Foo()
+            }
+
+            interface FunctionComponent { 
+                fun foo() = Foo()
+            }
+            
+            @RootFactory
+            typealias MyFactory = (FunctionModule) -> FunctionComponent
+        """
+    )
+
+    @Test
+    fun testComponentSuspendFunction() = codegen(
+        """
+            @Module
+            object SuspendFunctionModule {
+                @Given
+                suspend fun suspendFoo() = Foo()
+            }
+
+            interface SuspendComponent {
+                suspend fun foo() = Foo()
+            }
+            
+            @RootFactory
+            typealias MyFactory = (SuspendFunctionModule) -> SuspendComponent
+        """
+    )
+
+    @Test
     fun testInput() = codegen(
         """
             @RootFactory

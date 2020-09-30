@@ -5,6 +5,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkers.getGivenFunctionType
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
+import org.jetbrains.kotlin.backend.common.descriptors.isSuspend
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -146,7 +147,8 @@ class DeclarationStore(
                 )
             },
             isCall = owner !is PropertyDescriptor &&
-                    (owner !is ClassDescriptor || owner.kind != ClassKind.OBJECT)
+                    (owner !is ClassDescriptor || owner.kind != ClassKind.OBJECT),
+            isSuspend = (owner is CallableDescriptor && owner.isSuspend)
         )
     }
 

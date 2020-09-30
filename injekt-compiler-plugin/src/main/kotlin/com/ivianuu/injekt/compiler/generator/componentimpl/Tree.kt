@@ -30,25 +30,42 @@ interface ComponentMember {
     fun CodeBuilder.emit()
 }
 
-class ComponentProperty(
+class ComponentCallable(
     val name: Name,
     val type: TypeRef,
+    val isProperty: Boolean,
+    val isSuspend: Boolean,
     val initializer: ComponentStatement?,
-    val getter: ComponentStatement?,
+    val body: ComponentStatement?,
     val isMutable: Boolean,
     var isOverride: Boolean,
 ) : ComponentMember {
     override fun CodeBuilder.emit() {
         if (isOverride) emit("override ")
-        if (isMutable) emit("var ") else emit("val ")
-        emit("$name: ${type.render()}")
-        if (initializer != null) {
-            emit(" = ")
-            initializer!!()
+        if (isSuspend) emit("suspend ")
+        if (isProperty) {
+            if (isMutable) emit("var ") else emit("val ")
         } else {
-            emitLine()
-            emit("    get() = ")
-            getter!!()
+            emit("fun ")
+        }
+        emit("$name")
+        if (!isProperty) emit("()")
+        emit(": ${type.render()}")
+        if (isProperty) {
+            if (initializer != null) {
+                emit(" = ")
+                initializer!!()
+            } else {
+                emitLine()
+                emit("    get() = ")
+                body!!()
+            }
+        } else {
+            emitSpace()
+            braced {
+                emit("return ")
+                body!!()
+            }
         }
     }
 }

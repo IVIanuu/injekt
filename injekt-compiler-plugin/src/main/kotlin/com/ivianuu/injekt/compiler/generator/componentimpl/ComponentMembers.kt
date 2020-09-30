@@ -21,38 +21,45 @@ class GivenStatements(
     private val parent = owner.factoryImpl.parent?.statements
     private val statementsByType = mutableMapOf<TypeRef, ComponentStatement>()
 
-    fun getProperty(
+    fun getCallable(
         type: TypeRef,
         name: Name,
         isOverride: Boolean,
-        getter: ComponentStatement,
-    ): ComponentProperty {
+        body: ComponentStatement,
+        isProperty: Boolean,
+        isSuspend: Boolean
+    ): ComponentCallable {
         val existing = owner.members.firstOrNull {
-            it is ComponentProperty && it.name == name
-        } as? ComponentProperty
+            it is ComponentCallable && it.name == name
+        } as? ComponentCallable
         existing?.let {
             if (isOverride) it.isOverride = true
             return it
         }
-        val property = ComponentProperty(
+        val callable = ComponentCallable(
             name = name,
             isOverride = isOverride,
             type = type,
-            getter = getter,
+            body = body,
+            isProperty = isProperty,
+            isSuspend = isSuspend,
             initializer = null,
             isMutable = false
         )
-        owner.members += property
-        return property
+        owner.members += callable
+        return callable
     }
 
     fun getGivenStatement(given: GivenNode): ComponentStatement {
+        val isSuspend = given is CallableGivenNode && given.callable.isSuspend
         statementsByType[given.type]?.let {
-            getProperty(
+            getCallable(
                 type = given.type,
                 name = given.type.uniqueTypeName(),
                 isOverride = false,
-                getter = it
+                body = it,
+                isSuspend = isSuspend,
+                isProperty = !isSuspend
             )
             return it
         }
@@ -76,13 +83,15 @@ class GivenStatements(
             given.owner != owner
         ) rawStatement else (
             {
-                val property = ComponentProperty(
+                val property = ComponentCallable(
                     name = "_${given.type.uniqueTypeName()}".asNameId(),
                     type = SimpleTypeRef(ClassifierRef(FqName("kotlin.Any")), isMarkedNullable = true),
                     initializer = { emit("this") },
                     isMutable = true,
-                    getter = null,
-                    isOverride = false
+                    body = null,
+                    isOverride = false,
+                    isProperty = true,
+                    isSuspend = false,
                 ).also { owner.members += it }
 
                 emit("run ")
@@ -103,16 +112,21 @@ class GivenStatements(
             }
             )
 
-        val propertyName = given.type.uniqueTypeName()
+        val callableName = given.type.uniqueTypeName()
 
-        getProperty(
+        getCallable(
             type = given.type,
-            name = propertyName,
+            name = callableName,
             isOverride = false,
-            getter = finalStatement
+            body = finalStatement,
+            isProperty = !isSuspend,
+            isSuspend = isSuspend
         )
 
-        val statement: ComponentStatement = { emit("this@${owner.name}.$propertyName") }
+        val statement: ComponentStatement = {
+            emit("this@${owner.name}.$callableName")
+            if (isSuspend) emit("()")
+        }
 
         statementsByType[given.type] = statement
 
