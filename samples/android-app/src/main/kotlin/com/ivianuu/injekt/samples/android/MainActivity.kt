@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.samples.android
 
 import android.os.Bundle
+import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -25,13 +26,10 @@ import androidx.lifecycle.ViewModel
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.ivianuu.injekt.Assisted
+import com.ivianuu.injekt.ChildFactory
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityContext
-import com.ivianuu.injekt.android.GivenActivityViewModel
-import com.ivianuu.injekt.android.activityComponent
-import com.ivianuu.injekt.merge.EntryPoint
-import com.ivianuu.injekt.merge.entryPoint
+import com.ivianuu.injekt.android.ActivityModule
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
@@ -40,7 +38,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            with(activityComponent.entryPoint<MainActivityDependencies>()) {
+            val activityComponent = applicationComponent.mainActivityComponentFactory(this, ActivityModule)
+            with(activityComponent) {
                 WithMainViewModel {
                     GlobalScope.launch {
                         enqueueWork()
@@ -51,11 +50,13 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-@EntryPoint(ActivityComponent::class)
-interface MainActivityDependencies {
+interface MainActivityComponent {
     val WithMainViewModel: WithMainViewModel
     val enqueueWork: enqueueWork
 }
+
+@ChildFactory
+typealias MainActivityComponentFactory = (ComponentActivity, ActivityModule) -> MainActivityComponent
 
 @Given
 @Composable
@@ -76,7 +77,7 @@ fun enqueueWork(context: ActivityContext) {
         )
 }
 
-@GivenActivityViewModel
+@Given
 class MainViewModel : ViewModel() {
     init {
         println("init")

@@ -24,27 +24,9 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.merge.ApplicationComponent
-import com.ivianuu.injekt.merge.EntryPoint
-import com.ivianuu.injekt.merge.MergeComponent
-import com.ivianuu.injekt.merge.MergeFactory
-import com.ivianuu.injekt.merge.entryPoint
 
-val ComponentActivity.activityComponent: ActivityComponent
-    get() = lifecycle.singleton {
-        retainedActivityComponent.entryPoint<ActivityComponentEntryPoint>()
-            .activityComponentFactory(this)
-    }
-
-@MergeComponent
-interface ActivityComponent
-
-@MergeFactory(ApplicationComponent::class)
-typealias ActivityComponentFactory = (ComponentActivity) -> ActivityComponent
-
-@Module(ActivityComponent::class)
+@Module
 object ActivityModule {
-
     @Given
     val ComponentActivity.activityContext: ActivityContext
         get() = this
@@ -75,8 +57,3 @@ typealias ActivityLifecycleOwner = LifecycleOwner
 typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
 
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
-
-@EntryPoint(RetainedActivityComponent::class)
-interface ActivityComponentEntryPoint {
-    val activityComponentFactory: ActivityComponentFactory
-}

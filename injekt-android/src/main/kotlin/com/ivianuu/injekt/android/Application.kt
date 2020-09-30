@@ -17,25 +17,13 @@
 package com.ivianuu.injekt.android
 
 import android.app.Application
+import android.content.Context
 import android.content.res.Resources
-import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.merge.ApplicationComponent
-import com.ivianuu.injekt.merge.MergeFactory
-import com.ivianuu.injekt.merge.mergeFactory
 
-val Application.applicationComponent: ApplicationComponent
-    get() = ProcessLifecycleOwner.get().lifecycle.singleton {
-        mergeFactory<ApplicationComponentFactory>()(this)
-    }
-
-@MergeFactory
-typealias ApplicationComponentFactory = (Application) -> ApplicationComponent
-
-@Module(ApplicationComponent::class)
+@Module
 object ApplicationModule {
-
     @Given
     val Application.givenApplicationContext: ApplicationContext
         get() = this
@@ -45,6 +33,6 @@ object ApplicationModule {
         get() = resources
 }
 
-typealias ApplicationContext = android.content.Context
+typealias ApplicationContext = Context
 
 typealias ApplicationResources = Resources

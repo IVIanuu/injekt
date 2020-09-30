@@ -32,7 +32,7 @@ android {
 }
 
 dependencies {
-    api(project(":injekt-merge"))
+    api(project(":injekt-core"))
     kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
     api(Deps.AndroidX.appCompat)
     api(Deps.AndroidX.Lifecycle.extensions)

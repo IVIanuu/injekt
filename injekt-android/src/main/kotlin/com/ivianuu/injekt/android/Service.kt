@@ -21,31 +21,13 @@ import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.merge.ApplicationComponent
-import com.ivianuu.injekt.merge.EntryPoint
-import com.ivianuu.injekt.merge.MergeComponent
-import com.ivianuu.injekt.merge.MergeFactory
-import com.ivianuu.injekt.merge.entryPoint
-
-fun Service.createServiceComponent(): ServiceComponent {
-    return application.applicationComponent
-        .entryPoint<ServiceComponentEntryPoint>()
-        .serviceComponentFactory(this)
-}
-
-@MergeComponent
-interface ServiceComponent
-
-@MergeFactory(ApplicationComponent::class)
-typealias ServiceComponentFactory = (Service) -> ServiceComponent
 
 typealias ServiceContext = Context
 
 typealias ServiceResources = Resources
 
-@Module(ServiceComponent::class)
+@Module
 object ServiceModule {
-
     @Given
     val Service.serviceContext: ServiceContext
         get() = this
@@ -53,9 +35,4 @@ object ServiceModule {
     @Given
     val Service.serviceResources: ServiceResources
         get() = resources
-}
-
-@EntryPoint(ApplicationComponent::class)
-interface ServiceComponentEntryPoint {
-    val serviceComponentFactory: ServiceComponentFactory
 }

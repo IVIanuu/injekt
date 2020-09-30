@@ -1,20 +1,23 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.js.translate.utils.refineType
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.replace
+import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.types.upperIfFlexible
 
 fun <D : DeclarationDescriptor> KtDeclaration.descriptor(
@@ -36,16 +39,6 @@ fun DeclarationDescriptor.hasAnnotationWithPropertyAndClass(
     (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotation(fqName)) ||
     (this is ConstructorDescriptor && constructedClass.hasAnnotation(fqName))
 
-fun DeclarationDescriptor.hasAnnotatedAnnotationsWithPropertyAndClass(
-    fqName: FqName
-): Boolean = hasAnnotatedAnnotations(fqName) ||
-    (
-        this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotatedAnnotations(
-            fqName
-        )
-        ) ||
-    (this is ConstructorDescriptor && constructedClass.hasAnnotatedAnnotations(fqName))
-
 fun ClassDescriptor.getGivenConstructor(): ConstructorDescriptor? {
     constructors
         .firstOrNull { it.hasAnnotation(InjektFqNames.Given) }?.let { return it }
@@ -60,16 +53,6 @@ fun FqName.toFactoryImplFqName() =
 
 fun <T> unsafeLazy(init: () -> T) = lazy(LazyThreadSafetyMode.NONE, init)
 
-fun joinedNameOf(
-    packageFqName: FqName,
-    fqName: FqName,
-): Name {
-    val joinedSegments = fqName.asString()
-        .removePrefix(packageFqName.asString() + ".")
-        .split(".")
-    return joinedSegments.joinToString("_").asNameId()
-}
-
 fun String.removeIllegalChars() =
     replace(".", "")
         .replace("<", "")
@@ -81,3 +64,19 @@ fun String.removeIllegalChars() =
         .replace(",", "")
         .replace(" ", "")
         .replace("-", "")
+
+fun Annotated.hasAnnotation(fqName: FqName): Boolean =
+    annotations.hasAnnotation(fqName)
+
+fun FunctionDescriptor.getGivenFunctionType(): KotlinType {
+    val assistedParameters =
+        (listOfNotNull(extensionReceiverParameter) + valueParameters)
+            .filter { it.hasAnnotation(InjektFqNames.Assisted) }
+            .map { it.type }
+    return (
+            if (isSuspend) builtIns.getSuspendFunction(assistedParameters.size)
+            else builtIns.getFunction(assistedParameters.size)
+            )
+        .defaultType
+        .replace(newArguments = assistedParameters.map { it.asTypeProjection() } + returnType!!.asTypeProjection())
+}

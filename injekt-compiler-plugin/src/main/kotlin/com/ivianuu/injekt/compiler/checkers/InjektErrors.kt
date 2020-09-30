@@ -57,31 +57,6 @@ interface InjektErrors {
             "Can't choose a constructor. Annotate the right one with @Given"
         )
 
-        @JvmField
-        val EFFECT_WITHOUT_COMPANION = error(
-            "@Effect annotated class needs a companion object"
-        )
-
-        @JvmField
-        val EFFECT_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS = error(
-            "@Effect functions cannot have value parameters"
-        )
-
-        @JvmField
-        val EFFECT_FUNCTION_INVALID_TYPE_PARAMETERS = error(
-            "@Effect function must have one of the following type parameter signatures <T> or <T : S, S>"
-        )
-
-        @JvmField
-        val NOT_IN_EFFECT_BOUNDS = error(
-            "Annotated class is not in @Effect bounds"
-        )
-
-        @JvmField
-        val EFFECT_USAGE_WITH_TYPE_PARAMETERS = error(
-            "@Effect annotated declaration cannot have type parameters"
-        )
-
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,

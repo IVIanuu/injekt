@@ -24,21 +24,30 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.GivenMapEntries
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.android.ApplicationContext
-import com.ivianuu.injekt.android.work.GivenWorker
+import com.ivianuu.injekt.android.work.Workers
 
-@GivenWorker
+@Given
 class TestWorker(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
     private val repo: Repo,
 ) : CoroutineWorker(context, workerParams) {
-
     init {
         println("hello $context $workerParams $repo")
     }
 
     override suspend fun doWork(): Result = Result.success()
+}
+
+@Module
+object TestWorkerModule {
+    @GivenMapEntries
+    fun intoMap(factory: (Context, WorkerParameters) -> TestWorker): Workers = mapOf(
+        TestWorker::class to factory
+    )
 }
 
 @Given

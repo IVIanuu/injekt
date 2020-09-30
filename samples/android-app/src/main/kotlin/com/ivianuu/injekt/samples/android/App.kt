@@ -17,26 +17,36 @@
 package com.ivianuu.injekt.samples.android
 
 import android.app.Application
-import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.merge.ApplicationComponent
-import com.ivianuu.injekt.merge.EntryPoint
-import com.ivianuu.injekt.merge.GenerateMergeFactories
-import com.ivianuu.injekt.merge.entryPoint
+import com.ivianuu.injekt.RootFactory
+import com.ivianuu.injekt.android.ApplicationModule
+import com.ivianuu.injekt.android.work.WorkerModule
+import com.ivianuu.injekt.rootFactory
 
-@GenerateMergeFactories
 class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        with(applicationComponent.entryPoint<ApplicationDependencies>()) {
-            initializeWorkers()
-            refreshRepo()
-        }
+        applicationComponent = rootFactory<ApplicationComponentFactory>()(
+            this, DataModule, ApplicationModule, WorkerModule, TestWorkerModule
+        )
+        applicationComponent.initializeWorkers()
+        applicationComponent.refreshRepo()
     }
 }
 
-@EntryPoint(ApplicationComponent::class)
-interface ApplicationDependencies {
+lateinit var applicationComponent: ApplicationComponent
+
+interface ApplicationComponent {
     val initializeWorkers: initializeWorkers
     val refreshRepo: refreshRepo
+    val mainActivityComponentFactory: MainActivityComponentFactory
 }
+
+@RootFactory
+typealias ApplicationComponentFactory = (
+    Application,
+    DataModule,
+    ApplicationModule,
+    WorkerModule,
+    TestWorkerModule
+) -> ApplicationComponent

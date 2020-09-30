@@ -2,6 +2,17 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
+@Target(AnnotationTarget.TYPEALIAS)
+annotation class RootFactory
+
+@Target(AnnotationTarget.TYPEALIAS)
+annotation class ChildFactory
+
+fun <T> rootFactory(): T = error("Must be compiled with the Injekt compiler")
+
+@Target(AnnotationTarget.CLASS, AnnotationTarget.PROPERTY, AnnotationTarget.FUNCTION)
+annotation class Module
+
 @Target(
     AnnotationTarget.FUNCTION,
     AnnotationTarget.CLASS,
@@ -15,3 +26,6 @@ annotation class GivenMapEntries
 
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class GivenSetElements
+
+@Target(AnnotationTarget.VALUE_PARAMETER)
+annotation class Assisted

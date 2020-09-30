@@ -16,36 +16,16 @@
 
 package com.ivianuu.injekt.android
 
-import android.app.Application
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.ivianuu.injekt.merge.ApplicationComponent
-import com.ivianuu.injekt.merge.EntryPoint
-import com.ivianuu.injekt.merge.MergeComponent
-import com.ivianuu.injekt.merge.MergeFactory
-import com.ivianuu.injekt.merge.entryPoint
-
-fun BroadcastReceiver.createReceiverComponent(
-    context: Context,
-    intent: Intent,
-): ReceiverComponent {
-    return (context.applicationContext as Application).applicationComponent
-        .entryPoint<ReceiverComponentEntryPoint>()
-        .receiverComponentFactory(this, context, intent)
-}
-
-@MergeComponent
-interface ReceiverComponent
-
-@MergeFactory(ApplicationComponent::class)
-typealias ReceiverComponentFactory = (BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent
+import com.ivianuu.injekt.Module
 
 typealias ReceiverContext = Context
 
 typealias ReceiverIntent = Intent
 
-@EntryPoint(ReceiverComponent::class)
-interface ReceiverComponentEntryPoint {
-    val receiverComponentFactory: ReceiverComponentFactory
-}
+@Module
+class ReceiverModule(
+    val context: Context,
+    val intent: Intent
+)

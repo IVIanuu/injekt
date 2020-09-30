@@ -23,23 +23,6 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.merge.EntryPoint
-import com.ivianuu.injekt.merge.MergeComponent
-import com.ivianuu.injekt.merge.MergeFactory
-import com.ivianuu.injekt.merge.entryPoint
-
-val Fragment.fragmentComponent: FragmentComponent
-    get() = lifecycle.singleton {
-        activity!!.activityComponent
-            .entryPoint<FragmentComponentEntryPoint>()
-            .fragmentComponentFactory(this)
-    }
-
-@MergeComponent
-interface FragmentComponent
-
-@MergeFactory
-typealias FragmentComponentFactory = (Fragment) -> FragmentComponent
 
 typealias FragmentContext = android.content.Context
 
@@ -51,9 +34,8 @@ typealias FragmentSavedStateRegistryOwner = SavedStateRegistryOwner
 
 typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
 
-@Module(FragmentComponent::class)
+@Module
 object FragmentModule {
-
     @Given
     val Fragment.fragmentContext: FragmentContext
         get() = requireContext()
@@ -73,9 +55,4 @@ object FragmentModule {
     @Given
     val Fragment.fragmentViewModelStoreOwner: FragmentViewModelStoreOwner
         get() = this
-}
-
-@EntryPoint(FragmentComponent::class)
-interface FragmentComponentEntryPoint {
-    val fragmentComponentFactory: FragmentComponentFactory
 }

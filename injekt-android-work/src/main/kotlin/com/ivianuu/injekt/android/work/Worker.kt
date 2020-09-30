@@ -21,26 +21,8 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenMapEntries
 import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.merge.ApplicationComponent
-import com.ivianuu.injekt.merge.Effect
 import kotlin.reflect.KClass
-import kotlin.reflect.typeOf
-
-@Effect(ApplicationComponent::class)
-annotation class GivenWorker {
-    companion object {
-        @GivenMapEntries
-        inline operator fun <reified T : (Context, WorkerParameters) -> ListenableWorker> invoke(
-            factory: T,
-        ): Workers {
-            val workerClass =
-                typeOf<T>().arguments.last().type!!.classifier as KClass<out ListenableWorker>
-            return mapOf(workerClass to factory)
-        }
-    }
-}
 
 typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
 
@@ -58,8 +40,8 @@ class InjektWorkerFactory(private val workers: Workers) : WorkerFactory() {
     }
 }
 
-@Module(ApplicationComponent::class)
-object WorkerInjectionModule {
+@Module
+object WorkerModule {
     @Given
     val InjektWorkerFactory.workerFactory: WorkerFactory
         get() = this

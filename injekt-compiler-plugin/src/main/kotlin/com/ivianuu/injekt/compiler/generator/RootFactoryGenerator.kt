@@ -2,7 +2,6 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentFactoryImpl
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentImpl
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor

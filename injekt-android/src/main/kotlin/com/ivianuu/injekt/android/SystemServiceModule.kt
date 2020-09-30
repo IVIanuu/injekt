@@ -78,11 +78,9 @@ import android.view.textservice.TextServicesManager
 import androidx.core.content.ContextCompat
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.merge.ApplicationComponent
 
-@Module(ApplicationComponent::class)
+@Module
 class SystemServiceModule {
-
     @Given
     val Context.accessibilityManager
         get() = systemService<AccessibilityManager>()

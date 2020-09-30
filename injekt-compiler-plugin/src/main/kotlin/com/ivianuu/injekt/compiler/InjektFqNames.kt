@@ -36,11 +36,5 @@ object InjektFqNames {
     val InternalPackage = InjektPackage.child("internal".asNameId())
     val FunctionAlias = InternalPackage.child("FunctionAlias".asNameId())
 
-    val MergePackage = InjektPackage.child("Merge".asNameId())
-
-    val Effect = InjektPackage.child("Effect".asNameId())
-    val MergeFactory = MergePackage.child("MergeFactory".asNameId())
-    val mergeFactoryFun = MergePackage.child("mergeFactory".asNameId())
-
     val Composable = FqName("androidx.compose.runtime.Composable")
 }
