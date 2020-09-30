@@ -189,22 +189,22 @@ class GivenStatements(
     private fun callableExpression(given: CallableGivenNode): ComponentStatement {
         return {
             if (given.type.isFunctionAlias ||
-                given.callable.valueParameters.any { it.isAssisted }
+                given.valueParameters.any { it.isAssisted }
             ) {
                 emit("{ ")
-                given.callable.valueParameters
+                given.valueParameters
                     .filter { it.isAssisted }
                     .forEachIndexed { index, parameter ->
                         emit("p$index: ${parameter.type.render()}")
-                        if (index != given.callable.valueParameters.lastIndex) emit(", ")
+                        if (index != given.valueParameters.lastIndex) emit(", ")
                     }
                 emitLine(" ->")
                 var assistedIndex = 0
                 var nonAssistedIndex = 0
                 emitCallableInvocation(
                     given.callable,
-                    given.moduleAccessStatement,
-                    given.callable.valueParameters.map { parameter ->
+                    given.receiver,
+                    given.valueParameters.map { parameter ->
                         if (parameter.isAssisted) {
                             { emit("p${assistedIndex++}") }
                         } else {
@@ -224,7 +224,7 @@ class GivenStatements(
             } else {
                 emitCallableInvocation(
                     given.callable,
-                    given.moduleAccessStatement,
+                    given.receiver,
                     given.dependencies.map { getGivenStatement(owner.graph.getGiven(it)) }
                 )
             }

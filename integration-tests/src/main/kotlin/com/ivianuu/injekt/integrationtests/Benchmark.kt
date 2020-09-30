@@ -4,11 +4,10 @@ import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
-import org.junit.Test
 
 class Benchmark {
 
-    @Test
+    //@Test
     fun testPerformanceInternal() {
         val sources = buildList {
             repeat(4000) { index ->

@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.generator.componentimpl
 import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.TypeRef
+import com.ivianuu.injekt.compiler.generator.ValueParameterRef
 import com.ivianuu.injekt.compiler.generator.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -59,7 +60,7 @@ sealed class GivenNode {
     abstract val owner: ComponentImpl
     abstract val origin: FqName?
     abstract val targetComponent: TypeRef?
-    abstract val moduleAccessStatement: ComponentStatement?
+    abstract val receiver: ComponentStatement?
 }
 
 class SelfGivenNode(
@@ -73,7 +74,7 @@ class SelfGivenNode(
     override val owner: ComponentImpl get() = component
     override val origin: FqName? get() = null
     override val targetComponent: TypeRef? get() = null
-    override val moduleAccessStatement: ComponentStatement? get() = null
+    override val receiver: ComponentStatement? get() = null
 }
 
 class ChildFactoryGivenNode(
@@ -86,7 +87,7 @@ class ChildFactoryGivenNode(
         get() = emptyList()
     override val rawType: TypeRef
         get() = type
-    override val moduleAccessStatement: ComponentStatement?
+    override val receiver: ComponentStatement?
         get() = null
     override val targetComponent: TypeRef?
         get() = owner.contextType
@@ -99,7 +100,8 @@ class CallableGivenNode(
     override val dependencies: List<GivenRequest>,
     override val origin: FqName?,
     override val targetComponent: TypeRef?,
-    override val moduleAccessStatement: ComponentStatement?,
+    override val receiver: ComponentStatement?,
+    val valueParameters: List<ValueParameterRef>,
     val callable: Callable,
 ) : GivenNode() {
     override fun toString(): String = "Callable${callable.fqName}"
@@ -114,7 +116,7 @@ class InputGivenNode(
         get() = type
     override val dependencies: List<GivenRequest>
         get() = emptyList()
-    override val moduleAccessStatement: ComponentStatement?
+    override val receiver: ComponentStatement?
         get() = null
     override val origin: FqName?
         get() = null
@@ -134,7 +136,7 @@ class MapGivenNode(
         get() = null
     override val targetComponent: TypeRef?
         get() = null
-    override val moduleAccessStatement: ComponentStatement?
+    override val receiver: ComponentStatement?
         get() = null
 }
 
@@ -144,7 +146,7 @@ class ProviderGivenNode(
     override val dependencies: List<GivenRequest>,
     override val origin: FqName?,
 ) : GivenNode() {
-    override val moduleAccessStatement: ComponentStatement?
+    override val receiver: ComponentStatement?
         get() = null
     override val rawType: TypeRef
         get() = type
@@ -164,7 +166,7 @@ class SetGivenNode(
         get() = null
     override val targetComponent: TypeRef?
         get() = null
-    override val moduleAccessStatement: ComponentStatement?
+    override val receiver: ComponentStatement?
         get() = null
 }
 
@@ -181,7 +183,7 @@ class NullGivenNode(
         get() = type
     override val dependencies: List<GivenRequest>
         get() = emptyList()
-    override val moduleAccessStatement: ComponentStatement?
+    override val receiver: ComponentStatement?
         get() = null
     override val origin: FqName?
         get() = null

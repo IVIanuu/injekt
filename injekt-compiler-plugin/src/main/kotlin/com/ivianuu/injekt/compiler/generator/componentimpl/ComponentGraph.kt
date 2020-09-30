@@ -61,7 +61,7 @@ class GivensGraph(
         .mapIndexed { index, inputType -> InputGivenNode(inputType, "p$index", owner) }
         .groupBy { it.type }
 
-    private val givens = mutableListOf<GivenNode>()
+    private val moduleGivenCallables = mutableListOf<CallableWithReceiver>()
 
     private val collections: GivenCollections = collectionsFactory(owner, parent?.collections)
 
@@ -103,25 +103,10 @@ class GivensGraph(
             for (callable in callables) {
                 if (callable.givenKind == null) continue
                 when (callable.givenKind) {
-                    Callable.GivenKind.GIVEN -> {
-                        givens += CallableGivenNode(
-                            type = callable.type,
-                            rawType = callable.type,
-                            owner = owner,
-                            dependencies = callable.valueParameters
-                                .filterNot { it.isAssisted }
-                                .map {
-                                    GivenRequest(
-                                        it.type,
-                                        callable.fqName.child(it.name)
-                                    )
-                                },
-                            origin = callable.fqName,
-                            targetComponent = callable.targetComponent,
-                            moduleAccessStatement = thisAccessStatement,
-                            callable = callable
-                        )
-                    }
+                    Callable.GivenKind.GIVEN -> moduleGivenCallables += CallableWithReceiver(
+                        callable,
+                        thisAccessStatement
+                    )
                     Callable.GivenKind.GIVEN_MAP_ENTRIES -> {
                         collections.addMapEntries(
                             CallableWithReceiver(
@@ -267,9 +252,14 @@ class GivensGraph(
                                     callable.fqName.child(it.name)
                                 )
                             },
+                        valueParameters = callable.valueParameters.map {
+                            it.copy(
+                                type = it.type.substitute(substitutionMap)
+                            )
+                        },
                         origin = callable.fqName,
                         targetComponent = callable.targetComponent,
-                        moduleAccessStatement = null,
+                        receiver = null,
                         callable = callable
                     )
                 }
@@ -341,9 +331,14 @@ class GivensGraph(
                             callable.fqName.child(it.name)
                         )
                     },
+                valueParameters = callable.valueParameters.map {
+                    it.copy(
+                        type = it.type.substitute(substitutionMap)
+                    )
+                },
                 origin = callable.fqName,
                 targetComponent = callable.targetComponent,
-                moduleAccessStatement = null,
+                receiver = null,
                 callable = callable
             )
         }
@@ -362,8 +357,33 @@ class GivensGraph(
             )
         }
 
-        this += givens
-            .filter { type.isAssignable(it.type) }
+        this += moduleGivenCallables
+            .filter { type.isAssignable(it.callable.type) }
+            .map { (callable, receiver) ->
+                val substitutionMap = type.getSubstitutionMap(callable.type)
+                CallableGivenNode(
+                    type = type,
+                    rawType = callable.type,
+                    owner = owner,
+                    dependencies = callable.valueParameters
+                        .filterNot { it.isAssisted }
+                        .map {
+                            GivenRequest(
+                                it.type.substitute(substitutionMap),
+                                callable.fqName.child(it.name)
+                            )
+                        },
+                    valueParameters = callable.valueParameters.map {
+                        it.copy(
+                            type = it.type.substitute(substitutionMap)
+                        )
+                    },
+                    origin = callable.fqName,
+                    targetComponent = callable.targetComponent,
+                    receiver = receiver,
+                    callable = callable
+                )
+            }
 
         this += collections.getNodes(type)
     }

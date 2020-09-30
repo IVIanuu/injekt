@@ -255,14 +255,26 @@ class ComponentTest {
     @Test
     fun testGivenPerComponent() = codegen(
         """
-            @Given(TestParentContext::class) fun parentFoo() = Foo()
-            @Given(TestChildContext::class) fun childFoo() = Foo()
+            @Module
+            object ParentModule {
+                @Given(TestParentComponent2::class) fun parentFoo() = Foo()
+            }
+            
+            @RootFactory
+            typealias MyParentFactory = (ParentModule) -> TestParentComponent2<Foo, MyChildFactory>
+            
+            @Module
+            object ChildModule {
+                @Given(TestChildComponent1::class) fun childFoo() = Foo()
+            }
+            
+            @ChildFactory
+            typealias MyChildFactory = (ChildModule) -> TestChildComponent1<Foo>
+            
             fun invoke(): Pair<Foo, Foo> {
-                return rootFactory<TestParentContext>().runReader {
-                    given<Foo>() to childContext<TestChildContext>().runReader {
-                        given<Foo>()
-                    }
-                }
+                val parent = rootFactory<MyParentFactory>()(ParentModule)
+                val child = parent.b(ChildModule)
+                return parent.a to child.a
             }
         """
     ) {
@@ -331,7 +343,7 @@ class ComponentTest {
             typealias MyFactory = (MyModule) -> TestComponent1<compare<Int>>
 
             @Given
-            fun <T> compare(@Assisted a: T, @Assisted b: T, comparator: AliasComparator<T>): Int = aliasComparator
+            fun <T> compare(@Assisted a: T, @Assisted b: T, comparator: AliasComparator<T>): Int = comparator
                 .compare(a, b)
 
         """

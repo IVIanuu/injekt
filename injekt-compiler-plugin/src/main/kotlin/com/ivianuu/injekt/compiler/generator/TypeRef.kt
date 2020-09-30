@@ -222,8 +222,8 @@ fun TypeRef.getSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRef> {
         if (baseType.classifier.isTypeParameter) {
             substitutionMap[baseType.classifier] = thisType
         } else {
-            thisType.typeArguments.zip(baseType.classifier.typeParameters).forEach {
-                visitType(it.first, it.second.defaultType)
+            thisType.typeArguments.zip(baseType.typeArguments).forEach {
+                visitType(it.first, it.second)
             }
         }
     }
