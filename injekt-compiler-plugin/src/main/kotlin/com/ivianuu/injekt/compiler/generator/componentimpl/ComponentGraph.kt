@@ -19,19 +19,15 @@ package com.ivianuu.injekt.compiler.generator.componentimpl
 import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.generator.Callable
+import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.ModuleDescriptor
 import com.ivianuu.injekt.compiler.generator.TypeRef
-import com.ivianuu.injekt.compiler.generator.asClassDescriptor
 import com.ivianuu.injekt.compiler.generator.asNameId
-import com.ivianuu.injekt.compiler.generator.getFactoryForType
-import com.ivianuu.injekt.compiler.generator.getFunctionForAlias
 import com.ivianuu.injekt.compiler.generator.getGivenConstructor
-import com.ivianuu.injekt.compiler.generator.getModuleForType
 import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.isAssignable
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.substitute
-import com.ivianuu.injekt.compiler.generator.toCallableRef
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.name.FqName
@@ -41,6 +37,7 @@ import org.jetbrains.kotlin.name.Name
 class GivensGraph(
     @Assisted private val owner: ComponentImpl,
     collectionsFactory: (ComponentImpl, GivenCollections?) -> GivenCollections,
+    private val declarationStore: DeclarationStore,
     private val module: org.jetbrains.kotlin.descriptors.ModuleDescriptor,
     private val componentFactoryImplFactory: (
         Name,
@@ -83,7 +80,7 @@ class GivensGraph(
     init {
         val modules = inputs
             .filter { it.isModule }
-            .map { getModuleForType(it, module) }
+            .map { declarationStore.moduleForType(it) }
 
         fun ModuleDescriptor.collectGivens(
             parentCallable: Callable?,
@@ -124,7 +121,7 @@ class GivensGraph(
                         )
                     }
                     Callable.GivenKind.MODULE -> {
-                        getModuleForType(callable.type, module)
+                        declarationStore.moduleForType(callable.type)
                             .collectGivens(callable, thisAccessStatement)
                     }
                 }.let {}
@@ -235,9 +232,10 @@ class GivensGraph(
 
         if (type.isGiven || type.typeArguments.lastOrNull()?.isGiven == true) {
             val givenType = if (type.isGiven) type else type.typeArguments.last()
-            given = givenType.classifier.fqName.asClassDescriptor(module)!!
-                .getGivenConstructor()!!
-                .toCallableRef()
+            given = declarationStore.callableForDescriptor(
+                declarationStore.classDescriptorForFqName(givenType.classifier.fqName)
+                    .getGivenConstructor()!!
+            )
                 .let { callable ->
                     val substitutionMap = type.getSubstitutionMap(callable.type)
                     CallableGivenNode(
@@ -297,7 +295,7 @@ class GivensGraph(
                 currentComponent = currentComponent.factoryImpl.parent
             }
             if (type !in existingFactories) {
-                val factoryDescriptor = getFactoryForType(type)
+                val factoryDescriptor = declarationStore.factoryForType(type)
                 val factoryImpl = componentFactoryImplFactory(
                     owner.factoryImpl.contextTreeNameProvider("F").asNameId(),
                     type,
@@ -315,7 +313,7 @@ class GivensGraph(
         }
 
         if (type.isFunctionAlias) {
-            val callable = getFunctionForAlias(type, module)
+            val callable = declarationStore.functionForAlias(type)
             val substitutionMap = callable.typeParameters
                 .zip(type.typeArguments)
                 .toMap()

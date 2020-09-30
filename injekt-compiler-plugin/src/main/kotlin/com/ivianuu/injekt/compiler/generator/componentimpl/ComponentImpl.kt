@@ -4,11 +4,10 @@ import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
+import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.asNameId
-import com.ivianuu.injekt.compiler.generator.getAllCallables
 import com.ivianuu.injekt.compiler.generator.render
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.Name
 
 @Given
@@ -78,7 +77,7 @@ class ComponentImpl(
     @Assisted val contextType: TypeRef,
     @Assisted val name: Name,
     @Assisted val inputTypes: List<TypeRef>,
-    val module: ModuleDescriptor,
+    private val declarationStore: DeclarationStore,
     statementsFactory: (ComponentImpl) -> GivenStatements,
     graphFactory: (ComponentImpl) -> GivensGraph,
 ) {
@@ -91,7 +90,7 @@ class ComponentImpl(
     val members = mutableListOf<ComponentMember>()
 
     fun initialize() {
-        val requests = contextType.getAllCallables(module)
+        val requests = declarationStore.allCallablesForType(contextType)
         graph.checkRequests(requests.map { GivenRequest(it.type, it.fqName) })
         requests.forEach {
             statements.getProperty(
