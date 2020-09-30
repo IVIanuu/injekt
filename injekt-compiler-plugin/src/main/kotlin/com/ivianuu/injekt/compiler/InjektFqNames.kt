@@ -38,9 +38,12 @@ object InjektFqNames {
 
     val MergePackage = InjektPackage.child("Merge".asNameId())
 
-    val Effect = InjektPackage.child("Effect".asNameId())
+    val Effect = MergePackage.child("Effect".asNameId())
+    val EntryPoint = MergePackage.child("EntryPoint".asNameId())
+    val GenerateMergeFactories = MergePackage.child("GenerateMergeFactories".asNameId())
     val MergeFactory = MergePackage.child("MergeFactory".asNameId())
     val mergeFactoryFun = MergePackage.child("mergeFactory".asNameId())
+    val MergeIndexPackage = MergePackage.child("internal".asNameId()).child("index".asNameId())
 
     val Composable = FqName("androidx.compose.runtime.Composable")
 }

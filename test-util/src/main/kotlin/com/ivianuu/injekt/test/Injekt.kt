@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.test
 
+import com.ivianuu.injekt.merge.MergeComponent
+
 class Foo
 
 class Bar(val foo: Foo)
@@ -45,6 +47,15 @@ interface TestParentComponent2<A, B> {
 interface TestChildComponent1<A> {
     val a: A
 }
+
+@MergeComponent
+interface TestMergeComponent
+
+@MergeComponent
+interface TestParentMergeComponent
+
+@MergeComponent
+interface TestChildMergeComponent
 
 interface Command
 

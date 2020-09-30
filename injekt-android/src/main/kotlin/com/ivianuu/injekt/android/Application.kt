@@ -23,11 +23,11 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.merge.ApplicationComponent
 import com.ivianuu.injekt.merge.MergeFactory
-import com.ivianuu.injekt.merge.mergeFactory
+import com.ivianuu.injekt.merge.rootMergeFactory
 
 val Application.applicationComponent: ApplicationComponent
     get() = ProcessLifecycleOwner.get().lifecycle.singleton {
-        mergeFactory<ApplicationComponentFactory>()(this)
+        rootMergeFactory<ApplicationComponentFactory>()(this)
     }
 
 @MergeFactory

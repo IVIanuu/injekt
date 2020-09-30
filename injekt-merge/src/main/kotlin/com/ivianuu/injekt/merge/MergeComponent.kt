@@ -10,7 +10,7 @@ annotation class MergeFactory(val parent: KClass<*> = Nothing::class)
 
 annotation class GenerateMergeFactories
 
-fun <T> mergeFactory(): T = error("Must be compiled with the Injekt compiler")
+fun <T> rootMergeFactory(): T = error("Must be compiled with the Injekt compiler")
 
 @MergeComponent
 interface ApplicationComponent

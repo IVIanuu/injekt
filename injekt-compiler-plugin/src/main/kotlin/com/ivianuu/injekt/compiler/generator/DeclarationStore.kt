@@ -4,11 +4,15 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkers.getGivenFunctionType
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
+import com.ivianuu.injekt.compiler.generator.merge.MergeDeclarations
+import com.ivianuu.injekt.compiler.generator.merge.MergeEntryPointDescriptor
+import com.ivianuu.injekt.compiler.generator.merge.MergeModuleDescriptor
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -23,9 +27,66 @@ import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 
 @Given
-class DeclarationStore(
-    private val module: ModuleDescriptor
-) {
+class DeclarationStore(private val module: ModuleDescriptor) {
+
+    val generatedFactories: List<FactoryDescriptor> by ::_generatedFactories
+    private val _generatedFactories = mutableListOf<FactoryDescriptor>()
+
+    fun addGeneratedFactory(descriptor: FactoryDescriptor) {
+        _generatedFactories += descriptor
+    }
+
+    val generatedModules: List<com.ivianuu.injekt.compiler.generator.ModuleDescriptor> by ::_generatedModules
+    private val _generatedModules = mutableListOf<com.ivianuu.injekt.compiler.generator.ModuleDescriptor>()
+
+    fun addGeneratedModule(module: com.ivianuu.injekt.compiler.generator.ModuleDescriptor) {
+        _generatedModules += module
+    }
+
+    fun getMergeDeclarations(): MergeDeclarations {
+        val mergeIndexPackage = memberScopeForFqName(InjektFqNames.MergeIndexPackage)!!
+        val entryPoints = mutableListOf<MergeEntryPointDescriptor>()
+        val modules = mutableListOf<MergeModuleDescriptor>()
+        val mergeFactories = mutableListOf<TypeRef>()
+        mergeIndexPackage.getContributedDescriptors(DescriptorKindFilter.VARIABLES)
+            .filterIsInstance<PropertyDescriptor>()
+            .map {
+                val fqName = FqName(it.name.asString().replace("_", "."))
+                val classifier = classifierDescriptorByFqName(fqName)
+                when {
+                    classifier.hasAnnotation(InjektFqNames.MergeFactory) -> {
+                        mergeFactories += classifier.defaultType.toTypeRef()
+                    }
+                    classifier.hasAnnotation(InjektFqNames.Module) -> {
+                        val component = classifier.annotations.findAnnotation(InjektFqNames.Module)!!
+                            .allValueArguments
+                            .get("installIn".asNameId())
+                            .let { it as KClassValue }
+                            .getArgumentType(module)
+                            .toTypeRef()
+                        modules += MergeModuleDescriptor(
+                            component = component,
+                            module = classifier.defaultType.toTypeRef()
+                        )
+                    }
+                    classifier.hasAnnotation(InjektFqNames.EntryPoint) -> {
+                        val component = classifier.annotations.findAnnotation(InjektFqNames.EntryPoint)!!
+                            .allValueArguments
+                            .get("installIn".asNameId())
+                            .let { it as KClassValue }
+                            .getArgumentType(module)
+                            .toTypeRef()
+                        entryPoints += MergeEntryPointDescriptor(
+                            component = component,
+                            entryPoint = classifier.defaultType.toTypeRef()
+                        )
+                    }
+
+                }
+            }
+
+        return MergeDeclarations(entryPoints, modules, mergeFactories)
+    }
 
     private val callablesForType = mutableMapOf<TypeRef, List<Callable>>()
     fun allCallablesForType(type: TypeRef): List<Callable> {
@@ -75,6 +136,15 @@ class DeclarationStore(
             memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
             ) as ClassDescriptor
+        }
+    }
+
+    private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor>()
+    fun classifierDescriptorByFqName(fqName: FqName): ClassifierDescriptor {
+        return classifierDescriptorByFqName.getOrPut(fqName) {
+            memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
+                fqName.shortName(), NoLookupLocation.FROM_BACKEND
+            )!!
         }
     }
 
@@ -155,30 +225,31 @@ class DeclarationStore(
     private val moduleByType = mutableMapOf<TypeRef, com.ivianuu.injekt.compiler.generator.ModuleDescriptor>()
     fun moduleForType(type: TypeRef): com.ivianuu.injekt.compiler.generator.ModuleDescriptor {
         return moduleByType.getOrPut(type) {
-            val descriptor = classDescriptorForFqName(type.classifier.fqName)
-            val substitutionMap = type.classifier.typeParameters
-                .zip(type.typeArguments)
-                .toMap()
-            ModuleDescriptor(
-                type = type,
-                callables = descriptor.unsubstitutedMemberScope.getContributedDescriptors(
-                    DescriptorKindFilter.CALLABLES
-                ).filter {
-                    it.hasAnnotationWithPropertyAndClass(
-                        InjektFqNames.Given
-                    ) || it.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) ||
-                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) ||
-                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.Module)
-                }
-                    .mapNotNull {
-                        when (it) {
-                            is PropertyDescriptor -> it.getter!!
-                            is FunctionDescriptor -> it
-                            else -> null
-                        }
+            _generatedModules.firstOrNull {
+                it.type == type
+            } ?: run {
+                val descriptor = classDescriptorForFqName(type.classifier.fqName)
+                ModuleDescriptor(
+                    type = type,
+                    callables = descriptor.unsubstitutedMemberScope.getContributedDescriptors(
+                        DescriptorKindFilter.CALLABLES
+                    ).filter {
+                        it.hasAnnotationWithPropertyAndClass(
+                            InjektFqNames.Given
+                        ) || it.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) ||
+                                it.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) ||
+                                it.hasAnnotationWithPropertyAndClass(InjektFqNames.Module)
                     }
-                    .map { callableForDescriptor(it) }
-            )
+                        .mapNotNull {
+                            when (it) {
+                                is PropertyDescriptor -> it.getter!!
+                                is FunctionDescriptor -> it
+                                else -> null
+                            }
+                        }
+                        .map { callableForDescriptor(it) }
+                )
+            }
         }
     }
 

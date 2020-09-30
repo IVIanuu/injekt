@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.ChildFactory
+import com.ivianuu.injekt.compiler.generator.merge.MergeFactoryGenerator
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
@@ -14,6 +15,7 @@ interface Generator {
 interface GenerationComponent {
     val functionAliasGeneratorFactory: ((FqName, String, String) -> Unit) -> FunctionAliasGenerator
     val fileManager: FileManager
+    val mergeFactoryGenerator: MergeFactoryGenerator
     val rootFactoryGenerator: RootFactoryGenerator
 }
 

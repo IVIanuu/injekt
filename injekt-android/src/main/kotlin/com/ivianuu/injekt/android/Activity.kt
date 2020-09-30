@@ -44,7 +44,6 @@ typealias ActivityComponentFactory = (ComponentActivity) -> ActivityComponent
 
 @Module(ActivityComponent::class)
 object ActivityModule {
-
     @Given
     val ComponentActivity.activityContext: ActivityContext
         get() = this

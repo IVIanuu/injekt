@@ -26,8 +26,8 @@ import org.jetbrains.kotlin.types.SimpleType
 
 @Given
 class InjektIntrinsicIrExtension : IrGenerationExtension {
+    private val rootFactoryStubByType = mutableMapOf<SimpleType, IrClass>()
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val rootFactoryStubByType = mutableMapOf<SimpleType, IrClass>()
         moduleFragment.transformChildrenVoid(
             object : IrElementTransformerVoid() {
                 override fun visitCall(expression: IrCall): IrExpression {
@@ -35,68 +35,49 @@ class InjektIntrinsicIrExtension : IrGenerationExtension {
                     return if (expression.symbol.descriptor.fqNameSafe ==
                         InjektFqNames.rootFactoryFun
                     ) {
-                        val rootFactoryType = result.getTypeArgument(0)!!
-                            .let { it as IrSimpleType }
-                            .abbreviation!!.typeAlias.descriptor.defaultType
-                        val rootFactoryStub = rootFactoryStubByType.getOrPut(rootFactoryType) {
-                            val rootFactoryImplFqName =
-                                rootFactoryType.constructor.declarationDescriptor!!
-                                    .fqNameSafe.toFactoryImplFqName()
-                            buildClass {
-                                this.name = rootFactoryImplFqName.shortName()
-                                origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
-                                kind = ClassKind.OBJECT
-                                visibility = Visibilities.INTERNAL
-                            }.apply clazz@{
-                                createImplicitParameterDeclarationWithWrappedDescriptor()
-                                parent = IrExternalPackageFragmentImpl(
-                                    IrExternalPackageFragmentSymbolImpl(
-                                        EmptyPackageFragmentDescriptor(
-                                            pluginContext.moduleDescriptor,
-                                            rootFactoryImplFqName.parent()
-                                        )
-                                    ),
-                                    rootFactoryImplFqName.parent()
-                                )
-                            }
-                        }
-                        DeclarationIrBuilder(pluginContext, result.symbol)
-                            .irGetObject(rootFactoryStub.symbol)
+                       transformRootFactoryCall(expression, pluginContext)
                     } else if (expression.symbol.descriptor.fqNameSafe ==
                         InjektFqNames.mergeFactoryFun
                     ) {
-                        val mergeFactoryType = result.getTypeArgument(0)!!
-                            .let { it as IrSimpleType }
-                            .abbreviation!!.typeAlias.descriptor.defaultType
-                        val mergeFactoryStub = rootFactoryStubByType.getOrPut(mergeFactoryType) {
-                            val mergeFactoryImplFqName =
-                                mergeFactoryType.constructor.declarationDescriptor!!
-                                    .fqNameSafe.toFactoryImplFqName()
-                            buildClass {
-                                this.name = mergeFactoryImplFqName.shortName()
-                                origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
-                                kind = ClassKind.OBJECT
-                                visibility = Visibilities.INTERNAL
-                            }.apply clazz@{
-                                createImplicitParameterDeclarationWithWrappedDescriptor()
-                                parent = IrExternalPackageFragmentImpl(
-                                    IrExternalPackageFragmentSymbolImpl(
-                                        EmptyPackageFragmentDescriptor(
-                                            pluginContext.moduleDescriptor,
-                                            mergeFactoryImplFqName.parent()
-                                        )
-                                    ),
-                                    mergeFactoryImplFqName.parent()
-                                )
-                            }
-                        }
-                        DeclarationIrBuilder(pluginContext, result.symbol)
-                            .irGetObject(mergeFactoryStub.symbol)
+                        result
                     } else {
                         result
                     }
                 }
             }
         )
+    }
+
+    private fun transformRootFactoryCall(
+        call: IrCall,
+        pluginContext: IrPluginContext
+    ): IrExpression {
+        val rootFactoryType = call.getTypeArgument(0)!!
+            .let { it as IrSimpleType }
+            .abbreviation!!.typeAlias.descriptor.defaultType
+        val rootFactoryStub = rootFactoryStubByType.getOrPut(rootFactoryType) {
+            val rootFactoryImplFqName =
+                rootFactoryType.constructor.declarationDescriptor!!
+                    .fqNameSafe.toFactoryImplFqName()
+            buildClass {
+                this.name = rootFactoryImplFqName.shortName()
+                origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
+                kind = ClassKind.OBJECT
+                visibility = Visibilities.INTERNAL
+            }.apply clazz@{
+                createImplicitParameterDeclarationWithWrappedDescriptor()
+                parent = IrExternalPackageFragmentImpl(
+                    IrExternalPackageFragmentSymbolImpl(
+                        EmptyPackageFragmentDescriptor(
+                            pluginContext.moduleDescriptor,
+                            rootFactoryImplFqName.parent()
+                        )
+                    ),
+                    rootFactoryImplFqName.parent()
+                )
+            }
+        }
+        return DeclarationIrBuilder(pluginContext, call.symbol)
+            .irGetObject(rootFactoryStub.symbol)
     }
 }
