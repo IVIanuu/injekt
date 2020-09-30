@@ -147,4 +147,3 @@ fun KotlinCompilation.Result.assertCompileError(
     assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, exitCode)
     message?.let { assertTrue(messages.toLowerCase().contains(it.toLowerCase())) }
 }
-

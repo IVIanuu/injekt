@@ -53,7 +53,6 @@ object ServiceModule {
     @Given
     val Service.serviceResources: ServiceResources
         get() = resources
-
 }
 
 @EntryPoint(ApplicationComponent::class)

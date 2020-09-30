@@ -33,4 +33,3 @@ class InjektCommandLineProcessor : CommandLineProcessor {
 val SrcDirKey = CompilerConfigurationKey<String>("srcDir")
 
 typealias SrcDir = File
-

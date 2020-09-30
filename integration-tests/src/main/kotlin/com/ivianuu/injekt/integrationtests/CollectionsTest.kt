@@ -210,7 +210,6 @@ class CollectionsTest {
         assertTrue(set.any { it("b") is CommandB })
     }
 
-
     @Test
     fun testUndeclaredSet() = codegen(
         """
@@ -223,5 +222,4 @@ class CollectionsTest {
 
     // todo test child overrides parent
     // todo test input overrides implicit
-
 }

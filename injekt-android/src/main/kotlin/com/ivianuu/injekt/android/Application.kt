@@ -43,7 +43,6 @@ object ApplicationModule {
     @Given
     val Application.applicationResources: ApplicationResources
         get() = resources
-
 }
 
 typealias ApplicationContext = android.content.Context

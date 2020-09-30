@@ -41,16 +41,18 @@ fun KotlinType.prepare(): KotlinType {
 fun DeclarationDescriptor.hasAnnotationWithPropertyAndClass(
     fqName: FqName
 ): Boolean = hasAnnotation(fqName) ||
-        (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotation(fqName)) ||
-        (this is ConstructorDescriptor && constructedClass.hasAnnotation(fqName))
+    (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotation(fqName)) ||
+    (this is ConstructorDescriptor && constructedClass.hasAnnotation(fqName))
 
 fun DeclarationDescriptor.hasAnnotatedAnnotationsWithPropertyAndClass(
     fqName: FqName
 ): Boolean = hasAnnotatedAnnotations(fqName) ||
-        (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotatedAnnotations(
+    (
+        this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotatedAnnotations(
             fqName
-        )) ||
-        (this is ConstructorDescriptor && constructedClass.hasAnnotatedAnnotations(fqName))
+        )
+        ) ||
+    (this is ConstructorDescriptor && constructedClass.hasAnnotatedAnnotations(fqName))
 
 fun ClassDescriptor.getGivenConstructor(): ConstructorDescriptor? {
     constructors
@@ -106,7 +108,8 @@ fun FqName.toMemberScope(module: ModuleDescriptor): MemberScope? {
 
 fun FqName.asClassDescriptor(module: ModuleDescriptor): ClassDescriptor {
     return parent().toMemberScope(module)!!.getContributedClassifier(
-        shortName(), NoLookupLocation.FROM_BACKEND) as ClassDescriptor
+        shortName(), NoLookupLocation.FROM_BACKEND
+    ) as ClassDescriptor
 }
 
 fun TypeRef.getAllCallables(module: ModuleDescriptor): List<Callable> {
@@ -168,8 +171,8 @@ fun getModuleForType(
             it.hasAnnotationWithPropertyAndClass(
                 InjektFqNames.Given
             ) || it.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) ||
-                    it.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) ||
-                    it.hasAnnotationWithPropertyAndClass(InjektFqNames.Module)
+                it.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) ||
+                it.hasAnnotationWithPropertyAndClass(InjektFqNames.Module)
         }
             .mapNotNull {
                 when (it) {
@@ -184,8 +187,10 @@ fun getModuleForType(
 
 fun getFunctionForAlias(aliasType: TypeRef, module: ModuleDescriptor): Callable {
     return aliasType.classifier.fqName.parent().toMemberScope(module)!!
-        .getContributedFunctions(aliasType.classifier.fqName.shortName(),
-            NoLookupLocation.FROM_BACKEND)
+        .getContributedFunctions(
+            aliasType.classifier.fqName.shortName(),
+            NoLookupLocation.FROM_BACKEND
+        )
         .single()
         .toCallableRef()
 }

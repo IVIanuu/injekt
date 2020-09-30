@@ -74,32 +74,34 @@ class GivenStatements(
 
         val finalStatement = if (given.targetComponent == null ||
             given.owner != owner
-        ) rawStatement else ({
-            val property = ComponentProperty(
-                name = "_${given.type.uniqueTypeName()}".asNameId(),
-                type = SimpleTypeRef(ClassifierRef(FqName("kotlin.Any")), isMarkedNullable = true),
-                initializer = { emit("this") },
-                isMutable = true,
-                getter = null,
-                isOverride = false
-            ).also { owner.members += it }
+        ) rawStatement else (
+            {
+                val property = ComponentProperty(
+                    name = "_${given.type.uniqueTypeName()}".asNameId(),
+                    type = SimpleTypeRef(ClassifierRef(FqName("kotlin.Any")), isMarkedNullable = true),
+                    initializer = { emit("this") },
+                    isMutable = true,
+                    getter = null,
+                    isOverride = false
+                ).also { owner.members += it }
 
-            emit("run ")
-            braced {
-                emitLine("var value = this@${owner.name}.${property.name}")
-                emitLine("if (value !== this@${owner.name}) return@run value as ${given.type.render()}")
-                emit("synchronized(this) ")
+                emit("run ")
                 braced {
-                    emitLine("value = this@${owner.name}.${property.name}")
+                    emitLine("var value = this@${owner.name}.${property.name}")
                     emitLine("if (value !== this@${owner.name}) return@run value as ${given.type.render()}")
-                    emit("value = ")
-                    rawStatement()
-                    emitLine()
-                    emitLine("this@${owner.name}.${property.name} = value")
-                    emitLine("return@run value as ${given.type.render()}")
+                    emit("synchronized(this) ")
+                    braced {
+                        emitLine("value = this@${owner.name}.${property.name}")
+                        emitLine("if (value !== this@${owner.name}) return@run value as ${given.type.render()}")
+                        emit("value = ")
+                        rawStatement()
+                        emitLine()
+                        emitLine("this@${owner.name}.${property.name} = value")
+                        emitLine("return@run value as ${given.type.render()}")
+                    }
                 }
             }
-        })
+            )
 
         val propertyName = given.type.uniqueTypeName()
 
@@ -110,7 +112,7 @@ class GivenStatements(
             getter = finalStatement
         )
 
-        val statement: ComponentStatement = { emit("this@${owner.name}.${propertyName}") }
+        val statement: ComponentStatement = { emit("this@${owner.name}.$propertyName") }
 
         statementsByType[given.type] = statement
 
@@ -208,7 +210,6 @@ class GivenStatements(
 
     private fun selfContextExpression(given: SelfGivenNode): ComponentStatement =
         { emit("this@${given.component.name}") }
-
 }
 
 private fun CodeBuilder.emitCallableInvocation(

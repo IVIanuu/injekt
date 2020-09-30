@@ -48,8 +48,10 @@ fun FunctionDescriptor.toCallableRef(): Callable {
         name = owner.name,
         packageFqName = findPackage().fqName,
         fqName = owner.fqNameSafe,
-        type = (if (allParameters.any { it.hasAnnotation(InjektFqNames.Assisted) })
-            getGivenFunctionType() else returnType!!)
+        type = (
+            if (allParameters.any { it.hasAnnotation(InjektFqNames.Assisted) })
+                getGivenFunctionType() else returnType!!
+            )
             .toTypeRef(),
         targetComponent = owner.annotations.findAnnotation(InjektFqNames.Given)
             ?.allValueArguments
@@ -84,7 +86,7 @@ fun FunctionDescriptor.toCallableRef(): Callable {
             )
         },
         isCall = owner !is PropertyDescriptor &&
-                (owner !is ClassDescriptor || owner.kind != ClassKind.OBJECT)
+            (owner !is ClassDescriptor || owner.kind != ClassKind.OBJECT)
     )
 }
 

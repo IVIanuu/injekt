@@ -39,7 +39,6 @@ class TestWorker(
     }
 
     override suspend fun doWork(): Result = Result.success()
-
 }
 
 @Given
@@ -48,7 +47,8 @@ fun initializeWorkers(
     workerFactory: WorkerFactory,
 ) {
     WorkManager.initialize(
-        applicationContext, Configuration.Builder()
+        applicationContext,
+        Configuration.Builder()
             .setWorkerFactory(workerFactory).build()
     )
 }

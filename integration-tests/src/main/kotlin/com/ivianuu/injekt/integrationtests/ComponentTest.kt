@@ -127,7 +127,8 @@ class ComponentTest {
                     fun invoke(): Pair<Foo, Foo> {
                         return rootFactory<TestContext>().runReader { given<Foo1>() to given<Foo2>() }
                     }
-            """, name = "File.kt"
+            """,
+                name = "File.kt"
             )
         )
     ) {
@@ -304,5 +305,4 @@ class ComponentTest {
 
         """
     )
-
 }

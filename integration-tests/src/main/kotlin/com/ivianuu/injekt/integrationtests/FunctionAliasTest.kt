@@ -74,5 +74,4 @@ class FunctionAliasTest {
     )
 
     // todo test with composable
-
 }

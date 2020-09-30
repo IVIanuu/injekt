@@ -43,7 +43,11 @@ class GivensGraph(
     collectionsFactory: (ComponentImpl, GivenCollections?) -> GivenCollections,
     private val module: org.jetbrains.kotlin.descriptors.ModuleDescriptor,
     private val componentFactoryImplFactory: (
-        Name, TypeRef, List<TypeRef>, TypeRef, ComponentImpl?,
+        Name,
+        TypeRef,
+        List<TypeRef>,
+        TypeRef,
+        ComponentImpl?,
     ) -> ComponentFactoryImpl,
 ) {
 
@@ -228,8 +232,8 @@ class GivensGraph(
             } else {
                 error(
                     "Multiple givens found for '${type.render()}' at:\n${
-                        givens
-                            .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
+                    givens
+                        .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
                     }"
                 )
             }
@@ -366,7 +370,6 @@ class GivensGraph(
 
     private fun List<GivenNode>.getExact(requested: TypeRef): GivenNode? =
         singleOrNull { it.rawType == requested }
-
 }
 
 private fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"
@@ -392,7 +395,7 @@ class GivenCollections(
     private fun getMapEntries(type: TypeRef): List<CallableWithReceiver> {
         return mapEntriesByType.getOrPut(type) {
             (parent?.getMapEntries(type) ?: emptyList()) +
-                    (thisMapEntries[type] ?: emptyList())
+                (thisMapEntries[type] ?: emptyList())
         }
     }
 
@@ -400,7 +403,7 @@ class GivenCollections(
     private fun getSetElements(type: TypeRef): List<CallableWithReceiver> {
         return setElementsByType.getOrPut(type) {
             (parent?.getSetElements(type) ?: emptyList()) +
-                    (thisSetElements[type] ?: emptyList())
+                (thisSetElements[type] ?: emptyList())
         }
     }
 

@@ -82,7 +82,7 @@ class KotlinTypeRef(
     }
     override val isComposable: Boolean by unsafeLazy {
         kotlinType.hasAnnotation(InjektFqNames.Composable) &&
-                kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
+            kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
     }
     override val superTypes: List<TypeRef> by unsafeLazy {
         kotlinType.constructor.supertypes.map { it.toTypeRef() }
@@ -119,8 +119,8 @@ class SimpleTypeRef(
     init {
         check(typeArguments.size == classifier.typeParameters.size) {
             "Argument size mismatch ${classifier.fqName} " +
-                    "params: ${classifier.typeParameters.map { it.fqName }} " +
-                    "args: ${typeArguments.map { it.render() }}"
+                "params: ${classifier.typeParameters.map { it.fqName }} " +
+                "args: ${typeArguments.map { it.render() }}"
         }
     }
 }
@@ -189,7 +189,7 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
     fun TypeRef.renderName(includeArguments: Boolean = true): String {
         return buildString {
             if (isComposable) append("composable_")
-            //if (includeNullability && isMarkedNullable) append("nullable_")
+            // if (includeNullability && isMarkedNullable) append("nullable_")
             append(classifier.fqName.pathSegments().joinToString("_") { it.asString() })
             if (includeArguments) {
                 typeArguments.forEachIndexed { index, typeArgument ->
@@ -204,8 +204,10 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
     val fullTypeName = renderName()
 
     // Conservatively shorten the name if the length exceeds 128
-    return (if (fullTypeName.length <= 128) fullTypeName
-    else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}"))
+    return (
+        if (fullTypeName.length <= 128) fullTypeName
+        else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}")
+        )
         .removeIllegalChars()
         .asNameId()
 }

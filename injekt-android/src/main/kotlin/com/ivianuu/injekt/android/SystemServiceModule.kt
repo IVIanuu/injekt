@@ -317,5 +317,4 @@ class SystemServiceModule {
 
     private inline fun <reified T : Any> Context.systemService() =
         ContextCompat.getSystemService(this, T::class.java)!!
-
 }

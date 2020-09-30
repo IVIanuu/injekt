@@ -42,7 +42,6 @@ class InjektComponentRegistrar : ComponentRegistrar {
         rootFactory<ApplicationComponentFactory>()(project, configuration, ApplicationModule)
             .registerExtensions()
     }
-
 }
 
 @Given
@@ -74,7 +73,9 @@ interface ApplicationComponent {
 
 @RootFactory
 typealias ApplicationComponentFactory = (
-    Project, CompilerConfiguration, ApplicationModule,
+    Project,
+    CompilerConfiguration,
+    ApplicationModule,
 ) -> ApplicationComponent
 
 @Module

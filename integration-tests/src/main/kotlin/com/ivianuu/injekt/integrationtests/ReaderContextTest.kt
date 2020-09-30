@@ -329,5 +329,4 @@ class ReaderContextTest {
     ) {
         assertTrue(invokeSingleFile() is Bar)
     }
-
 }

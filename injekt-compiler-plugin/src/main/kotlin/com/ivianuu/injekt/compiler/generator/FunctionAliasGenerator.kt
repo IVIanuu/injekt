@@ -19,8 +19,9 @@ class FunctionAliasGenerator(
             file.accept(
                 namedFunctionRecursiveVisitor { declaration ->
                     if (declaration.isTopLevel && declaration.annotationEntries.any {
-                            it.text.contains("Given")
-                        }) {
+                        it.text.contains("Given")
+                    }
+                    ) {
                         givenFunctions += declaration
                     }
                 }
@@ -92,5 +93,4 @@ class FunctionAliasGenerator(
 
         generateFile(file.packageFqName, fileName, code)
     }
-
 }

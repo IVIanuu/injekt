@@ -64,12 +64,14 @@ class InjektKtGenerationExtension(
             }.generate(files.toList())
         }
 
-        return super.doAnalysis(project,
+        return super.doAnalysis(
+            project,
             module,
             projectContext,
             files,
             bindingTrace,
-            componentProvider)
+            componentProvider
+        )
     }
 
     override fun analysisCompleted(
@@ -79,8 +81,9 @@ class InjektKtGenerationExtension(
         files: Collection<KtFile>,
     ): AnalysisResult? {
         if (generatedCode || bindingTrace.bindingContext.diagnostics.any {
-                it.severity == Severity.ERROR
-            }) return null
+            it.severity == Severity.ERROR
+        }
+        ) return null
         generatedCode = true
 
         files as List<KtFile>
@@ -95,5 +98,4 @@ class InjektKtGenerationExtension(
             bindingTrace.bindingContext, module, emptyList(), newFiles, true
         )
     }
-
 }

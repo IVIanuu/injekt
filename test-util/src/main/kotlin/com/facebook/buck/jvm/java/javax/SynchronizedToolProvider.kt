@@ -17,12 +17,10 @@
 package com.facebook.buck.jvm.java.javax
 
 import com.tschuchort.compiletesting.isJdk9OrLater
-
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import javax.tools.JavaCompiler
 import javax.tools.ToolProvider
-
 
 /**
  * ToolProvider has no synchronization internally, so if we don't synchronize from the outside we
@@ -52,7 +50,6 @@ internal object SynchronizedToolProvider {
                 } catch (e: InvocationTargetException) {
                     throw RuntimeException(e)
                 }
-
             }
 
             val classLoader: ClassLoader
@@ -70,7 +67,6 @@ internal object SynchronizedToolProvider {
             } catch (e: NoSuchMethodException) {
                 throw RuntimeException(e)
             }
-
         }
     }
 }

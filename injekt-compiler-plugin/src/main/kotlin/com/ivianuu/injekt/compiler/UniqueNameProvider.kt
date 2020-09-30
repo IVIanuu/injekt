@@ -17,5 +17,4 @@ class UniqueNameProvider {
         existingNames += name
         return name
     }
-
 }

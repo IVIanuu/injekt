@@ -43,8 +43,10 @@ fun FunctionDescriptor.getGivenFunctionType(): KotlinType {
     val assistedParameters =
         listOfNotNull(extensionReceiverParameter?.type) + valueParameters.map { it.type }
             .filter { it.hasAnnotation(InjektFqNames.Assisted) }
-    return (if (isSuspend) builtIns.getSuspendFunction(assistedParameters.size)
-    else builtIns.getFunction(assistedParameters.size))
+    return (
+        if (isSuspend) builtIns.getSuspendFunction(assistedParameters.size)
+        else builtIns.getFunction(assistedParameters.size)
+        )
         .defaultType
         .replace(newArguments = assistedParameters.map { it.asTypeProjection() } + returnType!!.asTypeProjection())
 }

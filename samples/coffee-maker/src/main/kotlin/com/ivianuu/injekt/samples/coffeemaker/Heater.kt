@@ -24,4 +24,3 @@ class ElectricHeater : Heater {
     override val isHot: Boolean
         get() = heating
 }
-

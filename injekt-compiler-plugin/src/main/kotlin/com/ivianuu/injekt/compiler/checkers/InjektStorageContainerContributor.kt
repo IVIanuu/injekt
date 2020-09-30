@@ -37,5 +37,4 @@ class InjektStorageContainerContributor(
         // todo only if merge is in classpath container.useInstance(given<EffectChecker>())
         container.useInstance(givenChecker)
     }
-
 }

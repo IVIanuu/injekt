@@ -5,10 +5,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentFactoryImpl
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentImpl
-import com.ivianuu.injekt.compiler.generator.componentimpl.GivenStatements
-import com.ivianuu.injekt.compiler.generator.componentimpl.GivensGraph
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile

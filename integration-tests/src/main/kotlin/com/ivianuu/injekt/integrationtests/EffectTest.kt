@@ -347,5 +347,4 @@ class EffectTest {
     ) {
         assertTrue(invokeSingleFile() is Foo)
     }
-
 }

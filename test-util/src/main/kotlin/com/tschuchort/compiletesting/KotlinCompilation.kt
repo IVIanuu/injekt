@@ -399,7 +399,6 @@ class KotlinCompilation {
             sourcesGeneratedByAnnotationProcessor + compiledClassAndResourceFiles + generatedStubFiles
     }
 
-
     // setup common arguments for the two kotlinc calls
     fun commonK2JVMArgs() = K2JVMCompilerArguments().also { args ->
         args.destination = classesDir.absolutePath
@@ -632,9 +631,9 @@ class KotlinCompilation {
             }
             .find { resourcesPath ->
                 ServiceLoaderLite.findImplementations(
-                        ComponentRegistrar::class.java,
-                        listOf(resourcesPath.toFile())
-                    )
+                    ComponentRegistrar::class.java,
+                    listOf(resourcesPath.toFile())
+                )
                     .any { implementation -> implementation == MainComponentRegistrar::class.java.name }
             }?.toString()
             ?: throw AssertionError("Could not get path to ComponentRegistrar service from META-INF")
@@ -658,8 +657,8 @@ class KotlinCompilation {
         )
 
         val sources = sourceFiles +
-                kaptKotlinGeneratedDir.listFilesRecursively() +
-                kaptSourceDir.listFilesRecursively()
+            kaptKotlinGeneratedDir.listFilesRecursively() +
+            kaptSourceDir.listFilesRecursively()
 
         // if no Kotlin sources are available, skip the compileKotlin step
         if (sources.none(File::hasKotlinFileExtension))
@@ -708,7 +707,8 @@ class KotlinCompilation {
         // also add class output path to javac classpath so it can discover
         // already compiled Kotlin classes
         addAll(
-            "-cp", (commonClasspaths() + classesDir)
+            "-cp",
+            (commonClasspaths() + classesDir)
                 .joinToString(File.pathSeparator, transform = File::getAbsolutePath)
         )
     }
@@ -890,17 +890,17 @@ class KotlinCompilation {
         if (compilerSystemOut.contains("No enum constant com.sun.tools.javac.main.Option.BOOT_CLASS_PATH")) {
             warn(
                 "${this::class.simpleName} has detected that the compiler output contains an error message that may be " +
-                        "caused by including a tools.jar file together with a JDK of version 9 or later. " +
-                        if (inheritClassPath)
-                            "Make sure that no tools.jar (or unwanted JDK) is in the inherited classpath"
-                        else ""
+                    "caused by including a tools.jar file together with a JDK of version 9 or later. " +
+                    if (inheritClassPath)
+                        "Make sure that no tools.jar (or unwanted JDK) is in the inherited classpath"
+                    else ""
             )
         }
 
         if (compilerSystemOut.contains("Unable to find package java.")) {
             warn(
                 "${this::class.simpleName} has detected that the compiler output contains an error message " +
-                        "that may be caused by a missing JDK. This can happen if jdkHome=null and inheritClassPath=false."
+                    "that may be caused by a missing JDK. This can happen if jdkHome=null and inheritClassPath=false."
             )
         }
     }
@@ -913,7 +913,7 @@ class KotlinCompilation {
     ): File? {
         val jarFile = hostClasspaths.firstOrNull { classpath ->
             classpath.name.matches(regex)
-            //TODO("check that jar file actually contains the right classes")
+            // TODO("check that jar file actually contains the right classes")
         }
 
         if (jarFile == null)

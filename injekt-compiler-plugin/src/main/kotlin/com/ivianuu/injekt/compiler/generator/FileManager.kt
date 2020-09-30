@@ -31,5 +31,4 @@ class FileManager(
             .also { it.createNewFile() }
             .also { it.writeText(code) }
     }
-
 }

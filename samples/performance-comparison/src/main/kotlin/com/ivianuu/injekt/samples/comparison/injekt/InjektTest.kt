@@ -36,5 +36,4 @@ object InjektTest : InjectionTest {
     override fun shutdown() {
         component = null
     }
-
 }

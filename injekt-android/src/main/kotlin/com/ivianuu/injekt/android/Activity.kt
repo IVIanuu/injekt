@@ -64,7 +64,6 @@ object ActivityModule {
     @Given
     val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
         get() = this
-
 }
 
 typealias ActivityContext = Context

@@ -27,7 +27,8 @@ import org.junit.Test
 class ComposeTest {
 
     @Test
-    fun testComposableBindingEffect() = codegen("""
+    fun testComposableBindingEffect() = codegen(
+        """
         typealias AppUi = @androidx.compose.runtime.Composable () -> Unit
 
         @Effect
@@ -98,5 +99,4 @@ class ComposeTest {
     ) {
         it.last().invokeSingleFile()
     }
-
 }

@@ -45,7 +45,6 @@ class CodeBuilder(out: Appendable) {
         }
         emitLine("}")
     }
-
 }
 
 private fun String.formatPrintedString() =

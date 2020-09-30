@@ -77,5 +77,4 @@ class GivenChecker : DeclarationChecker {
             )
         }
     }
-
 }

@@ -19,27 +19,26 @@ package com.tschuchort.compiletesting
 import java.io.IOException
 import java.io.OutputStream
 
-
 /** An output stream that does nothing, like /dev/null */
 internal object NullStream : OutputStream() {
     override fun write(b: Int) {
-        //NoOp
+        // NoOp
     }
 
     override fun close() {
-        //NoOp
+        // NoOp
     }
 
     override fun flush() {
-        //NoOp
+        // NoOp
     }
 
     override fun write(b: ByteArray, off: Int, len: Int) {
-        //NoOp
+        // NoOp
     }
 
     override fun write(b: ByteArray) {
-        //NoOp
+        // NoOp
     }
 }
 

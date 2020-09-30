@@ -32,7 +32,6 @@ interface InjektErrors {
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also { MAP.put(it, message) }
 
-
         @JvmField
         val FACTORY_EXPANDED_TYPE_MUST_BE_FUNCTION = error(
             "@RootFactory, @ChildFactory and @MergeFactory must be a function type"
@@ -93,6 +92,5 @@ interface InjektErrors {
         object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             override fun getMap() = MAP
         }
-
     }
 }

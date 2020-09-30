@@ -152,5 +152,4 @@ class EffectChecker : DeclarationChecker {
             }
         }
     }
-
 }

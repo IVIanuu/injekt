@@ -65,7 +65,8 @@ internal class KaptComponentRegistrar(
         val optionsBuilder = kaptOptions.apply {
             projectBaseDir = project.basePath?.let(::File)
             compileClasspath.addAll(
-                contentRoots.filterIsInstance<JvmClasspathRoot>().map { it.file })
+                contentRoots.filterIsInstance<JvmClasspathRoot>().map { it.file }
+            )
             javaSourceRoots.addAll(contentRoots.filterIsInstance<JavaSourceRoot>().map { it.file })
             classesOutputDir =
                 classesOutputDir ?: configuration.get(JVMConfigurationKeys.OUTPUT_DIRECTORY)
@@ -188,5 +189,4 @@ internal class KaptComponentRegistrar(
             )
         }
     }
-
 }

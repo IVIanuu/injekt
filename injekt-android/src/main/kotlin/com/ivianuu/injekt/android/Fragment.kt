@@ -73,7 +73,6 @@ object FragmentModule {
     @Given
     val Fragment.fragmentViewModelStoreOwner: FragmentViewModelStoreOwner
         get() = this
-
 }
 
 @EntryPoint(FragmentComponent::class)

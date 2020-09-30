@@ -52,7 +52,7 @@ class Benchmark {
         }
     }
 
-    //@Test
+    // @Test
     fun testPerformanceExternal() {
         val sources = buildList {
             repeat(4000) { index ->
@@ -97,5 +97,4 @@ class Benchmark {
             it.last().assertOk()
         }
     }
-
 }
