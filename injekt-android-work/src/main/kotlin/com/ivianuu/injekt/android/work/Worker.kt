@@ -22,6 +22,7 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenMapEntries
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.merge.ApplicationComponent
 import com.ivianuu.injekt.merge.Effect
 import kotlin.reflect.KClass
@@ -55,10 +56,11 @@ class InjektWorkerFactory(private val workers: Workers) : WorkerFactory() {
             workerParameters
         )
     }
+}
 
-    companion object {
-        @Given
-        val InjektWorkerFactory.workerFactory: WorkerFactory
-            get() = this
-    }
+@Module(ApplicationComponent::class)
+object WorkerInjectionModule {
+    @Given
+    val InjektWorkerFactory.workerFactory: WorkerFactory
+        get() = this
 }

@@ -32,9 +32,7 @@ object DataModule {
 }
 
 @Given(ApplicationComponent::class)
-class Database(
-    private val file: DatabaseFile,
-)
+class Database(private val file: DatabaseFile, )
 
 @Given(ApplicationComponent::class)
 class Repo(

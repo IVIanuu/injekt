@@ -41,8 +41,9 @@ fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescri
 
 fun FunctionDescriptor.getGivenFunctionType(): KotlinType {
     val assistedParameters =
-        listOfNotNull(extensionReceiverParameter?.type) + valueParameters.map { it.type }
+        (listOfNotNull(extensionReceiverParameter) + valueParameters)
             .filter { it.hasAnnotation(InjektFqNames.Assisted) }
+            .map { it.type }
     return (
         if (isSuspend) builtIns.getSuspendFunction(assistedParameters.size)
         else builtIns.getFunction(assistedParameters.size)

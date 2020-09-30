@@ -112,20 +112,30 @@ class CollectionsTest {
     @Test
     fun testAssistedMap() = codegen(
         """
-            @Given 
-            fun commandA(arg: String) = CommandA()
-            
-            @GivenMapEntries
-            fun commandAIntoMap(): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandA::class to given<(String) -> CommandA>())
-            
-            @Given 
-            fun commandB(arg: String) = CommandB()
-    
-            @GivenMapEntries 
-            fun commandBIntoMap(): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandB::class to given<(String) -> CommandB>())
-    
+            @Module
+            object MapModule {
+                @Given 
+                fun commandA(@Assisted arg: String) = CommandA()
+                
+                @GivenMapEntries
+                fun commandAIntoMap(
+                    commandAFactory: (String) -> CommandA
+                ): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandA::class to commandAFactory)
+                
+                @Given 
+                fun commandB(@Assisted arg: String) = CommandB()
+        
+                @GivenMapEntries 
+                fun commandBIntoMap(
+                    commandBFactory: (String) -> CommandB
+                ): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandB::class to commandBFactory)
+            }
+
+            @RootFactory 
+            typealias MapFactory = (MapModule) -> TestComponent1<Map<KClass<out Command>, (String) -> Command>>
+         
             fun invoke(): Map<KClass<out Command>, (String) -> Command> {
-                return rootFactory<TestContext>().runReader { given<Map<KClass<out Command>, (String) -> Command>>() }
+                return rootFactory<MapFactory>()(MapModule).a
             }
         """
     ) {
@@ -149,20 +159,26 @@ class CollectionsTest {
     @Test
     fun testSimpleSet() = codegen(
         """
-            @Given 
-            fun commandA() = CommandA()
-            
-            @GivenSetElements
-            fun commandAIntoSet(): Set<Command> = setOf(given<CommandA>())
-            
-            @Given 
-            fun commandB() = CommandB()
-            
-            @GivenSetElements
-            fun commandBIntoSet(): Set<Command> = setOf(given<CommandB>())
+            @Module
+            object SetModule {
+                @Given 
+                fun commandA() = CommandA()
+                
+                @GivenSetElements
+                fun commandAIntoSet(commandA: CommandA): Set<Command> = setOf(commandA)
+                
+                @Given 
+                fun commandB() = CommandB()
+                
+                @GivenSetElements
+                fun commandBIntoSet(commandB: CommandB): Set<Command> = setOf(commandB)
+            }
     
+            @RootFactory
+            typealias SetFactory = (SetModule) -> TestComponent1<Set<Command>>
+         
             fun invoke(): Set<Command> {
-                return rootFactory<TestContext>().runReader { given<Set<Command>>() }
+                return rootFactory<SetFactory>()(SetModule).a
             }
         """
     ) {
@@ -175,24 +191,35 @@ class CollectionsTest {
     @Test
     fun testNestedSet() = codegen(
         """
-            @Given 
-            fun commandA() = CommandA()
+            @Module
+            object ParentModule {
+                @Given 
+                fun commandA() = CommandA()
+                
+                @GivenSetElements
+                fun commandAIntoSet(commandA: CommandA): Set<Command> = 
+                    setOf(commandA)
+            }
             
-            @GivenSetElements(TestParentContext::class)
-            fun commandAIntoSet(): Set<Command> = setOf(given<CommandA>())
+            @Module
+            object ChildModule {
+                @Given 
+                fun commandB() = CommandB()
+        
+                @GivenSetElements
+                fun commandBIntoSet(commandB: CommandB): Set<Command> = 
+                    setOf(commandB)
+            }
             
-            @Given 
-            fun commandB() = CommandB()
+            @RootFactory
+            typealias MyParentFactory = (ParentModule) -> TestComponent2<Set<Command>, MyChildFactory>
             
-            @GivenSetElements(TestChildContext::class)
-            fun commandBIntoSet(): Set<Command> = setOf(given<CommandB>())
-    
+            @ChildFactory
+            typealias MyChildFactory = (ChildModule) -> TestComponent1<Set<Command>>
+         
             fun invoke(): Pair<Set<Command>, Set<Command>> {
-                return rootFactory<TestParentContext>().runReader { 
-                    given<Set<Command>>() to childContext<TestChildContext>().runReader {
-                        given<Set<Command>>()
-                    }
-                }
+                val parent = rootFactory<MyParentFactory>()(ParentModule)
+                return parent.a to parent.b(ChildModule).a
             }
         """
     ) {
@@ -207,20 +234,30 @@ class CollectionsTest {
     @Test
     fun testAssistedSet() = codegen(
         """
-            @Given 
-            fun commandA(arg: String) = CommandA()
-            
-            @GivenSetElements
-            fun commandAIntoSet(): Set<(String) -> Command> = setOf(given<(String) -> CommandA>())
-            
-            @Given 
-            fun commandB(arg: String) = CommandB()
-            
-            @GivenSetElements
-            fun commandBIntoSet(): Set<(String) -> Command> = setOf(given<(String) -> CommandB>())
-    
+            @Module
+            object SetModule {
+                @Given 
+                fun commandA(@Assisted arg: String) = CommandA()
+                
+                @GivenSetElements
+                fun commandAIntoSet(
+                    commandAFactory: (String) -> CommandA
+                ): Set<(String) -> Command> = setOf(commandAFactory)
+                
+                @Given 
+                fun commandB(@Assisted arg: String) = CommandB()
+        
+                @GivenSetElements
+                fun commandBIntoSet(
+                    commandBFactory: (String) -> CommandB
+                ): Set<(String) -> Command> = setOf(commandBFactory)
+            }
+
+            @RootFactory 
+            typealias SetFactory = (SetModule) -> TestComponent1<Set<(String) -> Command>>
+         
             fun invoke(): Set<(String) -> Command> {
-                return rootFactory<TestContext>().runReader { given<Set<(String) -> Command>>() }
+                return rootFactory<SetFactory>()(SetModule).a
             }
         """
     ) {

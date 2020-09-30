@@ -223,7 +223,7 @@ class GivensGraph(
         var given = resolvedGivens[type]
         if (given != null) return given
 
-        val givens = givensForKey(type)
+        val givens = givensForType(type)
 
         if (givens.size > 1) {
             val mostSpecific = givens.getExact(type)
@@ -289,7 +289,7 @@ class GivensGraph(
         return null
     }
 
-    private fun givensForKey(type: TypeRef): List<GivenNode> = buildList<GivenNode> {
+    private fun givensForType(type: TypeRef): List<GivenNode> = buildList<GivenNode> {
         instanceNodes[type]?.let { this += it }
 
         if (type == contextType) {

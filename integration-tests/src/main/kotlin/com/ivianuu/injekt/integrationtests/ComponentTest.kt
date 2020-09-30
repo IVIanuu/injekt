@@ -64,11 +64,18 @@ class ComponentTest {
     @Test
     fun testDistinctTypeParameter() = codegen(
         """
-            @GivenSetElements fun setA() = setOf("a")
-            @GivenSetElements fun setB() = setOf(0)
+            @Module
+            object MyModule {
+                @GivenSetElements fun setA() = setOf("a")
+                @GivenSetElements fun setB() = setOf(0)
+            }
+            
+            @RootFactory
+            typealias MyFactory = (MyModule) -> TestComponent2<Set<String>, Set<Int>>
             
             fun invoke(): Pair<Set<String>, Set<Int>> {
-                return rootFactory<TestContext>().runReader { given<Set<String>>() to given<Set<Int>>() }
+                val component = rootFactory<MyFactory>()(MyModule)
+                return component.a to component.b
             }
             """
     ) {
@@ -204,15 +211,19 @@ class ComponentTest {
     fun testPrefersInputsOverGiven() = codegen(
         """
             @Given
-            fun provideFoo() = Foo()
+            class Dep
             
-            fun invoke(foo: Foo): Foo {
-                return rootFactory<TestContext>(foo).runReader { given() }
+            @RootFactory
+            typealias MyFactory = (Dep) -> TestComponent1<Dep>
+            
+            fun invoke(): Pair<Any, Any> {
+                val dep = Dep()
+                return dep to rootFactory<MyFactory>()(dep).a
             }
         """
     ) {
-        val foo = Foo()
-        assertSame(foo, invokeSingleFile(foo))
+        val (a, b) = invokeSingleFile<Pair<Any, Any>>()
+        assertSame(a, b)
     }
 
     @Test
@@ -285,20 +296,20 @@ class ComponentTest {
         """
             class Dep<T>(val value: T)
             
-            @Given
-            fun <T> genericDep(): Dep<T> = Dep(given())
-            
-            @Given
-            fun fooDep(): Dep<Foo> = Dep(given())
-            
-            @Given
-            fun foo() = Foo()
-            
-            fun invoke() {
-                runReader {
-                    given<Dep<Foo>>()
-                }
+            @Module
+            object FooModule {
+                @Given
+                fun <T> genericDep(t: T): Dep<T> = Dep(t)
+                
+                @Given
+                fun fooDep(foo: Foo): Dep<Foo> = Dep(foo)
+                
+                @Given
+                fun foo() = Foo()
             }
+            
+            @RootFactory
+            typealias MyFactory = (FooModule) -> TestComponent1<Dep<Foo>>
         """
     )
 
@@ -309,10 +320,6 @@ class ComponentTest {
                 fun compare(a: T, b: T): Int
             }
             typealias AliasComparator<T> = Comparator<T>
-            @Reader
-            fun callMax() {
-                compare(1, 2)
-            }
             
             @Module
             object MyModule {
@@ -321,7 +328,7 @@ class ComponentTest {
             }
             
             @RootFactory
-            typealias MyFactory = (MyModule) -> TestComponent<compare<Int>>
+            typealias MyFactory = (MyModule) -> TestComponent1<compare<Int>>
 
             @Given
             fun <T> compare(@Assisted a: T, @Assisted b: T, comparator: AliasComparator<T>): Int = aliasComparator

@@ -4,13 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.merge.Effect
 import kotlin.reflect.KClass
 
 @Effect(ActivityComponent::class)
 annotation class GivenActivityViewModel {
-    @Module(ActivityComponent::class)
     companion object {
         @Given
         inline fun <reified VM : S, reified S : ViewModel> viewModel(
@@ -22,7 +20,6 @@ annotation class GivenActivityViewModel {
 
 @Effect(FragmentComponent::class)
 annotation class GivenFragmentViewModel {
-    @Module(FragmentComponent::class)
     companion object {
         @Given
         inline fun <reified VM : S, reified S : ViewModel> viewModel(
