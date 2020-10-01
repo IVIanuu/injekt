@@ -344,9 +344,11 @@ class ComponentTest {
         """
             @Component
             abstract class SuspendFunctionComponent {
-                abstract suspend fun suspendFoo(): Foo
+                abstract suspend fun bar(): Bar
                 @Binding
                 protected suspend fun _suspendFoo() = Foo()
+                @Binding
+                protected suspend fun _suspendBar(foo: Foo) = Bar(foo)
             }
         """
     )
