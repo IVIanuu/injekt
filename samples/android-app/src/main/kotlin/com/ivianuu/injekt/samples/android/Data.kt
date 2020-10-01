@@ -31,7 +31,7 @@ object DataModule {
 }
 
 @Binding(AppComponent::class)
-class Database(private val file: DatabaseFile, )
+class Database(private val file: DatabaseFile)
 
 @Binding(AppComponent::class)
 class Repo(

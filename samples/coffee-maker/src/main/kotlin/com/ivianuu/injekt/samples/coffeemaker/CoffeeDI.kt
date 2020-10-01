@@ -12,6 +12,6 @@ abstract class CoffeeComponent {
         get() = this
 
     @Binding
-    protected val Thermosiphon.givenPump: Pump
+    protected val Thermosiphon.pump: Pump
         get() = this
 }

@@ -27,7 +27,6 @@ import com.ivianuu.injekt.Module
 
 @Module
 class ActivityModule<T : ComponentActivity>(@Binding val activity: T) {
-
     @Binding
     val T.componentActivity: ComponentActivity
         get() = this
