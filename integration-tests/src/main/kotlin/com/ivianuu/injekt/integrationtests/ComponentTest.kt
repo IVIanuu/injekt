@@ -76,17 +76,16 @@ class ComponentTest {
     @Test
     fun testScopedBinding() = codegen(
         """
-            @Module
-            object MyModule {
-                @Binding(TestComponent1::class)
-                fun foo() = Foo()
+            @Component
+            abstract class MyComponent { 
+                abstract val foo: Foo
+                @Binding(MyComponent::class) 
+                protected fun foo() = Foo()
             }
-            @RootFactory
-            typealias MyFactory = (MyModule) -> TestComponent1<Foo>
         
-            val component = rootFactory<MyFactory>()(MyModule)
+            val component: MyComponent = MyComponentImpl()
         
-            fun invoke() = component.a
+            fun invoke() = component.foo
     """
     ) {
         assertSame(invokeSingleFile(), invokeSingleFile())
@@ -95,25 +94,28 @@ class ComponentTest {
     @Test
     fun testParentScopedBinding() = codegen(
         """
-            @Module
-            object MyModule {
+            @Component
+            abstract class MyParentComponent {
+                abstract val childFactory: () -> MyChildComponent
+            
                 @Binding
-                fun foo() = Foo()
+                protected fun foo() = Foo()
                 
-                @Binding(TestParentComponent1::class)
-                fun bar(foo: Foo) = Bar(foo)
+                @Binding(MyParentComponent::class)
+                protected fun bar(foo: Foo) = Bar(foo)
             }
             
-            @RootFactory
-            typealias MyParentFactory = (MyModule) -> TestParentComponent1<MyChildFactory>
-            val parentComponent = rootFactory<MyParentFactory>()(MyModule)
+            val parentComponent: MyParentComponent = MyParentComponentImpl()
             
-            @ChildFactory
-            typealias MyChildFactory = () -> TestChildComponent1<Bar>
-            val childComponent = parentComponent.a()
+            @ChildComponent
+            abstract class MyChildComponent {
+                abstract val bar: Bar
+            }
+
+            val childComponent = parentComponent.childFactory()
          
             fun invoke(): Bar {
-                return childComponent.a
+                return childComponent.bar
             }
     """
     ) {
@@ -173,7 +175,9 @@ class ComponentTest {
                 @Binding protected val _foo = Foo()
             }
             
-            fun invoke() = FooComponentImpl().foo
+            fun invoke(): Foo {
+                return FooComponentImpl().foo
+            }
     """
     ) {
         assertTrue(invokeSingleFile() is Foo)
@@ -200,17 +204,16 @@ class ComponentTest {
     @Test
     fun testAssistedBindingFunction() = codegen(
         """
-            @Module
-            object BarModule {
+            @Component
+            abstract class BarComponent {
+                abstract val barFactory: (Foo) -> Bar
+                
                 @Binding
-                fun bar(@Assisted foo: Foo) = Bar(foo)
+                protected fun bar(@Assisted foo: Foo) = Bar(foo)
             }
-            
-            @RootFactory
-            typealias MyFactory = (BarModule) -> TestComponent1<(Foo) -> Bar>
 
             fun invoke(foo: Foo): Bar { 
-                return rootFactory<MyFactory>()(BarModule).a(foo)
+                return BarComponentImpl().barFactory(foo)
             }
     """
     ) {
@@ -223,10 +226,12 @@ class ComponentTest {
             @Binding
             class AnnotatedBar(@Assisted foo: Foo)
             
-            @RootFactory
-            typealias MyFactory = () -> TestComponent1<(Foo) -> AnnotatedBar>
+            @Component
+            abstract class MyComponent {
+                abstract val annotatedBar: (Foo) -> AnnotatedBar
+            }
 
-            fun invoke(foo: Foo): AnnotatedBar = rootFactory<MyFactory>()().a(foo)
+            fun invoke(foo: Foo): AnnotatedBar = MyComponentImpl().annotatedBar(foo)
     """
     ) {
         invokeSingleFile(Foo())
@@ -237,17 +242,15 @@ class ComponentTest {
         """
             @Binding class Dep<T>(val value: T)
             
-            @Module
-            object FooModule {
+            @Component
+            abstract class FooComponent {
+                abstract val fooDep: Dep<Foo>
                 @Binding
-                fun foo() = Foo()
+                protected fun foo() = Foo()
             }
             
-            @RootFactory
-            typealias MyFactory = (FooModule) -> TestComponent1<Dep<Foo>>
-            
             fun invoke() {
-                rootFactory<MyFactory>()(FooModule).a
+                FooComponentImpl().fooDep
             }
     """
     )
@@ -257,17 +260,15 @@ class ComponentTest {
         """    
             class Dep<T>(val value: T)
             
-            @Module
-            object MyModule { 
-                @Binding fun <T> dep(value: T) = Dep<T>(value)
-                @Binding fun foo() = Foo() 
+            @Component
+            abstract class MyComponent { 
+                abstract val fooDep: Dep<Foo>
+                @Binding protected fun <T> dep(value: T) = Dep(value)
+                @Binding protected fun foo() = Foo() 
             }
-            
-            @RootFactory
-            typealias MyFactory = (MyModule) -> TestComponent1<Dep<Foo>>
-    
+
             fun invoke() {
-                rootFactory<MyFactory>()(MyModule).a
+                MyComponentImpl().fooDep
             }
     """
     )
@@ -277,14 +278,12 @@ class ComponentTest {
         """    
             class Dep<A, B, C>(val value: A)
             
-            @Module
-            object MyModule { 
-                @Binding fun <A, B : A, C : B> dep(a: A) = Dep<A, A, A>(a)
-                @Binding fun foo() = Foo() 
+            @Component
+            abstract class MyComponent { 
+                abstract val dep: Dep<Foo, Foo, Foo>
+                @Binding protected fun <A, B : A, C : B> dep(a: A) = Dep<A, A, A>(a)
+                @Binding protected fun foo() = Foo() 
             }
-            
-            @RootFactory
-            typealias MyFactory = (MyModule) -> TestComponent1<Dep<Foo, Foo, Foo>>
     """
     )
 
@@ -601,26 +600,23 @@ class ComponentTest {
     @Test
     fun testBindingPerComponent() = codegen(
         """
-            @Module
-            object ParentModule {
-                @Binding(TestParentComponent2::class) fun parentFoo() = Foo()
+            @Component
+            abstract class MyParentComponent {
+                abstract val childFactory: () -> MyChildComponent
+                abstract val foo: Foo
+                @Binding(MyParentComponent::class) protected fun parentFoo() = Foo()
             }
-            
-            @RootFactory
-            typealias MyParentFactory = (ParentModule) -> TestParentComponent2<Foo, MyChildFactory>
-            
-            @Module
-            object ChildModule {
-                @Binding(TestChildComponent1::class) fun childFoo() = Foo()
+
+            @ChildComponent
+            abstract class MyChildComponent {
+                abstract val foo: Foo
+                @Binding(MyChildComponent::class) protected fun childFoo() = Foo()
             }
-            
-            @ChildFactory
-            typealias MyChildFactory = (ChildModule) -> TestChildComponent1<Foo>
-            
+
             fun invoke(): Pair<Foo, Foo> {
-                val parent = rootFactory<MyParentFactory>()(ParentModule)
-                val child = parent.b(ChildModule)
-                return parent.a to child.a
+                val parent = MyParentComponentImpl()
+                val child = parent.childFactory()
+                return parent.foo to child.foo
             }
         """
     ) {
@@ -694,9 +690,11 @@ class ComponentTest {
         """
             @Binding class A(b: B)
             @Binding class B(a: A)
-            
-            @RootFactory
-            typealias MyFactory = () -> TestComponent1<B>
+
+            @Component
+            abstract class MyComponent {
+                abstract val b: B
+            }
         """
     ) {
         assertInternalError("circular")
@@ -706,10 +704,12 @@ class ComponentTest {
     fun testProviderBreaksCircularDependency() = codegen(
         """
             @Binding class A(b: B)
-            @Binding(TestComponent1::class) class B(a: () -> A)
+            @Binding(MyComponent::class) class B(a: () -> A)
             
-            @RootFactory
-            typealias MyFactory = () -> TestComponent1<B>
+            @Component
+            abstract class MyComponent {
+                abstract val b: B
+            }
         """
     ) {
         assertOk()
@@ -722,8 +722,10 @@ class ComponentTest {
             @Binding class B(b: C)
             @Binding class C(b: B)
             
-            @RootFactory
-            typealias MyFactory = () -> TestComponent1<C>
+            @Component
+            abstract class MyComponent {
+                abstract val c: C
+            }
         """
     ) {
         assertInternalError("circular")
@@ -733,10 +735,12 @@ class ComponentTest {
     fun testAssistedBreaksCircularDependency() = codegen(
         """
             @Binding class A(@Assisted b: B)
-            @Binding(TestComponent1::class) class B(a: (B) -> A)
+            @Binding(MyComponent::class) class B(a: (B) -> A)
             
-            @RootFactory
-            typealias MyFactory = () -> TestComponent1<B>
+            @Component
+            abstract class MyComponent {
+                abstract val b: B
+            }
         """
     ) {
         assertOk()
