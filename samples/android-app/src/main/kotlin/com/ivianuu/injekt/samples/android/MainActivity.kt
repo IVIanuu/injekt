@@ -57,8 +57,6 @@ abstract class MainActivityComponent(activity: MainActivity) {
 
     @Module
     protected val activityModule = ActivityModule(activity)
-    @Module
-    protected val dataModule = DataModule
 }
 
 @Binding
