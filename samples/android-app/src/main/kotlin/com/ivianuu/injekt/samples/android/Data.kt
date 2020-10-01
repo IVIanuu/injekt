@@ -34,7 +34,7 @@ class Database(private val file: DatabaseFile)
 @Binding(AppComponent::class)
 class Repo(
     private val database: Database,
-    private val api: Api,
+    private val api: Api
 ) {
     fun refresh() {
     }

@@ -14,6 +14,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-compiler-plugin/injekt-compiler-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-compiler-plugin/injekt-compiler-plugin.iml" group="injekt/injekt-compiler-plugin" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-core/injekt-core.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-core/injekt-core.iml" group="injekt/injekt-core" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-gradle-plugin/injekt-gradle-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-gradle-plugin/injekt-gradle-plugin.iml" group="injekt/injekt-gradle-plugin" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-merge/injekt-merge.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-merge/injekt-merge.iml" group="injekt/injekt-merge" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt_buildSrc.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt_buildSrc.iml" group="injekt/injekt_buildSrc" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/integration-tests/integration-tests.iml" filepath="$PROJECT_DIR$/.idea/modules/integration-tests/integration-tests.iml" group="injekt/integration-tests" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/lol/lol.iml" filepath="$PROJECT_DIR$/.idea/modules/lol/lol.iml" group="injekt/lol" />

@@ -46,7 +46,6 @@ class ComponentGenerator(
         componentImpl.initialize()
 
         val code = buildCodeString {
-            emitLine("// injekt-generated")
             emitLine("package ${componentImplFqName.parent()}")
             with(componentImpl) { emit() }
 

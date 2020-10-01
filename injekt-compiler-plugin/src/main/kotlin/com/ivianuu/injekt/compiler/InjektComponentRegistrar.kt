@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.compiler.checkers.InjektStorageContainerContributor
 import com.ivianuu.injekt.compiler.generator.InjektKtGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -27,7 +26,6 @@ import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
-import java.io.File
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
@@ -56,20 +54,4 @@ fun registerExtensions(
         project,
         injektKtGenerationExtension
     )
-}
-
-@Component
-abstract class ApplicationComponent(
-    @Binding protected val project: Project,
-    @Binding protected val configuration: CompilerConfiguration
-) {
-    abstract val registerExtensions: registerExtensions
-
-    @Binding(ApplicationComponent::class)
-    protected fun srcDir(configuration: CompilerConfiguration): SrcDir =
-        File(configuration.getNotNull(SrcDirKey))
-            .also { it.mkdirs() }
-
-    @Binding
-    protected fun logger(): Logger? = if (loggingEnabled) LoggerImpl else null
 }

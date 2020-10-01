@@ -39,6 +39,7 @@ fun source(
             appendLine("package com.ivianuu.injekt.integrationtests")
             appendLine()
             appendLine("import com.ivianuu.injekt.*")
+            appendLine("import com.ivianuu.injekt.merge.*")
             appendLine("import com.ivianuu.injekt.internal.*")
             appendLine("import com.ivianuu.injekt.test.*")
             appendLine("import kotlin.reflect.*")
