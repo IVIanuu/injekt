@@ -330,7 +330,7 @@ class ComponentTest {
     fun testComponentFunction() = codegen(
         """
             @Component
-            abstract class FunctionModule {
+            abstract class FunctionComponent {
                 abstract fun foo(): Foo
                 
                 @Binding
@@ -343,7 +343,7 @@ class ComponentTest {
     fun testComponentSuspendFunction() = codegen(
         """
             @Component
-            abstract class SuspendFunctionModule {
+            abstract class SuspendFunctionComponent {
                 abstract suspend fun suspendFoo(): Foo
                 @Binding
                 protected suspend fun _suspendFoo() = Foo()
@@ -369,7 +369,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testNestedModule() = codegen(
+    fun testNestedComponent() = codegen(
         """
             @Component
             abstract class BarComponent {
@@ -378,11 +378,10 @@ class ComponentTest {
                 @Binding
                 protected fun foo() = Foo()
                 
-                @Module
-                protected val barModule = BarModule()
+                @Component
+                protected val nested = NestedComponent()
                 
-                @Module
-                protected class BarModule {
+                protected class NestedComponent {
                     @Binding
                     fun bar(foo: Foo) = Bar(foo)
                 }
@@ -397,17 +396,16 @@ class ComponentTest {
     }
 
     @Test
-    fun testGenericNestedModule() = codegen(
+    fun testGenericNestedComponent() = codegen(
         """
             @Component
             abstract class MyComponent {
                 abstract val foo: Foo
             
-                @Module
-                protected val fooModule = InstanceModule<Foo>(Foo())
+                @Component
+                protected val fooComponent = InstanceComponent<Foo>(Foo())
                 
-                @Module
-                protected class InstanceModule<T>(@Binding val instance: T)
+                protected class InstanceComponent<T>(@Binding val instance: T)
             }
 
             fun invoke(): Foo {
@@ -502,8 +500,7 @@ class ComponentTest {
             source(
                 """
                     typealias Foo1 = Foo
-                    @Module
-                    object Foo1Module {
+                    object Foo1Component {
                         @Binding fun foo1(): Foo1 = Foo()
                     }
             """
@@ -513,8 +510,7 @@ class ComponentTest {
             source(
                 """
                     typealias Foo2 = Foo
-                    @Module
-                    object Foo2Module {
+                    object Foo2Component {
                         @Binding fun foo2(): Foo2 = Foo()
                     }
             """
@@ -528,8 +524,8 @@ class ComponentTest {
                         abstract val foo1: Foo1
                         abstract val foo2: Foo2
                         
-                        @Module protected val foo1Module = Foo1Module 
-                        @Module protected val foo2Module = Foo2Module
+                        @Component protected val foo1Component = Foo1Component
+                        @Component protected val foo2Component = Foo2Component
                     }
                     fun invoke(): Pair<Foo1, Foo2> {
                         val component = MyComponentImpl()
@@ -791,9 +787,8 @@ class ComponentTest {
             source(
                 """
                     internal typealias InternalFoo = Foo
-                    
-                    @Module
-                    object MyModule {
+
+                    object FooBarComponent {
                         @Binding
                         fun foo(): InternalFoo = Foo()
                         
@@ -810,8 +805,8 @@ class ComponentTest {
                     abstract class MyComponent {
                         abstract val bar: Bar
                         
-                        @Module
-                        protected val module = MyModule
+                        @Component
+                        protected val fooBarComponent = FooBarComponent
                     }
                 """
             )
