@@ -5,6 +5,7 @@ include(
     ":injekt-compiler-plugin",
     ":injekt-core",
     ":injekt-gradle-plugin",
+    ":injekt-merge",
     ":integration-tests",
     ":test-util",
     "samples:android-app",
