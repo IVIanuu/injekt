@@ -129,17 +129,16 @@ class ComponentTest {
             @Binding
             class AnnotatedBar(foo: Foo)
             
-            @Module
-            object FooModule {
+            @Component
+            abstract class FooComponent {
+                abstract val annotatedBar: AnnotatedBar
+                
                 @Binding
-                fun foo() = Foo()
+                protected fun foo() = Foo()
             }
-    
-            @RootFactory
-            typealias MyFactory = (FooModule) -> TestComponent1<AnnotatedBar>
-            
+
             fun invoke() {
-                rootFactory<MyFactory>()(FooModule).a
+                FooComponentImpl().annotatedBar
             }
     """
     ) {
@@ -151,12 +150,14 @@ class ComponentTest {
         """
             @Binding
             object AnnotatedBar
-    
-            @RootFactory
-            typealias MyFactory = () -> TestComponent1<AnnotatedBar>
+            
+            @Component
+            abstract class MyComponent {
+                abstract val annotationBar: AnnotatedBar
+            }
             
             fun invoke() {
-                rootFactory<MyFactory>()().a
+                MyComponentImpl().annotationBar
             }
     """
     ) {
@@ -166,15 +167,13 @@ class ComponentTest {
     @Test
     fun testBindingProperty() = codegen(
         """
-            @Module
-            object FooModule {
-                @Binding val foo = Foo()
+            @Component
+            abstract class FooComponent {
+                abstract val foo: Foo
+                @Binding protected val _foo = Foo()
             }
-    
-            @RootFactory
-            typealias MyFactory = (FooModule) -> TestComponent1<Foo>
             
-            fun invoke() = rootFactory<MyFactory>()(FooModule).a
+            fun invoke() = FooComponentImpl().foo
     """
     ) {
         assertTrue(invokeSingleFile() is Foo)
@@ -183,17 +182,15 @@ class ComponentTest {
     @Test
     fun testProvider() = codegen(
         """
-            @Module
-            object FooModule {
+            @Component
+            abstract class ProviderComponent {
+                abstract val fooFactory: () -> Foo
                 @Binding
-                fun foo() = Foo()
+                protected fun foo() = Foo()
             }
-            
-            @RootFactory
-            typealias MyFactory = (FooModule) -> TestComponent1<() -> Foo>
-            
+
             fun invoke() {
-                rootFactory<MyFactory>()(FooModule).a()
+                ProviderComponentImpl().fooFactory()
             }
         """
     ) {
@@ -294,47 +291,38 @@ class ComponentTest {
     @Test
     fun testComponentFunction() = codegen(
         """
-            @Module
-            object FunctionModule {
+            @Component
+            abstract class FunctionModule {
+                abstract fun foo(): Foo
+                
                 @Binding
-                fun foo() = Foo()
+                protected fun _foo() = Foo()
             }
-
-            interface FunctionComponent { 
-                fun foo() = Foo()
-            }
-            
-            @RootFactory
-            typealias MyFactory = (FunctionModule) -> FunctionComponent
         """
     )
 
     @Test
     fun testComponentSuspendFunction() = codegen(
         """
-            @Module
-            object SuspendFunctionModule {
+            @Component
+            abstract class SuspendFunctionModule {
+                abstract suspend fun suspendFoo(): Foo
                 @Binding
-                suspend fun suspendFoo() = Foo()
+                protected suspend fun _suspendFoo() = Foo()
             }
-
-            interface SuspendComponent {
-                suspend fun foo() = Foo()
-            }
-            
-            @RootFactory
-            typealias MyFactory = (SuspendFunctionModule) -> SuspendComponent
         """
     )
 
     @Test
-    fun testInput() = codegen(
+    fun testComponentWithConstructorParameters() = codegen(
         """
-            @RootFactory
-            typealias MyFactory = (Foo) -> TestComponent1<Foo>
+            @Component
+            abstract class MyComponent(@Binding protected val _foo: Foo) {
+                abstract val foo: Foo
+            }
             fun invoke(): Pair<Foo, Foo> {
                 val foo = Foo()
-                return foo to rootFactory<MyFactory>()(foo).a
+                return foo to MyComponentImpl(foo).foo
             }
     """
     ) {
@@ -345,26 +333,25 @@ class ComponentTest {
     @Test
     fun testNestedModule() = codegen(
         """
-            @Module
-            class FooModule {
+            @Component
+            abstract class BarComponent {
+                abstract val bar: Bar
+            
                 @Binding
-                fun foo() = Foo()
+                protected fun foo() = Foo()
                 
                 @Module
-                val barModule = BarModule()
+                protected val barModule = BarModule()
                 
                 @Module
-                class BarModule {
+                protected class BarModule {
                     @Binding
                     fun bar(foo: Foo) = Bar(foo)
                 }
             }
             
-            @RootFactory
-            typealias MyFactory = (FooModule) -> TestComponent1<Bar>
-            
             fun invoke(): Bar {
-                return rootFactory<MyFactory>()(FooModule()).a
+                return BarComponentImpl().bar
             }
     """
     ) {
@@ -374,20 +361,19 @@ class ComponentTest {
     @Test
     fun testGenericNestedModule() = codegen(
         """
-            @Module
-            class OuterModule {
+            @Component
+            abstract class MyComponent {
+                abstract val foo: Foo
+            
                 @Module
-                val fooModule = InstanceModule<Foo>(Foo())
+                protected val fooModule = InstanceModule<Foo>(Foo())
                 
                 @Module
-                class InstanceModule<T>(@Binding val instance: T)
+                protected class InstanceModule<T>(@Binding val instance: T)
             }
-            
-            @RootFactory
-            typealias MyFactory = (OuterModule) -> TestComponent1<Foo>
-            
+
             fun invoke(): Foo {
-                return rootFactory<MyFactory>()(OuterModule()).a
+                return MyComponentImpl().foo
             }
     """
     ) {
@@ -399,8 +385,10 @@ class ComponentTest {
         """
             class Dep
             
-            @RootFactory
-            typealias MyFactory = () -> TestComponent1<Dep>
+            @Component
+            abstract class DepComponent {
+                abstract val dep: Dep
+            }
         """
     ) {
         assertInternalError("no binding")
@@ -409,17 +397,16 @@ class ComponentTest {
     @Test
     fun testDeeplyMissingBindingFails() = codegen(
         """
-            @Module
-            object MyModule {
+            @Component
+            abstract class BazComponent {
+                abstract val baz: Baz
+            
                 @Binding
-                fun bar(foo: Foo) = Bar(foo)
+                protected fun bar(foo: Foo) = Bar(foo)
         
                 @Binding
-                fun baz(bar: Bar, foo: Foo) = Baz(bar, foo)
+                protected fun baz(bar: Bar, foo: Foo) = Baz(bar, foo)
             }
-            
-            @RootFactory
-            typealias MyFactory = (MyModule) -> TestComponent1<Baz>
         """
     ) {
         assertInternalError("no binding")
@@ -428,18 +415,18 @@ class ComponentTest {
     @Test
     fun testDistinctTypeParameter() = codegen(
         """
-            @Module
-            object MyModule {
-                @SetElements fun setA() = setOf("a")
-                @SetElements fun setB() = setOf(0)
+            @Component
+            abstract class MyComponent {
+                abstract val setOfStrings: Set<String>
+                abstract val setOfInts: Set<Int>
+            
+                @SetElements protected fun _setA() = setOf("a")
+                @SetElements protected fun _setB() = setOf(0)
             }
-            
-            @RootFactory
-            typealias MyFactory = (MyModule) -> TestComponent2<Set<String>, Set<Int>>
-            
+
             fun invoke(): Pair<Set<String>, Set<Int>> {
-                val component = rootFactory<MyFactory>()(MyModule)
-                return component.a to component.b
+                val component = MyComponentImpl()
+                return component.setOfStrings to component.setOfInts
             }
             """
     ) {
@@ -453,18 +440,17 @@ class ComponentTest {
             typealias Foo1 = Foo
             typealias Foo2 = Foo
             
-            @Module
-            object FooModule {
-                @Binding fun foo1(): Foo1 = Foo()
-                @Binding fun foo2(): Foo2 = Foo()
+            @Component
+            abstract class FooComponent {
+                abstract val foo1: Foo1
+                abstract val foo2: Foo2
+                @Binding protected fun _foo1(): Foo1 = Foo()
+                @Binding protected fun _foo2(): Foo2 = Foo()
             }
-            
-            @RootFactory
-            typealias MyFactory = (FooModule) -> TestComponent2<Foo1, Foo2>
-            
+       
             fun invoke(): Pair<Foo, Foo> {
-                val component = rootFactory<MyFactory>()(FooModule)
-                return component.a to component.b
+                val component = FooComponentImpl()
+                return component.foo1 to component.foo2
             }
             """
     ) {
@@ -523,14 +509,12 @@ class ComponentTest {
     @Test
     fun testIgnoresNullability() = codegen(
         """
-            @Module
-            object FooModule { 
-                @Binding fun foo(): Foo = Foo()
-                @Binding fun nullableFoo(): Foo? = null
+            @Component
+            abstract class FooComponent { 
+                abstract val foo: Foo
+                @Binding protected fun foo(): Foo = Foo()
+                @Binding protected fun nullableFoo(): Foo? = null
             }
-            
-            @RootFactory
-            typealias MyFactory = (FooModule) -> TestComponent1<Foo>
             """
     ) {
         assertInternalError("multiple")
@@ -691,14 +675,12 @@ class ComponentTest {
             }
             typealias AliasComparator<T> = Comparator<T>
             
-            @Module
-            object MyModule {
+            @Component
+            abstract class MyComponent {
+                abstract val compareInt: compare<Int>
                 @Binding
-                fun intComparator(): AliasComparator<Int> = error("")
+                protected fun intComparator(): AliasComparator<Int> = error("")
             }
-            
-            @RootFactory
-            typealias MyFactory = (MyModule) -> TestComponent1<compare<Int>>
 
             @Binding
             fun <T> compare(@Assisted a: T, @Assisted b: T, comparator: AliasComparator<T>): Int = comparator
