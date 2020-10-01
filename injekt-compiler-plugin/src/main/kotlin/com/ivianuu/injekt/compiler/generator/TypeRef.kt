@@ -163,7 +163,10 @@ fun TypeRef.copy(
 
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
     map[classifier]?.let { return it }
-    return copy(typeArguments = typeArguments.map { it.substitute(map) })
+    return copy(
+        typeArguments = typeArguments.map { it.substitute(map) },
+        expandedType = expandedType?.substitute(map)
+    )
 }
 
 fun TypeRef.render(): String {
@@ -192,6 +195,8 @@ fun TypeRef.render(): String {
         if (isMarkedNullable) append("?")
     }
 }
+
+fun TypeRef.renderExpanded() = expandedType?.render() ?: render()
 
 fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
     fun TypeRef.renderName(includeArguments: Boolean = true): String {

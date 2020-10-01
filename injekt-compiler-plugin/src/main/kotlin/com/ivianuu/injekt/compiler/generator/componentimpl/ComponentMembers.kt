@@ -8,7 +8,7 @@ import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.asNameId
-import com.ivianuu.injekt.compiler.generator.render
+import com.ivianuu.injekt.compiler.generator.renderExpanded
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -95,16 +95,16 @@ class ComponentStatements(@Assisted private val owner: ComponentImpl) {
                 emit("run ")
                 braced {
                     emitLine("var value = this@${owner.name}.${property.name}")
-                    emitLine("if (value !== this@${owner.name}) return@run value as ${binding.type.render()}")
+                    emitLine("if (value !== this@${owner.name}) return@run value as ${binding.type.renderExpanded()}")
                     emit("synchronized(this) ")
                     braced {
                         emitLine("value = this@${owner.name}.${property.name}")
-                        emitLine("if (value !== this@${owner.name}) return@run value as ${binding.type.render()}")
+                        emitLine("if (value !== this@${owner.name}) return@run value as ${binding.type.renderExpanded()}")
                         emit("value = ")
                         rawExpression()
                         emitLine()
                         emitLine("this@${owner.name}.${property.name} = value")
-                        emitLine("return@run value as ${binding.type.render()}")
+                        emitLine("return@run value as ${binding.type.renderExpanded()}")
                     }
                 }
             }
@@ -158,7 +158,7 @@ class ComponentStatements(@Assisted private val owner: ComponentImpl) {
                 )
                 emitLine(")")
             }
-            emitLine("result as ${binding.type.render()}")
+            emitLine("result as ${binding.type.renderExpanded()}")
         }
     }
 
@@ -185,7 +185,7 @@ class ComponentStatements(@Assisted private val owner: ComponentImpl) {
                 )
                 emitLine(")")
             }
-            emitLine("result as ${binding.type.render()}")
+            emitLine("result as ${binding.type.renderExpanded()}")
         }
     }
 
@@ -197,7 +197,7 @@ class ComponentStatements(@Assisted private val owner: ComponentImpl) {
             binding.valueParameters
                 .filter { it.isAssisted }
                 .forEachIndexed { index, parameter ->
-                    emit("p$index: ${parameter.type.render()}")
+                    emit("p$index: ${parameter.type.renderExpanded()}")
                     if (index != binding.valueParameters.lastIndex) emit(", ")
                 }
             emitLine(" ->")
@@ -237,7 +237,7 @@ class ComponentStatements(@Assisted private val owner: ComponentImpl) {
         binding.valueParameters
             .filter { it.isAssisted }
             .forEachIndexed { index, parameter ->
-                emit("p$index: ${parameter.type.render()}")
+                emit("p$index: ${parameter.type.renderExpanded()}")
                 if (index != binding.valueParameters.lastIndex) emit(", ")
             }
         emitLine(" ->")

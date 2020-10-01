@@ -8,7 +8,7 @@ import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
-import com.ivianuu.injekt.compiler.generator.render
+import com.ivianuu.injekt.compiler.generator.renderExpanded
 import com.ivianuu.injekt.compiler.generator.substitute
 import org.jetbrains.kotlin.name.Name
 
@@ -65,13 +65,13 @@ class ComponentImpl(
         if (constructorParameters.isNotEmpty()) {
             emit("(")
             constructorParameters.forEachIndexed { index, param ->
-                emit("${param.name}: ${param.type.render()}")
+                emit("${param.name}: ${param.type.renderExpanded()}")
                 if (index != constructorParameters.lastIndex) emit(", ")
             }
             emit(")")
         }
 
-        emit(" : ${componentType.render()}")
+        emit(" : ${componentType.renderExpanded()}")
         if (componentConstructor != null) {
             emit("(")
             constructorParameters.forEachIndexed { index, param ->

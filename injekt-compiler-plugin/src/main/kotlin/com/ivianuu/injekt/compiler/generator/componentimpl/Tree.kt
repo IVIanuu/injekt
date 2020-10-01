@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.ValueParameterRef
 import com.ivianuu.injekt.compiler.generator.render
+import com.ivianuu.injekt.compiler.generator.renderExpanded
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -51,7 +52,7 @@ class ComponentCallable(
         }
         emit("$name")
         if (!isProperty) emit("()")
-        emit(": ${type.render()}")
+        emit(": ${type.renderExpanded()}")
         if (isProperty) {
             if (initializer != null) {
                 emit(" = ")

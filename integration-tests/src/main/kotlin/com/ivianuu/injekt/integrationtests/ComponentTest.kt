@@ -742,4 +742,37 @@ class ComponentTest {
         assertOk()
     }
 
+    @Test
+    fun testBindingsCanBeInternalizedViaInternalTypeAliases() = multiCodegen(
+        listOf(
+            source(
+                """
+                    internal typealias InternalFoo = Foo
+                    
+                    @Module
+                    object MyModule {
+                        @Binding
+                        fun foo(): InternalFoo = Foo()
+                        
+                        @Binding
+                        fun bar(foo: InternalFoo) = Bar(foo)
+                    }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Component 
+                    abstract class MyComponent {
+                        abstract val bar: Bar
+                        
+                        @Module
+                        protected val module = MyModule
+                    }
+                """
+            )
+        )
+    )
+
 }
