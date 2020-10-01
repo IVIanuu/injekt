@@ -22,7 +22,6 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.android.ApplicationModule
-import com.ivianuu.injekt.component
 
 class App : Application() {
     override fun onCreate() {
@@ -36,11 +35,12 @@ class App : Application() {
 lateinit var appComponent: AppComponent
 
 @Component
-abstract class AppComponent(@Binding val app: App) {
+abstract class AppComponent(@Binding val app: Application) {
     abstract val initializeWorkers: initializeWorkers
     abstract val refreshRepo: refreshRepo
     abstract val mainActivityComponentFactory: (ComponentActivity) -> MainActivityComponent
 
     @Module protected val applicationModule = ApplicationModule
+    @Module protected val dataModule = DataModule
     @Module protected val workerModule = SampleWorkerModule
 }

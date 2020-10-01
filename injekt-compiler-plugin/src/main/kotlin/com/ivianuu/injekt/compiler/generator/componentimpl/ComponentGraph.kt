@@ -65,6 +65,7 @@ class GivensGraph(
             val thisAccessStatement: ComponentStatement = {
                 parentAccessStatement()
                 if (parentCallable != null) {
+                    emit(".")
                     emit("${parentCallable!!.name}")
                     if (parentCallable.isCall) emit("()")
                 }
