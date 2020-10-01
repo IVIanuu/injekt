@@ -3,6 +3,7 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.builtins.isFunctionType
+import org.jetbrains.kotlin.builtins.isSuspendFunctionType
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
@@ -48,6 +49,7 @@ sealed class TypeRef {
     abstract val typeArguments: List<TypeRef>
     abstract val variance: Variance
     abstract val isFunction: Boolean
+    abstract val isSuspendFunction: Boolean
     abstract val isBinding: Boolean
     abstract val isChildComponent: Boolean
     abstract val isComposable: Boolean
@@ -70,6 +72,9 @@ class KotlinTypeRef(
     }
     override val isFunction: Boolean by unsafeLazy {
         finalType.isFunctionType
+    }
+    override val isSuspendFunction: Boolean by unsafeLazy {
+        finalType.isSuspendFunctionType
     }
     override val isBinding: Boolean by unsafeLazy {
         (kotlinType.constructor.declarationDescriptor!! as? ClassDescriptor)
@@ -110,6 +115,7 @@ class SimpleTypeRef(
     override val typeArguments: List<TypeRef> = emptyList(),
     override val variance: Variance = Variance.INVARIANT,
     override val isFunction: Boolean = false,
+    override val isSuspendFunction: Boolean = false,
     override val isBinding: Boolean = false,
     override val isChildComponent: Boolean = false,
     override val isFunctionAlias: Boolean = false,
@@ -134,6 +140,7 @@ fun TypeRef.copy(
     typeArguments: List<TypeRef> = this.typeArguments,
     variance: Variance = this.variance,
     isFunction: Boolean = this.isFunction,
+    isSuspendFunction: Boolean = this.isSuspendFunction,
     isBinding: Boolean = this.isBinding,
     isChildComponent: Boolean = this.isChildComponent,
     isComposable: Boolean = this.isComposable,
@@ -146,6 +153,7 @@ fun TypeRef.copy(
     typeArguments,
     variance,
     isFunction,
+    isSuspendFunction,
     isBinding,
     isChildComponent,
     isFunctionAlias,

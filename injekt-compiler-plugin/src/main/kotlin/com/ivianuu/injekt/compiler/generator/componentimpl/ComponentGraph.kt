@@ -315,7 +315,7 @@ class BindingGraph(
             )
         }
 
-        if (type.isFunction && type.typeArguments.size == 1 &&
+        if ((type.isFunction || type.isSuspendFunction) && type.typeArguments.size == 1 &&
                 !type.typeArguments.last().isChildComponent) {
             this += ProviderBindingNode(
                 type = type,

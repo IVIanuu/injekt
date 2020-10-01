@@ -49,7 +49,8 @@ class ComponentStatements(@Assisted private val owner: ComponentImpl) {
     }
 
     fun getBindingExpression(binding: BindingNode): ComponentExpression {
-        val isSuspend = binding is CallableBindingNode && binding.callable.isSuspend
+        val isSuspend = binding is CallableBindingNode && binding.callable.isSuspend &&
+                binding.valueParameters.none { it.isAssisted }
         expressionsByType[binding.type]?.let {
             getCallable(
                 type = binding.type,

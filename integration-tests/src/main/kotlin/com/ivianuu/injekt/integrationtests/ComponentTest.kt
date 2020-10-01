@@ -202,6 +202,45 @@ class ComponentTest {
     }
 
     @Test
+    fun testSuspendProvider() = codegen(
+        """
+            @Component
+            abstract class ProviderComponent {
+                abstract val fooFactory: suspend () -> Foo
+                @Binding
+                protected suspend fun foo() = Foo()
+            }
+
+            fun invoke() {
+                runBlocking {
+                    ProviderComponentImpl().fooFactory()
+                }
+            }
+        """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testAssistedSuspendBindingFunction() = codegen(
+        """
+            @Component
+            abstract class BarComponent {
+                abstract val barFactory: suspend (Foo) -> Bar
+                
+                @Binding
+                protected suspend fun bar(@Assisted foo: Foo) = Bar(foo)
+            }
+
+            fun invoke(foo: Foo): Bar { 
+                return runBlocking { BarComponentImpl().barFactory(foo) }
+            }
+    """
+    ) {
+        invokeSingleFile(Foo())
+    }
+
+    @Test
     fun testAssistedBindingFunction() = codegen(
         """
             @Component
