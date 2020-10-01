@@ -315,7 +315,8 @@ class GivensGraph(
             )
         }
 
-        if (type.isFunction && type.typeArguments.size == 1) {
+        if (type.isFunction && type.typeArguments.size == 1 &&
+                !type.typeArguments.last().isChildComponent) {
             this += ProviderGivenNode(
                 type = type,
                 owner = owner,

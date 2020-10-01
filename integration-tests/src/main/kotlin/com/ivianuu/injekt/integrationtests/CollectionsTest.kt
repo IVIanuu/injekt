@@ -32,30 +32,29 @@ class CollectionsTest {
     @Test
     fun testSimpleMap() = codegen(
         """
-            @Module
-            object MapModule {
+            @Component
+            abstract class MapComponent {
+                abstract val map: Map<KClass<out Command>, Command>
+            
                 @Binding 
-                fun commandA() = CommandA()
+                protected fun commandA() = CommandA()
                 
                 @MapEntries
-                fun commandAIntoMap(
+                protected fun commandAIntoMap(
                     commandA: CommandA
                 ): Map<KClass<out Command>, Command> = mapOf(CommandA::class to commandA)
                 
                 @Binding 
-                fun commandB() = CommandB()
+                protected fun commandB() = CommandB()
         
                 @MapEntries 
-                fun commandBIntoMap(
+                protected fun commandBIntoMap(
                     commandB: CommandB
                 ): Map<KClass<out Command>, Command> = mapOf(CommandB::class to commandB)
             }
             
-            @RootFactory
-            typealias MapFactory = (MapModule) -> TestComponent1<Map<KClass<out Command>, Command>>
-         
             fun invoke(): Map<KClass<out Command>, Command> {
-                return rootFactory<MapFactory>()(MapModule).a
+                return MapComponentImpl().map
             }
         """
     ) {
@@ -68,35 +67,35 @@ class CollectionsTest {
     @Test
     fun testNestedMap() = codegen(
         """
-            @Module
-            object ParentModule {
-                @Binding 
-                fun commandA() = CommandA()
+            @Component
+            abstract class ParentMapComponent {
+                abstract val map: Map<KClass<out Command>, Command>
+
+                abstract val childMapComponentFactory: () -> ChildMapComponent
+            
+                @Binding
+                protected fun commandA() = CommandA()
                 
                 @MapEntries
-                fun commandAIntoMap(commandA: CommandA): Map<KClass<out Command>, Command> = 
+                protected fun commandAIntoMap(commandA: CommandA): Map<KClass<out Command>, Command> = 
                     mapOf(CommandA::class to commandA)
             }
             
-            @Module
-            object ChildModule {
-                @Binding 
-                fun commandB() = CommandB()
-        
+            @ChildComponent
+            abstract class ChildMapComponent {
+                abstract val map: Map<KClass<out Command>, Command>
+            
+                @Binding
+                protected fun commandB() = CommandB()
+                
                 @MapEntries
-                fun commandBIntoMap(commandB: CommandB): Map<KClass<out Command>, Command> = 
+                protected fun commandBIntoMap(commandB: CommandB): Map<KClass<out Command>, Command> = 
                     mapOf(CommandB::class to commandB)
             }
-            
-            @RootFactory
-            typealias MyParentFactory = (ParentModule) -> TestComponent2<Map<KClass<out Command>, Command>, MyChildFactory>
-            
-            @ChildFactory
-            typealias MyChildFactory = (ChildModule) -> TestComponent1<Map<KClass<out Command>, Command>>
          
             fun invoke(): Pair<Map<KClass<out Command>, Command>, Map<KClass<out Command>, Command>> {
-                val parent = rootFactory<MyParentFactory>()(ParentModule)
-                return parent.a to parent.b(ChildModule).a
+                val parent = ParentMapComponentImpl()
+                return parent.map to parent.childMapComponentFactory().map
             }
         """
     ) {
@@ -112,30 +111,29 @@ class CollectionsTest {
     @Test
     fun testAssistedMap() = codegen(
         """
-            @Module
-            object MapModule {
+            @Component
+            abstract class MapComponent {
+                abstract val map: Map<KClass<out Command>, (String) -> Command>
+            
                 @Binding 
-                fun commandA(@Assisted arg: String) = CommandA()
+                protected fun commandA(@Assisted arg: String) = CommandA()
                 
                 @MapEntries
-                fun commandAIntoMap(
+                protected fun commandAIntoMap(
                     commandAFactory: (String) -> CommandA
                 ): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandA::class to commandAFactory)
                 
                 @Binding 
-                fun commandB(@Assisted arg: String) = CommandB()
+                protected fun commandB(@Assisted arg: String) = CommandB()
         
                 @MapEntries 
-                fun commandBIntoMap(
+                protected fun commandBIntoMap(
                     commandBFactory: (String) -> CommandB
                 ): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandB::class to commandBFactory)
             }
-
-            @RootFactory 
-            typealias MapFactory = (MapModule) -> TestComponent1<Map<KClass<out Command>, (String) -> Command>>
          
             fun invoke(): Map<KClass<out Command>, (String) -> Command> {
-                return rootFactory<MapFactory>()(MapModule).a
+                return MapComponentImpl().map
             }
         """
     ) {
@@ -192,35 +190,35 @@ class CollectionsTest {
     @Test
     fun testNestedSet() = codegen(
         """
-            @Module
-            object ParentModule {
-                @Binding 
-                fun commandA() = CommandA()
+            @Component
+            abstract class ParentSetComponent {
+                abstract val set: Set<Command>
+
+                abstract val childSetComponentFactory: () -> ChildSetComponent
+            
+                @Binding
+                protected fun commandA() = CommandA()
                 
                 @SetElements
-                fun commandAIntoSet(commandA: CommandA): Set<Command> = 
+                protected fun commandAIntoSet(commandA: CommandA): Set<Command> = 
                     setOf(commandA)
             }
             
-            @Module
-            object ChildModule {
-                @Binding 
-                fun commandB() = CommandB()
-        
+            @ChildComponent
+            abstract class ChildSetComponent {
+                abstract val set: Set<Command>
+            
+                @Binding
+                protected fun commandB() = CommandB()
+                
                 @SetElements
-                fun commandBIntoSet(commandB: CommandB): Set<Command> = 
+                protected fun commandBIntoSet(commandB: CommandB): Set<Command> = 
                     setOf(commandB)
             }
-            
-            @RootFactory
-            typealias MyParentFactory = (ParentModule) -> TestComponent2<Set<Command>, MyChildFactory>
-            
-            @ChildFactory
-            typealias MyChildFactory = (ChildModule) -> TestComponent1<Set<Command>>
          
             fun invoke(): Pair<Set<Command>, Set<Command>> {
-                val parent = rootFactory<MyParentFactory>()(ParentModule)
-                return parent.a to parent.b(ChildModule).a
+                val parent = ParentSetComponentImpl()
+                return parent.set to parent.childSetComponentFactory().set
             }
         """
     ) {
@@ -235,8 +233,10 @@ class CollectionsTest {
     @Test
     fun testAssistedSet() = codegen(
         """
-            @Module
-            object SetModule {
+            @Component
+            abstract class SetComponent {
+                abstract val set: Set<(String) -> Command>
+                
                 @Binding 
                 fun commandA(@Assisted arg: String) = CommandA()
                 
@@ -254,11 +254,8 @@ class CollectionsTest {
                 ): Set<(String) -> Command> = setOf(commandBFactory)
             }
 
-            @RootFactory 
-            typealias SetFactory = (SetModule) -> TestComponent1<Set<(String) -> Command>>
-         
             fun invoke(): Set<(String) -> Command> {
-                return rootFactory<SetFactory>()(SetModule).a
+                return SetComponentImpl().set
             }
         """
     ) {
