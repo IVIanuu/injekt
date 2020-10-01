@@ -8,6 +8,7 @@ import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
+import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.renderExpanded
 import com.ivianuu.injekt.compiler.generator.substitute
 import org.jetbrains.kotlin.name.Name
@@ -25,14 +26,17 @@ class ComponentImpl(
     val contextTreeNameProvider: UniqueNameProvider =
         parent?.contextTreeNameProvider ?: UniqueNameProvider()
 
-    val statements = statementsFactory(this)
-    val graph = graphFactory(this)
+    val mergeDeclarations =
+        declarationStore.mergeDeclarationsForMergeComponent(componentType.classifier.fqName)
 
     val members = mutableListOf<ComponentMember>()
 
+    val statements = statementsFactory(this)
+    val graph = graphFactory(this)
+
     private val componentConstructor = declarationStore.constructorForComponent(componentType)
 
-    val constructorParameters = if (componentConstructor != null) {
+    private val constructorParameters = if (componentConstructor != null) {
         val substitutionMap = componentType.getSubstitutionMap(componentType.classifier.defaultType)
         componentConstructor
             .valueParameters
@@ -43,7 +47,8 @@ class ComponentImpl(
 
     fun initialize() {
         parent?.members?.add(this)
-        val requests = declarationStore.allCallablesForType(componentType)
+        val requests = (listOf(componentType) + mergeDeclarations)
+            .flatMap { declarationStore.allCallablesForType(it) }
             .filter { it.contributionKind == null }
         graph.checkRequests(requests.map { BindingRequest(it.type, it.fqName) })
         requests.forEach {
@@ -80,6 +85,19 @@ class ComponentImpl(
             }
             emit(") ")
         }
+
+        val mergeSuperTypes = mergeDeclarations
+            .filter { it.classifier.isInterface }
+
+        if (mergeSuperTypes.isNotEmpty()) {
+            emit(", ")
+            mergeSuperTypes.forEachIndexed { index, superType ->
+                emit(superType.render())
+                if (index != mergeSuperTypes.lastIndex) emit(", ")
+            }
+            emitSpace()
+        }
+
         braced {
             val renderedMembers = mutableSetOf<ComponentMember>()
             var currentMembers: List<ComponentMember> = members.toList()

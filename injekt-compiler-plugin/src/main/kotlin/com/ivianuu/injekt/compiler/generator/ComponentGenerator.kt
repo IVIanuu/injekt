@@ -13,19 +13,24 @@ import org.jetbrains.kotlin.resolve.BindingContext
 @Binding
 class ComponentGenerator(
     private val bindingContext: BindingContext,
+    private val declarationStore: DeclarationStore,
     private val fileManager: FileManager,
     private val componentImplFactory: (
         TypeRef,
         Name,
         ComponentImpl?,
-    ) -> ComponentImpl
+    ) -> ComponentImpl,
+    private val supportsMerge: SupportsMerge
 ) : Generator {
     override fun generate(files: List<KtFile>) {
+        var generateMergeComponents = false
         files.forEach { file ->
             file.accept(
                 namedDeclarationRecursiveVisitor { declaration ->
                     val descriptor = declaration.descriptor<DeclarationDescriptor>(bindingContext)
                         ?: return@namedDeclarationRecursiveVisitor
+                    generateMergeComponents = supportsMerge && (generateMergeComponents ||
+                            descriptor.hasAnnotation(InjektFqNames.GenerateMergeComponents))
                     if (descriptor is ClassDescriptor &&
                         descriptor.hasAnnotation(InjektFqNames.Component)
                     ) {
@@ -33,6 +38,10 @@ class ComponentGenerator(
                     }
                 }
             )
+        }
+        if (generateMergeComponents) {
+            declarationStore.mergeComponents
+                .forEach { generateComponent(it) }
         }
     }
 

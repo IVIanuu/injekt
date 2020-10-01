@@ -34,7 +34,7 @@ object InjektFqNames {
 
     val MergePackage = InjektPackage.child("merge".asNameId())
 
-    val BindingModule = MergePackage.child("BindingModule".asNameId())
+    val BindingComponent = MergePackage.child("BindingComponent".asNameId())
     val MergeComponent = MergePackage.child("MergeComponent".asNameId())
     val MergeChildComponent = MergePackage.child("MergeChildComponent".asNameId())
     val MergeInto = MergePackage.child("MergeInto".asNameId())

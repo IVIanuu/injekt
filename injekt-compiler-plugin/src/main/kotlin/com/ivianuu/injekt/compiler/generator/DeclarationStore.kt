@@ -21,16 +21,57 @@ import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 
-@Binding
-class DeclarationStore(
-    private val module: ModuleDescriptor
-) {
+@Binding(GenerationComponent::class)
+class DeclarationStore(private val module: ModuleDescriptor) {
+
+    private val generatedMergeDeclarations = mutableListOf<TypeRef>()
+
+    fun addMergeDeclaration(type: TypeRef) {
+        generatedMergeDeclarations += type
+    }
 
     fun constructorForComponent(type: TypeRef): Callable? {
         return classDescriptorForFqName(type.classifier.fqName)
             .unsubstitutedPrimaryConstructor
             ?.let { callableForDescriptor(it) }
     }
+
+    private val allMergeDeclarations by unsafeLazy {
+        (memberScopeForFqName(InjektFqNames.MergeIndexPackage)
+            ?.getContributedDescriptors(DescriptorKindFilter.VALUES)
+            ?.filterIsInstance<PropertyDescriptor>()
+            ?.map { it.name }
+            ?.map { FqName(it.asString().replace("_", ".")) }
+            ?.map { classDescriptorForFqName(it) }
+            ?: emptyList()) + generatedMergeDeclarations
+            .map { classDescriptorForFqName(it.classifier.fqName) }
+    }
+
+    val mergeComponents: List<TypeRef> by unsafeLazy {
+        allMergeDeclarations
+            .filter { it.hasAnnotation(InjektFqNames.MergeComponent) }
+            .map { it.defaultType.toTypeRef() }
+    }
+
+    private val allDeclarationsByFqName by unsafeLazy {
+        allMergeDeclarations
+            .filter { it.hasAnnotation(InjektFqNames.MergeInto) }
+            .groupBy { declaration ->
+                declaration.annotations.findAnnotation(InjektFqNames.MergeInto)!!
+                    .allValueArguments["component".asNameId()]!!
+                    .let { it as KClassValue }
+                    .getArgumentType(module)
+                    .constructor
+                    .declarationDescriptor!!
+                    .fqNameSafe
+            }
+            .mapValues { (_, values) ->
+                values.map { it.defaultType.toTypeRef() }
+            }
+    }
+
+    fun mergeDeclarationsForMergeComponent(component: FqName): List<TypeRef> =
+        allDeclarationsByFqName[component] ?: emptyList()
 
     private val callablesForType = mutableMapOf<TypeRef, List<Callable>>()
     fun allCallablesForType(type: TypeRef): List<Callable> {

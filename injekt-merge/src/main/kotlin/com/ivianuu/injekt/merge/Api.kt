@@ -15,6 +15,6 @@ annotation class MergeInto(val component: KClass<*>)
 annotation class GenerateMergeComponents
 
 @Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class BindingModule(val component: KClass<*>)
+annotation class BindingComponent(val component: KClass<*>)
 
 fun <T> Any.mergeComponent(): T = this as T

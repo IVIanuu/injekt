@@ -12,8 +12,7 @@ class MergeTest {
             abstract class MyComponent
             
             @MergeInto(MyComponent::class)
-            @Module
-            class MyModule {
+            class ProvideFooComponent {
                 @Binding
                 fun foo() = Foo()
             }
@@ -27,6 +26,38 @@ class MergeTest {
             fun invoke() {
                 val component = MyComponentImpl()
                 val fooComponent = component.mergeComponent<FooComponent>()
+                fooComponent.foo
+            }
+        """
+    )
+
+    @Test
+    fun testMergeChildComponent() = codegen(
+        """
+            @Component
+            abstract class MyParentComponent {
+                abstract val myChildComponentFactory: () -> MyChildComponent
+            }
+            
+            @MergeChildComponent
+            abstract class MyChildComponent
+            
+            @MergeInto(MyChildComponent::class)
+            class ProvideFooComponent {
+                @Binding
+                fun foo() = Foo()
+            }
+            
+            @MergeInto(MyChildComponent::class)
+            interface FooComponent {
+                val foo: Foo
+            }
+            
+            @GenerateMergeComponents
+            fun invoke() {
+                val parentComponent = MyParentComponentImpl()
+                val childComponent = parentComponent.myChildComponentFactory()
+                val fooComponent = childComponent.mergeComponent<FooComponent>()
                 fooComponent.foo
             }
         """

@@ -20,7 +20,7 @@ import java.io.File
 @Binding
 class InjektKtGenerationExtension(
     private val srcDir: SrcDir,
-    private val generationComponentFactory: (ModuleDescriptor, BindingTrace, BindingContext) -> GenerationComponent,
+    private val generationComponentFactory: (ModuleDescriptor, BindingContext) -> GenerationComponent
 ) : PartialAnalysisHandlerExtension() {
 
     override val analyzePartially: Boolean
@@ -44,7 +44,6 @@ class InjektKtGenerationExtension(
             files.removeAll { !File(it.virtualFilePath).exists() }
             val generationComponent = generationComponentFactory(
                 module,
-                bindingTrace,
                 bindingTrace.bindingContext
             )
             val fileManager = generationComponent.fileManager
@@ -86,8 +85,9 @@ class InjektKtGenerationExtension(
         files as List<KtFile>
 
         val generationComponent = generationComponentFactory(
-            module, bindingTrace, bindingTrace.bindingContext
+            module, bindingTrace.bindingContext
         )
+        generationComponent.mergeIndexGenerator.generate(files)
         generationComponent.componentGenerator.generate(files)
         val newFiles = generationComponent.fileManager.newFiles
 

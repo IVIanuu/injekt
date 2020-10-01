@@ -5,6 +5,7 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.builtins.isSuspendFunctionType
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
@@ -22,6 +23,8 @@ data class ClassifierRef(
     val typeParameters: List<ClassifierRef> = emptyList(),
     val superTypes: List<TypeRef> = emptyList(),
     val isTypeParameter: Boolean = false,
+    val isInterface: Boolean = false,
+    val isObject: Boolean = false
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
     override fun hashCode(): Int = fqName.hashCode()
@@ -33,7 +36,9 @@ fun ClassifierDescriptor.toClassifierRef(): ClassifierRef {
         (original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
             ?.map { it.toClassifierRef() } ?: emptyList(),
         (original as? TypeParameterDescriptor)?.upperBounds?.map { it.toTypeRef() } ?: emptyList(),
-        this is TypeParameterDescriptor
+        this is TypeParameterDescriptor,
+        this is ClassDescriptor && kind == ClassKind.INTERFACE,
+        this is ClassDescriptor && kind == ClassKind.OBJECT
     )
 }
 
@@ -51,6 +56,8 @@ sealed class TypeRef {
     abstract val isFunction: Boolean
     abstract val isSuspendFunction: Boolean
     abstract val isBinding: Boolean
+    abstract val isMergeComponent: Boolean
+    abstract val isMergeChildComponent: Boolean
     abstract val isChildComponent: Boolean
     abstract val isComposable: Boolean
     abstract val isFunctionAlias: Boolean
@@ -79,6 +86,12 @@ class KotlinTypeRef(
     override val isBinding: Boolean by unsafeLazy {
         (kotlinType.constructor.declarationDescriptor!! as? ClassDescriptor)
             ?.getInjectConstructor() != null
+    }
+    override val isMergeComponent: Boolean by unsafeLazy {
+        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.MergeComponent)
+    }
+    override val isMergeChildComponent: Boolean by unsafeLazy {
+        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.MergeChildComponent)
     }
     override val isChildComponent: Boolean by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ChildComponent)
@@ -117,6 +130,8 @@ class SimpleTypeRef(
     override val isFunction: Boolean = false,
     override val isSuspendFunction: Boolean = false,
     override val isBinding: Boolean = false,
+    override val isMergeComponent: Boolean = false,
+    override val isMergeChildComponent: Boolean = false,
     override val isChildComponent: Boolean = false,
     override val isFunctionAlias: Boolean = false,
     override val isComposable: Boolean = false,
@@ -142,6 +157,8 @@ fun TypeRef.copy(
     isFunction: Boolean = this.isFunction,
     isSuspendFunction: Boolean = this.isSuspendFunction,
     isBinding: Boolean = this.isBinding,
+    isMergeComponent: Boolean = this.isMergeComponent,
+    isMergeChildComponent: Boolean = this.isMergeChildComponent,
     isChildComponent: Boolean = this.isChildComponent,
     isComposable: Boolean = this.isComposable,
     isFunctionAlias: Boolean = this.isFunctionAlias,
@@ -155,6 +172,8 @@ fun TypeRef.copy(
     isFunction,
     isSuspendFunction,
     isBinding,
+    isMergeComponent,
+    isMergeChildComponent,
     isChildComponent,
     isFunctionAlias,
     isComposable,

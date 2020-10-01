@@ -28,6 +28,7 @@ import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.isAssignable
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.substitute
+import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.name.FqName
@@ -107,6 +108,29 @@ class BindingGraph(
 
         declarationStore.componentForType(componentType)
             .collectBindings(null) { emit("this@${owner.name}") }
+        owner.mergeDeclarations
+            .filterNot { it.classifier.isInterface }
+            .map { declarationStore.componentForType(it) }
+            .onEach { includedComponent ->
+                val callable = ComponentCallable(
+                    name = includedComponent.type.uniqueTypeName(),
+                    isOverride = false,
+                    type = includedComponent.type,
+                    body = null,
+                    isProperty = true,
+                    isSuspend = false,
+                    initializer = {
+                        emit("${includedComponent.type.classifier.fqName}")
+                        if (!includedComponent.type.classifier.isObject)
+                            emit("()")
+                    },
+                    isMutable = false
+                ).also { owner.members += it }
+
+                includedComponent.collectBindings(null) {
+                    emit("this@${owner.name}.${callable.name}")
+                }
+            }
     }
 
     fun checkRequests(requests: List<BindingRequest>) {
@@ -262,7 +286,9 @@ class BindingGraph(
             )
         }
 
-        if (type.isFunction && type.typeArguments.last().isChildComponent) {
+        if (type.isFunction && type.typeArguments.last().let {
+                it.isChildComponent || it.isMergeChildComponent
+            }) {
             // todo check if the arguments match the constructor arguments of the child component
             val childComponentType = type.typeArguments.last()
             val existingComponents = mutableSetOf<TypeRef>()
@@ -316,7 +342,9 @@ class BindingGraph(
         }
 
         if ((type.isFunction || type.isSuspendFunction) && type.typeArguments.size == 1 &&
-                !type.typeArguments.last().isChildComponent) {
+                type.typeArguments.last().let {
+                    !it.isChildComponent && !it.isMergeChildComponent
+                }) {
             this += ProviderBindingNode(
                 type = type,
                 owner = owner,
