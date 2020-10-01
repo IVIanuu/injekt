@@ -193,7 +193,7 @@ class GivensGraph(
                 given = mostSpecific
             } else {
                 error(
-                    "Multiple givens found for '${type.render()}' at:\n${
+                    "Multiple bindings found for '${type.render()}' at:\n${
                     givens
                         .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
                     }"

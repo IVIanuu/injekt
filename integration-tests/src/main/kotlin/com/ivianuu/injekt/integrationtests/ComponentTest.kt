@@ -499,12 +499,17 @@ class ComponentTest {
         listOf(
             source(
                 """
-                    @RootFactory
-                    typealias MyFactory = (Foo1Module, Foo2Module) -> TestComponent2<Foo1, Foo2>
-        
+                    @Component
+                    abstract class MyComponent {
+                        abstract val foo1: Foo1
+                        abstract val foo2: Foo2
+                        
+                        @Module protected val foo1Module = Foo1Module 
+                        @Module protected val foo2Module = Foo2Module
+                    }
                     fun invoke(): Pair<Foo1, Foo2> {
-                        val component = rootFactory<MyFactory>()(Foo1Module, Foo2Module)
-                        return component.a to component.b
+                        val component = MyComponentImpl()
+                        return component.foo1 to component.foo2
                     }
             """,
                 name = "File.kt"
@@ -534,16 +539,14 @@ class ComponentTest {
     @Test
     fun testReturnsInstanceForNullableBinding() = codegen(
         """
-            @Module
-            object FooModule {
-                @Binding fun foo(): Foo = Foo()
+            @Component
+            abstract class FooComponent {
+                abstract val foo: Foo?
+                @Binding protected fun foo(): Foo = Foo()
             }
             
-            @RootFactory
-            typealias MyFactory = (FooModule) -> TestComponent1<Foo?>
-    
             fun invoke(): Foo? {
-                return rootFactory<MyFactory>()(FooModule).a
+                return FooComponentImpl().foo
             }
         """
     ) {
@@ -553,10 +556,12 @@ class ComponentTest {
     @Test
     fun testReturnsNullOnMissingNullableBinding() = codegen(
         """
-            @RootFactory
-            typealias MyFactory = () -> TestComponent1<Foo?>
+            @Component
+            abstract class FooComponent {
+                abstract val foo: Foo?
+            }
             fun invoke(): Foo? { 
-                return rootFactory<MyFactory>()().a
+                return FooComponentImpl().foo
             }
         """
     ) {
@@ -566,23 +571,27 @@ class ComponentTest {
     @Test
     fun testTypeWithStarProjectedArg() = codegen(
         """ 
-            @RootFactory
-            typealias MyFactory = (List<*>) -> TestComponent1<List<*>>
+            @Component
+            abstract class MyComponent(@Binding protected val _list: List<*>) {
+                abstract val list: List<*>
+            }
         """
     )
 
     @Test
-    fun testPrefersInputsOverBinding() = codegen(
+    fun testPrefersExplicitOverImplicitBinding() = codegen(
         """
             @Binding
             class Dep
             
-            @RootFactory
-            typealias MyFactory = (Dep) -> TestComponent1<Dep>
+            @Component
+            abstract class MyComponent(@Binding protected val _dep: Dep) { 
+                abstract val dep: Dep
+            }
             
             fun invoke(): Pair<Any, Any> {
                 val dep = Dep()
-                return dep to rootFactory<MyFactory>()(dep).a
+                return dep to MyComponentImpl(dep).dep
             }
         """
     ) {
@@ -591,26 +600,15 @@ class ComponentTest {
     }
 
     @Test
-    fun testDuplicatedInputsFails() = codegen(
-        """
-            @RootFactory
-            typealias MyFactory = (Foo, Foo) -> TestComponent1<Foo>
-        """
-    ) {
-        assertInternalError("multiple bindings")
-    }
-
-    @Test
     fun testDuplicatedBindingsFails() = codegen(
         """
-            @Module
-            object FooModule {
-                @Binding fun foo1() = Foo()
-                @Binding fun foo2() = Foo()
+            @Component
+            abstract class MyComponent(
+                @Binding protected val foo1: Foo,
+                @Binding protected val foo2: Foo
+            ) {
+                abstract val foo: Foo
             }
-            
-            @RootFactory
-            typealias MyFactory = (FooModule) -> TestComponent1<Foo>
         """
     ) {
         assertInternalError("multiple bindings")
@@ -646,25 +644,22 @@ class ComponentTest {
         assertNotSame(foo1, foo2)
     }
 
-    interface SelfComponent {
-        val self: SelfComponent
-    }
-
     @Test
     fun testInjectingComponent() = codegen(
-        """
-            import com.ivianuu.injekt.integrationtests.ComponentTest.SelfComponent
-            
-            @RootFactory
-            typealias MyFactory = () -> SelfComponent
+        """ 
+            @Component
+            abstract class SelfComponent {
+                abstract val self: SelfComponent
+            }
+
             fun invoke(): Pair<SelfComponent, SelfComponent> {
-                val component = rootFactory<MyFactory>()()
+                val component = SelfComponentImpl()
                 return component to component.self
             }
         """
     ) {
-        val (component1, component2) = invokeSingleFile<Pair<SelfComponent, SelfComponent>>()
-        assertSame(component1, component2)
+        val (a, b) = invokeSingleFile<Pair<Any, Any>>()
+        assertSame(a, b)
     }
 
     @Test
@@ -672,20 +667,19 @@ class ComponentTest {
         """
             class Dep<T>(val value: T)
             
-            @Module
-            object FooModule {
-                @Binding
-                fun <T> genericDep(t: T): Dep<T> = Dep(t)
+            @Component
+            abstract class FooComponent {
+                abstract val fooDep: Dep<Foo>
                 
                 @Binding
-                fun fooDep(foo: Foo): Dep<Foo> = Dep(foo)
+                protected fun <T> genericDep(t: T): Dep<T> = Dep(t)
                 
                 @Binding
-                fun foo() = Foo()
+                protected fun fooDep(foo: Foo): Dep<Foo> = Dep(foo)
+                
+                @Binding
+                protected fun foo() = Foo()
             }
-            
-            @RootFactory
-            typealias MyFactory = (FooModule) -> TestComponent1<Dep<Foo>>
         """
     )
 
