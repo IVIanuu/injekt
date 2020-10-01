@@ -128,7 +128,7 @@ class DeclarationStore(
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.ContributionKind.MAP_ENTRIES
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) -> Callable.ContributionKind.SET_ELEMENTS
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) -> Callable.ContributionKind.MODULE
+                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Component) -> Callable.ContributionKind.COMPONENT
                 else -> null
             },
             typeParameters = descriptor.typeParameters.map { it.toClassifierRef() },
@@ -155,21 +155,20 @@ class DeclarationStore(
         )
     }
 
-    private val moduleByType = mutableMapOf<TypeRef, com.ivianuu.injekt.compiler.generator.ModuleDescriptor>()
-    fun moduleForType(type: TypeRef): com.ivianuu.injekt.compiler.generator.ModuleDescriptor {
-        return moduleByType.getOrPut(type) {
+    private val componentByType = mutableMapOf<TypeRef, ComponentDescriptor>()
+    fun componentForType(type: TypeRef): ComponentDescriptor {
+        return componentByType.getOrPut(type) {
             val descriptor = classDescriptorForFqName(type.classifier.fqName)
             val substitutionMap = type.classifier.typeParameters
                 .zip(type.typeArguments)
                 .toMap()
-            ModuleDescriptor(
+            ComponentDescriptor(
                 type = type,
                 callables = descriptor.unsubstitutedMemberScope.getContributedDescriptors().filter {
-                    it.hasAnnotationWithPropertyAndClass(
-                        InjektFqNames.Binding
-                    ) || it.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
+                    it.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
+                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
-                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.Module)
+                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.Component)
                 }
                     .mapNotNull {
                         when (it) {

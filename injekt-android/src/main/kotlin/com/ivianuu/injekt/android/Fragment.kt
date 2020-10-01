@@ -22,10 +22,8 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Module
 
-@Module
-class FragmentModule<T : Fragment>(@Binding val fragment: T) {
+class FragmentComponent<T : Fragment>(@Binding val fragment: T) {
     @Binding
     val T.fragment: Fragment
         get() = this

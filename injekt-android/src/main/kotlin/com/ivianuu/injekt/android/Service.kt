@@ -20,14 +20,12 @@ import android.app.Service
 import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Module
 
 typealias ServiceContext = Context
 
 typealias ServiceResources = Resources
 
-@Module
-class ServiceModule<T : Service>(val service: T) {
+class ServiceComponent<T : Service>(val service: T) {
     @Binding
     val T.service: Service
         get() = this

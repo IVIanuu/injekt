@@ -19,8 +19,7 @@ package com.ivianuu.injekt.samples.android
 import android.app.Application
 import androidx.activity.ComponentActivity
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.android.ApplicationModule
+import com.ivianuu.injekt.android.ApplicationComponent
 
 class App : Application() {
     override fun onCreate() {
@@ -39,7 +38,7 @@ abstract class AppComponent(app: App) {
     abstract val refreshRepo: refreshRepo
     abstract val mainActivityComponentFactory: (ComponentActivity) -> MainActivityComponent
 
-    @Module protected val applicationModule = ApplicationModule(app)
-    @Module protected val dataModule = DataModule
-    @Module protected val workerModule = SampleWorkerModule
+    @Component protected val applicationModule = ApplicationComponent(app)
+    @Component protected val dataModule = DataComponent
+    @Component protected val workerModule = SampleWorkerComponent
 }

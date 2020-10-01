@@ -2,14 +2,11 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
-@Target(AnnotationTarget.CLASS)
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class Component
 
 @Target(AnnotationTarget.CLASS)
 annotation class ChildComponent
-
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
-annotation class Module
 
 @Target(
     AnnotationTarget.FUNCTION,

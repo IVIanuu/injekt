@@ -19,8 +19,8 @@ package com.ivianuu.injekt.compiler.generator.componentimpl
 import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.generator.Callable
+import com.ivianuu.injekt.compiler.generator.ComponentDescriptor
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
-import com.ivianuu.injekt.compiler.generator.ModuleDescriptor
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.getInjectConstructor
@@ -58,7 +58,7 @@ class BindingGraph(
     private val chain = mutableListOf<BindingNode>()
 
     init {
-        fun ModuleDescriptor.collectBindings(
+        fun ComponentDescriptor.collectBindings(
             parentCallable: Callable?,
             parentAccessExpression: ComponentExpression,
         ) {
@@ -97,15 +97,15 @@ class BindingGraph(
                             )
                         )
                     }
-                    Callable.ContributionKind.MODULE -> {
-                        declarationStore.moduleForType(callable.type)
+                    Callable.ContributionKind.COMPONENT -> {
+                        declarationStore.componentForType(callable.type)
                             .collectBindings(callable, thisAccessExpression)
                     }
                 }.let {}
             }
         }
 
-        declarationStore.moduleForType(componentType)
+        declarationStore.componentForType(componentType)
             .collectBindings(null) { emit("this@${owner.name}") }
     }
 

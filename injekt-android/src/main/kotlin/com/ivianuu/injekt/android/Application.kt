@@ -20,10 +20,8 @@ import android.app.Application
 import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Module
 
-@Module
-class ApplicationModule<T : Application>(@Binding val application: T) {
+class ApplicationComponent<T : Application>(@Binding val application: T) {
     @Binding
     val T.application: Application
         get() = this

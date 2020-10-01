@@ -17,14 +17,12 @@
 package com.ivianuu.injekt.samples.android
 
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.android.ApplicationContext
 import java.io.File
 
 typealias DatabaseFile = File
 
-@Module
-object DataModule {
+object DataComponent {
     @Binding
     fun databaseFile(applicationContext: ApplicationContext): DatabaseFile =
         applicationContext.cacheDir

@@ -25,7 +25,7 @@ typealias ReceiverContext = Context
 
 typealias ReceiverIntent = Intent
 
-class ReceiverModule<T : BroadcastReceiver>(
+class ReceiverComponent<T : BroadcastReceiver>(
     @Binding val receiver: T,
     @Binding val context: ReceiverContext,
     @Binding val intent: ReceiverIntent

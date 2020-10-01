@@ -23,10 +23,8 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Module
 
-@Module
-class ActivityModule<T : ComponentActivity>(@Binding val activity: T) {
+class ActivityComponent<T : ComponentActivity>(@Binding val activity: T) {
     @Binding
     val T.componentActivity: ComponentActivity
         get() = this

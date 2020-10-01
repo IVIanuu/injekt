@@ -49,7 +49,6 @@ sealed class TypeRef {
     abstract val variance: Variance
     abstract val isFunction: Boolean
     abstract val isBinding: Boolean
-    abstract val isModule: Boolean
     abstract val isChildComponent: Boolean
     abstract val isComposable: Boolean
     abstract val isFunctionAlias: Boolean
@@ -75,9 +74,6 @@ class KotlinTypeRef(
     override val isBinding: Boolean by unsafeLazy {
         (kotlinType.constructor.declarationDescriptor!! as? ClassDescriptor)
             ?.getInjectConstructor() != null
-    }
-    override val isModule: Boolean by unsafeLazy {
-        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.Module)
     }
     override val isChildComponent: Boolean by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ChildComponent)
@@ -115,7 +111,6 @@ class SimpleTypeRef(
     override val variance: Variance = Variance.INVARIANT,
     override val isFunction: Boolean = false,
     override val isBinding: Boolean = false,
-    override val isModule: Boolean = false,
     override val isChildComponent: Boolean = false,
     override val isFunctionAlias: Boolean = false,
     override val isComposable: Boolean = false,
@@ -140,7 +135,6 @@ fun TypeRef.copy(
     variance: Variance = this.variance,
     isFunction: Boolean = this.isFunction,
     isBinding: Boolean = this.isBinding,
-    isModule: Boolean = this.isModule,
     isChildComponent: Boolean = this.isChildComponent,
     isComposable: Boolean = this.isComposable,
     isFunctionAlias: Boolean = this.isFunctionAlias,
@@ -153,7 +147,6 @@ fun TypeRef.copy(
     variance,
     isFunction,
     isBinding,
-    isModule,
     isChildComponent,
     isFunctionAlias,
     isComposable,

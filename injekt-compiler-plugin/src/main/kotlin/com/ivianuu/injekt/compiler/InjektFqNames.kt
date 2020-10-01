@@ -27,7 +27,6 @@ object InjektFqNames {
     val Component = InjektPackage.child("Component".asNameId())
     val ChildComponent = InjektPackage.child("ChildComponent".asNameId())
     val MapEntries = InjektPackage.child("MapEntries".asNameId())
-    val Module = InjektPackage.child("Module".asNameId())
     val SetElements = InjektPackage.child("SetElements".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
