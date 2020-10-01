@@ -25,7 +25,7 @@ import com.ivianuu.injekt.compiler.generator.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
-typealias ComponentStatement = CodeBuilder.() -> Unit
+typealias ComponentExpression = CodeBuilder.() -> Unit
 
 interface ComponentMember {
     fun CodeBuilder.emit()
@@ -36,8 +36,8 @@ class ComponentCallable(
     val type: TypeRef,
     val isProperty: Boolean,
     val isSuspend: Boolean,
-    val initializer: ComponentStatement?,
-    val body: ComponentStatement?,
+    val initializer: ComponentExpression?,
+    val body: ComponentExpression?,
     val isMutable: Boolean,
     var isOverride: Boolean,
 ) : ComponentMember {
@@ -71,95 +71,95 @@ class ComponentCallable(
     }
 }
 
-sealed class GivenNode {
+sealed class BindingNode {
     abstract val type: TypeRef
-    abstract val dependencies: List<GivenRequest>
+    abstract val dependencies: List<BindingRequest>
     abstract val rawType: TypeRef
     abstract val owner: ComponentImpl
     abstract val origin: FqName?
     abstract val targetComponent: TypeRef?
-    abstract val receiver: ComponentStatement?
+    abstract val receiver: ComponentExpression?
 }
 
-class SelfGivenNode(
+class SelfBindingNode(
     override val type: TypeRef,
     val component: ComponentImpl,
-) : GivenNode() {
-    override val dependencies: List<GivenRequest>
+) : BindingNode() {
+    override val dependencies: List<BindingRequest>
         get() = emptyList()
     override val rawType: TypeRef
         get() = type
     override val owner: ComponentImpl get() = component
     override val origin: FqName? get() = null
     override val targetComponent: TypeRef? get() = null
-    override val receiver: ComponentStatement? get() = null
+    override val receiver: ComponentExpression? get() = null
 }
 
-class ChildImplGivenNode(
+class ChildImplBindingNode(
     override val type: TypeRef,
     override val owner: ComponentImpl,
     override val origin: FqName?,
     val childComponentImpl: ComponentImpl,
-) : GivenNode() {
-    override val dependencies: List<GivenRequest>
+) : BindingNode() {
+    override val dependencies: List<BindingRequest>
         get() = emptyList()
     override val rawType: TypeRef
         get() = type
-    override val receiver: ComponentStatement?
+    override val receiver: ComponentExpression?
         get() = null
     override val targetComponent: TypeRef?
         get() = owner.componentType
 }
 
-class CallableGivenNode(
+class CallableBindingNode(
     override val type: TypeRef,
     override val rawType: TypeRef,
     override val owner: ComponentImpl,
-    override val dependencies: List<GivenRequest>,
+    override val dependencies: List<BindingRequest>,
     override val origin: FqName?,
     override val targetComponent: TypeRef?,
-    override val receiver: ComponentStatement?,
+    override val receiver: ComponentExpression?,
     val valueParameters: List<ValueParameterRef>,
     val callable: Callable,
-) : GivenNode() {
+) : BindingNode() {
     override fun toString(): String = "Callable(${callable.type.render()})"
 }
 
-class FunctionAliasGivenNode(
+class FunctionAliasBindingNode(
     override val type: TypeRef,
     override val rawType: TypeRef,
     override val owner: ComponentImpl,
-    override val dependencies: List<GivenRequest>,
+    override val dependencies: List<BindingRequest>,
     override val origin: FqName?,
     override val targetComponent: TypeRef?,
-    override val receiver: ComponentStatement?,
+    override val receiver: ComponentExpression?,
     val valueParameters: List<ValueParameterRef>,
     val callable: Callable,
-) : GivenNode()
+) : BindingNode()
 
-class MapGivenNode(
+class MapBindingNode(
     override val type: TypeRef,
     override val owner: ComponentImpl,
-    override val dependencies: List<GivenRequest>,
+    override val dependencies: List<BindingRequest>,
     val entries: List<CallableWithReceiver>,
-) : GivenNode() {
+) : BindingNode() {
     override val rawType: TypeRef
         get() = type
     override val origin: FqName?
         get() = null
     override val targetComponent: TypeRef?
         get() = null
-    override val receiver: ComponentStatement?
+    override val receiver: ComponentExpression?
         get() = null
 }
 
-class ProviderGivenNode(
+class ProviderBindingNode(
     override val type: TypeRef,
     override val owner: ComponentImpl,
-    override val dependencies: List<GivenRequest>,
+    override val dependencies: List<BindingRequest>,
     override val origin: FqName?,
-) : GivenNode() {
-    override val receiver: ComponentStatement?
+) : BindingNode() {
+    override val receiver: ComponentExpression?
         get() = null
     override val rawType: TypeRef
         get() = type
@@ -167,37 +167,37 @@ class ProviderGivenNode(
         get() = null
 }
 
-class SetGivenNode(
+class SetBindingNode(
     override val type: TypeRef,
     override val owner: ComponentImpl,
-    override val dependencies: List<GivenRequest>,
+    override val dependencies: List<BindingRequest>,
     val elements: List<CallableWithReceiver>,
-) : GivenNode() {
+) : BindingNode() {
     override val rawType: TypeRef
         get() = type
     override val origin: FqName?
         get() = null
     override val targetComponent: TypeRef?
         get() = null
-    override val receiver: ComponentStatement?
+    override val receiver: ComponentExpression?
         get() = null
 }
 
 data class CallableWithReceiver(
     val callable: Callable,
-    val receiver: ComponentStatement?,
+    val receiver: ComponentExpression?,
     val substitutionMap: Map<ClassifierRef, TypeRef>
 )
 
-class NullGivenNode(
+class NullBindingNode(
     override val type: TypeRef,
     override val owner: ComponentImpl,
-) : GivenNode() {
+) : BindingNode() {
     override val rawType: TypeRef
         get() = type
-    override val dependencies: List<GivenRequest>
+    override val dependencies: List<BindingRequest>
         get() = emptyList()
-    override val receiver: ComponentStatement?
+    override val receiver: ComponentExpression?
         get() = null
     override val origin: FqName?
         get() = null
@@ -205,4 +205,4 @@ class NullGivenNode(
         get() = null
 }
 
-data class GivenRequest(val type: TypeRef, val origin: FqName)
+data class BindingRequest(val type: TypeRef, val origin: FqName)

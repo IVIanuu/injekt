@@ -23,7 +23,7 @@ import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.ModuleDescriptor
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.asNameId
-import com.ivianuu.injekt.compiler.generator.getGivenConstructor
+import com.ivianuu.injekt.compiler.generator.getInjectConstructor
 import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.isAssignable
 import com.ivianuu.injekt.compiler.generator.render
@@ -34,9 +34,9 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 @Binding
-class GivensGraph(
+class BindingGraph(
     @Assisted private val owner: ComponentImpl,
-    collectionsFactory: (ComponentImpl, GivenCollections?) -> GivenCollections,
+    collectionsFactory: (ComponentImpl, BindingCollections?) -> BindingCollections,
     private val declarationStore: DeclarationStore,
     private val componentImplFactory: (
         TypeRef,
@@ -49,21 +49,21 @@ class GivensGraph(
 
     private val componentType = owner.componentType
 
-    private val moduleGivenCallables = mutableListOf<CallableWithReceiver>()
+    private val moduleBindingCallables = mutableListOf<CallableWithReceiver>()
 
-    private val collections: GivenCollections = collectionsFactory(owner, parent?.collections)
+    private val collections: BindingCollections = collectionsFactory(owner, parent?.collections)
 
-    val resolvedGivens = mutableMapOf<TypeRef, GivenNode>()
+    val resolvedBindings = mutableMapOf<TypeRef, BindingNode>()
 
-    private val chain = mutableListOf<GivenNode>()
+    private val chain = mutableListOf<BindingNode>()
 
     init {
-        fun ModuleDescriptor.collectGivens(
+        fun ModuleDescriptor.collectBindings(
             parentCallable: Callable?,
-            parentAccessStatement: ComponentStatement,
+            parentAccessExpression: ComponentExpression,
         ) {
-            val thisAccessStatement: ComponentStatement = {
-                parentAccessStatement()
+            val thisAccessExpression: ComponentExpression = {
+                parentAccessExpression()
                 if (parentCallable != null) {
                     emit(".")
                     emit("${parentCallable!!.name}")
@@ -72,80 +72,80 @@ class GivensGraph(
             }
 
             for (callable in callables) {
-                if (callable.givenKind == null) continue
-                when (callable.givenKind) {
-                    Callable.GivenKind.GIVEN -> moduleGivenCallables += CallableWithReceiver(
+                if (callable.contributionKind == null) continue
+                when (callable.contributionKind) {
+                    Callable.ContributionKind.BINDING -> moduleBindingCallables += CallableWithReceiver(
                         callable,
-                        thisAccessStatement,
+                        thisAccessExpression,
                         emptyMap()
                     )
-                    Callable.GivenKind.GIVEN_MAP_ENTRIES -> {
+                    Callable.ContributionKind.MAP_ENTRIES -> {
                         collections.addMapEntries(
                             CallableWithReceiver(
                                 callable,
-                                thisAccessStatement,
+                                thisAccessExpression,
                                 emptyMap()
                             )
                         )
                     }
-                    Callable.GivenKind.GIVEN_SET_ELEMENTS -> {
+                    Callable.ContributionKind.SET_ELEMENTS -> {
                         collections.addSetElements(
                             CallableWithReceiver(
                                 callable,
-                                thisAccessStatement,
+                                thisAccessExpression,
                                 emptyMap()
                             )
                         )
                     }
-                    Callable.GivenKind.MODULE -> {
+                    Callable.ContributionKind.MODULE -> {
                         declarationStore.moduleForType(callable.type)
-                            .collectGivens(callable, thisAccessStatement)
+                            .collectBindings(callable, thisAccessExpression)
                     }
                 }.let {}
             }
         }
 
         declarationStore.moduleForType(componentType)
-            .collectGivens(null) { emit("this@${owner.name}") }
+            .collectBindings(null) { emit("this@${owner.name}") }
     }
 
-    fun checkRequests(requests: List<GivenRequest>) {
+    fun checkRequests(requests: List<BindingRequest>) {
         requests.forEach { check(it) }
     }
 
-    private fun check(given: GivenNode) {
-        if (given in chain) {
+    private fun check(binding: BindingNode) {
+        if (binding in chain) {
             val relevantSubchain = chain.subList(
-                chain.indexOf(given), chain.lastIndex
+                chain.indexOf(binding), chain.lastIndex
             )
             if (relevantSubchain.any {
-                    it is ProviderGivenNode ||
+                    it is ProviderBindingNode ||
                             it.type.classifier.fqName.asString().startsWith("kotlin.Function")
                 }) return
             error(
-                "Circular dependency ${relevantSubchain.map { it.type.render() }} already contains ${given.type.render()} $chain"
+                "Circular dependency ${relevantSubchain.map { it.type.render() }} already contains ${binding.type.render()} $chain"
             )
         }
-        chain.push(given)
-        given
+        chain.push(binding)
+        binding
             .dependencies
             .forEach { check(it) }
-        (given as? ChildImplGivenNode)?.childComponentImpl?.initialize()
+        (binding as? ChildImplBindingNode)?.childComponentImpl?.initialize()
         chain.pop()
     }
 
-    private fun check(request: GivenRequest) {
-        check(getGiven(request))
+    private fun check(request: BindingRequest) {
+        check(getBinding(request))
     }
 
-    fun getGiven(request: GivenRequest): GivenNode {
-        var given = getGivenOrNull(request.type)
-        if (given != null) return given
+    fun getBinding(request: BindingRequest): BindingNode {
+        var binding = getBindingOrNull(request.type)
+        if (binding != null) return binding
 
         if (request.type.isMarkedNullable) {
-            given = NullGivenNode(request.type, owner)
-            resolvedGivens[request.type] = given
-            return given
+            binding = NullBindingNode(request.type, owner)
+            resolvedBindings[request.type] = binding
+            return binding
         }
 
         error(
@@ -155,7 +155,7 @@ class GivensGraph(
                     indendation = "$indendation    "
                 }
                 appendLine("No binding found for '${request.type.render()}' in '${componentType.render()}':")
-                /*chain.push(ChainElement.Given(type))
+                /*chain.push(ChainElement.Binding(type))
                 chain.forEachIndexed { index, element ->
                     if (index == 0) {
                         appendLine("${indendation}runReader call '${element}'")
@@ -163,13 +163,13 @@ class GivensGraph(
                         when (element) {
                             is ChainElement.Call -> {
                                 val lastElement = chain.getOrNull(index - 1)
-                                if (lastElement is ChainElement.Given) {
-                                    appendLine("${indendation}given by '${element}'")
+                                if (lastElement is ChainElement.Binding) {
+                                    appendLine("${indendation}binding by '${element}'")
                                 } else {
                                     appendLine("${indendation}calls reader '${element}'")
                                 }
                             }
-                            is ChainElement.Given -> appendLine("${indendation}requires given '${element}'")
+                            is ChainElement.Binding -> appendLine("${indendation}requires binding '${element}'")
                         }
 
                     }
@@ -181,49 +181,49 @@ class GivensGraph(
         )
     }
 
-    private fun getGivenOrNull(type: TypeRef): GivenNode? {
-        var given = resolvedGivens[type]
-        if (given != null) return given
+    private fun getBindingOrNull(type: TypeRef): BindingNode? {
+        var binding = resolvedBindings[type]
+        if (binding != null) return binding
 
-        val givens = givensForType(type)
+        val bindings = bindingsForType(type)
 
-        if (givens.size > 1) {
-            val mostSpecific = givens.getExact(type)
+        if (bindings.size > 1) {
+            val mostSpecific = bindings.getExact(type)
             if (mostSpecific != null) {
-                given = mostSpecific
+                binding = mostSpecific
             } else {
                 error(
                     "Multiple bindings found for '${type.render()}' at:\n${
-                    givens
+                    bindings
                         .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
                     }"
                 )
             }
         } else {
-            given = givens.singleOrNull()
+            binding = bindings.singleOrNull()
         }
 
-        given?.let {
-            resolvedGivens[type] = it
+        binding?.let {
+            resolvedBindings[type] = it
             return it
         }
 
         if (type.isBinding || type.typeArguments.lastOrNull()?.isBinding == true) {
-            val givenType = if (type.isBinding) type else type.typeArguments.last()
-            given = declarationStore.callableForDescriptor(
-                declarationStore.classDescriptorForFqName(givenType.classifier.fqName)
-                    .getGivenConstructor()!!
+            val bindingType = if (type.isBinding) type else type.typeArguments.last()
+            binding = declarationStore.callableForDescriptor(
+                declarationStore.classDescriptorForFqName(bindingType.classifier.fqName)
+                    .getInjectConstructor()!!
             )
                 .let { callable ->
                     val substitutionMap = type.getSubstitutionMap(callable.type)
-                    CallableGivenNode(
+                    CallableBindingNode(
                         type = type,
                         rawType = callable.type.substitute(substitutionMap),
                         owner = owner,
                         dependencies = callable.valueParameters
                             .filterNot { it.isAssisted }
                             .map {
-                                GivenRequest(
+                                BindingRequest(
                                     it.type.substitute(substitutionMap),
                                     callable.fqName.child(it.name)
                                 )
@@ -240,23 +240,23 @@ class GivensGraph(
                     )
                 }
 
-            given.let {
-                resolvedGivens[type] = it
+            binding.let {
+                resolvedBindings[type] = it
                 return it
             }
         }
 
-        parent?.getGivenOrNull(type)?.let {
-            resolvedGivens[type] = it
+        parent?.getBindingOrNull(type)?.let {
+            resolvedBindings[type] = it
             return it
         }
 
         return null
     }
 
-    private fun givensForType(type: TypeRef): List<GivenNode> = buildList<GivenNode> {
+    private fun bindingsForType(type: TypeRef): List<BindingNode> = buildList<BindingNode> {
         if (type == componentType) {
-            this += SelfGivenNode(
+            this += SelfBindingNode(
                 type = type,
                 component = owner
             )
@@ -277,7 +277,7 @@ class GivensGraph(
                     owner.contextTreeNameProvider("C").asNameId(),
                     owner
                 )
-                this += ChildImplGivenNode(
+                this += ChildImplBindingNode(
                     type = type,
                     owner = owner,
                     origin = null,
@@ -291,14 +291,14 @@ class GivensGraph(
             val substitutionMap = callable.typeParameters
                 .zip(type.typeArguments)
                 .toMap()
-            this += FunctionAliasGivenNode(
+            this += FunctionAliasBindingNode(
                 type = type,
                 rawType = callable.type,
                 owner = owner,
                 dependencies = callable.valueParameters
                     .filterNot { it.isAssisted }
                     .map {
-                        GivenRequest(
+                        BindingRequest(
                             it.type.substitute(substitutionMap),
                             callable.fqName.child(it.name)
                         )
@@ -317,11 +317,11 @@ class GivensGraph(
 
         if (type.isFunction && type.typeArguments.size == 1 &&
                 !type.typeArguments.last().isChildComponent) {
-            this += ProviderGivenNode(
+            this += ProviderBindingNode(
                 type = type,
                 owner = owner,
                 dependencies = listOf(
-                    GivenRequest(
+                    BindingRequest(
                         type.typeArguments.single(),
                         FqName.ROOT // todo
                     )
@@ -330,18 +330,18 @@ class GivensGraph(
             )
         }
 
-        this += moduleGivenCallables
+        this += moduleBindingCallables
             .filter { type.isAssignable(it.callable.type) }
             .map { (callable, receiver) ->
                 val substitutionMap = type.getSubstitutionMap(callable.type)
-                CallableGivenNode(
+                CallableBindingNode(
                     type = type,
                     rawType = callable.type,
                     owner = owner,
                     dependencies = callable.valueParameters
                         .filterNot { it.isAssisted }
                         .map {
-                            GivenRequest(
+                            BindingRequest(
                                 it.type.substitute(substitutionMap),
                                 callable.fqName.child(it.name)
                             )
@@ -361,16 +361,16 @@ class GivensGraph(
         this += collections.getNodes(type)
     }
 
-    private fun List<GivenNode>.getExact(requested: TypeRef): GivenNode? =
+    private fun List<BindingNode>.getExact(requested: TypeRef): BindingNode? =
         singleOrNull { it.rawType == requested }
 }
 
 private fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"
 
 @Binding
-class GivenCollections(
+class BindingCollections(
     @Assisted private val owner: ComponentImpl,
-    @Assisted private val parent: GivenCollections?,
+    @Assisted private val parent: BindingCollections?,
 ) {
 
     private val thisMapEntries = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
@@ -400,19 +400,19 @@ class GivenCollections(
         }
     }
 
-    fun getNodes(type: TypeRef): List<GivenNode> {
+    fun getNodes(type: TypeRef): List<BindingNode> {
         return listOfNotNull(
             getMapEntries(type)
                 .takeIf { it.isNotEmpty() }
                 ?.let { entries ->
-                    MapGivenNode(
+                    MapBindingNode(
                         type = type,
                         owner = owner,
                         dependencies = entries.flatMap { (entry, _, substitutionMap) ->
                             entry.valueParameters
                                 .filterNot { it.isAssisted }
                                 .map {
-                                    GivenRequest(
+                                    BindingRequest(
                                         it.type.substitute(substitutionMap),
                                         entry.fqName.child(it.name)
                                     )
@@ -424,14 +424,14 @@ class GivenCollections(
             getSetElements(type)
                 .takeIf { it.isNotEmpty() }
                 ?.let { elements ->
-                    SetGivenNode(
+                    SetBindingNode(
                         type = type,
                         owner = owner,
                         dependencies = elements.flatMap { (element, _, substitutionMap) ->
                             element.valueParameters
                                 .filterNot { it.isAssisted }
                                 .map {
-                                    GivenRequest(
+                                    BindingRequest(
                                         it.type.substitute(substitutionMap),
                                         element.fqName.child(it.name)
                                     )

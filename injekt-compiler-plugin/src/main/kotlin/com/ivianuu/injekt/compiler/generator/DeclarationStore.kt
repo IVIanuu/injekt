@@ -115,7 +115,7 @@ class DeclarationStore(
             fqName = owner.fqNameSafe,
             type = (
                     if (descriptor.allParameters.any { it.hasAnnotation(InjektFqNames.Assisted) })
-                        descriptor.getGivenFunctionType() else descriptor.returnType!!
+                        descriptor.getBindingFunctionType() else descriptor.returnType!!
                     )
                 .toTypeRef(),
             targetComponent = owner.annotations.findAnnotation(InjektFqNames.Binding)
@@ -124,11 +124,11 @@ class DeclarationStore(
                 ?.let { it as KClassValue }
                 ?.getArgumentType(module)
                 ?.toTypeRef(),
-            givenKind = when {
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.GivenKind.GIVEN
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.GivenKind.GIVEN_MAP_ENTRIES
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) -> Callable.GivenKind.GIVEN_SET_ELEMENTS
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) -> Callable.GivenKind.MODULE
+            contributionKind = when {
+                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
+                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.ContributionKind.MAP_ENTRIES
+                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) -> Callable.ContributionKind.SET_ELEMENTS
+                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) -> Callable.ContributionKind.MODULE
                 else -> null
             },
             typeParameters = descriptor.typeParameters.map { it.toClassifierRef() },

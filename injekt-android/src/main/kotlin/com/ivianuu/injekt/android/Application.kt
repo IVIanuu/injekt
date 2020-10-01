@@ -29,7 +29,7 @@ class ApplicationModule<T : Application>(@Binding val application: T) {
         get() = this
 
     @Binding
-    val Application.givenApplicationContext: ApplicationContext
+    val Application.appContext: ApplicationContext
         get() = this
 
     @Binding

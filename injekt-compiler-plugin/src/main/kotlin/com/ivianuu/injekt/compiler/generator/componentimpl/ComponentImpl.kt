@@ -18,8 +18,8 @@ class ComponentImpl(
     @Assisted val name: Name,
     @Assisted val parent: ComponentImpl?,
     private val declarationStore: DeclarationStore,
-    statementsFactory: (ComponentImpl) -> GivenStatements,
-    graphFactory: (ComponentImpl) -> GivensGraph,
+    statementsFactory: (ComponentImpl) -> ComponentStatements,
+    graphFactory: (ComponentImpl) -> BindingGraph,
 ) : ComponentMember {
 
     val contextTreeNameProvider: UniqueNameProvider =
@@ -44,14 +44,14 @@ class ComponentImpl(
     fun initialize() {
         parent?.members?.add(this)
         val requests = declarationStore.allCallablesForType(componentType)
-            .filter { it.givenKind == null }
-        graph.checkRequests(requests.map { GivenRequest(it.type, it.fqName) })
+            .filter { it.contributionKind == null }
+        graph.checkRequests(requests.map { BindingRequest(it.type, it.fqName) })
         requests.forEach {
             statements.getCallable(
                 type = it.type,
                 name = it.name,
                 isOverride = true,
-                body = statements.getGivenStatement(graph.resolvedGivens[it.type]!!),
+                body = statements.getBindingExpression(graph.resolvedBindings[it.type]!!),
                 isProperty = !it.isCall,
                 isSuspend = it.isSuspend
             )

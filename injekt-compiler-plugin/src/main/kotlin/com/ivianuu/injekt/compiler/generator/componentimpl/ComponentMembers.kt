@@ -14,16 +14,16 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 @Binding
-class GivenStatements(@Assisted private val owner: ComponentImpl) {
+class ComponentStatements(@Assisted private val owner: ComponentImpl) {
 
     private val parent = owner.parent?.statements
-    private val statementsByType = mutableMapOf<TypeRef, ComponentStatement>()
+    private val expressionsByType = mutableMapOf<TypeRef, ComponentExpression>()
 
     fun getCallable(
         type: TypeRef,
         name: Name,
         isOverride: Boolean,
-        body: ComponentStatement,
+        body: ComponentExpression,
         isProperty: Boolean,
         isSuspend: Boolean
     ): ComponentCallable {
@@ -48,12 +48,12 @@ class GivenStatements(@Assisted private val owner: ComponentImpl) {
         return callable
     }
 
-    fun getGivenStatement(given: GivenNode): ComponentStatement {
-        val isSuspend = given is CallableGivenNode && given.callable.isSuspend
-        statementsByType[given.type]?.let {
+    fun getBindingExpression(binding: BindingNode): ComponentExpression {
+        val isSuspend = binding is CallableBindingNode && binding.callable.isSuspend
+        expressionsByType[binding.type]?.let {
             getCallable(
-                type = given.type,
-                name = given.type.uniqueTypeName(),
+                type = binding.type,
+                name = binding.type.uniqueTypeName(),
                 isOverride = false,
                 body = it,
                 isSuspend = isSuspend,
@@ -62,27 +62,27 @@ class GivenStatements(@Assisted private val owner: ComponentImpl) {
             return it
         }
 
-        val rawStatement = if (given.owner != owner) {
-            parent!!.getGivenStatement(given)
+        val rawExpression = if (binding.owner != owner) {
+            parent!!.getBindingExpression(binding)
         } else {
-            when (given) {
-                is ChildImplGivenNode -> childFactoryExpression(given)
-                is CallableGivenNode -> callableExpression(given)
-                is FunctionAliasGivenNode -> functionAliasExpression(given)
-                is MapGivenNode -> mapExpression(given)
-                is NullGivenNode -> nullExpression()
-                is ProviderGivenNode -> providerExpression(given)
-                is SelfGivenNode -> selfContextExpression(given)
-                is SetGivenNode -> setExpression(given)
+            when (binding) {
+                is ChildImplBindingNode -> childFactoryExpression(binding)
+                is CallableBindingNode -> callableExpression(binding)
+                is FunctionAliasBindingNode -> functionAliasExpression(binding)
+                is MapBindingNode -> mapExpression(binding)
+                is NullBindingNode -> nullExpression()
+                is ProviderBindingNode -> providerExpression(binding)
+                is SelfBindingNode -> selfContextExpression(binding)
+                is SetBindingNode -> setExpression(binding)
             }
         }
 
-        val finalStatement = if (given.targetComponent == null ||
-            given.owner != owner
-        ) rawStatement else (
+        val finalExpression = if (binding.targetComponent == null ||
+            binding.owner != owner
+        ) rawExpression else (
             {
                 val property = ComponentCallable(
-                    name = "_${given.type.uniqueTypeName()}".asNameId(),
+                    name = "_${binding.type.uniqueTypeName()}".asNameId(),
                     type = SimpleTypeRef(ClassifierRef(FqName("kotlin.Any")), isMarkedNullable = true),
                     initializer = { emit("this") },
                     isMutable = true,
@@ -95,60 +95,60 @@ class GivenStatements(@Assisted private val owner: ComponentImpl) {
                 emit("run ")
                 braced {
                     emitLine("var value = this@${owner.name}.${property.name}")
-                    emitLine("if (value !== this@${owner.name}) return@run value as ${given.type.render()}")
+                    emitLine("if (value !== this@${owner.name}) return@run value as ${binding.type.render()}")
                     emit("synchronized(this) ")
                     braced {
                         emitLine("value = this@${owner.name}.${property.name}")
-                        emitLine("if (value !== this@${owner.name}) return@run value as ${given.type.render()}")
+                        emitLine("if (value !== this@${owner.name}) return@run value as ${binding.type.render()}")
                         emit("value = ")
-                        rawStatement()
+                        rawExpression()
                         emitLine()
                         emitLine("this@${owner.name}.${property.name} = value")
-                        emitLine("return@run value as ${given.type.render()}")
+                        emitLine("return@run value as ${binding.type.render()}")
                     }
                 }
             }
             )
 
-        val callableName = given.type.uniqueTypeName()
+        val callableName = binding.type.uniqueTypeName()
 
         getCallable(
-            type = given.type,
+            type = binding.type,
             name = callableName,
             isOverride = false,
-            body = finalStatement,
+            body = finalExpression,
             isProperty = !isSuspend,
             isSuspend = isSuspend
         )
 
-        val statement: ComponentStatement = {
+        val expression: ComponentExpression = {
             emit("this@${owner.name}.$callableName")
             if (isSuspend) emit("()")
         }
 
-        statementsByType[given.type] = statement
+        expressionsByType[binding.type] = expression
 
-        return statement
+        return expression
     }
 
-    private fun childFactoryExpression(given: ChildImplGivenNode): ComponentStatement = {
-        emit("::${given.childComponentImpl.name}")
+    private fun childFactoryExpression(binding: ChildImplBindingNode): ComponentExpression = {
+        emit("::${binding.childComponentImpl.name}")
     }
 
-    private fun mapExpression(given: MapGivenNode): ComponentStatement = {
+    private fun mapExpression(binding: MapBindingNode): ComponentExpression = {
         emit("run ")
         braced {
             emitLine("val result = mutableMapOf<Any?, Any?>()")
-            given.entries.forEach { (callable, receiver) ->
+            binding.entries.forEach { (callable, receiver) ->
                 emit("result.putAll(")
                 emitCallableInvocation(
                     callable,
                     receiver,
                     callable.valueParameters
                         .map {
-                            getGivenStatement(
-                                owner.graph.getGiven(
-                                    GivenRequest(
+                            getBindingExpression(
+                                owner.graph.getBinding(
+                                    BindingRequest(
                                         it.type,
                                         callable.fqName.child(it.name)
                                     )
@@ -158,24 +158,24 @@ class GivenStatements(@Assisted private val owner: ComponentImpl) {
                 )
                 emitLine(")")
             }
-            emitLine("result as ${given.type.render()}")
+            emitLine("result as ${binding.type.render()}")
         }
     }
 
-    private fun setExpression(given: SetGivenNode): ComponentStatement = {
+    private fun setExpression(binding: SetBindingNode): ComponentExpression = {
         emit("run ")
         braced {
             emitLine("val result = mutableSetOf<Any?>()")
-            given.elements.forEach { (callable, receiver) ->
+            binding.elements.forEach { (callable, receiver) ->
                 emit("result.addAll(")
                 emitCallableInvocation(
                     callable,
                     receiver,
                     callable.valueParameters
                         .map {
-                            getGivenStatement(
-                                owner.graph.getGiven(
-                                    GivenRequest(
+                            getBindingExpression(
+                                owner.graph.getBinding(
+                                    BindingRequest(
                                         it.type,
                                         callable.fqName.child(it.name)
                                     )
@@ -185,36 +185,36 @@ class GivenStatements(@Assisted private val owner: ComponentImpl) {
                 )
                 emitLine(")")
             }
-            emitLine("result as ${given.type.render()}")
+            emitLine("result as ${binding.type.render()}")
         }
     }
 
-    private fun nullExpression(): ComponentStatement = { emit("null") }
+    private fun nullExpression(): ComponentExpression = { emit("null") }
 
-    private fun callableExpression(given: CallableGivenNode): ComponentStatement = {
-        if (given.valueParameters.any { it.isAssisted }) {
+    private fun callableExpression(binding: CallableBindingNode): ComponentExpression = {
+        if (binding.valueParameters.any { it.isAssisted }) {
             emit("{ ")
-            given.valueParameters
+            binding.valueParameters
                 .filter { it.isAssisted }
                 .forEachIndexed { index, parameter ->
                     emit("p$index: ${parameter.type.render()}")
-                    if (index != given.valueParameters.lastIndex) emit(", ")
+                    if (index != binding.valueParameters.lastIndex) emit(", ")
                 }
             emitLine(" ->")
             var assistedIndex = 0
             var nonAssistedIndex = 0
             emitCallableInvocation(
-                given.callable,
-                given.receiver,
-                given.valueParameters.map { parameter ->
+                binding.callable,
+                binding.receiver,
+                binding.valueParameters.map { parameter ->
                     if (parameter.isAssisted) {
                         { emit("p${assistedIndex++}") }
                     } else {
-                        getGivenStatement(
-                            owner.graph.getGiven(
-                                GivenRequest(
-                                    given.dependencies[nonAssistedIndex++].type,
-                                    given.callable.fqName.child(parameter.name)
+                        getBindingExpression(
+                            owner.graph.getBinding(
+                                BindingRequest(
+                                    binding.dependencies[nonAssistedIndex++].type,
+                                    binding.callable.fqName.child(parameter.name)
                                 )
                             )
                         )
@@ -225,36 +225,36 @@ class GivenStatements(@Assisted private val owner: ComponentImpl) {
             emitLine("}")
         } else {
             emitCallableInvocation(
-                given.callable,
-                given.receiver,
-                given.dependencies.map { getGivenStatement(owner.graph.getGiven(it)) }
+                binding.callable,
+                binding.receiver,
+                binding.dependencies.map { getBindingExpression(owner.graph.getBinding(it)) }
             )
         }
     }
 
-    private fun functionAliasExpression(given: FunctionAliasGivenNode): ComponentStatement = {
+    private fun functionAliasExpression(binding: FunctionAliasBindingNode): ComponentExpression = {
         emit("{ ")
-        given.valueParameters
+        binding.valueParameters
             .filter { it.isAssisted }
             .forEachIndexed { index, parameter ->
                 emit("p$index: ${parameter.type.render()}")
-                if (index != given.valueParameters.lastIndex) emit(", ")
+                if (index != binding.valueParameters.lastIndex) emit(", ")
             }
         emitLine(" ->")
         var assistedIndex = 0
         var nonAssistedIndex = 0
         emitCallableInvocation(
-            given.callable,
-            given.receiver,
-            given.valueParameters.map { parameter ->
+            binding.callable,
+            binding.receiver,
+            binding.valueParameters.map { parameter ->
                 if (parameter.isAssisted) {
                     { emit("p${assistedIndex++}") }
                 } else {
-                    getGivenStatement(
-                        owner.graph.getGiven(
-                            GivenRequest(
-                                given.dependencies[nonAssistedIndex++].type,
-                                given.callable.fqName.child(parameter.name)
+                    getBindingExpression(
+                        owner.graph.getBinding(
+                            BindingRequest(
+                                binding.dependencies[nonAssistedIndex++].type,
+                                binding.callable.fqName.child(parameter.name)
                             )
                         )
                     )
@@ -265,19 +265,19 @@ class GivenStatements(@Assisted private val owner: ComponentImpl) {
         emitLine("}")
     }
 
-    private fun providerExpression(given: ProviderGivenNode): ComponentStatement = {
-        braced { getGivenStatement(owner.graph.getGiven(given.dependencies.single()))() }
+    private fun providerExpression(binding: ProviderBindingNode): ComponentExpression = {
+        braced { getBindingExpression(owner.graph.getBinding(binding.dependencies.single()))() }
     }
 
-    private fun selfContextExpression(given: SelfGivenNode): ComponentStatement = {
-        emit("this@${given.component.name}")
+    private fun selfContextExpression(binding: SelfBindingNode): ComponentExpression = {
+        emit("this@${binding.component.name}")
     }
 }
 
 private fun CodeBuilder.emitCallableInvocation(
     callable: Callable,
-    receiver: ComponentStatement?,
-    arguments: List<ComponentStatement>,
+    receiver: ComponentExpression?,
+    arguments: List<ComponentExpression>,
 ) {
     fun emitArguments() {
         if (callable.isCall) {

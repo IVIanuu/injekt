@@ -39,7 +39,7 @@ fun DeclarationDescriptor.hasAnnotationWithPropertyAndClass(
     (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotation(fqName)) ||
     (this is ConstructorDescriptor && constructedClass.hasAnnotation(fqName))
 
-fun ClassDescriptor.getGivenConstructor(): ConstructorDescriptor? {
+fun ClassDescriptor.getInjectConstructor(): ConstructorDescriptor? {
     constructors
         .firstOrNull { it.hasAnnotation(InjektFqNames.Binding) }?.let { return it }
     if (!hasAnnotation(InjektFqNames.Binding)) return null
@@ -68,7 +68,7 @@ fun String.removeIllegalChars() =
 fun Annotated.hasAnnotation(fqName: FqName): Boolean =
     annotations.hasAnnotation(fqName)
 
-fun FunctionDescriptor.getGivenFunctionType(): KotlinType {
+fun FunctionDescriptor.getBindingFunctionType(): KotlinType {
     val assistedParameters =
         (listOfNotNull(extensionReceiverParameter) + valueParameters)
             .filter { it.hasAnnotation(InjektFqNames.Assisted) }

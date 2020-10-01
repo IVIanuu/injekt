@@ -74,7 +74,7 @@ class KotlinTypeRef(
     }
     override val isBinding: Boolean by unsafeLazy {
         (kotlinType.constructor.declarationDescriptor!! as? ClassDescriptor)
-            ?.getGivenConstructor() != null
+            ?.getInjectConstructor() != null
     }
     override val isModule: Boolean by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.Module)
