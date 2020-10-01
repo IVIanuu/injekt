@@ -25,4 +25,5 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mv
 
 dependencies {
     api(project(":injekt-core"))
+    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
 }

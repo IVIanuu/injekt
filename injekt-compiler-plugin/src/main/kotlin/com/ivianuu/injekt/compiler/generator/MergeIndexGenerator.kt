@@ -5,7 +5,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.classRecursiveVisitor
+import org.jetbrains.kotlin.psi.classOrObjectRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -21,9 +21,9 @@ class MergeIndexGenerator(
         files.forEach { file ->
             val indices = mutableListOf<FqName>()
             file.accept(
-                classRecursiveVisitor { declaration ->
+                classOrObjectRecursiveVisitor { declaration ->
                     val descriptor = declaration.descriptor<ClassDescriptor>(bindingContext)
-                        ?: return@classRecursiveVisitor
+                        ?: return@classOrObjectRecursiveVisitor
                     if (descriptor.hasAnnotation(InjektFqNames.MergeComponent) ||
                             descriptor.hasAnnotation(InjektFqNames.MergeChildComponent) ||
                             descriptor.hasAnnotation(InjektFqNames.MergeInto)) {
@@ -34,7 +34,7 @@ class MergeIndexGenerator(
             )
 
             if (indices.isNotEmpty()) {
-                val fileName = file.packageFqName.pathSegments().joinToString("_") + "_${file.name.removeSuffix(".kt")}"
+                val fileName = file.packageFqName.pathSegments().joinToString("_") + "_${file.name}"
                 fileManager.generateFile(
                     packageFqName = InjektFqNames.MergeIndexPackage,
                     fileName = fileName,

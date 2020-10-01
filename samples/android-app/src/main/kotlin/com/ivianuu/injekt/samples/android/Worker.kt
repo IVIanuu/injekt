@@ -24,12 +24,10 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.android.ApplicationContext
-import com.ivianuu.injekt.android.work.WorkerComponent
-import com.ivianuu.injekt.android.work.WorkerInjectionComponent
+import com.ivianuu.injekt.android.work.WorkerBinding
 
-@Binding
+@WorkerBinding
 class TestWorker(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
@@ -40,11 +38,6 @@ class TestWorker(
     }
 
     override suspend fun doWork(): Result = Result.success()
-}
-
-object SampleWorkerComponent {
-    @Component val workerInjectionModule = WorkerInjectionComponent
-    @Component val testWorkerModule = WorkerComponent<TestWorker>()
 }
 
 @Binding

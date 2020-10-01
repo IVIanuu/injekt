@@ -19,12 +19,25 @@ package com.ivianuu.injekt.android
 import android.app.Application
 import android.content.Context
 import android.content.res.Resources
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.merge.App
+import com.ivianuu.injekt.merge.ApplicationComponent
+import com.ivianuu.injekt.merge.MergeInto
 
-class ApplicationComponent<T : Application>(@Binding val application: T) {
+val Application.applicationComponent: ApplicationComponent
+    get() = ProcessLifecycleOwner.get().lifecycle.singleton {
+        Class.forName("com.ivianuu.injekt.merge.ApplicationComponentImpl")
+            .constructors
+            .single()
+            .newInstance(this) as ApplicationComponent
+    }
+
+@MergeInto(ApplicationComponent::class)
+class MergeAndroidApplicationComponent {
     @Binding
-    val T.application: Application
-        get() = this
+    val App.application: Application
+        get() = this as Application
 
     @Binding
     val Application.appContext: ApplicationContext

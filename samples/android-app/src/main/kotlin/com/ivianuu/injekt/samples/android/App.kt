@@ -17,28 +17,27 @@
 package com.ivianuu.injekt.samples.android
 
 import android.app.Application
-import androidx.activity.ComponentActivity
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.android.ApplicationComponent
+import com.ivianuu.injekt.android.applicationComponent
+import com.ivianuu.injekt.merge.ApplicationComponent
+import com.ivianuu.injekt.merge.GenerateMergeComponents
+import com.ivianuu.injekt.merge.MergeInto
+import com.ivianuu.injekt.merge.mergeComponent
 
+@GenerateMergeComponents
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
-        appComponent = AppComponentImpl(this)
-        appComponent.initializeWorkers()
-        appComponent.refreshRepo()
+        applicationComponent
+            .mergeComponent<SampleAppComponent>()
+            .run {
+                initializeWorkers()
+                refreshRepo()
+            }
     }
 }
 
-lateinit var appComponent: AppComponent
-
-@Component
-abstract class AppComponent(app: App) {
-    abstract val initializeWorkers: initializeWorkers
-    abstract val refreshRepo: refreshRepo
-    abstract val mainActivityComponentFactory: (ComponentActivity) -> MainActivityComponent
-
-    @Component protected val applicationModule = ApplicationComponent(app)
-    @Component protected val dataModule = DataComponent
-    @Component protected val workerModule = SampleWorkerComponent
+@MergeInto(ApplicationComponent::class)
+interface SampleAppComponent {
+    val initializeWorkers: initializeWorkers
+    val refreshRepo: refreshRepo
 }

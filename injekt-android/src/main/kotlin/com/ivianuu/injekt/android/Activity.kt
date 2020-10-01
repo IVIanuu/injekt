@@ -23,30 +23,37 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.merge.MergeChildComponent
+import com.ivianuu.injekt.merge.MergeInto
+import com.ivianuu.injekt.merge.mergeComponent
 
-class ActivityComponent<T : ComponentActivity>(@Binding val activity: T) {
+val ComponentActivity.activityComponent: ActivityComponent
+    get() = lifecycle.singleton {
+        retainedActivityComponent
+            .mergeComponent<ActivityComponentFactoryOwner>()
+            .activityComponentFactoryOwner(this)
+    }
+
+@MergeChildComponent
+abstract class ActivityComponent(@Binding protected val activity: ComponentActivity) {
     @Binding
-    val T.componentActivity: ComponentActivity
+    protected val ComponentActivity.activityContext: ActivityContext
         get() = this
 
     @Binding
-    val ComponentActivity.activityContext: ActivityContext
-        get() = this
-
-    @Binding
-    val ComponentActivity.activityResources: ActivityResources
+    protected val ComponentActivity.activityResources: ActivityResources
         get() = resources
 
     @Binding
-    val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
+    protected val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
         get() = this
 
     @Binding
-    val ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
+    protected val ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
         get() = this
 
     @Binding
-    val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
+    protected val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
         get() = this
 }
 
@@ -59,3 +66,8 @@ typealias ActivityLifecycleOwner = LifecycleOwner
 typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
 
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
+
+@MergeInto(RetainedActivityComponent::class)
+interface ActivityComponentFactoryOwner {
+    val activityComponentFactoryOwner: (ComponentActivity) -> ActivityComponent
+}

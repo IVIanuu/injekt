@@ -22,30 +22,29 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.merge.MergeChildComponent
+import com.ivianuu.injekt.merge.MergeInto
 
-class FragmentComponent<T : Fragment>(@Binding val fragment: T) {
+@MergeChildComponent
+abstract class FragmentComponent(@Binding protected val fragment: Fragment) {
     @Binding
-    val T.fragment: Fragment
-        get() = this
-
-    @Binding
-    val Fragment.fragmentContext: FragmentContext
+    protected val Fragment.fragmentContext: FragmentContext
         get() = requireContext()
 
     @Binding
-    val FragmentContext.fragmentResources: FragmentResources
+    protected val FragmentContext.fragmentResources: FragmentResources
         get() = resources
 
     @Binding
-    val Fragment.fragmentLifecycleOwner: FragmentLifecycleOwner
+    protected val Fragment.fragmentLifecycleOwner: FragmentLifecycleOwner
         get() = this
 
     @Binding
-    val Fragment.fragmentSavedStateRegistryOwner: FragmentSavedStateRegistryOwner
+    protected val Fragment.fragmentSavedStateRegistryOwner: FragmentSavedStateRegistryOwner
         get() = this
 
     @Binding
-    val Fragment.fragmentViewModelStoreOwner: FragmentViewModelStoreOwner
+    protected val Fragment.fragmentViewModelStoreOwner: FragmentViewModelStoreOwner
         get() = this
 }
 
@@ -58,3 +57,8 @@ typealias FragmentLifecycleOwner = LifecycleOwner
 typealias FragmentSavedStateRegistryOwner = SavedStateRegistryOwner
 
 typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
+
+@MergeInto(ActivityComponent::class)
+interface FragmentComponentFactoryOwner {
+    val fragmentComponentFactoryOwner: (Fragment) -> FragmentComponent
+}

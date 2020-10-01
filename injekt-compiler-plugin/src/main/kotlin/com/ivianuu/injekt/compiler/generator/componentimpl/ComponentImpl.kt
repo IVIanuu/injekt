@@ -47,7 +47,8 @@ class ComponentImpl(
 
     fun initialize() {
         parent?.members?.add(this)
-        val requests = (listOf(componentType) + mergeDeclarations)
+        val requests = (listOf(componentType) + mergeDeclarations
+            .filter { it.classifier.isInterface })
             .flatMap { declarationStore.allCallablesForType(it) }
             .filter { it.contributionKind == null }
         graph.checkRequests(requests.map { BindingRequest(it.type, it.fqName) })
