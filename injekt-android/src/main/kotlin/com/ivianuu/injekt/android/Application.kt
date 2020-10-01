@@ -23,7 +23,11 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Module
 
 @Module
-object ApplicationModule {
+class ApplicationModule<T : Application>(@Binding val application: T) {
+    @Binding
+    val T.application: Application
+        get() = this
+
     @Binding
     val Application.givenApplicationContext: ApplicationContext
         get() = this

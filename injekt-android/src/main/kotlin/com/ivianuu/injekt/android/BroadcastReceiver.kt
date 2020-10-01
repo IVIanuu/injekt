@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.ivianuu.injekt.Binding
@@ -24,7 +25,12 @@ typealias ReceiverContext = Context
 
 typealias ReceiverIntent = Intent
 
-class ReceiverModule(
+class ReceiverModule<T : BroadcastReceiver>(
+    @Binding val receiver: T,
     @Binding val context: ReceiverContext,
     @Binding val intent: ReceiverIntent
-)
+) {
+    @Binding
+    val T.broadcastReceiver: BroadcastReceiver
+        get() = this
+}

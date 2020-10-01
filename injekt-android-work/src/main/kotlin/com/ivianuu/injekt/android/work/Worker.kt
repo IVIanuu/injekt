@@ -59,4 +59,3 @@ class InjektWorkerFactory(private val workers: Workers) : WorkerFactory() {
         )
     }
 }
-

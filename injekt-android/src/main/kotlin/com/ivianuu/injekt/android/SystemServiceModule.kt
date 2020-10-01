@@ -77,8 +77,10 @@ import android.view.inputmethod.InputMethodManager
 import android.view.textservice.TextServicesManager
 import androidx.core.content.ContextCompat
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.Module
 
-object SystemServiceComponent {
+@Module
+object SystemServiceModule {
     @Binding
     val Context.accessibilityManager
         get() = systemService<AccessibilityManager>()

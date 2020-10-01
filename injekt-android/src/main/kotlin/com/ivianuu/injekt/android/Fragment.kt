@@ -25,7 +25,11 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Module
 
 @Module
-object FragmentModule {
+class FragmentModule<T : Fragment>(@Binding val fragment: T) {
+    @Binding
+    val T.fragment: Fragment
+        get() = this
+
     @Binding
     val Fragment.fragmentContext: FragmentContext
         get() = requireContext()

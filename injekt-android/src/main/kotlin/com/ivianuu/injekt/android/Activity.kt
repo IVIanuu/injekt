@@ -26,7 +26,12 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Module
 
 @Module
-object ActivityModule {
+class ActivityModule<T : ComponentActivity>(@Binding val activity: T) {
+
+    @Binding
+    val T.componentActivity: ComponentActivity
+        get() = this
+
     @Binding
     val ComponentActivity.activityContext: ActivityContext
         get() = this

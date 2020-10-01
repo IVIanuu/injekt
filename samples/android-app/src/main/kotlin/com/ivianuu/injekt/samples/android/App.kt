@@ -18,7 +18,6 @@ package com.ivianuu.injekt.samples.android
 
 import android.app.Application
 import androidx.activity.ComponentActivity
-import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.android.ApplicationModule
@@ -35,12 +34,12 @@ class App : Application() {
 lateinit var appComponent: AppComponent
 
 @Component
-abstract class AppComponent(@Binding val app: Application) {
+abstract class AppComponent(app: App) {
     abstract val initializeWorkers: initializeWorkers
     abstract val refreshRepo: refreshRepo
     abstract val mainActivityComponentFactory: (ComponentActivity) -> MainActivityComponent
 
-    @Module protected val applicationModule = ApplicationModule
+    @Module protected val applicationModule = ApplicationModule(app)
     @Module protected val dataModule = DataModule
     @Module protected val workerModule = SampleWorkerModule
 }

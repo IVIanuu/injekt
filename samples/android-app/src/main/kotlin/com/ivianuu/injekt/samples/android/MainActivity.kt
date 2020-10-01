@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.samples.android
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -52,14 +51,12 @@ class MainActivity : AppCompatActivity() {
 }
 
 @ChildComponent
-abstract class MainActivityComponent(
-    @Binding protected val activity: ComponentActivity
-) {
+abstract class MainActivityComponent(activity: MainActivity) {
     abstract val WithMainViewModel: WithMainViewModel
     abstract val enqueueWork: enqueueWork
 
     @Module
-    protected val activityModule = ActivityModule
+    protected val activityModule = ActivityModule(activity)
     @Module
     protected val dataModule = DataModule
 }

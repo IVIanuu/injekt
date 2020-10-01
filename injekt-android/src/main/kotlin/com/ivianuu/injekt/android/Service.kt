@@ -27,7 +27,11 @@ typealias ServiceContext = Context
 typealias ServiceResources = Resources
 
 @Module
-object ServiceModule {
+class ServiceModule<T : Service>(val service: T) {
+    @Binding
+    val T.service: Service
+        get() = this
+
     @Binding
     val Service.serviceContext: ServiceContext
         get() = this
