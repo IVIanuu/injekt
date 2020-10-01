@@ -1,6 +1,6 @@
 package com.ivianuu.injekt.compiler.generator
 
-import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.backend.common.descriptors.isSuspend
@@ -21,7 +21,7 @@ import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 
-@Given
+@Binding
 class DeclarationStore(
     private val module: ModuleDescriptor
 ) {

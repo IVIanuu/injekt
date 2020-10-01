@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.checkers
 
-import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.hasAnnotation
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -26,7 +26,7 @@ import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
-@Given
+@Binding
 class BindingChecker : DeclarationChecker {
 
     // todo check top level || in module

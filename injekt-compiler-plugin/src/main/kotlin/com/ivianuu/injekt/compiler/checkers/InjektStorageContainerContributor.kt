@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.checkers
 
-import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.ApplicationComponent
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useInstance
@@ -24,7 +24,7 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.platform.TargetPlatform
 
-@Given(ApplicationComponent::class)
+@Binding(ApplicationComponent::class)
 class InjektStorageContainerContributor(
     private val bindingChecker: BindingChecker,
 ) : StorageComponentContainerContributor {
@@ -34,7 +34,6 @@ class InjektStorageContainerContributor(
         platform: TargetPlatform,
         moduleDescriptor: ModuleDescriptor,
     ) {
-        // todo only if merge is in classpath container.useInstance(given<EffectChecker>())
         container.useInstance(bindingChecker)
     }
 }

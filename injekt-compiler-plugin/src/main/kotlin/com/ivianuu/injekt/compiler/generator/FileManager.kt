@@ -1,12 +1,12 @@
 package com.ivianuu.injekt.compiler.generator
 
-import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.SrcDir
 import com.ivianuu.injekt.compiler.log
 import org.jetbrains.kotlin.name.FqName
 import java.io.File
 
-@Given(GenerationComponent::class)
+@Binding(GenerationComponent::class)
 class FileManager(
     private val srcDir: SrcDir,
     private val log: log,

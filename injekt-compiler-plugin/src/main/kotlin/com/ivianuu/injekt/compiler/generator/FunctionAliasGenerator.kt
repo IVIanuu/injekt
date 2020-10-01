@@ -1,14 +1,14 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Assisted
-import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Binding
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
 
-@Given
+@Binding
 class FunctionAliasGenerator(
     @Assisted private val generateFile: (FqName, String, String) -> Unit
 ) : Generator {

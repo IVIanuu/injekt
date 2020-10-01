@@ -1,7 +1,7 @@
 package com.ivianuu.injekt.compiler.generator.componentimpl
 
 import com.ivianuu.injekt.Assisted
-import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
@@ -12,7 +12,7 @@ import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.substitute
 import org.jetbrains.kotlin.name.Name
 
-@Given
+@Binding
 class ComponentImpl(
     @Assisted val componentType: TypeRef,
     @Assisted val name: Name,

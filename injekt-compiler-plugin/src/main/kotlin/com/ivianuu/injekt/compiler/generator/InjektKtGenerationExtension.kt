@@ -1,6 +1,6 @@
 package com.ivianuu.injekt.compiler.generator
 
-import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.SrcDir
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -13,14 +13,15 @@ import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtension
 import java.io.File
 
-@Given
+@Binding
 class InjektKtGenerationExtension(
     private val srcDir: SrcDir,
-    private val generationComponentFactory: GenerationComponentFactory,
+    private val generationComponentFactory: (ModuleDescriptor, BindingTrace, BindingContext) -> GenerationComponent,
 ) : PartialAnalysisHandlerExtension() {
 
     override val analyzePartially: Boolean

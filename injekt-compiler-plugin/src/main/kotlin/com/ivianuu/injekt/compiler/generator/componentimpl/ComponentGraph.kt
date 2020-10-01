@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.compiler.generator.componentimpl
 
 import com.ivianuu.injekt.Assisted
-import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.ModuleDescriptor
@@ -33,7 +33,7 @@ import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
-@Given
+@Binding
 class GivensGraph(
     @Assisted private val owner: ComponentImpl,
     collectionsFactory: (ComponentImpl, GivenCollections?) -> GivenCollections,
@@ -366,7 +366,7 @@ class GivensGraph(
 
 private fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"
 
-@Given
+@Binding
 class GivenCollections(
     @Assisted private val owner: ComponentImpl,
     @Assisted private val parent: GivenCollections?,

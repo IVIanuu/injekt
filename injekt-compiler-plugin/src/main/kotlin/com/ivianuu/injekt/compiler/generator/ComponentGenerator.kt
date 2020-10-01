@@ -1,6 +1,6 @@
 package com.ivianuu.injekt.compiler.generator
 
-import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentImpl
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -10,7 +10,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.namedDeclarationRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 
-@Given
+@Binding
 class ComponentGenerator(
     private val bindingContext: BindingContext,
     private val fileManager: FileManager,
