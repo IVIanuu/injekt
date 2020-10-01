@@ -15,11 +15,11 @@ class Benchmark {
                     source(
                         if (index == 0 || index == 1) {
                             """
-                                @Given class Fib${index + 1}
+                                @Binding class Fib${index + 1}
                             """
                         } else {
                             """
-                                @Given
+                                @Binding
                                 class Fib${index + 1}(
                                     val fibM1: Fib$index,
                                     val fibM2: Fib${index - 1}
@@ -59,11 +59,11 @@ class Benchmark {
                     source(
                         if (index == 0 || index == 1) {
                             """
-                                @Given class Fib${index + 1}
+                                @Binding class Fib${index + 1}
                             """
                         } else {
                             """
-                                @Given
+                                @Binding
                                 class Fib${index + 1}(
                                     val fibM1: Fib$index,
                                     val fibM2: Fib${index - 1}

@@ -91,7 +91,7 @@ class InjektKtGenerationExtension(
         val generationComponent = generationComponentFactory(
             module, bindingTrace, bindingTrace.bindingContext
         )
-        generationComponent.rootFactoryGenerator.generate(files)
+        generationComponent.componentGenerator.generate(files)
         val newFiles = generationComponent.fileManager.newFiles
 
         return AnalysisResult.RetryWithAdditionalRoots(

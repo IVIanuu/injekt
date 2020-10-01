@@ -3,11 +3,6 @@ package com.ivianuu.injekt.compiler.generator
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
-data class FactoryDescriptor(val factoryType: TypeRef) {
-    val contextType = factoryType.expandedType!!.typeArguments.last()
-    val inputTypes = factoryType.expandedType!!.typeArguments.dropLast(1)
-}
-
 data class Callable(
     val packageFqName: FqName,
     val fqName: FqName,

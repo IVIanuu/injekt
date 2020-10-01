@@ -1,23 +1,17 @@
 package com.ivianuu.injekt.samples.coffeemaker
 
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.RootFactory
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.Component
 
-interface CoffeeComponent {
-    val brewCoffee: brewCoffee
-}
+@Component
+abstract class CoffeeComponent {
+    abstract val brewCoffee: brewCoffee
 
-@RootFactory
-typealias CoffeeComponentFactory = (CoffeeModule) -> CoffeeComponent
-
-@Module
-object CoffeeModule {
-    @Given
-    val ElectricHeater.heater: Heater
+    @Binding
+    protected val ElectricHeater.heater: Heater
         get() = this
 
-    @Given
-    val Thermosiphon.givenPump: Pump
+    @Binding
+    protected val Thermosiphon.givenPump: Pump
         get() = this
 }

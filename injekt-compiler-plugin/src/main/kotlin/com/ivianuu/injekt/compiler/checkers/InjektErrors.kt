@@ -33,28 +33,18 @@ interface InjektErrors {
                 .also { MAP.put(it, message) }
 
         @JvmField
-        val FACTORY_EXPANDED_TYPE_MUST_BE_FUNCTION = error(
-            "@RootFactory, @ChildFactory and @MergeFactory must be a function type"
+        val ABSTRACT_BINDING_CLASS = error(
+            "@Binding class cannot be abstract"
         )
 
         @JvmField
-        val ROOT_FACTORY_WITH_TYPE_PARAMETERS = error(
-            "@RootFactory cannot have type parameters"
+        val EITHER_CLASS_OR_CONSTRUCTOR_BINDING = error(
+            "Either the class or 1 constructor may be annotated with @Binding"
         )
 
         @JvmField
-        val ABSTRACT_GIVEN_CLASS = error(
-            "@Given class cannot be abstract"
-        )
-
-        @JvmField
-        val EITHER_CLASS_OR_CONSTRUCTOR_GIVEN = error(
-            "Either the class or 1 constructor may be annotated with @Given"
-        )
-
-        @JvmField
-        val MULTIPLE_CONSTRUCTORS_ON_GIVEN_CLASS = error(
-            "Can't choose a constructor. Annotate the right one with @Given"
+        val MULTIPLE_CONSTRUCTORS_ON_BINDING_CLASS = error(
+            "Can't choose a constructor. Annotate the right one with @Binding"
         )
 
         init {

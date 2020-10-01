@@ -16,8 +16,10 @@
 
 package com.ivianuu.injekt.samples.comparison.injekt
 
-import com.ivianuu.injekt.rootFactory
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.component
 import com.ivianuu.injekt.samples.comparison.base.InjectionTest
+import com.ivianuu.injekt.samples.comparison.fibonacci.Fib8
 
 object InjektTest : InjectionTest {
 
@@ -26,7 +28,7 @@ object InjektTest : InjectionTest {
     private var component: InjektComponent? = null
 
     override fun setup() {
-        component = rootFactory<InjektComponentFactory>()()
+        component = component<InjektComponent>()
     }
 
     override fun inject() {
@@ -36,4 +38,9 @@ object InjektTest : InjectionTest {
     override fun shutdown() {
         component = null
     }
+}
+
+@Component
+interface InjektComponent {
+    val fib8: Fib8
 }

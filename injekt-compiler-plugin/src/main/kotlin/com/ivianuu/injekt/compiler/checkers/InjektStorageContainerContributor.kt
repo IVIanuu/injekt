@@ -26,7 +26,7 @@ import org.jetbrains.kotlin.platform.TargetPlatform
 
 @Given(ApplicationComponent::class)
 class InjektStorageContainerContributor(
-    private val givenChecker: GivenChecker,
+    private val bindingChecker: BindingChecker,
 ) : StorageComponentContainerContributor {
 
     override fun registerModuleComponents(
@@ -35,6 +35,6 @@ class InjektStorageContainerContributor(
         moduleDescriptor: ModuleDescriptor,
     ) {
         // todo only if merge is in classpath container.useInstance(given<EffectChecker>())
-        container.useInstance(givenChecker)
+        container.useInstance(bindingChecker)
     }
 }

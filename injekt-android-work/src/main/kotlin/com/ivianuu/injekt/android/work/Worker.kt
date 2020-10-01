@@ -20,27 +20,33 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenMapEntries
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.MapEntries
 import com.ivianuu.injekt.Module
 import kotlin.reflect.KClass
 
 typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
 
 @Module
-class GivenWorkerModule<T : ListenableWorker>(private val workerClass: KClass<T>) {
-
-    @GivenMapEntries
+class WorkerModule<T : ListenableWorker>(private val workerClass: KClass<T>) {
+    @MapEntries
     fun workerIntoMap(factory: (Context, WorkerParameters) -> T): Workers =
         mapOf(workerClass to factory)
 
     companion object {
         inline operator fun <reified T : ListenableWorker> invoke() =
-            GivenWorkerModule(T::class)
+            WorkerModule(T::class)
     }
 }
 
-@Given
+@Module
+object WorkerInjectionModule {
+    @Binding
+    val InjektWorkerFactory.workerFactory: WorkerFactory
+        get() = this
+}
+
+@Binding
 class InjektWorkerFactory(private val workers: Workers) : WorkerFactory() {
     override fun createWorker(
         appContext: Context,
@@ -54,9 +60,3 @@ class InjektWorkerFactory(private val workers: Workers) : WorkerFactory() {
     }
 }
 
-@Module
-object WorkerModule {
-    @Given
-    val InjektWorkerFactory.workerFactory: WorkerFactory
-        get() = this
-}

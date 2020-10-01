@@ -27,7 +27,7 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
 @Given
-class GivenChecker : DeclarationChecker {
+class BindingChecker : DeclarationChecker {
 
     // todo check top level || in module
 
@@ -46,10 +46,10 @@ class GivenChecker : DeclarationChecker {
         descriptor: ClassDescriptor,
         context: DeclarationCheckerContext
     ) {
-        val classHasAnnotation = descriptor.hasAnnotation(InjektFqNames.Given)
+        val classHasAnnotation = descriptor.hasAnnotation(InjektFqNames.Binding)
 
         val annotatedConstructors = descriptor.constructors
-            .filter { it.hasAnnotation(InjektFqNames.Given) }
+            .filter { it.hasAnnotation(InjektFqNames.Binding) }
 
         if (!classHasAnnotation && annotatedConstructors.isEmpty()) return
 
@@ -57,7 +57,7 @@ class GivenChecker : DeclarationChecker {
             annotatedConstructors.isEmpty()
         ) {
             context.trace.report(
-                InjektErrors.MULTIPLE_CONSTRUCTORS_ON_GIVEN_CLASS
+                InjektErrors.MULTIPLE_CONSTRUCTORS_ON_BINDING_CLASS
                     .on(declaration)
             )
         }
@@ -66,14 +66,14 @@ class GivenChecker : DeclarationChecker {
             annotatedConstructors.size > 1
         ) {
             context.trace.report(
-                InjektErrors.EITHER_CLASS_OR_CONSTRUCTOR_GIVEN
+                InjektErrors.EITHER_CLASS_OR_CONSTRUCTOR_BINDING
                     .on(declaration)
             )
         }
 
         if (descriptor.modality == Modality.ABSTRACT) {
             context.trace.report(
-                InjektErrors.ABSTRACT_GIVEN_CLASS
+                InjektErrors.ABSTRACT_BINDING_CLASS
                     .on(declaration)
             )
         }

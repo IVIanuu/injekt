@@ -9,16 +9,14 @@ class FunctionAliasTest {
     @Test
     fun testSimpleFunctionAlias() = codegen(
         """
-            @Given
+            @Binding
             fun function(string: String) {
             }
             
-            interface TestComponent {
-                val function: function
+            @Component
+            abstract class TestComponent(@Binding val string: String) {
+                abstract val function: function
             }
-            
-            @RootFactory
-            typealias Factory = (String) -> TestComponent
         """
     ) {
         assertOk()
@@ -27,49 +25,43 @@ class FunctionAliasTest {
     @Test
     fun testAssistedFunctionAlias() = codegen(
         """
-            @Given
+            @Binding
             fun function(string: String, @Assisted assistedString: String) {
             }
             
-            interface TestComponent {
-                val function: function
+            @Component
+            abstract class TestComponent(@Binding val string: String) {
+                abstract val function: function
             }
-            
-            @RootFactory
-            typealias Factory = (String) -> TestComponent
         """
     )
 
     @Test
     fun testSuspendFunctionAlias() = codegen(
         """
-            @Given
+            @Binding
             suspend fun function(string: String, @Assisted assistedString: String) {
             }
             
-            interface TestComponent {
-                val function: function
+            @Component
+            abstract class TestComponent(@Binding val string: String) {
+                abstract val function: function
             }
-            
-            @RootFactory
-            typealias Factory = (String) -> TestComponent
         """
     )
 
     @Test
     fun testFunctionAliasWithTypeParameters() = codegen(
         """
-            @Given
+            @Binding
             fun <T : S, S> function(t: T): S {
                 return error("")
             }
             
-            interface TestComponent {
-                val function: function<String, String>
+            @Component
+            abstract class TestComponent(@Binding val string: String) {
+                abstract val function: function<String, String>
             }
-            
-            @RootFactory
-            typealias Factory = (String) -> TestComponent
         """
     )
 

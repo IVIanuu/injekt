@@ -41,14 +41,14 @@ fun DeclarationDescriptor.hasAnnotationWithPropertyAndClass(
 
 fun ClassDescriptor.getGivenConstructor(): ConstructorDescriptor? {
     constructors
-        .firstOrNull { it.hasAnnotation(InjektFqNames.Given) }?.let { return it }
-    if (!hasAnnotation(InjektFqNames.Given)) return null
+        .firstOrNull { it.hasAnnotation(InjektFqNames.Binding) }?.let { return it }
+    if (!hasAnnotation(InjektFqNames.Binding)) return null
     return unsubstitutedPrimaryConstructor
 }
 
 fun String.asNameId() = Name.identifier(this)
 
-fun FqName.toFactoryImplFqName() =
+fun FqName.toComponentImplFqName() =
     FqName("${asString()}Impl")
 
 fun <T> unsafeLazy(init: () -> T) = lazy(LazyThreadSafetyMode.NONE, init)

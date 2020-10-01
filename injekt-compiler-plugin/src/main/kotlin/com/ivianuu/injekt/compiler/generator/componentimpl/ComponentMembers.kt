@@ -14,11 +14,9 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 @Given
-class GivenStatements(
-    @Assisted private val owner: ComponentImpl
-) {
+class GivenStatements(@Assisted private val owner: ComponentImpl) {
 
-    private val parent = owner.factoryImpl.parent?.statements
+    private val parent = owner.parent?.statements
     private val statementsByType = mutableMapOf<TypeRef, ComponentStatement>()
 
     fun getCallable(
@@ -68,10 +66,9 @@ class GivenStatements(
             parent!!.getGivenStatement(given)
         } else {
             when (given) {
-                is ChildFactoryGivenNode -> childFactoryExpression(given)
+                is ChildImplGivenNode -> childFactoryExpression(given)
                 is CallableGivenNode -> callableExpression(given)
                 is FunctionAliasGivenNode -> functionAliasExpression(given)
-                is InputGivenNode -> inputExpression(given)
                 is MapGivenNode -> mapExpression(given)
                 is NullGivenNode -> nullExpression()
                 is ProviderGivenNode -> providerExpression(given)
@@ -134,118 +131,68 @@ class GivenStatements(
         return statement
     }
 
-    private fun childFactoryExpression(given: ChildFactoryGivenNode): ComponentStatement =
-        { emit("${given.childFactoryImpl.name}()") }
+    private fun childFactoryExpression(given: ChildImplGivenNode): ComponentStatement = {
+        emit("::${given.childComponentImpl.name}")
+    }
 
-    private fun inputExpression(
-        given: InputGivenNode,
-    ): ComponentStatement = { emit("this@${given.owner.name}.${given.name}") }
-
-    private fun mapExpression(given: MapGivenNode): ComponentStatement {
-        return {
-            emit("run ")
-            braced {
-                emitLine("val result = mutableMapOf<Any?, Any?>()")
-                given.entries.forEach { (callable, receiver) ->
-                    emit("result.putAll(")
-                    emitCallableInvocation(
-                        callable,
-                        receiver,
-                        callable.valueParameters
-                            .map {
-                                getGivenStatement(
-                                    owner.graph.getGiven(
-                                        GivenRequest(
-                                            it.type,
-                                            callable.fqName.child(it.name)
-                                        )
+    private fun mapExpression(given: MapGivenNode): ComponentStatement = {
+        emit("run ")
+        braced {
+            emitLine("val result = mutableMapOf<Any?, Any?>()")
+            given.entries.forEach { (callable, receiver) ->
+                emit("result.putAll(")
+                emitCallableInvocation(
+                    callable,
+                    receiver,
+                    callable.valueParameters
+                        .map {
+                            getGivenStatement(
+                                owner.graph.getGiven(
+                                    GivenRequest(
+                                        it.type,
+                                        callable.fqName.child(it.name)
                                     )
                                 )
-                            }
-                    )
-                    emitLine(")")
-                }
-                emitLine("result as ${given.type.render()}")
+                            )
+                        }
+                )
+                emitLine(")")
             }
+            emitLine("result as ${given.type.render()}")
         }
     }
 
-    private fun setExpression(given: SetGivenNode): ComponentStatement {
-        return {
-            emit("run ")
-            braced {
-                emitLine("val result = mutableSetOf<Any?>()")
-                given.elements.forEach { (callable, receiver) ->
-                    emit("result.addAll(")
-                    emitCallableInvocation(
-                        callable,
-                        receiver,
-                        callable.valueParameters
-                            .map {
-                                getGivenStatement(
-                                    owner.graph.getGiven(
-                                        GivenRequest(
-                                            it.type,
-                                            callable.fqName.child(it.name)
-                                        )
+    private fun setExpression(given: SetGivenNode): ComponentStatement = {
+        emit("run ")
+        braced {
+            emitLine("val result = mutableSetOf<Any?>()")
+            given.elements.forEach { (callable, receiver) ->
+                emit("result.addAll(")
+                emitCallableInvocation(
+                    callable,
+                    receiver,
+                    callable.valueParameters
+                        .map {
+                            getGivenStatement(
+                                owner.graph.getGiven(
+                                    GivenRequest(
+                                        it.type,
+                                        callable.fqName.child(it.name)
                                     )
                                 )
-                            }
-                    )
-                    emitLine(")")
-                }
-                emitLine("result as ${given.type.render()}")
+                            )
+                        }
+                )
+                emitLine(")")
             }
+            emitLine("result as ${given.type.render()}")
         }
     }
 
     private fun nullExpression(): ComponentStatement = { emit("null") }
 
-    private fun callableExpression(given: CallableGivenNode): ComponentStatement {
-        return {
-            if (given.valueParameters.any { it.isAssisted }) {
-                emit("{ ")
-                given.valueParameters
-                    .filter { it.isAssisted }
-                    .forEachIndexed { index, parameter ->
-                        emit("p$index: ${parameter.type.render()}")
-                        if (index != given.valueParameters.lastIndex) emit(", ")
-                    }
-                emitLine(" ->")
-                var assistedIndex = 0
-                var nonAssistedIndex = 0
-                emitCallableInvocation(
-                    given.callable,
-                    given.receiver,
-                    given.valueParameters.map { parameter ->
-                        if (parameter.isAssisted) {
-                            { emit("p${assistedIndex++}") }
-                        } else {
-                            getGivenStatement(
-                                owner.graph.getGiven(
-                                    GivenRequest(
-                                        given.dependencies[nonAssistedIndex++].type,
-                                        given.callable.fqName.child(parameter.name)
-                                    )
-                                )
-                            )
-                        }
-                    }
-                )
-                emitLine()
-                emitLine("}")
-            } else {
-                emitCallableInvocation(
-                    given.callable,
-                    given.receiver,
-                    given.dependencies.map { getGivenStatement(owner.graph.getGiven(it)) }
-                )
-            }
-        }
-    }
-
-    private fun functionAliasExpression(given: FunctionAliasGivenNode): ComponentStatement {
-        return {
+    private fun callableExpression(given: CallableGivenNode): ComponentStatement = {
+        if (given.valueParameters.any { it.isAssisted }) {
             emit("{ ")
             given.valueParameters
                 .filter { it.isAssisted }
@@ -276,16 +223,55 @@ class GivenStatements(
             )
             emitLine()
             emitLine("}")
+        } else {
+            emitCallableInvocation(
+                given.callable,
+                given.receiver,
+                given.dependencies.map { getGivenStatement(owner.graph.getGiven(it)) }
+            )
         }
     }
 
-    private fun providerExpression(given: ProviderGivenNode): ComponentStatement =
-        {
-            braced { getGivenStatement(owner.graph.getGiven(given.dependencies.single()))() }
-        }
+    private fun functionAliasExpression(given: FunctionAliasGivenNode): ComponentStatement = {
+        emit("{ ")
+        given.valueParameters
+            .filter { it.isAssisted }
+            .forEachIndexed { index, parameter ->
+                emit("p$index: ${parameter.type.render()}")
+                if (index != given.valueParameters.lastIndex) emit(", ")
+            }
+        emitLine(" ->")
+        var assistedIndex = 0
+        var nonAssistedIndex = 0
+        emitCallableInvocation(
+            given.callable,
+            given.receiver,
+            given.valueParameters.map { parameter ->
+                if (parameter.isAssisted) {
+                    { emit("p${assistedIndex++}") }
+                } else {
+                    getGivenStatement(
+                        owner.graph.getGiven(
+                            GivenRequest(
+                                given.dependencies[nonAssistedIndex++].type,
+                                given.callable.fqName.child(parameter.name)
+                            )
+                        )
+                    )
+                }
+            }
+        )
+        emitLine()
+        emitLine("}")
+    }
 
-    private fun selfContextExpression(given: SelfGivenNode): ComponentStatement =
-        { emit("this@${given.component.name}") }
+    private fun providerExpression(given: ProviderGivenNode): ComponentStatement = {
+        braced { getGivenStatement(owner.graph.getGiven(given.dependencies.single()))() }
+    }
+
+    private fun selfContextExpression(given: SelfGivenNode): ComponentStatement = {
+        emit("this@${given.component.name}")
+    }
 }
 
 private fun CodeBuilder.emitCallableInvocation(

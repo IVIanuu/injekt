@@ -95,11 +95,11 @@ class SelfGivenNode(
     override val receiver: ComponentStatement? get() = null
 }
 
-class ChildFactoryGivenNode(
+class ChildImplGivenNode(
     override val type: TypeRef,
     override val owner: ComponentImpl,
     override val origin: FqName?,
-    val childFactoryImpl: ComponentFactoryImpl,
+    val childComponentImpl: ComponentImpl,
 ) : GivenNode() {
     override val dependencies: List<GivenRequest>
         get() = emptyList()
@@ -108,7 +108,7 @@ class ChildFactoryGivenNode(
     override val receiver: ComponentStatement?
         get() = null
     override val targetComponent: TypeRef?
-        get() = owner.contextType
+        get() = owner.componentType
 }
 
 class CallableGivenNode(
@@ -136,23 +136,6 @@ class FunctionAliasGivenNode(
     val valueParameters: List<ValueParameterRef>,
     val callable: Callable,
 ) : GivenNode()
-
-class InputGivenNode(
-    override val type: TypeRef,
-    val name: String,
-    override val owner: ComponentImpl,
-) : GivenNode() {
-    override val rawType: TypeRef
-        get() = type
-    override val dependencies: List<GivenRequest>
-        get() = emptyList()
-    override val receiver: ComponentStatement?
-        get() = null
-    override val origin: FqName?
-        get() = null
-    override val targetComponent: TypeRef?
-        get() = null
-}
 
 class MapGivenNode(
     override val type: TypeRef,

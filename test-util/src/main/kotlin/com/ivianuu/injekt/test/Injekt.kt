@@ -22,30 +22,6 @@ class Bar(val foo: Foo)
 
 class Baz(val bar: Bar, val foo: Foo)
 
-interface TestComponent
-
-interface TestComponent1<A> {
-    val a: A
-}
-
-interface TestComponent2<A, B> {
-    val a: A
-    val b: B
-}
-
-interface TestParentComponent1<A> {
-    val a: A
-}
-
-interface TestParentComponent2<A, B> {
-    val a: A
-    val b: B
-}
-
-interface TestChildComponent1<A> {
-    val a: A
-}
-
 interface Command
 
 class CommandA : Command

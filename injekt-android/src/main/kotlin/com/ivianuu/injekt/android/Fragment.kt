@@ -21,8 +21,31 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
-import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Module
+
+@Module
+object FragmentModule {
+    @Binding
+    val Fragment.fragmentContext: FragmentContext
+        get() = requireContext()
+
+    @Binding
+    val FragmentContext.fragmentResources: FragmentResources
+        get() = resources
+
+    @Binding
+    val Fragment.fragmentLifecycleOwner: FragmentLifecycleOwner
+        get() = this
+
+    @Binding
+    val Fragment.fragmentSavedStateRegistryOwner: FragmentSavedStateRegistryOwner
+        get() = this
+
+    @Binding
+    val Fragment.fragmentViewModelStoreOwner: FragmentViewModelStoreOwner
+        get() = this
+}
 
 typealias FragmentContext = android.content.Context
 
@@ -33,26 +56,3 @@ typealias FragmentLifecycleOwner = LifecycleOwner
 typealias FragmentSavedStateRegistryOwner = SavedStateRegistryOwner
 
 typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
-
-@Module
-object FragmentModule {
-    @Given
-    val Fragment.fragmentContext: FragmentContext
-        get() = requireContext()
-
-    @Given
-    val FragmentContext.fragmentResources: FragmentResources
-        get() = resources
-
-    @Given
-    val Fragment.fragmentLifecycleOwner: FragmentLifecycleOwner
-        get() = this
-
-    @Given
-    val Fragment.fragmentSavedStateRegistryOwner: FragmentSavedStateRegistryOwner
-        get() = this
-
-    @Given
-    val Fragment.fragmentViewModelStoreOwner: FragmentViewModelStoreOwner
-        get() = this
-}

@@ -26,8 +26,9 @@ import androidx.lifecycle.ViewModel
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.ivianuu.injekt.Assisted
-import com.ivianuu.injekt.ChildFactory
-import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.ChildComponent
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.android.ActivityContext
 import com.ivianuu.injekt.android.ActivityModule
 import kotlinx.coroutines.GlobalScope
@@ -38,7 +39,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val activityComponent = applicationComponent.mainActivityComponentFactory(this, ActivityModule)
+            val activityComponent = appComponent.mainActivityComponentFactory(this)
             with(activityComponent) {
                 WithMainViewModel {
                     GlobalScope.launch {
@@ -50,15 +51,20 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-interface MainActivityComponent {
-    val WithMainViewModel: WithMainViewModel
-    val enqueueWork: enqueueWork
+@ChildComponent
+abstract class MainActivityComponent(
+    @Binding protected val activity: ComponentActivity
+) {
+    abstract val WithMainViewModel: WithMainViewModel
+    abstract val enqueueWork: enqueueWork
+
+    @Module
+    protected val activityModule = ActivityModule
+    @Module
+    protected val dataModule = DataModule
 }
 
-@ChildFactory
-typealias MainActivityComponentFactory = (ComponentActivity, ActivityModule) -> MainActivityComponent
-
-@Given
+@Binding
 @Composable
 fun WithMainViewModel(
     viewModelFactory: () -> MainViewModel,
@@ -68,7 +74,7 @@ fun WithMainViewModel(
     children(viewModel)
 }
 
-@Given
+@Binding
 fun enqueueWork(context: ActivityContext) {
     WorkManager.getInstance(context)
         .enqueue(
@@ -77,7 +83,7 @@ fun enqueueWork(context: ActivityContext) {
         )
 }
 
-@Given
+@Binding
 class MainViewModel : ViewModel() {
     init {
         println("init")

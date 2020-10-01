@@ -1,12 +1,12 @@
 package com.ivianuu.injekt.samples.coffeemaker
 
-import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Binding
 
 interface Pump {
     fun pump()
 }
 
-@Given
+@Binding
 class Thermosiphon(private val heater: Heater) : Pump {
     override fun pump() {
         if (heater.isHot) {

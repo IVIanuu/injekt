@@ -19,16 +19,16 @@ package com.ivianuu.injekt.android
 import android.app.Application
 import android.content.Context
 import android.content.res.Resources
-import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Module
 
 @Module
 object ApplicationModule {
-    @Given
+    @Binding
     val Application.givenApplicationContext: ApplicationContext
         get() = this
 
-    @Given
+    @Binding
     val Application.applicationResources: ApplicationResources
         get() = resources
 }

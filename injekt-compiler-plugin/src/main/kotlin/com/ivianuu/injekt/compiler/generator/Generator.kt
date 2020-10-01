@@ -14,7 +14,7 @@ interface Generator {
 interface GenerationComponent {
     val functionAliasGeneratorFactory: ((FqName, String, String) -> Unit) -> FunctionAliasGenerator
     val fileManager: FileManager
-    val rootFactoryGenerator: RootFactoryGenerator
+    val componentGenerator: ComponentGenerator
 }
 
 @ChildFactory

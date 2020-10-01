@@ -23,17 +23,17 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Assisted
-import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.android.ApplicationContext
-import com.ivianuu.injekt.android.work.GivenWorkerModule
+import com.ivianuu.injekt.android.work.WorkerInjectionModule
 import com.ivianuu.injekt.android.work.WorkerModule
 
-@Given
+@Binding
 class TestWorker(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
-    private val repo: Repo,
+    repo: Repo,
 ) : CoroutineWorker(context, workerParams) {
     init {
         println("hello $context $workerParams $repo")
@@ -44,11 +44,11 @@ class TestWorker(
 
 @Module
 object SampleWorkerModule {
-    @Module val injectionModule = WorkerModule
-    @Module val testWorkerModule = GivenWorkerModule<TestWorker>()
+    @Module val workerInjectionModule = WorkerInjectionModule
+    @Module val testWorkerModule = WorkerModule<TestWorker>()
 }
 
-@Given
+@Binding
 fun initializeWorkers(
     applicationContext: ApplicationContext,
     workerFactory: WorkerFactory,

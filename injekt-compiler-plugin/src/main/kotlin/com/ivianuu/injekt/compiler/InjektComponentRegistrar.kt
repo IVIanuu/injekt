@@ -23,7 +23,6 @@ import com.ivianuu.injekt.RootFactory
 import com.ivianuu.injekt.compiler.checkers.InjektStorageContainerContributor
 import com.ivianuu.injekt.compiler.generator.InjektKtGenerationExtension
 import com.ivianuu.injekt.rootFactory
-import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
@@ -48,8 +47,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
 fun registerExtensions(
     project: Project,
     injektStorageContainerContributor: InjektStorageContainerContributor,
-    injektKtGenerationExtension: InjektKtGenerationExtension,
-    injektIntrinsicIrExtension: InjektIntrinsicIrExtension,
+    injektKtGenerationExtension: InjektKtGenerationExtension
 ) {
     StorageComponentContainerContributor.registerExtension(
         project,
@@ -59,11 +57,6 @@ fun registerExtensions(
     AnalysisHandlerExtension.registerExtension(
         project,
         injektKtGenerationExtension
-    )
-
-    IrGenerationExtension.registerExtension(
-        project,
-        injektIntrinsicIrExtension
     )
 }
 

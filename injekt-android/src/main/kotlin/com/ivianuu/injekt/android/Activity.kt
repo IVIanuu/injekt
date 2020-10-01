@@ -22,28 +22,28 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
-import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Module
 
 @Module
 object ActivityModule {
-    @Given
+    @Binding
     val ComponentActivity.activityContext: ActivityContext
         get() = this
 
-    @Given
+    @Binding
     val ComponentActivity.activityResources: ActivityResources
         get() = resources
 
-    @Given
+    @Binding
     val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
         get() = this
 
-    @Given
+    @Binding
     val ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
         get() = this
 
-    @Given
+    @Binding
     val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
         get() = this
 }

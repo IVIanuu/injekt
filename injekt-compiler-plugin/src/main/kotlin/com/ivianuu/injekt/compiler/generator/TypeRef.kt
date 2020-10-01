@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
+import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
@@ -46,9 +47,10 @@ sealed class TypeRef {
     abstract val isMarkedNullable: Boolean
     abstract val typeArguments: List<TypeRef>
     abstract val variance: Variance
-    abstract val isGiven: Boolean
+    abstract val isFunction: Boolean
+    abstract val isBinding: Boolean
     abstract val isModule: Boolean
-    abstract val isChildFactory: Boolean
+    abstract val isChildComponent: Boolean
     abstract val isComposable: Boolean
     abstract val isFunctionAlias: Boolean
     abstract val superTypes: List<TypeRef>
@@ -67,15 +69,18 @@ class KotlinTypeRef(
     override val classifier: ClassifierRef by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.toClassifierRef()
     }
-    override val isGiven: Boolean by unsafeLazy {
+    override val isFunction: Boolean by unsafeLazy {
+        finalType.isFunctionType
+    }
+    override val isBinding: Boolean by unsafeLazy {
         (kotlinType.constructor.declarationDescriptor!! as? ClassDescriptor)
             ?.getGivenConstructor() != null
     }
     override val isModule: Boolean by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.Module)
     }
-    override val isChildFactory: Boolean by unsafeLazy {
-        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ChildFactory)
+    override val isChildComponent: Boolean by unsafeLazy {
+        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ChildComponent)
     }
     override val isFunctionAlias: Boolean by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.FunctionAlias)
@@ -108,9 +113,10 @@ class SimpleTypeRef(
     override val isMarkedNullable: Boolean = false,
     override val typeArguments: List<TypeRef> = emptyList(),
     override val variance: Variance = Variance.INVARIANT,
-    override val isGiven: Boolean = false,
+    override val isFunction: Boolean = false,
+    override val isBinding: Boolean = false,
     override val isModule: Boolean = false,
-    override val isChildFactory: Boolean = false,
+    override val isChildComponent: Boolean = false,
     override val isFunctionAlias: Boolean = false,
     override val isComposable: Boolean = false,
     override val superTypes: List<TypeRef> = emptyList(),
@@ -132,25 +138,27 @@ fun TypeRef.copy(
     isMarkedNullable: Boolean = this.isMarkedNullable,
     typeArguments: List<TypeRef> = this.typeArguments,
     variance: Variance = this.variance,
-    isGiven: Boolean = this.isGiven,
+    isFunction: Boolean = this.isFunction,
+    isBinding: Boolean = this.isBinding,
     isModule: Boolean = this.isModule,
-    isChildFactory: Boolean = this.isChildFactory,
-    isFunctionAlias: Boolean = this.isFunctionAlias,
+    isChildComponent: Boolean = this.isChildComponent,
     isComposable: Boolean = this.isComposable,
+    isFunctionAlias: Boolean = this.isFunctionAlias,
     superTypes: List<TypeRef> = this.superTypes,
-    expandedType: TypeRef? = this.expandedType,
+    expandedType: TypeRef? = this.expandedType
 ) = SimpleTypeRef(
-    classifier = classifier,
-    isMarkedNullable = isMarkedNullable,
-    typeArguments = typeArguments,
-    variance = variance,
-    isGiven = isGiven,
-    isModule = isModule,
-    isChildFactory = isChildFactory,
-    isFunctionAlias = isFunctionAlias,
-    isComposable = isComposable,
-    superTypes = superTypes,
-    expandedType = expandedType
+    classifier,
+    isMarkedNullable,
+    typeArguments,
+    variance,
+    isFunction,
+    isBinding,
+    isModule,
+    isChildComponent,
+    isFunctionAlias,
+    isComposable,
+    superTypes,
+    expandedType
 )
 
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {

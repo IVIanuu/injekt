@@ -38,24 +38,16 @@ class GivensGraph(
     @Assisted private val owner: ComponentImpl,
     collectionsFactory: (ComponentImpl, GivenCollections?) -> GivenCollections,
     private val declarationStore: DeclarationStore,
-    private val componentFactoryImplFactory: (
+    private val componentImplFactory: (
+        TypeRef,
         Name,
-        TypeRef,
-        List<TypeRef>,
-        TypeRef,
         ComponentImpl?,
-    ) -> ComponentFactoryImpl,
+    ) -> ComponentImpl,
 ) {
 
-    private val parent = owner.factoryImpl.parent?.graph
+    private val parent = owner.parent?.graph
 
-    private val inputs = owner.inputTypes
-
-    private val contextType = owner.contextType
-
-    private val instanceNodes = inputs
-        .mapIndexed { index, inputType -> InputGivenNode(inputType, "p$index", owner) }
-        .groupBy { it.type }
+    private val componentType = owner.componentType
 
     private val moduleGivenCallables = mutableListOf<CallableWithReceiver>()
 
@@ -66,22 +58,15 @@ class GivensGraph(
     private val chain = mutableListOf<GivenNode>()
 
     init {
-        val modules = inputs
-            .filter { it.isModule }
-            .map { declarationStore.moduleForType(it) }
-
         fun ModuleDescriptor.collectGivens(
             parentCallable: Callable?,
             parentAccessStatement: ComponentStatement,
         ) {
             val thisAccessStatement: ComponentStatement = {
                 parentAccessStatement()
-                emit(".")
                 if (parentCallable != null) {
                     emit("${parentCallable!!.name}")
                     if (parentCallable.isCall) emit("()")
-                } else {
-                    emit("p${inputs.indexOf(type)}")
                 }
             }
 
@@ -119,11 +104,8 @@ class GivensGraph(
             }
         }
 
-        modules.forEach {
-            it.collectGivens(null) {
-                emit("this@${owner.name}")
-            }
-        }
+        declarationStore.moduleForType(componentType)
+            .collectGivens(null) { emit("this@${owner.name}") }
     }
 
     fun checkRequests(requests: List<GivenRequest>) {
@@ -147,7 +129,7 @@ class GivensGraph(
         given
             .dependencies
             .forEach { check(it) }
-        (given as? ChildFactoryGivenNode)?.childFactoryImpl?.initialize()
+        (given as? ChildImplGivenNode)?.childComponentImpl?.initialize()
         chain.pop()
     }
 
@@ -171,7 +153,7 @@ class GivensGraph(
                 fun indent() {
                     indendation = "$indendation    "
                 }
-                appendLine("No given found for '${request.type.render()}' in '${contextType.render()}':")
+                appendLine("No binding found for '${request.type.render()}' in '${componentType.render()}':")
                 /*chain.push(ChainElement.Given(type))
                 chain.forEachIndexed { index, element ->
                     if (index == 0) {
@@ -225,8 +207,8 @@ class GivensGraph(
             return it
         }
 
-        if (type.isGiven || type.typeArguments.lastOrNull()?.isGiven == true) {
-            val givenType = if (type.isGiven) type else type.typeArguments.last()
+        if (type.isBinding || type.typeArguments.lastOrNull()?.isBinding == true) {
+            val givenType = if (type.isBinding) type else type.typeArguments.last()
             given = declarationStore.callableForDescriptor(
                 declarationStore.classDescriptorForFqName(givenType.classifier.fqName)
                     .getGivenConstructor()!!
@@ -272,36 +254,33 @@ class GivensGraph(
     }
 
     private fun givensForType(type: TypeRef): List<GivenNode> = buildList<GivenNode> {
-        instanceNodes[type]?.let { this += it }
-
-        if (type == contextType) {
+        if (type == componentType) {
             this += SelfGivenNode(
                 type = type,
                 component = owner
             )
         }
 
-        if (type.isChildFactory) {
-            val existingFactories = mutableSetOf<TypeRef>()
+        if (type.isFunction && type.typeArguments.last().isChildComponent) {
+            // todo check if the arguments match the constructor arguments of the child component
+            val childComponentType = type.typeArguments.last()
+            val existingComponents = mutableSetOf<TypeRef>()
             var currentComponent: ComponentImpl? = owner
             while (currentComponent != null) {
-                existingFactories += currentComponent.factoryImpl.factoryType
-                currentComponent = currentComponent.factoryImpl.parent
+                existingComponents += currentComponent.componentType
+                currentComponent = currentComponent.parent
             }
-            if (type !in existingFactories) {
-                val factoryDescriptor = declarationStore.factoryForType(type)
-                val factoryImpl = componentFactoryImplFactory(
-                    owner.factoryImpl.contextTreeNameProvider("F").asNameId(),
-                    type,
-                    factoryDescriptor.inputTypes,
-                    factoryDescriptor.contextType,
+            if (childComponentType !in existingComponents) {
+                val componentImpl = componentImplFactory(
+                    childComponentType,
+                    owner.contextTreeNameProvider("C").asNameId(),
                     owner
                 )
-                this += ChildFactoryGivenNode(
+                this += ChildImplGivenNode(
                     type = type,
                     owner = owner,
                     origin = null,
-                    childFactoryImpl = factoryImpl
+                    childComponentImpl = componentImpl
                 )
             }
         }
@@ -335,7 +314,7 @@ class GivensGraph(
             )
         }
 
-        if (type.classifier.fqName.asString() == "kotlin.Function0") {
+        if (type.isFunction && type.typeArguments.size == 1) {
             this += ProviderGivenNode(
                 type = type,
                 owner = owner,

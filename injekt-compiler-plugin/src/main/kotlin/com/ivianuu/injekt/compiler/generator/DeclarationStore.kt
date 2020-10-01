@@ -26,6 +26,12 @@ class DeclarationStore(
     private val module: ModuleDescriptor
 ) {
 
+    fun constructorForComponent(type: TypeRef): Callable? {
+        return classDescriptorForFqName(type.classifier.fqName)
+            .unsubstitutedPrimaryConstructor
+            ?.let { callableForDescriptor(it) }
+    }
+
     private val callablesForType = mutableMapOf<TypeRef, List<Callable>>()
     fun allCallablesForType(type: TypeRef): List<Callable> {
         return callablesForType.getOrPut(type) {
@@ -112,16 +118,16 @@ class DeclarationStore(
                         descriptor.getGivenFunctionType() else descriptor.returnType!!
                     )
                 .toTypeRef(),
-            targetComponent = owner.annotations.findAnnotation(InjektFqNames.Given)
+            targetComponent = owner.annotations.findAnnotation(InjektFqNames.Binding)
                 ?.allValueArguments
                 ?.get("scopeComponent".asNameId())
                 ?.let { it as KClassValue }
                 ?.getArgumentType(module)
                 ?.toTypeRef(),
             givenKind = when {
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Given) -> Callable.GivenKind.GIVEN
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) -> Callable.GivenKind.GIVEN_MAP_ENTRIES
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) -> Callable.GivenKind.GIVEN_SET_ELEMENTS
+                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.GivenKind.GIVEN
+                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.GivenKind.GIVEN_MAP_ENTRIES
+                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) -> Callable.GivenKind.GIVEN_SET_ELEMENTS
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) -> Callable.GivenKind.MODULE
                 else -> null
             },
@@ -149,8 +155,6 @@ class DeclarationStore(
         )
     }
 
-    fun factoryForType(type: TypeRef): FactoryDescriptor = FactoryDescriptor(type)
-
     private val moduleByType = mutableMapOf<TypeRef, com.ivianuu.injekt.compiler.generator.ModuleDescriptor>()
     fun moduleForType(type: TypeRef): com.ivianuu.injekt.compiler.generator.ModuleDescriptor {
         return moduleByType.getOrPut(type) {
@@ -160,13 +164,11 @@ class DeclarationStore(
                 .toMap()
             ModuleDescriptor(
                 type = type,
-                callables = descriptor.unsubstitutedMemberScope.getContributedDescriptors(
-                    DescriptorKindFilter.CALLABLES
-                ).filter {
+                callables = descriptor.unsubstitutedMemberScope.getContributedDescriptors().filter {
                     it.hasAnnotationWithPropertyAndClass(
-                        InjektFqNames.Given
-                    ) || it.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) ||
-                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) ||
+                        InjektFqNames.Binding
+                    ) || it.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
+                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.Module)
                 }
                     .mapNotNull {

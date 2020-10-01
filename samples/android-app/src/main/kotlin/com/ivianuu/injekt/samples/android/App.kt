@@ -17,34 +17,30 @@
 package com.ivianuu.injekt.samples.android
 
 import android.app.Application
-import com.ivianuu.injekt.RootFactory
+import androidx.activity.ComponentActivity
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.android.ApplicationModule
-import com.ivianuu.injekt.rootFactory
+import com.ivianuu.injekt.component
 
 class App : Application() {
-
     override fun onCreate() {
         super.onCreate()
-        applicationComponent = rootFactory<ApplicationComponentFactory>()(
-            this, DataModule, ApplicationModule, SampleWorkerModule
-        )
-        applicationComponent.initializeWorkers()
-        applicationComponent.refreshRepo()
+        appComponent = AppComponentImpl(this)
+        appComponent.initializeWorkers()
+        appComponent.refreshRepo()
     }
 }
 
-lateinit var applicationComponent: ApplicationComponent
+lateinit var appComponent: AppComponent
 
-interface ApplicationComponent {
-    val initializeWorkers: initializeWorkers
-    val refreshRepo: refreshRepo
-    val mainActivityComponentFactory: MainActivityComponentFactory
+@Component
+abstract class AppComponent(@Binding val app: App) {
+    abstract val initializeWorkers: initializeWorkers
+    abstract val refreshRepo: refreshRepo
+    abstract val mainActivityComponentFactory: (ComponentActivity) -> MainActivityComponent
+
+    @Module protected val applicationModule = ApplicationModule
+    @Module protected val workerModule = SampleWorkerModule
 }
-
-@RootFactory
-typealias ApplicationComponentFactory = (
-    Application,
-    DataModule,
-    ApplicationModule,
-    SampleWorkerModule
-) -> ApplicationComponent

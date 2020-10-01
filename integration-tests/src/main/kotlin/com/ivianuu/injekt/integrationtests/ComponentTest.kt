@@ -36,20 +36,15 @@ class ComponentTest {
     @Test
     fun testSimple() = codegen(
         """
-            @Module
-            object TestModule {
-                @Given
-                fun foo() = Foo()
-                
-                @Given
-                fun bar(foo: Foo) = Bar(foo)
+            @Component
+            abstract class TestComponent { 
+                abstract val bar: Bar
+                @Binding protected fun foo() = Foo()
+                @Binding protected fun bar(foo: Foo) = Bar(foo)
             }
             
-            @RootFactory
-            typealias TestComponentFactory = (TestModule) -> TestComponent1<Bar>
-            
             fun invoke(): Bar {
-                return rootFactory<TestComponentFactory>()(TestModule).a
+                return TestComponentImpl().bar
             }
     """
     ) {
@@ -59,14 +54,18 @@ class ComponentTest {
     @Test
     fun testWithChild() = codegen(
         """
-            @RootFactory
-            typealias MyParentFactory = () -> TestParentComponent1<MyChildFactory>
+            @Component
+            abstract class ParentComponent {
+                abstract val childComponentFactory: (Foo) -> MyChildComponent
+            }
             
-            @ChildFactory
-            typealias MyChildFactory = (Foo) -> TestChildComponent1<Foo>
-            
+            @ChildComponent
+            abstract class MyChildComponent(@Binding protected val _foo: Foo) {
+                abstract val foo: Foo
+            }
+
             fun invoke(foo: Foo): Foo {
-                return rootFactory<MyParentFactory>()().a(foo).a
+                return ParentComponentImpl().childComponentFactory(foo).foo
             }
     """
     ) {
@@ -75,11 +74,11 @@ class ComponentTest {
     }
 
     @Test
-    fun testScopedGiven() = codegen(
+    fun testScopedBinding() = codegen(
         """
             @Module
             object MyModule {
-                @Given(TestComponent1::class)
+                @Binding(TestComponent1::class)
                 fun foo() = Foo()
             }
             @RootFactory
@@ -94,14 +93,14 @@ class ComponentTest {
     }
 
     @Test
-    fun testParentScopedGiven() = codegen(
+    fun testParentScopedBinding() = codegen(
         """
             @Module
             object MyModule {
-                @Given
+                @Binding
                 fun foo() = Foo()
                 
-                @Given(TestParentComponent1::class)
+                @Binding(TestParentComponent1::class)
                 fun bar(foo: Foo) = Bar(foo)
             }
             
@@ -125,14 +124,14 @@ class ComponentTest {
     }
 
     @Test
-    fun testGivenClass() = codegen(
+    fun testBindingClass() = codegen(
         """
-            @Given
+            @Binding
             class AnnotatedBar(foo: Foo)
             
             @Module
             object FooModule {
-                @Given
+                @Binding
                 fun foo() = Foo()
             }
     
@@ -148,9 +147,9 @@ class ComponentTest {
     }
 
     @Test
-    fun testGivenObject() = codegen(
+    fun testBindingObject() = codegen(
         """
-            @Given
+            @Binding
             object AnnotatedBar
     
             @RootFactory
@@ -165,11 +164,11 @@ class ComponentTest {
     }
 
     @Test
-    fun testGivenProperty() = codegen(
+    fun testBindingProperty() = codegen(
         """
             @Module
             object FooModule {
-                @Given val foo = Foo()
+                @Binding val foo = Foo()
             }
     
             @RootFactory
@@ -186,7 +185,7 @@ class ComponentTest {
         """
             @Module
             object FooModule {
-                @Given
+                @Binding
                 fun foo() = Foo()
             }
             
@@ -202,11 +201,11 @@ class ComponentTest {
     }
 
     @Test
-    fun testAssistedGivenFunction() = codegen(
+    fun testAssistedBindingFunction() = codegen(
         """
             @Module
             object BarModule {
-                @Given
+                @Binding
                 fun bar(@Assisted foo: Foo) = Bar(foo)
             }
             
@@ -222,9 +221,9 @@ class ComponentTest {
     }
 
     @Test
-    fun testAssistedGivenClass() = codegen(
+    fun testAssistedBindingClass() = codegen(
         """
-            @Given
+            @Binding
             class AnnotatedBar(@Assisted foo: Foo)
             
             @RootFactory
@@ -237,13 +236,13 @@ class ComponentTest {
     }
 
     @Test
-    fun testGenericGivenClass() = codegen(
+    fun testGenericBindingClass() = codegen(
         """
-            @Given class Dep<T>(val value: T)
+            @Binding class Dep<T>(val value: T)
             
             @Module
             object FooModule {
-                @Given
+                @Binding
                 fun foo() = Foo()
             }
             
@@ -257,14 +256,14 @@ class ComponentTest {
     )
 
     @Test
-    fun testGenericGivenFunction() = codegen(
+    fun testGenericBindingFunction() = codegen(
         """    
             class Dep<T>(val value: T)
             
             @Module
             object MyModule { 
-                @Given fun <T> dep(value: T) = Dep<T>(value)
-                @Given fun foo() = Foo() 
+                @Binding fun <T> dep(value: T) = Dep<T>(value)
+                @Binding fun foo() = Foo() 
             }
             
             @RootFactory
@@ -277,14 +276,14 @@ class ComponentTest {
     )
 
     @Test
-    fun testComplexGenericGivenFunction() = codegen(
+    fun testComplexGenericBindingFunction() = codegen(
         """    
             class Dep<A, B, C>(val value: A)
             
             @Module
             object MyModule { 
-                @Given fun <A, B : A, C : B> dep(a: A) = Dep<A, A, A>(a)
-                @Given fun foo() = Foo() 
+                @Binding fun <A, B : A, C : B> dep(a: A) = Dep<A, A, A>(a)
+                @Binding fun foo() = Foo() 
             }
             
             @RootFactory
@@ -297,7 +296,7 @@ class ComponentTest {
         """
             @Module
             object FunctionModule {
-                @Given
+                @Binding
                 fun foo() = Foo()
             }
 
@@ -315,7 +314,7 @@ class ComponentTest {
         """
             @Module
             object SuspendFunctionModule {
-                @Given
+                @Binding
                 suspend fun suspendFoo() = Foo()
             }
 
@@ -348,7 +347,7 @@ class ComponentTest {
         """
             @Module
             class FooModule {
-                @Given
+                @Binding
                 fun foo() = Foo()
                 
                 @Module
@@ -356,7 +355,7 @@ class ComponentTest {
                 
                 @Module
                 class BarModule {
-                    @Given
+                    @Binding
                     fun bar(foo: Foo) = Bar(foo)
                 }
             }
@@ -381,7 +380,7 @@ class ComponentTest {
                 val fooModule = InstanceModule<Foo>(Foo())
                 
                 @Module
-                class InstanceModule<T>(@Given val instance: T)
+                class InstanceModule<T>(@Binding val instance: T)
             }
             
             @RootFactory
@@ -396,7 +395,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testMissingGivenFails() = codegen(
+    fun testMissingBindingFails() = codegen(
         """
             class Dep
             
@@ -404,18 +403,18 @@ class ComponentTest {
             typealias MyFactory = () -> TestComponent1<Dep>
         """
     ) {
-        assertInternalError("no given")
+        assertInternalError("no binding")
     }
 
     @Test
-    fun testDeeplyMissingGivenFails() = codegen(
+    fun testDeeplyMissingBindingFails() = codegen(
         """
             @Module
             object MyModule {
-                @Given
+                @Binding
                 fun bar(foo: Foo) = Bar(foo)
         
-                @Given
+                @Binding
                 fun baz(bar: Bar, foo: Foo) = Baz(bar, foo)
             }
             
@@ -423,7 +422,7 @@ class ComponentTest {
             typealias MyFactory = (MyModule) -> TestComponent1<Baz>
         """
     ) {
-        assertInternalError("no given")
+        assertInternalError("no binding")
     }
 
     @Test
@@ -431,8 +430,8 @@ class ComponentTest {
         """
             @Module
             object MyModule {
-                @GivenSetElements fun setA() = setOf("a")
-                @GivenSetElements fun setB() = setOf(0)
+                @SetElements fun setA() = setOf("a")
+                @SetElements fun setB() = setOf(0)
             }
             
             @RootFactory
@@ -456,8 +455,8 @@ class ComponentTest {
             
             @Module
             object FooModule {
-                @Given fun foo1(): Foo1 = Foo()
-                @Given fun foo2(): Foo2 = Foo()
+                @Binding fun foo1(): Foo1 = Foo()
+                @Binding fun foo2(): Foo2 = Foo()
             }
             
             @RootFactory
@@ -481,7 +480,7 @@ class ComponentTest {
                     typealias Foo1 = Foo
                     @Module
                     object Foo1Module {
-                        @Given fun foo1(): Foo1 = Foo()
+                        @Binding fun foo1(): Foo1 = Foo()
                     }
             """
             )
@@ -492,7 +491,7 @@ class ComponentTest {
                     typealias Foo2 = Foo
                     @Module
                     object Foo2Module {
-                        @Given fun foo2(): Foo2 = Foo()
+                        @Binding fun foo2(): Foo2 = Foo()
                     }
             """
             )
@@ -521,8 +520,8 @@ class ComponentTest {
         """
             @Module
             object FooModule { 
-                @Given fun foo(): Foo = Foo()
-                @Given fun nullableFoo(): Foo? = null
+                @Binding fun foo(): Foo = Foo()
+                @Binding fun nullableFoo(): Foo? = null
             }
             
             @RootFactory
@@ -533,11 +532,11 @@ class ComponentTest {
     }
 
     @Test
-    fun testReturnsInstanceForNullableGiven() = codegen(
+    fun testReturnsInstanceForNullableBinding() = codegen(
         """
             @Module
             object FooModule {
-                @Given fun foo(): Foo = Foo()
+                @Binding fun foo(): Foo = Foo()
             }
             
             @RootFactory
@@ -552,7 +551,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testReturnsNullOnMissingNullableGiven() = codegen(
+    fun testReturnsNullOnMissingNullableBinding() = codegen(
         """
             @RootFactory
             typealias MyFactory = () -> TestComponent1<Foo?>
@@ -573,9 +572,9 @@ class ComponentTest {
     )
 
     @Test
-    fun testPrefersInputsOverGiven() = codegen(
+    fun testPrefersInputsOverBinding() = codegen(
         """
-            @Given
+            @Binding
             class Dep
             
             @RootFactory
@@ -598,31 +597,31 @@ class ComponentTest {
             typealias MyFactory = (Foo, Foo) -> TestComponent1<Foo>
         """
     ) {
-        assertInternalError("multiple givens")
+        assertInternalError("multiple bindings")
     }
 
     @Test
-    fun testDuplicatedGivensFails() = codegen(
+    fun testDuplicatedBindingsFails() = codegen(
         """
             @Module
             object FooModule {
-                @Given fun foo1() = Foo()
-                @Given fun foo2() = Foo()
+                @Binding fun foo1() = Foo()
+                @Binding fun foo2() = Foo()
             }
             
             @RootFactory
             typealias MyFactory = (FooModule) -> TestComponent1<Foo>
         """
     ) {
-        assertInternalError("multiple givens")
+        assertInternalError("multiple bindings")
     }
 
     @Test
-    fun testGivenPerComponent() = codegen(
+    fun testBindingPerComponent() = codegen(
         """
             @Module
             object ParentModule {
-                @Given(TestParentComponent2::class) fun parentFoo() = Foo()
+                @Binding(TestParentComponent2::class) fun parentFoo() = Foo()
             }
             
             @RootFactory
@@ -630,7 +629,7 @@ class ComponentTest {
             
             @Module
             object ChildModule {
-                @Given(TestChildComponent1::class) fun childFoo() = Foo()
+                @Binding(TestChildComponent1::class) fun childFoo() = Foo()
             }
             
             @ChildFactory
@@ -675,13 +674,13 @@ class ComponentTest {
             
             @Module
             object FooModule {
-                @Given
+                @Binding
                 fun <T> genericDep(t: T): Dep<T> = Dep(t)
                 
-                @Given
+                @Binding
                 fun fooDep(foo: Foo): Dep<Foo> = Dep(foo)
                 
-                @Given
+                @Binding
                 fun foo() = Foo()
             }
             
@@ -700,14 +699,14 @@ class ComponentTest {
             
             @Module
             object MyModule {
-                @Given
+                @Binding
                 fun intComparator(): AliasComparator<Int> = error("")
             }
             
             @RootFactory
             typealias MyFactory = (MyModule) -> TestComponent1<compare<Int>>
 
-            @Given
+            @Binding
             fun <T> compare(@Assisted a: T, @Assisted b: T, comparator: AliasComparator<T>): Int = comparator
                 .compare(a, b)
 
@@ -717,8 +716,8 @@ class ComponentTest {
     @Test
     fun testCircularDependencyFails() = codegen(
         """
-            @Given class A(b: B)
-            @Given class B(a: A)
+            @Binding class A(b: B)
+            @Binding class B(a: A)
             
             @RootFactory
             typealias MyFactory = () -> TestComponent1<B>
@@ -730,8 +729,8 @@ class ComponentTest {
     @Test
     fun testProviderBreaksCircularDependency() = codegen(
         """
-            @Given class A(b: B)
-            @Given(TestComponent1::class) class B(a: () -> A)
+            @Binding class A(b: B)
+            @Binding(TestComponent1::class) class B(a: () -> A)
             
             @RootFactory
             typealias MyFactory = () -> TestComponent1<B>
@@ -743,9 +742,9 @@ class ComponentTest {
     @Test
     fun testIrrelevantProviderInChainDoesNotBreakCircularDependecy() = codegen(
         """
-            @Given class A(b: () -> B)
-            @Given class B(b: C)
-            @Given class C(b: B)
+            @Binding class A(b: () -> B)
+            @Binding class B(b: C)
+            @Binding class C(b: B)
             
             @RootFactory
             typealias MyFactory = () -> TestComponent1<C>
@@ -757,8 +756,8 @@ class ComponentTest {
     @Test
     fun testAssistedBreaksCircularDependency() = codegen(
         """
-            @Given class A(@Assisted b: B)
-            @Given(TestComponent1::class) class B(a: (B) -> A)
+            @Binding class A(@Assisted b: B)
+            @Binding(TestComponent1::class) class B(a: (B) -> A)
             
             @RootFactory
             typealias MyFactory = () -> TestComponent1<B>

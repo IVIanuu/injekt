@@ -6,91 +6,45 @@ import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.TypeRef
-import com.ivianuu.injekt.compiler.generator.asNameId
+import com.ivianuu.injekt.compiler.generator.defaultType
+import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.render
+import com.ivianuu.injekt.compiler.generator.substitute
 import org.jetbrains.kotlin.name.Name
 
 @Given
-class ComponentFactoryImpl(
-    @Assisted val name: Name,
-    @Assisted val factoryType: TypeRef,
-    @Assisted val inputTypes: List<TypeRef>,
-    @Assisted val contextType: TypeRef,
-    @Assisted val parent: ComponentImpl?,
-    componentFactory: (
-        ComponentFactoryImpl,
-        TypeRef,
-        Name,
-        List<TypeRef>
-    ) -> ComponentImpl
-) : ComponentMember {
-
-    val contextTreeNameProvider: UniqueNameProvider =
-        parent?.factoryImpl?.contextTreeNameProvider ?: UniqueNameProvider()
-
-    val component = componentFactory(
-        this,
-        contextType,
-        contextTreeNameProvider("C").asNameId(),
-        inputTypes
-    )
-
-    fun initialize() {
-        parent?.members?.add(this)
-        parent?.children?.add(this)
-        component.initialize()
-    }
-
-    override fun CodeBuilder.emit() {
-        if (parent == null) {
-            emit("object ")
-        } else {
-            emit("private inner class ")
-        }
-        emit(name)
-        emit(" : ${factoryType.render()} ")
-        braced {
-            emit("override fun invoke(")
-            inputTypes.forEachIndexed { index, inputType ->
-                emit("p$index: ${inputType.render()}")
-                if (index != inputTypes.lastIndex) emit(", ")
-            }
-            emit("): ${contextType.render()} ")
-            braced {
-                emit("return ${component.name}")
-                emit("(")
-                inputTypes.forEachIndexed { index, _ ->
-                    emit("p$index")
-                    if (index != inputTypes.lastIndex) emit(", ")
-                }
-                emit(")")
-                emitLine()
-            }
-            with(component) { emit() }
-        }
-    }
-}
-
-@Given
 class ComponentImpl(
-    @Assisted val factoryImpl: ComponentFactoryImpl,
-    @Assisted val contextType: TypeRef,
+    @Assisted val componentType: TypeRef,
     @Assisted val name: Name,
-    @Assisted val inputTypes: List<TypeRef>,
+    @Assisted val parent: ComponentImpl?,
     private val declarationStore: DeclarationStore,
     statementsFactory: (ComponentImpl) -> GivenStatements,
     graphFactory: (ComponentImpl) -> GivensGraph,
-) {
+) : ComponentMember {
+
+    val contextTreeNameProvider: UniqueNameProvider =
+        parent?.contextTreeNameProvider ?: UniqueNameProvider()
 
     val statements = statementsFactory(this)
     val graph = graphFactory(this)
 
-    val children = mutableListOf<ComponentFactoryImpl>()
-
     val members = mutableListOf<ComponentMember>()
 
+    private val componentConstructor = declarationStore.constructorForComponent(componentType)
+
+    val constructorParameters = if (componentConstructor != null) {
+        val substitutionMap = componentType.getSubstitutionMap(componentType.classifier.defaultType)
+        componentConstructor
+            .valueParameters
+            .map { it.copy(type = it.type.substitute(substitutionMap)) }
+    } else {
+        emptyList()
+    }
+
     fun initialize() {
-        val requests = declarationStore.allCallablesForType(contextType)
+        parent?.members?.add(this)
+        val requests = declarationStore.allCallablesForType(componentType)
+            .filter { it.givenKind == null }
         graph.checkRequests(requests.map { GivenRequest(it.type, it.fqName) })
         requests.forEach {
             statements.getCallable(
@@ -104,20 +58,28 @@ class ComponentImpl(
         }
     }
 
-    fun CodeBuilder.emit() {
-        emit("private ")
-        if (factoryImpl.parent != null) emit("inner ")
+    override fun CodeBuilder.emit() {
+        if (parent != null) emit("private inner ")
         emit("class $name")
-        if (inputTypes.isNotEmpty()) {
+
+        if (constructorParameters.isNotEmpty()) {
             emit("(")
-            inputTypes.forEachIndexed { index, inputType ->
-                emit("private val p$index: ${inputType.render()}")
-                if (index != inputTypes.lastIndex) emit(", ")
+            constructorParameters.forEachIndexed { index, param ->
+                emit("${param.name}: ${param.type.render()}")
+                if (index != constructorParameters.lastIndex) emit(", ")
             }
             emit(")")
         }
 
-        emit(" : ${contextType.render()} ")
+        emit(" : ${componentType.render()}")
+        if (componentConstructor != null) {
+            emit("(")
+            constructorParameters.forEachIndexed { index, param ->
+                emit(param.name)
+                if (index != constructorParameters.lastIndex) emit(", ")
+            }
+            emit(") ")
+        }
         braced {
             val renderedMembers = mutableSetOf<ComponentMember>()
             var currentMembers: List<ComponentMember> = members.toList()

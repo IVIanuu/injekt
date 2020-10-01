@@ -1,14 +1,14 @@
 package com.ivianuu.injekt.samples.coffeemaker
 
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.rootFactory
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.component
 
 fun main() {
-    val component = rootFactory<CoffeeComponentFactory>()(CoffeeModule)
+    val component = component<CoffeeComponent>()
     component.brewCoffee()
 }
 
-@Given
+@Binding
 fun brewCoffee(heater: Heater, pump: Pump) {
     heater.on()
     pump.pump()

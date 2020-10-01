@@ -34,18 +34,18 @@ class CollectionsTest {
         """
             @Module
             object MapModule {
-                @Given 
+                @Binding 
                 fun commandA() = CommandA()
                 
-                @GivenMapEntries
+                @MapEntries
                 fun commandAIntoMap(
                     commandA: CommandA
                 ): Map<KClass<out Command>, Command> = mapOf(CommandA::class to commandA)
                 
-                @Given 
+                @Binding 
                 fun commandB() = CommandB()
         
-                @GivenMapEntries 
+                @MapEntries 
                 fun commandBIntoMap(
                     commandB: CommandB
                 ): Map<KClass<out Command>, Command> = mapOf(CommandB::class to commandB)
@@ -70,20 +70,20 @@ class CollectionsTest {
         """
             @Module
             object ParentModule {
-                @Given 
+                @Binding 
                 fun commandA() = CommandA()
                 
-                @GivenMapEntries
+                @MapEntries
                 fun commandAIntoMap(commandA: CommandA): Map<KClass<out Command>, Command> = 
                     mapOf(CommandA::class to commandA)
             }
             
             @Module
             object ChildModule {
-                @Given 
+                @Binding 
                 fun commandB() = CommandB()
         
-                @GivenMapEntries
+                @MapEntries
                 fun commandBIntoMap(commandB: CommandB): Map<KClass<out Command>, Command> = 
                     mapOf(CommandB::class to commandB)
             }
@@ -114,18 +114,18 @@ class CollectionsTest {
         """
             @Module
             object MapModule {
-                @Given 
+                @Binding 
                 fun commandA(@Assisted arg: String) = CommandA()
                 
-                @GivenMapEntries
+                @MapEntries
                 fun commandAIntoMap(
                     commandAFactory: (String) -> CommandA
                 ): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandA::class to commandAFactory)
                 
-                @Given 
+                @Binding 
                 fun commandB(@Assisted arg: String) = CommandB()
         
-                @GivenMapEntries 
+                @MapEntries 
                 fun commandBIntoMap(
                     commandBFactory: (String) -> CommandB
                 ): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandB::class to commandBFactory)
@@ -149,36 +149,37 @@ class CollectionsTest {
     @Test
     fun testUndeclaredMap() = codegen(
         """
-            @RootFactory
-            typealias MyFactory = () -> TestComponent1<Map<KClass<out Command>, Command>>
+            @Component
+            abstract class TestComponent {
+                abstract val map: Map<KClass<out Command>, Command>
+            }
         """
     ) {
-        assertInternalError("no given")
+        assertInternalError("no binding")
     }
 
     @Test
     fun testSimpleSet() = codegen(
         """
-            @Module
-            object SetModule {
-                @Given 
-                fun commandA() = CommandA()
+            @Component
+            abstract class SetComponent {
+                abstract val set: Set<Command>
+            
+                @Binding 
+                protected fun commandA() = CommandA()
                 
-                @GivenSetElements
-                fun commandAIntoSet(commandA: CommandA): Set<Command> = setOf(commandA)
+                @SetElements
+                protected fun commandAIntoSet(commandA: CommandA): Set<Command> = setOf(commandA)
                 
-                @Given 
-                fun commandB() = CommandB()
+                @Binding 
+                protected fun commandB() = CommandB()
                 
-                @GivenSetElements
-                fun commandBIntoSet(commandB: CommandB): Set<Command> = setOf(commandB)
+                @SetElements
+                protected fun commandBIntoSet(commandB: CommandB): Set<Command> = setOf(commandB)
             }
-    
-            @RootFactory
-            typealias SetFactory = (SetModule) -> TestComponent1<Set<Command>>
          
             fun invoke(): Set<Command> {
-                return rootFactory<SetFactory>()(SetModule).a
+                return SetComponentImpl().set
             }
         """
     ) {
@@ -193,20 +194,20 @@ class CollectionsTest {
         """
             @Module
             object ParentModule {
-                @Given 
+                @Binding 
                 fun commandA() = CommandA()
                 
-                @GivenSetElements
+                @SetElements
                 fun commandAIntoSet(commandA: CommandA): Set<Command> = 
                     setOf(commandA)
             }
             
             @Module
             object ChildModule {
-                @Given 
+                @Binding 
                 fun commandB() = CommandB()
         
-                @GivenSetElements
+                @SetElements
                 fun commandBIntoSet(commandB: CommandB): Set<Command> = 
                     setOf(commandB)
             }
@@ -236,18 +237,18 @@ class CollectionsTest {
         """
             @Module
             object SetModule {
-                @Given 
+                @Binding 
                 fun commandA(@Assisted arg: String) = CommandA()
                 
-                @GivenSetElements
+                @SetElements
                 fun commandAIntoSet(
                     commandAFactory: (String) -> CommandA
                 ): Set<(String) -> Command> = setOf(commandAFactory)
                 
-                @Given 
+                @Binding 
                 fun commandB(@Assisted arg: String) = CommandB()
         
-                @GivenSetElements
+                @SetElements
                 fun commandBIntoSet(
                     commandBFactory: (String) -> CommandB
                 ): Set<(String) -> Command> = setOf(commandBFactory)
@@ -270,11 +271,13 @@ class CollectionsTest {
     @Test
     fun testUndeclaredSet() = codegen(
         """
-            @RootFactory
-            typealias MyFactory = () -> TestComponent1<Set<Command>>
+            @Component
+            abstract class SetComponent {
+                abstract val set: Set<Command>
+            }
         """
     ) {
-        assertInternalError("no given")
+        assertInternalError("no binding")
     }
 
     // todo test child overrides parent

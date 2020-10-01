@@ -20,48 +20,48 @@ import com.ivianuu.injekt.test.assertCompileError
 import com.ivianuu.injekt.test.codegen
 import org.junit.Test
 
-class GivenFrontendTest {
+class BindingFrontendTest {
 
     @Test
-    fun testGivenClassOk() = codegen(
+    fun testBindingClassOk() = codegen(
         """ 
-            @Given class Dep
+            @Binding class Dep
         """
     )
 
     @Test
-    fun testGivenAbstractClassFails() = codegen(
+    fun testBindingAbstractClassFails() = codegen(
         """ 
-            @Given abstract class Dep
+            @Binding abstract class Dep
     """
     ) {
         assertCompileError("abstract")
     }
 
     @Test
-    fun testGivenInterfaceFails() = codegen(
+    fun testBindingInterfaceFails() = codegen(
         """ 
-            @Given interface Dep
+            @Binding interface Dep
     """
     ) {
         assertCompileError("abstract")
     }
 
     @Test
-    fun testGivenClassAndGivenConstructorFails() = codegen(
+    fun testBindingClassAndBindingConstructorFails() = codegen(
         """
-            @Given class Dep @Given constructor()  
+            @Binding class Dep @Binding constructor()  
         """
     ) {
         assertCompileError("either")
     }
 
     @Test
-    fun testMultipleGivenConstructorsFails() = codegen(
+    fun testMultipleBindingConstructorsFails() = codegen(
         """
             class Dep {
-                @Given constructor(foo: Foo)
-                @Given constructor(bar: Bar)
+                @Binding constructor(foo: Foo)
+                @Binding constructor(bar: Bar)
             }
         """
     ) {
@@ -69,9 +69,9 @@ class GivenFrontendTest {
     }
 
     @Test
-    fun testMultipleConstructorsOnGivenClassFails() = codegen(
+    fun testMultipleConstructorsOnBindingClassFails() = codegen(
         """
-            @Given
+            @Binding
             class Dep { 
                 constructor(foo: Foo)
                 constructor(bar: Bar)

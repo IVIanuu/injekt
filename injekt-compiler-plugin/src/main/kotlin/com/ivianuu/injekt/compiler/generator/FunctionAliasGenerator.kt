@@ -15,27 +15,27 @@ class FunctionAliasGenerator(
 
     override fun generate(files: List<KtFile>) {
         files.forEach { file ->
-            val givenFunctions = mutableListOf<KtNamedFunction>()
+            val bindingFunctions = mutableListOf<KtNamedFunction>()
             file.accept(
                 namedFunctionRecursiveVisitor { declaration ->
                     if (declaration.isTopLevel && declaration.annotationEntries.any {
-                        it.text.contains("Given")
+                        it.text.contains("Binding")
                     }
                     ) {
-                        givenFunctions += declaration
+                        bindingFunctions += declaration
                     }
                 }
             )
 
-            if (givenFunctions.isNotEmpty()) {
-                generateFunctionAliases(file, givenFunctions)
+            if (bindingFunctions.isNotEmpty()) {
+                generateFunctionAliases(file, bindingFunctions)
             }
         }
     }
 
     private fun generateFunctionAliases(
         file: KtFile,
-        givenFunctions: List<KtNamedFunction>,
+        bindingFunctions: List<KtNamedFunction>,
     ) {
         val fileName = "${file.name.removeSuffix(".kt")}FunctionAliases.kt"
         val code = buildCodeString {
@@ -44,7 +44,7 @@ class FunctionAliasGenerator(
                 emitLine(it.text)
             }
             emitLine()
-            givenFunctions.forEach { function ->
+            bindingFunctions.forEach { function ->
                 val isSuspend = function.hasModifier(KtTokens.SUSPEND_KEYWORD)
                 val isComposable = function.annotationEntries.any {
                     it.text.contains("Composable")
@@ -63,7 +63,7 @@ class FunctionAliasGenerator(
                     .map { it.typeReference!!.text }
                 val returnType = function.typeReference?.text
                     ?: if (function.hasBlockBody()) "Unit" else error(
-                        "@Given function must have a block body ${function.text}"
+                        "@Binding function must have a block body ${function.text}"
                     )
 
                 emitLine("@com.ivianuu.injekt.internal.FunctionAlias")
