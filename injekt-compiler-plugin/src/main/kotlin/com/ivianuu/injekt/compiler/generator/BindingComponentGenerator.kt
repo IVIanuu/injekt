@@ -308,13 +308,13 @@ class BindingComponentGenerator(
                 if (dispatchReceiverParameter != null) {
                     returnType!!.toTypeRef()
                 } else {
-                    val parametersSize = valueParameters.size
-                    (if (isSuspend) moduleDescriptor.builtIns.getSuspendFunction(parametersSize)
-                    else moduleDescriptor.builtIns.getFunction(parametersSize))
+                    val assistedParameters = valueParameters
+                        .filter { it.hasAnnotation(InjektFqNames.Assisted) }
+                    (if (isSuspend) moduleDescriptor.builtIns.getSuspendFunction(assistedParameters.size)
+                    else moduleDescriptor.builtIns.getFunction(assistedParameters.size))
                         .defaultType
                         .replace(
-                            newArguments = (valueParameters
-                                .take(parametersSize)
+                            newArguments = (assistedParameters
                                 .map { it.type } + returnType!!)
                                 .map { it.asTypeProjection() }
                         )

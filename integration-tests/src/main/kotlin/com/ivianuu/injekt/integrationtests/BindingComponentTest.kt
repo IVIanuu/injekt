@@ -62,7 +62,7 @@ class BindingComponentTest {
         """
             @BindingComponent(MyComponent::class)
             annotation class AnyBinding {
-                class Impl<T : Any> {
+                class Impl<T : () -> Unit> {
                     @Binding
                     val T.any: Any get() = this
                 }
@@ -90,7 +90,7 @@ class BindingComponentTest {
         """
             @BindingComponent(MyComponent::class)
             annotation class AnyBinding {
-                class Impl<T : Any> {
+                class Impl<T : (Foo) -> Unit> {
                     @Binding
                     val T.any: Any get() = this
                 }
