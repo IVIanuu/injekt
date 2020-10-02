@@ -54,28 +54,44 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     }
 
     private val allDeclarationsByFqName by unsafeLazy {
-        allMergeDeclarations
-            .filter { it.hasAnnotation(InjektFqNames.MergeInto) }
-            .groupBy { declaration ->
-                declaration.annotations.findAnnotation(InjektFqNames.MergeInto)!!
-                    .allValueArguments["component".asNameId()]!!
-                    .let { it as KClassValue }
-                    .getArgumentType(module)
-                    .constructor
-                    .declarationDescriptor!!
-                    .fqNameSafe
-            }
-            .mapValues { (_, values) ->
-                values.map { it.defaultType.toTypeRef() }
-            }
+        buildMap<FqName, MutableList<TypeRef>> {
+            generatedMergeDeclarationsByComponent
+                .forEach { (mergeComponent, declarations) ->
+                    getOrPut(mergeComponent) { mutableListOf() } += declarations.map { it.type }
+                }
+            allMergeDeclarations
+                .filter { it.hasAnnotation(InjektFqNames.MergeInto) }
+                .groupBy { declaration ->
+                    declaration.annotations.findAnnotation(InjektFqNames.MergeInto)!!
+                        .allValueArguments["component".asNameId()]!!
+                        .let { it as KClassValue }
+                        .getArgumentType(module)
+                        .constructor
+                        .declarationDescriptor!!
+                        .fqNameSafe
+                }
+                .forEach { (mergeComponent, declarations) ->
+                    getOrPut(mergeComponent) { mutableListOf() } += declarations.map { it.defaultType.toTypeRef() }
+                }
+        }
     }
 
     fun mergeDeclarationsForMergeComponent(component: FqName): List<TypeRef> =
         allDeclarationsByFqName[component] ?: emptyList()
 
-    private val callablesForType = mutableMapOf<TypeRef, List<Callable>>()
+    private val generatedMergeDeclarationsByComponent = mutableMapOf<FqName, MutableList<ComponentDescriptor>>()
+    fun addGeneratedMergeComponent(
+        mergeComponent: TypeRef,
+        componentDescriptor: ComponentDescriptor
+    ) {
+        generatedMergeDeclarationsByComponent.getOrPut(
+            mergeComponent.classifier.fqName) { mutableListOf() } += componentDescriptor
+        componentByType[componentDescriptor.type] = componentDescriptor
+    }
+
+    private val callablesByType = mutableMapOf<TypeRef, List<Callable>>()
     fun allCallablesForType(type: TypeRef): List<Callable> {
-        return callablesForType.getOrPut(type) {
+        return callablesByType.getOrPut(type) {
             val callables = mutableListOf<Callable>()
 
             fun TypeRef.collect(typeArguments: List<TypeRef>) {

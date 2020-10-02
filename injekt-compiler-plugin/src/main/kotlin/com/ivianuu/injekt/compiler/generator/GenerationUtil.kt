@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.js.translate.utils.refineType
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -41,8 +42,11 @@ fun DeclarationDescriptor.hasAnnotationWithPropertyAndClass(
 
 fun ClassDescriptor.getInjectConstructor(): ConstructorDescriptor? {
     constructors
-        .firstOrNull { it.hasAnnotation(InjektFqNames.Binding) }?.let { return it }
-    if (!hasAnnotation(InjektFqNames.Binding)) return null
+        .firstOrNull {
+            it.hasAnnotation(InjektFqNames.Binding) ||
+                    it.hasAnnotatedAnnotations(InjektFqNames.BindingComponent)
+        }?.let { return it }
+    if (!hasAnnotation(InjektFqNames.Binding) && !hasAnnotatedAnnotations(InjektFqNames.BindingComponent)) return null
     return unsubstitutedPrimaryConstructor
 }
 
@@ -79,4 +83,24 @@ fun FunctionDescriptor.getBindingFunctionType(): KotlinType {
             )
         .defaultType
         .replace(newArguments = assistedParameters.map { it.asTypeProjection() } + returnType!!.asTypeProjection())
+}
+
+fun AnnotationDescriptor.hasAnnotation(annotation: FqName): Boolean =
+    type.constructor.declarationDescriptor!!.hasAnnotation(annotation)
+
+fun Annotated.hasAnnotatedAnnotations(
+    annotation: FqName
+): Boolean = annotations.any { it.hasAnnotation(annotation) }
+
+fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescriptor> =
+    annotations.filter { it.hasAnnotation(annotation) }
+
+fun joinedNameOf(
+    packageFqName: FqName,
+    fqName: FqName
+): Name {
+    val joinedSegments = fqName.asString()
+        .removePrefix(packageFqName.asString() + ".")
+        .split(".")
+    return joinedSegments.joinToString("_").asNameId()
 }

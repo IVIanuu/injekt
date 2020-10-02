@@ -23,6 +23,7 @@ abstract class GenerationComponent(
 ) {
     abstract val functionAliasGeneratorFactory: ((FqName, String, String) -> Unit) -> FunctionAliasGenerator
     abstract val fileManager: FileManager
+    abstract val bindingComponentGenerator: BindingComponentGenerator
     abstract val componentGenerator: ComponentGenerator
     abstract val mergeIndexGenerator: MergeIndexGenerator
 

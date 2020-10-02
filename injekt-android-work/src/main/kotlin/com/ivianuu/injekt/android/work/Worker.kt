@@ -26,19 +26,23 @@ import com.ivianuu.injekt.merge.ApplicationComponent
 import com.ivianuu.injekt.merge.BindingComponent
 import com.ivianuu.injekt.merge.MergeInto
 import kotlin.reflect.KClass
+import kotlin.reflect.typeOf
 
 typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
 
 @BindingComponent(ApplicationComponent::class)
 annotation class WorkerBinding {
-    class WorkerComponent<T : ListenableWorker>(private val workerClass: KClass<T>) {
+    class WorkerComponent<T : (Context, WorkerParameters) -> ListenableWorker>(private val workerClass: KClass<out ListenableWorker>) {
         @MapEntries
-        fun workerIntoMap(factory: (Context, WorkerParameters) -> T): Workers =
+        fun workerIntoMap(factory: T): Workers =
             mapOf(workerClass to factory)
 
         companion object {
-            inline operator fun <reified T : ListenableWorker> invoke() =
-                WorkerComponent(T::class)
+            inline operator fun <reified T : (Context, WorkerParameters) -> ListenableWorker> invoke(): WorkerComponent<T> {
+                val workerClass =
+                    typeOf<T>().arguments.last().type!!.classifier as KClass<out ListenableWorker>
+                return WorkerComponent(workerClass)
+            }
         }
     }
 }
@@ -49,7 +53,7 @@ object WorkerInjectionComponent {
     val InjektWorkerFactory.workerFactory: WorkerFactory
         get() = this
 
-    @Binding
+    @MapEntries
     fun defaultWorkers(): Workers = emptyMap()
 }
 

@@ -87,6 +87,7 @@ class InjektKtGenerationExtension(
         val generationComponent = generationComponentFactory(
             module, bindingTrace.bindingContext
         )
+        generationComponent.bindingComponentGenerator.generate(files)
         generationComponent.mergeIndexGenerator.generate(files)
         generationComponent.componentGenerator.generate(files)
         val newFiles = generationComponent.fileManager.newFiles

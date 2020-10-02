@@ -9,13 +9,16 @@ import org.jetbrains.kotlin.psi.classOrObjectRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-@Binding
+@Binding(GenerationComponent::class)
 class MergeIndexGenerator(
     private val bindingContext: BindingContext,
     private val declarationStore: DeclarationStore,
     private val fileManager: FileManager,
     private val supportsMerge: SupportsMerge
 ) : Generator {
+    fun addMergeDeclaration(fqName: FqName) {
+
+    }
     override fun generate(files: List<KtFile>) {
         if (!supportsMerge) return
         files.forEach { file ->
