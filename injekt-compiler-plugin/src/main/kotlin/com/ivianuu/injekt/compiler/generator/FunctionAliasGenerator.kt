@@ -49,13 +49,12 @@ class FunctionAliasGenerator(
                 val isComposable = function.annotationEntries.any {
                     it.text.contains("Composable")
                 }
-                val assistedParameters = listOfNotNull(
-                    function.receiverTypeReference
-                        ?.takeIf {
-                            it.annotationEntries
-                                .any { it.text.contains("Assisted") }
-                        }?.text
-                ) + function.valueParameters
+                val assistedReceiver = function.receiverTypeReference
+                    ?.takeIf {
+                        it.annotationEntries
+                            .any { it.text.contains("Assisted") }
+                    }?.text
+                val assistedValueParameters = function.valueParameters
                     .filter {
                         it.annotationEntries
                             .any { it.text.contains("Assisted") }
@@ -82,10 +81,13 @@ class FunctionAliasGenerator(
                 emit(" = ")
                 if (isComposable) emit("@androidx.compose.runtime.Composable ")
                 if (isSuspend) emit("suspend ")
+                if (assistedReceiver != null) {
+                    emit("$assistedReceiver.")
+                }
                 emit("(")
-                assistedParameters.forEachIndexed { index, param ->
+                assistedValueParameters.forEachIndexed { index, param ->
                     emit(param)
-                    if (index != assistedParameters.lastIndex) emit(", ")
+                    if (index != assistedValueParameters.lastIndex) emit(", ")
                 }
                 emitLine(") -> $returnType")
             }
