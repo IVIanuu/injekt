@@ -27,7 +27,6 @@ class InjektKtGenerationExtension(
         get() = !generatedCode
 
     private var generatedCode = false
-    private var generatedFunctionAlias = false
 
     override fun doAnalysis(
         project: Project,
@@ -37,8 +36,7 @@ class InjektKtGenerationExtension(
         bindingTrace: BindingTrace,
         componentProvider: ComponentProvider,
     ): AnalysisResult? {
-        if (!generatedFunctionAlias) {
-            generatedFunctionAlias = true
+        if (!generatedCode) {
             files as MutableList<KtFile>
             srcDir.deleteRecursively()
             files.removeAll { !File(it.virtualFilePath).exists() }
