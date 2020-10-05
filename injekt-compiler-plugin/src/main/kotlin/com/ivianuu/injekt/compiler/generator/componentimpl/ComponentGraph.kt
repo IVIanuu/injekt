@@ -178,28 +178,11 @@ class BindingGraph(
                     indendation = "$indendation    "
                 }
                 appendLine("No binding found for '${request.type.render()}' in '${componentType.render()}':")
-                /*chain.push(ChainElement.Binding(type))
-                chain.forEachIndexed { index, element ->
-                    if (index == 0) {
-                        appendLine("${indendation}runReader call '${element}'")
-                    } else {
-                        when (element) {
-                            is ChainElement.Call -> {
-                                val lastElement = chain.getOrNull(index - 1)
-                                if (lastElement is ChainElement.Binding) {
-                                    appendLine("${indendation}binding by '${element}'")
-                                } else {
-                                    appendLine("${indendation}calls reader '${element}'")
-                                }
-                            }
-                            is ChainElement.Binding -> appendLine("${indendation}requires binding '${element}'")
-                        }
-
-                    }
+                appendLine("${request.origin.orUnknown()} requires '${request.type.render()}'")
+                /*chain.forEachIndexed { index, binding ->
+                    appendLine("${indendation}${binding.origin.orUnknown()} requires binding '${binding.type.render()}'")
                     indent()
-                }
-                chain.pop()*/
-                // todo
+                }*/
             }
         )
     }

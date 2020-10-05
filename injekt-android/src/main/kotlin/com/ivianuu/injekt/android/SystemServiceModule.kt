@@ -85,235 +85,235 @@ import com.ivianuu.injekt.merge.MergeInto
 @Module
 object SystemServiceModule {
     @Binding
-    val Context.accessibilityManager
+    val ApplicationContext.accessibilityManager
         get() = systemService<AccessibilityManager>()
 
     @Binding
-    val Context.accountManager
+    val ApplicationContext.accountManager
         get() = systemService<AccountManager>()
 
     @Binding
-    val Context.activityManager
+    val ApplicationContext.activityManager
         get() = systemService<ActivityManager>()
 
     @Binding
-    val Context.alarmManager
+    val ApplicationContext.alarmManager
         get() = systemService<AlarmManager>()
 
     @Binding
-    val Context.audioManager
+    val ApplicationContext.audioManager
         get() = systemService<AudioManager>()
 
     @Binding
-    val Context.clipboardManager
+    val ApplicationContext.clipboardManager
         get() = systemService<ClipboardManager>()
 
     @Binding
-    val Context.connectivityManager
+    val ApplicationContext.connectivityManager
         get() = systemService<ConnectivityManager>()
 
     @Binding
-    val Context.devicePolicyManager
+    val ApplicationContext.devicePolicyManager
         get() = systemService<DevicePolicyManager>()
 
     @Binding
-    val Context.downloadManager
+    val ApplicationContext.downloadManager
         get() = systemService<DownloadManager>()
 
     @Binding
-    val Context.dropBoxManager
+    val ApplicationContext.dropBoxManager
         get() = systemService<DropBoxManager>()
 
     @Binding
-    val Context.inputMethodManager
+    val ApplicationContext.inputMethodManager
         get() = systemService<InputMethodManager>()
 
     @Binding
-    val Context.keyguardManager
+    val ApplicationContext.keyguardManager
         get() = systemService<KeyguardManager>()
 
     @Binding
-    val Context.layoutInflater
+    val ApplicationContext.layoutInflater
         get() = systemService<LayoutInflater>()
 
     @Binding
-    val Context.locationManager
+    val ApplicationContext.locationManager
         get() = systemService<LocationManager>()
 
     @Binding
-    val Context.nfcManager
+    val ApplicationContext.nfcManager
         get() = systemService<NfcManager>()
 
     @Binding
-    val Context.notificationManager
+    val ApplicationContext.notificationManager
         get() = systemService<NotificationManager>()
 
     @Binding
-    val Context.powerManager
+    val ApplicationContext.powerManager
         get() = systemService<PowerManager>()
 
     @Binding
-    val Context.searchManager
+    val ApplicationContext.searchManager
         get() = systemService<SearchManager>()
 
     @Binding
-    val Context.sensorManager
+    val ApplicationContext.sensorManager
         get() = systemService<SensorManager>()
 
     @Binding
-    val Context.storageManager
+    val ApplicationContext.storageManager
         get() = systemService<StorageManager>()
 
     @Binding
-    val Context.telephonyManager
+    val ApplicationContext.telephonyManager
         get() = systemService<TelephonyManager>()
 
     @Binding
-    val Context.textServicesManager
+    val ApplicationContext.textServicesManager
         get() = systemService<TextServicesManager>()
 
     @Binding
-    val Context.uiModeManager
+    val ApplicationContext.uiModeManager
         get() = systemService<UiModeManager>()
 
     @Binding
-    val Context.usbManager
+    val ApplicationContext.usbManager
         get() = systemService<UsbManager>()
 
     @Binding
-    val Context.vibrator
+    val ApplicationContext.vibrator
         get() = systemService<Vibrator>()
 
     @Binding
-    val Context.wallpaperManager
+    val ApplicationContext.wallpaperManager
         get() = systemService<WallpaperManager>()
 
     @Binding
-    val Context.wifiP2pManager
+    val ApplicationContext.wifiP2pManager
         get() = systemService<WifiP2pManager>()
 
     @Binding
-    val Context.wifiManager
+    val ApplicationContext.wifiManager
         get() = systemService<WifiManager>()
 
     @Binding
-    val Context.windowManager
+    val ApplicationContext.windowManager
         get() = systemService<WindowManager>()
 
     @Binding
-    val Context.inputManager
+    val ApplicationContext.inputManager
         get() = systemService<InputManager>()
 
     @Binding
-    val Context.mediaRouter
+    val ApplicationContext.mediaRouter
         get() = systemService<MediaRouter>()
 
     @Binding
-    val Context.nsdManager
+    val ApplicationContext.nsdManager
         get() = systemService<NsdManager>()
 
     @Binding
-    val Context.displayManager
+    val ApplicationContext.displayManager
         get() = systemService<DisplayManager>()
 
     @Binding
-    val Context.userManager
+    val ApplicationContext.userManager
         get() = systemService<UserManager>()
 
     @Binding
-    val Context.bluetoothManager
+    val ApplicationContext.bluetoothManager
         get() = systemService<BluetoothManager>()
 
     @Binding
-    val Context.appOpsManager
+    val ApplicationContext.appOpsManager
         get() = systemService<AppOpsManager>()
 
     @Binding
-    val Context.captioningManager
+    val ApplicationContext.captioningManager
         get() = systemService<CaptioningManager>()
 
     @Binding
-    val Context.consumerIrManager
+    val ApplicationContext.consumerIrManager
         get() = systemService<ConsumerIrManager>()
 
     @Binding
-    val Context.printManager
+    val ApplicationContext.printManager
         get() = systemService<PrintManager>()
 
     @Binding
-    val Context.appWidgetManager
+    val ApplicationContext.appWidgetManager
         get() = systemService<AppWidgetManager>()
 
     @Binding
-    val Context.batteryManager
+    val ApplicationContext.batteryManager
         get() = systemService<BatteryManager>()
 
     @Binding
-    val Context.cameraManager
+    val ApplicationContext.cameraManager
         get() = systemService<CameraManager>()
 
     @Binding
-    val Context.jobScheduler
+    val ApplicationContext.jobScheduler
         get() = systemService<JobScheduler>()
 
     @Binding
-    val Context.launcherApps
+    val ApplicationContext.launcherApps
         get() = systemService<LauncherApps>()
 
     @Binding
-    val Context.mediaProjectionManager
+    val ApplicationContext.mediaProjectionManager
         get() = systemService<MediaProjectionManager>()
 
     @Binding
-    val Context.mediaSessionManager
+    val ApplicationContext.mediaSessionManager
         get() = systemService<MediaSessionManager>()
 
     @Binding
-    val Context.restrictionsManager
+    val ApplicationContext.restrictionsManager
         get() = systemService<RestrictionsManager>()
 
     @Binding
-    val Context.telecomManager
+    val ApplicationContext.telecomManager
         get() = systemService<TelecomManager>()
 
     @Binding
-    val Context.tvInputManager
+    val ApplicationContext.tvInputManager
         get() = systemService<TvInputManager>()
 
     @Binding
-    val Context.subscriptionManager
+    val ApplicationContext.subscriptionManager
         get() = systemService<SubscriptionManager>()
 
     @Binding
-    val Context.usageStatsManager
+    val ApplicationContext.usageStatsManager
         get() = systemService<UsageStatsManager>()
 
     @Binding
-    val Context.carrierConfigManager
+    val ApplicationContext.carrierConfigManager
         get() = systemService<CarrierConfigManager>()
 
     @Binding
-    val Context.fingerprintManager
+    val ApplicationContext.fingerprintManager
         get() = systemService<FingerprintManager>()
 
     @Binding
-    val Context.midiManager
+    val ApplicationContext.midiManager
         get() = systemService<MidiManager>()
 
     @Binding
-    val Context.networkStatsManager
+    val ApplicationContext.networkStatsManager
         get() = systemService<NetworkStatsManager>()
 
     @Binding
-    val Context.hardwarePropertiesManager
+    val ApplicationContext.hardwarePropertiesManager
         get() = systemService<HardwarePropertiesManager>()
 
     @Binding
-    val Context.systemHealthManager
+    val ApplicationContext.systemHealthManager
         get() = systemService<SystemHealthManager>()
 
     @Binding
-    val Context.shortcutManager
+    val ApplicationContext.shortcutManager
         get() = systemService<ShortcutManager>()
 
     private inline fun <reified T : Any> Context.systemService() =
