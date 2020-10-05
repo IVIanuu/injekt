@@ -19,8 +19,7 @@ class ComponentGenerator(
         TypeRef,
         Name,
         ComponentImpl?,
-    ) -> ComponentImpl,
-    private val supportsMerge: SupportsMerge
+    ) -> ComponentImpl
 ) : Generator {
     override fun generate(files: List<KtFile>) {
         var generateMergeComponents = false
@@ -29,7 +28,7 @@ class ComponentGenerator(
                 namedDeclarationRecursiveVisitor { declaration ->
                     val descriptor = declaration.descriptor<DeclarationDescriptor>(bindingContext)
                         ?: return@namedDeclarationRecursiveVisitor
-                    generateMergeComponents = supportsMerge && (generateMergeComponents ||
+                    generateMergeComponents = (generateMergeComponents ||
                             descriptor.hasAnnotation(InjektFqNames.GenerateMergeComponents))
                     if (descriptor is ClassDescriptor &&
                         descriptor.hasAnnotation(InjektFqNames.Component)

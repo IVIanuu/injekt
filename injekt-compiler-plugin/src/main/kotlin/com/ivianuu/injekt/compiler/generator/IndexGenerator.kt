@@ -3,12 +3,13 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -17,12 +18,10 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class IndexGenerator(
     private val bindingContext: BindingContext,
     private val declarationStore: DeclarationStore,
-    private val fileManager: FileManager,
-    private val supportsMerge: SupportsMerge
+    private val fileManager: FileManager
 ) : Generator {
 
     override fun generate(files: List<KtFile>) {
-        if (!supportsMerge) return
         files.forEach { file ->
             val indices = mutableListOf<Index>()
             file.accept(
@@ -32,22 +31,22 @@ class IndexGenerator(
                     override fun visitClassOrObject(classOrObject: KtClassOrObject) {
                         val descriptor = classOrObject.descriptor<DeclarationDescriptor>(bindingContext)
                             ?: return
-                        val prevShouldIndexBindings = inModuleLikeScope
+                        val prevInModuleLikeScope = inModuleLikeScope
                         inModuleLikeScope = descriptor.hasAnnotation(InjektFqNames.Module) ||
                                 descriptor.hasAnnotation(InjektFqNames.Component) ||
                                 descriptor.hasAnnotation(InjektFqNames.ChildComponent) ||
                                 descriptor.hasAnnotation(InjektFqNames.MergeComponent) ||
                                 descriptor.hasAnnotation(InjektFqNames.MergeChildComponent)
                         super.visitClassOrObject(classOrObject)
-                        inModuleLikeScope = prevShouldIndexBindings
-
+                        inModuleLikeScope = prevInModuleLikeScope
                     }
-                    override fun visitNamedDeclaration(declaration: KtNamedDeclaration) {
-                        super.visitNamedDeclaration(declaration)
+
+                    override fun visitDeclaration(declaration: KtDeclaration) {
+                        super.visitDeclaration(declaration)
                         val descriptor = declaration.descriptor<DeclarationDescriptor>(bindingContext)
                             ?: return
 
-                        if (((descriptor !is FunctionDescriptor || !inModuleLikeScope) &&
+                        if (((descriptor is ClassDescriptor || descriptor is ConstructorDescriptor || !inModuleLikeScope) &&
                                     (descriptor.hasAnnotation(InjektFqNames.Binding) ||
                                             descriptor.hasAnnotation(InjektFqNames.MapEntries) ||
                                             descriptor.hasAnnotation(InjektFqNames.SetElements))) ||
