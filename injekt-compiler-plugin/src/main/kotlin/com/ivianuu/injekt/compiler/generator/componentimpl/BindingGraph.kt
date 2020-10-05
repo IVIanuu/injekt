@@ -395,7 +395,6 @@ private fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"
 
 @Binding
 class BindingCollections(
-    private val declarationStore: DeclarationStore,
     @Assisted private val owner: ComponentImpl,
     @Assisted private val parent: BindingCollections?,
 ) {
