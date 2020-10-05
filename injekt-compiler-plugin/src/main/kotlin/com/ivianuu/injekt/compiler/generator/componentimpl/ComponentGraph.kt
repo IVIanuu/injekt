@@ -208,47 +208,43 @@ class BindingGraph(
         var binding = resolvedBindings[type]
         if (binding != null) return binding
 
-        val explicitBindings = getExplicitBindingsForType(type)
-
-        if (explicitBindings.size > 1) {
-            val mostSpecific = explicitBindings.getExact(type)
-            if (mostSpecific != null) {
-                binding = mostSpecific
+        fun List<BindingNode>.mostSpecificOrFail(bindingType: String): BindingNode? {
+            return if (size > 1) {
+                getExact(type)
+                    ?: error(
+                        "Multiple $bindingType bindings found for '${type.render()}' at:\n${
+                            joinToString("\n") { "    '${it.origin.orUnknown()}'" }
+                        }"
+                    )
             } else {
-                error(
-                    "Multiple explicit bindings found for '${type.render()}' at:\n${
-                    explicitBindings
-                        .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
-                    }"
-                )
+                singleOrNull()
             }
-        } else {
-            binding = explicitBindings.singleOrNull()
         }
 
+        val explicitBindings = getExplicitBindingsForType(type)
+        binding = explicitBindings.mostSpecificOrFail("explicit")
         binding?.let {
             resolvedBindings[type] = it
             return it
         }
 
-        val implicitBindings = getImplicitBindingsForType(type)
+        val (implicitInternalUserBindings, externalImplicitUserBindings) = getImplicitUserBindingsForType(type)
+            .partition { !it.isExternal }
 
-        if (implicitBindings.size > 1) {
-            val mostSpecific = implicitBindings.getExact(type)
-            if (mostSpecific != null) {
-                binding = mostSpecific
-            } else {
-                error(
-                    "Multiple implicit bindings found for '${type.render()}' at:\n${
-                        implicitBindings
-                            .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
-                    }"
-                )
-            }
-        } else {
-            binding = implicitBindings.singleOrNull()
+        binding = implicitInternalUserBindings.mostSpecificOrFail("internal implicit")
+        binding?.let {
+            resolvedBindings[type] = it
+            return it
         }
 
+        binding = externalImplicitUserBindings.mostSpecificOrFail("external implicit")
+        binding?.let {
+            resolvedBindings[type] = it
+            return it
+        }
+
+        val implicitFrameworkBindings = getImplicitFrameworkBindingsForType(type)
+        binding = implicitFrameworkBindings.mostSpecificOrFail("")
         binding?.let {
             resolvedBindings[type] = it
             return it
@@ -263,6 +259,68 @@ class BindingGraph(
     }
 
     private fun getExplicitBindingsForType(type: TypeRef): List<BindingNode> = buildList<BindingNode> {
+        this += moduleBindingCallables
+            .filter { type.isAssignable(it.callable.type) }
+            .map { (callable, receiver) ->
+                val substitutionMap = type.getSubstitutionMap(callable.type)
+                CallableBindingNode(
+                    type = type,
+                    rawType = callable.type,
+                    owner = owner,
+                    dependencies = callable.valueParameters
+                        .filterNot { it.isAssisted }
+                        .map {
+                            BindingRequest(
+                                it.type.substitute(substitutionMap),
+                                callable.fqName.child(it.name)
+                            )
+                        },
+                    valueParameters = callable.valueParameters.map {
+                        it.copy(
+                            type = it.type.substitute(substitutionMap)
+                        )
+                    },
+                    origin = callable.fqName,
+                    targetComponent = callable.targetComponent,
+                    receiver = receiver,
+                    callable = callable,
+                    isExternal = callable.isExternal
+                )
+            }
+    }
+
+    private fun getImplicitUserBindingsForType(type: TypeRef): List<BindingNode> {
+        return declarationStore.bindingsForType(type)
+            .filter { it.targetComponent == null || it.targetComponent == owner.componentType }
+            .map { callable ->
+                val substitutionMap = type.getSubstitutionMap(callable.type)
+                CallableBindingNode(
+                    type = type,
+                    rawType = callable.type,
+                    owner = owner,
+                    dependencies = callable.valueParameters
+                        .filterNot { it.isAssisted }
+                        .map {
+                            BindingRequest(
+                                it.type.substitute(substitutionMap),
+                                callable.fqName.child(it.name)
+                            )
+                        },
+                    valueParameters = callable.valueParameters.map {
+                        it.copy(
+                            type = it.type.substitute(substitutionMap)
+                        )
+                    },
+                    origin = callable.fqName,
+                    targetComponent = callable.targetComponent,
+                    receiver = null,
+                    callable = callable,
+                    isExternal = callable.isExternal
+                )
+            }
+    }
+
+    private fun getImplicitFrameworkBindingsForType(type: TypeRef): List<BindingNode> = buildList<BindingNode> {
         if (type == componentType) {
             this += SelfBindingNode(
                 type = type,
@@ -321,14 +379,15 @@ class BindingGraph(
                 origin = callable.fqName,
                 targetComponent = callable.targetComponent,
                 receiver = null,
-                callable = callable
+                callable = callable,
+                isExternal = false
             )
         }
 
         if ((type.isFunction || type.isSuspendFunction) && type.typeArguments.size == 1 &&
-                type.typeArguments.last().let {
-                    !it.isChildComponent && !it.isMergeChildComponent
-                }) {
+            type.typeArguments.last().let {
+                !it.isChildComponent && !it.isMergeChildComponent
+            }) {
             this += ProviderBindingNode(
                 type = type,
                 owner = owner,
@@ -342,65 +401,7 @@ class BindingGraph(
             )
         }
 
-        this += moduleBindingCallables
-            .filter { type.isAssignable(it.callable.type) }
-            .map { (callable, receiver) ->
-                val substitutionMap = type.getSubstitutionMap(callable.type)
-                CallableBindingNode(
-                    type = type,
-                    rawType = callable.type,
-                    owner = owner,
-                    dependencies = callable.valueParameters
-                        .filterNot { it.isAssisted }
-                        .map {
-                            BindingRequest(
-                                it.type.substitute(substitutionMap),
-                                callable.fqName.child(it.name)
-                            )
-                        },
-                    valueParameters = callable.valueParameters.map {
-                        it.copy(
-                            type = it.type.substitute(substitutionMap)
-                        )
-                    },
-                    origin = callable.fqName,
-                    targetComponent = callable.targetComponent,
-                    receiver = receiver,
-                    callable = callable
-                )
-            }
-
         this += collections.getNodes(type)
-    }
-
-    private fun getImplicitBindingsForType(type: TypeRef): List<BindingNode> {
-        return declarationStore.bindingsForType(type)
-            .filter { it.targetComponent == null || it.targetComponent == owner.componentType }
-            .map { callable ->
-                val substitutionMap = type.getSubstitutionMap(callable.type)
-                CallableBindingNode(
-                    type = type,
-                    rawType = callable.type,
-                    owner = owner,
-                    dependencies = callable.valueParameters
-                        .filterNot { it.isAssisted }
-                        .map {
-                            BindingRequest(
-                                it.type.substitute(substitutionMap),
-                                callable.fqName.child(it.name)
-                            )
-                        },
-                    valueParameters = callable.valueParameters.map {
-                        it.copy(
-                            type = it.type.substitute(substitutionMap)
-                        )
-                    },
-                    origin = callable.fqName,
-                    targetComponent = callable.targetComponent,
-                    receiver = null,
-                    callable = callable
-                )
-            }
     }
 
     private fun List<BindingNode>.getExact(requested: TypeRef): BindingNode? =

@@ -662,7 +662,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testDuplicatedExplicitBindingFails() = codegen(
+    fun testMultipleExplicitBindingFails() = codegen(
         """
             @Component
             abstract class MyComponent(
@@ -677,18 +677,96 @@ class ComponentTest {
     }
 
     @Test
-    fun testDuplicatedImplicitBindingFails() = codegen(
+    fun testPrefersInternalImplicitOverExternalImplicitBinding() = multiCodegen(
+        listOf(
+            source(
+                """
+                    var externalFooField: Foo? = null
+                    @Binding
+                    val externalFoo: Foo get() = externalFooField!!
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    var internalFooField: Foo? = null
+                    @Binding
+                    val internalFoo: Foo get() = internalFooField!!
+
+                    @Component
+                    abstract class MyComponent {
+                        abstract val foo: Foo
+                    }
+                    
+                    fun invoke(
+                        internalFoo: Foo,
+                        externalFoo: Foo
+                    ): Foo {
+                        externalFooField = externalFoo
+                        internalFooField = internalFoo
+                        return MyComponentImpl().foo
+                    }
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        val externalFoo = Foo()
+        val internalFoo = Foo()
+        assertSame(internalFoo, it.last().invokeSingleFile(internalFoo, externalFoo))
+    }
+
+    @Test
+    fun testDuplicatedInternalImplicitBindingFails() = codegen(
         """
-            @Component
-            abstract class MyComponent {
-                abstract val foo: Foo
-            }
-            
-            @Binding fun foo1() = Foo()
-            @Binding fun foo2() = Foo()
+        @Binding fun foo1() = Foo()
+        @Binding fun foo2() = Foo()
+        
+        @Component
+        abstract class MyComponent {
+            abstract val foo: Foo
+        }
+        
+        fun invoke(): Foo { 
+            return MyComponentImpl().foo
+        }
         """
     ) {
-        assertInternalError("multiple implicit bindings")
+        assertInternalError("multiple internal implicit bindings")
+    }
+
+    @Test
+    fun testDuplicatedExternalImplicitBindingsFails() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Binding fun foo1() = Foo()
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Binding fun foo2() = Foo()
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Component
+                    abstract class MyComponent {
+                        abstract val foo: Foo
+                    }
+                    fun invoke(): Foo { 
+                        return MyComponentImpl().foo
+                    }
+                """
+            )
+        )
+    ) {
+        it.last().assertInternalError("multiple external bindings")
     }
 
     @Test

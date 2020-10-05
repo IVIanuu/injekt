@@ -80,6 +80,7 @@ sealed class BindingNode {
     abstract val origin: FqName?
     abstract val targetComponent: TypeRef?
     abstract val receiver: ComponentExpression?
+    abstract val isExternal: Boolean
 }
 
 class SelfBindingNode(
@@ -94,6 +95,8 @@ class SelfBindingNode(
     override val origin: FqName? get() = null
     override val targetComponent: TypeRef? get() = null
     override val receiver: ComponentExpression? get() = null
+    override val isExternal: Boolean
+        get() = false
 }
 
 class ChildImplBindingNode(
@@ -110,6 +113,8 @@ class ChildImplBindingNode(
         get() = null
     override val targetComponent: TypeRef?
         get() = owner.componentType
+    override val isExternal: Boolean
+        get() = false
 }
 
 class CallableBindingNode(
@@ -120,6 +125,7 @@ class CallableBindingNode(
     override val origin: FqName?,
     override val targetComponent: TypeRef?,
     override val receiver: ComponentExpression?,
+    override val isExternal: Boolean,
     val valueParameters: List<ValueParameterRef>,
     val callable: Callable,
 ) : BindingNode() {
@@ -136,6 +142,7 @@ class FunBindingNode(
     override val receiver: ComponentExpression?,
     val valueParameters: List<ValueParameterRef>,
     val callable: Callable,
+    override val isExternal: Boolean
 ) : BindingNode()
 
 class MapBindingNode(
@@ -152,6 +159,8 @@ class MapBindingNode(
         get() = null
     override val receiver: ComponentExpression?
         get() = null
+    override val isExternal: Boolean
+        get() = false
 }
 
 class ProviderBindingNode(
@@ -166,6 +175,8 @@ class ProviderBindingNode(
         get() = type
     override val targetComponent: TypeRef?
         get() = null
+    override val isExternal: Boolean
+        get() = false
 }
 
 class SetBindingNode(
@@ -182,6 +193,8 @@ class SetBindingNode(
         get() = null
     override val receiver: ComponentExpression?
         get() = null
+    override val isExternal: Boolean
+        get() = false
 }
 
 data class CallableWithReceiver(
@@ -204,6 +217,8 @@ class NullBindingNode(
         get() = null
     override val targetComponent: TypeRef?
         get() = null
+    override val isExternal: Boolean
+        get() = false
 }
 
 data class BindingRequest(val type: TypeRef, val origin: FqName)

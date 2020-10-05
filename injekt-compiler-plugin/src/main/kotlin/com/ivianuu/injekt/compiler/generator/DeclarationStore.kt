@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.DeserializedDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
@@ -294,7 +295,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             },
             isCall = owner !is PropertyDescriptor &&
                     (owner !is ClassDescriptor || owner.kind != ClassKind.OBJECT),
-            isSuspend = (owner is CallableDescriptor && owner.isSuspend)
+            isSuspend = (owner is CallableDescriptor && owner.isSuspend),
+            isExternal = owner is DeserializedDescriptor
         )
     }
 

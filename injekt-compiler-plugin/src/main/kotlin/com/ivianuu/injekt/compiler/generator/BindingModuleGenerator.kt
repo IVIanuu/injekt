@@ -246,7 +246,8 @@ class BindingModuleGenerator(
                     targetComponent = null,
                     contributionKind = Callable.ContributionKind.BINDING,
                     isCall = true,
-                    isSuspend = false
+                    isSuspend = false,
+                    isExternal = false
                 )
                 bindingModules
                     .forEach { bindingModule ->
@@ -273,7 +274,8 @@ class BindingModuleGenerator(
                             targetComponent = null,
                             contributionKind = Callable.ContributionKind.MODULE,
                             isCall = false,
-                            isSuspend = false
+                            isSuspend = false,
+                            isExternal = false
                         )
                     }
             }
