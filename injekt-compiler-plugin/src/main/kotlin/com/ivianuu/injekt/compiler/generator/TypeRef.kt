@@ -1,13 +1,14 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.checkers.hasAnnotation
-import com.ivianuu.injekt.compiler.irtransform.asNameId
-import com.ivianuu.injekt.compiler.removeIllegalChars
-import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
+import org.jetbrains.kotlin.builtins.isFunctionType
+import org.jetbrains.kotlin.builtins.isSuspendFunctionType
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
+import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -21,7 +22,8 @@ data class ClassifierRef(
     val fqName: FqName,
     val typeParameters: List<ClassifierRef> = emptyList(),
     val superTypes: List<TypeRef> = emptyList(),
-    val isTypeParameter: Boolean = false
+    val isTypeParameter: Boolean = false,
+    val isObject: Boolean = false
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
     override fun hashCode(): Int = fqName.hashCode()
@@ -33,7 +35,8 @@ fun ClassifierDescriptor.toClassifierRef(): ClassifierRef {
         (original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
             ?.map { it.toClassifierRef() } ?: emptyList(),
         (original as? TypeParameterDescriptor)?.upperBounds?.map { it.toTypeRef() } ?: emptyList(),
-        this is TypeParameterDescriptor
+        this is TypeParameterDescriptor,
+        this is ClassDescriptor && kind == ClassKind.OBJECT
     )
 }
 
@@ -46,47 +49,64 @@ val ClassifierRef.defaultType: TypeRef
 sealed class TypeRef {
     abstract val classifier: ClassifierRef
     abstract val isMarkedNullable: Boolean
-    abstract val isContext: Boolean
-    abstract val isChildContextFactory: Boolean
-    abstract val isGivenSet: Boolean
     abstract val typeArguments: List<TypeRef>
     abstract val variance: Variance
-    abstract val isReader: Boolean
+    abstract val isFunction: Boolean
+    abstract val isSuspendFunction: Boolean
+    abstract val isModule: Boolean
+    abstract val isBinding: Boolean
+    abstract val isMergeComponent: Boolean
+    abstract val isMergeChildComponent: Boolean
+    abstract val isChildComponent: Boolean
     abstract val isComposable: Boolean
+    abstract val isFunctionAlias: Boolean
     abstract val superTypes: List<TypeRef>
+    abstract val expandedType: TypeRef?
     private val typeName by unsafeLazy { uniqueTypeName(includeNullability = false) }
     override fun equals(other: Any?) = other is TypeRef && typeName == other.typeName
     override fun hashCode() = typeName.hashCode()
+    override fun toString(): String = render()
 }
 
 class KotlinTypeRef(
     val kotlinType: KotlinType,
-    override val variance: Variance = Variance.INVARIANT
+    override val variance: Variance = Variance.INVARIANT,
 ) : TypeRef() {
     private val finalType by unsafeLazy { kotlinType.getAbbreviation() ?: kotlinType.prepare() }
     override val classifier: ClassifierRef by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.toClassifierRef()
     }
-
+    override val isFunction: Boolean by unsafeLazy {
+        finalType.isFunctionType
+    }
+    override val isSuspendFunction: Boolean by unsafeLazy {
+        finalType.isSuspendFunctionType
+    }
+    override val isModule: Boolean by unsafeLazy {
+        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.Module)
+    }
+    override val isBinding: Boolean by unsafeLazy {
+        (kotlinType.constructor.declarationDescriptor!! as? ClassDescriptor)
+            ?.getInjectConstructor() != null
+    }
+    override val isMergeComponent: Boolean by unsafeLazy {
+        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.MergeComponent)
+    }
+    override val isMergeChildComponent: Boolean by unsafeLazy {
+        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.MergeChildComponent)
+    }
+    override val isChildComponent: Boolean by unsafeLazy {
+        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ChildComponent)
+    }
+    override val isFunctionAlias: Boolean by unsafeLazy {
+        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.FunctionAlias)
+    }
     override val isComposable: Boolean by unsafeLazy {
         kotlinType.hasAnnotation(InjektFqNames.Composable) &&
-                kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
+            kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
     }
     override val superTypes: List<TypeRef> by unsafeLazy {
         kotlinType.constructor.supertypes.map { it.toTypeRef() }
-    }
-    override val isReader: Boolean by unsafeLazy {
-        kotlinType.hasAnnotation(InjektFqNames.Reader) &&
-                kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Reader) != true
-    }
-    override val isContext: Boolean by unsafeLazy {
-        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ContextMarker)
-    }
-    override val isChildContextFactory: Boolean by unsafeLazy {
-        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ChildContextFactory)
-    }
-    override val isGivenSet: Boolean by unsafeLazy {
-        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.GivenSet)
     }
     override val isMarkedNullable: Boolean by unsafeLazy {
         kotlinType.isMarkedNullable
@@ -94,27 +114,38 @@ class KotlinTypeRef(
     override val typeArguments: List<TypeRef> by unsafeLazy {
         finalType.arguments.map { it.type.toTypeRef(it.projectionKind) }
     }
+    override val expandedType: TypeRef? by unsafeLazy {
+        (kotlinType.constructor.declarationDescriptor as? TypeAliasDescriptor)
+            ?.expandedType?.toTypeRef()
+            ?: kotlinType.getAbbreviatedType()?.expandedType?.toTypeRef()
+    }
 }
 
-fun KotlinType.toTypeRef(variance: Variance = Variance.INVARIANT) = KotlinTypeRef(this, variance)
+fun KotlinType.toTypeRef(variance: Variance = Variance.INVARIANT) =
+    KotlinTypeRef(this, variance)
 
 class SimpleTypeRef(
     override val classifier: ClassifierRef,
     override val isMarkedNullable: Boolean = false,
-    override val isContext: Boolean = false,
-    override val isChildContextFactory: Boolean = false,
-    override val isGivenSet: Boolean = false,
     override val typeArguments: List<TypeRef> = emptyList(),
     override val variance: Variance = Variance.INVARIANT,
+    override val isFunction: Boolean = false,
+    override val isSuspendFunction: Boolean = false,
+    override val isModule: Boolean = false,
+    override val isBinding: Boolean = false,
+    override val isMergeComponent: Boolean = false,
+    override val isMergeChildComponent: Boolean = false,
+    override val isChildComponent: Boolean = false,
+    override val isFunctionAlias: Boolean = false,
     override val isComposable: Boolean = false,
     override val superTypes: List<TypeRef> = emptyList(),
-    override val isReader: Boolean = false
+    override val expandedType: TypeRef? = null,
 ) : TypeRef() {
     init {
         check(typeArguments.size == classifier.typeParameters.size) {
             "Argument size mismatch ${classifier.fqName} " +
-                    "params: ${classifier.typeParameters.map { it.fqName }} " +
-                    "args: ${typeArguments.map { it.render() }}"
+                "params: ${classifier.typeParameters.map { it.fqName }} " +
+                "args: ${typeArguments.map { it.render() }}"
         }
     }
 }
@@ -124,34 +155,48 @@ fun TypeRef.typeWith(typeArguments: List<TypeRef>): TypeRef = copy(typeArguments
 fun TypeRef.copy(
     classifier: ClassifierRef = this.classifier,
     isMarkedNullable: Boolean = this.isMarkedNullable,
-    isContext: Boolean = this.isContext,
-    isChildContextFactory: Boolean = this.isChildContextFactory,
-    isGivenSet: Boolean = this.isGivenSet,
     typeArguments: List<TypeRef> = this.typeArguments,
     variance: Variance = this.variance,
+    isFunction: Boolean = this.isFunction,
+    isSuspendFunction: Boolean = this.isSuspendFunction,
+    isModule: Boolean = this.isModule,
+    isBinding: Boolean = this.isBinding,
+    isMergeComponent: Boolean = this.isMergeComponent,
+    isMergeChildComponent: Boolean = this.isMergeChildComponent,
+    isChildComponent: Boolean = this.isChildComponent,
     isComposable: Boolean = this.isComposable,
-    isReader: Boolean = this.isReader
+    isFunctionAlias: Boolean = this.isFunctionAlias,
+    superTypes: List<TypeRef> = this.superTypes,
+    expandedType: TypeRef? = this.expandedType
 ) = SimpleTypeRef(
-    classifier = classifier,
-    isMarkedNullable = isMarkedNullable,
-    isContext = isContext,
-    isChildContextFactory = isChildContextFactory,
-    isGivenSet = isGivenSet,
-    typeArguments = typeArguments,
-    variance = variance,
-    isComposable = isComposable,
-    isReader = isReader
+    classifier,
+    isMarkedNullable,
+    typeArguments,
+    variance,
+    isFunction,
+    isSuspendFunction,
+    isModule,
+    isBinding,
+    isMergeComponent,
+    isMergeChildComponent,
+    isChildComponent,
+    isFunctionAlias,
+    isComposable,
+    superTypes,
+    expandedType
 )
 
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
     map[classifier]?.let { return it }
-    return copy(typeArguments = typeArguments.map { it.substitute(map) })
+    return copy(
+        typeArguments = typeArguments.map { it.substitute(map) },
+        expandedType = expandedType?.substitute(map)
+    )
 }
 
 fun TypeRef.render(): String {
     return buildString {
         val annotations = listOfNotNull(
-            if (isReader) "@com.ivianuu.injekt.Reader" else null,
             if (isComposable) "@androidx.compose.runtime.Composable" else null,
         )
         if (annotations.isNotEmpty()) {
@@ -176,12 +221,13 @@ fun TypeRef.render(): String {
     }
 }
 
+fun TypeRef.renderExpanded() = expandedType?.render() ?: render()
+
 fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
     fun TypeRef.renderName(includeArguments: Boolean = true): String {
         return buildString {
             if (isComposable) append("composable_")
-            if (isReader) append("reader_")
-            //if (includeNullability && isMarkedNullable) append("nullable_")
+            // if (includeNullability && isMarkedNullable) append("nullable_")
             append(classifier.fqName.pathSegments().joinToString("_") { it.asString() })
             if (includeArguments) {
                 typeArguments.forEachIndexed { index, typeArgument ->
@@ -196,8 +242,10 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
     val fullTypeName = renderName()
 
     // Conservatively shorten the name if the length exceeds 128
-    return (if (fullTypeName.length <= 128) fullTypeName
-    else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}"))
+    return (
+        if (fullTypeName.length <= 128) fullTypeName
+        else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}")
+        )
         .removeIllegalChars()
         .asNameId()
 }
@@ -207,13 +255,13 @@ fun TypeRef.getSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRef> {
 
     fun visitType(
         thisType: TypeRef,
-        baseType: TypeRef
+        baseType: TypeRef,
     ) {
         if (baseType.classifier.isTypeParameter) {
             substitutionMap[baseType.classifier] = thisType
         } else {
-            thisType.typeArguments.zip(baseType.classifier.typeParameters).forEach {
-                visitType(it.first, it.second.defaultType)
+            thisType.typeArguments.zip(baseType.typeArguments).forEach {
+                visitType(it.first, it.second)
             }
         }
     }

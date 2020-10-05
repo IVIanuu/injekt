@@ -1,72 +1,29 @@
 package com.ivianuu.injekt.compiler.generator
 
-import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.compiler.SrcDir
-import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.checkers.hasAnnotation
-import com.ivianuu.injekt.compiler.checkers.isMarkedAsReader
-import com.ivianuu.injekt.compiler.log
-import com.ivianuu.injekt.given
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
+import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.descriptors.Visibility
-import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.descriptors.annotations.Annotated
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.js.translate.utils.refineType
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.replace
+import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.types.upperIfFlexible
-import java.io.File
-import kotlin.math.absoluteValue
 
-@Reader
-val isInjektCompiler: Boolean
-    get() = moduleDescriptor.name.asString() == "<injekt-compiler-plugin>"
-
-@Reader
-fun <D : DeclarationDescriptor> KtDeclaration.descriptor() =
-    given<BindingContext>()[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as D
-
-@Reader
-val moduleDescriptor: ModuleDescriptor
-    get() = given()
-
-fun DeclarationDescriptor.uniqueKey() = when (this) {
-    is ClassDescriptor -> "${fqNameSafe}${
-        if (visibility == Visibilities.LOCAL &&
-            name.isSpecial
-        ) findPsi()?.startOffset else ""
-    }__class"
-    is FunctionDescriptor -> uniqueFunctionKeyOf(
-        fqNameSafe,
-        visibility,
-        findPsi()?.startOffset,
-        allParameters.map { it.type.prepare().constructor.declarationDescriptor!!.fqNameSafe })
-    is PropertyDescriptor -> "${fqNameSafe}${
-        if (visibility == Visibilities.LOCAL &&
-            name.isSpecial
-        ) findPsi()?.startOffset else ""
-    }__property${
-        listOfNotNull(
-            dispatchReceiverParameter?.type?.prepare(),
-            extensionReceiverParameter?.type?.prepare()
-        ).map { it.constructor.declarationDescriptor!!.fqNameSafe }.hashCode().absoluteValue
-    }"
-    else -> error("Unsupported declaration $this")
-}
+fun <D : DeclarationDescriptor> KtDeclaration.descriptor(
+    bindingContext: BindingContext,
+) = bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
 
 fun KotlinType.prepare(): KotlinType {
     var tmp = refineType()
@@ -77,52 +34,73 @@ fun KotlinType.prepare(): KotlinType {
     return tmp
 }
 
-fun uniqueFunctionKeyOf(
-    fqName: FqName,
-    visibility: Visibility,
-    startOffset: Int? = null,
-    parameterTypes: List<FqName>
-) = "$fqName${
-    if (visibility == Visibilities.LOCAL && fqName.shortName().isSpecial) startOffset ?: "" else ""
-}__function${parameterTypes.hashCode().absoluteValue}"
-
 fun DeclarationDescriptor.hasAnnotationWithPropertyAndClass(
     fqName: FqName
 ): Boolean = hasAnnotation(fqName) ||
-        (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotation(fqName)) ||
-        (this is ConstructorDescriptor && constructedClass.hasAnnotation(fqName))
+    (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotation(fqName)) ||
+    (this is ConstructorDescriptor && constructedClass.hasAnnotation(fqName))
 
-fun DeclarationDescriptor.hasAnnotatedAnnotationsWithPropertyAndClass(
-    fqName: FqName
-): Boolean = hasAnnotatedAnnotations(fqName) ||
-        (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotatedAnnotations(
-            fqName
-        )) ||
-        (this is ConstructorDescriptor && constructedClass.hasAnnotatedAnnotations(fqName))
-
-fun ClassDescriptor.getReaderConstructor(trace: BindingTrace): ConstructorDescriptor? {
+fun ClassDescriptor.getInjectConstructor(): ConstructorDescriptor? {
     constructors
         .firstOrNull {
-            it.isMarkedAsReader(trace)
+            it.hasAnnotation(InjektFqNames.Binding) ||
+                    it.hasAnnotatedAnnotations(InjektFqNames.BindingModule)
         }?.let { return it }
-    if (!isMarkedAsReader(trace)) return null
+    if (!hasAnnotation(InjektFqNames.Binding) && !hasAnnotatedAnnotations(InjektFqNames.BindingModule)) return null
     return unsubstitutedPrimaryConstructor
 }
 
-@Reader
-fun generateFile(
+fun String.asNameId() = Name.identifier(this)
+
+fun FqName.toComponentImplFqName() =
+    FqName("${asString()}Impl")
+
+fun <T> unsafeLazy(init: () -> T) = lazy(LazyThreadSafetyMode.NONE, init)
+
+fun String.removeIllegalChars() =
+    replace(".", "")
+        .replace("<", "")
+        .replace(">", "")
+        .replace(" ", "")
+        .replace("[", "")
+        .replace("]", "")
+        .replace("@", "")
+        .replace(",", "")
+        .replace(" ", "")
+        .replace("-", "")
+
+fun Annotated.hasAnnotation(fqName: FqName): Boolean =
+    annotations.hasAnnotation(fqName)
+
+fun FunctionDescriptor.getBindingFunctionType(): KotlinType {
+    val assistedParameters =
+        (listOfNotNull(extensionReceiverParameter) + valueParameters)
+            .filter { it.hasAnnotation(InjektFqNames.Assisted) }
+            .map { it.type }
+    return (
+            if (isSuspend) builtIns.getSuspendFunction(assistedParameters.size)
+            else builtIns.getFunction(assistedParameters.size)
+            )
+        .defaultType
+        .replace(newArguments = assistedParameters.map { it.asTypeProjection() } + returnType!!.asTypeProjection())
+}
+
+fun AnnotationDescriptor.hasAnnotation(annotation: FqName): Boolean =
+    type.constructor.declarationDescriptor!!.hasAnnotation(annotation)
+
+fun Annotated.hasAnnotatedAnnotations(
+    annotation: FqName
+): Boolean = annotations.any { it.hasAnnotation(annotation) }
+
+fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescriptor> =
+    annotations.filter { it.hasAnnotation(annotation) }
+
+fun joinedNameOf(
     packageFqName: FqName,
-    fileName: String,
-    code: String
-): File {
-    val newFile = given<SrcDir>()
-        .resolve(packageFqName.asString().replace(".", "/"))
-        .also { it.mkdirs() }
-        .resolve(fileName)
-
-    log { "generated file $packageFqName.$fileName $code" }
-
-    return newFile
-        .also { it.createNewFile() }
-        .also { it.writeText(code) }
+    fqName: FqName
+): Name {
+    val joinedSegments = fqName.asString()
+        .removePrefix(packageFqName.asString() + ".")
+        .split(".")
+    return joinedSegments.joinToString("_").asNameId()
 }

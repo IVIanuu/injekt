@@ -62,12 +62,15 @@ internal fun File.listFilesRecursively(): List<File> {
 internal fun Path.listFilesRecursively(): List<Path> {
     val files = mutableListOf<Path>()
 
-    Files.walkFileTree(this, object : SimpleFileVisitor<Path>() {
-        override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
-            files.add(file)
-            return FileVisitResult.CONTINUE
+    Files.walkFileTree(
+        this,
+        object : SimpleFileVisitor<Path>() {
+            override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+                files.add(file)
+                return FileVisitResult.CONTINUE
+            }
         }
-    })
+    )
 
     return files
 }
@@ -87,7 +90,6 @@ internal fun URLClassLoader.addUrl(url: URL) {
 
 internal inline fun <T> withSystemProperty(key: String, value: String, f: () -> T): T =
     withSystemProperties(mapOf(key to value), f)
-
 
 internal inline fun <T> withSystemProperties(properties: Map<String, String>, f: () -> T): T {
     val previousProperties = mutableMapOf<String, String?>()

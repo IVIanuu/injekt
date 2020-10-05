@@ -125,8 +125,8 @@ data class Results(
         "Overall",
         setup.timings.indices.map {
             setup.timings[it] +
-                    firstInjection.timings[it] +
-                    secondInjection.timings[it]
+                firstInjection.timings[it] +
+                secondInjection.timings[it]
         }
     )
 }
@@ -136,13 +136,16 @@ fun List<Timings>.results(): Results {
         injectorName = first().injectorName,
         setup = Result(
             "Setup",
-            map { it.setup }),
+            map { it.setup }
+        ),
         firstInjection = Result(
             "First injection",
-            map { it.firstInjection }),
+            map { it.firstInjection }
+        ),
         secondInjection = Result(
             "Second injection",
-            map { it.secondInjection })
+            map { it.secondInjection }
+        )
     )
 }
 
@@ -156,9 +159,9 @@ fun Double.format(config: Config): String {
 fun Result.print(name: String, config: Config) {
     println(
         "$name | " +
-                "${average.format(config)} | " +
-                "${min.format(config)} | " +
-                "${max.format(config)}"
+            "${average.format(config)} | " +
+            "${min.format(config)} | " +
+            "${max.format(config)}"
     )
 }
 

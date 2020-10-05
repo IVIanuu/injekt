@@ -41,7 +41,7 @@ class MainCommandLineProcessor : CommandLineProcessor {
         val threadLocalParameters: ThreadLocal<ThreadLocalParameters> = ThreadLocal()
 
         private fun encode(str: String) =
-            str //Base64.getEncoder().encodeToString(str.toByteArray()).replace('=', '%')
+            str // Base64.getEncoder().encodeToString(str.toByteArray()).replace('=', '%')
 
         private fun decode(str: String) =
             str // String(Base64.getDecoder().decode(str.replace('%', '=')))

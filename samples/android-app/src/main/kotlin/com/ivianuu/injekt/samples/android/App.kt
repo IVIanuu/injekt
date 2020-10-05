@@ -17,18 +17,27 @@
 package com.ivianuu.injekt.samples.android
 
 import android.app.Application
-import com.ivianuu.injekt.InitializeInjekt
-import com.ivianuu.injekt.android.applicationReaderContext
-import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.android.applicationComponent
+import com.ivianuu.injekt.merge.ApplicationComponent
+import com.ivianuu.injekt.merge.GenerateMergeComponents
+import com.ivianuu.injekt.merge.MergeInto
+import com.ivianuu.injekt.merge.mergeComponent
 
-@InitializeInjekt
+@GenerateMergeComponents
 class App : Application() {
-
     override fun onCreate() {
         super.onCreate()
-        applicationReaderContext.runReader {
-            initializeWorkers()
-            refreshRepo()
-        }
+        applicationComponent
+            .mergeComponent<SampleAppComponent>()
+            .run {
+                initializeWorkers()
+                refreshRepo()
+            }
     }
+}
+
+@MergeInto(ApplicationComponent::class)
+interface SampleAppComponent {
+    val initializeWorkers: initializeWorkers
+    val refreshRepo: refreshRepo
 }

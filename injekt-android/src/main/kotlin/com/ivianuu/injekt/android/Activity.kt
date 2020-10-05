@@ -16,27 +16,48 @@
 
 package com.ivianuu.injekt.android
 
+import android.content.Context
 import android.content.res.Resources
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
-import com.ivianuu.injekt.Context
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.childContext
-import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.merge.MergeChildComponent
+import com.ivianuu.injekt.merge.MergeInto
+import com.ivianuu.injekt.merge.mergeComponent
 
-interface ActivityContext : Context
-
-val ComponentActivity.activityContext: ActivityContext
+val ComponentActivity.activityComponent: ActivityComponent
     get() = lifecycle.singleton {
-        retainedActivityContext.runReader {
-            childContext(this)
-        }
+        retainedActivityComponent
+            .mergeComponent<ActivityComponentFactoryOwner>()
+            .activityComponentFactoryOwner(this)
     }
 
-typealias AndroidActivityContext = android.content.Context
+@MergeChildComponent
+abstract class ActivityComponent(@Binding protected val activity: ComponentActivity) {
+    @Binding
+    protected val ComponentActivity.activityContext: ActivityContext
+        get() = this
+
+    @Binding
+    protected val ComponentActivity.activityResources: ActivityResources
+        get() = resources
+
+    @Binding
+    protected val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
+        get() = this
+
+    @Binding
+    protected val ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
+        get() = this
+
+    @Binding
+    protected val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
+        get() = this
+}
+
+typealias ActivityContext = Context
 
 typealias ActivityResources = Resources
 
@@ -46,21 +67,7 @@ typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
 
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
-object ActivityGivens {
-
-    @Given
-    fun context(): AndroidActivityContext = given<ComponentActivity>()
-
-    @Given
-    fun resources(): ActivityResources = given<AndroidActivityContext>().resources
-
-    @Given
-    fun lifecycleOwner(): ActivityLifecycleOwner = given<ComponentActivity>()
-
-    @Given
-    fun savedStateRegistryOwner(): ActivitySavedStateRegistryOwner = given<ComponentActivity>()
-
-    @Given
-    fun viewModelStoreOwner(): ActivityViewModelStoreOwner = given<ComponentActivity>()
-
+@MergeInto(RetainedActivityComponent::class)
+interface ActivityComponentFactoryOwner {
+    val activityComponentFactoryOwner: (ComponentActivity) -> ActivityComponent
 }

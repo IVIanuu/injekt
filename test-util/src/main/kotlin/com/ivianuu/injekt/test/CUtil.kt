@@ -32,7 +32,6 @@ fun source(
     @Language("kotlin") source: String,
     name: String = "File${fileIndex++}.kt",
     injektImports: Boolean = true,
-    initializeInjekt: Boolean = true
 ) = SourceFile.kotlin(
     name = name,
     contents = buildString {
@@ -40,15 +39,12 @@ fun source(
             appendLine("package com.ivianuu.injekt.integrationtests")
             appendLine()
             appendLine("import com.ivianuu.injekt.*")
+            appendLine("import com.ivianuu.injekt.merge.*")
             appendLine("import com.ivianuu.injekt.internal.*")
             appendLine("import com.ivianuu.injekt.test.*")
             appendLine("import kotlin.reflect.*")
             appendLine("import kotlinx.coroutines.*")
             appendLine()
-            if (initializeInjekt) {
-                appendLine("@InitializeInjekt interface InjektInitializer")
-                appendLine()
-            }
         }
 
         append(source)
@@ -152,4 +148,3 @@ fun KotlinCompilation.Result.assertCompileError(
     assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, exitCode)
     message?.let { assertTrue(messages.toLowerCase().contains(it.toLowerCase())) }
 }
-

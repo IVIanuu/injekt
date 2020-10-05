@@ -17,26 +17,39 @@
 package com.ivianuu.injekt.android
 
 import android.app.Application
+import android.content.Context
 import android.content.res.Resources
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.ivianuu.injekt.ApplicationContext
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.given
-import com.ivianuu.injekt.rootContext
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.merge.App
+import com.ivianuu.injekt.merge.ApplicationComponent
+import com.ivianuu.injekt.merge.MergeInto
 
-val Application.applicationReaderContext: ApplicationContext
-    get() = ProcessLifecycleOwner.get().lifecycle.singleton { rootContext(this) }
+val Application.applicationComponent: ApplicationComponent
+    get() = ProcessLifecycleOwner.get().lifecycle.singleton {
+        Class.forName("com.ivianuu.injekt.merge.ApplicationComponentImpl")
+            .constructors
+            .single()
+            .newInstance(this) as ApplicationComponent
+    }
 
-typealias AndroidApplicationContext = android.content.Context
+@MergeInto(ApplicationComponent::class)
+@Module
+class AndroidApplicationModule {
+    @Binding
+    val App.application: Application
+        get() = this as Application
+
+    @Binding
+    val Application.appContext: ApplicationContext
+        get() = this
+
+    @Binding
+    val Application.applicationResources: ApplicationResources
+        get() = resources
+}
+
+typealias ApplicationContext = Context
 
 typealias ApplicationResources = Resources
-
-object ApplicationGivens {
-
-    @Given
-    fun context(): AndroidApplicationContext = given<Application>()
-
-    @Given
-    fun resources(): ApplicationResources = given<Application>().resources
-
-}

@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.android
 
+/**
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
@@ -43,4 +44,4 @@ internal fun <VM : S, S : ViewModel, VMS : ViewModelStoreOwner> getViewModel(
             }
         }
     )[viewModelClass.java]
-}
+}*/

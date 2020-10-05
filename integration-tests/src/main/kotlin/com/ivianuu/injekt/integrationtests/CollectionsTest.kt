@@ -32,25 +32,33 @@ class CollectionsTest {
     @Test
     fun testSimpleMap() = codegen(
         """
-        @Given 
-        fun commandA() = CommandA()
+            @Component
+            abstract class MapComponent {
+                abstract val map: Map<KClass<out Command>, Command>
+            
+                @Binding 
+                protected fun commandA() = CommandA()
+                
+                @MapEntries
+                protected fun commandAIntoMap(
+                    commandA: CommandA
+                ): Map<KClass<out Command>, Command> = mapOf(CommandA::class to commandA)
+                
+                @Binding 
+                protected fun commandB() = CommandB()
         
-        @GivenMapEntries
-        fun commandAIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandA::class to given<CommandA>())
-        
-        @Given 
-        fun commandB() = CommandB()
-
-        @GivenMapEntries 
-        fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
-     
-        fun invoke(): Map<KClass<out Command>, Command> {
-            return rootContext<TestContext>().runReader { given<Map<KClass<out Command>, Command>>() }
-        }
+                @MapEntries 
+                protected fun commandBIntoMap(
+                    commandB: CommandB
+                ): Map<KClass<out Command>, Command> = mapOf(CommandB::class to commandB)
+            }
+            
+            fun invoke(): Map<KClass<out Command>, Command> {
+                return MapComponentImpl().map
+            }
         """
     ) {
-        val map =
-            invokeSingleFile<Map<KClass<out Command>, Command>>()
+        val map = invokeSingleFile<Map<KClass<out Command>, Command>>()
         assertEquals(2, map.size)
         assertTrue(map[CommandA::class] is CommandA)
         assertTrue(map[CommandB::class] is CommandB)
@@ -59,25 +67,36 @@ class CollectionsTest {
     @Test
     fun testNestedMap() = codegen(
         """
-        @Given 
-        fun commandA() = CommandA()
-        
-        @GivenMapEntries(TestParentContext::class)
-        fun commandAIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandA::class to given<CommandA>())
-        
-        @Given 
-        fun commandB() = CommandB()
+            @Component
+            abstract class ParentMapComponent {
+                abstract val map: Map<KClass<out Command>, Command>
 
-        @GivenMapEntries(TestChildContext::class)
-        fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
-     
-        fun invoke(): Pair<Map<KClass<out Command>, Command>, Map<KClass<out Command>, Command>> {
-            return rootContext<TestParentContext>().runReader { 
-                given<Map<KClass<out Command>, Command>>() to childContext<TestChildContext>().runReader {
-                    given<Map<KClass<out Command>, Command>>()
-                }
+                abstract val childMapComponentFactory: () -> ChildMapComponent
+            
+                @Binding
+                protected fun commandA() = CommandA()
+                
+                @MapEntries
+                protected fun commandAIntoMap(commandA: CommandA): Map<KClass<out Command>, Command> = 
+                    mapOf(CommandA::class to commandA)
             }
-        }
+            
+            @ChildComponent
+            abstract class ChildMapComponent {
+                abstract val map: Map<KClass<out Command>, Command>
+            
+                @Binding
+                protected fun commandB() = CommandB()
+                
+                @MapEntries
+                protected fun commandBIntoMap(commandB: CommandB): Map<KClass<out Command>, Command> = 
+                    mapOf(CommandB::class to commandB)
+            }
+         
+            fun invoke(): Pair<Map<KClass<out Command>, Command>, Map<KClass<out Command>, Command>> {
+                val parent = ParentMapComponentImpl()
+                return parent.map to parent.childMapComponentFactory().map
+            }
         """
     ) {
         val (parentMap, childMap) =
@@ -92,21 +111,30 @@ class CollectionsTest {
     @Test
     fun testAssistedMap() = codegen(
         """
-        @Given 
-        fun commandA(arg: String) = CommandA()
+            @Component
+            abstract class MapComponent {
+                abstract val map: Map<KClass<out Command>, (String) -> Command>
+            
+                @Binding 
+                protected fun commandA(@Assisted arg: String) = CommandA()
+                
+                @MapEntries
+                protected fun commandAIntoMap(
+                    commandAFactory: (String) -> CommandA
+                ): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandA::class to commandAFactory)
+                
+                @Binding 
+                protected fun commandB(@Assisted arg: String) = CommandB()
         
-        @GivenMapEntries
-        fun commandAIntoMap(): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandA::class to given<(String) -> CommandA>())
-        
-        @Given 
-        fun commandB(arg: String) = CommandB()
-
-        @GivenMapEntries 
-        fun commandBIntoMap(): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandB::class to given<(String) -> CommandB>())
-
-        fun invoke(): Map<KClass<out Command>, (String) -> Command> {
-            return rootContext<TestContext>().runReader { given<Map<KClass<out Command>, (String) -> Command>>() }
-        }
+                @MapEntries 
+                protected fun commandBIntoMap(
+                    commandBFactory: (String) -> CommandB
+                ): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandB::class to commandBFactory)
+            }
+         
+            fun invoke(): Map<KClass<out Command>, (String) -> Command> {
+                return MapComponentImpl().map
+            }
         """
     ) {
         val map =
@@ -119,32 +147,38 @@ class CollectionsTest {
     @Test
     fun testUndeclaredMap() = codegen(
         """
-        fun invoke(): Map<KClass<out Command>, Command> {
-            return rootContext<TestContext>().runReader { given<Map<KClass<out Command>, Command>>() }
-        }
+            @Component
+            abstract class TestComponent {
+                abstract val map: Map<KClass<out Command>, Command>
+            }
         """
     ) {
-        assertInternalError("no given")
+        assertInternalError("no binding")
     }
 
     @Test
     fun testSimpleSet() = codegen(
         """
-        @Given 
-        fun commandA() = CommandA()
-        
-        @GivenSetElements
-        fun commandAIntoSet(): Set<Command> = setOf(given<CommandA>())
-        
-        @Given 
-        fun commandB() = CommandB()
-        
-        @GivenSetElements
-        fun commandBIntoSet(): Set<Command> = setOf(given<CommandB>())
-
-        fun invoke(): Set<Command> {
-            return rootContext<TestContext>().runReader { given<Set<Command>>() }
-        }
+            @Component
+            abstract class SetComponent {
+                abstract val set: Set<Command>
+            
+                @Binding 
+                protected fun commandA() = CommandA()
+                
+                @SetElements
+                protected fun commandAIntoSet(commandA: CommandA): Set<Command> = setOf(commandA)
+                
+                @Binding 
+                protected fun commandB() = CommandB()
+                
+                @SetElements
+                protected fun commandBIntoSet(commandB: CommandB): Set<Command> = setOf(commandB)
+            }
+         
+            fun invoke(): Set<Command> {
+                return SetComponentImpl().set
+            }
         """
     ) {
         val set = invokeSingleFile<Set<Command>>().toList()
@@ -156,25 +190,36 @@ class CollectionsTest {
     @Test
     fun testNestedSet() = codegen(
         """
-        @Given 
-        fun commandA() = CommandA()
-        
-        @GivenSetElements(TestParentContext::class)
-        fun commandAIntoSet(): Set<Command> = setOf(given<CommandA>())
-        
-        @Given 
-        fun commandB() = CommandB()
-        
-        @GivenSetElements(TestChildContext::class)
-        fun commandBIntoSet(): Set<Command> = setOf(given<CommandB>())
+            @Component
+            abstract class ParentSetComponent {
+                abstract val set: Set<Command>
 
-        fun invoke(): Pair<Set<Command>, Set<Command>> {
-            return rootContext<TestParentContext>().runReader { 
-                given<Set<Command>>() to childContext<TestChildContext>().runReader {
-                    given<Set<Command>>()
-                }
+                abstract val childSetComponentFactory: () -> ChildSetComponent
+            
+                @Binding
+                protected fun commandA() = CommandA()
+                
+                @SetElements
+                protected fun commandAIntoSet(commandA: CommandA): Set<Command> = 
+                    setOf(commandA)
             }
-        }
+            
+            @ChildComponent
+            abstract class ChildSetComponent {
+                abstract val set: Set<Command>
+            
+                @Binding
+                protected fun commandB() = CommandB()
+                
+                @SetElements
+                protected fun commandBIntoSet(commandB: CommandB): Set<Command> = 
+                    setOf(commandB)
+            }
+         
+            fun invoke(): Pair<Set<Command>, Set<Command>> {
+                val parent = ParentSetComponentImpl()
+                return parent.set to parent.childSetComponentFactory().set
+            }
         """
     ) {
         val (parentSet, childSet) = invokeSingleFile<Pair<Set<Command>, Set<Command>>>().toList()
@@ -188,21 +233,30 @@ class CollectionsTest {
     @Test
     fun testAssistedSet() = codegen(
         """
-        @Given 
-        fun commandA(arg: String) = CommandA()
+            @Component
+            abstract class SetComponent {
+                abstract val set: Set<(String) -> Command>
+                
+                @Binding 
+                fun commandA(@Assisted arg: String) = CommandA()
+                
+                @SetElements
+                fun commandAIntoSet(
+                    commandAFactory: (String) -> CommandA
+                ): Set<(String) -> Command> = setOf(commandAFactory)
+                
+                @Binding 
+                fun commandB(@Assisted arg: String) = CommandB()
         
-        @GivenSetElements
-        fun commandAIntoSet(): Set<(String) -> Command> = setOf(given<(String) -> CommandA>())
-        
-        @Given 
-        fun commandB(arg: String) = CommandB()
-        
-        @GivenSetElements
-        fun commandBIntoSet(): Set<(String) -> Command> = setOf(given<(String) -> CommandB>())
+                @SetElements
+                fun commandBIntoSet(
+                    commandBFactory: (String) -> CommandB
+                ): Set<(String) -> Command> = setOf(commandBFactory)
+            }
 
-        fun invoke(): Set<(String) -> Command> {
-            return rootContext<TestContext>().runReader { given<Set<(String) -> Command>>() }
-        }
+            fun invoke(): Set<(String) -> Command> {
+                return SetComponentImpl().set
+            }
         """
     ) {
         val set = invokeSingleFile<Set<(String) -> Command>>().toList()
@@ -211,19 +265,18 @@ class CollectionsTest {
         assertTrue(set.any { it("b") is CommandB })
     }
 
-
     @Test
     fun testUndeclaredSet() = codegen(
         """
-        fun invoke(): Set<Command> {
-            return rootContext<TestContext>().runReader { given<Set<Command>>() }
-        }
+            @Component
+            abstract class SetComponent {
+                abstract val set: Set<Command>
+            }
         """
     ) {
-        assertInternalError("no given")
+        assertInternalError("no binding")
     }
 
     // todo test child overrides parent
     // todo test input overrides implicit
-
 }

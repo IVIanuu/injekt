@@ -20,30 +20,34 @@ import android.content.Context
 import androidx.work.Configuration
 import androidx.work.CoroutineWorker
 import androidx.work.WorkManager
+import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.android.AndroidApplicationContext
-import com.ivianuu.injekt.android.work.GivenWorker
-import com.ivianuu.injekt.given
+import com.ivianuu.injekt.Assisted
+import com.ivianuu.injekt.FunBinding
+import com.ivianuu.injekt.android.ApplicationContext
+import com.ivianuu.injekt.android.work.WorkerBinding
 
-@GivenWorker
+@WorkerBinding
 class TestWorker(
-    context: Context,
-    workerParams: WorkerParameters
+    @Assisted context: Context,
+    @Assisted workerParams: WorkerParameters,
+    repo: Repo,
 ) : CoroutineWorker(context, workerParams) {
-
     init {
-        println("hello $context $workerParams ${given<Repo>()}")
+        println("hello $context $workerParams $repo")
     }
 
     override suspend fun doWork(): Result = Result.success()
-
 }
 
-@Reader
-fun initializeWorkers() {
+@FunBinding
+fun initializeWorkers(
+    applicationContext: ApplicationContext,
+    workerFactory: WorkerFactory,
+) {
     WorkManager.initialize(
-        given<AndroidApplicationContext>(), Configuration.Builder()
-            .setWorkerFactory(given()).build()
+        applicationContext,
+        Configuration.Builder()
+            .setWorkerFactory(workerFactory).build()
     )
 }

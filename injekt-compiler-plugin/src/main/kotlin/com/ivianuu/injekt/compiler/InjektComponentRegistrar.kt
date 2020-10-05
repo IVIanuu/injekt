@@ -17,70 +17,41 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
-import com.ivianuu.injekt.ApplicationContext
-import com.ivianuu.injekt.InitializeInjekt
-import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.checkers.InjektStorageContainerContributor
 import com.ivianuu.injekt.compiler.generator.InjektKtGenerationExtension
-import com.ivianuu.injekt.compiler.irtransform.InjektIrGenerationExtension
-import com.ivianuu.injekt.given
-import com.ivianuu.injekt.rootContext
-import com.ivianuu.injekt.runReader
-import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
-import org.jetbrains.kotlin.com.intellij.openapi.extensions.ExtensionPointName
-import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 
-@InitializeInjekt
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
 
     override fun registerProjectComponents(
         project: MockProject,
-        configuration: CompilerConfiguration
+        configuration: CompilerConfiguration,
     ) {
-        rootContext<ApplicationContext>(project as Project, configuration).runReader {
-            registerExtensions(project)
-        }
+        ApplicationComponentImpl(project, configuration)
+            .registerExtensions()
     }
+}
 
-    @Reader
-    private fun registerExtensions(project: Project) {
-        StorageComponentContainerContributor.registerExtension(
-            project,
-            given<InjektStorageContainerContributor>()
-        )
+@Binding
+fun registerExtensions(
+    project: Project,
+    injektStorageContainerContributor: InjektStorageContainerContributor,
+    injektKtGenerationExtension: InjektKtGenerationExtension
+) {
+    StorageComponentContainerContributor.registerExtension(
+        project,
+        injektStorageContainerContributor
+    )
 
-        AnalysisHandlerExtension.registerExtension(
-            project,
-            given<InjektKtGenerationExtension>()
-        )
-
-        registerExtensionAtFirst(
-            project,
-            IrGenerationExtension.extensionPointName,
-            given<InjektIrGenerationExtension>()
-        )
-    }
-
-    fun <T : Any> registerExtensionAtFirst(
-        project: Project,
-        extensionPointName: ExtensionPointName<T>,
-        extension: T
-    ) {
-        val extensionPoint = Extensions.getArea(project)
-            .getExtensionPoint(extensionPointName)
-
-        val registeredExtensions = extensionPoint.extensionList
-        registeredExtensions.forEach { extensionPoint.unregisterExtension(it::class.java) }
-
-        extensionPoint.registerExtension(extension, {})
-        registeredExtensions.forEach { extensionPoint.registerExtension(it, {}) }
-    }
-
+    AnalysisHandlerExtension.registerExtension(
+        project,
+        injektKtGenerationExtension
+    )
 }

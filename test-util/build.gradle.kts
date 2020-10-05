@@ -29,6 +29,7 @@ dependencies {
 
     api(project(":injekt-compiler-plugin"))
     api(project(":injekt-core"))
+    api(project(":injekt-merge"))
 
     api(Deps.Coroutines.core)
     api(Deps.Coroutines.test)

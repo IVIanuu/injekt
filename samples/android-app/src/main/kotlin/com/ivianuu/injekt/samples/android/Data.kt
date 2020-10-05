@@ -16,35 +16,40 @@
 
 package com.ivianuu.injekt.samples.android
 
-import com.ivianuu.injekt.ApplicationContext
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.android.AndroidApplicationContext
-import com.ivianuu.injekt.given
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.FunBinding
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.android.ApplicationContext
+import com.ivianuu.injekt.merge.ApplicationComponent
+import com.ivianuu.injekt.merge.MergeInto
 import java.io.File
 
 typealias DatabaseFile = File
 
-@Given
-fun databaseFile(): DatabaseFile = given<AndroidApplicationContext>().cacheDir
-
-@Given(ApplicationContext::class)
-class Database {
-    private val file: DatabaseFile = given()
+@MergeInto(ApplicationComponent::class)
+@Module
+object DataModule {
+    @Binding
+    fun databaseFile(applicationContext: ApplicationContext): DatabaseFile =
+        applicationContext.cacheDir
 }
 
-@Given(ApplicationContext::class)
-class Repo {
-    private val database: Database = given()
-    private val api: Api = given()
+@Binding(ApplicationComponent::class)
+class Database(private val file: DatabaseFile)
+
+@Binding(ApplicationComponent::class)
+class Repo(
+    private val database: Database,
+    private val api: Api
+) {
     fun refresh() {
     }
 }
 
-@Reader
-fun refreshRepo() {
-    given<Repo>().refresh()
+@FunBinding
+fun refreshRepo(repo: Repo) {
+    repo.refresh()
 }
 
-@Given(ApplicationContext::class)
+@Binding(ApplicationComponent::class)
 class Api

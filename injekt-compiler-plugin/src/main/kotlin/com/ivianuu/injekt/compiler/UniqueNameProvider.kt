@@ -1,5 +1,7 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.generator.removeIllegalChars
+
 class UniqueNameProvider {
 
     private val existingNames = mutableSetOf<String>()
@@ -15,5 +17,4 @@ class UniqueNameProvider {
         existingNames += name
         return name
     }
-
 }

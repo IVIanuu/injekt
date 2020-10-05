@@ -27,7 +27,8 @@ import org.junit.Test
 class ComposeTest {
 
     @Test
-    fun testComposableBindingEffect() = codegen("""
+    fun testComposableBindingEffect() = codegen(
+        """
         typealias AppUi = @androidx.compose.runtime.Composable () -> Unit
 
         @Effect
@@ -47,7 +48,7 @@ class ComposeTest {
         }
         
         fun invoke(): AppUi {
-            return rootContext<TestContext>().runReader { given<AppUi>() }
+            return rootFactory<TestContext>().runReader { given<AppUi>() }
         }
     """,
         config = {
@@ -74,7 +75,6 @@ class ComposeTest {
                     }
                 }
                 """,
-                initializeInjekt = false
             )
         ),
         listOf(
@@ -87,7 +87,7 @@ class ComposeTest {
                 }
                 
                 fun invoke(): AppUi {
-                    return rootContext<TestContext>().runReader { given<AppUi>() }
+                    return rootFactory<TestContext>().runReader { given<AppUi>() }
                 }
                 """,
                 name = "File.kt"
@@ -99,5 +99,4 @@ class ComposeTest {
     ) {
         it.last().invokeSingleFile()
     }
-
 }

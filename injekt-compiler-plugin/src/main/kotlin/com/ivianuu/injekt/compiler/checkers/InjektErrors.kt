@@ -33,88 +33,18 @@ interface InjektErrors {
                 .also { MAP.put(it, message) }
 
         @JvmField
-        val FORBIDDEN_READER_CALL = error(
-            "@Reader functions can only be invoked inside a enclosing @Reader scope"
+        val ABSTRACT_BINDING_CLASS = error(
+            "@Binding class cannot be abstract"
         )
 
         @JvmField
-        val MUST_BE_A_CONCRETE_CONTEXT_TYPE = error(
-            "Must be a concrete context type"
+        val EITHER_CLASS_OR_CONSTRUCTOR_BINDING = error(
+            "Either the class or 1 constructor may be annotated with @Binding"
         )
 
         @JvmField
-        val GIVEN_CLASS_CANNOT_BE_ABSTRACT = error(
-            "@Given class cannot be an interface or abstract"
-        )
-
-        @JvmField
-        val EITHER_CLASS_OR_CONSTRUCTOR_GIVEN = error(
-            "Either the class or a constructor may be annotated with @Given"
-        )
-
-        @JvmField
-        val MULTIPLE_GIVEN_ANNOTATED_CONSTRUCTORS = error(
-            "Only 1 one constructor may be annotated with @Given"
-        )
-
-        @JvmField
-        val MULTIPLE_CONSTRUCTORS_ON_GIVEN_CLASS = error(
-            "Can't choose a constructor. Annotate the right one with @Given"
-        )
-
-        @JvmField
-        val READER_FUNCTION_MUST_BE_FINAL = error(
-            "@Reader function must be final"
-        )
-
-        @JvmField
-        val READER_CLASS_CANNOT_BE_INTERFACE = error(
-            "@Reader class cannot be an interface"
-        )
-
-        @JvmField
-        val READER_CLASS_CANNOT_BE_OBJECT = error(
-            "@Reader class cannot be an object"
-        )
-
-        @JvmField
-        val READER_PROPERTY_WITH_BACKING_FIELD = error(
-            "@Reader property cannot have a backing field"
-        )
-
-        @JvmField
-        val MULTIPLE_READER_ANNOTATIONS = error(
-            "A declaration can only be annotated with one of @Reader, @Given, @GivenMapEntries, @GivenSetElements or @Effect annotated annotations"
-        )
-
-        @JvmField
-        val EFFECT_WITHOUT_GIVEN_SET_COMPANION = error(
-            "@Effect annotated class needs a @GivenSet companion object"
-        )
-
-        @JvmField
-        val EFFECT_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS = error(
-            "@Effect functions cannot have value parameters"
-        )
-
-        @JvmField
-        val NOT_A_GIVEN_SET = error(
-            "Not a @GivenSet"
-        )
-
-        @JvmField
-        val EFFECT_FUNCTION_INVALID_TYPE_PARAMETERS = error(
-            "@Effect function must have one of the following type parameter signatures <T> or <T : S, S>"
-        )
-
-        @JvmField
-        val NOT_IN_EFFECT_BOUNDS = error(
-            "Annotated class is not in @Effect bounds"
-        )
-
-        @JvmField
-        val EFFECT_USAGE_WITH_TYPE_PARAMETERS = error(
-            "@Effect annotated declaration cannot have type parameters"
+        val MULTIPLE_CONSTRUCTORS_ON_BINDING_CLASS = error(
+            "Can't choose a constructor. Annotate the right one with @Binding"
         )
 
         init {
@@ -127,6 +57,5 @@ interface InjektErrors {
         object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             override fun getMap() = MAP
         }
-
     }
 }

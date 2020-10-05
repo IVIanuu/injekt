@@ -42,9 +42,9 @@ internal fun <T> ViewModelStore.singleton(init: () -> T): T {
         this,
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                ViewModelContextHolder(init()) as T
+                ViewModelValueHolder(init()) as T
         }
-    )[ViewModelContextHolder::class.java].context as T
+    )[ViewModelValueHolder::class.java].context as T
 }
 
-private class ViewModelContextHolder<T>(val context: T) : ViewModel()
+private class ViewModelValueHolder<T>(val context: T) : ViewModel()

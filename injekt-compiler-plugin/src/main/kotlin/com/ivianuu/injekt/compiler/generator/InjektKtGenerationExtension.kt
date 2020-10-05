@@ -1,56 +1,99 @@
 package com.ivianuu.injekt.compiler.generator
 
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.childContext
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.SrcDir
-import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runReader
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
+import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalFileSystem
+import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalVirtualFile
+import org.jetbrains.kotlin.com.intellij.psi.PsiManager
+import org.jetbrains.kotlin.com.intellij.psi.SingleRootFileViewProvider
+import org.jetbrains.kotlin.container.ComponentProvider
+import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
+import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtension
+import java.io.File
 
-@Given
-class InjektKtGenerationExtension : AnalysisHandlerExtension {
+@Binding
+class InjektKtGenerationExtension(
+    private val srcDir: SrcDir,
+    private val generationComponentFactory: (ModuleDescriptor, BindingContext) -> GenerationComponent
+) : PartialAnalysisHandlerExtension() {
+
+    override val analyzePartially: Boolean
+        get() = !generatedCode
 
     private var generatedCode = false
+    private var generatedFunctionAlias = false
+
+    override fun doAnalysis(
+        project: Project,
+        module: ModuleDescriptor,
+        projectContext: ProjectContext,
+        files: Collection<KtFile>,
+        bindingTrace: BindingTrace,
+        componentProvider: ComponentProvider,
+    ): AnalysisResult? {
+        if (!generatedFunctionAlias) {
+            generatedFunctionAlias = true
+            files as MutableList<KtFile>
+            srcDir.deleteRecursively()
+            files.removeAll { !File(it.virtualFilePath).exists() }
+            val generationComponent = generationComponentFactory(
+                module,
+                bindingTrace.bindingContext
+            )
+            val fileManager = generationComponent.fileManager
+
+            generationComponent.functionAliasGeneratorFactory.invoke { fqName, fileName, code ->
+                val file = fileManager.generateFile(fqName, fileName, code)
+                files += KtFile(
+                    SingleRootFileViewProvider(
+                        PsiManager.getInstance(project),
+                        CoreLocalVirtualFile(
+                            CoreLocalFileSystem(),
+                            file
+                        )
+                    ),
+                    false
+                )
+            }.generate(files.toList())
+        }
+
+        return super.doAnalysis(
+            project,
+            module,
+            projectContext,
+            files,
+            bindingTrace,
+            componentProvider
+        )
+    }
 
     override fun analysisCompleted(
         project: Project,
         module: ModuleDescriptor,
         bindingTrace: BindingTrace,
-        files: Collection<KtFile>
+        files: Collection<KtFile>,
     ): AnalysisResult? {
-        if (generatedCode || bindingTrace.bindingContext.diagnostics.any {
-                it.severity == Severity.ERROR
-            }
-        ) return null
+        if (generatedCode) return null
         generatedCode = true
-
-        given<SrcDir>()
-            .deleteRecursively()
 
         files as List<KtFile>
 
-        childContext<GenerationContext>(
-            module,
-            bindingTrace,
-            bindingTrace.bindingContext
-        ).runReader {
-            given<GivenIndexingGenerator>().generate(files)
-            given<EffectGenerator>().generate(files)
-            given<ContextFactoryGenerator>().generate(files)
-            given<ReaderContextGenerator>().generate(files)
-            given<RunReaderCallIndexingGenerator>().generate(files)
-            given<RootContextFactoryImplGenerator>().generate(files)
-        }
+        val generationComponent = generationComponentFactory(
+            module, bindingTrace.bindingContext
+        )
+        generationComponent.bindingModuleGenerator.generate(files)
+        generationComponent.indexGenerator.generate(files)
+        generationComponent.componentGenerator.generate(files)
+        val newFiles = generationComponent.fileManager.newFiles
 
         return AnalysisResult.RetryWithAdditionalRoots(
-            bindingTrace.bindingContext, module, emptyList(), listOf(given<SrcDir>()), true
+            bindingTrace.bindingContext, module, emptyList(), newFiles, true
         )
     }
-
 }

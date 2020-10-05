@@ -16,8 +16,10 @@
 
 package com.ivianuu.injekt.gradle
 
+import com.android.build.gradle.BaseExtension
 import com.google.auto.service.AutoService
 import org.gradle.api.Project
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.jetbrains.kotlin.gradle.dsl.KotlinCommonOptions
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
@@ -53,6 +55,19 @@ open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
         val srcDir = project.buildDir.resolve("generated/source/injekt/$sourceSetName")
             .also { it.mkdirs() }
             .absolutePath
+
+        if (androidProjectHandler != null) {
+            project.extensions.findByType(BaseExtension::class.java)
+                ?.sourceSets
+                ?.findByName(sourceSetName)
+                ?.java
+                ?.srcDir(srcDir)
+        } else {
+            project.extensions.findByType(SourceSetContainer::class.java)
+                ?.findByName(sourceSetName)
+                ?.java
+                ?.srcDir(srcDir)
+        }
 
         return listOf(
             SubpluginOption(

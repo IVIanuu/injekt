@@ -16,28 +16,24 @@
 
 package com.ivianuu.injekt.compiler.checkers
 
-import com.ivianuu.injekt.ApplicationContext
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.given
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.compiler.ApplicationComponent
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.platform.TargetPlatform
 
-@Given(ApplicationContext::class)
-class InjektStorageContainerContributor : StorageComponentContainerContributor {
+@Binding(ApplicationComponent::class)
+class InjektStorageContainerContributor(
+    private val bindingChecker: BindingChecker,
+) : StorageComponentContainerContributor {
 
     override fun registerModuleComponents(
         container: StorageComponentContainer,
         platform: TargetPlatform,
-        moduleDescriptor: ModuleDescriptor
+        moduleDescriptor: ModuleDescriptor,
     ) {
-        container.useInstance(given<ReaderContextChecker>())
-        container.useInstance(given<EffectChecker>())
-        container.useInstance(given<GivenChecker>())
-        container.useInstance(given<GivenSetChecker>())
-        container.useInstance(given<ReaderChecker>())
+        container.useInstance(bindingChecker)
     }
-
 }

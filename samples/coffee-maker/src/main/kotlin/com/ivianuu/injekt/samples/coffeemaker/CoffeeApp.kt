@@ -1,23 +1,16 @@
 package com.ivianuu.injekt.samples.coffeemaker
 
-import com.ivianuu.injekt.ApplicationContext
-import com.ivianuu.injekt.InitializeInjekt
-import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.given
-import com.ivianuu.injekt.rootContext
-import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.Binding
 
-@InitializeInjekt
 fun main() {
-    val context = rootContext<ApplicationContext>()
-    context.runReader { brewCoffee() }
+    val component = CoffeeComponentImpl()
+    component.brewCoffee()
 }
 
-@Reader
-private fun brewCoffee() {
-    val heater = given<Heater>()
+@Binding
+fun brewCoffee(heater: Heater, pump: Pump) {
     heater.on()
-    given<Pump>().pump()
+    pump.pump()
     println(" [_]P coffee! [_]P ")
     heater.off()
 }

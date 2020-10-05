@@ -24,7 +24,7 @@ fun main() {
             appendLine("fun createModule() = Kodein.Module(\"fib\") {")
             (1..FIB_COUNT).forEach { index ->
                 if (index == 1 || index == 2) {
-                    appendLine("bind<Fib${index}>() with provider { Fib${index}() }")
+                    appendLine("bind<Fib$index>() with provider { Fib$index() }")
                 } else {
                     appendLine(
                         """

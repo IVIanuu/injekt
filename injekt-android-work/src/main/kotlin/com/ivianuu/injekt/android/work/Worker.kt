@@ -20,44 +20,56 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.Effect
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenMapEntries
-import com.ivianuu.injekt.GivenSet
-import com.ivianuu.injekt.given
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.MapEntries
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.merge.ApplicationComponent
+import com.ivianuu.injekt.merge.BindingModule
+import com.ivianuu.injekt.merge.MergeInto
 import kotlin.reflect.KClass
 import kotlin.reflect.typeOf
 
-@Effect
-annotation class GivenWorker {
-    @GivenSet
-    companion object {
-        @GivenMapEntries
-        inline operator fun <reified T : (Context, WorkerParameters) -> ListenableWorker> invoke(): Workers {
-            val workerClass =
-                typeOf<T>().arguments.last().type!!.classifier as KClass<out ListenableWorker>
-            return mapOf(workerClass to given<T>())
+typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
+
+@BindingModule(ApplicationComponent::class)
+annotation class WorkerBinding {
+    @Module
+    class WorkerModule<T : (Context, WorkerParameters) -> ListenableWorker>(private val workerClass: KClass<out ListenableWorker>) {
+        @MapEntries
+        fun workerIntoMap(factory: T): Workers =
+            mapOf(workerClass to factory)
+
+        companion object {
+            inline operator fun <reified T : (Context, WorkerParameters) -> ListenableWorker> invoke(): WorkerModule<T> {
+                val workerClass =
+                    typeOf<T>().arguments.last().type!!.classifier as KClass<out ListenableWorker>
+                return WorkerModule(workerClass)
+            }
         }
     }
 }
 
-typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
+@MergeInto(ApplicationComponent::class)
+@Module
+object WorkerInjectionModule {
+    @Binding
+    val InjektWorkerFactory.workerFactory: WorkerFactory
+        get() = this
 
-@Given
-class InjektWorkerFactory : WorkerFactory() {
+    @MapEntries
+    fun defaultWorkers(): Workers = emptyMap()
+}
+
+@Binding
+class InjektWorkerFactory(private val workers: Workers) : WorkerFactory() {
     override fun createWorker(
         appContext: Context,
         workerClassName: String,
-        workerParameters: WorkerParameters
+        workerParameters: WorkerParameters,
     ): ListenableWorker? {
-        return given<Workers>()[Class.forName(workerClassName).kotlin]?.invoke(
+        return workers[Class.forName(workerClassName).kotlin]?.invoke(
             appContext,
             workerParameters
         )
-    }
-
-    companion object {
-        @Given
-        fun workerFactory(): WorkerFactory = given<InjektWorkerFactory>()
     }
 }

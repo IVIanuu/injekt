@@ -16,30 +16,33 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.irtransform.asNameId
+import com.ivianuu.injekt.compiler.generator.asNameId
 import org.jetbrains.kotlin.name.FqName
 
 object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
-    val Context = InjektPackage.child("Context".asNameId())
-    val Effect = InjektPackage.child("Effect".asNameId())
-    val Given = InjektPackage.child("Given".asNameId())
-    val GivenMapEntries = InjektPackage.child("GivenMapEntries".asNameId())
-    val GivenSet = InjektPackage.child("GivenSet".asNameId())
-    val GivenSetElements = InjektPackage.child("GivenSetElements".asNameId())
-    val InitializeInjekt = InjektPackage.child("InitializeInjekt".asNameId())
-    val Reader = InjektPackage.child("Reader".asNameId())
+
+    val Assisted = InjektPackage.child("Assisted".asNameId())
+    val Binding = InjektPackage.child("Binding".asNameId())
+    val Component = InjektPackage.child("Component".asNameId())
+    val ChildComponent = InjektPackage.child("ChildComponent".asNameId())
+    val FunBinding = InjektPackage.child("FunBinding".asNameId())
+    val MapEntries = InjektPackage.child("MapEntries".asNameId())
+    val Module = InjektPackage.child("Module".asNameId())
+    val SetElements = InjektPackage.child("SetElements".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
-    val ChildContextFactory = InternalPackage.child("ChildContextFactory".asNameId())
-    val ContextMarker = InternalPackage.child("ContextMarker".asNameId())
-    val ContextImplMarker = InternalPackage.child("ContextImplMarker".asNameId())
-    val Index = InternalPackage.child("Index".asNameId())
-    val Origin = InternalPackage.child("Origin".asNameId())
-    val RootContextFactory = InternalPackage.child("RootContextFactory".asNameId())
-    val RunReaderCall = InternalPackage.child("RunReaderCall".asNameId())
+    val FunctionAlias = InternalPackage.child("FunctionAlias".asNameId())
 
     val IndexPackage = InternalPackage.child("index".asNameId())
+
+    val MergePackage = InjektPackage.child("merge".asNameId())
+
+    val BindingModule = MergePackage.child("BindingModule".asNameId())
+    val MergeComponent = MergePackage.child("MergeComponent".asNameId())
+    val MergeChildComponent = MergePackage.child("MergeChildComponent".asNameId())
+    val MergeInto = MergePackage.child("MergeInto".asNameId())
+    val GenerateMergeComponents = MergePackage.child("GenerateMergeComponents".asNameId())
 
     val Composable = FqName("androidx.compose.runtime.Composable")
 }
