@@ -26,6 +26,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityContext
 import com.ivianuu.injekt.android.activityComponent
@@ -56,8 +57,8 @@ interface MainActivityComponent {
     val enqueueWork: enqueueWork
 }
 
-@Binding
 @Composable
+@FunBinding
 fun WithMainViewModel(
     viewModelFactory: () -> MainViewModel,
     @Assisted children: @Composable (MainViewModel) -> Unit,
@@ -66,7 +67,7 @@ fun WithMainViewModel(
     children(viewModel)
 }
 
-@Binding
+@FunBinding
 fun enqueueWork(context: ActivityContext) {
     WorkManager.getInstance(context)
         .enqueue(

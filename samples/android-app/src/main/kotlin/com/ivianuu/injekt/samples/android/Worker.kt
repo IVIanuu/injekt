@@ -23,7 +23,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Assisted
-import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.android.work.WorkerBinding
 
@@ -40,7 +40,7 @@ class TestWorker(
     override suspend fun doWork(): Result = Result.success()
 }
 
-@Binding
+@FunBinding
 fun initializeWorkers(
     applicationContext: ApplicationContext,
     workerFactory: WorkerFactory,

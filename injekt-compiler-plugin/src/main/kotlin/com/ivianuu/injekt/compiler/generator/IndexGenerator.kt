@@ -30,7 +30,8 @@ class IndexGenerator(
                     var inModuleLikeScope = false
 
                     override fun visitClassOrObject(classOrObject: KtClassOrObject) {
-                        val descriptor = classOrObject.descriptor<DeclarationDescriptor>(bindingContext)!!
+                        val descriptor = classOrObject.descriptor<DeclarationDescriptor>(bindingContext)
+                            ?: return
                         val prevShouldIndexBindings = inModuleLikeScope
                         inModuleLikeScope = descriptor.hasAnnotation(InjektFqNames.Module) ||
                                 descriptor.hasAnnotation(InjektFqNames.Component) ||

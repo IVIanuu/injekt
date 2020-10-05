@@ -50,7 +50,8 @@ annotation class WorkerBinding {
 }
 
 @MergeInto(ApplicationComponent::class)
-object WorkerInjectionComponent {
+@Module
+object WorkerInjectionModule {
     @Binding
     val InjektWorkerFactory.workerFactory: WorkerFactory
         get() = this
