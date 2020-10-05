@@ -126,7 +126,7 @@ class CallableBindingNode(
     override fun toString(): String = "Callable(${callable.type.render()})"
 }
 
-class FunctionAliasBindingNode(
+class FunBindingNode(
     override val type: TypeRef,
     override val rawType: TypeRef,
     override val owner: ComponentImpl,

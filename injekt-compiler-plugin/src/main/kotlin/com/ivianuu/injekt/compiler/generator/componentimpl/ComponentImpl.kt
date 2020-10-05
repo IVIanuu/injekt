@@ -48,7 +48,7 @@ class ComponentImpl(
     fun initialize() {
         parent?.members?.add(this)
         val requests = (listOf(componentType) + mergeDeclarations
-            .filter { it.classifier.isInterface })
+            .filterNot { it.isModule })
             .flatMap { declarationStore.allCallablesForType(it) }
             .filter { it.contributionKind == null }
         graph.checkRequests(requests.map { BindingRequest(it.type, it.fqName) })
@@ -88,7 +88,7 @@ class ComponentImpl(
         }
 
         val mergeSuperTypes = mergeDeclarations
-            .filter { it.classifier.isInterface }
+            .filterNot { it.isModule }
 
         if (mergeSuperTypes.isNotEmpty()) {
             emit(", ")

@@ -12,7 +12,8 @@ class MergeTest {
             abstract class MyComponent
             
             @MergeInto(MyComponent::class)
-            class ProvideFooComponent {
+            @Module
+            class ProvideFooModule {
                 @Binding
                 fun foo() = Foo()
             }
@@ -43,7 +44,8 @@ class MergeTest {
             abstract class MyChildComponent
             
             @MergeInto(MyChildComponent::class)
-            class ProvideFooComponent {
+            @Module
+            class ProvideFooModule {
                 @Binding
                 fun foo() = Foo()
             }

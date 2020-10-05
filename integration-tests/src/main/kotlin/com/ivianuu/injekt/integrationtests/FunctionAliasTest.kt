@@ -9,7 +9,7 @@ class FunctionAliasTest {
     @Test
     fun testSimpleFunctionAlias() = codegen(
         """
-            @Binding
+            @FunBinding
             fun function(string: String) {
             }
             
@@ -25,7 +25,7 @@ class FunctionAliasTest {
     @Test
     fun testAssistedFunctionAlias() = codegen(
         """
-            @Binding
+            @FunBinding
             fun function(string: String, @Assisted assistedString: String) {
             }
             
@@ -39,7 +39,7 @@ class FunctionAliasTest {
     @Test
     fun testSuspendFunctionAlias() = codegen(
         """
-            @Binding
+            @FunBinding
             suspend fun function(string: String, @Assisted assistedString: String) {
             }
             
@@ -53,7 +53,7 @@ class FunctionAliasTest {
     @Test
     fun testFunctionAliasWithTypeParameters() = codegen(
         """
-            @Binding
+            @FunBinding
             fun <T : S, S> function(t: T): S {
                 return error("")
             }

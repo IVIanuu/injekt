@@ -15,27 +15,27 @@ class FunctionAliasGenerator(
 
     override fun generate(files: List<KtFile>) {
         files.forEach { file ->
-            val bindingFunctions = mutableListOf<KtNamedFunction>()
+            val funBindings = mutableListOf<KtNamedFunction>()
             file.accept(
                 namedFunctionRecursiveVisitor { declaration ->
                     if (declaration.isTopLevel && declaration.annotationEntries.any {
-                        it.text.contains("Binding")
+                        it.text.contains("FunBinding")
                     }
                     ) {
-                        bindingFunctions += declaration
+                        funBindings += declaration
                     }
                 }
             )
 
-            if (bindingFunctions.isNotEmpty()) {
-                generateFunctionAliases(file, bindingFunctions)
+            if (funBindings.isNotEmpty()) {
+                generateFunctionAliases(file, funBindings)
             }
         }
     }
 
     private fun generateFunctionAliases(
         file: KtFile,
-        bindingFunctions: List<KtNamedFunction>,
+        funBindings: List<KtNamedFunction>,
     ) {
         val fileName = "${file.name.removeSuffix(".kt")}FunctionAliases.kt"
         val code = buildCodeString {
@@ -44,7 +44,7 @@ class FunctionAliasGenerator(
                 emitLine(it.text)
             }
             emitLine()
-            bindingFunctions.forEach { function ->
+            funBindings.forEach { function ->
                 val isSuspend = function.hasModifier(KtTokens.SUSPEND_KEYWORD)
                 val isComposable = function.annotationEntries.any {
                     it.text.contains("Composable")
@@ -62,7 +62,7 @@ class FunctionAliasGenerator(
                     .map { it.typeReference!!.text }
                 val returnType = function.typeReference?.text
                     ?: if (function.hasBlockBody()) "Unit" else error(
-                        "@Binding function must have explicit return type ${function.text}"
+                        "@FunBinding function must have explicit return type ${function.text}"
                     )
 
                 emitLine("@com.ivianuu.injekt.internal.FunctionAlias")

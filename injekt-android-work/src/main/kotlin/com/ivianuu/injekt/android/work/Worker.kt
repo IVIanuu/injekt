@@ -22,26 +22,28 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.MapEntries
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.merge.ApplicationComponent
-import com.ivianuu.injekt.merge.BindingComponent
+import com.ivianuu.injekt.merge.BindingModule
 import com.ivianuu.injekt.merge.MergeInto
 import kotlin.reflect.KClass
 import kotlin.reflect.typeOf
 
 typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
 
-@BindingComponent(ApplicationComponent::class)
+@BindingModule(ApplicationComponent::class)
 annotation class WorkerBinding {
-    class WorkerComponent<T : (Context, WorkerParameters) -> ListenableWorker>(private val workerClass: KClass<out ListenableWorker>) {
+    @Module
+    class WorkerModule<T : (Context, WorkerParameters) -> ListenableWorker>(private val workerClass: KClass<out ListenableWorker>) {
         @MapEntries
         fun workerIntoMap(factory: T): Workers =
             mapOf(workerClass to factory)
 
         companion object {
-            inline operator fun <reified T : (Context, WorkerParameters) -> ListenableWorker> invoke(): WorkerComponent<T> {
+            inline operator fun <reified T : (Context, WorkerParameters) -> ListenableWorker> invoke(): WorkerModule<T> {
                 val workerClass =
                     typeOf<T>().arguments.last().type!!.classifier as KClass<out ListenableWorker>
-                return WorkerComponent(workerClass)
+                return WorkerModule(workerClass)
             }
         }
     }

@@ -2,11 +2,14 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.CLASS)
 annotation class Component
 
 @Target(AnnotationTarget.CLASS)
 annotation class ChildComponent
+
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+annotation class Module
 
 @Target(
     AnnotationTarget.FUNCTION,
@@ -15,6 +18,9 @@ annotation class ChildComponent
     AnnotationTarget.PROPERTY
 )
 annotation class Binding(val scopeComponent: KClass<*> = Nothing::class)
+
+@Target(AnnotationTarget.FUNCTION)
+annotation class FunBinding
 
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class MapEntries

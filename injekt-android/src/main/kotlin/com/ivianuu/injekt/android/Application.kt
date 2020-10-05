@@ -21,6 +21,7 @@ import android.content.Context
 import android.content.res.Resources
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.merge.App
 import com.ivianuu.injekt.merge.ApplicationComponent
 import com.ivianuu.injekt.merge.MergeInto
@@ -34,7 +35,8 @@ val Application.applicationComponent: ApplicationComponent
     }
 
 @MergeInto(ApplicationComponent::class)
-class MergeAndroidApplicationComponent {
+@Module
+class AndroidApplicationModule {
     @Binding
     val App.application: Application
         get() = this as Application

@@ -69,7 +69,7 @@ class ComponentStatements(@Assisted private val owner: ComponentImpl) {
             when (binding) {
                 is ChildImplBindingNode -> childFactoryExpression(binding)
                 is CallableBindingNode -> callableExpression(binding)
-                is FunctionAliasBindingNode -> functionAliasExpression(binding)
+                is FunBindingNode -> functionAliasExpression(binding)
                 is MapBindingNode -> mapExpression(binding)
                 is NullBindingNode -> nullExpression()
                 is ProviderBindingNode -> providerExpression(binding)
@@ -233,7 +233,7 @@ class ComponentStatements(@Assisted private val owner: ComponentImpl) {
         }
     }
 
-    private fun functionAliasExpression(binding: FunctionAliasBindingNode): ComponentExpression = {
+    private fun functionAliasExpression(binding: FunBindingNode): ComponentExpression = {
         emit("{ ")
         binding.valueParameters
             .filter { it.isAssisted }

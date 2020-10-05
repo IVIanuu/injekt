@@ -21,7 +21,7 @@ import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 
 @Binding
-class BindingComponentGenerator(
+class BindingModuleGenerator(
     private val bindingContext: BindingContext,
     private val declarationStore: DeclarationStore,
     private val fileManager: FileManager,
@@ -36,8 +36,8 @@ class BindingComponentGenerator(
                         super.visitClass(klass)
                         val descriptor = klass.descriptor<ClassDescriptor>(bindingContext)
                             ?: return
-                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingComponent)) {
-                            generateBindingComponentForDeclaration(descriptor)
+                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingModule)) {
+                            generateBindingModuleForDeclaration(descriptor)
                         }
                     }
 
@@ -45,8 +45,8 @@ class BindingComponentGenerator(
                         super.visitNamedFunction(function)
                         val descriptor = function.descriptor<FunctionDescriptor>(bindingContext)
                             ?: return
-                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingComponent)) {
-                            generateBindingComponentForDeclaration(descriptor)
+                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingModule)) {
+                            generateBindingModuleForDeclaration(descriptor)
                         }
                     }
                 }
@@ -54,10 +54,10 @@ class BindingComponentGenerator(
         }
     }
 
-    private fun generateBindingComponentForDeclaration(declaration: DeclarationDescriptor) {
-        val bindingComponentAnnotations = declaration
-            .getAnnotatedAnnotations(InjektFqNames.BindingComponent)
-        val bindingComponents = bindingComponentAnnotations
+    private fun generateBindingModuleForDeclaration(declaration: DeclarationDescriptor) {
+        val bindingModuleAnnotations = declaration
+            .getAnnotatedAnnotations(InjektFqNames.BindingModule)
+        val bindingModules = bindingModuleAnnotations
             .map { it.type.constructor.declarationDescriptor as ClassDescriptor }
             .map {
                 it.unsubstitutedMemberScope.getContributedDescriptors()
@@ -65,28 +65,28 @@ class BindingComponentGenerator(
                     .single()
             }
 
-        val targetComponent = bindingComponentAnnotations
+        val targetComponent = bindingModuleAnnotations
             .first()
             .type
             .constructor
             .declarationDescriptor!!
             .annotations
-            .findAnnotation(InjektFqNames.BindingComponent)!!
+            .findAnnotation(InjektFqNames.BindingModule)!!
             .allValueArguments["component".asNameId()]!!
             .let { it as KClassValue }
             .getArgumentType(moduleDescriptor)
             .toTypeRef()
 
         val packageName = declaration.findPackage().fqName
-        val bindingComponentName = joinedNameOf(
+        val bindingModuleName = joinedNameOf(
             packageName,
-            FqName("${declaration.fqNameSafe.asString()}BindingComponent")
+            FqName("${declaration.fqNameSafe.asString()}BindingModule")
         )
 
         val rawBindingType = declaration.getBindingType()
         val aliasedType = SimpleTypeRef(
             classifier = ClassifierRef(
-                fqName = packageName.child("${bindingComponentName}Alias".asNameId())
+                fqName = packageName.child("${bindingModuleName}Alias".asNameId())
             )
         )
 
@@ -96,11 +96,11 @@ class BindingComponentGenerator(
             emitLine("package $packageName")
             emitLine("import ${declaration.fqNameSafe}")
             emitLine("import ${InjektFqNames.Binding}")
-            emitLine("import ${InjektFqNames.Component}")
+            emitLine("import ${InjektFqNames.Module}")
             emitLine()
             emitLine("typealias ${aliasedType.classifier.fqName.shortName()} = ${rawBindingType.render()}")
             emitLine()
-            emit("object $bindingComponentName ")
+            emit("object $bindingModuleName ")
             braced {
                 val assistedParameters = mutableListOf<ValueParameterRef>()
                 val valueParameters = mutableListOf<ValueParameterRef>()
@@ -237,7 +237,7 @@ class BindingComponentGenerator(
                 }
                 callables += Callable(
                     packageFqName = packageName,
-                    fqName = packageName.child(bindingComponentName)
+                    fqName = packageName.child(bindingModuleName)
                         .child("aliasedBinding".asNameId()),
                     name = "aliasedBinding".asNameId(),
                     type = aliasedType,
@@ -248,30 +248,30 @@ class BindingComponentGenerator(
                     isCall = true,
                     isSuspend = false
                 )
-                bindingComponents
-                    .forEach { bindingComponent ->
-                        val propertyType = bindingComponent.defaultType
+                bindingModules
+                    .forEach { bindingModule ->
+                        val propertyType = bindingModule.defaultType
                             .toTypeRef()
                             .typeWith(listOf(aliasedType))
                         val propertyName = propertyType
                             .uniqueTypeName()
-                        emit("@Component val $propertyName: ${propertyType.render()} = ${bindingComponent.fqNameSafe}")
-                        if (bindingComponent.kind != ClassKind.OBJECT) {
+                        emit("@Module val $propertyName: ${propertyType.render()} = ${bindingModule.fqNameSafe}")
+                        if (bindingModule.kind != ClassKind.OBJECT) {
                             emitLine("()")
                         } else {
                             emitLine()
                         }
                         callables += Callable(
                             packageFqName = packageName,
-                            fqName = packageName.child(bindingComponentName)
+                            fqName = packageName.child(bindingModuleName)
                                 .child(propertyName),
                             name = propertyName,
-                            type = bindingComponent.defaultType.toTypeRef()
+                            type = bindingModule.defaultType.toTypeRef()
                                 .typeWith(listOf(aliasedType)),
                             typeParameters = emptyList(),
                             valueParameters = emptyList(),
                             targetComponent = null,
-                            contributionKind = Callable.ContributionKind.COMPONENT,
+                            contributionKind = Callable.ContributionKind.MODULE,
                             isCall = false,
                             isSuspend = false
                         )
@@ -279,14 +279,15 @@ class BindingComponentGenerator(
             }
         }
 
-        declarationStore.addGeneratedMergeComponent(
+        declarationStore.addGeneratedMergeModule(
             targetComponent,
-            ComponentDescriptor(
+            ModuleDescriptor(
                 type = SimpleTypeRef(
                     classifier = ClassifierRef(
-                        fqName = packageName.child(bindingComponentName),
+                        fqName = packageName.child(bindingModuleName),
                         isObject = true
-                    )
+                    ),
+                    isModule = true
                 ),
                 callables = callables
             )
@@ -294,7 +295,7 @@ class BindingComponentGenerator(
 
         fileManager.generateFile(
             packageFqName = declaration.findPackage().fqName,
-            fileName = "$bindingComponentName.kt",
+            fileName = "$bindingModuleName.kt",
             code = code
         )
     }

@@ -44,9 +44,9 @@ fun ClassDescriptor.getInjectConstructor(): ConstructorDescriptor? {
     constructors
         .firstOrNull {
             it.hasAnnotation(InjektFqNames.Binding) ||
-                    it.hasAnnotatedAnnotations(InjektFqNames.BindingComponent)
+                    it.hasAnnotatedAnnotations(InjektFqNames.BindingModule)
         }?.let { return it }
-    if (!hasAnnotation(InjektFqNames.Binding) && !hasAnnotatedAnnotations(InjektFqNames.BindingComponent)) return null
+    if (!hasAnnotation(InjektFqNames.Binding) && !hasAnnotatedAnnotations(InjektFqNames.BindingModule)) return null
     return unsubstitutedPrimaryConstructor
 }
 

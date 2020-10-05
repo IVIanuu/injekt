@@ -16,7 +16,7 @@ data class Callable(
     val isSuspend: Boolean
 ) {
     enum class ContributionKind {
-        BINDING, MAP_ENTRIES, SET_ELEMENTS, COMPONENT
+        BINDING, MAP_ENTRIES, SET_ELEMENTS, MODULE
     }
 }
 
@@ -27,7 +27,7 @@ data class ValueParameterRef(
     val name: Name,
 )
 
-data class ComponentDescriptor(
+data class ModuleDescriptor(
     val type: TypeRef,
     val callables: List<Callable>,
 )

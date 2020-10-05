@@ -126,7 +126,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testBindingClass() = codegen(
+    fun testClassBinding() = codegen(
         """
             @Binding
             class AnnotatedBar(foo: Foo)
@@ -148,7 +148,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testBindingObject() = codegen(
+    fun testObjectBinding() = codegen(
         """
             @Binding
             object AnnotatedBar
@@ -167,7 +167,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testBindingProperty() = codegen(
+    fun testPropertyBinding() = codegen(
         """
             @Component
             abstract class FooComponent {
@@ -181,6 +181,44 @@ class ComponentTest {
     """
     ) {
         assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testTopLevelFunctionBinding() = codegen(
+        """
+            @Binding
+            fun foo() = Foo()
+            
+            @Component
+            abstract class FooComponent {
+                abstract val foo: Foo
+            }
+
+            fun invoke() {
+                FooComponentImpl().foo
+            }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testTopLevelPropertyBinding() = codegen(
+        """
+            @Binding
+            val foo get() = Foo()
+            
+            @Component
+            abstract class FooComponent {
+                abstract val foo: Foo
+            }
+
+            fun invoke() {
+                FooComponentImpl().foo
+            }
+    """
+    ) {
+        invokeSingleFile()
     }
 
     @Test
@@ -380,10 +418,11 @@ class ComponentTest {
                 @Binding
                 protected fun foo() = Foo()
                 
-                @Component
-                protected val nested = NestedComponent()
+                @Module
+                protected val nested = NestedModule()
                 
-                protected class NestedComponent {
+                @Module
+                protected class NestedModule {
                     @Binding
                     fun bar(foo: Foo) = Bar(foo)
                 }
@@ -404,10 +443,11 @@ class ComponentTest {
             abstract class MyComponent {
                 abstract val foo: Foo
             
-                @Component
-                protected val fooComponent = InstanceComponent<Foo>(Foo())
+                @Module
+                protected val fooModule = InstanceModule<Foo>(Foo())
                 
-                protected class InstanceComponent<T>(@Binding val instance: T)
+                @Module
+                protected class InstanceModule<T>(@Binding val instance: T)
             }
 
             fun invoke(): Foo {
@@ -502,7 +542,8 @@ class ComponentTest {
             source(
                 """
                     typealias Foo1 = Foo
-                    object Foo1Component {
+                    @Module
+                    object Foo1Module {
                         @Binding fun foo1(): Foo1 = Foo()
                     }
             """
@@ -512,7 +553,8 @@ class ComponentTest {
             source(
                 """
                     typealias Foo2 = Foo
-                    object Foo2Component {
+                    @Module
+                    object Foo2Module {
                         @Binding fun foo2(): Foo2 = Foo()
                     }
             """
@@ -526,8 +568,8 @@ class ComponentTest {
                         abstract val foo1: Foo1
                         abstract val foo2: Foo2
                         
-                        @Component protected val foo1Component = Foo1Component
-                        @Component protected val foo2Component = Foo2Component
+                        @Module protected val foo1Module = Foo1Module
+                        @Module protected val foo2Module = Foo2Module
                     }
                     fun invoke(): Pair<Foo1, Foo2> {
                         val component = MyComponentImpl()
@@ -620,7 +662,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testDuplicatedBindingsFails() = codegen(
+    fun testDuplicatedExplicitBindingFails() = codegen(
         """
             @Component
             abstract class MyComponent(
@@ -631,7 +673,22 @@ class ComponentTest {
             }
         """
     ) {
-        assertInternalError("multiple bindings")
+        assertInternalError("multiple explicit bindings")
+    }
+
+    @Test
+    fun testDuplicatedImplicitBindingFails() = codegen(
+        """
+            @Component
+            abstract class MyComponent {
+                abstract val foo: Foo
+            }
+            
+            @Binding fun foo1() = Foo()
+            @Binding fun foo2() = Foo()
+        """
+    ) {
+        assertInternalError("multiple implicit bindings")
     }
 
     @Test
@@ -715,7 +772,7 @@ class ComponentTest {
                 protected fun intComparator(): AliasComparator<Int> = error("")
             }
 
-            @Binding
+            @FunBinding
             fun <T> compare(@Assisted a: T, @Assisted b: T, comparator: AliasComparator<T>): Int = comparator
                 .compare(a, b)
 
@@ -790,7 +847,8 @@ class ComponentTest {
                 """
                     internal typealias InternalFoo = Foo
 
-                    object FooBarComponent {
+                    @Module
+                    object FooBarModule {
                         @Binding
                         fun foo(): InternalFoo = Foo()
                         
@@ -807,8 +865,8 @@ class ComponentTest {
                     abstract class MyComponent {
                         abstract val bar: Bar
                         
-                        @Component
-                        protected val fooBarComponent = FooBarComponent
+                        @Module
+                        protected val fooBarModule = FooBarModule
                     }
                 """
             )

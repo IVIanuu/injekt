@@ -23,9 +23,9 @@ abstract class GenerationComponent(
 ) {
     abstract val functionAliasGeneratorFactory: ((FqName, String, String) -> Unit) -> FunctionAliasGenerator
     abstract val fileManager: FileManager
-    abstract val bindingComponentGenerator: BindingComponentGenerator
+    abstract val bindingModuleGenerator: BindingModuleGenerator
     abstract val componentGenerator: ComponentGenerator
-    abstract val mergeIndexGenerator: MergeIndexGenerator
+    abstract val indexGenerator: IndexGenerator
 
     @Binding protected fun supportsMerge(moduleDescriptor: ModuleDescriptor): SupportsMerge =
         moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.MergeComponent)) != null

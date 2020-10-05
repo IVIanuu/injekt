@@ -24,10 +24,10 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 @Binding(GenerationComponent::class)
 class DeclarationStore(private val module: ModuleDescriptor) {
 
-    private val generatedMergeDeclarations = mutableListOf<TypeRef>()
+    private val internalIndices = mutableListOf<Index>()
 
-    fun addMergeDeclaration(type: TypeRef) {
-        generatedMergeDeclarations += type
+    fun addInternalIndex(index: Index) {
+        internalIndices += index
     }
 
     fun constructorForComponent(type: TypeRef): Callable? {
@@ -36,30 +36,97 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             ?.let { callableForDescriptor(it) }
     }
 
-    private val allMergeDeclarations by unsafeLazy {
-        (memberScopeForFqName(InjektFqNames.MergeIndexPackage)
+    private val allIndices by unsafeLazy {
+        internalIndices + (memberScopeForFqName(InjektFqNames.IndexPackage)
             ?.getContributedDescriptors(DescriptorKindFilter.VALUES)
             ?.filterIsInstance<PropertyDescriptor>()
             ?.map { it.name }
-            ?.map { FqName(it.asString().replace("_", ".")) }
-            ?.map { classDescriptorForFqName(it) }
-            ?: emptyList()) + generatedMergeDeclarations
-            .map { classDescriptorForFqName(it.classifier.fqName) }
+            ?.map {
+                val (fqNameWithUnderscores, type) = it.asString().split("__")
+                Index(
+                    FqName(fqNameWithUnderscores.replace("_", ".")),
+                    type
+                )
+            } ?: emptyList())
+    }
+
+    private val classIndices by unsafeLazy {
+        allIndices
+            .filter { it.type == "class" }
+            .map { classDescriptorForFqName(it.fqName) }
+    }
+
+    private val functionIndices by unsafeLazy {
+        allIndices
+            .filter { it.type == "function" }
+            .flatMap { functionDescriptorForFqName(it.fqName) }
+    }
+
+    private val propertyIndices by unsafeLazy {
+        allIndices
+            .filter { it.type == "property" }
+            .flatMap { propertyDescriptorsForFqName(it.fqName) }
+    }
+
+    private val allBindings by unsafeLazy {
+        classIndices
+            .mapNotNull { it.getInjectConstructor() }
+            .map { callableForDescriptor(it) } +
+                functionIndices
+                    .filter { it.hasAnnotation(InjektFqNames.Binding) }
+                    .map { callableForDescriptor(it) } +
+                propertyIndices
+                    .filter { it.hasAnnotation(InjektFqNames.Binding) }
+                    .map { callableForDescriptor(it.getter!!) }
+    }
+
+    private val bindingsByType = mutableMapOf<TypeRef, List<Callable>>()
+    fun bindingsForType(type: TypeRef): List<Callable> = bindingsByType.getOrPut(type) {
+        allBindings
+            .filter { type.isAssignable(it.type) }
+    }
+
+    private val allMapEntries by unsafeLazy {
+        functionIndices
+                    .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
+                    .map { callableForDescriptor(it) } +
+                propertyIndices
+                    .filter { it.hasAnnotation(InjektFqNames.SetElements) }
+                    .map { callableForDescriptor(it.getter!!) }
+    }
+    private val mapEntriesForType = mutableMapOf<TypeRef, List<Callable>>()
+    fun mapEntriesByType(type: TypeRef): List<Callable> = mapEntriesForType.getOrPut(type) {
+        return allMapEntries
+            .filter { type.isAssignable(it.type) }
+    }
+
+    private val allSetElements by unsafeLazy {
+        functionIndices
+            .filter { it.hasAnnotation(InjektFqNames.SetElements) }
+            .map { callableForDescriptor(it) } +
+                propertyIndices
+                    .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
+                    .map { callableForDescriptor(it.getter!!) }
+    }
+    private val setElementsForType = mutableMapOf<TypeRef, List<Callable>>()
+    fun setElementsByType(type: TypeRef): List<Callable> = setElementsForType.getOrPut(type) {
+        return allSetElements
+            .filter { type.isAssignable(it.type) }
     }
 
     val mergeComponents: List<TypeRef> by unsafeLazy {
-        allMergeDeclarations
+        classIndices
             .filter { it.hasAnnotation(InjektFqNames.MergeComponent) }
             .map { it.defaultType.toTypeRef() }
     }
 
-    private val allDeclarationsByFqName by unsafeLazy {
+    private val allMergeDeclarationsByFqName by unsafeLazy {
         buildMap<FqName, MutableList<TypeRef>> {
             generatedMergeDeclarationsByComponent
                 .forEach { (mergeComponent, declarations) ->
                     getOrPut(mergeComponent) { mutableListOf() } += declarations.map { it.type }
                 }
-            allMergeDeclarations
+            classIndices
                 .filter { it.hasAnnotation(InjektFqNames.MergeInto) }
                 .groupBy { declaration ->
                     declaration.annotations.findAnnotation(InjektFqNames.MergeInto)!!
@@ -77,16 +144,17 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     }
 
     fun mergeDeclarationsForMergeComponent(component: FqName): List<TypeRef> =
-        allDeclarationsByFqName[component] ?: emptyList()
+        allMergeDeclarationsByFqName[component] ?: emptyList()
 
-    private val generatedMergeDeclarationsByComponent = mutableMapOf<FqName, MutableList<ComponentDescriptor>>()
-    fun addGeneratedMergeComponent(
+    private val generatedMergeDeclarationsByComponent = mutableMapOf<FqName, MutableList<com.ivianuu.injekt.compiler.generator.ModuleDescriptor>>()
+    fun addGeneratedMergeModule(
         mergeComponent: TypeRef,
-        componentDescriptor: ComponentDescriptor
+        moduleDescriptor: com.ivianuu.injekt.compiler.generator.ModuleDescriptor
     ) {
         generatedMergeDeclarationsByComponent.getOrPut(
-            mergeComponent.classifier.fqName) { mutableListOf() } += componentDescriptor
-        componentByType[componentDescriptor.type] = componentDescriptor
+            mergeComponent.classifier.fqName) { mutableListOf() } += moduleDescriptor
+        moduleByType[moduleDescriptor.type] = moduleDescriptor
+        callablesByType[moduleDescriptor.type] = moduleDescriptor.callables
     }
 
     private val callablesByType = mutableMapOf<TypeRef, List<Callable>>()
@@ -140,6 +208,24 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         }
     }
 
+    private val functionDescriptorsByFqName = mutableMapOf<FqName, List<FunctionDescriptor>>()
+    fun functionDescriptorForFqName(fqName: FqName): List<FunctionDescriptor> {
+        return functionDescriptorsByFqName.getOrPut(fqName) {
+            memberScopeForFqName(fqName.parent())!!.getContributedFunctions(
+                fqName.shortName(), NoLookupLocation.FROM_BACKEND
+            ).toList()
+        }
+    }
+
+    private val propertyDescriptorsByFqName = mutableMapOf<FqName, List<PropertyDescriptor>>()
+    fun propertyDescriptorsForFqName(fqName: FqName): List<PropertyDescriptor> {
+        return propertyDescriptorsByFqName.getOrPut(fqName) {
+            memberScopeForFqName(fqName.parent())!!.getContributedVariables(
+                fqName.shortName(), NoLookupLocation.FROM_BACKEND
+            ).toList()
+        }
+    }
+
     private val memberScopeByFqName = mutableMapOf<FqName, MemberScope?>()
     fun memberScopeForFqName(fqName: FqName): MemberScope? {
         return memberScopeByFqName.getOrPut(fqName) {
@@ -185,7 +271,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.ContributionKind.MAP_ENTRIES
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) -> Callable.ContributionKind.SET_ELEMENTS
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Component) -> Callable.ContributionKind.COMPONENT
+                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) -> Callable.ContributionKind.MODULE
                 else -> null
             },
             typeParameters = descriptor.typeParameters.map { it.toClassifierRef() },
@@ -212,20 +298,20 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         )
     }
 
-    private val componentByType = mutableMapOf<TypeRef, ComponentDescriptor>()
-    fun componentForType(type: TypeRef): ComponentDescriptor {
-        return componentByType.getOrPut(type) {
+    private val moduleByType = mutableMapOf<TypeRef, com.ivianuu.injekt.compiler.generator.ModuleDescriptor>()
+    fun moduleForType(type: TypeRef): com.ivianuu.injekt.compiler.generator.ModuleDescriptor {
+        return moduleByType.getOrPut(type) {
             val descriptor = classDescriptorForFqName(type.classifier.fqName)
             val substitutionMap = type.classifier.typeParameters
                 .zip(type.typeArguments)
                 .toMap()
-            ComponentDescriptor(
+            ModuleDescriptor(
                 type = type,
                 callables = descriptor.unsubstitutedMemberScope.getContributedDescriptors().filter {
                     it.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
-                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.Component)
+                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.Module)
                 }
                     .mapNotNull {
                         when (it) {

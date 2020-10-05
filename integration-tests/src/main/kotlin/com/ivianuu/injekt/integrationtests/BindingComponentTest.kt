@@ -3,13 +3,14 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.test.codegen
 import org.junit.Test
 
-class BindingComponentTest {
+class BindingModuleTest {
 
     @Test
-    fun testBindingComponentWithClass() = codegen(
+    fun testBindingModuleWithClass() = codegen(
         """
-            @BindingComponent(MyComponent::class)
+            @BindingModule(MyComponent::class)
             annotation class AnyBinding {
+                @Module
                 class Impl<T : Any> {
                     @Binding
                     val T.any: Any get() = this
@@ -33,10 +34,11 @@ class BindingComponentTest {
     )
 
     @Test
-    fun testBindingComponentWithAssistedClass() = codegen(
+    fun testBindingModuleWithAssistedClass() = codegen(
         """
-            @BindingComponent(MyComponent::class)
+            @BindingModule(MyComponent::class)
             annotation class AnyBinding {
+                @Module
                 class Impl<T : Any> {
                     @Binding
                     val T.any: Any get() = this
@@ -58,10 +60,11 @@ class BindingComponentTest {
     )
 
     @Test
-    fun testBindingComponentWithTopLevelFunction() = codegen(
+    fun testBindingModuleWithTopLevelFunction() = codegen(
         """
-            @BindingComponent(MyComponent::class)
+            @BindingModule(MyComponent::class)
             annotation class AnyBinding {
+                @Module
                 class Impl<T : () -> Unit> {
                     @Binding
                     val T.any: Any get() = this
@@ -86,9 +89,9 @@ class BindingComponentTest {
     )
 
     @Test
-    fun testBindingComponentWithAssistedTopLevelFunction() = codegen(
+    fun testBindingModuleWithAssistedTopLevelFunction() = codegen(
         """
-            @BindingComponent(MyComponent::class)
+            @BindingModule(MyComponent::class)
             annotation class AnyBinding {
                 class Impl<T : (Foo) -> Unit> {
                     @Binding

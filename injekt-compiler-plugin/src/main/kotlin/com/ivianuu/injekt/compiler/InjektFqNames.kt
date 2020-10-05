@@ -26,21 +26,23 @@ object InjektFqNames {
     val Binding = InjektPackage.child("Binding".asNameId())
     val Component = InjektPackage.child("Component".asNameId())
     val ChildComponent = InjektPackage.child("ChildComponent".asNameId())
+    val FunBinding = InjektPackage.child("FunBinding".asNameId())
     val MapEntries = InjektPackage.child("MapEntries".asNameId())
+    val Module = InjektPackage.child("Module".asNameId())
     val SetElements = InjektPackage.child("SetElements".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
     val FunctionAlias = InternalPackage.child("FunctionAlias".asNameId())
 
+    val IndexPackage = InternalPackage.child("index".asNameId())
+
     val MergePackage = InjektPackage.child("merge".asNameId())
 
-    val BindingComponent = MergePackage.child("BindingComponent".asNameId())
+    val BindingModule = MergePackage.child("BindingModule".asNameId())
     val MergeComponent = MergePackage.child("MergeComponent".asNameId())
     val MergeChildComponent = MergePackage.child("MergeChildComponent".asNameId())
     val MergeInto = MergePackage.child("MergeInto".asNameId())
     val GenerateMergeComponents = MergePackage.child("GenerateMergeComponents".asNameId())
-
-    val MergeIndexPackage = MergePackage.child("internal".asNameId()).child("index".asNameId())
 
     val Composable = FqName("androidx.compose.runtime.Composable")
 }

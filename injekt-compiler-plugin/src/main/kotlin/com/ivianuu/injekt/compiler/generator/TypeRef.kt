@@ -23,7 +23,6 @@ data class ClassifierRef(
     val typeParameters: List<ClassifierRef> = emptyList(),
     val superTypes: List<TypeRef> = emptyList(),
     val isTypeParameter: Boolean = false,
-    val isInterface: Boolean = false,
     val isObject: Boolean = false
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
@@ -37,7 +36,6 @@ fun ClassifierDescriptor.toClassifierRef(): ClassifierRef {
             ?.map { it.toClassifierRef() } ?: emptyList(),
         (original as? TypeParameterDescriptor)?.upperBounds?.map { it.toTypeRef() } ?: emptyList(),
         this is TypeParameterDescriptor,
-        this is ClassDescriptor && kind == ClassKind.INTERFACE,
         this is ClassDescriptor && kind == ClassKind.OBJECT
     )
 }
@@ -55,6 +53,7 @@ sealed class TypeRef {
     abstract val variance: Variance
     abstract val isFunction: Boolean
     abstract val isSuspendFunction: Boolean
+    abstract val isModule: Boolean
     abstract val isBinding: Boolean
     abstract val isMergeComponent: Boolean
     abstract val isMergeChildComponent: Boolean
@@ -82,6 +81,9 @@ class KotlinTypeRef(
     }
     override val isSuspendFunction: Boolean by unsafeLazy {
         finalType.isSuspendFunctionType
+    }
+    override val isModule: Boolean by unsafeLazy {
+        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.Module)
     }
     override val isBinding: Boolean by unsafeLazy {
         (kotlinType.constructor.declarationDescriptor!! as? ClassDescriptor)
@@ -129,6 +131,7 @@ class SimpleTypeRef(
     override val variance: Variance = Variance.INVARIANT,
     override val isFunction: Boolean = false,
     override val isSuspendFunction: Boolean = false,
+    override val isModule: Boolean = false,
     override val isBinding: Boolean = false,
     override val isMergeComponent: Boolean = false,
     override val isMergeChildComponent: Boolean = false,
@@ -156,6 +159,7 @@ fun TypeRef.copy(
     variance: Variance = this.variance,
     isFunction: Boolean = this.isFunction,
     isSuspendFunction: Boolean = this.isSuspendFunction,
+    isModule: Boolean = this.isModule,
     isBinding: Boolean = this.isBinding,
     isMergeComponent: Boolean = this.isMergeComponent,
     isMergeChildComponent: Boolean = this.isMergeChildComponent,
@@ -171,6 +175,7 @@ fun TypeRef.copy(
     variance,
     isFunction,
     isSuspendFunction,
+    isModule,
     isBinding,
     isMergeComponent,
     isMergeChildComponent,
