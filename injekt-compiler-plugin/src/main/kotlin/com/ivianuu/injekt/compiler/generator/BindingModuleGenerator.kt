@@ -156,6 +156,7 @@ class BindingModuleGenerator(
                                 emit("${valueParameter.name}: ${valueParameter.type.render()}")
                                 if (index != assistedParameters.lastIndex) emit(", ") else emit(" -> ")
                             }
+                            emitLine()
                             indented {
                                 emit("with(${declaration.containingDeclaration.fqNameSafe}) ")
                                 braced {
@@ -175,6 +176,7 @@ class BindingModuleGenerator(
                                 emit("${valueParameter.name}: ${valueParameter.type.render()}")
                                 if (index != assistedParameters.lastIndex) emit(", ") else emit(" -> ")
                             }
+                            emitLine()
                             indented {
                                 emit("${declaration.name}(")
                                 val callable = declarationStore.callableForDescriptor(declaration)
