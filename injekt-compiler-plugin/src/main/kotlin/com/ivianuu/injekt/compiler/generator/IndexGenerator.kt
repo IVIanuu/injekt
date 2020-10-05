@@ -81,7 +81,7 @@ class IndexGenerator(
                             .forEach { index ->
                                 val indexName = index.fqName
                                     .pathSegments().joinToString("_") + "__${index.type}"
-                                emitLine("val $indexName = Unit")
+                                emitLine("internal val $indexName = Unit")
                         }
                     }
                 )
