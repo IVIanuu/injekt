@@ -65,6 +65,120 @@ class BindingModuleTest {
             @BindingModule(MyComponent::class)
             annotation class AnyBinding {
                 @Module
+                class Impl<T : Any> {
+                    @Binding
+                    val T.any: Any get() = this
+                }
+            }
+            
+            @AnyBinding
+            fun myService(foo: Foo) {
+            }
+
+            @MergeComponent
+            abstract class MyComponent {
+                abstract val any: Any
+                
+                @Binding protected fun foo() = Foo()
+            }
+            
+            @GenerateMergeComponents
+            fun invoke() {
+            }
+        """
+    )
+
+    @Test
+    fun testBindingModuleWithAssistedTopLevelFunction() = codegen(
+        """
+            @BindingModule(MyComponent::class)
+            annotation class AnyBinding {
+                class Impl<T : Any> {
+                    @Binding
+                    val T.any: Any get() = this
+                }
+            }
+
+            @AnyBinding
+            fun myService(@Assisted foo: Foo) {
+            }
+            
+            @MergeComponent
+            abstract class MyComponent {
+                abstract val any: Any
+            }
+            
+            @GenerateMergeComponents
+            fun invoke() {
+            }
+        """
+    )
+
+    @Test
+    fun testBindingModuleWithFunctionInObject() = codegen(
+        """
+            @BindingModule(MyComponent::class)
+            annotation class AnyBinding {
+                @Module
+                class Impl<T : Any> {
+                    @Binding
+                    val T.any: Any get() = this
+                }
+            }
+            
+            object MyObject {
+                @AnyBinding
+                fun myService(foo: Foo) {
+                }
+            }
+            
+            @MergeComponent
+            abstract class MyComponent {
+                abstract val any: Any
+                
+                @Binding protected fun foo() = Foo()
+            }
+            
+            @GenerateMergeComponents
+            fun invoke() {
+            }
+        """
+    )
+
+    @Test
+    fun testBindingModuleWithAssistedFunctionInObject() = codegen(
+        """
+            @BindingModule(MyComponent::class)
+            annotation class AnyBinding {
+                class Impl<T : Any> {
+                    @Binding
+                    val T.any: Any get() = this
+                }
+            }
+
+            object MyObject {
+                @AnyBinding
+                fun myService(@Assisted foo: Foo) {
+                }
+            }
+            
+            @MergeComponent
+            abstract class MyComponent {
+                abstract val any: Any
+            }
+            
+            @GenerateMergeComponents
+            fun invoke() {
+            }
+        """
+    )
+
+    @Test
+    fun testBindingModuleWithTopLevelFunBinding() = codegen(
+        """
+            @BindingModule(MyComponent::class)
+            annotation class AnyBinding {
+                @Module
                 class Impl<T : () -> Unit> {
                     @Binding
                     val T.any: Any get() = this
@@ -90,7 +204,7 @@ class BindingModuleTest {
     )
 
     @Test
-    fun testBindingModuleWithAssistedTopLevelFunction() = codegen(
+    fun testBindingModuleWithAssistedTopLevelFunBinding() = codegen(
         """
             @BindingModule(MyComponent::class)
             annotation class AnyBinding {
@@ -117,7 +231,7 @@ class BindingModuleTest {
     )
 
     @Test
-    fun testBindingModuleWithFunctionInObject() = codegen(
+    fun testBindingModuleWithFunBindingInObject() = codegen(
         """
             @BindingModule(MyComponent::class)
             annotation class AnyBinding {
@@ -149,7 +263,7 @@ class BindingModuleTest {
     )
 
     @Test
-    fun testBindingModuleWithAssistedFunctionInObject() = codegen(
+    fun testBindingModuleWithAssistedFunBindingInObject() = codegen(
         """
             @BindingModule(MyComponent::class)
             annotation class AnyBinding {

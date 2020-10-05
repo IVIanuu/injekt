@@ -150,43 +150,47 @@ class BindingModuleGenerator(
                 emit("): ${aliasedType.render()} ")
                 braced {
                     if (declaration is FunctionDescriptor) {
-                        if (declaration.containingDeclaration is ClassDescriptor) {
+                        val callable = declarationStore.callableForDescriptor(declaration)
+                        fun emitCall() {
+                            fun emitCallInner() {
+                                emit("${declaration.name}(")
+                                val callValueParameters = callable.valueParameters
+                                    .filterNot { it.isExtensionReceiver }
+                                callValueParameters
+                                    .forEachIndexed { index, valueParameter ->
+                                        emit(valueParameter.name)
+                                        if (index != callValueParameters.lastIndex) emit(", ")
+                                    }
+                                emit(")")
+                            }
+                            if (declaration.containingDeclaration is ClassDescriptor) {
+                                emit("with(${declaration.containingDeclaration.fqNameSafe}) ")
+                                braced { emitCallInner() }
+                            } else {
+                                emitCallInner()
+                            }
+                        }
+
+                        if (declaration.hasAnnotation(InjektFqNames.FunBinding) ||
+                                assistedParameters.isNotEmpty()) {
                             emit("return { ")
                             assistedParameters.forEachIndexed { index, valueParameter ->
                                 emit("${valueParameter.name}: ${valueParameter.type.render()}")
                                 if (index != assistedParameters.lastIndex) emit(", ") else emit(" -> ")
                             }
                             emitLine()
-                            indented {
-                                emit("with(${declaration.containingDeclaration.fqNameSafe}) ")
-                                braced {
-                                    emit("${declaration.name}(")
-                                    val callable = declarationStore.callableForDescriptor(declaration)
-                                    callable.valueParameters.forEachIndexed { index, valueParameter ->
-                                        emit(valueParameter.name)
-                                        if (index != callable.valueParameters.lastIndex) emit(", ")
-                                    }
-                                    emit(")")
+                            if (callable.valueParameters.any { it.isExtensionReceiver }) {
+                                indented {
+                                    emit("with(${callable.valueParameters.first().name}) ")
+                                    braced { emitCall() }
                                 }
+                            } else {
+                                emitCall()
                             }
                             emitLine(" }")
                         } else {
-                            emit("return { ")
-                            assistedParameters.forEachIndexed { index, valueParameter ->
-                                emit("${valueParameter.name}: ${valueParameter.type.render()}")
-                                if (index != assistedParameters.lastIndex) emit(", ") else emit(" -> ")
-                            }
-                            emitLine()
-                            indented {
-                                emit("${declaration.name}(")
-                                val callable = declarationStore.callableForDescriptor(declaration)
-                                callable.valueParameters.forEachIndexed { index, valueParameter ->
-                                    emit(valueParameter.name)
-                                    if (index != callable.valueParameters.lastIndex) emit(", ")
-                                }
-                                emit(")")
-                            }
-                            emitLine(" }")
+                            emit("return ")
+                            emitCall()
                         }
                     } else {
                         declaration as ClassDescriptor
@@ -295,11 +299,11 @@ class BindingModuleGenerator(
                 declarationStore.callableForDescriptor(getInjectConstructor()!!).type
             }
             is FunctionDescriptor -> {
-                if (!hasAnnotation(InjektFqNames.FunBinding)) {
+                val assistedParameters = valueParameters
+                    .filter { it.hasAnnotation(InjektFqNames.Assisted) }
+                if (!hasAnnotation(InjektFqNames.FunBinding) && assistedParameters.isEmpty()) {
                     returnType!!.toTypeRef()
                 } else {
-                    val assistedParameters = valueParameters
-                        .filter { it.hasAnnotation(InjektFqNames.Assisted) }
                     (if (isSuspend) moduleDescriptor.builtIns.getSuspendFunction(assistedParameters.size)
                     else moduleDescriptor.builtIns.getFunction(assistedParameters.size))
                         .defaultType
