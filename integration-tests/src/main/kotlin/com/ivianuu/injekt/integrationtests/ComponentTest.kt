@@ -718,7 +718,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testDuplicatedInternalImplicitBindingFails() = codegen(
+    fun testMultipleInternalImplicitBindingFails() = codegen(
         """
         @Binding fun foo1() = Foo()
         @Binding fun foo2() = Foo()
@@ -737,7 +737,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testDuplicatedExternalImplicitBindingsFails() = multiCodegen(
+    fun testMultipleExternalImplicitBindingsFails() = multiCodegen(
         listOf(
             source(
                 """
