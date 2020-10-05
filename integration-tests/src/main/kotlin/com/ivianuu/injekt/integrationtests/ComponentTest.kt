@@ -770,6 +770,26 @@ class ComponentTest {
     }
 
     @Test
+    fun testPrefsUserBindingOverFrameworkBinding() = codegen(
+        """
+            @Component
+            abstract class MyComponent(
+                @Binding protected val _lazyFoo: () -> Foo
+            ) {
+                abstract val lazyFoo: () -> Foo
+            }
+            
+            fun invoke(): Pair<() -> Foo, () -> Foo> {
+                val lazyFoo = { Foo() }
+                return lazyFoo to MyComponentImpl(lazyFoo).lazyFoo
+            }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Any, Any>>()
+        assertSame(a, b)
+    }
+
+    @Test
     fun testBindingPerComponent() = codegen(
         """
             @Component
