@@ -766,7 +766,7 @@ class ComponentTest {
             )
         )
     ) {
-        it.last().assertInternalError("multiple external bindings")
+        it.last().assertInternalError("multiple external implicit bindings")
     }
 
     @Test
