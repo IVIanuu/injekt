@@ -97,7 +97,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
                     .map { callableForDescriptor(it) } +
                 propertyIndices
-                    .filter { it.hasAnnotation(InjektFqNames.SetElements) }
+                    .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
                     .map { callableForDescriptor(it.getter!!) }
     }
     private val mapEntriesForType = mutableMapOf<TypeRef, List<Callable>>()
@@ -111,7 +111,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .filter { it.hasAnnotation(InjektFqNames.SetElements) }
             .map { callableForDescriptor(it) } +
                 propertyIndices
-                    .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
+                    .filter { it.hasAnnotation(InjektFqNames.SetElements) }
                     .map { callableForDescriptor(it.getter!!) }
     }
     private val setElementsForType = mutableMapOf<TypeRef, List<Callable>>()

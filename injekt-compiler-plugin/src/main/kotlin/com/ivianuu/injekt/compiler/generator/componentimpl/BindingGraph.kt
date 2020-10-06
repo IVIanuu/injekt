@@ -395,6 +395,7 @@ private fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"
 
 @Binding
 class BindingCollections(
+    private val declarationStore: DeclarationStore,
     @Assisted private val owner: ComponentImpl,
     @Assisted private val parent: BindingCollections?,
 ) {
@@ -414,6 +415,9 @@ class BindingCollections(
     private fun getMapEntries(type: TypeRef): List<CallableWithReceiver> {
         return mapEntriesByType.getOrPut(type) {
             (parent?.getMapEntries(type) ?: emptyList()) +
+                    (if (parent == null) declarationStore.mapEntriesByType(type)
+                        .map { CallableWithReceiver(it, null, emptyMap()) }
+                    else emptyList()) +
                     (thisMapEntries[type] ?: emptyList())
         }
     }
@@ -422,6 +426,9 @@ class BindingCollections(
     private fun getSetElements(type: TypeRef): List<CallableWithReceiver> {
         return setElementsByType.getOrPut(type) {
             (parent?.getSetElements(type) ?: emptyList()) +
+                    (if (parent == null) declarationStore.setElementsByType(type)
+                        .map { CallableWithReceiver(it, null, emptyMap()) }
+                    else emptyList()) +
                 (thisSetElements[type] ?: emptyList())
         }
     }
