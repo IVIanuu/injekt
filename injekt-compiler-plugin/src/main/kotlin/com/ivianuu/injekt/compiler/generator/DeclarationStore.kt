@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
@@ -25,11 +26,16 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 @Binding(GenerationComponent::class)
 class DeclarationStore(private val module: ModuleDescriptor) {
 
-    private val _internalIndices = mutableListOf<Index>()
-    val internalIndices: List<Index> get() = _internalIndices
+    private val internalIndices = mutableListOf<Index>()
+    val internalGeneratedIndices: Map<KtFile, List<Index>> get() = _internalGeneratedIndices
+    private val _internalGeneratedIndices = mutableMapOf<KtFile, MutableList<Index>>()
 
     fun addInternalIndex(index: Index) {
-        _internalIndices += index
+        internalIndices += index
+    }
+
+    fun addGeneratedInternalIndex(file: KtFile, index: Index) {
+        _internalGeneratedIndices.getOrPut(file) { mutableListOf() } += index
     }
 
     fun constructorForComponent(type: TypeRef): Callable? {
@@ -39,7 +45,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     }
 
     private val allIndices by unsafeLazy {
-        _internalIndices + (memberScopeForFqName(InjektFqNames.IndexPackage)
+        internalIndices + (memberScopeForFqName(InjektFqNames.IndexPackage)
             ?.getContributedDescriptors(DescriptorKindFilter.VALUES)
             ?.filterIsInstance<PropertyDescriptor>()
             ?.map { it.name }
@@ -54,21 +60,18 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
     private val classIndices by unsafeLazy {
         allIndices
-            .filterNot { it in _internalIndices }
             .filter { it.type == "class" }
             .map { classDescriptorForFqName(it.fqName) }
     }
 
     private val functionIndices by unsafeLazy {
         allIndices
-            .filterNot { it in _internalIndices }
             .filter { it.type == "function" }
             .flatMap { functionDescriptorForFqName(it.fqName) }
     }
 
     private val propertyIndices by unsafeLazy {
         allIndices
-            .filterNot { it in _internalIndices }
             .filter { it.type == "property" }
             .flatMap { propertyDescriptorsForFqName(it.fqName) }
     }
