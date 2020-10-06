@@ -101,6 +101,7 @@ class BindingModuleGenerator(
             emitLine()
             emitLine("typealias ${aliasedType.classifier.fqName.shortName()} = ${rawBindingType.render()}")
             emitLine()
+            emitLine("@MergeInto(${targetComponent.classifier.fqName}::class)")
             emitLine("@Module")
             emit("object $bindingModuleName ")
             braced {
