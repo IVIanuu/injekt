@@ -15,6 +15,7 @@
  */
 plugins {
     id("com.android.library")
+    id("symbol-processing") version Deps.Ksp.version
     kotlin("android")
 }
 
@@ -34,7 +35,7 @@ android {
 dependencies {
     api(project(":injekt-core"))
     api(project(":injekt-merge"))
-    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
+    ksp(project(":injekt-compiler"))
     api(Deps.AndroidX.appCompat)
     api(Deps.AndroidX.Lifecycle.extensions)
     api(Deps.AndroidX.Lifecycle.runtime)

@@ -16,6 +16,7 @@
 
 plugins {
     id("com.android.application")
+    id("symbol-processing") version Deps.Ksp.version
     kotlin("android")
     kotlin("kapt")
 }
@@ -53,7 +54,7 @@ dependencies {
     implementation(Deps.guice)
 
     implementation(project(":injekt-core"))
-    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
+    ksp(project(":injekt-compiler"))
 
     implementation(Deps.katana)
 

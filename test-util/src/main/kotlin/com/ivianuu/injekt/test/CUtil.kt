@@ -16,11 +16,10 @@
 
 package com.ivianuu.injekt.test
 
-import com.ivianuu.injekt.compiler.InjektCommandLineProcessor
-import com.ivianuu.injekt.compiler.InjektComponentRegistrar
+import com.ivianuu.injekt.compiler.InjektProcessor
 import com.tschuchort.compiletesting.KotlinCompilation
-import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
+import com.tschuchort.compiletesting.symbolProcessors
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.intellij.lang.annotations.Language
@@ -98,19 +97,13 @@ fun multiCodegen(
 }
 
 fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().apply {
-    compilerPlugins = listOf(InjektComponentRegistrar())
-    commandLineProcessors = listOf(InjektCommandLineProcessor())
+    symbolProcessors += listOf(InjektProcessor())
     inheritClassPath = true
     useIR = true
     jvmTarget = "1.8"
     verbose = false
     kotlincArguments += "-XXLanguage:+NewInference"
     block()
-    pluginOptions += PluginOption(
-        "com.ivianuu.injekt",
-        "srcDir",
-        workingDir.resolve("injekt/generated/src").absolutePath
-    )
 }
 
 fun compile(block: KotlinCompilation.() -> Unit = {}) = compilation(

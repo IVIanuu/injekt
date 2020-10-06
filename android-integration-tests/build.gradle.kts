@@ -16,6 +16,7 @@
 
 plugins {
     id("com.android.library")
+    id("symbol-processing") version Deps.Ksp.version
     kotlin("android")
     kotlin("kapt")
 }

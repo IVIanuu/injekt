@@ -27,15 +27,15 @@ dependencies {
     api(Deps.processingX)
     kapt(Deps.processingX)
 
-    api(project(":injekt-compiler-plugin"))
+    api(project(":injekt-compiler"))
     api(project(":injekt-core"))
     api(project(":injekt-merge"))
 
     api(Deps.Coroutines.core)
     api(Deps.Coroutines.test)
 
-    api(Deps.Kotlin.compilerEmbeddable)
     api(Deps.kotlinCompileTesting)
+    api(Deps.Ksp.api)
 
     api(Deps.junit)
     api(Deps.AndroidX.Test.core)

@@ -16,7 +16,9 @@
 
 plugins {
     id("com.android.application")
+    id("symbol-processing") version Deps.Ksp.version
     kotlin("android")
+    kotlin("kapt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
@@ -32,7 +34,7 @@ dependencies {
     implementation(project(":injekt-android-work"))
     implementation(project(":injekt-core"))
     implementation(project(":injekt-merge"))
-    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
+    ksp(project(":injekt-compiler"))
 
     implementation(Deps.AndroidX.Compose.runtime)
     kotlinCompilerPluginClasspath(Deps.AndroidX.Compose.compiler)

@@ -15,6 +15,7 @@
  */
 
 plugins {
+    id("symbol-processing") version Deps.Ksp.version
     kotlin("jvm")
 }
 
@@ -24,5 +25,5 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 
 dependencies {
     api(project(":injekt-core"))
-    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
+    ksp(project(":injekt-compiler"))
 }

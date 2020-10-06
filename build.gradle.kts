@@ -1,6 +1,3 @@
-import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
-import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
-
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -38,11 +35,6 @@ buildscript {
 }
 
 allprojects {
-    // todo remove
-    configurations.all {
-        resolutionStrategy.force("com.squareup:kotlinpoet:1.5.0")
-    }
-
     repositories {
         mavenLocal()
         maven("https://dl.bintray.com/ivianuu/maven")
@@ -51,44 +43,5 @@ allprojects {
         jcenter()
         maven("https://oss.sonatype.org/content/repositories/snapshots")
         maven("https://plugins.gradle.org/m2")
-    }
-
-    // todo move
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        val compilation = AbstractKotlinCompile::class.java
-            .getDeclaredMethod("getTaskData\$kotlin_gradle_plugin")
-            .invoke(this)
-            .let { taskData ->
-                taskData.javaClass
-                    .getDeclaredMethod("getCompilation")
-                    .invoke(taskData) as KotlinCompilation<*>
-            }
-        val androidVariantData: com.android.build.gradle.api.BaseVariant? =
-            (compilation as? org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmAndroidCompilation)?.androidVariant
-
-        val sourceSetName = androidVariantData?.name ?: compilation.compilationName
-
-        val srcDir = buildDir.resolve("generated/source/injekt/$sourceSetName")
-            .also { it.mkdirs() }.absolutePath
-
-        if (androidVariantData != null) {
-            project.extensions.findByType(com.android.build.gradle.BaseExtension::class.java)
-                ?.sourceSets
-                ?.findByName(sourceSetName)
-                ?.java
-                ?.srcDir(srcDir)
-        } else {
-            project.extensions.findByType(SourceSetContainer::class.java)
-                ?.findByName(sourceSetName)
-                ?.java
-                ?.srcDir(srcDir)
-        }
-
-        kotlinOptions {
-            useIR = true
-            freeCompilerArgs += listOf(
-                "-P", "plugin:com.ivianuu.injekt:srcDir=$srcDir"
-            )
-        }
     }
 }

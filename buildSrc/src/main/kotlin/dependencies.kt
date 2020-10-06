@@ -108,11 +108,16 @@ object Deps {
         private const val version = "1.4.10"
         const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
         const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
-        const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
         const val stdlib = "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$version"
     }
 
-    const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.3.1"
+    const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing-ksp:1.3.1"
+
+    object Ksp {
+        const val version = "1.4.10-dev-experimental-20200924"
+        const val api = "com.google.devtools.ksp:symbol-processing-api:$version"
+        const val symbolProcessing = "com.google.devtools.ksp:symbol-processing:$version"
+    }
 
     const val mavenGradlePlugin =
         "com.github.dcendents:android-maven-gradle-plugin:2.1"
