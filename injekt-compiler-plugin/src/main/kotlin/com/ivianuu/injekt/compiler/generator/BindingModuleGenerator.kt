@@ -101,6 +101,7 @@ class BindingModuleGenerator(
             emitLine()
             emitLine("typealias ${aliasedType.classifier.fqName.shortName()} = ${rawBindingType.render()}")
             emitLine()
+            emitLine("@Module")
             emit("object $bindingModuleName ")
             braced {
                 val assistedParameters = mutableListOf<ValueParameterRef>()
