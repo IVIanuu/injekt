@@ -24,6 +24,7 @@ class IndexGenerator(
     override fun generate(files: List<KtFile>) {
         files.forEach { file ->
             val indices = mutableListOf<Index>()
+            declarationStore.internalGeneratedIndices[file]?.let { indices += it }
             file.accept(
                 object : KtTreeVisitorVoid() {
                     var inModuleLikeScope = false
@@ -86,5 +87,6 @@ class IndexGenerator(
                 )
             }
         }
+
     }
 }

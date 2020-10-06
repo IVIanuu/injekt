@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
@@ -26,9 +27,15 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 class DeclarationStore(private val module: ModuleDescriptor) {
 
     private val internalIndices = mutableListOf<Index>()
+    val internalGeneratedIndices: Map<KtFile, List<Index>> get() = _internalGeneratedIndices
+    private val _internalGeneratedIndices = mutableMapOf<KtFile, MutableList<Index>>()
 
     fun addInternalIndex(index: Index) {
         internalIndices += index
+    }
+
+    fun addGeneratedInternalIndex(file: KtFile, index: Index) {
+        _internalGeneratedIndices.getOrPut(file) { mutableListOf() } += index
     }
 
     fun constructorForComponent(type: TypeRef): Callable? {

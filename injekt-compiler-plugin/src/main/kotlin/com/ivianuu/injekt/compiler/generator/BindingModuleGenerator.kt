@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
@@ -290,6 +291,11 @@ class BindingModuleGenerator(
             packageFqName = declaration.findPackage().fqName,
             fileName = "$bindingModuleName.kt",
             code = code
+        )
+
+        declarationStore.addGeneratedInternalIndex(
+            declaration.findPsi()!!.containingFile as KtFile,
+            Index(packageName.child(bindingModuleName), "class")
         )
     }
 
