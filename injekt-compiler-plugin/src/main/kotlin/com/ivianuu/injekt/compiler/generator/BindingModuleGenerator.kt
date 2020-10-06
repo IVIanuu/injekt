@@ -291,6 +291,13 @@ class BindingModuleGenerator(
             fileName = "$bindingModuleName.kt",
             code = code
         )
+
+        declarationStore.addInternalIndex(
+            Index(
+                packageName.child(bindingModuleName),
+                "class"
+            )
+        )
     }
 
     private fun DeclarationDescriptor.getBindingType(): TypeRef {

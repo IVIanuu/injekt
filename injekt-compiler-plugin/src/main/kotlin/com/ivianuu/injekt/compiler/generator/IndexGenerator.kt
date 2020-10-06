@@ -23,7 +23,6 @@ class IndexGenerator(
 
     override fun generate(files: List<KtFile>) {
         files.forEach { file ->
-            val indices = mutableListOf<Index>()
             file.accept(
                 object : KtTreeVisitorVoid() {
                     var inModuleLikeScope = false
@@ -62,12 +61,13 @@ class IndexGenerator(
                                     else -> error("Unexpected declaration ${declaration.text}")
                                 }
                             )
-                            indices += index
                             declarationStore.addInternalIndex(index)
                         }
                     }
                 }
             )
+
+            val indices = declarationStore.internalIndices
 
             if (indices.isNotEmpty()) {
                 val fileName = file.packageFqName.pathSegments().joinToString("_") + "_${file.name}"
