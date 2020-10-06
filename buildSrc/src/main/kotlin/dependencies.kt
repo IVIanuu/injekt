@@ -112,7 +112,7 @@ object Deps {
         const val stdlib = "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$version"
     }
 
-    const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.2.7"
+    const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.3.1"
 
     const val mavenGradlePlugin =
         "com.github.dcendents:android-maven-gradle-plugin:2.1"
