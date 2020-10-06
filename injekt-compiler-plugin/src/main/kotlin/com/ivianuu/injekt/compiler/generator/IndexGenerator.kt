@@ -80,8 +80,7 @@ class IndexGenerator(
                         emitLine("import ${InjektFqNames.Index}")
                         indices
                             .forEach { index ->
-                                val indexName = index.fqName
-                                    .pathSegments().joinToString("_") + "__${index.type}"
+                                val indexName = index.fqName.pathSegments().joinToString("_")
                                 emitLine("@Index(fqName = \"${index.fqName}\", type = \"${index.type}\")")
                                 emitLine("internal val $indexName = Unit")
                         }
