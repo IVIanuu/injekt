@@ -24,8 +24,10 @@ import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.JVMConfigurationKeys
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
+import java.io.File
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
@@ -34,6 +36,16 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project: MockProject,
         configuration: CompilerConfiguration,
     ) {
+        // Don't bother with KAPT tasks.
+        // There is no way to pass KSP options to compileKotlin only. Have to workaround here.
+        val outputDir = configuration[JVMConfigurationKeys.OUTPUT_DIRECTORY]
+        val kaptOutputDirs = listOf(
+            listOf("tmp", "kapt3", "stubs"),
+            listOf("tmp", "kapt3", "incrementalData"),
+            listOf("tmp", "kapt3", "incApCache")
+        ).map { File(it.joinToString(File.separator)) }
+        if (kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true })
+            return
         ApplicationComponentImpl(project, configuration)
             .registerExtensions()
     }
