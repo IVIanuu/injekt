@@ -97,6 +97,7 @@ class BindingModuleGenerator(
             emitLine("package $packageName")
             emitLine("import ${declaration.fqNameSafe}")
             emitLine("import ${InjektFqNames.Binding}")
+            emitLine("import ${InjektFqNames.MergeInto}")
             emitLine("import ${InjektFqNames.Module}")
             emitLine()
             emitLine("typealias ${aliasedType.classifier.fqName.shortName()} = ${rawBindingType.render()}")
