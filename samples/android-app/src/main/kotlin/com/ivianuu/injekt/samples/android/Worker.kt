@@ -29,8 +29,8 @@ import com.ivianuu.injekt.android.work.WorkerBinding
 
 @WorkerBinding
 class TestWorker(
-    @Assisted context: Context,
-    @Assisted workerParams: WorkerParameters,
+    context: @Assisted Context,
+    workerParams: @Assisted WorkerParameters,
     repo: Repo,
 ) : CoroutineWorker(context, workerParams) {
     init {

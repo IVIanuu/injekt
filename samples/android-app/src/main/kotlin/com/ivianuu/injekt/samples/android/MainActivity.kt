@@ -61,7 +61,7 @@ interface MainActivityComponent {
 @FunBinding
 fun WithMainViewModel(
     viewModelFactory: () -> MainViewModel,
-    @Assisted children: @Composable (MainViewModel) -> Unit,
+    children: @Assisted @Composable (MainViewModel) -> Unit,
 ) {
     val viewModel = remember { viewModelFactory() }
     children(viewModel)

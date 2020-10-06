@@ -242,7 +242,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     NoLookupLocation.FROM_BACKEND
                 ) as? ClassDescriptor ?: return null
 
-            return classDescriptor.unsubstitutedMemberScope
+            classDescriptor.unsubstitutedMemberScope
         }
     }
 
@@ -253,12 +253,12 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             is PropertyAccessorDescriptor -> descriptor.correspondingProperty
             else -> descriptor
         }
-        return Callable(
+        Callable(
             name = owner.name,
             packageFqName = descriptor.findPackage().fqName,
             fqName = owner.fqNameSafe,
             type = (
-                    if (descriptor.allParameters.any { it.hasAnnotation(InjektFqNames.Assisted) })
+                    if (descriptor.allParameters.any { it.type.hasAnnotation(InjektFqNames.Assisted) })
                         descriptor.getBindingFunctionType() else descriptor.returnType!!
                     )
                 .toTypeRef(),
@@ -281,7 +281,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     ValueParameterRef(
                         type = it.type.toTypeRef(),
                         isExtensionReceiver = true,
-                        isAssisted = it.hasAnnotation(InjektFqNames.Assisted),
+                        isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
                         name = "receiver".asNameId()
                     )
                 }
@@ -289,7 +289,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 ValueParameterRef(
                     type = it.type.toTypeRef(),
                     isExtensionReceiver = false,
-                    isAssisted = it.hasAnnotation(InjektFqNames.Assisted),
+                    isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
                     name = it.name
                 )
             },

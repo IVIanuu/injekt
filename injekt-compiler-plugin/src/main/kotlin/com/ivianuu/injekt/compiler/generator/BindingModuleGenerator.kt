@@ -111,7 +111,7 @@ class BindingModuleGenerator(
                             ValueParameterRef(
                                 type = it.type.toTypeRef(),
                                 isExtensionReceiver = false,
-                                isAssisted = it.hasAnnotation(InjektFqNames.Assisted),
+                                isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
                                 name = it.name
                             )
                         }
@@ -129,7 +129,7 @@ class BindingModuleGenerator(
                             ValueParameterRef(
                                 type = it.type.toTypeRef(),
                                 isExtensionReceiver = false,
-                                isAssisted = it.hasAnnotation(InjektFqNames.Assisted),
+                                isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
                                 name = it.name
                             )
                         }
@@ -300,7 +300,7 @@ class BindingModuleGenerator(
             }
             is FunctionDescriptor -> {
                 val assistedParameters = valueParameters
-                    .filter { it.hasAnnotation(InjektFqNames.Assisted) }
+                    .filter { it.type.hasAnnotation(InjektFqNames.Assisted) }
                 if (!hasAnnotation(InjektFqNames.FunBinding) && assistedParameters.isEmpty()) {
                     returnType!!.toTypeRef()
                 } else {

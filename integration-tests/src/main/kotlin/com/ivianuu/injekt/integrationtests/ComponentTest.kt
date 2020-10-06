@@ -267,7 +267,7 @@ class ComponentTest {
                 abstract val barFactory: suspend (Foo) -> Bar
                 
                 @Binding
-                protected suspend fun bar(@Assisted foo: Foo) = Bar(foo)
+                protected suspend fun bar(foo: @Assisted Foo) = Bar(foo)
             }
 
             fun invoke(foo: Foo): Bar { 
@@ -286,7 +286,7 @@ class ComponentTest {
                 abstract val barFactory: (Foo) -> Bar
                 
                 @Binding
-                protected fun bar(@Assisted foo: Foo) = Bar(foo)
+                protected fun bar(foo: @Assisted Foo) = Bar(foo)
             }
 
             fun invoke(foo: Foo): Bar { 
@@ -301,7 +301,7 @@ class ComponentTest {
     fun testAssistedBindingClass() = codegen(
         """
             @Binding
-            class AnnotatedBar(@Assisted foo: Foo)
+            class AnnotatedBar(foo: @Assisted Foo)
             
             @Component
             abstract class MyComponent {
@@ -871,7 +871,7 @@ class ComponentTest {
             }
 
             @FunBinding
-            fun <T> compare(@Assisted a: T, @Assisted b: T, comparator: AliasComparator<T>): Int = comparator
+            fun <T> compare(a: @Assisted T, b: @Assisted T, comparator: AliasComparator<T>): Int = comparator
                 .compare(a, b)
 
         """
@@ -926,7 +926,7 @@ class ComponentTest {
     @Test
     fun testAssistedBreaksCircularDependency() = codegen(
         """
-            @Binding class A(@Assisted b: B)
+            @Binding class A(b: @Assisted B)
             @Binding(MyComponent::class) class B(a: (B) -> A)
             
             @Component

@@ -26,7 +26,7 @@ class FunctionAliasTest {
     fun testAssistedFunctionAlias() = codegen(
         """
             @FunBinding
-            fun function(string: String, @Assisted assistedString: String) {
+            fun function(string: String, assistedString: @Assisted String) {
             }
             
             @Component
@@ -40,7 +40,7 @@ class FunctionAliasTest {
     fun testSuspendFunctionAlias() = codegen(
         """
             @FunBinding
-            suspend fun function(string: String, @Assisted assistedString: String) {
+            suspend fun function(string: String, assistedString: @Assisted String) {
             }
             
             @Component

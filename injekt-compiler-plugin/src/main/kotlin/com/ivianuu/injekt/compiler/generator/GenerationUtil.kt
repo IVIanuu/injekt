@@ -75,7 +75,7 @@ fun Annotated.hasAnnotation(fqName: FqName): Boolean =
 fun FunctionDescriptor.getBindingFunctionType(): KotlinType {
     val assistedParameters =
         (listOfNotNull(extensionReceiverParameter) + valueParameters)
-            .filter { it.hasAnnotation(InjektFqNames.Assisted) }
+            .filter { it.type.hasAnnotation(InjektFqNames.Assisted) }
             .map { it.type }
     return (
             if (isSuspend) builtIns.getSuspendFunction(assistedParameters.size)

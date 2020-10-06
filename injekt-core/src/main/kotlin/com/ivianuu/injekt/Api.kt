@@ -28,5 +28,5 @@ annotation class MapEntries
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class SetElements
 
-@Target(AnnotationTarget.VALUE_PARAMETER)
+@Target(AnnotationTarget.TYPE)
 annotation class Assisted

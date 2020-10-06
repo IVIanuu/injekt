@@ -56,8 +56,8 @@ class FunctionAliasGenerator(
                     }?.text
                 val assistedValueParameters = function.valueParameters
                     .filter {
-                        it.annotationEntries
-                            .any { it.text.contains("Assisted") }
+                        it.typeReference?.annotationEntries
+                            ?.any { it.text.contains("Assisted") } == true
                     }
                     .map { it.typeReference!!.text }
                 val returnType = function.typeReference?.text
