@@ -48,13 +48,11 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         internalIndices + (memberScopeForFqName(InjektFqNames.IndexPackage)
             ?.getContributedDescriptors(DescriptorKindFilter.VALUES)
             ?.filterIsInstance<PropertyDescriptor>()
-            ?.map { it.name }
             ?.map {
-                val (fqNameWithUnderscores, type) = it.asString().split("__")
-                Index(
-                    FqName(fqNameWithUnderscores.replace("_", ".")),
-                    type
-                )
+                val annotation = it.annotations.findAnnotation(InjektFqNames.Index)!!
+                val fqName = annotation.allValueArguments["fqName".asNameId()]!!.value as String
+                val type = annotation.allValueArguments["type".asNameId()]!!.value as String
+                Index(FqName(fqName), type)
             } ?: emptyList())
     }
 
@@ -212,7 +210,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         return classDescriptorByFqName.getOrPut(fqName) {
             memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
-            ) as ClassDescriptor
+            ) as? ClassDescriptor ?: error("Could not get for $fqName")
         }
     }
 
