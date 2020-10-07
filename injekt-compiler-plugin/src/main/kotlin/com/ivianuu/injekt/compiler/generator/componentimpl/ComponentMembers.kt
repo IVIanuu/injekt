@@ -135,7 +135,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
             isOverride = requestForType != null,
             body = finalExpression,
             isProperty = isProperty,
-            callableKind = callableKind,
+            callableKind = requestForType?.callableKind ?: callableKind,
             cacheable = binding.cacheable
         )
 
