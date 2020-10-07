@@ -143,6 +143,21 @@ class FunBindingTest {
     )
 
     @Test
+    fun testComposableFunBinding() = codegen(
+        """
+            @Composable
+            @FunBinding
+            fun function(string: String, assistedString: @Assisted String) {
+            }
+            
+            @Component
+            abstract class TestComponent(@Binding val string: String) {
+                abstract val function: function
+            }
+        """
+    )
+
+    @Test
     fun testSuspendFunBindingMulti() = multiCodegen(
         listOf(
             source(

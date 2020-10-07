@@ -25,7 +25,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
         isOverride: Boolean,
         body: ComponentExpression,
         isProperty: Boolean,
-        isSuspend: Boolean,
+        callableKind: Callable.CallableKind,
         cacheable: Boolean
     ): ComponentCallable {
         val existing = owner.members.firstOrNull {
@@ -35,14 +35,14 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
             if (isOverride) it.isOverride = true
             return it
         }
-        val cache = cacheable && isProperty && !isSuspend
+        val cache = cacheable && isProperty && callableKind == Callable.CallableKind.DEFAULT
         val callable = ComponentCallable(
             name = name,
             isOverride = isOverride,
             type = type,
             body = if (!cache) body else null,
             isProperty = isProperty,
-            isSuspend = isSuspend,
+            callableKind = callableKind,
             initializer = if (cache) body else null,
             isMutable = false
         )
@@ -51,16 +51,22 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
     }
 
     fun getBindingExpression(binding: BindingNode): ComponentExpression {
-        val isSuspend = binding is CallableBindingNode && binding.callable.isSuspend &&
-                binding.valueParameters.none { it.isAssisted }
+        val callableKind = when (binding) {
+            is CallableBindingNode -> {
+                if (binding.valueParameters.none { it.isAssisted })
+                    binding.callable.callableKind
+                else Callable.CallableKind.DEFAULT
+            }
+            else -> Callable.CallableKind.DEFAULT
+        }
         expressionsByType[binding.type]?.let {
             getCallable(
                 type = binding.type,
                 name = binding.type.uniqueTypeName(),
                 isOverride = false,
                 body = it,
-                isSuspend = isSuspend,
-                isProperty = !isSuspend,
+                callableKind = callableKind,
+                isProperty = callableKind != Callable.CallableKind.SUSPEND,
                 cacheable = binding.cacheable
             )
             return it
@@ -93,7 +99,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                     body = null,
                     isOverride = false,
                     isProperty = true,
-                    isSuspend = false,
+                    callableKind = Callable.CallableKind.DEFAULT,
                 ).also { owner.members += it }
 
                 emit("run ")
@@ -120,19 +126,22 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
         val callableName = requestForType
             ?.name ?: binding.type.uniqueTypeName()
 
+        val isProperty = requestForType?.isCall?.not() ?: if (binding is CallableBindingNode)
+            binding.callable.callableKind != Callable.CallableKind.SUSPEND else true
+
         getCallable(
             type = binding.type,
             name = callableName,
             isOverride = requestForType != null,
             body = finalExpression,
-            isProperty = requestForType?.isCall?.not() ?: !isSuspend,
-            isSuspend = requestForType?.isSuspend ?: isSuspend,
+            isProperty = isProperty,
+            callableKind = callableKind,
             cacheable = binding.cacheable
         )
 
         val expression: ComponentExpression = {
             emit("this@${owner.name}.$callableName")
-            if (isSuspend) emit("()")
+            if (callableKind == Callable.CallableKind.SUSPEND) emit("()")
         }
 
         expressionsByType[binding.type] = expression

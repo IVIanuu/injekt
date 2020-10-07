@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.generator.componentimpl
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.ClassifierRef
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
@@ -36,15 +37,16 @@ class ComponentCallable(
     val name: Name,
     val type: TypeRef,
     val isProperty: Boolean,
-    val isSuspend: Boolean,
+    val callableKind: Callable.CallableKind,
     val initializer: ComponentExpression?,
     val body: ComponentExpression?,
     val isMutable: Boolean,
     var isOverride: Boolean,
 ) : ComponentMember {
     override fun CodeBuilder.emit() {
+        if (callableKind == Callable.CallableKind.COMPOSABLE) emitLine("@${InjektFqNames.Composable}")
         if (isOverride) emit("override ")
-        if (isSuspend) emit("suspend ")
+        if (callableKind == Callable.CallableKind.SUSPEND) emit("suspend ")
         if (isProperty) {
             if (isMutable) emit("var ") else emit("val ")
         } else {

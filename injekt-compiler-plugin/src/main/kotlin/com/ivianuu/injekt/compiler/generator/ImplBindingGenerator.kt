@@ -109,7 +109,7 @@ class ImplBindingGenerator(
             targetComponent = targetComponent,
             contributionKind = Callable.ContributionKind.BINDING,
             isCall = true,
-            isSuspend = false,
+            callableKind = Callable.CallableKind.DEFAULT,
             isExternal = false
         )
         declarationStore.addGeneratedBinding(implCallable)
@@ -136,7 +136,7 @@ class ImplBindingGenerator(
             targetComponent = null,
             contributionKind = Callable.ContributionKind.BINDING,
             isCall = false,
-            isSuspend = false,
+            callableKind = Callable.CallableKind.DEFAULT,
             isExternal = false
         )
 

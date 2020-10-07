@@ -117,7 +117,7 @@ class BindingGraph(
                     type = includedModule.type,
                     body = null,
                     isProperty = true,
-                    isSuspend = false,
+                    callableKind = Callable.CallableKind.DEFAULT,
                     initializer = {
                         emit("${includedModule.type.classifier.fqName}")
                         if (!includedModule.type.classifier.isObject)

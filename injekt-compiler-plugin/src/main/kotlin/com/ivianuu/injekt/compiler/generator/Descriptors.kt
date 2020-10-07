@@ -13,11 +13,14 @@ data class Callable(
     val targetComponent: TypeRef?,
     val contributionKind: ContributionKind?,
     val isCall: Boolean,
-    val isSuspend: Boolean,
+    val callableKind: CallableKind,
     val isExternal: Boolean
 ) {
     enum class ContributionKind {
         BINDING, MAP_ENTRIES, SET_ELEMENTS, MODULE
+    }
+    enum class CallableKind {
+        DEFAULT, SUSPEND, COMPOSABLE
     }
 }
 

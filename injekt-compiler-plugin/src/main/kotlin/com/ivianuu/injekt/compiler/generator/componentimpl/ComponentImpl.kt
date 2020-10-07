@@ -63,7 +63,7 @@ class ComponentImpl(
                 isOverride = true,
                 body = statements.getBindingExpression(binding),
                 isProperty = !it.isCall,
-                isSuspend = it.isSuspend,
+                callableKind = it.callableKind,
                 cacheable = binding.cacheable
             )
         }

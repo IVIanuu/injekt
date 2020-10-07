@@ -260,6 +260,25 @@ class ComponentTest {
     }
 
     @Test
+    fun testComposableProvider() = codegen(
+        """
+            @Component
+            abstract class ProviderComponent {
+                abstract val fooFactory: @Composable () -> Foo
+                @Composable
+                @Binding
+                protected fun foo() = Foo()
+            }
+
+            fun invoke() {
+                ProviderComponentImpl().fooFactory()
+            }
+        """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
     fun testAssistedSuspendBindingFunction() = codegen(
         """
             @Component
@@ -272,6 +291,26 @@ class ComponentTest {
 
             fun invoke(foo: Foo): Bar { 
                 return runBlocking { BarComponentImpl().barFactory(foo) }
+            }
+    """
+    ) {
+        invokeSingleFile(Foo())
+    }
+
+    @Test
+    fun testAssistedComposableBindingFunction() = codegen(
+        """
+            @Component
+            abstract class BarComponent {
+                abstract val barFactory: @Composable (Foo) -> Bar
+                
+                @Binding
+                @Composable
+                protected fun bar(foo: @Assisted Foo) = Bar(foo)
+            }
+
+            fun invoke(foo: Foo): Bar { 
+                return BarComponentImpl().barFactory(foo)
             }
     """
     ) {
@@ -387,6 +426,23 @@ class ComponentTest {
                 protected suspend fun _suspendFoo() = Foo()
                 @Binding
                 protected suspend fun _suspendBar(foo: Foo) = Bar(foo)
+            }
+        """
+    )
+
+    @Test
+    fun testComponentComposableFunction() = codegen(
+        """
+            @Component
+            abstract class SuspendFunctionComponent {
+                @Composable
+                abstract fun bar(): Bar
+                @Composable
+                @Binding
+                protected fun _composableFoo() = Foo()
+                @Composable
+                @Binding
+                protected fun _composableBar(foo: Foo) = Bar(foo)
             }
         """
     )

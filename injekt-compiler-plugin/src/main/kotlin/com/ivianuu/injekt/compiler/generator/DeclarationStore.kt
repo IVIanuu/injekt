@@ -320,7 +320,13 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             },
             isCall = owner !is PropertyDescriptor &&
                     (owner !is ClassDescriptor || owner.kind != ClassKind.OBJECT),
-            isSuspend = (owner is CallableDescriptor && owner.isSuspend),
+            callableKind = if (owner is CallableDescriptor) {
+                when {
+                    owner.isSuspend -> Callable.CallableKind.SUSPEND
+                    owner.hasAnnotation(InjektFqNames.Composable) -> Callable.CallableKind.COMPOSABLE
+                    else -> Callable.CallableKind.DEFAULT
+                }
+            } else Callable.CallableKind.DEFAULT,
             isExternal = owner is DeserializedDescriptor
         )
     }

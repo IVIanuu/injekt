@@ -147,7 +147,25 @@ class BindingModuleGenerator(
                         }
                 }
 
-                emit("@Binding fun aliasedBinding(")
+                emitLine("@Binding")
+
+                val callableKind = if (declaration is FunctionDescriptor &&
+                    !declaration.hasAnnotation(InjektFqNames.FunBinding) &&
+                    assistedParameters.isEmpty()) {
+                    if (declaration.isSuspend) Callable.CallableKind.SUSPEND
+                    else if (declaration.hasAnnotation(InjektFqNames.Composable)) Callable.CallableKind.COMPOSABLE
+                    else Callable.CallableKind.DEFAULT
+                } else {
+                    Callable.CallableKind.DEFAULT
+                }
+
+                when (callableKind) {
+                    Callable.CallableKind.DEFAULT -> {}
+                    Callable.CallableKind.SUSPEND -> emit("suspend ")
+                    Callable.CallableKind.COMPOSABLE -> emitLine("@${InjektFqNames.Composable}")
+                }.let {}
+
+                emit("fun aliasedBinding(")
                 valueParameters.forEachIndexed { index, valueParameter ->
                     emit("${valueParameter.name}: ${valueParameter.type.render()}")
                     if (index != valueParameters.lastIndex) emit(", ")
@@ -242,7 +260,7 @@ class BindingModuleGenerator(
                     targetComponent = null,
                     contributionKind = Callable.ContributionKind.BINDING,
                     isCall = true,
-                    isSuspend = false,
+                    callableKind = callableKind,
                     isExternal = false
                 )
                 bindingModules
@@ -271,7 +289,7 @@ class BindingModuleGenerator(
                             targetComponent = null,
                             contributionKind = Callable.ContributionKind.MODULE,
                             isCall = false,
-                            isSuspend = false,
+                            callableKind = Callable.CallableKind.DEFAULT,
                             isExternal = false
                         )
                     }

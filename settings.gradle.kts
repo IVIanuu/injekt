@@ -1,5 +1,4 @@
 include(
-    ":android-integration-tests",
     ":injekt-android",
     ":injekt-android-work",
     ":injekt-compiler-plugin",
