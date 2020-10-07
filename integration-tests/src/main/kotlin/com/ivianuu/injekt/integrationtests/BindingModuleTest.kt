@@ -89,6 +89,66 @@ class BindingModuleTest {
     )
 
     @Test
+    fun testBindingModuleWithSuspendFunction() = codegen(
+        """
+            @BindingModule(MyComponent::class)
+            annotation class AnyBinding {
+                @Module
+                class Impl<T : Any> {
+                    @Binding
+                    val T.any: Any get() = this
+                }
+            }
+            
+            @AnyBinding
+            suspend fun myService(foo: Foo) {
+            }
+
+            @MergeComponent
+            abstract class MyComponent {
+                abstract suspend fun any(): Any
+                
+                @Binding protected fun foo() = Foo()
+            }
+            
+            @GenerateMergeComponents
+            fun invoke() {
+            }
+        """
+    )
+
+    @Test
+    fun testBindingModuleWithComposableFunction() = codegen(
+        """
+            @BindingModule(MyComponent::class)
+            annotation class AnyBinding {
+                @Module
+                class Impl<T : Any> {
+                    @Binding
+                    val T.any: Any get() = this
+                }
+            }
+            
+            @AnyBinding
+            @Composable
+            fun myService(foo: Foo) {
+            }
+
+            @MergeComponent
+            abstract class MyComponent {
+                @Composable
+                abstract val any: Any
+                
+                @Binding protected fun foo() = Foo()
+            }
+            
+            @GenerateMergeComponents
+            fun invoke() {
+            }
+        """
+    )
+
+    @Test
     fun testBindingModuleWithAssistedTopLevelFunction() = codegen(
         """
             @BindingModule(MyComponent::class)

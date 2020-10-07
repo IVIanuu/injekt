@@ -152,9 +152,11 @@ class BindingModuleGenerator(
                 val callableKind = if (declaration is FunctionDescriptor &&
                     !declaration.hasAnnotation(InjektFqNames.FunBinding) &&
                     assistedParameters.isEmpty()) {
-                    if (declaration.isSuspend) Callable.CallableKind.SUSPEND
-                    else if (declaration.hasAnnotation(InjektFqNames.Composable)) Callable.CallableKind.COMPOSABLE
-                    else Callable.CallableKind.DEFAULT
+                    when {
+                        declaration.isSuspend -> Callable.CallableKind.SUSPEND
+                        declaration.hasAnnotation(InjektFqNames.Composable) -> Callable.CallableKind.COMPOSABLE
+                        else -> Callable.CallableKind.DEFAULT
+                    }
                 } else {
                     Callable.CallableKind.DEFAULT
                 }
