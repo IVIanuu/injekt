@@ -34,11 +34,11 @@ object InjektFqNames {
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
     val FunctionAlias = InternalPackage.child("FunctionAlias".asNameId())
+    val Index = InternalPackage.child("Index".asNameId())
 
     val IndexPackage = InternalPackage.child("index".asNameId())
 
     val MergePackage = InjektPackage.child("merge".asNameId())
-    val Index = MergePackage.child("internal".asNameId()).child("Index".asNameId())
 
     val BindingModule = MergePackage.child("BindingModule".asNameId())
     val MergeComponent = MergePackage.child("MergeComponent".asNameId())
