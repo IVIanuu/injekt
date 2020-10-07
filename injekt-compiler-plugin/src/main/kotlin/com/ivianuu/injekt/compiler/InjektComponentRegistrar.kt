@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.compiler.checkers.InjektStorageContainerContributor
 import com.ivianuu.injekt.compiler.generator.InjektKtGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -51,7 +52,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
     }
 }
 
-@Binding
+@FunBinding
 fun registerExtensions(
     project: Project,
     injektStorageContainerContributor: InjektStorageContainerContributor,

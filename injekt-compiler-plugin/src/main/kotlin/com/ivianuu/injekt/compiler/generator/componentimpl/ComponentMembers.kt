@@ -14,7 +14,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 @Binding
-class ComponentStatements(@Assisted private val owner: ComponentImpl) {
+class ComponentStatements(private val owner: @Assisted ComponentImpl) {
 
     private val parent = owner.parent?.statements
     private val expressionsByType = mutableMapOf<TypeRef, ComponentExpression>()

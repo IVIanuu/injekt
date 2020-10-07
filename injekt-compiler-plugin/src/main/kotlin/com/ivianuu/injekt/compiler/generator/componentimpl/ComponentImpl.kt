@@ -15,9 +15,9 @@ import org.jetbrains.kotlin.name.Name
 
 @Binding
 class ComponentImpl(
-    @Assisted val componentType: TypeRef,
-    @Assisted val name: Name,
-    @Assisted val parent: ComponentImpl?,
+    val componentType: @Assisted TypeRef,
+    val name: @Assisted Name,
+    val parent: @Assisted ComponentImpl?,
     private val declarationStore: DeclarationStore,
     statementsFactory: (ComponentImpl) -> ComponentStatements,
     graphFactory: (ComponentImpl) -> BindingGraph,

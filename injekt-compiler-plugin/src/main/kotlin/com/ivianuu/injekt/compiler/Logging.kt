@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.FunBinding
 
 var loggingEnabled = true
 
@@ -15,10 +16,10 @@ object LoggerImpl : Logger {
     }
 }
 
-@Binding
+@FunBinding
 fun log(
     logger: Logger?,
-    @Assisted msg: () -> String,
+    msg: @Assisted () -> String,
 ) {
     logger?.log(msg())
 }

@@ -35,7 +35,7 @@ import org.jetbrains.kotlin.name.Name
 
 @Binding
 class BindingGraph(
-    @Assisted private val owner: ComponentImpl,
+    private val owner: @Assisted ComponentImpl,
     collectionsFactory: (ComponentImpl, BindingCollections?) -> BindingCollections,
     private val declarationStore: DeclarationStore,
     private val componentImplFactory: (
@@ -396,8 +396,8 @@ private fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"
 @Binding
 class BindingCollections(
     private val declarationStore: DeclarationStore,
-    @Assisted private val owner: ComponentImpl,
-    @Assisted private val parent: BindingCollections?,
+    private val owner: @Assisted ComponentImpl,
+    private val parent: @Assisted BindingCollections?,
 ) {
 
     private val thisMapEntries = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
