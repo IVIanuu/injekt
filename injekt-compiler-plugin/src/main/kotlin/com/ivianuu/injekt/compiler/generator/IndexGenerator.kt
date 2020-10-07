@@ -79,6 +79,7 @@ class IndexGenerator(
                         emitLine("package ${InjektFqNames.IndexPackage}")
                         emitLine("import ${InjektFqNames.Index}")
                         indices
+                            .distinct()
                             .forEach { index ->
                                 val indexName = index.fqName.pathSegments().joinToString("_")
                                 emitLine("@Index(fqName = \"${index.fqName}\", type = \"${index.type}\")")
