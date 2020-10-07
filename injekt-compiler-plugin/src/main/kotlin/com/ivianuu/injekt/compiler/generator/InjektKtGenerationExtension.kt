@@ -1,7 +1,6 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.compiler.SrcDir
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.container.ComponentProvider
@@ -11,11 +10,9 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtension
-import java.io.File
 
 @Binding
 class InjektKtGenerationExtension(
-    private val srcDir: SrcDir,
     private val generationComponentFactory: (ModuleDescriptor, BindingContext) -> GenerationComponent
 ) : PartialAnalysisHandlerExtension() {
 
@@ -32,12 +29,6 @@ class InjektKtGenerationExtension(
         bindingTrace: BindingTrace,
         componentProvider: ComponentProvider,
     ): AnalysisResult? {
-        if (!generatedCode) {
-            files as MutableList<KtFile>
-            srcDir.deleteRecursively()
-            files.removeAll { !File(it.virtualFilePath).exists() }
-        }
-
         return super.doAnalysis(
             project,
             module,

@@ -17,9 +17,10 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
-import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.compiler.checkers.InjektStorageContainerContributor
+import com.ivianuu.injekt.compiler.generator.DeleteOldFilesExtension
 import com.ivianuu.injekt.compiler.generator.InjektKtGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -45,26 +46,34 @@ class InjektComponentRegistrar : ComponentRegistrar {
             listOf("tmp", "kapt3", "incrementalData"),
             listOf("tmp", "kapt3", "incApCache")
         ).map { File(it.joinToString(File.separator)) }
-        if (kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true })
-            return
+        val isGenerateKaptStubs = kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
         ApplicationComponentImpl(project, configuration)
-            .registerExtensions()
+            .registerExtensions(isGenerateKaptStubs)
     }
 }
 
 @FunBinding
 fun registerExtensions(
     project: Project,
+    deleteOldFilesExtension: DeleteOldFilesExtension,
     injektStorageContainerContributor: InjektStorageContainerContributor,
-    injektKtGenerationExtension: InjektKtGenerationExtension
+    injektKtGenerationExtension: InjektKtGenerationExtension,
+    isGenerateKaptStubs: @Assisted Boolean
 ) {
-    StorageComponentContainerContributor.registerExtension(
-        project,
-        injektStorageContainerContributor
-    )
-
     AnalysisHandlerExtension.registerExtension(
         project,
-        injektKtGenerationExtension
+        deleteOldFilesExtension
     )
+
+    if (!isGenerateKaptStubs) {
+        StorageComponentContainerContributor.registerExtension(
+            project,
+            injektStorageContainerContributor
+        )
+
+        AnalysisHandlerExtension.registerExtension(
+            project,
+            injektKtGenerationExtension
+        )
+    }
 }
