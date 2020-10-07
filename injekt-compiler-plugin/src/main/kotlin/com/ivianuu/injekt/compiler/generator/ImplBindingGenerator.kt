@@ -138,7 +138,7 @@ class ImplBindingGenerator(
         declarationStore.addGeneratedBinding(superTypeCallable)
         declarationStore.addGeneratedInternalIndex(
             descriptor.findPsi()!!.containingFile as KtFile,
-            Index(superTypeCallable.fqName, "function")
+            Index(superTypeCallable.fqName, "property")
         )
     }
 

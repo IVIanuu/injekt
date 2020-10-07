@@ -63,11 +63,11 @@ class ComponentGenerator(
             imports += graph.resolvedBindings.values
                 .filterIsInstance<CallableBindingNode>()
                 .filter {
-                    it.callable.valueParameters.firstOrNull()
-                        ?.isExtensionReceiver == true
+                    (it.callable.valueParameters.firstOrNull()
+                        ?.isExtensionReceiver == true) && it.receiver == null
                 }
                 .map { it.callable.fqName }
-            componentImpl.children.forEach { it.collectImports() }
+            children.forEach { it.collectImports() }
         }
 
         componentImpl.collectImports()
