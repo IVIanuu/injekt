@@ -4,6 +4,7 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.componentimpl.CallableBindingNode
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentImpl
+import com.ivianuu.injekt.compiler.generator.componentimpl.FunBindingNode
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.name.FqName
@@ -63,12 +64,18 @@ class ComponentGenerator(
 
         fun ComponentImpl.collectImports() {
             imports += graph.resolvedBindings.values
-                .filterIsInstance<CallableBindingNode>()
-                .filter {
-                    (it.callable.valueParameters.firstOrNull()
-                        ?.isExtensionReceiver == true) && it.receiver == null
+                .mapNotNull {
+                    it to (when (it) {
+                        is CallableBindingNode -> it.callable
+                        is FunBindingNode -> it.callable
+                        else -> null
+                    } ?: return@mapNotNull null)
                 }
-                .map { it.callable.fqName }
+                .filter {
+                    (it.second.valueParameters.firstOrNull()
+                        ?.isExtensionReceiver == true) && it.first.receiver == null
+                }
+                .map { it.second.fqName }
             children.forEach { it.collectImports() }
         }
 
