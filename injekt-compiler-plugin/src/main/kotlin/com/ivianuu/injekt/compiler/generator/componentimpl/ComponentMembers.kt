@@ -25,7 +25,8 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
         isOverride: Boolean,
         body: ComponentExpression,
         isProperty: Boolean,
-        isSuspend: Boolean
+        isSuspend: Boolean,
+        cacheable: Boolean
     ): ComponentCallable {
         val existing = owner.members.firstOrNull {
             it is ComponentCallable && it.name == name
@@ -34,14 +35,15 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
             if (isOverride) it.isOverride = true
             return it
         }
+        val cache = cacheable && isProperty && !isSuspend
         val callable = ComponentCallable(
             name = name,
             isOverride = isOverride,
             type = type,
-            body = body,
+            body = if (!cache) body else null,
             isProperty = isProperty,
             isSuspend = isSuspend,
-            initializer = null,
+            initializer = if (cache) body else null,
             isMutable = false
         )
         owner.members += callable
@@ -58,7 +60,8 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                 isOverride = false,
                 body = it,
                 isSuspend = isSuspend,
-                isProperty = !isSuspend
+                isProperty = !isSuspend,
+                cacheable = binding.cacheable
             )
             return it
         }
@@ -69,7 +72,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
             when (binding) {
                 is ChildImplBindingNode -> childFactoryExpression(binding)
                 is CallableBindingNode -> callableExpression(binding)
-                is FunBindingNode -> functionAliasExpression(binding)
+                is FunBindingNode -> funBindingExpression(binding)
                 is MapBindingNode -> mapExpression(binding)
                 is NullBindingNode -> nullExpression()
                 is ProviderBindingNode -> providerExpression(binding)
@@ -111,15 +114,20 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
             }
             )
 
-        val callableName = binding.type.uniqueTypeName()
+        val requestForType = owner.requests
+            .firstOrNull { it.type == binding.type }
+
+        val callableName = requestForType
+            ?.name ?: binding.type.uniqueTypeName()
 
         getCallable(
             type = binding.type,
             name = callableName,
-            isOverride = false,
+            isOverride = requestForType != null,
             body = finalExpression,
-            isProperty = !isSuspend,
-            isSuspend = isSuspend
+            isProperty = requestForType?.isCall?.not() ?: !isSuspend,
+            isSuspend = requestForType?.isSuspend ?: isSuspend,
+            cacheable = binding.cacheable
         )
 
         val expression: ComponentExpression = {
@@ -233,7 +241,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
         }
     }
 
-    private fun functionAliasExpression(binding: FunBindingNode): ComponentExpression = {
+    private fun funBindingExpression(binding: FunBindingNode): ComponentExpression = {
         emit("{ ")
         binding.valueParameters
             .filter { it.isAssisted }

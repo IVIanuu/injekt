@@ -81,6 +81,7 @@ sealed class BindingNode {
     abstract val targetComponent: TypeRef?
     abstract val receiver: ComponentExpression?
     abstract val isExternal: Boolean
+    abstract val cacheable: Boolean
 }
 
 class SelfBindingNode(
@@ -97,6 +98,8 @@ class SelfBindingNode(
     override val receiver: ComponentExpression? get() = null
     override val isExternal: Boolean
         get() = false
+    override val cacheable: Boolean
+        get() = false
 }
 
 class ChildImplBindingNode(
@@ -112,9 +115,11 @@ class ChildImplBindingNode(
     override val receiver: ComponentExpression?
         get() = null
     override val targetComponent: TypeRef?
-        get() = owner.componentType
+        get() = null
     override val isExternal: Boolean
         get() = false
+    override val cacheable: Boolean
+        get() = true
 }
 
 class CallableBindingNode(
@@ -126,6 +131,7 @@ class CallableBindingNode(
     override val targetComponent: TypeRef?,
     override val receiver: ComponentExpression?,
     override val isExternal: Boolean,
+    override val cacheable: Boolean,
     val valueParameters: List<ValueParameterRef>,
     val callable: Callable,
 ) : BindingNode() {
@@ -143,7 +149,10 @@ class FunBindingNode(
     val valueParameters: List<ValueParameterRef>,
     val callable: Callable,
     override val isExternal: Boolean
-) : BindingNode()
+) : BindingNode() {
+    override val cacheable: Boolean
+        get() = true
+}
 
 class MapBindingNode(
     override val type: TypeRef,
@@ -161,6 +170,8 @@ class MapBindingNode(
         get() = null
     override val isExternal: Boolean
         get() = false
+    override val cacheable: Boolean
+        get() = false
 }
 
 class ProviderBindingNode(
@@ -177,6 +188,8 @@ class ProviderBindingNode(
         get() = null
     override val isExternal: Boolean
         get() = false
+    override val cacheable: Boolean
+        get() = true
 }
 
 class SetBindingNode(
@@ -194,6 +207,8 @@ class SetBindingNode(
     override val receiver: ComponentExpression?
         get() = null
     override val isExternal: Boolean
+        get() = false
+    override val cacheable: Boolean
         get() = false
 }
 
@@ -218,6 +233,8 @@ class NullBindingNode(
     override val targetComponent: TypeRef?
         get() = null
     override val isExternal: Boolean
+        get() = false
+    override val cacheable: Boolean
         get() = false
 }
 

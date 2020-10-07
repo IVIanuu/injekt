@@ -267,7 +267,10 @@ class BindingGraph(
                     targetComponent = callable.targetComponent,
                     receiver = receiver,
                     callable = callable,
-                    isExternal = callable.isExternal
+                    isExternal = callable.isExternal,
+                    cacheable = callable.valueParameters.any {
+                        it.isAssisted
+                    }
                 )
             }
     }
@@ -298,7 +301,10 @@ class BindingGraph(
                     targetComponent = callable.targetComponent,
                     receiver = null,
                     callable = callable,
-                    isExternal = callable.isExternal
+                    isExternal = callable.isExternal,
+                    cacheable = callable.valueParameters.any {
+                        it.isAssisted
+                    }
                 )
             }
     }

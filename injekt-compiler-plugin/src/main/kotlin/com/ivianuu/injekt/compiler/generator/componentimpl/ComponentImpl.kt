@@ -46,22 +46,25 @@ class ComponentImpl(
         emptyList()
     }
 
+    val requests = (listOf(componentType) + mergeDeclarations
+        .filterNot { it.isModule })
+        .flatMap { declarationStore.allCallablesForType(it) }
+        .filter { it.contributionKind == null }
+
     fun initialize() {
         parent?.members?.add(this)
         parent?.children?.add(this)
-        val requests = (listOf(componentType) + mergeDeclarations
-            .filterNot { it.isModule })
-            .flatMap { declarationStore.allCallablesForType(it) }
-            .filter { it.contributionKind == null }
         graph.checkRequests(requests.map { BindingRequest(it.type, it.fqName) })
         requests.forEach {
+            val binding = graph.resolvedBindings[it.type]!!
             statements.getCallable(
                 type = it.type,
                 name = it.name,
                 isOverride = true,
-                body = statements.getBindingExpression(graph.resolvedBindings[it.type]!!),
+                body = statements.getBindingExpression(binding),
                 isProperty = !it.isCall,
-                isSuspend = it.isSuspend
+                isSuspend = it.isSuspend,
+                cacheable = binding.cacheable
             )
         }
     }
