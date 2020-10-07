@@ -75,7 +75,7 @@ class ImplBindingGenerator(
                     }
                 emit("): ${descriptor.defaultType.let { typeTranslator.toTypeRef(it, descriptor) }.render()} ")
                 braced {
-                    emitLine("return ${descriptor.name}")
+                    emit("return ${descriptor.name}")
                     if (descriptor.kind != ClassKind.OBJECT) {
                         emit("(")
                         injectConstructor.valueParameters
