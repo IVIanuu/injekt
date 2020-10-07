@@ -4,6 +4,7 @@ import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
+import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
 class FunBindingTest {
@@ -20,6 +21,65 @@ class FunBindingTest {
                 abstract val function: function
             }
         """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testSimpleFunctionAliasInDifferentPackage() = codegen(
+        source(
+            """
+                @FunBinding
+                fun function(string: String) {
+                }
+            """
+        ),
+        source(
+            """
+                import com.ivianuu.injekt.integrationtests.function
+                
+                @Component
+                abstract class TestComponent(@Binding val string: String) {
+                    abstract val function: function
+                }
+            """,
+            packageFqName = FqName("com.ivianuu.injekt")
+        )
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testSimpleFunctionAliasInDifferentPackageComplex() = codegen(
+        source(
+            """
+                @FunBinding
+                fun function(string: String) {
+                }
+            """
+        ),
+        source(
+            """
+                import com.ivianuu.injekt.integrationtests.function
+                @FunBinding
+                fun function2(function: function, string: String) {
+                }
+            """,
+            packageFqName = FqName("com.ivianuu.injekt2")
+        ),
+        source(
+            """
+                import com.ivianuu.injekt.integrationtests.function 
+                import com.ivianuu.injekt2.function2
+
+                @Component
+                abstract class TestComponent(@Binding val string: String) {
+                    abstract val function: function
+                    abstract val function2: function2
+                }
+            """,
+            packageFqName = FqName("com.ivianuu.injekt")
+        )
     ) {
         assertOk()
     }

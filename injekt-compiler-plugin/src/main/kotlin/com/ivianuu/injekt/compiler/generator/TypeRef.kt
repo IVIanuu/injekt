@@ -5,14 +5,9 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.builtins.isSuspendFunctionType
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
-import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
-import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.getAbbreviatedType
@@ -23,21 +18,11 @@ data class ClassifierRef(
     val typeParameters: List<ClassifierRef> = emptyList(),
     val superTypes: List<TypeRef> = emptyList(),
     val isTypeParameter: Boolean = false,
-    val isObject: Boolean = false
+    val isObject: Boolean = false,
+    val isFunctionAlias: Boolean = false
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
     override fun hashCode(): Int = fqName.hashCode()
-}
-
-fun ClassifierDescriptor.toClassifierRef(): ClassifierRef {
-    return ClassifierRef(
-        original.fqNameSafe,
-        (original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
-            ?.map { it.toClassifierRef() } ?: emptyList(),
-        (original as? TypeParameterDescriptor)?.upperBounds?.map { it.toTypeRef() } ?: emptyList(),
-        this is TypeParameterDescriptor,
-        this is ClassDescriptor && kind == ClassKind.OBJECT
-    )
 }
 
 val ClassifierRef.defaultType: TypeRef
@@ -59,7 +44,6 @@ sealed class TypeRef {
     abstract val isMergeChildComponent: Boolean
     abstract val isChildComponent: Boolean
     abstract val isComposable: Boolean
-    abstract val isFunctionAlias: Boolean
     abstract val superTypes: List<TypeRef>
     abstract val expandedType: TypeRef?
     private val typeName by unsafeLazy { uniqueTypeName(includeNullability = false) }
@@ -70,11 +54,14 @@ sealed class TypeRef {
 
 class KotlinTypeRef(
     val kotlinType: KotlinType,
+    val typeTranslator: TypeTranslator,
     override val variance: Variance = Variance.INVARIANT,
 ) : TypeRef() {
     private val finalType by unsafeLazy { kotlinType.getAbbreviation() ?: kotlinType.prepare() }
     override val classifier: ClassifierRef by unsafeLazy {
-        finalType.constructor.declarationDescriptor!!.toClassifierRef()
+        finalType.constructor.declarationDescriptor!!.let {
+            typeTranslator.toClassifierRef(it, fixType = false)
+        }
     }
     override val isFunction: Boolean by unsafeLazy {
         finalType.isFunctionType
@@ -98,31 +85,33 @@ class KotlinTypeRef(
     override val isChildComponent: Boolean by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ChildComponent)
     }
-    override val isFunctionAlias: Boolean by unsafeLazy {
-        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.FunctionAlias)
-    }
     override val isComposable: Boolean by unsafeLazy {
         kotlinType.hasAnnotation(InjektFqNames.Composable) &&
             kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
     }
     override val superTypes: List<TypeRef> by unsafeLazy {
-        kotlinType.constructor.supertypes.map { it.toTypeRef() }
+        kotlinType.constructor.supertypes.map {
+            typeTranslator.toTypeRef(it, finalType.constructor.declarationDescriptor, fixType = false)
+        }
     }
     override val isMarkedNullable: Boolean by unsafeLazy {
         kotlinType.isMarkedNullable
     }
     override val typeArguments: List<TypeRef> by unsafeLazy {
-        finalType.arguments.map { it.type.toTypeRef(it.projectionKind) }
+        finalType.arguments.map {
+            typeTranslator.toTypeRef(it.type, finalType.constructor.declarationDescriptor, it.projectionKind, false)
+        }
     }
     override val expandedType: TypeRef? by unsafeLazy {
         (kotlinType.constructor.declarationDescriptor as? TypeAliasDescriptor)
-            ?.expandedType?.toTypeRef()
-            ?: kotlinType.getAbbreviatedType()?.expandedType?.toTypeRef()
+            ?.expandedType?.let {
+                typeTranslator.toTypeRef(it, finalType.constructor.declarationDescriptor, fixType = false)
+            }
+            ?: kotlinType.getAbbreviatedType()?.expandedType?.let {
+                typeTranslator.toTypeRef(it, finalType.constructor.declarationDescriptor, fixType = false)
+            }
     }
 }
-
-fun KotlinType.toTypeRef(variance: Variance = Variance.INVARIANT) =
-    KotlinTypeRef(this, variance)
 
 class SimpleTypeRef(
     override val classifier: ClassifierRef,
@@ -136,7 +125,6 @@ class SimpleTypeRef(
     override val isMergeComponent: Boolean = false,
     override val isMergeChildComponent: Boolean = false,
     override val isChildComponent: Boolean = false,
-    override val isFunctionAlias: Boolean = false,
     override val isComposable: Boolean = false,
     override val superTypes: List<TypeRef> = emptyList(),
     override val expandedType: TypeRef? = null,
@@ -165,7 +153,6 @@ fun TypeRef.copy(
     isMergeChildComponent: Boolean = this.isMergeChildComponent,
     isChildComponent: Boolean = this.isChildComponent,
     isComposable: Boolean = this.isComposable,
-    isFunctionAlias: Boolean = this.isFunctionAlias,
     superTypes: List<TypeRef> = this.superTypes,
     expandedType: TypeRef? = this.expandedType
 ) = SimpleTypeRef(
@@ -180,7 +167,6 @@ fun TypeRef.copy(
     isMergeComponent,
     isMergeChildComponent,
     isChildComponent,
-    isFunctionAlias,
     isComposable,
     superTypes,
     expandedType

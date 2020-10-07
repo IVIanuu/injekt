@@ -21,10 +21,13 @@ import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
+import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 
 @Binding(GenerationComponent::class)
 class DeclarationStore(private val module: ModuleDescriptor) {
+
+    lateinit var typeTranslator: TypeTranslator
 
     private val internalIndices = mutableListOf<Index>()
     val internalGeneratedIndices: Map<KtFile, List<Index>> get() = _internalGeneratedIndices
@@ -97,6 +100,12 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         generatedBindings += callable
     }
 
+    private val generatedClassifiers = mutableMapOf<FqName, ClassifierRef>()
+    fun addGeneratedClassifier(classifier: ClassifierRef) {
+        generatedClassifiers[classifier.fqName] = classifier
+    }
+    fun generatedClassifierFor(fqName: FqName): ClassifierRef? = generatedClassifiers[fqName]
+
     private val allMapEntries by unsafeLazy {
         functionIndices
                     .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
@@ -128,7 +137,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     val mergeComponents: List<TypeRef> by unsafeLazy {
         classIndices
             .filter { it.hasAnnotation(InjektFqNames.MergeComponent) }
-            .map { it.defaultType.toTypeRef() }
+            .map { it.defaultType.let { typeTranslator.toTypeRef2(it) } }
     }
 
     private val allMergeDeclarationsByFqName by unsafeLazy {
@@ -149,7 +158,11 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         .fqNameSafe
                 }
                 .forEach { (mergeComponent, declarations) ->
-                    getOrPut(mergeComponent) { mutableListOf() } += declarations.map { it.defaultType.toTypeRef() }
+                    getOrPut(mergeComponent) { mutableListOf() } += declarations.map {
+                        it.defaultType.let {
+                            typeTranslator.toTypeRef2(it)
+                        }
+                    }
                 }
         }
     }
@@ -271,13 +284,13 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     if (descriptor.allParameters.any { it.type.hasAnnotation(InjektFqNames.Assisted) })
                         descriptor.getBindingFunctionType() else descriptor.returnType!!
                     )
-                .toTypeRef(),
+                .let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
             targetComponent = owner.annotations.findAnnotation(InjektFqNames.Binding)
                 ?.allValueArguments
                 ?.get("scopeComponent".asNameId())
                 ?.let { it as KClassValue }
                 ?.getArgumentType(module)
-                ?.toTypeRef(),
+                ?.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
             contributionKind = when {
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.ContributionKind.MAP_ENTRIES
@@ -285,11 +298,13 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) -> Callable.ContributionKind.MODULE
                 else -> null
             },
-            typeParameters = descriptor.typeParameters.map { it.toClassifierRef() },
+            typeParameters = descriptor.typeParameters.map {
+                typeTranslator.toClassifierRef(it)
+            },
             valueParameters = listOfNotNull(
                 descriptor.extensionReceiverParameter?.let {
                     ValueParameterRef(
-                        type = it.type.toTypeRef(),
+                        type = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
                         isExtensionReceiver = true,
                         isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
                         name = "receiver".asNameId()
@@ -297,7 +312,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 }
             ) + descriptor.valueParameters.map {
                 ValueParameterRef(
-                    type = it.type.toTypeRef(),
+                    type = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
                     isExtensionReceiver = false,
                     isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
                     name = it.name

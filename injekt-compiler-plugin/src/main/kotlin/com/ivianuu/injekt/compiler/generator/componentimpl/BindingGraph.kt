@@ -337,7 +337,7 @@ class BindingGraph(
             }
         }
 
-        if (type.isFunctionAlias) {
+        if (type.classifier.isFunctionAlias) {
             val callable = declarationStore.functionForAlias(type)
             val substitutionMap = callable.typeParameters
                 .zip(type.typeArguments)

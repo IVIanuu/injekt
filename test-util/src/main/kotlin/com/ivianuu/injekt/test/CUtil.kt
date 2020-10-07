@@ -24,6 +24,7 @@ import com.tschuchort.compiletesting.SourceFile
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.intellij.lang.annotations.Language
+import org.jetbrains.kotlin.name.FqName
 import kotlin.reflect.KClass
 
 var fileIndex = 0
@@ -32,13 +33,15 @@ fun source(
     @Language("kotlin") source: String,
     name: String = "File${fileIndex++}.kt",
     injektImports: Boolean = true,
+    packageFqName: FqName = FqName("com.ivianuu.injekt.integrationtests")
 ) = SourceFile.kotlin(
     name = name,
     contents = buildString {
         if (injektImports) {
-            appendLine("package com.ivianuu.injekt.integrationtests")
+            appendLine("package $packageFqName")
             appendLine()
             appendLine("import com.ivianuu.injekt.*")
+            appendLine("import com.ivianuu.injekt.integrationtests.*")
             appendLine("import com.ivianuu.injekt.merge.*")
             appendLine("import com.ivianuu.injekt.internal.*")
             appendLine("import com.ivianuu.injekt.test.*")

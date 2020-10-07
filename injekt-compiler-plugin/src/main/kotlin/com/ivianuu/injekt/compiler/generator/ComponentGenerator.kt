@@ -21,7 +21,8 @@ class ComponentGenerator(
         TypeRef,
         Name,
         ComponentImpl?,
-    ) -> ComponentImpl
+    ) -> ComponentImpl,
+    private val typeTranslator: TypeTranslator
 ) : Generator {
     override fun generate(files: List<KtFile>) {
         var generateMergeComponents = false
@@ -35,7 +36,8 @@ class ComponentGenerator(
                     if (descriptor is ClassDescriptor &&
                         descriptor.hasAnnotation(InjektFqNames.Component)
                     ) {
-                        generateComponent(descriptor.defaultType.toTypeRef())
+                        generateComponent(descriptor.defaultType
+                            .let { typeTranslator.toTypeRef(it, descriptor) })
                     }
                 }
             )

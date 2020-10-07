@@ -26,7 +26,8 @@ class BindingModuleGenerator(
     private val bindingContext: BindingContext,
     private val declarationStore: DeclarationStore,
     private val fileManager: FileManager,
-    private val moduleDescriptor: ModuleDescriptor
+    private val moduleDescriptor: ModuleDescriptor,
+    private val typeTranslator: TypeTranslator
 ) : Generator {
 
     override fun generate(files: List<KtFile>) {
@@ -76,7 +77,7 @@ class BindingModuleGenerator(
             .allValueArguments["component".asNameId()]!!
             .let { it as KClassValue }
             .getArgumentType(moduleDescriptor)
-            .toTypeRef()
+            .let { typeTranslator.toTypeRef(it, declaration) }
 
         val packageName = declaration.findPackage().fqName
         val bindingModuleName = joinedNameOf(
@@ -113,7 +114,7 @@ class BindingModuleGenerator(
                         ?.valueParameters
                         ?.map {
                             ValueParameterRef(
-                                type = it.type.toTypeRef(),
+                                type = it.type.let { typeTranslator.toTypeRef(it, declaration) },
                                 isExtensionReceiver = false,
                                 isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
                                 name = it.name
@@ -131,7 +132,7 @@ class BindingModuleGenerator(
                         .valueParameters
                         .map {
                             ValueParameterRef(
-                                type = it.type.toTypeRef(),
+                                type = it.type.let { typeTranslator.toTypeRef(it, declaration) },
                                 isExtensionReceiver = false,
                                 isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
                                 name = it.name
@@ -247,7 +248,7 @@ class BindingModuleGenerator(
                 bindingModules
                     .forEach { bindingModule ->
                         val propertyType = bindingModule.defaultType
-                            .toTypeRef()
+                            .let { typeTranslator.toTypeRef(it, declaration) }
                             .typeWith(listOf(aliasedType))
                         val propertyName = propertyType
                             .uniqueTypeName()
@@ -262,7 +263,8 @@ class BindingModuleGenerator(
                             fqName = packageName.child(bindingModuleName)
                                 .child(propertyName),
                             name = propertyName,
-                            type = bindingModule.defaultType.toTypeRef()
+                            type = bindingModule.defaultType
+                                .let { typeTranslator.toTypeRef(it, declaration) }
                                 .typeWith(listOf(aliasedType)),
                             typeParameters = emptyList(),
                             valueParameters = emptyList(),
@@ -311,7 +313,7 @@ class BindingModuleGenerator(
                 val assistedParameters = valueParameters
                     .filter { it.type.hasAnnotation(InjektFqNames.Assisted) }
                 if (!hasAnnotation(InjektFqNames.FunBinding) && assistedParameters.isEmpty()) {
-                    returnType!!.toTypeRef()
+                    returnType!!.let { typeTranslator.toTypeRef(it, this) }
                 } else {
                     (if (isSuspend) moduleDescriptor.builtIns.getSuspendFunction(assistedParameters.size)
                     else moduleDescriptor.builtIns.getFunction(assistedParameters.size))
@@ -321,11 +323,11 @@ class BindingModuleGenerator(
                                 .map { it.type } + returnType!!)
                                 .map { it.asTypeProjection() }
                         )
-                        .toTypeRef()
+                        .let { typeTranslator.toTypeRef(it, this) }
                         .copy(isComposable = hasAnnotation(InjektFqNames.Composable))
                 }
             }
-            is PropertyDescriptor -> type.toTypeRef()
+            is PropertyDescriptor -> type.let { typeTranslator.toTypeRef(it, this) }
             else -> error("Unexpected given declaration $this")
         }
     }

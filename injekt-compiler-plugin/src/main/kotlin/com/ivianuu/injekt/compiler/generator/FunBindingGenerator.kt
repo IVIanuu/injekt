@@ -1,16 +1,20 @@
 package com.ivianuu.injekt.compiler.generator
 
-import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Binding
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.lexer.KtTokens
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
+import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 @Binding
-class FunctionAliasGenerator(
-    @Assisted private val generateFile: (FqName, String, String) -> Unit
+class FunBindingGenerator(
+    private val bindingContext: BindingContext,
+    private val declarationStore: DeclarationStore,
+    private val fileManager: FileManager,
+    private val typeTranslator: TypeTranslator
 ) : Generator {
 
     override fun generate(files: List<KtFile>) {
@@ -44,6 +48,7 @@ class FunctionAliasGenerator(
             }
             emitLine()
             funBindings.forEach { function ->
+                val descriptor = function.descriptor<FunctionDescriptor>(bindingContext)!!
                 val isSuspend = function.hasModifier(KtTokens.SUSPEND_KEYWORD)
                 val isComposable = function.annotationEntries.any {
                     it.text.contains("Composable")
@@ -66,6 +71,15 @@ class FunctionAliasGenerator(
 
                 emitLine("@com.ivianuu.injekt.internal.FunctionAlias")
                 emit("typealias ${function.name}")
+                declarationStore.addGeneratedClassifier(
+                    ClassifierRef(
+                        fqName = descriptor.fqNameSafe,
+                        typeParameters = descriptor.typeParameters.map {
+                            typeTranslator.toClassifierRef(it)
+                        },
+                        isFunctionAlias = true
+                    )
+                )
                 function.typeParameterList?.parameters
                     ?.mapNotNull { it.name }
                     ?.takeIf { it.isNotEmpty() }
@@ -92,6 +106,6 @@ class FunctionAliasGenerator(
             }
         }
 
-        generateFile(file.packageFqName, fileName, code)
+        fileManager.generateFile(file.packageFqName, fileName, code)
     }
 }

@@ -17,7 +17,8 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 class ImplBindingGenerator(
     private val bindingContext: BindingContext,
     private val declarationStore: DeclarationStore,
-    private val fileManager: FileManager
+    private val fileManager: FileManager,
+    private val typeTranslator: TypeTranslator
 ) : Generator {
 
     override fun generate(files: List<KtFile>) {
@@ -37,7 +38,7 @@ class ImplBindingGenerator(
     private fun generateImplBinding(descriptor: ClassDescriptor) {
         val singleSuperType = descriptor.defaultType.constructor
             .supertypes.first { !it.isAnyOrNullableAny() }
-            .toTypeRef()
+            .let { typeTranslator.toTypeRef(it, descriptor) }
         val packageFqName = descriptor.findPackage().fqName
         val fileName = joinedNameOf(
             packageFqName,
@@ -52,7 +53,7 @@ class ImplBindingGenerator(
             ?.get("scopeComponent".asNameId())
             ?.let { it as KClassValue }
             ?.getArgumentType(descriptor.module)
-            ?.toTypeRef()
+            ?.let { typeTranslator.toTypeRef(it, descriptor) }
         val injectConstructor = descriptor.getInjectConstructor()!!
         fileManager.generateFile(
             packageFqName = packageFqName,
@@ -67,10 +68,11 @@ class ImplBindingGenerator(
                 emitLine("fun $implFunctionName(")
                 injectConstructor.valueParameters
                     .forEachIndexed { index, valueParameter ->
-                        emit("${valueParameter.name}: ${valueParameter.type.toTypeRef().render()}")
+                        emit("${valueParameter.name}: ${valueParameter.type
+                            .let { typeTranslator.toTypeRef(it, descriptor) }.render()}")
                         if (index != injectConstructor.valueParameters.lastIndex) emit(", ")
                     }
-                emit("): ${descriptor.defaultType.toTypeRef().render()} ")
+                emit("): ${descriptor.defaultType.let { typeTranslator.toTypeRef(it, descriptor) }.render()} ")
                 braced {
                     emitLine("return ${descriptor.name}(")
                     injectConstructor.valueParameters
@@ -91,12 +93,14 @@ class ImplBindingGenerator(
             packageFqName = packageFqName,
             fqName = packageFqName.child(implFunctionName),
             name = implFunctionName,
-            type = descriptor.defaultType.toTypeRef(),
+            type = descriptor.defaultType
+                .let { typeTranslator.toTypeRef(it, descriptor) },
             typeParameters = emptyList(),
             valueParameters = injectConstructor.valueParameters
                 .map {
                     ValueParameterRef(
-                        type = it.type.toTypeRef(),
+                        type = it.type
+                            .let { typeTranslator.toTypeRef(it, descriptor) },
                         isExtensionReceiver = false,
                         isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
                         name = it.name
@@ -122,7 +126,8 @@ class ImplBindingGenerator(
             typeParameters = emptyList(),
             valueParameters = listOf(
                 ValueParameterRef(
-                    type = descriptor.defaultType.toTypeRef(),
+                    type = descriptor.defaultType
+                        .let { typeTranslator.toTypeRef(it, descriptor) },
                     isExtensionReceiver = true,
                     isAssisted = false,
                     name = "receiver".asNameId()

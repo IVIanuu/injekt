@@ -4,10 +4,6 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.SrcDir
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalFileSystem
-import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalVirtualFile
-import org.jetbrains.kotlin.com.intellij.psi.PsiManager
-import org.jetbrains.kotlin.com.intellij.psi.SingleRootFileViewProvider
 import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -40,25 +36,6 @@ class InjektKtGenerationExtension(
             files as MutableList<KtFile>
             srcDir.deleteRecursively()
             files.removeAll { !File(it.virtualFilePath).exists() }
-            val generationComponent = generationComponentFactory(
-                module,
-                bindingTrace.bindingContext
-            )
-            val fileManager = generationComponent.fileManager
-
-            generationComponent.funBindingGeneratorFactory.invoke { fqName, fileName, code ->
-                val file = fileManager.generateFile(fqName, fileName, code)
-                files += KtFile(
-                    SingleRootFileViewProvider(
-                        PsiManager.getInstance(project),
-                        CoreLocalVirtualFile(
-                            CoreLocalFileSystem(),
-                            file
-                        )
-                    ),
-                    false
-                )
-            }.generate(files.toList())
         }
 
         return super.doAnalysis(
@@ -85,6 +62,7 @@ class InjektKtGenerationExtension(
         val generationComponent = generationComponentFactory(
             module, bindingTrace.bindingContext
         )
+        generationComponent.funBindingGenerator.generate(files)
         generationComponent.implBindingGenerator.generate(files)
         generationComponent.bindingModuleGenerator.generate(files)
         generationComponent.indexGenerator.generate(files)
