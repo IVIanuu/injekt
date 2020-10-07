@@ -71,15 +71,14 @@ class FunBindingGenerator(
 
                 emitLine("@com.ivianuu.injekt.internal.FunctionAlias")
                 emit("typealias ${function.name}")
-                declarationStore.addGeneratedClassifier(
-                    ClassifierRef(
-                        fqName = descriptor.fqNameSafe,
-                        typeParameters = descriptor.typeParameters.map {
-                            typeTranslator.toClassifierRef(it)
-                        },
-                        isFunctionAlias = true
-                    )
+                val classifier = ClassifierRef(
+                    fqName = descriptor.fqNameSafe,
+                    typeParameters = descriptor.typeParameters.map {
+                        typeTranslator.toClassifierRef(it)
+                    },
+                    isFunctionAlias = true
                 )
+                declarationStore.addGeneratedClassifier(classifier)
                 function.typeParameterList?.parameters
                     ?.mapNotNull { it.name }
                     ?.takeIf { it.isNotEmpty() }
@@ -103,6 +102,30 @@ class FunBindingGenerator(
                     if (index != assistedValueParameters.lastIndex) emit(", ")
                 }
                 emitLine(") -> $returnType")
+
+                emitLine()
+
+                emit("fun ")
+                function.typeParameterList?.parameters
+                    ?.mapNotNull { it.name }
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { typeParameters ->
+                        emit("<")
+                        typeParameters.forEachIndexed { index, name ->
+                            emit(name)
+                            if (index != typeParameters.lastIndex) emit(", ")
+                        }
+                        emit(">")
+                        emitSpace()
+                    }
+
+                emit("${classifier.defaultType.render()}.invoke${classifier.fqName.shortName()}(")
+                emit("): $returnType ")
+                braced {
+                    emit("return invoke(")
+                    assistedValueParameters.forEach {  }
+                    emitLine(")")
+                }
             }
         }
 
