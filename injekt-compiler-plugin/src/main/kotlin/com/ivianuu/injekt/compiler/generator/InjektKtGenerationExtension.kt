@@ -46,7 +46,7 @@ class InjektKtGenerationExtension(
             )
             val fileManager = generationComponent.fileManager
 
-            generationComponent.functionAliasGeneratorFactory.invoke { fqName, fileName, code ->
+            generationComponent.funBindingGeneratorFactory.invoke { fqName, fileName, code ->
                 val file = fileManager.generateFile(fqName, fileName, code)
                 files += KtFile(
                     SingleRootFileViewProvider(
@@ -85,6 +85,7 @@ class InjektKtGenerationExtension(
         val generationComponent = generationComponentFactory(
             module, bindingTrace.bindingContext
         )
+        generationComponent.implBindingGenerator.generate(files)
         generationComponent.bindingModuleGenerator.generate(files)
         generationComponent.indexGenerator.generate(files)
         generationComponent.componentGenerator.generate(files)

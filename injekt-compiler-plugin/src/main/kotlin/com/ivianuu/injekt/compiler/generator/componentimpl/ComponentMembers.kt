@@ -311,7 +311,17 @@ private fun CodeBuilder.emitCallableInvocation(
             }
         }
     } else {
-        emit(callable.fqName)
-        emitArguments()
+        if (callable.valueParameters.any { it.isExtensionReceiver }) {
+            emit("with(")
+            arguments.first()()
+            emit(") ")
+            braced {
+                emit(callable.name)
+                emitArguments()
+            }
+        } else {
+            emit(callable.fqName)
+            emitArguments()
+        }
     }
 }

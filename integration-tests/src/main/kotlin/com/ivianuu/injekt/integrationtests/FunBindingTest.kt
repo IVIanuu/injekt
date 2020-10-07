@@ -6,7 +6,7 @@ import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
 import org.junit.Test
 
-class FunctionAliasTest {
+class FunBindingTest {
 
     @Test
     fun testSimpleFunctionAlias() = codegen(

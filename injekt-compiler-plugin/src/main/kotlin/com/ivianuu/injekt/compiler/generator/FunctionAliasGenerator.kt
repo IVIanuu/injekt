@@ -20,8 +20,7 @@ class FunctionAliasGenerator(
                 namedFunctionRecursiveVisitor { declaration ->
                     if (declaration.isTopLevel && declaration.annotationEntries.any {
                         it.text.contains("FunBinding")
-                    }
-                    ) {
+                    }) {
                         funBindings += declaration
                     }
                 }

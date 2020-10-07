@@ -88,8 +88,13 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
     private val bindingsByType = mutableMapOf<TypeRef, List<Callable>>()
     fun bindingsForType(type: TypeRef): List<Callable> = bindingsByType.getOrPut(type) {
-        allBindings
+        (allBindings + generatedBindings)
             .filter { type.isAssignable(it.type) }
+    }
+
+    private val generatedBindings = mutableListOf<Callable>()
+    fun addGeneratedBinding(callable: Callable) {
+        generatedBindings += callable
     }
 
     private val allMapEntries by unsafeLazy {

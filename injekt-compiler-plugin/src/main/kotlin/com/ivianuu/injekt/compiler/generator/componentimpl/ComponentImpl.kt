@@ -29,6 +29,7 @@ class ComponentImpl(
     val mergeDeclarations =
         declarationStore.mergeDeclarationsForMergeComponent(componentType.classifier.fqName)
 
+    val children = mutableListOf<ComponentImpl>()
     val members = mutableListOf<ComponentMember>()
 
     val statements = statementsFactory(this)
@@ -47,6 +48,7 @@ class ComponentImpl(
 
     fun initialize() {
         parent?.members?.add(this)
+        parent?.children?.add(this)
         val requests = (listOf(componentType) + mergeDeclarations
             .filterNot { it.isModule })
             .flatMap { declarationStore.allCallablesForType(it) }

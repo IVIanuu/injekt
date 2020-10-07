@@ -2,9 +2,11 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.generator.componentimpl.CallableBindingNode
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentImpl
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.namedDeclarationRecursiveVisitor
@@ -53,8 +55,26 @@ class ComponentGenerator(
         )
         componentImpl.initialize()
 
+        // extensions functions cannot be called by their fully qualified name
+        // because of that we collect all extension function calls and import them
+        val imports = mutableSetOf<FqName>()
+
+        fun ComponentImpl.collectImports() {
+            imports += graph.resolvedBindings.values
+                .filterIsInstance<CallableBindingNode>()
+                .filter {
+                    it.callable.valueParameters.firstOrNull()
+                        ?.isExtensionReceiver == true
+                }
+                .map { it.callable.fqName }
+            componentImpl.children.forEach { it.collectImports() }
+        }
+
+        componentImpl.collectImports()
+
         val code = buildCodeString {
             emitLine("package ${componentImplFqName.parent()}")
+            imports.forEach { emitLine("import $it") }
             with(componentImpl) { emit() }
 
             /*emit("fun ${componentType.classifier.fqName.shortName()}(")
