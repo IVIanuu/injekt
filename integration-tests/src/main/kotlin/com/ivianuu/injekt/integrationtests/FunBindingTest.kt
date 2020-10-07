@@ -10,7 +10,7 @@ import org.junit.Test
 class FunBindingTest {
 
     @Test
-    fun testSimpleFunctionAlias() = codegen(
+    fun testSimpleFunBinding() = codegen(
         """
             @FunBinding
             fun function(string: String) {
@@ -26,7 +26,23 @@ class FunBindingTest {
     }
 
     @Test
-    fun testSimpleFunctionAliasInDifferentPackage() = codegen(
+    fun testFunBindingWithExtension() = codegen(
+        """
+            @FunBinding
+            fun String.function() {
+            }
+            
+            @Component
+            abstract class TestComponent(@Binding val string: String) {
+                abstract val function: function
+            }
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testSimpleFunBindingInDifferentPackage() = codegen(
         source(
             """
                 @FunBinding
@@ -50,7 +66,7 @@ class FunBindingTest {
     }
 
     @Test
-    fun testSimpleFunctionAliasInDifferentPackageComplex() = codegen(
+    fun testSimpleFunBindingInDifferentPackageComplex() = codegen(
         source(
             """
                 @FunBinding
@@ -85,7 +101,7 @@ class FunBindingTest {
     }
 
     @Test
-    fun testAssistedFunctionAlias() = codegen(
+    fun testAssistedFunBinding() = codegen(
         """
             @FunBinding
             fun function(string: String, assistedString: @Assisted String) {
@@ -99,7 +115,21 @@ class FunBindingTest {
     )
 
     @Test
-    fun testSuspendFunctionAlias() = codegen(
+    fun testAssistedExtensionFunBinding() = codegen(
+        """
+            @FunBinding
+            fun @Assisted String.function(string: String) {
+            }
+            
+            @Component
+            abstract class TestComponent(@Binding val string: String) {
+                abstract val function: function
+            }
+        """
+    )
+
+    @Test
+    fun testSuspendFunBinding() = codegen(
         """
             @FunBinding
             suspend fun function(string: String, assistedString: @Assisted String) {
@@ -113,7 +143,7 @@ class FunBindingTest {
     )
 
     @Test
-    fun testSuspendFunctionAliasMulti() = multiCodegen(
+    fun testSuspendFunBindingMulti() = multiCodegen(
         listOf(
             source(
                 """
@@ -141,7 +171,7 @@ class FunBindingTest {
     )
 
     @Test
-    fun testFunctionAliasWithTypeParameters() = codegen(
+    fun testFunBindingWithTypeParameters() = codegen(
         """
             @FunBinding
             fun <T : S, S> function(t: T): S {

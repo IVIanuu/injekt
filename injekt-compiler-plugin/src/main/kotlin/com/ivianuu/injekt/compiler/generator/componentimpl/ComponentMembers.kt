@@ -243,11 +243,14 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
 
     private fun funBindingExpression(binding: FunBindingNode): ComponentExpression = {
         emit("{ ")
-        binding.valueParameters
+        val assistedParameters = binding.valueParameters
             .filter { it.isAssisted }
+        val assistedValueParameters = assistedParameters
+            .filterNot { it.isExtensionReceiver }
+        assistedValueParameters
             .forEachIndexed { index, parameter ->
                 emit("p$index: ${parameter.type.renderExpanded()}")
-                if (index != binding.valueParameters.lastIndex) emit(", ")
+                if (index != assistedValueParameters.lastIndex) emit(", ")
             }
         emitLine(" ->")
         var assistedIndex = 0
@@ -256,17 +259,26 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
             binding.callable,
             binding.receiver,
             binding.valueParameters.map { parameter ->
-                if (parameter.isAssisted) {
-                    { emit("p${assistedIndex++}") }
-                } else {
-                    getBindingExpression(
-                        owner.graph.getBinding(
-                            BindingRequest(
-                                binding.dependencies[nonAssistedIndex++].type,
-                                binding.callable.fqName.child(parameter.name)
+                when {
+                    parameter.isAssisted -> {
+                        {
+                            if (parameter.isExtensionReceiver) {
+                                emit("this")
+                            } else {
+                                emit("p${assistedIndex++}")
+                            }
+                        }
+                    }
+                    else -> {
+                        getBindingExpression(
+                            owner.graph.getBinding(
+                                BindingRequest(
+                                    binding.dependencies[nonAssistedIndex++].type,
+                                    binding.callable.fqName.child(parameter.name)
+                                )
                             )
                         )
-                    )
+                    }
                 }
             }
         )
