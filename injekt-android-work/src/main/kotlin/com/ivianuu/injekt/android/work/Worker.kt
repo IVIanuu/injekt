@@ -20,7 +20,7 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.ImplBinding
 import com.ivianuu.injekt.MapEntries
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.merge.ApplicationComponent
@@ -52,15 +52,11 @@ annotation class WorkerBinding {
 @MergeInto(ApplicationComponent::class)
 @Module
 object WorkerInjectionModule {
-    @Binding
-    val InjektWorkerFactory.workerFactory: WorkerFactory
-        get() = this
-
     @MapEntries
     fun defaultWorkers(): Workers = emptyMap()
 }
 
-@Binding
+@ImplBinding
 class InjektWorkerFactory(private val workers: Workers) : WorkerFactory() {
     override fun createWorker(
         appContext: Context,
