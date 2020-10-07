@@ -4,6 +4,7 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.classOrObjectRecursiveVisitor
@@ -74,13 +75,18 @@ class ImplBindingGenerator(
                     }
                 emit("): ${descriptor.defaultType.let { typeTranslator.toTypeRef(it, descriptor) }.render()} ")
                 braced {
-                    emitLine("return ${descriptor.name}(")
-                    injectConstructor.valueParameters
-                        .forEachIndexed { index, valueParameter ->
-                            emit("${valueParameter.name}")
-                            if (index != injectConstructor.valueParameters.lastIndex) emit(", ")
-                        }
-                    emitLine(")")
+                    emitLine("return ${descriptor.name}")
+                    if (descriptor.kind != ClassKind.OBJECT) {
+                        emit("(")
+                        injectConstructor.valueParameters
+                            .forEachIndexed { index, valueParameter ->
+                                emit("${valueParameter.name}")
+                                if (index != injectConstructor.valueParameters.lastIndex) emit(", ")
+                            }
+                        emitLine(")")
+                    } else {
+                        emitLine()
+                    }
                 }
                 emitLine()
                 emitLine("@Binding")
