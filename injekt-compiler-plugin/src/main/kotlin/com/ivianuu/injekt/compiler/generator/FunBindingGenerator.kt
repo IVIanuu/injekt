@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtFile
@@ -49,6 +50,15 @@ class FunBindingGenerator(
             emitLine()
             funBindings.forEach { function ->
                 val descriptor = function.descriptor<FunctionDescriptor>(bindingContext)!!
+                declarationStore.addGeneratedClassifier(
+                    ClassifierRef(
+                        fqName = descriptor.fqNameSafe,
+                        typeParameters = descriptor.typeParameters.map {
+                            typeTranslator.toClassifierRef(it)
+                        },
+                        isFunctionAlias = true
+                    )
+                )
                 val isSuspend = function.hasModifier(KtTokens.SUSPEND_KEYWORD)
                 val isComposable = function.annotationEntries.any {
                     it.text.contains("Composable")
@@ -63,46 +73,54 @@ class FunBindingGenerator(
                         it.typeReference?.annotationEntries
                             ?.any { it.text.contains("Assisted") } == true
                     }
-                    .map { it.typeReference!!.text }
                 val returnType = function.typeReference?.text
                     ?: if (function.hasBlockBody()) "Unit" else error(
                         "@FunBinding function must have explicit return type ${function.text}"
                     )
-
                 emitLine("@com.ivianuu.injekt.internal.FunctionAlias")
-                emit("typealias ${function.name}")
-                declarationStore.addGeneratedClassifier(
-                    ClassifierRef(
-                        fqName = descriptor.fqNameSafe,
-                        typeParameters = descriptor.typeParameters.map {
-                            typeTranslator.toClassifierRef(it)
-                        },
-                        isFunctionAlias = true
-                    )
-                )
-                function.typeParameterList?.parameters
-                    ?.mapNotNull { it.name }
-                    ?.takeIf { it.isNotEmpty() }
-                    ?.let { typeParameters ->
-                        emit("<")
-                        typeParameters.forEachIndexed { index, name ->
-                            emit(name)
-                            if (index != typeParameters.lastIndex) emit(", ")
-                        }
-                        emit(">")
-                    }
-                emit(" = ")
-                if (isComposable) emit("@androidx.compose.runtime.Composable ")
+                emit("inline class ${function.name}")
+                function.typeParameterList?.let { emit(it.text) }
+                emit("(val function: ")
+                if (isComposable) emit("@${InjektFqNames.Composable} ")
                 if (isSuspend) emit("suspend ")
                 if (assistedReceiver != null) {
                     emit("$assistedReceiver.")
                 }
                 emit("(")
                 assistedValueParameters.forEachIndexed { index, param ->
-                    emit(param)
+                    emit(param.typeReference!!.text)
                     if (index != assistedValueParameters.lastIndex) emit(", ")
                 }
-                emitLine(") -> $returnType")
+                emit(") -> $returnType) ")
+                braced {
+                    if (isComposable) emitLine("@${InjektFqNames.Composable}")
+                    if (isSuspend) emit("suspend ")
+                    emit("operator fun ")
+                    if (assistedReceiver != null) emit("$assistedReceiver.")
+                    emit("invoke(")
+                    assistedValueParameters
+                        .forEachIndexed { index, param ->
+                            emit("${param.name!!}: ${param.typeReference!!.text}")
+                            if (param.defaultValue != null) {
+                                emit(" = ${param.defaultValue!!.text}")
+                            }
+                            if (index != assistedValueParameters.lastIndex) emitLine(",")
+                        }
+                    emit("): $returnType ")
+                    braced {
+                        emit("return function.invoke(")
+                        if (assistedReceiver != null) {
+                            emit("this")
+                            if (assistedValueParameters.isNotEmpty()) emit(", ")
+                        }
+                        assistedValueParameters
+                            .forEachIndexed { index, param ->
+                                emit(param.name!!)
+                                if (index != assistedValueParameters.lastIndex) emitLine(",")
+                            }
+                        emitLine(")")
+                    }
+                }
             }
         }
 

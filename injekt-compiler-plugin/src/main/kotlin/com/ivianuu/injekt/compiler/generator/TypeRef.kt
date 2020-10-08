@@ -183,7 +183,7 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
 fun TypeRef.render(): String {
     return buildString {
         val annotations = listOfNotNull(
-            if (isComposable) "@androidx.compose.runtime.Composable" else null,
+            if (isComposable) "@${InjektFqNames.Composable}" else null,
         )
         if (annotations.isNotEmpty()) {
             annotations.forEach { annotation ->

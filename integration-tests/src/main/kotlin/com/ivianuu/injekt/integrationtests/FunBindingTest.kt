@@ -200,5 +200,20 @@ class FunBindingTest {
         """
     )
 
+    @Test
+    fun testFunBindingWithDefaultValue() = codegen(
+        """
+            @FunBinding
+            fun function(string: @Assisted String = ""): Unit {
+                return error("")
+            }
+            
+            @Component
+            abstract class TestComponent {
+                abstract val function: function
+            }
+        """
+    )
+
     // todo test with composable
 }

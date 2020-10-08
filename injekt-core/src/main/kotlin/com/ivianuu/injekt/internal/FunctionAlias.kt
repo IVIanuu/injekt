@@ -1,4 +1,4 @@
 package com.ivianuu.injekt.internal
 
-@Target(AnnotationTarget.TYPEALIAS)
+@Target(AnnotationTarget.CLASS)
 annotation class FunctionAlias

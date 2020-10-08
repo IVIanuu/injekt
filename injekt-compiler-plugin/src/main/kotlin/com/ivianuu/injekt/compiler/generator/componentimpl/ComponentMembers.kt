@@ -251,7 +251,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
     }
 
     private fun funBindingExpression(binding: FunBindingNode): ComponentExpression = {
-        emit("{ ")
+        emit("${binding.type.classifier.fqName} { ")
         val assistedParameters = binding.valueParameters
             .filter { it.isAssisted }
         val assistedValueParameters = assistedParameters
