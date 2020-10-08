@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtFile
@@ -92,7 +93,7 @@ class FunBindingGenerator(
                         emit(">")
                     }
                 emit(" = ")
-                if (isComposable) emit("@androidx.compose.runtime.Composable ")
+                if (isComposable) emit("@${InjektFqNames.Composable} ")
                 if (isSuspend) emit("suspend ")
                 if (assistedReceiver != null) {
                     emit("$assistedReceiver.")
