@@ -2,7 +2,6 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
-import org.jetbrains.kotlin.builtins.isExtensionFunctionType
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.builtins.isSuspendFunctionType
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -72,7 +71,7 @@ class KotlinTypeRef(
         finalType.isSuspendFunctionType
     }
     override val isExtensionFunction: Boolean by unsafeLazy {
-        isFunction && kotlinType.isExtensionFunctionType
+        kotlinType.hasAnnotation(KotlinBuiltIns.FQ_NAMES.extensionFunctionType)
     }
     override val isModule: Boolean by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.Module)
@@ -96,7 +95,9 @@ class KotlinTypeRef(
     }
     override val superTypes: List<TypeRef> by unsafeLazy {
         kotlinType.constructor.supertypes.map {
-            typeTranslator.toTypeRef(it, finalType.constructor.declarationDescriptor, fixType = false)
+            typeTranslator.toTypeRef(it,
+                finalType.constructor.declarationDescriptor,
+                fixType = false)
         }
     }
     override val isMarkedNullable: Boolean by unsafeLazy {
@@ -104,16 +105,23 @@ class KotlinTypeRef(
     }
     override val typeArguments: List<TypeRef> by unsafeLazy {
         finalType.arguments.map {
-            typeTranslator.toTypeRef(it.type, finalType.constructor.declarationDescriptor, it.projectionKind, false)
+            typeTranslator.toTypeRef(it.type,
+                finalType.constructor.declarationDescriptor,
+                it.projectionKind,
+                false)
         }
     }
     override val expandedType: TypeRef? by unsafeLazy {
         (kotlinType.constructor.declarationDescriptor as? TypeAliasDescriptor)
             ?.expandedType?.let {
-                typeTranslator.toTypeRef(it, finalType.constructor.declarationDescriptor, fixType = false)
+                typeTranslator.toTypeRef(it,
+                    finalType.constructor.declarationDescriptor,
+                    fixType = false)
             }
             ?: kotlinType.getAbbreviatedType()?.expandedType?.let {
-                typeTranslator.toTypeRef(it, finalType.constructor.declarationDescriptor, fixType = false)
+                typeTranslator.toTypeRef(it,
+                    finalType.constructor.declarationDescriptor,
+                    fixType = false)
             }
     }
 }
@@ -161,7 +169,7 @@ fun TypeRef.copy(
     isChildComponent: Boolean = this.isChildComponent,
     isComposable: Boolean = this.isComposable,
     superTypes: List<TypeRef> = this.superTypes,
-    expandedType: TypeRef? = this.expandedType
+    expandedType: TypeRef? = this.expandedType,
 ) = SimpleTypeRef(
     classifier,
     isMarkedNullable,
