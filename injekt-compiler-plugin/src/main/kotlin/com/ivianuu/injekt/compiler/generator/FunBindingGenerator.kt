@@ -59,13 +59,21 @@ class FunBindingGenerator(
                         it.annotationEntries
                             .any { it.text.contains("Assisted") }
                     }?.text
+                    ?.replace("@${InjektFqNames.Assisted.asString()} ", "")
+                    ?.replace("@Assisted ", "")
                 val assistedValueParameters = function.valueParameters
                     .filter {
                         it.typeReference?.annotationEntries
                             ?.any { it.text.contains("Assisted") } == true
                     }
                     .map { it.typeReference!!.text }
+                    .map {
+                        it.replace("@${InjektFqNames.Assisted.asString()} ", "")
+                            .replace("@Assisted ", "")
+                    }
                 val returnType = function.typeReference?.text
+                    ?.replace("@${InjektFqNames.Assisted.asString()} ", "")
+                    ?.replace("@Assisted ", "")
                     ?: if (function.hasBlockBody()) "Unit" else error(
                         "@FunBinding function must have explicit return type ${function.text}"
                     )

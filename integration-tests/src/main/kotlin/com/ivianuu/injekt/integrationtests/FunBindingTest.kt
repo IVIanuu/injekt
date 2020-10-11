@@ -129,6 +129,20 @@ class FunBindingTest {
     )
 
     @Test
+    fun testAssistedExtensionSuspendFunBinding() = codegen(
+        """
+            @FunBinding
+            suspend fun @Assisted String.function(string: String) {
+            }
+            
+            @Component
+            abstract class TestComponent(@Binding val string: String) {
+                abstract val function: function
+            }
+        """
+    )
+
+    @Test
     fun testSuspendFunBinding() = codegen(
         """
             @FunBinding

@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
+import org.jetbrains.kotlin.builtins.isExtensionFunctionType
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.builtins.isSuspendFunctionType
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -38,6 +39,7 @@ sealed class TypeRef {
     abstract val variance: Variance
     abstract val isFunction: Boolean
     abstract val isSuspendFunction: Boolean
+    abstract val isExtensionFunction: Boolean
     abstract val isModule: Boolean
     abstract val isBinding: Boolean
     abstract val isMergeComponent: Boolean
@@ -68,6 +70,9 @@ class KotlinTypeRef(
     }
     override val isSuspendFunction: Boolean by unsafeLazy {
         finalType.isSuspendFunctionType
+    }
+    override val isExtensionFunction: Boolean by unsafeLazy {
+        isFunction && kotlinType.isExtensionFunctionType
     }
     override val isModule: Boolean by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.Module)
@@ -120,6 +125,7 @@ class SimpleTypeRef(
     override val variance: Variance = Variance.INVARIANT,
     override val isFunction: Boolean = false,
     override val isSuspendFunction: Boolean = false,
+    override val isExtensionFunction: Boolean = false,
     override val isModule: Boolean = false,
     override val isBinding: Boolean = false,
     override val isMergeComponent: Boolean = false,
@@ -147,6 +153,7 @@ fun TypeRef.copy(
     variance: Variance = this.variance,
     isFunction: Boolean = this.isFunction,
     isSuspendFunction: Boolean = this.isSuspendFunction,
+    isExtensionFunction: Boolean = this.isExtensionFunction,
     isModule: Boolean = this.isModule,
     isBinding: Boolean = this.isBinding,
     isMergeComponent: Boolean = this.isMergeComponent,
@@ -162,6 +169,7 @@ fun TypeRef.copy(
     variance,
     isFunction,
     isSuspendFunction,
+    isExtensionFunction,
     isModule,
     isBinding,
     isMergeComponent,
@@ -184,6 +192,7 @@ fun TypeRef.render(): String {
     return buildString {
         val annotations = listOfNotNull(
             if (isComposable) "@${InjektFqNames.Composable}" else null,
+            if (isExtensionFunction) "@ExtensionFunctionType" else null
         )
         if (annotations.isNotEmpty()) {
             annotations.forEach { annotation ->
