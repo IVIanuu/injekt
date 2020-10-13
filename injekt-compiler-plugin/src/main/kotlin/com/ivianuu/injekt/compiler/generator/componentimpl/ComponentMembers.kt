@@ -88,7 +88,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
         }
 
         val finalExpression = if (binding.targetComponent == null ||
-            binding.owner != owner
+            binding.owner != owner || binding.cacheable
         ) rawExpression else (
             {
                 val property = ComponentCallable(
