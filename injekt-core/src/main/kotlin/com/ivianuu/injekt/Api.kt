@@ -8,6 +8,8 @@ annotation class Component
 @Target(AnnotationTarget.CLASS)
 annotation class ChildComponent
 
+fun <T> component(vararg inputs: Any?): T = error("Intrinsic")
+
 @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class Module
 

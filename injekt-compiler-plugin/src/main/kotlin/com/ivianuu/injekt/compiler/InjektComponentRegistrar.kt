@@ -22,6 +22,7 @@ import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.compiler.checkers.InjektStorageContainerContributor
 import com.ivianuu.injekt.compiler.generator.DeleteOldFilesExtension
 import com.ivianuu.injekt.compiler.generator.InjektKtGenerationExtension
+import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
@@ -49,6 +50,10 @@ class InjektComponentRegistrar : ComponentRegistrar {
         val isGenerateKaptStubs = kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
         ApplicationComponentImpl(project, configuration)
             .registerExtensions(isGenerateKaptStubs)
+        IrGenerationExtension.registerExtension(
+            project,
+            InjektIrIntrinsicTransformer()
+        )
     }
 }
 

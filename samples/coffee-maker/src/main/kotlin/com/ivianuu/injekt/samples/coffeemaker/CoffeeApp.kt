@@ -3,9 +3,10 @@ package com.ivianuu.injekt.samples.coffeemaker
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.ImplBinding
+import com.ivianuu.injekt.component
 
 fun main() {
-    val component = CoffeeComponentImpl()
+    val component = component<CoffeeComponent>()
     component.brewCoffee()
 }
 

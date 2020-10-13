@@ -44,7 +44,7 @@ class ComponentTest {
             }
             
             fun invoke(): Bar {
-                return TestComponentImpl().bar
+                return component<TestComponent>().bar
             }
     """
     ) {
@@ -65,7 +65,7 @@ class ComponentTest {
             }
 
             fun invoke(foo: Foo): Foo {
-                return ParentComponentImpl().childComponentFactory(foo).foo
+                return component<ParentComponent>().childComponentFactory(foo).foo
             }
     """
     ) {
@@ -83,7 +83,7 @@ class ComponentTest {
                 protected fun foo() = Foo()
             }
         
-            val component: MyComponent = MyComponentImpl()
+            val component: MyComponent = component<MyComponent>()
         
             fun invoke() = component.foo
     """
@@ -105,7 +105,7 @@ class ComponentTest {
                 protected fun bar(foo: Foo) = Bar(foo)
             }
             
-            val parentComponent: MyParentComponent = MyParentComponentImpl()
+            val parentComponent: MyParentComponent = component<MyParentComponent>()
             
             @ChildComponent
             abstract class MyChildComponent {
@@ -140,7 +140,7 @@ class ComponentTest {
             }
 
             fun invoke() {
-                FooComponentImpl().annotatedBar
+                component<FooComponent>().annotatedBar
             }
     """
     ) {
@@ -159,7 +159,7 @@ class ComponentTest {
             }
             
             fun invoke() {
-                MyComponentImpl().annotationBar
+                component<MyComponent>().annotationBar
             }
     """
     ) {
@@ -176,7 +176,7 @@ class ComponentTest {
             }
             
             fun invoke(): Foo {
-                return FooComponentImpl().foo
+                return component<FooComponent>().foo
             }
     """
     ) {
@@ -195,7 +195,7 @@ class ComponentTest {
             }
 
             fun invoke() {
-                FooComponentImpl().foo
+                component<FooComponent>().foo
             }
     """
     ) {
@@ -214,7 +214,7 @@ class ComponentTest {
             }
 
             fun invoke() {
-                FooComponentImpl().foo
+                component<FooComponent>().foo
             }
     """
     ) {
@@ -232,7 +232,7 @@ class ComponentTest {
             }
 
             fun invoke() {
-                ProviderComponentImpl().fooFactory()
+                component<ProviderComponent>().fooFactory()
             }
         """
     ) {
@@ -251,7 +251,7 @@ class ComponentTest {
 
             fun invoke() {
                 runBlocking {
-                    ProviderComponentImpl().fooFactory()
+                    component<ProviderComponent>().fooFactory()
                 }
             }
         """
@@ -271,7 +271,7 @@ class ComponentTest {
             }
 
             fun invoke() {
-                ProviderComponentImpl().fooFactory()
+                component<ProviderComponent>().fooFactory()
             }
         """
     ) {
@@ -290,7 +290,7 @@ class ComponentTest {
             }
 
             fun invoke(foo: Foo): Bar { 
-                return runBlocking { BarComponentImpl().barFactory(foo) }
+                return runBlocking { component<BarComponent>().barFactory(foo) }
             }
     """
     ) {
@@ -310,7 +310,7 @@ class ComponentTest {
             }
 
             fun invoke(foo: Foo): Bar { 
-                return BarComponentImpl().barFactory(foo)
+                return component<BarComponent>().barFactory(foo)
             }
     """
     ) {
@@ -329,7 +329,7 @@ class ComponentTest {
             }
 
             fun invoke(foo: Foo): Bar { 
-                return BarComponentImpl().barFactory(foo)
+                return component<BarComponent>().barFactory(foo)
             }
     """
     ) {
@@ -347,7 +347,7 @@ class ComponentTest {
                 abstract val annotatedBar: (Foo) -> AnnotatedBar
             }
 
-            fun invoke(foo: Foo): AnnotatedBar = MyComponentImpl().annotatedBar(foo)
+            fun invoke(foo: Foo): AnnotatedBar = component<MyComponent>().annotatedBar(foo)
     """
     ) {
         invokeSingleFile(Foo())
@@ -366,7 +366,7 @@ class ComponentTest {
             }
             
             fun invoke() {
-                FooComponentImpl().fooDep
+                component<FooComponent>().fooDep
             }
     """
     )
@@ -384,7 +384,7 @@ class ComponentTest {
             }
 
             fun invoke() {
-                MyComponentImpl().fooDep
+                component<MyComponent>().fooDep
             }
     """
     )
@@ -456,7 +456,7 @@ class ComponentTest {
             }
             fun invoke(): Pair<Foo, Foo> {
                 val foo = Foo()
-                return foo to MyComponentImpl(foo).foo
+                return foo to component<MyComponent>(foo).foo
             }
     """
     ) {
@@ -485,7 +485,7 @@ class ComponentTest {
             }
             
             fun invoke(): Bar {
-                return BarComponentImpl().bar
+                return component<BarComponent>().bar
             }
     """
     ) {
@@ -507,7 +507,7 @@ class ComponentTest {
             }
 
             fun invoke(): Foo {
-                return MyComponentImpl().foo
+                return component<MyComponent>().foo
             }
     """
     ) {
@@ -559,7 +559,7 @@ class ComponentTest {
             }
 
             fun invoke(): Pair<Set<String>, Set<Int>> {
-                val component = MyComponentImpl()
+                val component = component<MyComponent>()
                 return component.setOfStrings to component.setOfInts
             }
             """
@@ -583,7 +583,7 @@ class ComponentTest {
             }
        
             fun invoke(): Pair<Foo, Foo> {
-                val component = FooComponentImpl()
+                val component = component<FooComponent>()
                 return component.foo1 to component.foo2
             }
             """
@@ -628,7 +628,7 @@ class ComponentTest {
                         @Module protected val foo2Module = Foo2Module
                     }
                     fun invoke(): Pair<Foo1, Foo2> {
-                        val component = MyComponentImpl()
+                        val component = component<MyComponent>()
                         return component.foo1 to component.foo2
                     }
             """,
@@ -664,7 +664,7 @@ class ComponentTest {
             }
             
             fun invoke(): Foo? {
-                return FooComponentImpl().foo
+                return component<FooComponent>().foo
             }
         """
     ) {
@@ -679,7 +679,7 @@ class ComponentTest {
                 abstract val foo: Foo?
             }
             fun invoke(): Foo? { 
-                return FooComponentImpl().foo
+                return component<FooComponent>().foo
             }
         """
     ) {
@@ -709,7 +709,7 @@ class ComponentTest {
             
             fun invoke(): Pair<Any, Any> {
                 val dep = Dep()
-                return dep to MyComponentImpl(dep).dep
+                return dep to component<MyComponent>(dep).dep
             }
         """
     ) {
@@ -761,7 +761,7 @@ class ComponentTest {
                     ): Foo {
                         externalFooField = externalFoo
                         internalFooField = internalFoo
-                        return MyComponentImpl().foo
+                        return component<MyComponent>().foo
                     }
                 """,
                 name = "File.kt"
@@ -785,7 +785,7 @@ class ComponentTest {
         }
         
         fun invoke(): Foo { 
-            return MyComponentImpl().foo
+            return component<MyComponent>().foo
         }
         """
     ) {
@@ -816,7 +816,7 @@ class ComponentTest {
                         abstract val foo: Foo
                     }
                     fun invoke(): Foo { 
-                        return MyComponentImpl().foo
+                        return component<MyComponent>().foo
                     }
                 """
             )
@@ -837,7 +837,7 @@ class ComponentTest {
             
             fun invoke(): Pair<() -> Foo, () -> Foo> {
                 val lazyFoo = { Foo() }
-                return lazyFoo to MyComponentImpl(lazyFoo).lazyFoo
+                return lazyFoo to component<MyComponent>(lazyFoo).lazyFoo
             }
         """
     ) {
@@ -862,7 +862,7 @@ class ComponentTest {
             }
 
             fun invoke(): Pair<Foo, Foo> {
-                val parent = MyParentComponentImpl()
+                val parent = component<MyParentComponent>()
                 val child = parent.childFactory()
                 return parent.foo to child.foo
             }
@@ -881,7 +881,7 @@ class ComponentTest {
             }
 
             fun invoke(): Pair<SelfComponent, SelfComponent> {
-                val component = SelfComponentImpl()
+                val component = component<SelfComponent>()
                 return component to component.self
             }
         """

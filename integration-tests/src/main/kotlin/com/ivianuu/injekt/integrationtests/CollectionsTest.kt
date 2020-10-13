@@ -54,7 +54,7 @@ class CollectionsTest {
             }
             
             fun invoke(): Map<KClass<out Command>, Command> {
-                return MapComponentImpl().map
+                return component<MapComponent>().map
             }
         """
     ) {
@@ -94,7 +94,7 @@ class CollectionsTest {
             }
          
             fun invoke(): Pair<Map<KClass<out Command>, Command>, Map<KClass<out Command>, Command>> {
-                val parent = ParentMapComponentImpl()
+                val parent = component<ParentMapComponent>()
                 return parent.map to parent.childMapComponentFactory().map
             }
         """
@@ -133,7 +133,7 @@ class CollectionsTest {
             }
          
             fun invoke(): Map<KClass<out Command>, (String) -> Command> {
-                return MapComponentImpl().map
+                return component<MapComponent>().map
             }
         """
     ) {
@@ -177,7 +177,7 @@ class CollectionsTest {
             }
          
             fun invoke(): Set<Command> {
-                return SetComponentImpl().set
+                return component<SetComponent>().set
             }
         """
     ) {
@@ -217,7 +217,7 @@ class CollectionsTest {
             }
          
             fun invoke(): Pair<Set<Command>, Set<Command>> {
-                val parent = ParentSetComponentImpl()
+                val parent = component<ParentSetComponent>()
                 return parent.set to parent.childSetComponentFactory().set
             }
         """
@@ -255,7 +255,7 @@ class CollectionsTest {
             }
 
             fun invoke(): Set<(String) -> Command> {
-                return SetComponentImpl().set
+                return component<SetComponent>().set
             }
         """
     ) {

@@ -25,7 +25,7 @@ class MergeTest {
             
             @GenerateMergeComponents
             fun invoke() {
-                val component = MyComponentImpl()
+                val component = component<MyComponent>()
                 val fooComponent = component.mergeComponent<FooComponent>()
                 fooComponent.foo
             }
@@ -57,7 +57,7 @@ class MergeTest {
             
             @GenerateMergeComponents
             fun invoke() {
-                val parentComponent = MyParentComponentImpl()
+                val parentComponent = component<MyParentComponent>()
                 val childComponent = parentComponent.myChildComponentFactory()
                 val fooComponent = childComponent.mergeComponent<FooComponent>()
                 fooComponent.foo

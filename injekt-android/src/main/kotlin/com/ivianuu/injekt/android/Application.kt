@@ -23,16 +23,14 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.component
 import com.ivianuu.injekt.merge.App
 import com.ivianuu.injekt.merge.ApplicationComponent
 import com.ivianuu.injekt.merge.MergeInto
 
 val Application.applicationComponent: ApplicationComponent
     get() = ProcessLifecycleOwner.get().lifecycle.singleton {
-        Class.forName("com.ivianuu.injekt.merge.ApplicationComponentImpl")
-            .constructors
-            .single()
-            .newInstance(this) as ApplicationComponent
+        component(this)
     }
 
 @MergeInto(ApplicationComponent::class)
