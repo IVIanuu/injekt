@@ -19,6 +19,7 @@ package com.ivianuu.injekt.android
 import android.app.Application
 import android.content.Context
 import android.content.res.Resources
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Module
@@ -48,8 +49,14 @@ class AndroidApplicationModule {
     @Binding
     val Application.applicationResources: ApplicationResources
         get() = resources
+
+    @Binding
+    val Application.applicationLifecycleOwner: ApplicationLifecycleOwner
+        get() = ProcessLifecycleOwner.get()
 }
 
 typealias ApplicationContext = Context
 
 typealias ApplicationResources = Resources
+
+typealias ApplicationLifecycleOwner = LifecycleOwner
