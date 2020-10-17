@@ -105,7 +105,8 @@ class BindingModuleGenerator(
         val aliasedType = SimpleTypeRef(
             classifier = ClassifierRef(
                 fqName = packageName.child("${bindingModuleName}Alias".asNameId())
-            )
+            ),
+            expandedType = rawBindingType
         )
 
         val callables = mutableListOf<Callable>()

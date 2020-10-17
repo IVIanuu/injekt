@@ -17,6 +17,9 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import org.junit.Test
 
 class BindingModuleTest {
@@ -366,5 +369,79 @@ class BindingModuleTest {
             }
         """
     )
+
+    @Test
+    fun testSetBindingModuleWithComposableFunction() = codegen(
+        """
+            @BindingModule(MyComponent::class)
+            annotation class UiComponentBinding {
+                @Module
+                class Impl<T : @Composable () -> Unit> {
+                    @SetElements
+                    fun intoSet(instance: T): Set<@Composable () -> Unit> = setOf(instance)
+                }
+            }
+            
+            @UiComponentBinding
+            @FunBinding
+            @Composable
+            fun MyUiComponent() {
+            }
+            
+            @MergeComponent
+            abstract class MyComponent {
+                abstract val uiComponents: Set<@Composable () -> Unit>
+            }
+            
+            @GenerateMergeComponents
+            fun invoke() {
+                val uiComponents = component<MyComponent>().uiComponents
+            }
+        """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testSetBindingModuleWithComposableFunctionMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @BindingModule(MyComponent::class)
+                    annotation class UiComponentBinding {
+                        @Module
+                        class Impl<T : @Composable () -> Unit> {
+                            @SetElements
+                            fun <T : @Composable () -> Unit> intoSet(instance: T): Set<@Composable () -> Unit> = setOf(instance)
+                        }
+                    }
+                    
+                    @MergeComponent
+                    abstract class MyComponent {
+                        abstract val uiComponents: Set<@Composable () -> Unit>
+                    }
+                    
+                    @UiComponentBinding
+                    @FunBinding
+                    @Composable
+                    fun MyUiComponent() {
+                    }
+        """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @GenerateMergeComponents
+                    fun invoke() {
+                        val uiComponents = component<MyComponent>().uiComponents
+                    }
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        it.last().invokeSingleFile()
+    }
 
 }

@@ -351,7 +351,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     fun moduleForType(type: TypeRef): com.ivianuu.injekt.compiler.generator.ModuleDescriptor {
         return moduleByType.getOrPut(type) {
             val descriptor = classDescriptorForFqName(type.classifier.fqName)
-            val substitutionMap = type.classifier.typeParameters
+            val moduleSubstitutionMap = type.classifier.typeParameters
                 .zip(type.typeArguments)
                 .toMap()
             ModuleDescriptor(
@@ -371,6 +371,15 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     }
                     .map { callableDescriptor ->
                         val callable = callableForDescriptor(callableDescriptor)
+                        val substitutionMap = moduleSubstitutionMap.toMutableMap()
+
+                        // todo tmp workaround for composables
+                        if ((descriptor.containingDeclaration as? ClassDescriptor)
+                                ?.hasAnnotation(InjektFqNames.BindingModule) == true) {
+                            substitutionMap += callable.typeParameters
+                                .zip(moduleSubstitutionMap.values)
+                        }
+
                         callable.copy(
                             type = callable.type.substitute(substitutionMap),
                             valueParameters = callable.valueParameters.map {
