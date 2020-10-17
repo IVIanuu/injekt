@@ -27,6 +27,8 @@ dependencies {
     api(Deps.processingX)
     kapt(Deps.processingX)
 
+    api(Deps.AndroidX.Compose.compiler)
+
     api(project(":injekt-compiler-plugin"))
     api(project(":injekt-core"))
     api(project(":injekt-merge"))

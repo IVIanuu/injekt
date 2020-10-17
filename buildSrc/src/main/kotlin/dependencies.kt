@@ -41,8 +41,8 @@ object Deps {
         const val appCompat = "androidx.appcompat:appcompat:1.1.0"
 
         object Compose {
-            const val version = "1.0.0-alpha03"
-            const val compiler = "androidx.compose:compose-compiler:$version"
+            const val version = "1.0.0-alpha05"
+            const val compiler = "androidx.compose.compiler:compiler:$version"
             const val material = "androidx.compose.material:material:$version"
             const val runtime = "androidx.compose.runtime:runtime:$version"
         }

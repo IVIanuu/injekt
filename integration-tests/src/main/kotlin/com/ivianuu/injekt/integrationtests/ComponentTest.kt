@@ -271,7 +271,7 @@ class ComponentTest {
             }
 
             fun invoke() {
-                component<ProviderComponent>().fooFactory()
+                component<ProviderComponent>().fooFactory
             }
         """
     ) {
@@ -309,8 +309,8 @@ class ComponentTest {
                 protected fun bar(foo: @Assisted Foo) = Bar(foo)
             }
 
-            fun invoke(foo: Foo): Bar { 
-                return component<BarComponent>().barFactory(foo)
+            fun invoke(foo: Foo) { 
+                component<BarComponent>().barFactory
             }
     """
     ) {
