@@ -35,10 +35,14 @@ dependencies {
     api(Deps.Coroutines.test)
 
     api(Deps.Kotlin.compilerEmbeddable)
-    api(Deps.kotlinCompileTesting)
 
     api(Deps.junit)
     api(Deps.AndroidX.Test.core)
     api(Deps.AndroidX.Test.junit)
     api(Deps.roboelectric)
+
+    // todo remove compile testing deps
+    api("com.squareup.okio:okio:2.1.0")
+    api("org.jetbrains.kotlin:kotlin-annotation-processing-embeddable:1.3.70")
+    api("io.github.classgraph:classgraph:4.8.64")
 }
