@@ -31,19 +31,15 @@ fun Service.createServiceComponent(): ServiceComponent =
         .serviceComponentFactoryOwner(this)
 
 @MergeChildComponent
-abstract class ServiceComponent(@Binding protected val service: Service) {
-    @Binding
-    protected val Service.serviceContext: ServiceContext
-        get() = this
+abstract class ServiceComponent(@Binding protected val service: Service)
 
-    @Binding
-    protected val Service.serviceResources: ServiceResources
-        get() = resources
-}
+@Binding
+val Service.serviceContext: Context
+    get() = this
 
-typealias ServiceContext = Context
-
-typealias ServiceResources = Resources
+@Binding
+val Service.serviceResources: Resources
+    get() = resources
 
 @MergeInto(ApplicationComponent::class)
 interface ServiceComponentFactoryOwner {

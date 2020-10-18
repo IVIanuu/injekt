@@ -23,6 +23,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.TypeBinding
 import com.ivianuu.injekt.merge.MergeChildComponent
 import com.ivianuu.injekt.merge.MergeInto
 import com.ivianuu.injekt.merge.mergeComponent
@@ -35,37 +36,27 @@ val ComponentActivity.activityComponent: ActivityComponent
     }
 
 @MergeChildComponent
-abstract class ActivityComponent(@Binding protected val activity: ComponentActivity) {
-    @Binding
-    protected val ComponentActivity.activityContext: ActivityContext
-        get() = this
+abstract class ActivityComponent(@Binding protected val activity: ComponentActivity)
 
-    @Binding
-    protected val ComponentActivity.activityResources: ActivityResources
-        get() = resources
+@TypeBinding
+val ComponentActivity.activityContext: Context
+    get() = this
 
-    @Binding
-    protected val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
-        get() = this
+@TypeBinding
+val ComponentActivity.activityResources: Resources
+    get() = resources
 
-    @Binding
-    protected val ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
-        get() = this
+@TypeBinding
+val ComponentActivity.activityLifecycleOwner: LifecycleOwner
+    get() = this
 
-    @Binding
-    protected val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
-        get() = this
-}
+@TypeBinding
+val ComponentActivity.activitySavedStateRegistryOwner: SavedStateRegistryOwner
+    get() = this
 
-typealias ActivityContext = Context
-
-typealias ActivityResources = Resources
-
-typealias ActivityLifecycleOwner = LifecycleOwner
-
-typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
-
-typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
+@TypeBinding
+val ComponentActivity.activityViewModelStoreOwner: ViewModelStoreOwner
+    get() = this
 
 @MergeInto(RetainedActivityComponent::class)
 interface ActivityComponentFactoryOwner {

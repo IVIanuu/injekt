@@ -16,47 +16,39 @@
 
 package com.ivianuu.injekt.android
 
+import android.content.Context
 import android.content.res.Resources
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.TypeBinding
 import com.ivianuu.injekt.merge.MergeChildComponent
 import com.ivianuu.injekt.merge.MergeInto
 
 @MergeChildComponent
-abstract class FragmentComponent(@Binding protected val fragment: Fragment) {
-    @Binding
-    protected val Fragment.fragmentContext: FragmentContext
-        get() = requireContext()
+abstract class FragmentComponent(@Binding protected val fragment: Fragment)
 
-    @Binding
-    protected val FragmentContext.fragmentResources: FragmentResources
-        get() = resources
+@TypeBinding
+val Fragment.fragmentContext: Context
+    get() = requireContext()
 
-    @Binding
-    protected val Fragment.fragmentLifecycleOwner: FragmentLifecycleOwner
-        get() = this
+@TypeBinding
+val FragmentContext.fragmentResources: Resources
+    get() = resources
 
-    @Binding
-    protected val Fragment.fragmentSavedStateRegistryOwner: FragmentSavedStateRegistryOwner
-        get() = this
+@TypeBinding
+val Fragment.fragmentLifecycleOwner: LifecycleOwner
+    get() = this
 
-    @Binding
-    protected val Fragment.fragmentViewModelStoreOwner: FragmentViewModelStoreOwner
-        get() = this
-}
+@TypeBinding
+val Fragment.fragmentSavedStateRegistryOwner: SavedStateRegistryOwner
+    get() = this
 
-typealias FragmentContext = android.content.Context
-
-typealias FragmentResources = Resources
-
-typealias FragmentLifecycleOwner = LifecycleOwner
-
-typealias FragmentSavedStateRegistryOwner = SavedStateRegistryOwner
-
-typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
+@TypeBinding
+val Fragment.fragmentViewModelStoreOwner: ViewModelStoreOwner
+    get() = this
 
 @MergeInto(ActivityComponent::class)
 interface FragmentComponentFactoryOwner {
