@@ -22,39 +22,28 @@ import android.content.res.Resources
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.TypeBinding
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.merge.App
 import com.ivianuu.injekt.merge.ApplicationComponent
-import com.ivianuu.injekt.merge.MergeInto
 
 val Application.applicationComponent: ApplicationComponent
     get() = ProcessLifecycleOwner.get().lifecycle.singleton {
         component(this)
     }
 
-@MergeInto(ApplicationComponent::class)
-@Module
-class AndroidApplicationModule {
-    @Binding
-    val App.application: Application
-        get() = this as Application
+@Binding
+val App.application: Application
+    get() = this as Application
 
-    @Binding
-    val Application.appContext: ApplicationContext
-        get() = this
+@TypeBinding
+val Application.applicationContext: Context
+    get() = this
 
-    @Binding
-    val Application.applicationResources: ApplicationResources
-        get() = resources
+@TypeBinding
+val Application.applicationResources: Resources
+    get() = resources
 
-    @Binding
-    val Application.applicationLifecycleOwner: ApplicationLifecycleOwner
-        get() = ProcessLifecycleOwner.get()
-}
-
-typealias ApplicationContext = Context
-
-typealias ApplicationResources = Resources
-
-typealias ApplicationLifecycleOwner = LifecycleOwner
+@TypeBinding
+val Application.applicationLifecycleOwner: LifecycleOwner
+    get() = ProcessLifecycleOwner.get()

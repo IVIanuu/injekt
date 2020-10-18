@@ -19,8 +19,6 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.Binding
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.container.ComponentProvider
-import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingContext
@@ -37,24 +35,6 @@ class InjektKtGenerationExtension(
 
     private var generatedCode = false
 
-    override fun doAnalysis(
-        project: Project,
-        module: ModuleDescriptor,
-        projectContext: ProjectContext,
-        files: Collection<KtFile>,
-        bindingTrace: BindingTrace,
-        componentProvider: ComponentProvider,
-    ): AnalysisResult? {
-        return super.doAnalysis(
-            project,
-            module,
-            projectContext,
-            files,
-            bindingTrace,
-            componentProvider
-        )
-    }
-
     override fun analysisCompleted(
         project: Project,
         module: ModuleDescriptor,
@@ -69,6 +49,8 @@ class InjektKtGenerationExtension(
         val generationComponent = generationComponentFactory(
             module, bindingTrace.bindingContext
         )
+        generationComponent.funBindingGenerator.collect(files)
+        generationComponent.typeBindingGenerator.collect(files)
         generationComponent.funBindingGenerator.generate(files)
         generationComponent.typeBindingGenerator.generate(files)
         generationComponent.implBindingGenerator.generate(files)

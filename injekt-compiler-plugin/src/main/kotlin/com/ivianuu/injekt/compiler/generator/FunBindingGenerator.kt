@@ -27,7 +27,7 @@ import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-@Binding
+@Binding(GenerationComponent::class)
 class FunBindingGenerator(
     private val bindingContext: BindingContext,
     private val declarationStore: DeclarationStore,
@@ -35,9 +35,10 @@ class FunBindingGenerator(
     private val typeTranslator: TypeTranslator
 ) : Generator {
 
-    override fun generate(files: List<KtFile>) {
+    private val funBindings = mutableListOf<FunctionDescriptor>()
+
+    fun collect(files: List<KtFile>) {
         files.forEach { file ->
-            val funBindings = mutableListOf<FunctionDescriptor>()
             file.accept(
                 namedFunctionRecursiveVisitor { declaration ->
                     val descriptor = declaration.descriptor<FunctionDescriptor>(bindingContext)
@@ -56,9 +57,12 @@ class FunBindingGenerator(
                     )
                 )
             }
-            funBindings.forEach { descriptor ->
-                generateFunBinding(descriptor)
-            }
+        }
+    }
+
+    override fun generate(files: List<KtFile>) {
+        funBindings.forEach { descriptor ->
+            generateFunBinding(descriptor)
         }
     }
 

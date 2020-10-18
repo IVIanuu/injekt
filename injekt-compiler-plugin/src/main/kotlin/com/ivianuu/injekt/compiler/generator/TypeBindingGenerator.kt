@@ -17,7 +17,7 @@ import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
-@Binding
+@Binding(GenerationComponent::class)
 class TypeBindingGenerator(
     private val bindingContext: BindingContext,
     private val declarationStore: DeclarationStore,
@@ -25,9 +25,10 @@ class TypeBindingGenerator(
     private val typeTranslator: TypeTranslator
 ) : Generator {
 
-    override fun generate(files: List<KtFile>) {
+    private val typeBindings = mutableListOf<CallableDescriptor>()
+
+    fun collect(files: List<KtFile>) {
         files.forEach { file ->
-            val typeBindings = mutableListOf<CallableDescriptor>()
             file.accept(
                 namedDeclarationRecursiveVisitor { declaration ->
                     val descriptor = declaration.descriptor<DeclarationDescriptor>(bindingContext)
@@ -48,9 +49,12 @@ class TypeBindingGenerator(
                     )
                 )
             }
-            typeBindings.forEach { descriptor ->
-                generateTypeBinding(descriptor)
-            }
+        }
+    }
+
+    override fun generate(files: List<KtFile>) {
+        typeBindings.forEach { descriptor ->
+            generateTypeBinding(descriptor)
         }
     }
 
