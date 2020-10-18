@@ -70,6 +70,7 @@ class InjektKtGenerationExtension(
             module, bindingTrace.bindingContext
         )
         generationComponent.funBindingGenerator.generate(files)
+        generationComponent.typeBindingGenerator.generate(files)
         generationComponent.implBindingGenerator.generate(files)
         generationComponent.bindingModuleGenerator.generate(files)
         generationComponent.indexGenerator.generate(files)
