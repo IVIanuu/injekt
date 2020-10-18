@@ -1,4 +1,4 @@
-package com.ivianuu.common
+package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 

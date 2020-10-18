@@ -41,7 +41,7 @@ class FunBindingGenerator(
             file.accept(
                 namedFunctionRecursiveVisitor { declaration ->
                     val descriptor = declaration.descriptor<FunctionDescriptor>(bindingContext)
-                    if (descriptor!!.hasAnnotation(InjektFqNames.FunBinding)) {
+                    if (descriptor?.hasAnnotation(InjektFqNames.FunBinding) == true) {
                         funBindings += descriptor
                     }
                 }
