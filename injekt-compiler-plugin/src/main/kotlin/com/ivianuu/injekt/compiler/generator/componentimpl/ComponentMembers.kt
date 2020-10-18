@@ -320,7 +320,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
     }
 }
 
-private fun CodeBuilder.emitCallableInvocation(
+fun CodeBuilder.emitCallableInvocation(
     callable: Callable,
     receiver: ComponentExpression?,
     arguments: List<ComponentExpression>,

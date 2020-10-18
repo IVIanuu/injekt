@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
@@ -52,8 +51,7 @@ class TypeTranslator(
                 toTypeRef(it, descriptor, Variance.INVARIANT)
             } ?: emptyList(),
             descriptor is TypeParameterDescriptor,
-            descriptor is ClassDescriptor && descriptor.kind == ClassKind.OBJECT,
-            descriptor.hasAnnotation(InjektFqNames.FunctionAlias)
+            descriptor is ClassDescriptor && descriptor.kind == ClassKind.OBJECT
         )
     }
 

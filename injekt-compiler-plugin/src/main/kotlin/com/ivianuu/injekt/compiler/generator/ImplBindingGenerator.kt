@@ -61,7 +61,7 @@ class ImplBindingGenerator(
             packageFqName,
             descriptor.fqNameSafe
         ).asString() + "ImplBinding.kt"
-        val implFunctionName = "${descriptor.name.asString()}Binding".asNameId()
+        val implFunctionName = "${descriptor.name.asString()}ImplBinding".asNameId()
         val superTypeFunctionName = singleSuperType.classifier.fqName.shortName()
             .asString().decapitalize().asNameId()
         val targetComponent = descriptor.annotations

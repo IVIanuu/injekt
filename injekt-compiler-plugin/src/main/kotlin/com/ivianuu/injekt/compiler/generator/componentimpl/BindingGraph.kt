@@ -346,36 +346,6 @@ class BindingGraph(
             }
         }
 
-        if (type.classifier.isFunctionAlias) {
-            val callable = declarationStore.functionForAlias(type)
-            val substitutionMap = callable.typeParameters
-                .zip(type.typeArguments)
-                .toMap()
-            this += FunBindingNode(
-                type = type,
-                rawType = callable.type,
-                owner = owner,
-                dependencies = callable.valueParameters
-                    .filterNot { it.isAssisted }
-                    .map {
-                        BindingRequest(
-                            it.type.substitute(substitutionMap),
-                            callable.fqName.child(it.name)
-                        )
-                    },
-                valueParameters = callable.valueParameters.map {
-                    it.copy(
-                        type = it.type.substitute(substitutionMap)
-                    )
-                },
-                origin = callable.fqName,
-                targetComponent = callable.targetComponent,
-                receiver = null,
-                callable = callable,
-                isExternal = false
-            )
-        }
-
         if ((type.isFunction || type.isSuspendFunction) && type.typeArguments.size == 1 &&
             type.typeArguments.last().let {
                 !it.isChildComponent && !it.isMergeChildComponent

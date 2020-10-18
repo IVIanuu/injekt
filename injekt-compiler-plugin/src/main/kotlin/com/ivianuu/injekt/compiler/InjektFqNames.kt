@@ -26,14 +26,15 @@ object InjektFqNames {
     val Binding = InjektPackage.child("Binding".asNameId())
     val Component = InjektPackage.child("Component".asNameId())
     val ChildComponent = InjektPackage.child("ChildComponent".asNameId())
-    val FunBinding = InjektPackage.child("FunBinding".asNameId())
-    val ImplBinding = InjektPackage.child("ImplBinding".asNameId())
     val MapEntries = InjektPackage.child("MapEntries".asNameId())
     val Module = InjektPackage.child("Module".asNameId())
     val SetElements = InjektPackage.child("SetElements".asNameId())
 
+    val CommonPackage = InjektPackage//.child("common".asNameId())
+    val FunBinding = CommonPackage.child("FunBinding".asNameId())
+    val ImplBinding = CommonPackage.child("ImplBinding".asNameId())
+
     val InternalPackage = InjektPackage.child("internal".asNameId())
-    val FunctionAlias = InternalPackage.child("FunctionAlias".asNameId())
     val Index = InternalPackage.child("Index".asNameId())
 
     val IndexPackage = InternalPackage.child("index".asNameId())
