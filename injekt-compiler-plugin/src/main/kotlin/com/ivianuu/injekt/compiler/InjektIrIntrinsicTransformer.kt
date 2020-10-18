@@ -67,13 +67,13 @@ class InjektIrIntrinsicTransformer : IrGenerationExtension {
                         )
                     }
 
-                    val componentConstructor = componentClass.constructors.single()
+                    val componentConstructor = componentClass.constructors.singleOrNull()
 
                     val componentImplConstructorStub = componentImplClassStub.addConstructor {
                         origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
                     }.apply {
                         parent = componentImplClassStub
-                        componentConstructor.valueParameters.forEach {
+                        componentConstructor?.valueParameters?.forEach {
                             addValueParameter(it.name.asString(), it.type)
                         }
                     }
