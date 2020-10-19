@@ -37,8 +37,7 @@ val App.application: Application
     get() = this as Application
 
 @TypeBinding
-val Application.applicationContext: Context
-    get() = this
+fun Application.applicationContext(): Context = this
 
 @TypeBinding
 val Application.applicationResources: Resources
