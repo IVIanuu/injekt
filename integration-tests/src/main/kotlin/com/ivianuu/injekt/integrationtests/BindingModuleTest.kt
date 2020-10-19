@@ -265,7 +265,7 @@ class BindingModuleTest {
             }
             
             @AnyBinding
-            @FunBinding
+            @Binding
             fun myService(foo: Foo) {
             }
 
@@ -294,7 +294,7 @@ class BindingModuleTest {
             }
 
             @AnyBinding
-            @FunBinding
+            @Binding
             fun myService(foo: @Assisted Foo) {
             }
             
@@ -323,7 +323,7 @@ class BindingModuleTest {
             
             object MyObject {
                 @AnyBinding
-                @FunBinding
+                @Binding
                 fun myService(foo: Foo) {
                 }
             }
@@ -354,7 +354,7 @@ class BindingModuleTest {
 
             object MyObject {
                 @AnyBinding
-                @FunBinding
+                @Binding
                 fun myService(foo: @Assisted Foo) {
                 }
             }
@@ -383,7 +383,7 @@ class BindingModuleTest {
             }
             
             @UiComponentBinding
-            @FunBinding
+            @Binding
             @Composable
             fun MyUiComponent() {
             }
@@ -422,7 +422,7 @@ class BindingModuleTest {
                     }
                     
                     @UiComponentBinding
-                    @FunBinding
+                    @Binding
                     @Composable
                     fun MyUiComponent() {
                     }

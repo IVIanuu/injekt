@@ -926,7 +926,7 @@ class ComponentTest {
                 protected fun intComparator(): AliasComparator<Int> = error("")
             }
 
-            @FunBinding
+            @Binding
             fun <T> compare(a: @Assisted T, b: @Assisted T, comparator: AliasComparator<T>): Int = comparator
                 .compare(a, b)
 

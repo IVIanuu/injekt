@@ -20,7 +20,7 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.ImplBinding
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.MapEntries
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.merge.ApplicationComponent
@@ -47,11 +47,10 @@ annotation class WorkerBinding {
 }
 
 typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
-
 @MapEntries
 fun defaultWorkers(): Workers = emptyMap()
 
-@ImplBinding
+@Binding
 class InjektWorkerFactory(private val workers: Workers) : WorkerFactory() {
     override fun createWorker(
         appContext: Context,
@@ -64,3 +63,7 @@ class InjektWorkerFactory(private val workers: Workers) : WorkerFactory() {
         )
     }
 }
+
+@Binding
+val InjektWorkerFactory.workerFactory: WorkerFactory
+    get() = this

@@ -167,7 +167,6 @@ class BindingModuleGenerator(
                 emitLine("@Binding")
 
                 val callableKind = if (declaration is FunctionDescriptor &&
-                    !declaration.hasAnnotation(InjektFqNames.FunBinding) &&
                     assistedParameters.isEmpty()) {
                     when {
                         declaration.isSuspend -> Callable.CallableKind.SUSPEND
@@ -213,8 +212,7 @@ class BindingModuleGenerator(
                             }
                         }
 
-                        if (declaration.hasAnnotation(InjektFqNames.FunBinding) ||
-                                assistedParameters.isNotEmpty()) {
+                        if (assistedParameters.isNotEmpty()) {
                             emit("return { ")
                             assistedParameters.forEachIndexed { index, valueParameter ->
                                 emit("${valueParameter.name}: ${valueParameter.type.render()}")
@@ -349,7 +347,7 @@ class BindingModuleGenerator(
             is FunctionDescriptor -> {
                 val assistedParameters = valueParameters
                     .filter { it.type.hasAnnotation(InjektFqNames.Assisted) }
-                if (!hasAnnotation(InjektFqNames.FunBinding) && assistedParameters.isEmpty()) {
+                if (assistedParameters.isEmpty()) {
                     returnType!!.let { typeTranslator.toTypeRef(it, this) }
                 } else {
                     (if (isSuspend) moduleDescriptor.builtIns.getSuspendFunction(assistedParameters.size)

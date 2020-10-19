@@ -17,13 +17,14 @@
 package com.ivianuu.injekt.samples.android
 
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.FunBinding
-import com.ivianuu.injekt.TypeBinding
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.merge.ApplicationComponent
+import java.io.File
 
-@TypeBinding(ApplicationComponent::class)
-fun databaseFile(applicationContext: ApplicationContext) = applicationContext.cacheDir
+typealias DatabaseFile = File
+@Binding(ApplicationComponent::class)
+fun databaseFile(applicationContext: ApplicationContext): DatabaseFile =
+    applicationContext.cacheDir
 
 @Binding(ApplicationComponent::class)
 class Database(private val file: DatabaseFile)
@@ -37,8 +38,9 @@ class Repo(
     }
 }
 
-@FunBinding
-fun refreshRepo(repo: Repo) {
+typealias refreshRepo = () -> Unit
+@Binding
+fun refreshRepo(repo: Repo): refreshRepo = {
     repo.refresh()
 }
 
