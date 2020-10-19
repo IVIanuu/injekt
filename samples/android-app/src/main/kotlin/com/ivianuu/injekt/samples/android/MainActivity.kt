@@ -56,7 +56,6 @@ interface MainActivityComponent {
 }
 
 typealias WithMainViewModel = @Composable (@Composable (MainViewModel) -> Unit) -> Unit
-@Composable
 @Binding
 fun WithMainViewModel(viewModelFactory: () -> MainViewModel): WithMainViewModel = { children ->
     val viewModel = remember { viewModelFactory() }
