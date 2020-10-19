@@ -30,6 +30,9 @@ object LoggerImpl : Logger {
     }
 }
 
+@Binding
+fun logger(): Logger? = if (loggingEnabled) LoggerImpl else null
+
 typealias log = (() -> String) -> Unit
 @Binding
 fun log(logger: Logger?): log = { msg ->

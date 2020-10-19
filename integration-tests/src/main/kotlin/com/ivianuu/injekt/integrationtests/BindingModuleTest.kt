@@ -422,7 +422,7 @@ class BindingModuleTest {
                     }
                     
                     @UiComponentBinding
-                    @Binding
+                    @FunBinding
                     @Composable
                     fun MyUiComponent() {
                     }

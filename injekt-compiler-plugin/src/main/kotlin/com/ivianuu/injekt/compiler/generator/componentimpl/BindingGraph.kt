@@ -254,7 +254,6 @@ class BindingGraph(
                     rawType = callable.type,
                     owner = owner,
                     dependencies = callable.valueParameters
-                        .filterNot { it.isAssisted }
                         .map {
                             BindingRequest(
                                 it.type.substitute(substitutionMap),
@@ -271,9 +270,7 @@ class BindingGraph(
                     receiver = receiver,
                     callable = callable,
                     isExternal = callable.isExternal,
-                    cacheable = callable.valueParameters.any {
-                        it.isAssisted
-                    }
+                    cacheable = false
                 )
             }
     }
@@ -288,7 +285,6 @@ class BindingGraph(
                     rawType = callable.type,
                     owner = owner,
                     dependencies = callable.valueParameters
-                        .filterNot { it.isAssisted }
                         .map {
                             BindingRequest(
                                 it.type.substitute(substitutionMap),
@@ -305,9 +301,7 @@ class BindingGraph(
                     receiver = null,
                     callable = callable,
                     isExternal = callable.isExternal,
-                    cacheable = callable.valueParameters.any {
-                        it.isAssisted
-                    }
+                    cacheable = false
                 )
             }
     }
@@ -422,7 +416,6 @@ class BindingCollections(
                         owner = owner,
                         dependencies = entries.flatMap { (entry, _, substitutionMap) ->
                             entry.valueParameters
-                                .filterNot { it.isAssisted }
                                 .map {
                                     BindingRequest(
                                         it.type.substitute(substitutionMap),
@@ -441,7 +434,6 @@ class BindingCollections(
                         owner = owner,
                         dependencies = elements.flatMap { (element, _, substitutionMap) ->
                             element.valueParameters
-                                .filterNot { it.isAssisted }
                                 .map {
                                     BindingRequest(
                                         it.type.substitute(substitutionMap),

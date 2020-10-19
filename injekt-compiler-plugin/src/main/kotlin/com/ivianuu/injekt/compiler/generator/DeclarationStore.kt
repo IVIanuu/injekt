@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.backend.common.descriptors.isSuspend
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -296,10 +295,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             name = owner.name,
             packageFqName = descriptor.findPackage().fqName,
             fqName = owner.fqNameSafe,
-            type = (
-                    if (descriptor.allParameters.any { it.type.hasAnnotation(InjektFqNames.Assisted) })
-                        descriptor.getBindingFunctionType() else descriptor.returnType!!
-                    )
+            type = descriptor.returnType!!
                 .let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
             targetComponent = owner.annotations.findAnnotation(InjektFqNames.Binding)
                 ?.allValueArguments
@@ -322,7 +318,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     ValueParameterRef(
                         type = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
                         isExtensionReceiver = true,
-                        isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
                         name = "receiver".asNameId()
                     )
                 }
@@ -330,7 +325,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 ValueParameterRef(
                     type = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
                     isExtensionReceiver = false,
-                    isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
                     name = it.name
                 )
             },

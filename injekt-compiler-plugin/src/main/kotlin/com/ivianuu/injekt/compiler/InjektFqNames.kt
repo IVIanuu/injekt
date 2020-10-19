@@ -22,7 +22,6 @@ import org.jetbrains.kotlin.name.FqName
 object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
 
-    val Assisted = InjektPackage.child("Assisted".asNameId())
     val Binding = InjektPackage.child("Binding".asNameId())
     val Component = InjektPackage.child("Component".asNameId())
     val ChildComponent = InjektPackage.child("ChildComponent".asNameId())
