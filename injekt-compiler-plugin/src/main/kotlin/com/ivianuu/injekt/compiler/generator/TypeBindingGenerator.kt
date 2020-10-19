@@ -104,7 +104,7 @@ class TypeBindingGenerator(
             if (descriptor.hasAnnotation(InjektFqNames.Composable))
                 emitLine("@${InjektFqNames.Composable}")
             if (descriptor.isSuspend) emit("suspend ")
-            emit("fun ")
+            emit("inline fun ")
             if (descriptor.typeParameters.isNotEmpty()) {
                 emit("<")
                 descriptor.typeParameters
