@@ -50,14 +50,10 @@ class InjektKtGenerationExtension(
             module, bindingTrace.bindingContext
         )
         val generators = listOf(
-            generationComponent.funBindingGenerator,
-            generationComponent.typeBindingGenerator,
-            generationComponent.implBindingGenerator,
             generationComponent.bindingModuleGenerator,
             generationComponent.indexGenerator,
             generationComponent.componentGenerator
         )
-        generators.forEach { it.preProcess(files) }
         generators.forEach { it.generate(files) }
         val newFiles = generationComponent.fileManager.newFiles
 

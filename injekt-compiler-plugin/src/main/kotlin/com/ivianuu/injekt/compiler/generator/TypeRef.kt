@@ -76,7 +76,7 @@ class KotlinTypeRef(
     private val finalType by unsafeLazy { kotlinType.getAbbreviation() ?: kotlinType.prepare() }
     override val classifier: ClassifierRef by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.let {
-            typeTranslator.toClassifierRef(it, fixType = false)
+            typeTranslator.toClassifierRef(it)
         }
     }
     override val isFunction: Boolean by unsafeLazy {
@@ -109,34 +109,23 @@ class KotlinTypeRef(
             kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
     }
     override val superTypes: List<TypeRef> by unsafeLazy {
-        kotlinType.constructor.supertypes.map {
-            typeTranslator.toTypeRef(it,
-                finalType.constructor.declarationDescriptor,
-                fixType = false)
-        }
+        kotlinType.constructor.supertypes.map { typeTranslator.toTypeRef(it) }
     }
     override val isMarkedNullable: Boolean by unsafeLazy {
         kotlinType.isMarkedNullable
     }
     override val typeArguments: List<TypeRef> by unsafeLazy {
         finalType.arguments.map {
-            typeTranslator.toTypeRef(it.type,
-                finalType.constructor.declarationDescriptor,
-                it.projectionKind,
-                false)
+            typeTranslator.toTypeRef(it.type, it.projectionKind)
         }
     }
     override val expandedType: TypeRef? by unsafeLazy {
         (kotlinType.constructor.declarationDescriptor as? TypeAliasDescriptor)
             ?.expandedType?.let {
-                typeTranslator.toTypeRef(it,
-                    finalType.constructor.declarationDescriptor,
-                    fixType = false)
+                typeTranslator.toTypeRef(it)
             }
             ?: kotlinType.getAbbreviatedType()?.expandedType?.let {
-                typeTranslator.toTypeRef(it,
-                    finalType.constructor.declarationDescriptor,
-                    fixType = false)
+                typeTranslator.toTypeRef(it)
             }
     }
 }

@@ -23,7 +23,6 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.TypeBinding
 import com.ivianuu.injekt.merge.MergeChildComponent
 import com.ivianuu.injekt.merge.MergeInto
 import com.ivianuu.injekt.merge.mergeComponent
@@ -38,24 +37,29 @@ val ComponentActivity.activityComponent: ActivityComponent
 @MergeChildComponent
 abstract class ActivityComponent(@Binding protected val activity: ComponentActivity)
 
-@TypeBinding
-val ComponentActivity.activityContext: Context
+typealias ActivityContext = Context
+@Binding
+val ComponentActivity.activityContext: ActivityContext
     get() = this
 
-@TypeBinding
-val ComponentActivity.activityResources: Resources
+typealias ActivityResources = Resources
+@Binding
+val ComponentActivity.activityResources: ActivityResources
     get() = resources
 
-@TypeBinding
-val ComponentActivity.activityLifecycleOwner: LifecycleOwner
+typealias ActivityLifecycleOwner = LifecycleOwner
+@Binding
+val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
     get() = this
 
-@TypeBinding
-val ComponentActivity.activitySavedStateRegistryOwner: SavedStateRegistryOwner
+typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
+@Binding
+val ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
     get() = this
 
-@TypeBinding
-val ComponentActivity.activityViewModelStoreOwner: ViewModelStoreOwner
+typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
+@Binding
+val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
     get() = this
 
 @MergeInto(RetainedActivityComponent::class)

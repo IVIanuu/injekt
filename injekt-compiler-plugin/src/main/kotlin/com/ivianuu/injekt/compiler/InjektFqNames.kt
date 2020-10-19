@@ -22,18 +22,12 @@ import org.jetbrains.kotlin.name.FqName
 object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
 
-    val Assisted = InjektPackage.child("Assisted".asNameId())
     val Binding = InjektPackage.child("Binding".asNameId())
     val Component = InjektPackage.child("Component".asNameId())
     val ChildComponent = InjektPackage.child("ChildComponent".asNameId())
     val MapEntries = InjektPackage.child("MapEntries".asNameId())
     val Module = InjektPackage.child("Module".asNameId())
     val SetElements = InjektPackage.child("SetElements".asNameId())
-
-    val CommonPackage = InjektPackage//.child("common".asNameId())
-    val FunBinding = CommonPackage.child("FunBinding".asNameId())
-    val ImplBinding = CommonPackage.child("ImplBinding".asNameId())
-    val TypeBinding = CommonPackage.child("TypeBinding".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
     val Index = InternalPackage.child("Index".asNameId())

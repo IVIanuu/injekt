@@ -20,7 +20,6 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.componentimpl.CallableBindingNode
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentImpl
-import com.ivianuu.injekt.compiler.generator.componentimpl.FunBindingNode
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.name.FqName
@@ -54,7 +53,7 @@ class ComponentGenerator(
                         descriptor.hasAnnotation(InjektFqNames.Component)
                     ) {
                         generateComponent(descriptor.defaultType
-                            .let { typeTranslator.toTypeRef(it, descriptor) })
+                            .let { typeTranslator.toTypeRef(it) })
                     }
                 }
             )
@@ -83,7 +82,6 @@ class ComponentGenerator(
                 .mapNotNull {
                     it to (when (it) {
                         is CallableBindingNode -> it.callable
-                        is FunBindingNode -> it.callable
                         else -> null
                     } ?: return@mapNotNull null)
                 }

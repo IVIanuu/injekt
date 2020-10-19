@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
+import com.ivianuu.injekt.Binding
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
@@ -49,3 +50,7 @@ class InjektCommandLineProcessor : CommandLineProcessor {
 val SrcDirKey = CompilerConfigurationKey<String>("srcDir")
 
 typealias SrcDir = File
+@Binding(ApplicationComponent::class)
+fun srcDir(configuration: CompilerConfiguration): SrcDir =
+    File(configuration.getNotNull(SrcDirKey))
+        .also { it.mkdirs() }

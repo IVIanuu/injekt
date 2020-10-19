@@ -68,11 +68,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
 
     fun getBindingExpression(binding: BindingNode): ComponentExpression {
         val callableKind = when (binding) {
-            is CallableBindingNode -> {
-                if (binding.valueParameters.none { it.isAssisted })
-                    binding.callable.callableKind
-                else Callable.CallableKind.DEFAULT
-            }
+            is CallableBindingNode -> binding.callable.callableKind
             else -> Callable.CallableKind.DEFAULT
         }
         expressionsByType[binding.type]?.let {
@@ -94,7 +90,6 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
             when (binding) {
                 is ChildImplBindingNode -> childFactoryExpression(binding)
                 is CallableBindingNode -> callableExpression(binding)
-                is FunBindingNode -> funBindingExpression(binding)
                 is MapBindingNode -> mapExpression(binding)
                 is NullBindingNode -> nullExpression()
                 is ProviderBindingNode -> providerExpression(binding)
@@ -226,28 +221,26 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
     private fun nullExpression(): ComponentExpression = { emit("null") }
 
     private fun callableExpression(binding: CallableBindingNode): ComponentExpression = {
-        if (binding.valueParameters.any { it.isAssisted }) {
+        if (binding.assistedParameters.isNotEmpty()) {
             emit("{ ")
-            binding.valueParameters
-                .filter { it.isAssisted }
+            binding.assistedParameters
                 .forEachIndexed { index, parameter ->
-                    emit("p$index: ${parameter.type.renderExpanded()}")
-                    if (index != binding.valueParameters.lastIndex) emit(", ")
+                    emit("p$index: ${parameter.renderExpanded()}")
+                    if (index != binding.assistedParameters.lastIndex) emit(", ")
                 }
             emitLine(" ->")
             var assistedIndex = 0
-            var nonAssistedIndex = 0
             emitCallableInvocation(
                 binding.callable,
                 binding.receiver,
-                binding.valueParameters.map { parameter ->
-                    if (parameter.isAssisted) {
+                binding.callable.valueParameters.map { parameter ->
+                    if (parameter.type in binding.assistedParameters) {
                         { emit("p${assistedIndex++}") }
                     } else {
                         getBindingExpression(
                             owner.graph.getBinding(
                                 BindingRequest(
-                                    binding.dependencies[nonAssistedIndex++].type,
+                                    parameter.type,
                                     binding.callable.fqName.child(parameter.name)
                                 )
                             )
@@ -264,51 +257,6 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                 binding.dependencies.map { getBindingExpression(owner.graph.getBinding(it)) }
             )
         }
-    }
-
-    private fun funBindingExpression(binding: FunBindingNode): ComponentExpression = {
-        emit("{ ")
-        val assistedParameters = binding.valueParameters
-            .filter { it.isAssisted }
-        val assistedValueParameters = assistedParameters
-            .filterNot { it.isExtensionReceiver }
-        assistedValueParameters
-            .forEachIndexed { index, parameter ->
-                emit("p$index: ${parameter.type.renderExpanded()}")
-                if (index != assistedValueParameters.lastIndex) emit(", ")
-            }
-        emitLine(" ->")
-        var assistedIndex = 0
-        var nonAssistedIndex = 0
-        emitCallableInvocation(
-            binding.callable,
-            binding.receiver,
-            binding.valueParameters.map { parameter ->
-                when {
-                    parameter.isAssisted -> {
-                        {
-                            if (parameter.isExtensionReceiver) {
-                                emit("this")
-                            } else {
-                                emit("p${assistedIndex++}")
-                            }
-                        }
-                    }
-                    else -> {
-                        getBindingExpression(
-                            owner.graph.getBinding(
-                                BindingRequest(
-                                    binding.dependencies[nonAssistedIndex++].type,
-                                    binding.callable.fqName.child(parameter.name)
-                                )
-                            )
-                        )
-                    }
-                }
-            }
-        )
-        emitLine()
-        emitLine("}")
     }
 
     private fun providerExpression(binding: ProviderBindingNode): ComponentExpression = {

@@ -23,31 +23,35 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.TypeBinding
 import com.ivianuu.injekt.merge.MergeChildComponent
 import com.ivianuu.injekt.merge.MergeInto
 
 @MergeChildComponent
 abstract class FragmentComponent(@Binding protected val fragment: Fragment)
 
-@TypeBinding
-val Fragment.fragmentContext: Context
+typealias FragmentContext = Context
+@Binding
+val Fragment.fragmentContext: FragmentContext
     get() = requireContext()
 
-@TypeBinding
-val FragmentContext.fragmentResources: Resources
+typealias FragmentResources = Resources
+@Binding
+val FragmentContext.fragmentResources: FragmentResources
     get() = resources
 
-@TypeBinding
-val Fragment.fragmentLifecycleOwner: LifecycleOwner
+typealias FragmentLifecycleOwner = LifecycleOwner
+@Binding
+val Fragment.fragmentLifecycleOwner: FragmentLifecycleOwner
     get() = this
 
-@TypeBinding
-val Fragment.fragmentSavedStateRegistryOwner: SavedStateRegistryOwner
+typealias FragmentSavedStateRegistryOwner = SavedStateRegistryOwner
+@Binding
+val Fragment.fragmentSavedStateRegistryOwner: FragmentSavedStateRegistryOwner
     get() = this
 
-@TypeBinding
-val Fragment.fragmentViewModelStoreOwner: ViewModelStoreOwner
+typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
+@Binding
+val Fragment.fragmentViewModelStoreOwner: FragmentViewModelStoreOwner
     get() = this
 
 @MergeInto(ActivityComponent::class)

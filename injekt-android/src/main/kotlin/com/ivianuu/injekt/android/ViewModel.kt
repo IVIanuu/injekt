@@ -19,8 +19,7 @@ package com.ivianuu.injekt.android
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
-import com.ivianuu.injekt.Assisted
-import com.ivianuu.injekt.FunBinding
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.merge.BindingModule
 import kotlin.reflect.KClass
@@ -59,13 +58,13 @@ annotation class FragmentViewModelBinding {
     }
 }
 
-@FunBinding
+typealias getViewModel<VM, S, VMSO> = (KClass<S>) -> S
+@Binding
 fun <VM : S, S : ViewModel, VMSO : ViewModelStoreOwner> getViewModel(
     viewModelStoreOwner: VMSO,
-    viewModelFactory: () -> VM,
-    viewModelClass: @Assisted KClass<S>
-): S {
-    return ViewModelProvider(
+    viewModelFactory: () -> VM
+): getViewModel<VM, S, VMSO> = { viewModelClass ->
+    ViewModelProvider(
         viewModelStoreOwner,
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel?> create(modelClass: Class<T>): T =
