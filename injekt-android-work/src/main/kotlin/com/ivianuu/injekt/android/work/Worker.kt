@@ -25,11 +25,8 @@ import com.ivianuu.injekt.MapEntries
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.merge.ApplicationComponent
 import com.ivianuu.injekt.merge.BindingModule
-import com.ivianuu.injekt.merge.MergeInto
 import kotlin.reflect.KClass
 import kotlin.reflect.typeOf
-
-typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
 
 @BindingModule(ApplicationComponent::class)
 annotation class WorkerBinding {
@@ -49,12 +46,10 @@ annotation class WorkerBinding {
     }
 }
 
-@MergeInto(ApplicationComponent::class)
-@Module
-object WorkerInjectionModule {
-    @MapEntries
-    fun defaultWorkers(): Workers = emptyMap()
-}
+typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
+
+@MapEntries
+fun defaultWorkers(): Workers = emptyMap()
 
 @ImplBinding
 class InjektWorkerFactory(private val workers: Workers) : WorkerFactory() {
