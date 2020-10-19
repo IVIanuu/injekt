@@ -106,20 +106,9 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
     private val bindingsByType = mutableMapOf<TypeRef, List<Callable>>()
     fun bindingsForType(type: TypeRef): List<Callable> = bindingsByType.getOrPut(type) {
-        (allBindings + generatedBindings)
+        allBindings
             .filter { type.isAssignable(it.type) }
     }
-
-    private val generatedBindings = mutableListOf<Callable>()
-    fun addGeneratedBinding(callable: Callable) {
-        generatedBindings += callable
-    }
-
-    private val generatedClassifiers = mutableMapOf<FqName, ClassifierRef>()
-    fun addGeneratedClassifier(classifier: ClassifierRef) {
-        generatedClassifiers[classifier.fqName] = classifier
-    }
-    fun generatedClassifierFor(fqName: FqName): ClassifierRef? = generatedClassifiers[fqName]
 
     private val allMapEntries by unsafeLazy {
         functionIndices
@@ -296,13 +285,13 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             packageFqName = descriptor.findPackage().fqName,
             fqName = owner.fqNameSafe,
             type = descriptor.returnType!!
-                .let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
+                .let { typeTranslator.toTypeRef(it, Variance.INVARIANT) },
             targetComponent = owner.annotations.findAnnotation(InjektFqNames.Binding)
                 ?.allValueArguments
                 ?.get("scopeComponent".asNameId())
                 ?.let { it as KClassValue }
                 ?.getArgumentType(module)
-                ?.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
+                ?.let { typeTranslator.toTypeRef(it, Variance.INVARIANT) },
             contributionKind = when {
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.ContributionKind.MAP_ENTRIES
@@ -316,14 +305,14 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             valueParameters = listOfNotNull(
                 descriptor.extensionReceiverParameter?.let {
                     ValueParameterRef(
-                        type = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
+                        type = it.type.let { typeTranslator.toTypeRef(it, Variance.INVARIANT) },
                         isExtensionReceiver = true,
                         name = "receiver".asNameId()
                     )
                 }
             ) + descriptor.valueParameters.map {
                 ValueParameterRef(
-                    type = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
+                    type = it.type.let { typeTranslator.toTypeRef(it, Variance.INVARIANT) },
                     isExtensionReceiver = false,
                     name = it.name
                 )

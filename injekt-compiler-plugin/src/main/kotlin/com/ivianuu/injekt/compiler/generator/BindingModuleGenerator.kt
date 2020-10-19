@@ -91,7 +91,7 @@ class BindingModuleGenerator(
             .allValueArguments["component".asNameId()]!!
             .let { it as KClassValue }
             .getArgumentType(moduleDescriptor)
-            .let { typeTranslator.toTypeRef(it, declaration) }
+            .let { typeTranslator.toTypeRef(it) }
 
         val packageName = declaration.findPackage().fqName
         val bindingModuleName = joinedNameOf(
@@ -127,7 +127,7 @@ class BindingModuleGenerator(
                         ?.valueParameters
                         ?.map {
                             ValueParameterRef(
-                                type = it.type.let { typeTranslator.toTypeRef(it, declaration) },
+                                type = it.type.let { typeTranslator.toTypeRef(it) },
                                 isExtensionReceiver = false,
                                 name = it.name
                             )
@@ -138,7 +138,7 @@ class BindingModuleGenerator(
                         .valueParameters
                         .map {
                             ValueParameterRef(
-                                type = it.type.let { typeTranslator.toTypeRef(it, declaration) },
+                                type = it.type.let { typeTranslator.toTypeRef(it) },
                                 isExtensionReceiver = false,
                                 name = it.name
                             )
@@ -158,7 +158,8 @@ class BindingModuleGenerator(
                 }
 
                 when (callableKind) {
-                    Callable.CallableKind.DEFAULT -> {}
+                    Callable.CallableKind.DEFAULT -> {
+                    }
                     Callable.CallableKind.SUSPEND -> emit("suspend ")
                     Callable.CallableKind.COMPOSABLE -> emitLine("@${InjektFqNames.Composable}")
                 }.let {}
@@ -221,7 +222,7 @@ class BindingModuleGenerator(
                 bindingModules
                     .forEach { bindingModule ->
                         val propertyType = bindingModule.defaultType
-                            .let { typeTranslator.toTypeRef(it, declaration) }
+                            .let { typeTranslator.toTypeRef(it) }
                             .typeWith(listOf(aliasedType))
                         val propertyName = propertyType
                             .uniqueTypeName()
@@ -237,7 +238,7 @@ class BindingModuleGenerator(
                                 .child(propertyName),
                             name = propertyName,
                             type = bindingModule.defaultType
-                                .let { typeTranslator.toTypeRef(it, declaration) }
+                                .let { typeTranslator.toTypeRef(it) }
                                 .typeWith(listOf(aliasedType)),
                             typeParameters = emptyList(),
                             valueParameters = emptyList(),
@@ -249,22 +250,21 @@ class BindingModuleGenerator(
                         )
                     }
             }
-        }
 
-        declarationStore.addGeneratedMergeModule(
-            targetComponent,
-            ModuleDescriptor(
-                type = SimpleTypeRef(
-                    classifier = ClassifierRef(
-                        fqName = packageName.child(bindingModuleName),
-                        isObject = true
+            declarationStore.addGeneratedMergeModule(
+                targetComponent,
+                ModuleDescriptor(
+                    type = SimpleTypeRef(
+                        classifier = ClassifierRef(
+                            fqName = packageName.child(bindingModuleName),
+                            isObject = true
+                        ),
+                        isModule = true
                     ),
-                    isModule = true
-                ),
-                callables = callables
+                    callables = callables
+                )
             )
-        )
-
+        }
         fileManager.generateFile(
             packageFqName = declaration.findPackage().fqName,
             fileName = "$bindingModuleName.kt",
@@ -277,14 +277,15 @@ class BindingModuleGenerator(
         )
     }
 
+
     private fun DeclarationDescriptor.getBindingType(): TypeRef {
         return when (this) {
             is ClassDescriptor -> {
                 declarationStore.callableForDescriptor(getInjectConstructor()!!).type
             }
             is FunctionDescriptor -> returnType!!
-                .let { typeTranslator.toTypeRef(it, this) }
-            is PropertyDescriptor -> type.let { typeTranslator.toTypeRef(it, this) }
+                .let { typeTranslator.toTypeRef(it) }
+            is PropertyDescriptor -> type.let { typeTranslator.toTypeRef(it) }
             else -> error("Unexpected given declaration $this")
         }
     }

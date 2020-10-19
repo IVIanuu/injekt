@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.ClassifierRef
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.TypeRef
-import com.ivianuu.injekt.compiler.generator.ValueParameterRef
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.renderExpanded
 import org.jetbrains.kotlin.name.FqName
@@ -134,7 +133,7 @@ class CallableBindingNode(
     override val receiver: ComponentExpression?,
     override val isExternal: Boolean,
     override val cacheable: Boolean,
-    val valueParameters: List<ValueParameterRef>,
+    val assistedParameters: List<TypeRef>,
     val callable: Callable,
 ) : BindingNode() {
     override fun toString(): String = "Callable(${callable.type.render()})"

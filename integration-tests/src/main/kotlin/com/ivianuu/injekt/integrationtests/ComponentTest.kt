@@ -926,9 +926,11 @@ class ComponentTest {
                 protected fun intComparator(): AliasComparator<Int> = error("")
             }
 
+            typealias compare<T> = (T, T) -> Int
             @Binding
-            fun <T> compare(a: T, b: T, comparator: AliasComparator<T>): Int = comparator
-                .compare(a, b)
+            fun <T> compare(comparator: AliasComparator<T>): compare<T> = { a, b -> 
+                comparator.compare(a, b)
+            }
 
         """
     )

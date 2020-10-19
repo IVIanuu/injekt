@@ -221,11 +221,42 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
     private fun nullExpression(): ComponentExpression = { emit("null") }
 
     private fun callableExpression(binding: CallableBindingNode): ComponentExpression = {
-        emitCallableInvocation(
-            binding.callable,
-            binding.receiver,
-            binding.dependencies.map { getBindingExpression(owner.graph.getBinding(it)) }
-        )
+        if (binding.assistedParameters.isNotEmpty()) {
+            emit("{ ")
+            binding.assistedParameters
+                .forEachIndexed { index, parameter ->
+                    emit("p$index: ${parameter.renderExpanded()}")
+                    if (index != binding.assistedParameters.lastIndex) emit(", ")
+                }
+            emitLine(" ->")
+            var assistedIndex = 0
+            emitCallableInvocation(
+                binding.callable,
+                binding.receiver,
+                (binding.assistedParameters + binding.dependencies).map { parameter ->
+                    when (parameter) {
+                        is TypeRef -> {
+                            { emit("p${assistedIndex++}") }
+                        }
+                        else -> {
+                            getBindingExpression(
+                                owner.graph.getBinding(
+                                    parameter as BindingRequest
+                                )
+                            )
+                        }
+                    }
+                }
+            )
+            emitLine()
+            emitLine("}")
+        } else {
+            emitCallableInvocation(
+                binding.callable,
+                binding.receiver,
+                binding.dependencies.map { getBindingExpression(owner.graph.getBinding(it)) }
+            )
+        }
     }
 
     private fun providerExpression(binding: ProviderBindingNode): ComponentExpression = {
