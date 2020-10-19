@@ -233,18 +233,18 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
             emitCallableInvocation(
                 binding.callable,
                 binding.receiver,
-                (binding.assistedParameters + binding.dependencies).map { parameter ->
-                    when (parameter) {
-                        is TypeRef -> {
-                            { emit("p${assistedIndex++}") }
-                        }
-                        else -> {
-                            getBindingExpression(
-                                owner.graph.getBinding(
-                                    parameter as BindingRequest
+                binding.callable.valueParameters.map { parameter ->
+                    if (parameter.type in binding.assistedParameters) {
+                        { emit("p${assistedIndex++}") }
+                    } else {
+                        getBindingExpression(
+                            owner.graph.getBinding(
+                                BindingRequest(
+                                    parameter.type,
+                                    binding.callable.fqName.child(parameter.name)
                                 )
                             )
-                        }
+                        )
                     }
                 }
             )

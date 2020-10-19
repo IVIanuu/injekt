@@ -278,10 +278,9 @@ class BindingGraph(
                 this += moduleBindingCallables
                     .filter { returnType.isAssignable(it.callable.type) }
                     .filter { callableWithReceiver ->
-                        assistedParameters.withIndex().all { (index, assistedParameterType) ->
-                            val callableParameter = callableWithReceiver.callable.valueParameters.getOrNull(index)
-                            callableParameter != null &&
-                                    assistedParameterType.isAssignable(callableParameter.type)
+                        assistedParameters.all { assistedParameterType ->
+                            callableWithReceiver.callable.valueParameters
+                                .any { assistedParameterType.isAssignable(it.type) }
                         }
                     }
                     .map { (callable, receiver) ->
@@ -291,7 +290,7 @@ class BindingGraph(
                             rawType = callable.type,
                             owner = owner,
                             dependencies = callable.valueParameters
-                                .drop(assistedParameters.size)
+                                .filter { it.type !in assistedParameters }
                                 .map {
                                     BindingRequest(
                                         it.type.substitute(substitutionMap),
@@ -346,10 +345,9 @@ class BindingGraph(
                     this += declarationStore.bindingsForType(returnType)
                         .filter { it.targetComponent == null || it.targetComponent == owner.componentType }
                         .filter { callableWithReceiver ->
-                            assistedParameters.withIndex().all { (index, assistedParameterType) ->
-                                val callableParameter = callableWithReceiver.valueParameters.getOrNull(index)
-                                callableParameter != null &&
-                                        assistedParameterType.isAssignable(callableParameter.type)
+                            assistedParameters.all { assistedParameterType ->
+                                callableWithReceiver.valueParameters
+                                    .any { assistedParameterType.isAssignable(it.type) }
                             }
                         }
                         .map { callable ->
@@ -359,7 +357,7 @@ class BindingGraph(
                                 rawType = callable.type,
                                 owner = owner,
                                 dependencies = callable.valueParameters
-                                    .drop(assistedParameters.size)
+                                    .filter { it.type !in assistedParameters }
                                     .map {
                                         BindingRequest(
                                             it.type.substitute(substitutionMap),

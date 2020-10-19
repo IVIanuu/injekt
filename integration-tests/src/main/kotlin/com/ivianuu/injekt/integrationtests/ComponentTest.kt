@@ -337,6 +337,28 @@ class ComponentTest {
     }
 
     @Test
+    fun testComplexAssistedBindingFunction() = codegen(
+        """
+            @Component
+            abstract class BarComponent {
+                abstract val barFactory: (Foo, Int) -> Bar
+                
+                @Binding
+                protected fun bar(foo: Foo, string: String, int: Int) = Bar(foo)
+                
+                @Binding
+                protected val string = ""
+            }
+
+            fun invoke(foo: Foo): Bar { 
+                return component<BarComponent>().barFactory(foo, 0)
+            }
+    """
+    ) {
+        invokeSingleFile(Foo())
+    }
+
+    @Test
     fun testAssistedBindingClass() = codegen(
         """
             @Binding
