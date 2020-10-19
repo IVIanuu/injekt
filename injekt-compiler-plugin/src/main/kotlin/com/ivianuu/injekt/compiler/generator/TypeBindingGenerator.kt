@@ -27,7 +27,7 @@ class TypeBindingGenerator(
 
     private val typeBindings = mutableListOf<CallableDescriptor>()
 
-    fun collect(files: List<KtFile>) {
+    override fun preProcess(files: List<KtFile>) {
         files.forEach { file ->
             file.accept(
                 namedDeclarationRecursiveVisitor { declaration ->

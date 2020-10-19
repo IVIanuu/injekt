@@ -37,7 +37,7 @@ class FunBindingGenerator(
 
     private val funBindings = mutableListOf<FunctionDescriptor>()
 
-    fun collect(files: List<KtFile>) {
+    override fun preProcess(files: List<KtFile>) {
         files.forEach { file ->
             file.accept(
                 namedFunctionRecursiveVisitor { declaration ->

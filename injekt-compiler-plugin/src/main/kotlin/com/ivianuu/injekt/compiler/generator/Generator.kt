@@ -23,6 +23,8 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingContext
 
 interface Generator {
+    fun preProcess(files: List<KtFile>) {
+    }
     fun generate(files: List<KtFile>)
 }
 
