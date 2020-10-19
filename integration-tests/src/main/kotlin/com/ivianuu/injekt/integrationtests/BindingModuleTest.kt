@@ -65,7 +65,7 @@ class BindingModuleTest {
             }
             
             @AnyBinding
-            class AnnotatedBar(val foo: @Assisted Foo)
+            class AnnotatedBar(val foo: Foo)
             
             @MergeComponent
             abstract class MyComponent {
@@ -179,7 +179,7 @@ class BindingModuleTest {
             }
 
             @AnyBinding
-            fun myService(foo: @Assisted Foo) {
+            fun myService(foo: Foo) {
             }
             
             @MergeComponent
@@ -237,7 +237,7 @@ class BindingModuleTest {
 
             object MyObject {
                 @AnyBinding
-                fun myService(foo: @Assisted Foo) {
+                fun myService(foo: Foo) {
                 }
             }
             
@@ -295,7 +295,7 @@ class BindingModuleTest {
 
             @AnyBinding
             @Binding
-            fun myService(foo: @Assisted Foo) {
+            fun myService(foo: Foo) {
             }
             
             @MergeComponent
@@ -355,7 +355,7 @@ class BindingModuleTest {
             object MyObject {
                 @AnyBinding
                 @Binding
-                fun myService(foo: @Assisted Foo) {
+                fun myService(foo: Foo) {
                 }
             }
             
