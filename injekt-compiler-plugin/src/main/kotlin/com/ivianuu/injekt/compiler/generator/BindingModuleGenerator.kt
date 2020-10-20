@@ -18,11 +18,10 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.generator.componentimpl.emitCallableInvocation
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.backend.common.serialization.findPackage
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
@@ -31,6 +30,8 @@ import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.types.replace
+import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 
 @Binding
 class BindingModuleGenerator(
@@ -50,12 +51,10 @@ class BindingModuleGenerator(
                         val descriptor = klass.descriptor<ClassDescriptor>(bindingContext)
                             ?: return
                         if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingModule)) {
-                            generateBindingModuleForCallable(
-                                declarationStore.callableForDescriptor(
-                                    descriptor.getInjectConstructor()!!
-                                ),
-                                file
-                            )
+                            try {
+                                generateBindingModuleForDeclaration(descriptor)
+                            } catch (e: CancelGenerationException) {
+                            }
                         }
                     }
 
@@ -63,52 +62,48 @@ class BindingModuleGenerator(
                         super.visitNamedFunction(function)
                         val descriptor = function.descriptor<FunctionDescriptor>(bindingContext)
                             ?: return
-                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingModule) &&
-                                !descriptor.hasAnnotation(InjektFqNames.FunBinding)) {
-                            generateBindingModuleForCallable(
-                                declarationStore.callableForDescriptor(descriptor),
-                                file
-                            )
+                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingModule)) {
+                            try {
+                                generateBindingModuleForDeclaration(descriptor)
+                            } catch (e: CancelGenerationException) {
+                            }
                         }
                     }
                 }
             )
         }
-
-        declarationStore.generatedBindings
-            .filter { it.first.bindingModules.isNotEmpty() }
-            .forEach { generateBindingModuleForCallable(it.first, it.second) }
     }
 
-    private fun generateBindingModuleForCallable(
-        callable: Callable,
-        file: KtFile
-    ) {
-        val bindingModules = callable.bindingModules
-            .map { declarationStore.classDescriptorForFqName(it) }
+    private fun generateBindingModuleForDeclaration(declaration: DeclarationDescriptor) {
+        val bindingModuleAnnotations = declaration
+            .getAnnotatedAnnotations(InjektFqNames.BindingModule)
+        val bindingModules = bindingModuleAnnotations
+            .map { it.type.constructor.declarationDescriptor as ClassDescriptor }
             .map {
                 it.unsubstitutedMemberScope.getContributedDescriptors()
                     .filterIsInstance<ClassDescriptor>()
                     .single()
             }
 
-        val targetComponent = bindingModules
+        val targetComponent = bindingModuleAnnotations
             .first()
-            .containingDeclaration
+            .type
+            .constructor
+            .declarationDescriptor!!
             .annotations
             .findAnnotation(InjektFqNames.BindingModule)!!
             .allValueArguments["component".asNameId()]!!
             .let { it as KClassValue }
             .getArgumentType(moduleDescriptor)
-            .let { typeTranslator.toTypeRef(it) }
+            .let { typeTranslator.toTypeRef(it, declaration) }
 
-        val packageName = callable.packageFqName
+        val packageName = declaration.findPackage().fqName
         val bindingModuleName = joinedNameOf(
             packageName,
-            FqName("${callable.fqName.asString()}BindingModule")
+            FqName("${declaration.fqNameSafe.asString()}BindingModule")
         )
 
-        val rawBindingType = callable.type
+        val rawBindingType = declaration.getBindingType()
         val aliasedType = SimpleTypeRef(
             classifier = ClassifierRef(
                 fqName = packageName.child("${bindingModuleName}Alias".asNameId())
@@ -120,7 +115,7 @@ class BindingModuleGenerator(
 
         val code = buildCodeString {
             emitLine("package $packageName")
-            emitLine("import ${callable.fqName}")
+            emitLine("import ${declaration.fqNameSafe}")
             emitLine("import ${InjektFqNames.Binding}")
             emitLine("import ${InjektFqNames.MergeInto}")
             emitLine("import ${InjektFqNames.Module}")
@@ -131,32 +126,149 @@ class BindingModuleGenerator(
             emitLine("@Module")
             emit("object $bindingModuleName ")
             braced {
+                val assistedParameters = mutableListOf<ValueParameterRef>()
+                val valueParameters = mutableListOf<ValueParameterRef>()
+                if (declaration is ClassDescriptor) {
+                    declaration.getInjectConstructor()
+                        ?.valueParameters
+                        ?.map {
+                            ValueParameterRef(
+                                type = it.type.let { typeTranslator.toTypeRef(it, declaration) },
+                                isExtensionReceiver = false,
+                                isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
+                                name = it.name
+                            )
+                        }
+                        ?.forEach { valueParameter ->
+                            if (valueParameter.isAssisted) {
+                                assistedParameters += valueParameter
+                            } else {
+                                valueParameters += valueParameter
+                            }
+                        }
+                } else if (declaration is FunctionDescriptor) {
+                    declaration
+                        .valueParameters
+                        .map {
+                            ValueParameterRef(
+                                type = it.type.let { typeTranslator.toTypeRef(it, declaration) },
+                                isExtensionReceiver = false,
+                                isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
+                                name = it.name
+                            )
+                        }
+                        .forEach { valueParameter ->
+                            if (valueParameter.isAssisted) {
+                                assistedParameters += valueParameter
+                            } else {
+                                valueParameters += valueParameter
+                            }
+                        }
+                }
+
                 emitLine("@Binding")
 
-                when (callable.callableKind) {
-                    Callable.CallableKind.DEFAULT -> {
+                val callableKind = if (declaration is FunctionDescriptor &&
+                    !declaration.hasAnnotation(InjektFqNames.FunBinding) &&
+                    assistedParameters.isEmpty()) {
+                    when {
+                        declaration.isSuspend -> Callable.CallableKind.SUSPEND
+                        declaration.hasAnnotation(InjektFqNames.Composable) -> Callable.CallableKind.COMPOSABLE
+                        else -> Callable.CallableKind.DEFAULT
                     }
+                } else {
+                    Callable.CallableKind.DEFAULT
+                }
+
+                when (callableKind) {
+                    Callable.CallableKind.DEFAULT -> {}
                     Callable.CallableKind.SUSPEND -> emit("suspend ")
                     Callable.CallableKind.COMPOSABLE -> emitLine("@${InjektFqNames.Composable}")
                 }.let {}
 
                 emit("fun aliasedBinding(")
-                callable.valueParameters.forEachIndexed { index, valueParameter ->
+                valueParameters.forEachIndexed { index, valueParameter ->
                     emit("${valueParameter.name}: ${valueParameter.type.render()}")
-                    if (index != callable.valueParameters.lastIndex) emit(", ")
+                    if (index != valueParameters.lastIndex) emit(", ")
                 }
                 emit("): ${aliasedType.render()} ")
                 braced {
-                    emit("return ")
-                    emitCallableInvocation(
-                        callable,
-                        null,
-                        callable.valueParameters.map { parameter ->
-                            {
-                                emit(parameter.name)
+                    if (declaration is FunctionDescriptor) {
+                        val callable = declarationStore.callableForDescriptor(declaration)
+                        fun emitCall() {
+                            fun emitCallInner() {
+                                emit("${declaration.name}(")
+                                val callValueParameters = callable.valueParameters
+                                    .filterNot { it.isExtensionReceiver }
+                                callValueParameters
+                                    .forEachIndexed { index, valueParameter ->
+                                        emit(valueParameter.name)
+                                        if (index != callValueParameters.lastIndex) emit(", ")
+                                    }
+                                emit(")")
+                            }
+                            if (declaration.containingDeclaration is ClassDescriptor) {
+                                emit("with(${declaration.containingDeclaration.fqNameSafe}) ")
+                                braced { emitCallInner() }
+                            } else {
+                                emitCallInner()
                             }
                         }
-                    )
+
+                        if (declaration.hasAnnotation(InjektFqNames.FunBinding) ||
+                                assistedParameters.isNotEmpty()) {
+                            emit("return { ")
+                            assistedParameters.forEachIndexed { index, valueParameter ->
+                                emit("${valueParameter.name}: ${valueParameter.type.render()}")
+                                if (index != assistedParameters.lastIndex) emit(", ") else emit(" -> ")
+                            }
+                            emitLine()
+                            if (callable.valueParameters.any { it.isExtensionReceiver }) {
+                                indented {
+                                    emit("with(${callable.valueParameters.first().name}) ")
+                                    braced { emitCall() }
+                                }
+                            } else {
+                                emitCall()
+                            }
+                            emitLine(" }")
+                        } else {
+                            emit("return ")
+                            emitCall()
+                        }
+                    } else {
+                        declaration as ClassDescriptor
+                        if (declaration.kind == ClassKind.OBJECT) {
+                            emit("return ${rawBindingType.classifier.fqName}")
+                        } else {
+                            if (assistedParameters.isNotEmpty()) {
+                                emit("return { ")
+                                assistedParameters.forEachIndexed { index, valueParameter ->
+                                    emit("${valueParameter.name}: ${valueParameter.type.render()}")
+                                    if (index != assistedParameters.lastIndex) emit(", ") else emit(" -> ")
+                                }
+                                indented {
+                                    emit("${declaration.name}(")
+                                    val constructorCallable = declarationStore.callableForDescriptor(
+                                        declaration.getInjectConstructor()!!
+                                    )
+                                    constructorCallable.valueParameters.forEachIndexed { index, valueParameter ->
+                                        emit(valueParameter.name)
+                                        if (index != constructorCallable.valueParameters.lastIndex) emit(", ")
+                                    }
+                                    emit(")")
+                                }
+                                emitLine(" }")
+                            } else {
+                                emit("return ${rawBindingType.classifier.fqName}(")
+                                valueParameters.forEachIndexed { index, valueParameter ->
+                                    emit(valueParameter.name)
+                                    if (index != valueParameters.lastIndex) emit(", ")
+                                }
+                                emit(")")
+                            }
+                        }
+                    }
                 }
                 callables += Callable(
                     packageFqName = packageName,
@@ -165,18 +277,17 @@ class BindingModuleGenerator(
                     name = "aliasedBinding".asNameId(),
                     type = aliasedType,
                     typeParameters = emptyList(),
-                    valueParameters = callable.valueParameters,
+                    valueParameters = valueParameters,
                     targetComponent = null,
                     contributionKind = Callable.ContributionKind.BINDING,
-                    bindingModules = emptyList(),
                     isCall = true,
-                    callableKind = callable.callableKind,
+                    callableKind = callableKind,
                     isExternal = false
                 )
                 bindingModules
                     .forEach { bindingModule ->
                         val propertyType = bindingModule.defaultType
-                            .let { typeTranslator.toTypeRef(it) }
+                            .let { typeTranslator.toTypeRef(it, declaration) }
                             .typeWith(listOf(aliasedType))
                         val propertyName = propertyType
                             .uniqueTypeName()
@@ -192,44 +303,71 @@ class BindingModuleGenerator(
                                 .child(propertyName),
                             name = propertyName,
                             type = bindingModule.defaultType
-                                .let { typeTranslator.toTypeRef(it) }
+                                .let { typeTranslator.toTypeRef(it, declaration) }
                                 .typeWith(listOf(aliasedType)),
                             typeParameters = emptyList(),
                             valueParameters = emptyList(),
                             targetComponent = null,
                             contributionKind = Callable.ContributionKind.MODULE,
-                            bindingModules = emptyList(),
                             isCall = false,
                             callableKind = Callable.CallableKind.DEFAULT,
                             isExternal = false
                         )
                     }
             }
-
-            declarationStore.addGeneratedMergeModule(
-                targetComponent,
-                ModuleDescriptor(
-                    type = SimpleTypeRef(
-                        classifier = ClassifierRef(
-                            fqName = packageName.child(bindingModuleName),
-                            isObject = true
-                        ),
-                        isModule = true
-                    ),
-                    callables = callables
-                )
-            )
         }
+
+        declarationStore.addGeneratedMergeModule(
+            targetComponent,
+            ModuleDescriptor(
+                type = SimpleTypeRef(
+                    classifier = ClassifierRef(
+                        fqName = packageName.child(bindingModuleName),
+                        isObject = true
+                    ),
+                    isModule = true
+                ),
+                callables = callables
+            )
+        )
+
         fileManager.generateFile(
-            packageFqName = callable.packageFqName,
+            packageFqName = declaration.findPackage().fqName,
             fileName = "$bindingModuleName.kt",
             code = code
         )
 
         declarationStore.addGeneratedInternalIndex(
-            file,
+            declaration.findPsi()!!.containingFile as KtFile,
             Index(packageName.child(bindingModuleName), "class")
         )
     }
 
+    private fun DeclarationDescriptor.getBindingType(): TypeRef {
+        return when (this) {
+            is ClassDescriptor -> {
+                declarationStore.callableForDescriptor(getInjectConstructor()!!).type
+            }
+            is FunctionDescriptor -> {
+                val assistedParameters = valueParameters
+                    .filter { it.type.hasAnnotation(InjektFqNames.Assisted) }
+                if (!hasAnnotation(InjektFqNames.FunBinding) && assistedParameters.isEmpty()) {
+                    returnType!!.let { typeTranslator.toTypeRef(it, this) }
+                } else {
+                    (if (isSuspend) moduleDescriptor.builtIns.getSuspendFunction(assistedParameters.size)
+                    else moduleDescriptor.builtIns.getFunction(assistedParameters.size))
+                        .defaultType
+                        .replace(
+                            newArguments = (assistedParameters
+                                .map { it.type } + returnType!!)
+                                .map { it.asTypeProjection() }
+                        )
+                        .let { typeTranslator.toTypeRef(it, this) }
+                        .copy(isComposable = hasAnnotation(InjektFqNames.Composable))
+                }
+            }
+            is PropertyDescriptor -> type.let { typeTranslator.toTypeRef(it, this) }
+            else -> error("Unexpected given declaration $this")
+        }
+    }
 }
