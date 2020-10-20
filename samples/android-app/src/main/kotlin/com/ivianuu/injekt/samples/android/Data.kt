@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.samples.android
 
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.merge.ApplicationComponent
 import java.io.File
@@ -39,8 +40,8 @@ class Repo(
 }
 
 typealias refreshRepo = () -> Unit
-@Binding
-fun refreshRepo(repo: Repo): refreshRepo = {
+@FunBinding
+fun refreshRepo(repo: Repo) {
     repo.refresh()
 }
 

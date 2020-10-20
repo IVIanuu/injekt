@@ -25,6 +25,7 @@ import androidx.lifecycle.ViewModel
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityContext
 import com.ivianuu.injekt.android.activityComponent
@@ -56,15 +57,19 @@ interface MainActivityComponent {
 }
 
 typealias WithMainViewModel = @Composable (@Composable (MainViewModel) -> Unit) -> Unit
-@Binding
-fun WithMainViewModel(viewModelFactory: () -> MainViewModel): WithMainViewModel = { children ->
+@FunBinding
+@Composable
+fun WithMainViewModel(
+    viewModelFactory: () -> MainViewModel,
+    children: @Composable (MainViewModel) -> Unit
+) {
     val viewModel = remember { viewModelFactory() }
     children(viewModel)
 }
 
 typealias enqueueWork = () -> Unit
-@Binding
-fun enqueueWork(context: ActivityContext): enqueueWork = {
+@FunBinding
+fun enqueueWork(context: ActivityContext) {
     WorkManager.getInstance(context)
         .enqueue(
             OneTimeWorkRequestBuilder<TestWorker>()
