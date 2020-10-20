@@ -86,7 +86,7 @@ class KotlinTypeRef(
         finalType.isSuspendFunctionType
     }
     override val isExtensionFunction: Boolean by unsafeLazy {
-        kotlinType.hasAnnotation(KotlinBuiltIns.FQ_NAMES.extensionFunctionType)
+        finalType.hasAnnotation(KotlinBuiltIns.FQ_NAMES.extensionFunctionType)
     }
     override val isModule: Boolean by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.Module)
