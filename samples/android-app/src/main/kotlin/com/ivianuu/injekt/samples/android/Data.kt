@@ -39,7 +39,6 @@ class Repo(
     }
 }
 
-typealias refreshRepo = () -> Unit
 @FunBinding
 fun refreshRepo(repo: Repo) {
     repo.refresh()

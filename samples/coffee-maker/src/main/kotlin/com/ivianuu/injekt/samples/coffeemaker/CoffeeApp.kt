@@ -16,9 +16,9 @@
 
 package com.ivianuu.injekt.samples.coffeemaker
 
-import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.FunBinding
+import com.ivianuu.injekt.ImplBinding
 import com.ivianuu.injekt.component
 
 fun main() {
@@ -26,7 +26,6 @@ fun main() {
     component.brewCoffee()
 }
 
-typealias brewCoffee = () -> Unit
 @FunBinding
 fun brewCoffee(heater: Heater, pump: Pump) {
     heater.on()
@@ -47,7 +46,7 @@ interface Heater {
     val isHot: Boolean
 }
 
-@Binding(CoffeeComponent::class)
+@ImplBinding(CoffeeComponent::class)
 class ElectricHeater : Heater {
     private var heating: Boolean = false
 
@@ -64,14 +63,11 @@ class ElectricHeater : Heater {
         get() = heating
 }
 
-@Binding
-val ElectricHeater.heater: Heater get() = this
-
 interface Pump {
     fun pump()
 }
 
-@Binding
+@ImplBinding
 class Thermosiphon(private val heater: Heater) : Pump {
     override fun pump() {
         if (heater.isHot) {
@@ -79,7 +75,3 @@ class Thermosiphon(private val heater: Heater) : Pump {
         }
     }
 }
-
-@Binding
-val Thermosiphon.pump: Pump
-    get() = this

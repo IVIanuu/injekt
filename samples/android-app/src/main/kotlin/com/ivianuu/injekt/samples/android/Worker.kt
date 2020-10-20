@@ -22,14 +22,15 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
+import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.android.work.WorkerBinding
 
 @WorkerBinding
 class TestWorker(
-    context: Context,
-    workerParams: WorkerParameters,
+    context: @Assisted Context,
+    workerParams: @Assisted WorkerParameters,
     repo: Repo,
 ) : CoroutineWorker(context, workerParams) {
     init {
@@ -39,7 +40,6 @@ class TestWorker(
     override suspend fun doWork(): Result = Result.success()
 }
 
-typealias initializeWorkers = () -> Unit
 @FunBinding
 fun initializeWorkers(
     applicationContext: ApplicationContext,

@@ -61,7 +61,11 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
 
     fun getBindingExpression(binding: BindingNode): ComponentExpression {
         val callableKind = when (binding) {
-            is CallableBindingNode -> binding.callable.callableKind
+            is CallableBindingNode -> {
+                if (binding.valueParameters.none { it.isAssisted })
+                    binding.callable.callableKind
+                else Callable.CallableKind.DEFAULT
+            }
             else -> Callable.CallableKind.DEFAULT
         }
         expressionsByType[binding.type]?.let {
@@ -214,26 +218,28 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
     private fun nullExpression(): ComponentExpression = { emit("null") }
 
     private fun callableExpression(binding: CallableBindingNode): ComponentExpression = {
-        if (binding.assistedParameters.isNotEmpty()) {
+        if (binding.valueParameters.any { it.isAssisted }) {
             emit("{ ")
-            binding.assistedParameters
+            binding.valueParameters
+                .filter { it.isAssisted }
                 .forEachIndexed { index, parameter ->
-                    emit("p$index: ${parameter.renderExpanded()}")
-                    if (index != binding.assistedParameters.lastIndex) emit(", ")
+                    emit("p$index: ${parameter.type.renderExpanded()}")
+                    if (index != binding.valueParameters.lastIndex) emit(", ")
                 }
             emitLine(" ->")
             var assistedIndex = 0
+            var nonAssistedIndex = 0
             emitCallableInvocation(
                 binding.callable,
                 binding.receiver,
-                binding.callable.valueParameters.map { parameter ->
-                    if (parameter.type in binding.assistedParameters) {
+                binding.valueParameters.map { parameter ->
+                    if (parameter.isAssisted) {
                         { emit("p${assistedIndex++}") }
                     } else {
                         getBindingExpression(
                             owner.graph.getBinding(
                                 BindingRequest(
-                                    parameter.type,
+                                    binding.dependencies[nonAssistedIndex++].type,
                                     binding.callable.fqName.child(parameter.name)
                                 )
                             )

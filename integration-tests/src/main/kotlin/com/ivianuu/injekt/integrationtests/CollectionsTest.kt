@@ -116,7 +116,7 @@ class CollectionsTest {
                 abstract val map: Map<KClass<out Command>, (String) -> Command>
             
                 @Binding 
-                protected fun commandA(arg: String) = CommandA()
+                protected fun commandA(arg: @Assisted String) = CommandA()
                 
                 @MapEntries
                 protected fun commandAIntoMap(
@@ -124,7 +124,7 @@ class CollectionsTest {
                 ): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandA::class to commandAFactory)
                 
                 @Binding 
-                protected fun commandB(arg: String) = CommandB()
+                protected fun commandB(arg: @Assisted String) = CommandB()
         
                 @MapEntries 
                 protected fun commandBIntoMap(
@@ -238,7 +238,7 @@ class CollectionsTest {
                 abstract val set: Set<(String) -> Command>
                 
                 @Binding 
-                fun commandA(arg: String) = CommandA()
+                fun commandA(arg: @Assisted String) = CommandA()
                 
                 @SetElements
                 fun commandAIntoSet(
@@ -246,7 +246,7 @@ class CollectionsTest {
                 ): Set<(String) -> Command> = setOf(commandAFactory)
                 
                 @Binding 
-                fun commandB(arg: String) = CommandB()
+                fun commandB(arg: @Assisted String) = CommandB()
         
                 @SetElements
                 fun commandBIntoSet(

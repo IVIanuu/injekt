@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.backend.common.descriptors.isSuspend
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -106,14 +107,20 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
     private val bindingsByType = mutableMapOf<TypeRef, List<Callable>>()
     fun bindingsForType(type: TypeRef): List<Callable> = bindingsByType.getOrPut(type) {
-        (allBindings + generatedBindings.map { it.first })
+        (allBindings + generatedBindings)
             .filter { type.isAssignable(it.type) }
     }
 
-    val generatedBindings = mutableListOf<Pair<Callable, KtFile>>()
-    fun addGeneratedBinding(callable: Callable, file: KtFile) {
-        generatedBindings += callable to file
+    private val generatedBindings = mutableListOf<Callable>()
+    fun addGeneratedBinding(callable: Callable) {
+        generatedBindings += callable
     }
+
+    private val generatedClassifiers = mutableMapOf<FqName, ClassifierRef>()
+    fun addGeneratedClassifier(classifier: ClassifierRef) {
+        generatedClassifiers[classifier.fqName] = classifier
+    }
+    fun generatedClassifierFor(fqName: FqName): ClassifierRef? = generatedClassifiers[fqName]
 
     private val allMapEntries by unsafeLazy {
         functionIndices
@@ -289,14 +296,17 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             name = owner.name,
             packageFqName = descriptor.findPackage().fqName,
             fqName = owner.fqNameSafe,
-            type = descriptor.returnType!!
-                .let { typeTranslator.toTypeRef(it, Variance.INVARIANT) },
+            type = (
+                    if (descriptor.allParameters.any { it.type.hasAnnotation(InjektFqNames.Assisted) })
+                        descriptor.getBindingFunctionType() else descriptor.returnType!!
+                    )
+                .let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
             targetComponent = owner.annotations.findAnnotation(InjektFqNames.Binding)
                 ?.allValueArguments
                 ?.get("scopeComponent".asNameId())
                 ?.let { it as KClassValue }
                 ?.getArgumentType(module)
-                ?.let { typeTranslator.toTypeRef(it, Variance.INVARIANT) },
+                ?.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
             contributionKind = when {
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.ContributionKind.MAP_ENTRIES
@@ -310,15 +320,17 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             valueParameters = listOfNotNull(
                 descriptor.extensionReceiverParameter?.let {
                     ValueParameterRef(
-                        type = it.type.let { typeTranslator.toTypeRef(it, Variance.INVARIANT) },
+                        type = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
                         isExtensionReceiver = true,
+                        isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
                         name = "receiver".asNameId()
                     )
                 }
             ) + descriptor.valueParameters.map {
                 ValueParameterRef(
-                    type = it.type.let { typeTranslator.toTypeRef(it, Variance.INVARIANT) },
+                    type = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
                     isExtensionReceiver = false,
+                    isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
                     name = it.name
                 )
             },
@@ -331,11 +343,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     else -> Callable.CallableKind.DEFAULT
                 }
             } else Callable.CallableKind.DEFAULT,
-            bindingModules = (descriptor
-                .getAnnotatedAnnotations(InjektFqNames.BindingModule)
-                .map { it.fqName!! } + owner
-                .getAnnotatedAnnotations(InjektFqNames.BindingModule)
-                .map { it.fqName!! }).distinct(),
             isExternal = owner is DeserializedDescriptor
         )
     }

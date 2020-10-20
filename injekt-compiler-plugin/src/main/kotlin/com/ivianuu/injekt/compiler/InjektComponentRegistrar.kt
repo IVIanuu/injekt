@@ -17,7 +17,8 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
-import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.Assisted
+import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.compiler.checkers.InjektStorageContainerContributor
 import com.ivianuu.injekt.compiler.generator.DeleteOldFilesExtension
 import com.ivianuu.injekt.compiler.generator.InjektKtGenerationExtension
@@ -56,14 +57,14 @@ class InjektComponentRegistrar : ComponentRegistrar {
     }
 }
 
-typealias registerExtensions = (Boolean) -> Unit
-@Binding
+@FunBinding
 fun registerExtensions(
     project: Project,
     deleteOldFilesExtension: DeleteOldFilesExtension,
     injektStorageContainerContributor: InjektStorageContainerContributor,
-    injektKtGenerationExtension: InjektKtGenerationExtension
-): registerExtensions = { isGenerateKaptStubs ->
+    injektKtGenerationExtension: InjektKtGenerationExtension,
+    isGenerateKaptStubs: @Assisted Boolean
+) {
     AnalysisHandlerExtension.registerExtension(
         project,
         deleteOldFilesExtension

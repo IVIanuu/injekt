@@ -20,34 +20,38 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.ImplBinding
 import com.ivianuu.injekt.MapEntries
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.merge.ApplicationComponent
 import com.ivianuu.injekt.merge.BindingModule
 import kotlin.reflect.KClass
+import kotlin.reflect.typeOf
 
 @BindingModule(ApplicationComponent::class)
 annotation class WorkerBinding {
     @Module
-    class WorkerModule<T : ListenableWorker>(private val workerClass: KClass<out ListenableWorker>) {
+    class WorkerModule<T : (Context, WorkerParameters) -> ListenableWorker>(private val workerClass: KClass<out ListenableWorker>) {
         @MapEntries
-        fun workerIntoMap(factory: (Context, WorkerParameters) -> T): Workers =
+        fun workerIntoMap(factory: T): Workers =
             mapOf(workerClass to factory)
 
         companion object {
-            inline operator fun <reified T : ListenableWorker> invoke(): WorkerModule<T> {
-                return WorkerModule(T::class)
+            inline operator fun <reified T : (Context, WorkerParameters) -> ListenableWorker> invoke(): WorkerModule<T> {
+                val workerClass =
+                    typeOf<T>().arguments.last().type!!.classifier as KClass<out ListenableWorker>
+                return WorkerModule(workerClass)
             }
         }
     }
 }
 
 typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
+
 @MapEntries
 fun defaultWorkers(): Workers = emptyMap()
 
-@Binding
+@ImplBinding
 class InjektWorkerFactory(private val workers: Workers) : WorkerFactory() {
     override fun createWorker(
         appContext: Context,
@@ -60,7 +64,3 @@ class InjektWorkerFactory(private val workers: Workers) : WorkerFactory() {
         )
     }
 }
-
-@Binding
-val InjektWorkerFactory.workerFactory: WorkerFactory
-    get() = this

@@ -53,7 +53,7 @@ class ComponentGenerator(
                         descriptor.hasAnnotation(InjektFqNames.Component)
                     ) {
                         generateComponent(descriptor.defaultType
-                            .let { typeTranslator.toTypeRef(it) })
+                            .let { typeTranslator.toTypeRef(it, descriptor) })
                     }
                 }
             )
