@@ -36,7 +36,6 @@ val App.application: Application
     get() = this as Application
 
 typealias ApplicationContext = Context
-
 @Binding
 val Application.appContext: ApplicationContext
     get() = this
