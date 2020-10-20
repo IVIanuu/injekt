@@ -31,11 +31,11 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev389"
+    const val version = "${Build.versionName}-dev390"
 }
 
 object Deps {
-    const val androidGradlePlugin = "com.android.tools.build:gradle:4.0.1"
+    const val androidGradlePlugin = "com.android.tools.build:gradle:4.2.0-alpha13"
 
     object AndroidX {
         const val appCompat = "androidx.appcompat:appcompat:1.1.0"
