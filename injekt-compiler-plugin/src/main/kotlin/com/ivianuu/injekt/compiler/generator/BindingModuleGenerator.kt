@@ -19,12 +19,8 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
@@ -55,7 +51,10 @@ class BindingModuleGenerator(
                         val descriptor = klass.descriptor<ClassDescriptor>(bindingContext)
                             ?: return
                         if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingModule)) {
-                            generateBindingModuleForDeclaration(descriptor)
+                            try {
+                                generateBindingModuleForDeclaration(descriptor)
+                            } catch (e: CancelGenerationException) {
+                            }
                         }
                     }
 
@@ -64,7 +63,10 @@ class BindingModuleGenerator(
                         val descriptor = function.descriptor<FunctionDescriptor>(bindingContext)
                             ?: return
                         if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingModule)) {
-                            generateBindingModuleForDeclaration(descriptor)
+                            try {
+                                generateBindingModuleForDeclaration(descriptor)
+                            } catch (e: CancelGenerationException) {
+                            }
                         }
                     }
                 }

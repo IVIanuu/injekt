@@ -22,7 +22,6 @@ import android.content.res.Resources
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.TypeBinding
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.merge.App
 import com.ivianuu.injekt.merge.ApplicationComponent
@@ -36,13 +35,17 @@ val Application.applicationComponent: ApplicationComponent
 val App.application: Application
     get() = this as Application
 
-@TypeBinding
-fun Application.applicationContext(): Context = this
+typealias ApplicationContext = Context
+@Binding
+val Application.appContext: ApplicationContext
+    get() = this
 
-@TypeBinding
-val Application.applicationResources: Resources
+typealias ApplicationResources = Resources
+@Binding
+val Application.applicationResources: ApplicationResources
     get() = resources
 
-@TypeBinding
-val Application.applicationLifecycleOwner: LifecycleOwner
+typealias ApplicationLifecycleOwner = LifecycleOwner
+@Binding
+val Application.applicationLifecycleOwner: ApplicationLifecycleOwner
     get() = ProcessLifecycleOwner.get()

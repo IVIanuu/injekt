@@ -45,7 +45,10 @@ class ImplBindingGenerator(
                     val descriptor = declaration.descriptor<ClassDescriptor>(bindingContext)
                         ?: return@classOrObjectRecursiveVisitor
                     if (descriptor.hasAnnotation(InjektFqNames.ImplBinding)) {
-                        generateImplBinding(descriptor)
+                        try {
+                            generateImplBinding(descriptor)
+                        } catch (e: CancelGenerationException) {
+                        }
                     }
                 }
             )

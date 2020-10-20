@@ -17,12 +17,7 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
-import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -96,8 +91,10 @@ class TypeTranslator(
                         expandedType = type.expandedType?.let { fixType(it, file) }
                     )
                 } else {
-                    error("Cannot resolve $type in ${file.virtualFilePath} guessed name '$fqName' " +
-                            "Do not use function aliases with '*' imports and import them explicitly")
+                    throw CancelGenerationException(
+                        "Cannot resolve $type in ${file.virtualFilePath} guessed name '$fqName' " +
+                                "Do not use function aliases with '*' imports and import them explicitly"
+                    )
                 }
             }
         }

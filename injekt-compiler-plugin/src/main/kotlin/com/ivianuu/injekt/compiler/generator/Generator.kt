@@ -39,5 +39,4 @@ abstract class GenerationComponent(
     abstract val componentGenerator: ComponentGenerator
     abstract val implBindingGenerator: ImplBindingGenerator
     abstract val indexGenerator: IndexGenerator
-    abstract val typeBindingGenerator: TypeBindingGenerator
 }

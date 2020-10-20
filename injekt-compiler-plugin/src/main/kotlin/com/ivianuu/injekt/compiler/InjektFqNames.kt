@@ -33,7 +33,6 @@ object InjektFqNames {
     val CommonPackage = InjektPackage//.child("common".asNameId())
     val FunBinding = CommonPackage.child("FunBinding".asNameId())
     val ImplBinding = CommonPackage.child("ImplBinding".asNameId())
-    val TypeBinding = CommonPackage.child("TypeBinding".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
     val Index = InternalPackage.child("Index".asNameId())

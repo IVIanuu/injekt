@@ -62,7 +62,10 @@ class FunBindingGenerator(
 
     override fun generate(files: List<KtFile>) {
         funBindings.forEach { descriptor ->
-            generateFunBinding(descriptor)
+            try {
+                generateFunBinding(descriptor)
+            } catch (e: CancelGenerationException) {
+            }
         }
     }
 

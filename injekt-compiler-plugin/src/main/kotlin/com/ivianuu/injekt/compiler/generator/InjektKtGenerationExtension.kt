@@ -51,14 +51,23 @@ class InjektKtGenerationExtension(
         )
         val generators = listOf(
             generationComponent.funBindingGenerator,
-            generationComponent.typeBindingGenerator,
             generationComponent.implBindingGenerator,
             generationComponent.bindingModuleGenerator,
             generationComponent.indexGenerator,
             generationComponent.componentGenerator
         )
-        generators.forEach { it.preProcess(files) }
-        generators.forEach { it.generate(files) }
+        generators.forEach {
+            try {
+                it.preProcess(files)
+            } catch (e: CancelGenerationException) {
+            }
+        }
+        generators.forEach {
+            try {
+                it.generate(files)
+            } catch (e: CancelGenerationException) {
+            }
+        }
         val newFiles = generationComponent.fileManager.newFiles
 
         return AnalysisResult.RetryWithAdditionalRoots(
