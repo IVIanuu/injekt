@@ -34,5 +34,6 @@ abstract class GenerationComponent(
     abstract val fileManager: FileManager
     abstract val bindingModuleGenerator: BindingModuleGenerator
     abstract val componentGenerator: ComponentGenerator
+    abstract val funBindingGenerator: FunBindingGenerator
     abstract val indexGenerator: IndexGenerator
 }

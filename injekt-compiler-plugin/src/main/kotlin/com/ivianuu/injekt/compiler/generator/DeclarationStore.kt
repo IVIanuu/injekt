@@ -106,8 +106,13 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
     private val bindingsByType = mutableMapOf<TypeRef, List<Callable>>()
     fun bindingsForType(type: TypeRef): List<Callable> = bindingsByType.getOrPut(type) {
-        allBindings
+        (allBindings + generatedBindings.map { it.first })
             .filter { type.isAssignable(it.type) }
+    }
+
+    val generatedBindings = mutableListOf<Pair<Callable, KtFile>>()
+    fun addGeneratedBinding(callable: Callable, file: KtFile) {
+        generatedBindings += callable to file
     }
 
     private val allMapEntries by unsafeLazy {
@@ -326,6 +331,11 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     else -> Callable.CallableKind.DEFAULT
                 }
             } else Callable.CallableKind.DEFAULT,
+            bindingModules = (descriptor
+                .getAnnotatedAnnotations(InjektFqNames.BindingModule)
+                .map { it.fqName!! } + owner
+                .getAnnotatedAnnotations(InjektFqNames.BindingModule)
+                .map { it.fqName!! }).distinct(),
             isExternal = owner is DeserializedDescriptor
         )
     }

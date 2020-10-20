@@ -28,6 +28,7 @@ data class Callable(
     val valueParameters: List<ValueParameterRef>,
     val targetComponent: TypeRef?,
     val contributionKind: ContributionKind?,
+    val bindingModules: List<FqName>,
     val isCall: Boolean,
     val callableKind: CallableKind,
     val isExternal: Boolean
