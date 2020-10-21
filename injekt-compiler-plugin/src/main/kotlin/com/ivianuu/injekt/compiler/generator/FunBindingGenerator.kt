@@ -115,7 +115,7 @@ class FunBindingGenerator(
             emitLine()
 
             emitLine("@Binding")
-            emit("fun ")
+            emit("inline fun ")
             if (descriptor.typeParameters.isNotEmpty()) {
                 emit("<")
                 descriptor.typeParameters
@@ -135,8 +135,14 @@ class FunBindingGenerator(
                 .filterNot { it.type.hasAnnotation(InjektFqNames.Assisted) }
             nonAssistedValueParameters
                 .forEachIndexed { index, valueParameter ->
-                    emit("${valueParameter.name}: ${valueParameter.type
-                        .let { typeTranslator.toTypeRef(it, descriptor) }.render()}")
+                    val typeRef = valueParameter.type
+                        .let { typeTranslator.toTypeRef(it, descriptor) }
+                    if ((typeRef.isFunction || typeRef.isSuspendFunction) ||
+                        (typeRef.expandedType?.isFunction == true || typeRef.expandedType?.isSuspendFunction == true) ||
+                            declarationStore.generatedClassifierFor(typeRef.classifier.fqName) != null) {
+                        emit("noinline ")
+                    }
+                    emit("${valueParameter.name}: ${typeRef.render()}")
                     if (index != nonAssistedValueParameters.lastIndex) emit(", ")
                 }
             emit("): ${descriptor.name}")
