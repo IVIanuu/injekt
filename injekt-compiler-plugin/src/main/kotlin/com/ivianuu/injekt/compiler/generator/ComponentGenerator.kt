@@ -52,15 +52,21 @@ class ComponentGenerator(
                     if (descriptor is ClassDescriptor &&
                         descriptor.hasAnnotation(InjektFqNames.Component)
                     ) {
-                        generateComponent(descriptor.defaultType
-                            .let { typeTranslator.toTypeRef(it, descriptor) })
+                        runExitCatching {
+                            generateComponent(descriptor.defaultType
+                                .let { typeTranslator.toTypeRef(it, descriptor) })
+                        }
                     }
                 }
             )
         }
         if (generateMergeComponents) {
             declarationStore.mergeComponents
-                .forEach { generateComponent(it) }
+                .forEach {
+                    runExitCatching {
+                        generateComponent(it)
+                    }
+                }
         }
     }
 

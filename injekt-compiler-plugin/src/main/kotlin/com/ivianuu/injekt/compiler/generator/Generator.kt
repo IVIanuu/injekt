@@ -33,6 +33,7 @@ abstract class GenerationComponent(
     @Binding protected val moduleDescriptor: ModuleDescriptor,
     @Binding protected val bindingContext: BindingContext
 ) {
+    abstract val errorCollector: ErrorCollector
     abstract val funBindingGenerator: FunBindingGenerator
     abstract val fileManager: FileManager
     abstract val bindingModuleGenerator: BindingModuleGenerator

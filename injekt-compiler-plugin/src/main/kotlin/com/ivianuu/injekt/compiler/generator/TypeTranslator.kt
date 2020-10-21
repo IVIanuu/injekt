@@ -27,7 +27,8 @@ import org.jetbrains.kotlin.types.Variance
 
 @Binding
 class TypeTranslator(
-    private val declarationStore: DeclarationStore
+    private val declarationStore: DeclarationStore,
+    private val errorCollector: ErrorCollector
 ) {
 
     init {
@@ -91,9 +92,11 @@ class TypeTranslator(
                         expandedType = type.expandedType?.let { fixType(it, file) }
                     )
                 } else {
-                    throw CancelGenerationException(
-                        "Cannot resolve $type in ${file.virtualFilePath} guessed name '$fqName' " +
-                                "Do not use function aliases with '*' imports and import them explicitly"
+                    errorCollector.add(
+                        RuntimeException(
+                            "Cannot resolve $type in ${file.virtualFilePath} guessed name '$fqName' " +
+                                    "Do not use function aliases with '*' imports and import them explicitly"
+                        )
                     )
                 }
             }

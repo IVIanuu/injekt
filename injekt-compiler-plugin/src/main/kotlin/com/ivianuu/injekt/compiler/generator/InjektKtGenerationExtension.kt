@@ -57,17 +57,16 @@ class InjektKtGenerationExtension(
             generationComponent.componentGenerator
         )
         generators.forEach {
-            try {
+            runExitCatching {
                 it.preProcess(files)
-            } catch (e: CancelGenerationException) {
             }
         }
         generators.forEach {
-            try {
+            runExitCatching {
                 it.generate(files)
-            } catch (e: CancelGenerationException) {
             }
         }
+        generationComponent.errorCollector.report()
         val newFiles = generationComponent.fileManager.newFiles
 
         return AnalysisResult.RetryWithAdditionalRoots(

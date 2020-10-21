@@ -48,23 +48,24 @@ class FunBindingGenerator(
                 }
             )
             funBindings.forEach { descriptor ->
-                declarationStore.addGeneratedClassifier(
-                    ClassifierRef(
-                        fqName = descriptor.fqNameSafe,
-                        typeParameters = descriptor.typeParameters.map {
-                            typeTranslator.toClassifierRef(it)
-                        }
+                runExitCatching {
+                    declarationStore.addGeneratedClassifier(
+                        ClassifierRef(
+                            fqName = descriptor.fqNameSafe,
+                            typeParameters = descriptor.typeParameters.map {
+                                typeTranslator.toClassifierRef(it)
+                            }
+                        )
                     )
-                )
+                }
             }
         }
     }
 
     override fun generate(files: List<KtFile>) {
         funBindings.forEach { descriptor ->
-            try {
+            runExitCatching {
                 generateFunBinding(descriptor)
-            } catch (e: CancelGenerationException) {
             }
         }
     }

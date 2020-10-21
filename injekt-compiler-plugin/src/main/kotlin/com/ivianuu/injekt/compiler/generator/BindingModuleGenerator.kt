@@ -51,9 +51,8 @@ class BindingModuleGenerator(
                         val descriptor = klass.descriptor<ClassDescriptor>(bindingContext)
                             ?: return
                         if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingModule)) {
-                            try {
+                            runExitCatching {
                                 generateBindingModuleForDeclaration(descriptor)
-                            } catch (e: CancelGenerationException) {
                             }
                         }
                     }
@@ -63,9 +62,8 @@ class BindingModuleGenerator(
                         val descriptor = function.descriptor<FunctionDescriptor>(bindingContext)
                             ?: return
                         if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingModule)) {
-                            try {
+                            runExitCatching {
                                 generateBindingModuleForDeclaration(descriptor)
-                            } catch (e: CancelGenerationException) {
                             }
                         }
                     }
