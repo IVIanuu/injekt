@@ -314,7 +314,12 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) -> Callable.ContributionKind.MODULE
                 else -> null
             },
-            typeParameters = descriptor.typeParameters.map {
+            typeParameters = (when (owner) {
+                is FunctionDescriptor -> owner.typeParameters
+                is ClassDescriptor -> owner.declaredTypeParameters
+                is PropertyDescriptor -> owner.typeParameters
+                else -> error("Unexpected owner $owner")
+            }).map {
                 typeTranslator.toClassifierRef(it)
             },
             valueParameters = listOfNotNull(
@@ -402,20 +407,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                             }
                         )
                     }
-            )
-        }
-    }
-
-    private val callableByFunctionAlias = mutableMapOf<TypeRef, Callable>()
-    fun functionForAlias(aliasType: TypeRef): Callable {
-        return callableByFunctionAlias.getOrPut(aliasType) {
-            callableForDescriptor(
-                memberScopeForFqName(aliasType.classifier.fqName.parent())!!
-                    .getContributedFunctions(
-                        aliasType.classifier.fqName.shortName(),
-                        NoLookupLocation.FROM_BACKEND
-                    )
-                    .single()
             )
         }
     }

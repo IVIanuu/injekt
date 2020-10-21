@@ -28,11 +28,10 @@ class BindingModuleTest {
     fun testBindingModuleWithClass() = codegen(
         """
             @BindingModule(MyComponent::class)
-            annotation class AnyBinding {
-                @Module
-                class Impl<T : Any> {
+            annotation class AnyBinding { 
+                companion object {
                     @Binding
-                    val T.any: Any get() = this
+                    val <T : Any> T.any: Any get() = this
                 }
             }
             
@@ -57,10 +56,9 @@ class BindingModuleTest {
         """
             @BindingModule(MyComponent::class)
             annotation class AnyBinding {
-                @Module
-                class Impl<T : Any> {
+                companion object {
                     @Binding
-                    val T.any: Any get() = this
+                    val <T : Any> T.any: Any get() = this
                 }
             }
             
@@ -83,10 +81,9 @@ class BindingModuleTest {
         """
             @BindingModule(MyComponent::class)
             annotation class AnyBinding {
-                @Module
-                class Impl<T : Any> {
+                companion object {
                     @Binding
-                    val T.any: Any get() = this
+                    val <T : Any> T.any: Any get() = this
                 }
             }
             
@@ -112,10 +109,9 @@ class BindingModuleTest {
         """
             @BindingModule(MyComponent::class)
             annotation class AnyBinding {
-                @Module
-                class Impl<T : Any> {
+                companion object {
                     @Binding
-                    val T.any: Any get() = this
+                    val <T : Any> T.any: Any get() = this
                 }
             }
             
@@ -141,10 +137,9 @@ class BindingModuleTest {
         """
             @BindingModule(MyComponent::class)
             annotation class AnyBinding {
-                @Module
-                class Impl<T : Any> {
+                companion object {
                     @Binding
-                    val T.any: Any get() = this
+                    val <T : Any> T.any: Any get() = this
                 }
             }
             
@@ -172,9 +167,9 @@ class BindingModuleTest {
         """
             @BindingModule(MyComponent::class)
             annotation class AnyBinding {
-                class Impl<T : Any> {
+                companion object {
                     @Binding
-                    val T.any: Any get() = this
+                    val <T : Any> T.any: Any get() = this
                 }
             }
 
@@ -198,10 +193,9 @@ class BindingModuleTest {
         """
             @BindingModule(MyComponent::class)
             annotation class AnyBinding {
-                @Module
-                class Impl<T : Any> {
+                companion object {
                     @Binding
-                    val T.any: Any get() = this
+                    val <T : Any> T.any: Any get() = this
                 }
             }
             
@@ -229,9 +223,9 @@ class BindingModuleTest {
         """
             @BindingModule(MyComponent::class)
             annotation class AnyBinding {
-                class Impl<T : Any> {
+                companion object {
                     @Binding
-                    val T.any: Any get() = this
+                    val <T : Any> T.any: Any get() = this
                 }
             }
 
@@ -257,10 +251,9 @@ class BindingModuleTest {
         """
             @BindingModule(MyComponent::class)
             annotation class AnyBinding {
-                @Module
-                class Impl<T : () -> Unit> {
+                companion object {
                     @Binding
-                    val T.any: Any get() = this
+                    val <T : () -> Unit> T.any: Any get() = this
                 }
             }
             
@@ -287,9 +280,9 @@ class BindingModuleTest {
         """
             @BindingModule(MyComponent::class)
             annotation class AnyBinding {
-                class Impl<T : (Foo) -> Unit> {
+                companion object {
                     @Binding
-                    val T.any: Any get() = this
+                    val <T : (Foo) -> Unit> T.any: Any get() = this
                 }
             }
 
@@ -314,10 +307,9 @@ class BindingModuleTest {
         """
             @BindingModule(MyComponent::class)
             annotation class UiComponentBinding {
-                @Module
-                class Impl<T : @Composable () -> Unit> {
+                companion object {
                     @SetElements
-                    fun intoSet(instance: T): Set<@Composable () -> Unit> = setOf(instance)
+                    fun <T : @Composable () -> Unit> intoSet(instance: T): Set<@Composable () -> Unit> = setOf(instance)
                 }
             }
             
@@ -348,8 +340,7 @@ class BindingModuleTest {
                 """
                     @BindingModule(MyComponent::class)
                     annotation class UiComponentBinding {
-                        @Module
-                        class Impl<T : @Composable () -> Unit> {
+                        companion object {
                             @SetElements
                             fun <T : @Composable () -> Unit> intoSet(instance: T): Set<@Composable () -> Unit> = setOf(instance)
                         }

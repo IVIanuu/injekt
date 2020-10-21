@@ -20,7 +20,6 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.componentimpl.emitCallableInvocation
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
@@ -159,7 +158,8 @@ class BindingModuleGenerator(
                         emit("crossinline ")
                     } else if (((typeRef.isFunction || typeRef.isSuspendFunction) ||
                                 (typeRef.expandedType?.isFunction == true || typeRef.expandedType?.isSuspendFunction == true) ||
-                                declarationStore.generatedClassifierFor(typeRef.classifier.fqName) != null)) {
+                                declarationStore.generatedClassifierFor(typeRef.classifier.fqName) != null) ||
+                        (typeRef.expandedType?.let { declarationStore.generatedClassifierFor(it.classifier.fqName) }) != null) {
                         emit("noinline ")
                     }
                     emit("${valueParameter.name}: ${valueParameter.type.render()}")
@@ -222,36 +222,117 @@ class BindingModuleGenerator(
                     isInline = true
                 )
                 bindingModules
-                    .forEach { bindingModule ->
-                        val propertyType = bindingModule.defaultType
-                            .let { typeTranslator.toTypeRef(it, file) }
-                            .typeWith(listOf(aliasedType))
-                        val propertyName = propertyType
-                            .uniqueTypeName()
-                        emit("@Module val $propertyName: ${propertyType.render()} = ${bindingModule.fqNameSafe}")
-                        if (bindingModule.kind != ClassKind.OBJECT) {
-                            emitLine("()")
-                        } else {
-                            emitLine()
+                    .flatMap { bindingModule ->
+                        declarationStore.moduleForType(
+                            typeTranslator.toClassifierRef(bindingModule)
+                                .defaultType
+                        ).callables
+                            .filter { it.contributionKind != null }
+                            .map { callable ->
+                                val substitutionMap = mapOf(
+                                    (callable.typeParameters.singleOrNull()
+                                        ?: error("Unexpected callable $callable")) to aliasedType
+                                )
+                                callable.copy(
+                                    type = callable.type.substitute(substitutionMap),
+                                    valueParameters = callable.valueParameters.map {
+                                        it.copy(
+                                            type = it.type.substitute(substitutionMap)
+                                        )
+                                    }
+                                )
+                            }
+                            .map { bindingModule to it }
+                    }
+                    .forEach { (bindingModule, callable) ->
+                        when (callable.contributionKind) {
+                            Callable.ContributionKind.BINDING -> {
+                                if (assistedParameters.isNotEmpty() || callable.isEager)
+                                    emitLine("@${InjektFqNames.Eager}")
+                                emit("@Binding")
+                                if (callable.targetComponent != null) {
+                                    emitLine("${callable.targetComponent.classifier.fqName}")
+                                }
+                                emitLine()
+                            }
+                            Callable.ContributionKind.MAP_ENTRIES -> emitLine("@${InjektFqNames.MapEntries}")
+                            Callable.ContributionKind.SET_ELEMENTS -> emitLine("@${InjektFqNames.SetElements}")
+                        }
+                        val functionName = callable.fqName.pathSegments().joinToString("_")
+
+                        emit("inline fun $functionName(")
+
+                        callable.valueParameters
+                            .forEachIndexed { index, valueParameter ->
+                                val typeRef = valueParameter.type
+                                if (valueParameter.inlineKind == ValueParameterRef.InlineKind.CROSSINLINE) {
+                                    emit("crossinline ")
+                                } else if (((typeRef.isFunction || typeRef.isSuspendFunction) ||
+                                            (typeRef.expandedType?.isFunction == true || typeRef.expandedType?.isSuspendFunction == true) ||
+                                            declarationStore.generatedClassifierFor(typeRef.classifier.fqName) != null) ||
+                                    (typeRef.expandedType?.let { declarationStore.generatedClassifierFor(it.classifier.fqName) }) != null) {
+                                    emit("noinline ")
+                                }
+                                emit("${valueParameter.name}: ${valueParameter.type.render()}")
+                                if (index != callable.valueParameters.lastIndex) emit(", ")
+                            }
+
+                        emit("): ${callable.type.render()} ")
+                        braced {
+                            emit("return ")
+                            if (callable.valueParameters.any { it.isAssisted }) {
+                                emit("{ ")
+                                callable.valueParameters
+                                    .filter { it.isAssisted }
+                                    .forEachIndexed { index, parameter ->
+                                        emit("p$index: ${parameter.type.renderExpanded()}")
+                                        if (index != callable.valueParameters.lastIndex) emit(", ")
+                                    }
+                                emitLine(" ->")
+                                var assistedIndex = 0
+                                var nonAssistedIndex = 0
+                                emitCallableInvocation(
+                                    callable,
+                                    { emit("${bindingModule.fqNameSafe}") },
+                                    callable.valueParameters.map { parameter ->
+                                        if (parameter.isAssisted) {
+                                            { emit("p${assistedIndex++}") }
+                                        } else {
+                                            { emit(parameter.name) }
+                                        }
+                                    }
+                                )
+                                emitLine()
+                                emitLine("}")
+                            } else {
+                                emitCallableInvocation(
+                                    callable,
+                                    { emit("${bindingModule.fqNameSafe}") },
+                                    callable.valueParameters.map { parameter ->
+                                        {
+                                            emit(parameter.name)
+                                        }
+                                    }
+                                )
+                            }
                         }
                         callables += Callable(
                             packageFqName = packageName,
                             fqName = packageName.child(bindingModuleName)
-                                .child(propertyName),
-                            name = propertyName,
-                            type = bindingModule.defaultType
-                                .let { typeTranslator.toTypeRef(it, file) }
-                                .typeWith(listOf(aliasedType)),
+                                .child(functionName.asNameId()),
+                            name = functionName.asNameId(),
+                            type = callable.type,
                             typeParameters = emptyList(),
-                            valueParameters = emptyList(),
-                            targetComponent = null,
-                            contributionKind = Callable.ContributionKind.MODULE,
+                            valueParameters = callable.valueParameters
+                                .map { it.copy(isExtensionReceiver = false) },
+                            targetComponent = callable.targetComponent,
+                            contributionKind = callable.contributionKind,
+                            isCall = true,
+                            callableKind = callableKind,
                             bindingModules = emptyList(),
-                            isCall = false,
-                            callableKind = Callable.CallableKind.DEFAULT,
-                            isEager = false,
+                            isEager = callable.isEager,
                             isExternal = false,
-                            isInline = false
+                            isInline = true
                         )
                     }
             }

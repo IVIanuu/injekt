@@ -53,7 +53,8 @@ class IndexGenerator(
                                 descriptor.hasAnnotation(InjektFqNames.Component) ||
                                 descriptor.hasAnnotation(InjektFqNames.ChildComponent) ||
                                 descriptor.hasAnnotation(InjektFqNames.MergeComponent) ||
-                                descriptor.hasAnnotation(InjektFqNames.MergeChildComponent)
+                                descriptor.hasAnnotation(InjektFqNames.MergeChildComponent) ||
+                                descriptor.containingDeclaration?.hasAnnotation(InjektFqNames.BindingModule) == true
                         super.visitClassOrObject(classOrObject)
                         inModuleLikeScope = prevInModuleLikeScope
                     }
