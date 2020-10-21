@@ -188,7 +188,8 @@ class BindingModuleGenerator(
                                 } else {
                                     { emit(parameter.name) }
                                 }
-                            }
+                            },
+                            emptyList()
                         )
                         emitLine()
                         emitLine("}")
@@ -200,7 +201,8 @@ class BindingModuleGenerator(
                                 {
                                     emit(parameter.name)
                                 }
-                            }
+                            },
+                            emptyList()
                         )
                     }
                 }
@@ -230,9 +232,11 @@ class BindingModuleGenerator(
                             .filter { it.contributionKind != null }
                             .map { callable ->
                                 val substitutionMap = mapOf(
-                                    (callable.typeParameters.singleOrNull()
+                                    (callable.typeParameters.getOrNull(0)
                                         ?: error("Unexpected callable $callable")) to aliasedType
-                                )
+                                ) + (if (callable.typeParameters.size > 1) mapOf(
+                                    callable.typeParameters[1] to rawBindingType
+                                ) else emptyMap())
                                 callable.copy(
                                     type = callable.type.substitute(substitutionMap),
                                     valueParameters = callable.valueParameters.map {
@@ -300,7 +304,11 @@ class BindingModuleGenerator(
                                         } else {
                                             { emit(parameter.name) }
                                         }
-                                    }
+                                    },
+                                    listOfNotNull(
+                                        aliasedType,
+                                        if (callable.typeParameters.size > 1) rawBindingType else null
+                                    )
                                 )
                                 emitLine()
                                 emitLine("}")
@@ -312,7 +320,11 @@ class BindingModuleGenerator(
                                         {
                                             emit(parameter.name)
                                         }
-                                    }
+                                    },
+                                    listOfNotNull(
+                                        aliasedType,
+                                        if (callable.typeParameters.size > 1) rawBindingType else null
+                                    )
                                 )
                             }
                         }

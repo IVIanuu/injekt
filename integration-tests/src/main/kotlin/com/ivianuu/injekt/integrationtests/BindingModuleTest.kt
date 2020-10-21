@@ -52,6 +52,33 @@ class BindingModuleTest {
     )
 
     @Test
+    fun testBindingModuleWithSuperTypeArgument() = codegen(
+        """
+            @BindingModule(MyComponent::class)
+            annotation class AnyBinding { 
+                companion object {
+                    @Binding
+                    val <T : S, S : Any> T.any: S get() = this
+                }
+            }
+            
+            @AnyBinding
+            class AnnotatedBar(val foo: Foo)
+            
+            @MergeComponent
+            abstract class MyComponent {
+                abstract val annotatedBar: AnnotatedBar
+                
+                @Binding protected fun foo() = Foo()
+            }
+            
+            @GenerateMergeComponents
+            fun invoke() {
+            }
+        """
+    )
+
+    @Test
     fun testBindingModuleWithAssistedClass() = codegen(
         """
             @BindingModule(MyComponent::class)

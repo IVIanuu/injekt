@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.asNameId
+import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.renderExpanded
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.name.FqName
@@ -188,7 +189,8 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                                     callable.isInline
                                 )
                             )
-                        }
+                        },
+                    emptyList()
                 )
                 emitLine(")")
             }
@@ -214,7 +216,8 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                                     callable.isInline
                                 )
                             )
-                        }
+                        },
+                    emptyList()
                 )
                 emitLine(")")
             }
@@ -251,7 +254,8 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                             )
                         )
                     }
-                }
+                },
+                emptyList()
             )
             emitLine()
             emitLine("}")
@@ -259,7 +263,8 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
             emitCallableInvocation(
                 binding.callable,
                 binding.receiver,
-                binding.dependencies.map { getBindingExpression(it) }
+                binding.dependencies.map { getBindingExpression(it) },
+                emptyList()
             )
         }
     }
@@ -277,9 +282,18 @@ fun CodeBuilder.emitCallableInvocation(
     callable: Callable,
     receiver: ComponentExpression?,
     arguments: List<ComponentExpression>,
+    typeArguments: List<TypeRef>
 ) {
     fun emitArguments() {
         if (callable.isCall) {
+            if (typeArguments.isNotEmpty()) {
+                emit("<")
+                typeArguments.forEachIndexed { index, typeArgument ->
+                    emit(typeArgument.render())
+                    if (index != typeArguments.size) emit(", ")
+                }
+                emit(">")
+            }
             emit("(")
             arguments
                 .drop(if (callable.valueParameters.firstOrNull()?.isExtensionReceiver == true) 1 else 0)

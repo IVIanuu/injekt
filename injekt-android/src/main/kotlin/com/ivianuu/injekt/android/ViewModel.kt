@@ -27,35 +27,19 @@ import kotlin.reflect.KClass
 
 @BindingModule(ActivityComponent::class)
 annotation class ActivityViewModelBinding {
-    @Module
-    class ModuleImpl<VM : S, S : ViewModel>(
-        private val viewModelClass: KClass<S>
-    ) {
+    companion object {
         @Module
-        fun viewModel(getViewModel: getViewModel<VM, S, ActivityViewModelStoreOwner>): S =
-            getViewModel(viewModelClass)
-
-        companion object {
-            inline operator fun <reified VM : S, reified S : ViewModel> invoke() =
-                ModuleImpl<VM, S>(S::class)
-        }
+        inline fun <VM : S, reified S : ViewModel> viewModel(getViewModel: getViewModel<VM, S, ActivityViewModelStoreOwner>): S =
+            getViewModel(S::class)
     }
 }
 
 @BindingModule(FragmentComponent::class)
 annotation class FragmentViewModelBinding {
-    @Module
-    class ModuleImpl<VM : S, S : ViewModel>(
-        private val viewModelClass: KClass<S>
-    ) {
+    companion object {
         @Module
-        fun viewModel(getViewModel: getViewModel<VM, S, FragmentViewModelStoreOwner>): S =
-            getViewModel(viewModelClass)
-
-        companion object {
-            inline operator fun <reified VM : S, reified S : ViewModel> invoke() =
-                ModuleImpl<VM, S>(S::class)
-        }
+        inline fun <VM : S, reified S : ViewModel> viewModel(getViewModel: getViewModel<VM, S, FragmentViewModelStoreOwner>): S =
+            getViewModel(S::class)
     }
 }
 
