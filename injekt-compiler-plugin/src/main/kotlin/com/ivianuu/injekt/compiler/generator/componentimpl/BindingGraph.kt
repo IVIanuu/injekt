@@ -63,11 +63,15 @@ class BindingGraph(
             parentAccessExpression: ComponentExpression,
         ) {
             val thisAccessExpression: ComponentExpression = {
-                parentAccessExpression()
-                if (parentCallable != null) {
-                    emit(".")
-                    emit("${parentCallable!!.name}")
-                    if (parentCallable.isCall) emit("()")
+                if (type.classifier.isObject) {
+                    emit(type.classifier.fqName)
+                } else {
+                    parentAccessExpression()
+                    if (parentCallable != null) {
+                        emit(".")
+                        emit("${parentCallable!!.name}")
+                        if (parentCallable.isCall) emit("()")
+                    }
                 }
             }
 
@@ -111,23 +115,29 @@ class BindingGraph(
             .filter { it.isModule }
             .map { declarationStore.moduleForType(it) }
             .onEach { includedModule ->
-                val callable = ComponentCallable(
-                    name = includedModule.type.uniqueTypeName(),
-                    isOverride = false,
-                    type = includedModule.type,
-                    body = null,
-                    isProperty = true,
-                    callableKind = Callable.CallableKind.DEFAULT,
-                    initializer = {
+                if (includedModule.type.classifier.isObject) {
+                    includedModule.collectContributions(null) {
                         emit("${includedModule.type.classifier.fqName}")
-                        if (!includedModule.type.classifier.isObject)
-                            emit("()")
-                    },
-                    isMutable = false
-                ).also { owner.members += it }
+                    }
+                } else {
+                    val callable = ComponentCallable(
+                        name = includedModule.type.uniqueTypeName(),
+                        isOverride = false,
+                        type = includedModule.type,
+                        body = null,
+                        isProperty = true,
+                        callableKind = Callable.CallableKind.DEFAULT,
+                        initializer = {
+                            emit("${includedModule.type.classifier.fqName}")
+                            if (!includedModule.type.classifier.isObject)
+                                emit("()")
+                        },
+                        isMutable = false
+                    ).also { owner.members += it }
 
-                includedModule.collectContributions(null) {
-                    emit("this@${owner.name}.${callable.name}")
+                    includedModule.collectContributions(null) {
+                        emit("this@${owner.name}.${callable.name}")
+                    }
                 }
             }
     }
