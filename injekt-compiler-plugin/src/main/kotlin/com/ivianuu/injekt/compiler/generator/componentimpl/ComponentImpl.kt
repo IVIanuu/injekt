@@ -70,14 +70,16 @@ class ComponentImpl(
     fun initialize() {
         parent?.members?.add(this)
         parent?.children?.add(this)
-        graph.checkRequests(requests.map { BindingRequest(it.type, it.fqName) })
+        graph.checkRequests(requests.map { BindingRequest(it.type, it.fqName, false) })
         requests.forEach {
             val binding = graph.resolvedBindings[it.type]!!
             statements.getCallable(
                 type = it.type,
                 name = it.name,
                 isOverride = true,
-                body = statements.getBindingExpression(binding),
+                body = statements.getBindingExpression(
+                    BindingRequest(it.type, it.fqName, false)
+                ),
                 isProperty = !it.isCall,
                 callableKind = it.callableKind,
                 cacheable = binding.cacheable

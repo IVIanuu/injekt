@@ -30,7 +30,10 @@ data class Callable(
     val contributionKind: ContributionKind?,
     val isCall: Boolean,
     val callableKind: CallableKind,
-    val isExternal: Boolean
+    val bindingModules: List<FqName>,
+    val isEager: Boolean,
+    val isExternal: Boolean,
+    val isInline: Boolean
 ) {
     enum class ContributionKind {
         BINDING, MAP_ENTRIES, SET_ELEMENTS, MODULE
@@ -44,8 +47,13 @@ data class ValueParameterRef(
     val type: TypeRef,
     val isExtensionReceiver: Boolean = false,
     val isAssisted: Boolean = false,
+    val inlineKind: InlineKind,
     val name: Name,
-)
+) {
+    enum class InlineKind {
+        NONE, NOINLINE, CROSSINLINE
+    }
+}
 
 data class ModuleDescriptor(
     val type: TypeRef,

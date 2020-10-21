@@ -127,6 +127,11 @@ class ImplBindingGenerator(
                             .let { typeTranslator.toTypeRef(it, descriptor) },
                         isExtensionReceiver = false,
                         isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
+                        inlineKind = when {
+                            it.isNoinline -> ValueParameterRef.InlineKind.NOINLINE
+                            it.isCrossinline -> ValueParameterRef.InlineKind.CROSSINLINE
+                            else -> ValueParameterRef.InlineKind.NONE
+                        },
                         name = it.name
                     )
                 },
@@ -134,9 +139,12 @@ class ImplBindingGenerator(
             contributionKind = Callable.ContributionKind.BINDING,
             isCall = true,
             callableKind = Callable.CallableKind.DEFAULT,
-            isExternal = false
+            bindingModules = emptyList(),
+            isEager = false,
+            isExternal = false,
+            isInline = true
         )
-        declarationStore.addGeneratedBinding(implCallable)
+        declarationStore.addGeneratedBinding(implCallable, descriptor.findPsi()!!.containingFile as KtFile)
         declarationStore.addGeneratedInternalIndex(
             descriptor.findPsi()!!.containingFile as KtFile,
             Index(implCallable.fqName, "function")
@@ -154,17 +162,21 @@ class ImplBindingGenerator(
                         .let { typeTranslator.toTypeRef(it, descriptor) },
                     isExtensionReceiver = true,
                     isAssisted = false,
-                    name = "receiver".asNameId()
+                    inlineKind = ValueParameterRef.InlineKind.NONE,
+                    name = "_receiver".asNameId()
                 )
             ),
             targetComponent = null,
             contributionKind = Callable.ContributionKind.BINDING,
             isCall = false,
             callableKind = Callable.CallableKind.DEFAULT,
-            isExternal = false
+            bindingModules = emptyList(),
+            isEager = false,
+            isExternal = false,
+            isInline = true
         )
 
-        declarationStore.addGeneratedBinding(superTypeCallable)
+        declarationStore.addGeneratedBinding(superTypeCallable, descriptor.findPsi()!!.containingFile as KtFile)
         declarationStore.addGeneratedInternalIndex(
             descriptor.findPsi()!!.containingFile as KtFile,
             Index(superTypeCallable.fqName, "property")

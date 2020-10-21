@@ -310,67 +310,6 @@ class BindingModuleTest {
     )
 
     @Test
-    fun testBindingModuleWithFunBindingInObject() = codegen(
-        """
-            @BindingModule(MyComponent::class)
-            annotation class AnyBinding {
-                @Module
-                class Impl<T : () -> Unit> {
-                    @Binding
-                    val T.any: Any get() = this
-                }
-            }
-            
-            object MyObject {
-                @AnyBinding
-                @FunBinding
-                fun myService(foo: Foo) {
-                }
-            }
-            
-            @MergeComponent
-            abstract class MyComponent {
-                abstract val any: Any
-                
-                @Binding protected fun foo() = Foo()
-            }
-            
-            @GenerateMergeComponents
-            fun invoke() {
-            }
-        """
-    )
-
-    @Test
-    fun testBindingModuleWithAssistedFunBindingInObject() = codegen(
-        """
-            @BindingModule(MyComponent::class)
-            annotation class AnyBinding {
-                class Impl<T : (Foo) -> Unit> {
-                    @Binding
-                    val T.any: Any get() = this
-                }
-            }
-
-            object MyObject {
-                @AnyBinding
-                @FunBinding
-                fun myService(foo: @Assisted Foo) {
-                }
-            }
-            
-            @MergeComponent
-            abstract class MyComponent {
-                abstract val any: Any
-            }
-            
-            @GenerateMergeComponents
-            fun invoke() {
-            }
-        """
-    )
-
-    @Test
     fun testSetBindingModuleWithComposableFunction() = codegen(
         """
             @BindingModule(MyComponent::class)

@@ -17,7 +17,13 @@
 package com.ivianuu.injekt.compiler.generator.componentimpl
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.generator.*
+import com.ivianuu.injekt.compiler.generator.Callable
+import com.ivianuu.injekt.compiler.generator.ClassifierRef
+import com.ivianuu.injekt.compiler.generator.CodeBuilder
+import com.ivianuu.injekt.compiler.generator.TypeRef
+import com.ivianuu.injekt.compiler.generator.ValueParameterRef
+import com.ivianuu.injekt.compiler.generator.render
+import com.ivianuu.injekt.compiler.generator.renderExpanded
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -218,4 +224,8 @@ class NullBindingNode(
         get() = false
 }
 
-data class BindingRequest(val type: TypeRef, val origin: FqName)
+data class BindingRequest(
+    val type: TypeRef,
+    val origin: FqName,
+    val isInline: Boolean
+)

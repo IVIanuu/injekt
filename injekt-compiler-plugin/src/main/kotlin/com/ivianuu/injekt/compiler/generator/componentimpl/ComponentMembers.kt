@@ -18,7 +18,14 @@ package com.ivianuu.injekt.compiler.generator.componentimpl
 
 import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.compiler.generator.*
+import com.ivianuu.injekt.compiler.generator.Callable
+import com.ivianuu.injekt.compiler.generator.ClassifierRef
+import com.ivianuu.injekt.compiler.generator.CodeBuilder
+import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
+import com.ivianuu.injekt.compiler.generator.TypeRef
+import com.ivianuu.injekt.compiler.generator.asNameId
+import com.ivianuu.injekt.compiler.generator.renderExpanded
+import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -59,7 +66,8 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
         return callable
     }
 
-    fun getBindingExpression(binding: BindingNode): ComponentExpression {
+    fun getBindingExpression(request: BindingRequest): ComponentExpression {
+        val binding = owner.graph.getBinding(request)
         val callableKind = when (binding) {
             is CallableBindingNode -> {
                 if (binding.valueParameters.none { it.isAssisted })
@@ -82,7 +90,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
         }
 
         val rawExpression = if (binding.owner != owner) {
-            parent!!.getBindingExpression(binding)
+            parent!!.getBindingExpression(request)
         } else {
             when (binding) {
                 is ChildImplBindingNode -> childFactoryExpression(binding)
@@ -96,7 +104,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
         }
 
         val finalExpression = if (binding.targetComponent == null ||
-            binding.owner != owner || binding.cacheable
+            binding.owner != owner || binding.cacheable || request.isInline
         ) rawExpression else (
             {
                 val property = ComponentCallable(
@@ -125,8 +133,9 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                         emitLine("return@run value as ${binding.type.renderExpanded()}")
                     }
                 }
-            }
-            )
+            })
+
+        if (request.isInline) return rawExpression
 
         val requestForType = owner.requests
             .firstOrNull { it.type == binding.type }
@@ -173,11 +182,10 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                     callable.valueParameters
                         .map {
                             getBindingExpression(
-                                owner.graph.getBinding(
-                                    BindingRequest(
-                                        it.type,
-                                        callable.fqName.child(it.name)
-                                    )
+                                BindingRequest(
+                                    it.type,
+                                    callable.fqName.child(it.name),
+                                    callable.isInline
                                 )
                             )
                         }
@@ -200,11 +208,10 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                     callable.valueParameters
                         .map {
                             getBindingExpression(
-                                owner.graph.getBinding(
-                                    BindingRequest(
-                                        it.type,
-                                        callable.fqName.child(it.name)
-                                    )
+                                BindingRequest(
+                                    it.type,
+                                    callable.fqName.child(it.name),
+                                    callable.isInline
                                 )
                             )
                         }
@@ -237,11 +244,10 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                         { emit("p${assistedIndex++}") }
                     } else {
                         getBindingExpression(
-                            owner.graph.getBinding(
-                                BindingRequest(
-                                    binding.dependencies[nonAssistedIndex++].type,
-                                    binding.callable.fqName.child(parameter.name)
-                                )
+                            BindingRequest(
+                                binding.dependencies[nonAssistedIndex++].type,
+                                binding.callable.fqName.child(parameter.name),
+                                binding.callable.isInline
                             )
                         )
                     }
@@ -253,13 +259,13 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
             emitCallableInvocation(
                 binding.callable,
                 binding.receiver,
-                binding.dependencies.map { getBindingExpression(owner.graph.getBinding(it)) }
+                binding.dependencies.map { getBindingExpression(it) }
             )
         }
     }
 
     private fun providerExpression(binding: ProviderBindingNode): ComponentExpression = {
-        braced { getBindingExpression(owner.graph.getBinding(binding.dependencies.single()))() }
+        braced { getBindingExpression(binding.dependencies.single())() }
     }
 
     private fun selfContextExpression(binding: SelfBindingNode): ComponentExpression = {

@@ -107,13 +107,13 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
     private val bindingsByType = mutableMapOf<TypeRef, List<Callable>>()
     fun bindingsForType(type: TypeRef): List<Callable> = bindingsByType.getOrPut(type) {
-        (allBindings + generatedBindings)
+        (allBindings + generatedBindings.map { it.first })
             .filter { type.isAssignable(it.type) }
     }
 
-    private val generatedBindings = mutableListOf<Callable>()
-    fun addGeneratedBinding(callable: Callable) {
-        generatedBindings += callable
+    val generatedBindings = mutableListOf<Pair<Callable, KtFile>>()
+    fun addGeneratedBinding(callable: Callable, file: KtFile) {
+        generatedBindings += callable to file
     }
 
     private val generatedClassifiers = mutableMapOf<FqName, ClassifierRef>()
@@ -323,7 +323,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         type = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
                         isExtensionReceiver = true,
                         isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
-                        name = "receiver".asNameId()
+                        name = "_receiver".asNameId(),
+                        inlineKind = ValueParameterRef.InlineKind.NONE
                     )
                 }
             ) + descriptor.valueParameters.map {
@@ -331,7 +332,12 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     type = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
                     isExtensionReceiver = false,
                     isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
-                    name = it.name
+                    name = it.name,
+                    inlineKind = when {
+                        it.isNoinline -> ValueParameterRef.InlineKind.NOINLINE
+                        it.isCrossinline -> ValueParameterRef.InlineKind.CROSSINLINE
+                        else -> ValueParameterRef.InlineKind.NONE
+                    }
                 )
             },
             isCall = owner !is PropertyDescriptor &&
@@ -343,7 +349,14 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     else -> Callable.CallableKind.DEFAULT
                 }
             } else Callable.CallableKind.DEFAULT,
-            isExternal = owner is DeserializedDescriptor
+            bindingModules = (descriptor
+                .getAnnotatedAnnotations(InjektFqNames.BindingModule)
+                .map { it.fqName!! } + owner
+                .getAnnotatedAnnotations(InjektFqNames.BindingModule)
+                .map { it.fqName!! }).distinct(),
+            isEager = descriptor.hasAnnotation(InjektFqNames.Eager),
+            isExternal = owner is DeserializedDescriptor,
+            isInline = descriptor.isInline
         )
     }
 
