@@ -19,8 +19,12 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
-import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
@@ -184,8 +188,14 @@ class BindingModuleGenerator(
                     Callable.CallableKind.COMPOSABLE -> emitLine("@${InjektFqNames.Composable}")
                 }.let {}
 
-                emit("fun aliasedBinding(")
+                emit("inline fun aliasedBinding(")
                 valueParameters.forEachIndexed { index, valueParameter ->
+                    val typeRef = valueParameter.type
+                    if ((typeRef.isFunction || typeRef.isSuspendFunction) ||
+                        (typeRef.expandedType?.isFunction == true || typeRef.expandedType?.isSuspendFunction == true) ||
+                        declarationStore.generatedClassifierFor(typeRef.classifier.fqName) != null) {
+                        emit("noinline ")
+                    }
                     emit("${valueParameter.name}: ${valueParameter.type.render()}")
                     if (index != valueParameters.lastIndex) emit(", ")
                 }
