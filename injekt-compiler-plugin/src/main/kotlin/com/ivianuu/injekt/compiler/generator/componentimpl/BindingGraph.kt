@@ -350,7 +350,9 @@ class BindingGraph(
             if (childComponentType !in existingComponents) {
                 val componentImpl = componentImplFactory(
                     childComponentType,
-                    owner.contextTreeNameProvider("C").asNameId(),
+                    owner.contextTreeNameProvider(
+                        childComponentType.classifier.fqName.shortName().asString()
+                    ).asNameId(),
                     owner
                 )
                 this += ChildImplBindingNode(

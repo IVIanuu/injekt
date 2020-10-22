@@ -105,21 +105,6 @@ class ComponentGenerator(
             emitLine("package ${componentImplFqName.parent()}")
             imports.forEach { emitLine("import $it") }
             with(componentImpl) { emit() }
-
-            /*emit("fun ${componentType.classifier.fqName.shortName()}(")
-            componentImpl.constructorParameters.forEachIndexed { index, param ->
-                emit("${param.name}: ${param.type.render()}")
-                if (index != componentImpl.constructorParameters.lastIndex) emit(", ")
-            }
-            emit("): ${componentType.render()} ")
-            braced {
-                emitLine("return ${componentImplFqName.shortName()}(")
-                componentImpl.constructorParameters.forEachIndexed { index, param ->
-                    emit("${param.name}")
-                    if (index != componentImpl.constructorParameters.lastIndex) emit(", ")
-                }
-                emitLine(")")
-            }*/
         }
 
         fileManager.generateFile(
