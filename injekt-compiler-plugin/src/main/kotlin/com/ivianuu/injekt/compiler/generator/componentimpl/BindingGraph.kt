@@ -271,7 +271,7 @@ class BindingGraph(
                             BindingRequest(
                                 it.type.substitute(substitutionMap),
                                 callable.fqName.child(it.name),
-                                callable.isInline
+                                callable.isInline && (it.type.isFunction || it.type.isSuspendFunction)
                             )
                         },
                     valueParameters = callable.valueParameters.map {
@@ -306,7 +306,7 @@ class BindingGraph(
                             BindingRequest(
                                 it.type.substitute(substitutionMap),
                                 callable.fqName.child(it.name),
-                                callable.isInline
+                                callable.isInline && (it.type.isFunction || it.type.isSuspendFunction)
                             )
                         },
                     valueParameters = callable.valueParameters.map {
@@ -444,7 +444,7 @@ class BindingCollections(
                                     BindingRequest(
                                         it.type.substitute(substitutionMap),
                                         entry.fqName.child(it.name),
-                                        entry.isInline
+                                        false
                                     )
                                 }
                         },
@@ -464,7 +464,7 @@ class BindingCollections(
                                     BindingRequest(
                                         it.type.substitute(substitutionMap),
                                         element.fqName.child(it.name),
-                                        element.isInline
+                                        false
                                     )
                                 }
                         },

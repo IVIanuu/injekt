@@ -105,7 +105,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
         }
 
         val finalExpression = if (binding.targetComponent == null ||
-            binding.owner != owner || binding.cacheable || request.isInline
+            binding.owner != owner || binding.cacheable
         ) rawExpression else (
             {
                 val property = ComponentCallable(
@@ -136,7 +136,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                 }
             })
 
-        if (request.isInline) return rawExpression
+        if (binding is ProviderBindingNode && request.isInline) return rawExpression
 
         val requestForType = owner.requests
             .firstOrNull { it.type == binding.type }
@@ -186,7 +186,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                                 BindingRequest(
                                     it.type,
                                     callable.fqName.child(it.name),
-                                    callable.isInline
+                                    false
                                 )
                             )
                         },
@@ -213,7 +213,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                                 BindingRequest(
                                     it.type,
                                     callable.fqName.child(it.name),
-                                    callable.isInline
+                                    false
                                 )
                             )
                         },
@@ -246,13 +246,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                     if (parameter.isAssisted) {
                         { emit("p${assistedIndex++}") }
                     } else {
-                        getBindingExpression(
-                            BindingRequest(
-                                binding.dependencies[nonAssistedIndex++].type,
-                                binding.callable.fqName.child(parameter.name),
-                                binding.callable.isInline
-                            )
-                        )
+                        getBindingExpression(binding.dependencies[nonAssistedIndex++])
                     }
                 },
                 emptyList()
