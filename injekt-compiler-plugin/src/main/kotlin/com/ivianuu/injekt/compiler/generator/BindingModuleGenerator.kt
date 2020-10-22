@@ -123,6 +123,12 @@ class BindingModuleGenerator(
 
         val callables = mutableListOf<Callable>()
 
+        fun TypeRef.toProviderType(): TypeRef {
+            return moduleDescriptor.builtIns.getFunction(0)
+                .let { typeTranslator.toTypeRef(it.defaultType, file) }
+                .typeWith(listOf(this))
+        }
+
         val code = buildCodeString {
             emitLine("package $packageName")
             emitLine("import ${callable.fqName}")
@@ -136,8 +142,24 @@ class BindingModuleGenerator(
             emitLine("@Module")
             emit("object $bindingModuleName ")
             braced {
-                val (assistedParameters, nonAssistedParameters) = callable.valueParameters
-                    .partition { it.isAssisted }
+                val assistedParameters = callable.valueParameters
+                    .filter { it.isAssisted }
+
+                val nonAssistedParameters = callable.valueParameters
+                    .filterNot { it.isAssisted }
+                    .map { valueParameter ->
+                        if ((assistedParameters.isNotEmpty() || callable.isEager) &&
+                                valueParameter.inlineKind == ValueParameterRef.InlineKind.NONE &&
+                            (!valueParameter.type.isFunction ||
+                                    valueParameter.type.typeArguments.size != 1)) {
+                            valueParameter.copy(
+                                type = valueParameter.type.toProviderType(),
+                                inlineKind = ValueParameterRef.InlineKind.CROSSINLINE
+                            )
+                        } else {
+                            valueParameter
+                        }
+                    }
 
                 if (assistedParameters.isNotEmpty() || callable.isEager)
                     emitLine("@${InjektFqNames.Eager}")
@@ -186,7 +208,11 @@ class BindingModuleGenerator(
                                 if (parameter.isAssisted) {
                                     { emit("p${assistedIndex++}") }
                                 } else {
-                                    { emit(parameter.name) }
+                                    {
+                                        emit(parameter.name)
+                                        if (assistedParameters.isNotEmpty() || callable.isEager)
+                                            emit("()")
+                                    }
                                 }
                             },
                             emptyList()
