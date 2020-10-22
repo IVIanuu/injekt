@@ -274,7 +274,7 @@ class BindingModuleTest {
     )
 
     @Test
-    fun testBindingModuleWithTopLevelFunBinding() = codegen(
+    fun testBindingModuleWithFunBinding() = codegen(
         """
             @BindingModule(MyComponent::class)
             annotation class AnyBinding {
@@ -303,7 +303,7 @@ class BindingModuleTest {
     )
 
     @Test
-    fun testBindingModuleWithAssistedTopLevelFunBinding() = codegen(
+    fun testBindingModuleWithAssistedFunBinding() = codegen(
         """
             @BindingModule(MyComponent::class)
             annotation class AnyBinding {

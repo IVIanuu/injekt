@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.generator.componentimpl.emitCallableInvocatio
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
@@ -246,11 +245,7 @@ class FunBindingGenerator(
                             .substitute(bindingCallableSubstitutionMap),
                         isExtensionReceiver = false,
                         isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
-                        inlineKind = when {
-                            (it is ValueParameterDescriptor && it.isNoinline) -> ValueParameterRef.InlineKind.NOINLINE
-                            (it is ValueParameterDescriptor && it.isCrossinline) -> ValueParameterRef.InlineKind.CROSSINLINE
-                            else -> ValueParameterRef.InlineKind.NONE
-                        },
+                        inlineKind = ValueParameterRef.InlineKind.CROSSINLINE,
                         name = if (it == descriptor.extensionReceiverParameter)
                             "_receiver".asNameId() else it.name
                     )

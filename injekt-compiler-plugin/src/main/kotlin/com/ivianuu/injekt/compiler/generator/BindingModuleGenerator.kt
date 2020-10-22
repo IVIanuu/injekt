@@ -290,6 +290,12 @@ class BindingModuleGenerator(
                         }
                         val functionName = callable.fqName.pathSegments().joinToString("_")
 
+                        when (callable.callableKind) {
+                            Callable.CallableKind.DEFAULT -> {}
+                            Callable.CallableKind.SUSPEND -> emit("suspend ")
+                            Callable.CallableKind.COMPOSABLE -> emitLine("@${InjektFqNames.Composable}")
+                        }.let {}
+
                         emit("inline fun $functionName(")
 
                         callable.valueParameters
