@@ -137,7 +137,7 @@ class FunBindingGenerator(
                 emit("<")
                 descriptor.typeParameters
                     .forEachIndexed { index, typeParameter ->
-                        emit("${typeParameter.name} : ${typeTranslator.toTypeRef(typeParameter.upperBounds.single(), descriptor).render()}")
+                        emit("reified ${typeParameter.name} : ${typeTranslator.toTypeRef(typeParameter.upperBounds.single(), descriptor).render()}")
                         if (index != descriptor.typeParameters.lastIndex) emit(", ")
                     }
                 emit("> ")

@@ -209,7 +209,7 @@ class FunBindingTest {
                     abstract class TestComponent(@Binding val string: String) {
                         abstract val function: function
                         abstract val usage: usage
-                    } 
+                    }
                 """
             )
         )
@@ -219,7 +219,7 @@ class FunBindingTest {
     fun testFunBindingWithTypeParameters() = codegen(
         """
             @FunBinding
-            fun <T : S, S> function(t: T): S {
+            inline fun <reified T : S, S> function(t: T): S {
                 return error("")
             }
             
