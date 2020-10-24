@@ -80,9 +80,16 @@ class FunBindingGenerator(
         ).asString() + "FunBinding.kt"
         val bindingFunctionName = "${descriptor.name.asString()}FunBinding".asNameId()
 
+        val isSuspend = descriptor.isSuspend
+        val isComposable = descriptor.hasAnnotation(InjektFqNames.Composable)
+
         fun TypeRef.toProviderType(): TypeRef {
-            return descriptor.builtIns.getFunction(0)
-                .let { typeTranslator.toTypeRef(it.defaultType, descriptor) }
+            return (if (isSuspend) descriptor.builtIns.getSuspendFunction(0)
+                    else descriptor.builtIns.getFunction(0))
+                .let {
+                    typeTranslator.toTypeRef(it.defaultType, descriptor)
+                        .copy(isComposable = isComposable)
+                }
                 .typeWith(listOf(this))
         }
 
@@ -90,8 +97,6 @@ class FunBindingGenerator(
             emitLine("package $packageFqName")
             emitLine("import ${InjektFqNames.Binding}")
             emitLine()
-            val isSuspend = descriptor.isSuspend
-            val isComposable = descriptor.hasAnnotation(InjektFqNames.Composable)
             val returnType = typeTranslator.toTypeRef(descriptor.returnType!!, descriptor)
 
             emit("typealias ${descriptor.name}")

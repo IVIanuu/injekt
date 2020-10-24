@@ -230,5 +230,41 @@ class FunBindingTest {
         """
     )
 
+    @Test
+    fun testComposableFunBindingWithComposableDependency() = codegen(
+        """
+            @FunBinding
+            @Composable
+            fun function(foo: Foo) {
+            }
+
+            @Binding
+            @Composable
+            fun foo() = Foo()
+            
+            @Component
+            abstract class TestComponent {
+                abstract val function: function
+            }
+        """
+    )
+
+    @Test
+    fun testSuspendFunBindingWithSuspendDependency() = codegen(
+        """
+            @FunBinding
+            suspend fun function(foo: Foo) {
+            }
+
+            @Binding
+            suspend fun foo() = Foo()
+            
+            @Component
+            abstract class TestComponent {
+                abstract val function: function
+            }
+        """
+    )
+
     // todo test with composable
 }
