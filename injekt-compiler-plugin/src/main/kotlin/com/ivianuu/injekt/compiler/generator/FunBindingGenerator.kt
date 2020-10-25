@@ -203,8 +203,7 @@ class FunBindingGenerator(
                                 }
                             }
                         }
-                    },
-                    emptyList()
+                    }
                 )
                 emitLine()
                 emitLine("}")

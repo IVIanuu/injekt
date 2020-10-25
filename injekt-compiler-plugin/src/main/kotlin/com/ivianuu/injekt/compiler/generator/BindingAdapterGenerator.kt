@@ -200,8 +200,7 @@ class BindingAdapterGenerator(
                                         emit("()")
                                 }
                             }
-                        },
-                        emptyList()
+                        }
                     )
                     emitLine()
                     emitLine("}")
@@ -213,8 +212,7 @@ class BindingAdapterGenerator(
                             {
                                 emit(parameter.name)
                             }
-                        },
-                        emptyList()
+                        }
                     )
                 }
             }
@@ -245,9 +243,7 @@ class BindingAdapterGenerator(
                             val substitutionMap = mapOf(
                                 (callable.typeParameters.getOrNull(0)
                                     ?: error("Unexpected callable $callable")) to aliasedType
-                            ) + (if (callable.typeParameters.size > 1) mapOf(
-                                callable.typeParameters[1] to rawBindingType
-                            ) else emptyMap())
+                            )
                             callable.copy(
                                 type = callable.type
                                     .substitute(substitutionMap)
@@ -324,8 +320,7 @@ class BindingAdapterGenerator(
                                     } else {
                                         { emit(parameter.name) }
                                     }
-                                },
-                                listOf(aliasedType)
+                                }
                             )
                             emitLine()
                             emitLine("}")
@@ -337,8 +332,7 @@ class BindingAdapterGenerator(
                                     {
                                         emit(parameter.name)
                                     }
-                                },
-                                listOf(aliasedType)
+                                }
                             )
                         }
                     }

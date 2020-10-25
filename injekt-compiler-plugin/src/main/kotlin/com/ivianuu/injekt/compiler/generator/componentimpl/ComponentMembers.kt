@@ -24,7 +24,6 @@ import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.asNameId
-import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.renderExpanded
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.name.FqName
@@ -189,8 +188,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                                     false
                                 )
                             )
-                        },
-                    emptyList()
+                        }
                 )
                 emitLine(")")
             }
@@ -216,8 +214,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                                     false
                                 )
                             )
-                        },
-                    emptyList()
+                        }
                 )
                 emitLine(")")
             }
@@ -248,8 +245,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                     } else {
                         getBindingExpression(binding.dependencies[nonAssistedIndex++])
                     }
-                },
-                emptyList()
+                }
             )
             emitLine()
             emitLine("}")
@@ -257,8 +253,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
             emitCallableInvocation(
                 binding.callable,
                 binding.receiver,
-                binding.dependencies.map { getBindingExpression(it) },
-                emptyList()
+                binding.dependencies.map { getBindingExpression(it) }
             )
         }
     }
@@ -275,19 +270,10 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
 fun CodeBuilder.emitCallableInvocation(
     callable: Callable,
     receiver: ComponentExpression?,
-    arguments: List<ComponentExpression>,
-    typeArguments: List<TypeRef>
+    arguments: List<ComponentExpression>
 ) {
     fun emitArguments() {
         if (callable.isCall) {
-            if (typeArguments.isNotEmpty()) {
-                emit("<")
-                typeArguments.forEachIndexed { index, typeArgument ->
-                    emit(typeArgument.render())
-                    if (index != typeArguments.size) emit(", ")
-                }
-                emit(">")
-            }
             emit("(")
             arguments
                 .drop(if (callable.valueParameters.firstOrNull()?.isExtensionReceiver == true) 1 else 0)
