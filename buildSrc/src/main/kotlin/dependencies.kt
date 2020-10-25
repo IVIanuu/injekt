@@ -116,7 +116,7 @@ object Deps {
 
     const val processingX = "com.ivianuu.processingx:processingx:0.0.1-dev4"
 
-    const val roboelectric = "org.robolectric:robolectric:4.4-SNAPSHOT"
+    const val roboelectric = "org.robolectric:robolectric:4.4"
 
     const val spotlessGradlePlugin = "com.diffplug.spotless:spotless-plugin-gradle:3.26.1"
 
