@@ -87,7 +87,7 @@ object Deps {
     const val guice = "com.google.inject:guice:4.2.2"
 
     object Injekt {
-        const val version = "0.0.1-dev380"
+        const val version = "0.0.1-dev381"
         const val core = "com.ivianuu.injekt:injekt-core:$version"
         const val compilerPlugin = "com.ivianuu.injekt:injekt-compiler-plugin:$version"
         const val merge = "com.ivianuu.injekt:injekt-merge:$version"

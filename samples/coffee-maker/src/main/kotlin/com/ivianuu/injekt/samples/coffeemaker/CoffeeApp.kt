@@ -34,7 +34,6 @@ fun brewCoffee(heater: Heater, pump: Pump) {
     heater.off()
 }
 
-
 @Component
 abstract class CoffeeComponent {
     abstract val brewCoffee: brewCoffee
