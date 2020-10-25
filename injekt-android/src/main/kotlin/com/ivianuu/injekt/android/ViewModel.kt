@@ -28,8 +28,8 @@ import kotlin.reflect.KClass
 annotation class ActivityViewModelBinding {
     companion object {
         @Binding
-        inline fun <VM : S, reified S : ViewModel> viewModel(getViewModel: getViewModel<VM, S, ActivityViewModelStoreOwner>): S =
-            getViewModel(S::class)
+        inline fun <reified VM : ViewModel> viewModel(getViewModel: getViewModel<VM, ActivityViewModelStoreOwner>): VM =
+            getViewModel(VM::class)
     }
 }
 
@@ -37,17 +37,17 @@ annotation class ActivityViewModelBinding {
 annotation class FragmentViewModelBinding {
     companion object {
         @Binding
-        inline fun <VM : S, reified S : ViewModel> viewModel(getViewModel: getViewModel<VM, S, FragmentViewModelStoreOwner>): S =
-            getViewModel(S::class)
+        inline fun <reified VM : ViewModel> viewModel(getViewModel: getViewModel<VM, FragmentViewModelStoreOwner>): VM =
+            getViewModel(VM::class)
     }
 }
 
 @FunBinding
-fun <VM : S, S : ViewModel, VMSO : ViewModelStoreOwner> getViewModel(
+fun <VM : ViewModel, VMSO : ViewModelStoreOwner> getViewModel(
     viewModelStoreOwner: VMSO,
     viewModelFactory: () -> VM,
-    viewModelClass: @Assisted KClass<S>
-): S {
+    viewModelClass: @Assisted KClass<VM>
+): VM {
     return ViewModelProvider(
         viewModelStoreOwner,
         object : ViewModelProvider.Factory {

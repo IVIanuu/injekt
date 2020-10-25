@@ -249,7 +249,9 @@ class BindingAdapterGenerator(
                                 callable.typeParameters[1] to rawBindingType
                             ) else emptyMap())
                             callable.copy(
-                                type = callable.type.substitute(substitutionMap),
+                                type = callable.type
+                                    .substitute(substitutionMap)
+                                    .substitute(mapOf(aliasedType.classifier to rawBindingType)),
                                 valueParameters = callable.valueParameters.map {
                                     it.copy(
                                         type = it.type.substitute(substitutionMap)
@@ -323,10 +325,7 @@ class BindingAdapterGenerator(
                                         { emit(parameter.name) }
                                     }
                                 },
-                                listOfNotNull(
-                                    aliasedType,
-                                    if (callable.typeParameters.size > 1) rawBindingType else null
-                                )
+                                listOf(aliasedType)
                             )
                             emitLine()
                             emitLine("}")
@@ -339,10 +338,7 @@ class BindingAdapterGenerator(
                                         emit(parameter.name)
                                     }
                                 },
-                                listOfNotNull(
-                                    aliasedType,
-                                    if (callable.typeParameters.size > 1) rawBindingType else null
-                                )
+                                listOf(aliasedType)
                             )
                         }
                     }
