@@ -72,7 +72,7 @@ class ComponentImpl(
         parent?.children?.add(this)
         graph.checkRequests(requests.map { BindingRequest(it.type, it.fqName, false) })
         requests.forEach {
-            val binding = graph.resolvedBindings[it.type]!!
+            val binding = graph.bindingsByRequest[it.type]!!
             statements.getCallable(
                 type = it.type,
                 name = it.name,

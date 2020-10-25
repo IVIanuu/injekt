@@ -84,7 +84,7 @@ class ComponentGenerator(
         val imports = mutableSetOf<FqName>()
 
         fun ComponentImpl.collectImports() {
-            imports += graph.resolvedBindings.values
+            imports += graph.resolvedBindings
                 .mapNotNull {
                     it to (when (it) {
                         is CallableBindingNode -> it.callable

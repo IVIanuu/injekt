@@ -53,7 +53,8 @@ class BindingGraph(
 
     private val collections: BindingCollections = collectionsFactory(owner, parent?.collections)
 
-    val resolvedBindings = mutableMapOf<TypeRef, BindingNode>()
+    val bindingsByRequest = mutableMapOf<TypeRef, BindingNode>()
+    val resolvedBindings = mutableListOf<BindingNode>()
 
     private val chain = mutableListOf<BindingNode>()
 
@@ -177,7 +178,8 @@ class BindingGraph(
 
         if (request.type.isMarkedNullable) {
             binding = NullBindingNode(request.type, owner)
-            resolvedBindings[request.type] = binding
+            bindingsByRequest[request.type] = binding
+            resolvedBindings += binding
             return binding
         }
 
@@ -201,9 +203,6 @@ class BindingGraph(
     }
 
     private fun getBindingOrNull(request: BindingRequest): BindingNode? {
-        var binding = resolvedBindings[request.type]
-        if (binding != null) return binding
-
         fun List<BindingNode>.mostSpecificOrFail(bindingType: String): BindingNode? {
             return if (size > 1) {
                 getExact(request.type)
@@ -217,10 +216,20 @@ class BindingGraph(
             }
         }
 
+        val existingBindings = resolvedBindings
+            .filter { request.type.isAssignable(it.type) }
+
+        var binding = existingBindings.singleOrNull() ?: existingBindings.getExact(request.type)
+        binding?.let {
+            bindingsByRequest[request.type] = it
+            return it
+        }
+
         val explicitBindings = getExplicitBindingsForType(request)
         binding = explicitBindings.mostSpecificOrFail("explicit")
         binding?.let {
-            resolvedBindings[request.type] = it
+            bindingsByRequest[request.type] = it
+            resolvedBindings += it
             return it
         }
 
@@ -229,25 +238,29 @@ class BindingGraph(
 
         binding = implicitInternalUserBindings.mostSpecificOrFail("internal implicit")
         binding?.let {
-            resolvedBindings[request.type] = it
+            bindingsByRequest[request.type] = it
+            resolvedBindings += it
             return it
         }
 
         binding = externalImplicitUserBindings.mostSpecificOrFail("external implicit")
         binding?.let {
-            resolvedBindings[request.type] = it
+            bindingsByRequest[request.type] = it
+            resolvedBindings += it
             return it
         }
 
         val implicitFrameworkBindings = getImplicitFrameworkBindingsForType(request)
         binding = implicitFrameworkBindings.mostSpecificOrFail("")
         binding?.let {
-            resolvedBindings[request.type] = it
+            bindingsByRequest[request.type] = it
+            resolvedBindings += it
             return it
         }
 
         parent?.getBindingOrNull(request)?.let {
-            resolvedBindings[request.type] = it
+            bindingsByRequest[request.type] = it
+            resolvedBindings += it
             return it
         }
 
@@ -326,6 +339,30 @@ class BindingGraph(
             }
     }
 
+    private fun getBindingsForStarProjectedType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
+        val componentRequestForType = owner.allRequests
+            .singleOrNull { request.type.isAssignable(it.type) }
+        if (componentRequestForType != null) {
+            DelegateBindingNode(
+                componentRequestForType.type,
+                owner,
+                BindingRequest(componentRequestForType.type,
+                    componentRequestForType.fqName, false)
+            )
+        } else {
+            val substitutionMap = request.type.getSubstitutionMap(binding.rawType)
+            DelegateBindingNode(
+                request.type,
+                owner,
+                BindingRequest(
+                    binding.rawType.substitute(substitutionMap),
+                    request.origin,
+                    request.isInline
+                )
+            )
+        }
+    }
+
     private fun getImplicitFrameworkBindingsForType(
         request: BindingRequest
     ): List<BindingNode> = buildList<BindingNode> {
@@ -387,6 +424,9 @@ class BindingGraph(
 
     private fun List<BindingNode>.getExact(requested: TypeRef): BindingNode? =
         singleOrNull { it.rawType == requested }
+
+    private val ComponentImpl.allRequests: List<Callable>
+        get() = requests + (parent?.allRequests ?: emptyList())
 }
 
 private fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"

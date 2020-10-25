@@ -86,6 +86,26 @@ sealed class BindingNode {
     abstract val cacheable: Boolean
 }
 
+class DelegateBindingNode(
+    override val type: TypeRef,
+    override val owner: ComponentImpl,
+    delegate: BindingRequest
+) : BindingNode() {
+    override val rawType: TypeRef
+        get() = type
+    override val cacheable: Boolean
+        get() = false
+    override val isExternal: Boolean
+        get() = false
+    override val dependencies: List<BindingRequest> = listOf(delegate)
+    override val origin: FqName?
+        get() = null
+    override val receiver: ComponentExpression?
+        get() = null
+    override val targetComponent: TypeRef?
+        get() = null
+}
+
 class SelfBindingNode(
     override val type: TypeRef,
     val component: ComponentImpl,

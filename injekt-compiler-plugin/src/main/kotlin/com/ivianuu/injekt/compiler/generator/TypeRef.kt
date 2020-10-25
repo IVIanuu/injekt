@@ -295,10 +295,22 @@ fun TypeRef.getSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRef> {
     return substitutionMap
 }
 
+fun TypeRef.getAllRecursive(): List<TypeRef> {
+    val all = mutableListOf<TypeRef>()
+    fun collect(type: TypeRef) {
+        all += type
+        type.typeArguments.forEach { collect(it) }
+    }
+    collect(this)
+    return all
+}
+
 fun TypeRef.isAssignable(superType: TypeRef): Boolean {
     if (this == superType) return true
 
     if (isStarProjection || superType.isStarProjection) return true
+    if (classifier.fqName == KotlinBuiltIns.FQ_NAMES.nothing.toSafe() ||
+            superType.classifier.fqName == KotlinBuiltIns.FQ_NAMES.nothing.toSafe()) return true
 
     if (superType.classifier.isTypeParameter) {
         return superType.classifier.superTypes.all { upperBound ->
