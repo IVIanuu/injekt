@@ -489,22 +489,6 @@ class ComponentTest {
     )
 
     @Test
-    fun testBindingWithStarProjection() = codegen(
-        """     
-            class FirstKey<K>(val key: K)
-            
-            @Binding
-            val <K> Map<K, *>.firstKey: FirstKey<K> get() = FirstKey(keys.first())
-            
-            @Component
-            abstract class MyComponent { 
-                abstract val firstKey: FirstKey<String>
-                @Binding protected fun map() = mapOf("key" to "value")
-            }
-    """
-    )
-
-    @Test
     fun testComponentFunction() = codegen(
         """
             @Component
