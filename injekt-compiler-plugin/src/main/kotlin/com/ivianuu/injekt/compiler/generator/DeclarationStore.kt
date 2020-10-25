@@ -158,10 +158,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
     private val allMergeDeclarationsByFqName by unsafeLazy {
         buildMap<FqName, MutableList<TypeRef>> {
-            generatedMergeDeclarationsByComponent
-                .forEach { (mergeComponent, declarations) ->
-                    getOrPut(mergeComponent) { mutableListOf() } += declarations.map { it.type }
-                }
             classIndices
                 .filter { it.hasAnnotation(InjektFqNames.MergeInto) }
                 .groupBy { declaration ->
@@ -185,17 +181,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
     fun mergeDeclarationsForMergeComponent(component: FqName): List<TypeRef> =
         allMergeDeclarationsByFqName[component] ?: emptyList()
-
-    private val generatedMergeDeclarationsByComponent = mutableMapOf<FqName, MutableList<com.ivianuu.injekt.compiler.generator.ModuleDescriptor>>()
-    fun addGeneratedMergeModule(
-        mergeComponent: TypeRef,
-        moduleDescriptor: com.ivianuu.injekt.compiler.generator.ModuleDescriptor
-    ) {
-        generatedMergeDeclarationsByComponent.getOrPut(
-            mergeComponent.classifier.fqName) { mutableListOf() } += moduleDescriptor
-        moduleByType[moduleDescriptor.type] = moduleDescriptor
-        callablesByType[moduleDescriptor.type] = moduleDescriptor.callables
-    }
 
     private val callablesByType = mutableMapOf<TypeRef, List<Callable>>()
     fun allCallablesForType(type: TypeRef): List<Callable> {
@@ -354,10 +339,10 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     else -> Callable.CallableKind.DEFAULT
                 }
             } else Callable.CallableKind.DEFAULT,
-            bindingModules = (descriptor
-                .getAnnotatedAnnotations(InjektFqNames.BindingModule)
+            bindingAdapters = (descriptor
+                .getAnnotatedAnnotations(InjektFqNames.BindingAdapter)
                 .map { it.fqName!! } + owner
-                .getAnnotatedAnnotations(InjektFqNames.BindingModule)
+                .getAnnotatedAnnotations(InjektFqNames.BindingAdapter)
                 .map { it.fqName!! }).distinct(),
             isEager = descriptor.hasAnnotation(InjektFqNames.Eager),
             isExternal = owner is DeserializedDescriptor,
@@ -393,7 +378,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
                         // todo tmp workaround for composables
                         if ((descriptor.containingDeclaration as? ClassDescriptor)
-                                ?.hasAnnotation(InjektFqNames.BindingModule) == true) {
+                                ?.hasAnnotation(InjektFqNames.BindingAdapter) == true) {
                             substitutionMap += callable.typeParameters
                                 .zip(moduleSubstitutionMap.values)
                         }

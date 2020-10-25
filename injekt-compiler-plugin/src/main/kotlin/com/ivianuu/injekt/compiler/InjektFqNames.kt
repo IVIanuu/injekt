@@ -24,6 +24,7 @@ object InjektFqNames {
 
     val Assisted = InjektPackage.child("Assisted".asNameId())
     val Binding = InjektPackage.child("Binding".asNameId())
+    val BindingAdapter = InjektPackage.child("BindingAdapter".asNameId())
     val Component = InjektPackage.child("Component".asNameId())
     val ChildComponent = InjektPackage.child("ChildComponent".asNameId())
     val MapEntries = InjektPackage.child("MapEntries".asNameId())
@@ -42,7 +43,6 @@ object InjektFqNames {
 
     val MergePackage = InjektPackage.child("merge".asNameId())
 
-    val BindingModule = MergePackage.child("BindingModule".asNameId())
     val MergeComponent = MergePackage.child("MergeComponent".asNameId())
     val MergeChildComponent = MergePackage.child("MergeChildComponent".asNameId())
     val MergeInto = MergePackage.child("MergeInto".asNameId())

@@ -52,7 +52,7 @@ class InjektKtGenerationExtension(
         val generators = listOf(
             generationComponent.funBindingGenerator,
             generationComponent.implBindingGenerator,
-            generationComponent.bindingModuleGenerator,
+            generationComponent.bindingAdapterGenerator,
             generationComponent.indexGenerator,
             generationComponent.componentGenerator
         )

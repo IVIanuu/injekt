@@ -51,3 +51,6 @@ annotation class SetElements
 
 @Target(AnnotationTarget.TYPE)
 annotation class Assisted
+
+@Target(AnnotationTarget.ANNOTATION_CLASS)
+annotation class BindingAdapter

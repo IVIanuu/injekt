@@ -20,24 +20,23 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
 import com.ivianuu.injekt.Assisted
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.BindingAdapter
 import com.ivianuu.injekt.FunBinding
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.merge.BindingModule
 import kotlin.reflect.KClass
 
-@BindingModule(ActivityComponent::class)
 annotation class ActivityViewModelBinding {
     companion object {
-        @Module
+        @Binding
         inline fun <VM : S, reified S : ViewModel> viewModel(getViewModel: getViewModel<VM, S, ActivityViewModelStoreOwner>): S =
             getViewModel(S::class)
     }
 }
 
-@BindingModule(FragmentComponent::class)
+@BindingAdapter
 annotation class FragmentViewModelBinding {
     companion object {
-        @Module
+        @Binding
         inline fun <VM : S, reified S : ViewModel> viewModel(getViewModel: getViewModel<VM, S, FragmentViewModelStoreOwner>): S =
             getViewModel(S::class)
     }

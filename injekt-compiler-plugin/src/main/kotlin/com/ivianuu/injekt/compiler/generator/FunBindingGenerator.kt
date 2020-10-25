@@ -229,9 +229,9 @@ class FunBindingGenerator(
             .map { typeTranslator.toClassifierRef(it) }
             .zip(callableTypeParameters.map { it.defaultType })
             .toMap()
-        val bindingModules = descriptor
+        val bindingAdapters = descriptor
             .annotations
-            .filter { it.hasAnnotation(InjektFqNames.BindingModule) }
+            .filter { it.hasAnnotation(InjektFqNames.BindingAdapter) }
         val bindingCallable = Callable(
             packageFqName = packageFqName,
             fqName = packageFqName.child(bindingFunctionName),
@@ -259,7 +259,7 @@ class FunBindingGenerator(
             contributionKind = Callable.ContributionKind.BINDING,
             isCall = true,
             callableKind = Callable.CallableKind.DEFAULT,
-            bindingModules = bindingModules
+            bindingAdapters = bindingAdapters
                 .map { it.fqName!! },
             isEager = true,
             isExternal = false,

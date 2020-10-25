@@ -30,7 +30,7 @@ data class Callable(
     val contributionKind: ContributionKind?,
     val isCall: Boolean,
     val callableKind: CallableKind,
-    val bindingModules: List<FqName>,
+    val bindingAdapters: List<FqName>,
     val isEager: Boolean,
     val isExternal: Boolean,
     val isInline: Boolean

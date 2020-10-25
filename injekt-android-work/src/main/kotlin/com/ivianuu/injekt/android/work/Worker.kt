@@ -20,14 +20,14 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
+import com.ivianuu.injekt.BindingAdapter
 import com.ivianuu.injekt.ImplBinding
 import com.ivianuu.injekt.MapEntries
 import com.ivianuu.injekt.merge.ApplicationComponent
-import com.ivianuu.injekt.merge.BindingModule
 import kotlin.reflect.KClass
 import kotlin.reflect.typeOf
 
-@BindingModule(ApplicationComponent::class)
+@BindingAdapter(ApplicationComponent::class)
 annotation class WorkerBinding {
     companion object {
         @MapEntries

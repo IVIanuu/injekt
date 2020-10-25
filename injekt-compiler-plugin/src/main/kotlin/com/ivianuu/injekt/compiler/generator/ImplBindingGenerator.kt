@@ -139,7 +139,7 @@ class ImplBindingGenerator(
             contributionKind = Callable.ContributionKind.BINDING,
             isCall = true,
             callableKind = Callable.CallableKind.DEFAULT,
-            bindingModules = emptyList(),
+            bindingAdapters = emptyList(),
             isEager = false,
             isExternal = false,
             isInline = true
@@ -170,7 +170,7 @@ class ImplBindingGenerator(
             contributionKind = Callable.ContributionKind.BINDING,
             isCall = false,
             callableKind = Callable.CallableKind.DEFAULT,
-            bindingModules = emptyList(),
+            bindingAdapters = emptyList(),
             isEager = false,
             isExternal = false,
             isInline = true

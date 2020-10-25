@@ -22,12 +22,12 @@ import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
 import org.junit.Test
 
-class BindingModuleTest {
+class BindingAdapterTest {
 
     @Test
-    fun testBindingModuleWithClass() = codegen(
+    fun testBindingAdapterWithClass() = codegen(
         """
-            @BindingModule(MyComponent::class)
+            @BindingAdapter
             annotation class AnyBinding { 
                 companion object {
                     @Binding
@@ -52,9 +52,9 @@ class BindingModuleTest {
     )
 
     @Test
-    fun testBindingModuleWithSuperTypeArgument() = codegen(
+    fun testBindingAdapterWithSuperTypeArgument() = codegen(
         """
-            @BindingModule(MyComponent::class)
+            @BindingAdapter
             annotation class AnyBinding { 
                 companion object {
                     @Binding
@@ -79,9 +79,9 @@ class BindingModuleTest {
     )
 
     @Test
-    fun testBindingModuleWithAssistedClass() = codegen(
+    fun testBindingAdapterWithAssistedClass() = codegen(
         """
-            @BindingModule(MyComponent::class)
+            @BindingAdapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -104,9 +104,9 @@ class BindingModuleTest {
     )
 
     @Test
-    fun testBindingModuleWithTopLevelFunction() = codegen(
+    fun testBindingAdapterWithTopLevelFunction() = codegen(
         """
-            @BindingModule(MyComponent::class)
+            @BindingAdapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -132,9 +132,9 @@ class BindingModuleTest {
     )
 
     @Test
-    fun testBindingModuleWithSuspendFunction() = codegen(
+    fun testBindingAdapterWithSuspendFunction() = codegen(
         """
-            @BindingModule(MyComponent::class)
+            @BindingAdapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -160,9 +160,9 @@ class BindingModuleTest {
     )
 
     @Test
-    fun testBindingModuleWithComposableFunction() = codegen(
+    fun testBindingAdapterWithComposableFunction() = codegen(
         """
-            @BindingModule(MyComponent::class)
+            @BindingAdapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -190,9 +190,9 @@ class BindingModuleTest {
     )
 
     @Test
-    fun testBindingModuleWithAssistedTopLevelFunction() = codegen(
+    fun testBindingAdapterWithAssistedTopLevelFunction() = codegen(
         """
-            @BindingModule(MyComponent::class)
+            @BindingAdapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -216,9 +216,9 @@ class BindingModuleTest {
     )
 
     @Test
-    fun testBindingModuleWithFunctionInObject() = codegen(
+    fun testBindingAdapterWithFunctionInObject() = codegen(
         """
-            @BindingModule(MyComponent::class)
+            @BindingAdapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -246,9 +246,9 @@ class BindingModuleTest {
     )
 
     @Test
-    fun testBindingModuleWithAssistedFunctionInObject() = codegen(
+    fun testBindingAdapterWithAssistedFunctionInObject() = codegen(
         """
-            @BindingModule(MyComponent::class)
+            @BindingAdapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -274,9 +274,9 @@ class BindingModuleTest {
     )
 
     @Test
-    fun testBindingModuleWithFunBinding() = codegen(
+    fun testBindingAdapterWithFunBinding() = codegen(
         """
-            @BindingModule(MyComponent::class)
+            @BindingAdapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -303,9 +303,9 @@ class BindingModuleTest {
     )
 
     @Test
-    fun testBindingModuleWithAssistedFunBinding() = codegen(
+    fun testBindingAdapterWithAssistedFunBinding() = codegen(
         """
-            @BindingModule(MyComponent::class)
+            @BindingAdapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -330,9 +330,9 @@ class BindingModuleTest {
     )
 
     @Test
-    fun testSetBindingModuleWithComposableFunction() = codegen(
+    fun testSetBindingAdapterWithComposableFunction() = codegen(
         """
-            @BindingModule(MyComponent::class)
+            @BindingAdapter
             annotation class UiComponentBinding {
                 companion object {
                     @SetElements
@@ -361,11 +361,11 @@ class BindingModuleTest {
     }
 
     @Test
-    fun testSetBindingModuleWithComposableFunctionMulti() = multiCodegen(
+    fun testSetBindingAdapterWithComposableFunctionMulti() = multiCodegen(
         listOf(
             source(
                 """
-                    @BindingModule(MyComponent::class)
+                    @BindingAdapter
                     annotation class UiComponentBinding {
                         companion object {
                             @SetElements
