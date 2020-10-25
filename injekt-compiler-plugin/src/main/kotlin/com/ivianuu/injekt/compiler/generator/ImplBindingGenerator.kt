@@ -144,7 +144,7 @@ class ImplBindingGenerator(
             isExternal = false,
             isInline = true
         )
-        declarationStore.addGeneratedBinding(implCallable, descriptor.findPsi()!!.containingFile as KtFile)
+        declarationStore.addGeneratedCallable(implCallable, descriptor.findPsi()!!.containingFile as KtFile)
         declarationStore.addGeneratedInternalIndex(
             descriptor.findPsi()!!.containingFile as KtFile,
             Index(implCallable.fqName, "function")
@@ -176,7 +176,7 @@ class ImplBindingGenerator(
             isInline = true
         )
 
-        declarationStore.addGeneratedBinding(superTypeCallable, descriptor.findPsi()!!.containingFile as KtFile)
+        declarationStore.addGeneratedCallable(superTypeCallable, descriptor.findPsi()!!.containingFile as KtFile)
         declarationStore.addGeneratedInternalIndex(
             descriptor.findPsi()!!.containingFile as KtFile,
             Index(superTypeCallable.fqName, "property")

@@ -107,13 +107,15 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
     private val bindingsByType = mutableMapOf<TypeRef, List<Callable>>()
     fun bindingsForType(type: TypeRef): List<Callable> = bindingsByType.getOrPut(type) {
-        (allBindings + generatedBindings.map { it.first })
+        (allBindings + generatedCallables
+            .filter { it.first.contributionKind == Callable.ContributionKind.BINDING }
+            .map { it.first })
             .filter { type.isAssignable(it.type) }
     }
 
-    val generatedBindings = mutableListOf<Pair<Callable, KtFile>>()
-    fun addGeneratedBinding(callable: Callable, file: KtFile) {
-        generatedBindings += callable to file
+    val generatedCallables = mutableListOf<Pair<Callable, KtFile>>()
+    fun addGeneratedCallable(callable: Callable, file: KtFile) {
+        generatedCallables += callable to file
     }
 
     private val generatedClassifiers = mutableMapOf<FqName, ClassifierRef>()
@@ -124,11 +126,13 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
     private val allMapEntries by unsafeLazy {
         functionIndices
-                    .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
-                    .map { callableForDescriptor(it) } +
+            .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
+            .map { callableForDescriptor(it) } +
                 propertyIndices
                     .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
-                    .map { callableForDescriptor(it.getter!!) }
+                    .map { callableForDescriptor(it.getter!!) } + (generatedCallables
+            .filter { it.first.contributionKind == Callable.ContributionKind.MAP_ENTRIES }
+            .map { it.first })
     }
     private val mapEntriesForType = mutableMapOf<TypeRef, List<Callable>>()
     fun mapEntriesByType(type: TypeRef): List<Callable> = mapEntriesForType.getOrPut(type) {
@@ -142,7 +146,9 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .map { callableForDescriptor(it) } +
                 propertyIndices
                     .filter { it.hasAnnotation(InjektFqNames.SetElements) }
-                    .map { callableForDescriptor(it.getter!!) }
+                    .map { callableForDescriptor(it.getter!!) } + (generatedCallables
+            .filter { it.first.contributionKind == Callable.ContributionKind.SET_ELEMENTS }
+            .map { it.first })
     }
     private val setElementsForType = mutableMapOf<TypeRef, List<Callable>>()
     fun setElementsByType(type: TypeRef): List<Callable> = setElementsForType.getOrPut(type) {

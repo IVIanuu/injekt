@@ -23,11 +23,10 @@ import androidx.work.WorkerParameters
 import com.ivianuu.injekt.BindingAdapter
 import com.ivianuu.injekt.ImplBinding
 import com.ivianuu.injekt.MapEntries
-import com.ivianuu.injekt.merge.ApplicationComponent
 import kotlin.reflect.KClass
 import kotlin.reflect.typeOf
 
-@BindingAdapter(ApplicationComponent::class)
+@BindingAdapter
 annotation class WorkerBinding {
     companion object {
         @MapEntries

@@ -78,7 +78,7 @@ class BindingAdapterGenerator(
             )
         }
 
-        declarationStore.generatedBindings
+        declarationStore.generatedCallables
             .filter { it.first.bindingAdapters.isNotEmpty() }
             .forEach { generateBindingAdapterForCallable(it.first, it.second) }
     }
@@ -373,7 +373,7 @@ class BindingAdapterGenerator(
         )
 
         callables.forEach {
-            declarationStore.addGeneratedBinding(it, file)
+            declarationStore.addGeneratedCallable(it, file)
             declarationStore.addGeneratedInternalIndex(
                 file, Index(
                     it.fqName,
