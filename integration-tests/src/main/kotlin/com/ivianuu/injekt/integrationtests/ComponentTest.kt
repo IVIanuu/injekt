@@ -74,7 +74,25 @@ class ComponentTest {
     }
 
     @Test
-    fun testScopedBinding() = codegen(
+    fun testUnscopedBindingReturnsDifferentInstance() = codegen(
+        """
+            @Component
+            abstract class MyComponent { 
+                abstract val foo: Foo
+                @Binding 
+                protected fun foo() = Foo()
+            }
+        
+            val component: MyComponent = component<MyComponent>()
+        
+            fun invoke() = component.foo
+    """
+    ) {
+        assertNotSame(invokeSingleFile(), invokeSingleFile())
+    }
+
+    @Test
+    fun testScopedBindingReturnsSameInstance() = codegen(
         """
             @Component
             abstract class MyComponent { 
@@ -89,6 +107,73 @@ class ComponentTest {
     """
     ) {
         assertSame(invokeSingleFile(), invokeSingleFile())
+    }
+
+    @Test
+    fun testGenericBindingsWithDifferentArgumentsHasDifferentIdentity() = codegen(
+        """
+            @Binding(MyComponent::class)
+            class Option<T>(val value: T)
+            
+            @Component
+            abstract class MyComponent {
+                abstract val stringOption: Option<String>
+                abstract val intOption: Option<Int>
+                
+                @Binding protected fun string() = ""
+                @Binding protected fun int() = 0
+            }
+            
+            val component = component<MyComponent>()
+            
+            fun invoke(): List<Any> {
+                return listOf(
+                    component.stringOption,
+                    component.stringOption,
+                    component.intOption,
+                    component.intOption
+                )
+            }
+            
+        """
+    ) {
+        val (a1, a2, b1, b2) = invokeSingleFile<List<Any>>()
+        assertSame(a1, a2)
+        assertSame(b1, b2)
+        assertNotSame(a1, b1)
+    }
+
+    @Test
+    fun testDifferentRequestsWithStarProjectionGetsSharedBinding() = codegen(
+        """
+            @Binding(MyComponent::class)
+            class Option<T>(val value: T)
+            
+            @Component
+            abstract class MyComponent {
+                abstract val stringOption: Option<String>
+                abstract val anyOption: Option<*>
+                               
+                @Binding protected fun string() = ""
+            }
+            
+            val component = component<MyComponent>()
+            
+            fun invoke(): List<Any> {
+                return listOf(
+                    component.stringOption,
+                    component.stringOption,
+                    component.anyOption,
+                    component.anyOption
+                )
+            }
+            
+        """
+    ) {
+        val (a1, a2, b1, b2) = invokeSingleFile<List<Any>>()
+        assertSame(a1, a2)
+        assertSame(b1, b2)
+        assertSame(a1, b1)
     }
 
     @Test
@@ -404,7 +489,7 @@ class ComponentTest {
     )
 
     @Test
-    fun testGenericBindingWithStarProjection() = codegen(
+    fun testBindingWithStarProjection() = codegen(
         """     
             class FirstKey<K>(val key: K)
             
