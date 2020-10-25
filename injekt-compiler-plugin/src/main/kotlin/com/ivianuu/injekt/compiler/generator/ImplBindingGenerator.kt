@@ -126,7 +126,6 @@ class ImplBindingGenerator(
                         type = it.type
                             .let { typeTranslator.toTypeRef(it, descriptor) },
                         isExtensionReceiver = false,
-                        isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
                         inlineKind = when {
                             it.isNoinline -> ValueParameterRef.InlineKind.NOINLINE
                             it.isCrossinline -> ValueParameterRef.InlineKind.CROSSINLINE
@@ -161,7 +160,6 @@ class ImplBindingGenerator(
                     type = descriptor.defaultType
                         .let { typeTranslator.toTypeRef(it, descriptor) },
                     isExtensionReceiver = true,
-                    isAssisted = false,
                     inlineKind = ValueParameterRef.InlineKind.NONE,
                     name = "_receiver".asNameId()
                 )

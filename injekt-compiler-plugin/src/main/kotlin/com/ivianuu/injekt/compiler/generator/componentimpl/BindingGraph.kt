@@ -266,7 +266,6 @@ class BindingGraph(
                     rawType = callable.type,
                     owner = owner,
                     dependencies = callable.valueParameters
-                        .filterNot { it.isAssisted }
                         .map {
                             BindingRequest(
                                 it.type.substitute(substitutionMap),
@@ -274,56 +273,125 @@ class BindingGraph(
                                 callable.isInline && (it.type.isFunction || it.type.isSuspendFunction)
                             )
                         },
-                    valueParameters = callable.valueParameters.map {
-                        it.copy(
-                            type = it.type.substitute(substitutionMap)
-                        )
-                    },
                     origin = callable.fqName,
                     targetComponent = callable.targetComponent,
                     receiver = receiver,
                     callable = callable,
                     isExternal = callable.isExternal,
-                    cacheable = callable.isEager || callable.valueParameters.any {
-                        it.isAssisted
-                    }
+                    assistedParameters = emptyList(),
+                    cacheable = callable.isEager
                 )
             }
+
+        if (request.type.isFunction || request.type.isSuspendFunction) {
+            val assistedParameters = request.type.typeArguments.dropLast(1)
+            if (assistedParameters.isNotEmpty()) {
+                val returnType = request.type.typeArguments.last()
+                this += moduleBindingCallables
+                    .filter { it.callable.targetComponent == null || it.callable.targetComponent == owner.componentType }
+                    .filter { returnType.isAssignable(it.callable.type) }
+                    .filter { callableWithReceiver ->
+                        assistedParameters.all { assistedParameterType ->
+                            callableWithReceiver.callable.valueParameters
+                                .any { assistedParameterType.isAssignable(it.type) }
+                        }
+                    }
+                    .map { (callable, receiver) ->
+                        val substitutionMap = request.type.getSubstitutionMap(callable.type)
+                        CallableBindingNode(
+                            type = request.type,
+                            rawType = callable.type,
+                            owner = owner,
+                            dependencies = callable.valueParameters
+                                .filter { it.type !in assistedParameters }
+                                .map {
+                                    BindingRequest(
+                                        it.type.substitute(substitutionMap),
+                                        callable.fqName.child(it.name),
+                                        callable.isInline
+                                    )
+                                },
+                            assistedParameters = assistedParameters,
+                            origin = callable.fqName,
+                            targetComponent = callable.targetComponent,
+                            receiver = receiver,
+                            callable = callable,
+                            isExternal = callable.isExternal,
+                            cacheable = true
+                        )
+                    }
+            }
+        }
     }
 
     private fun getImplicitUserBindingsForType(request: BindingRequest): List<BindingNode> {
-        return declarationStore.bindingsForType(request.type)
-            .filter { it.targetComponent == null || it.targetComponent == owner.componentType }
-            .map { callable ->
-                val substitutionMap = request.type.getSubstitutionMap(callable.type)
-                CallableBindingNode(
-                    type = request.type,
-                    rawType = callable.type,
-                    owner = owner,
-                    dependencies = callable.valueParameters
-                        .filterNot { it.isAssisted }
-                        .map {
-                            BindingRequest(
-                                it.type.substitute(substitutionMap),
-                                callable.fqName.child(it.name),
-                                callable.isInline && (it.type.isFunction || it.type.isSuspendFunction)
+        return buildList<BindingNode> {
+            this += declarationStore.bindingsForType(request.type)
+                .filter { it.targetComponent == null || it.targetComponent == owner.componentType }
+                .map { callable ->
+                    val substitutionMap = request.type.getSubstitutionMap(callable.type)
+                    CallableBindingNode(
+                        type = request.type,
+                        rawType = callable.type,
+                        owner = owner,
+                        dependencies = callable.valueParameters
+                            .map {
+                                BindingRequest(
+                                    it.type.substitute(substitutionMap),
+                                    callable.fqName.child(it.name),
+                                    callable.isInline && (it.type.isFunction || it.type.isSuspendFunction)
+                                )
+                            },
+                        assistedParameters = emptyList(),
+                        origin = callable.fqName,
+                        targetComponent = callable.targetComponent,
+                        receiver = null,
+                        callable = callable,
+                        isExternal = callable.isExternal,
+                        cacheable = callable.isEager
+                    )
+                }
+
+            if (request.type.isFunction || request.type.isSuspendFunction) {
+                val assistedParameters = request.type.typeArguments.dropLast(1)
+                if (assistedParameters.isNotEmpty()) {
+                    val returnType = request.type.typeArguments.last()
+                    this += declarationStore.bindingsForType(returnType)
+                        .filter { it.targetComponent == null || it.targetComponent == owner.componentType }
+                        .filter { returnType.isAssignable(it.type) }
+                        .filter { callableWithReceiver ->
+                            assistedParameters.all { assistedParameterType ->
+                                callableWithReceiver.valueParameters
+                                    .any { assistedParameterType.isAssignable(it.type) }
+                            }
+                        }
+                        .map { callable ->
+                            val substitutionMap = request.type.getSubstitutionMap(callable.type)
+                            CallableBindingNode(
+                                type = request.type,
+                                rawType = callable.type,
+                                owner = owner,
+                                dependencies = callable.valueParameters
+                                    .filter { it.type !in assistedParameters }
+                                    .map {
+                                        BindingRequest(
+                                            it.type.substitute(substitutionMap),
+                                            callable.fqName.child(it.name),
+                                            callable.isInline
+                                        )
+                                    },
+                                assistedParameters = assistedParameters,
+                                origin = callable.fqName,
+                                targetComponent = callable.targetComponent,
+                                receiver = null,
+                                callable = callable,
+                                isExternal = callable.isExternal,
+                                cacheable = true
                             )
-                        },
-                    valueParameters = callable.valueParameters.map {
-                        it.copy(
-                            type = it.type.substitute(substitutionMap)
-                        )
-                    },
-                    origin = callable.fqName,
-                    targetComponent = callable.targetComponent,
-                    receiver = null,
-                    callable = callable,
-                    isExternal = callable.isExternal,
-                    cacheable = callable.isEager || callable.valueParameters.any {
-                        it.isAssisted
-                    }
-                )
+                        }
+                }
             }
+        }
     }
 
     private fun getImplicitFrameworkBindingsForType(
@@ -441,7 +509,6 @@ class BindingCollections(
                         owner = owner,
                         dependencies = entries.flatMap { (entry, _, substitutionMap) ->
                             entry.valueParameters
-                                .filterNot { it.isAssisted }
                                 .map {
                                     BindingRequest(
                                         it.type.substitute(substitutionMap),
@@ -461,7 +528,6 @@ class BindingCollections(
                         owner = owner,
                         dependencies = elements.flatMap { (element, _, substitutionMap) ->
                             element.valueParameters
-                                .filterNot { it.isAssisted }
                                 .map {
                                     BindingRequest(
                                         it.type.substitute(substitutionMap),

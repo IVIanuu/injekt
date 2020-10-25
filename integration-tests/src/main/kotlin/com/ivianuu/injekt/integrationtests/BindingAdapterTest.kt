@@ -79,31 +79,6 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithAssistedClass() = codegen(
-        """
-            @BindingAdapter
-            annotation class AnyBinding {
-                companion object {
-                    @Binding
-                    val <T : Any> T.any: Any get() = this
-                }
-            }
-            
-            @AnyBinding
-            class AnnotatedBar(val foo: @Assisted Foo)
-            
-            @MergeComponent
-            abstract class MyComponent {
-                abstract val any: Any
-            }
-            
-            @GenerateMergeComponents
-            fun invoke() {
-            }
-        """
-    )
-
-    @Test
     fun testBindingAdapterWithTopLevelFunction() = codegen(
         """
             @BindingAdapter
@@ -190,32 +165,6 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithAssistedTopLevelFunction() = codegen(
-        """
-            @BindingAdapter
-            annotation class AnyBinding {
-                companion object {
-                    @Binding
-                    val <T : Any> T.any: Any get() = this
-                }
-            }
-
-            @AnyBinding
-            fun myService(foo: @Assisted Foo) {
-            }
-            
-            @MergeComponent
-            abstract class MyComponent {
-                abstract val any: Any
-            }
-            
-            @GenerateMergeComponents
-            fun invoke() {
-            }
-        """
-    )
-
-    @Test
     fun testBindingAdapterWithFunctionInObject() = codegen(
         """
             @BindingAdapter
@@ -237,34 +186,6 @@ class BindingAdapterTest {
                 abstract val any: Any
                 
                 @Binding protected fun foo() = Foo()
-            }
-            
-            @GenerateMergeComponents
-            fun invoke() {
-            }
-        """
-    )
-
-    @Test
-    fun testBindingAdapterWithAssistedFunctionInObject() = codegen(
-        """
-            @BindingAdapter
-            annotation class AnyBinding {
-                companion object {
-                    @Binding
-                    val <T : Any> T.any: Any get() = this
-                }
-            }
-
-            object MyObject {
-                @AnyBinding
-                fun myService(foo: @Assisted Foo) {
-                }
-            }
-            
-            @MergeComponent
-            abstract class MyComponent {
-                abstract val any: Any
             }
             
             @GenerateMergeComponents

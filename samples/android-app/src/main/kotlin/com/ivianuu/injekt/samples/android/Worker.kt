@@ -22,15 +22,14 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.android.work.WorkerBinding
 
 @WorkerBinding
 class TestWorker(
-    context: @Assisted Context,
-    workerParams: @Assisted WorkerParameters,
+    context: Context,
+    workerParams: WorkerParameters,
     repo: Repo,
 ) : CoroutineWorker(context, workerParams) {
     init {

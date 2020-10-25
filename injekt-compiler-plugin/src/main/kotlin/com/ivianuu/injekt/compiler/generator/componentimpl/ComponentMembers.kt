@@ -70,8 +70,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
         val binding = owner.graph.getBinding(request)
         val callableKind = when (binding) {
             is CallableBindingNode -> {
-                if (binding.valueParameters.none { it.isAssisted })
-                    binding.callable.callableKind
+                if (binding.assistedParameters.isEmpty()) binding.callable.callableKind
                 else Callable.CallableKind.DEFAULT
             }
             else -> Callable.CallableKind.DEFAULT
@@ -225,13 +224,12 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
     private fun nullExpression(): ComponentExpression = { emit("null") }
 
     private fun callableExpression(binding: CallableBindingNode): ComponentExpression = {
-        if (binding.valueParameters.any { it.isAssisted }) {
+        if (binding.assistedParameters.isNotEmpty()) {
             emit("{ ")
-            binding.valueParameters
-                .filter { it.isAssisted }
+            binding.assistedParameters
                 .forEachIndexed { index, parameter ->
-                    emit("p$index: ${parameter.type.renderExpanded()}")
-                    if (index != binding.valueParameters.lastIndex) emit(", ")
+                    emit("p$index: ${parameter.renderExpanded()}")
+                    if (index != binding.assistedParameters.lastIndex) emit(", ")
                 }
             emitLine(" ->")
             var assistedIndex = 0
@@ -239,8 +237,8 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
             emitCallableInvocation(
                 binding.callable,
                 binding.receiver,
-                binding.valueParameters.map { parameter ->
-                    if (parameter.isAssisted) {
+                binding.callable.valueParameters.map { parameter ->
+                    if (parameter.type in binding.assistedParameters) {
                         { emit("p${assistedIndex++}") }
                     } else {
                         getBindingExpression(binding.dependencies[nonAssistedIndex++])

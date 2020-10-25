@@ -24,16 +24,13 @@ import com.ivianuu.injekt.BindingAdapter
 import com.ivianuu.injekt.ImplBinding
 import com.ivianuu.injekt.MapEntries
 import kotlin.reflect.KClass
-import kotlin.reflect.typeOf
 
 @BindingAdapter
 annotation class WorkerBinding {
     companion object {
         @MapEntries
-        inline fun <reified T : (Context, WorkerParameters) -> ListenableWorker> workerIntoMap(factory: T): Workers {
-            val workerClass =
-                typeOf<T>().arguments.last().type!!.classifier as KClass<out ListenableWorker>
-            return mapOf(workerClass to factory)
+        inline fun <reified T : ListenableWorker> workerIntoMap(noinline factory: (Context, WorkerParameters) -> T): Workers {
+            return mapOf(T::class to factory)
         }
     }
 }

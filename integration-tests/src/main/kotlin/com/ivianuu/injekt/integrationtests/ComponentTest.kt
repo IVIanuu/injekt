@@ -338,7 +338,7 @@ class ComponentTest {
                 abstract val barFactory: suspend (Foo) -> Bar
                 
                 @Binding
-                protected suspend fun bar(foo: @Assisted Foo) = Bar(foo)
+                protected suspend fun bar(foo: Foo) = Bar(foo)
             }
 
             fun invoke(foo: Foo): Bar { 
@@ -358,7 +358,7 @@ class ComponentTest {
                 
                 @Binding
                 @Composable
-                protected fun bar(foo: @Assisted Foo) = Bar(foo)
+                protected fun bar(foo: Foo) = Bar(foo)
             }
 
             fun invoke(foo: Foo) { 
@@ -377,7 +377,7 @@ class ComponentTest {
                 abstract val barFactory: (Foo) -> Bar
                 
                 @Binding
-                protected fun bar(foo: @Assisted Foo) = Bar(foo)
+                protected fun bar(foo: Foo) = Bar(foo)
             }
 
             fun invoke(foo: Foo): Bar { 
@@ -389,10 +389,31 @@ class ComponentTest {
     }
 
     @Test
+    fun testComplexAssistedBindingFunction() = codegen(
+        """
+            @Component
+            abstract class BarComponent {
+                abstract val barFactory: (Foo, Int) -> Bar
+                
+                @Binding
+                protected fun bar(foo: Foo, string: String, int: Int) = Bar(foo)
+                
+                @Binding
+                protected val string = ""
+            }
+            fun invoke(foo: Foo): Bar { 
+                return component<BarComponent>().barFactory(foo, 0)
+            }
+    """
+    ) {
+        invokeSingleFile(Foo())
+    }
+
+    @Test
     fun testAssistedBindingClass() = codegen(
         """
             @Binding
-            class AnnotatedBar(foo: @Assisted Foo)
+            class AnnotatedBar(foo: Foo)
             
             @Component
             abstract class MyComponent {
@@ -1034,7 +1055,7 @@ class ComponentTest {
     @Test
     fun testAssistedBreaksCircularDependency() = codegen(
         """
-            @Binding class A(b: @Assisted B)
+            @Binding class A(b: B)
             @Binding(MyComponent::class) class B(a: (B) -> A)
             
             @Component

@@ -126,13 +126,10 @@ class BindingAdapterGenerator(
             emitLine()
             emitLine("typealias ${aliasedType.classifier.fqName.shortName()} = ${rawBindingType.render()}")
             emitLine()
-            val assistedParameters = callable.valueParameters
-                .filter { it.isAssisted }
 
-            val nonAssistedParameters = callable.valueParameters
-                .filterNot { it.isAssisted }
+            val parameters = callable.valueParameters
                 .map { valueParameter ->
-                    if ((assistedParameters.isNotEmpty() || callable.isEager) &&
+                    if (callable.isEager &&
                         valueParameter.inlineKind == ValueParameterRef.InlineKind.NONE &&
                         (!valueParameter.type.isFunction ||
                                 valueParameter.type.typeArguments.size != 1)) {
@@ -145,7 +142,7 @@ class BindingAdapterGenerator(
                     }
                 }
 
-            if (assistedParameters.isNotEmpty() || callable.isEager)
+            if (callable.isEager)
                 emitLine("@${InjektFqNames.Eager}")
             emitLine("@Binding")
 
@@ -160,7 +157,7 @@ class BindingAdapterGenerator(
             val aliasedBindingName = "${bindingAdapterNameBaseName}_aliasedBinding".asNameId()
 
             emit("inline fun $aliasedBindingName(")
-            nonAssistedParameters.forEachIndexed { index, valueParameter ->
+            parameters.forEachIndexed { index, valueParameter ->
                 val typeRef = valueParameter.type
                 if (valueParameter.inlineKind == ValueParameterRef.InlineKind.CROSSINLINE) {
                     emit("crossinline ")
@@ -171,50 +168,20 @@ class BindingAdapterGenerator(
                     emit("noinline ")
                 }
                 emit("${valueParameter.name}: ${valueParameter.type.render()}")
-                if (index != nonAssistedParameters.lastIndex) emit(", ")
+                if (index != parameters.lastIndex) emit(", ")
             }
             emit("): ${aliasedType.render()} ")
             braced {
                 emit("return ")
-                if (callable.valueParameters.any { it.isAssisted }) {
-                    emit("{ ")
-                    callable.valueParameters
-                        .filter { it.isAssisted }
-                        .forEachIndexed { index, parameter ->
-                            emit("p$index: ${parameter.type.renderExpanded()}")
-                            if (index != callable.valueParameters.lastIndex) emit(", ")
+                emitCallableInvocation(
+                    callable,
+                    null,
+                    callable.valueParameters.map { parameter ->
+                        {
+                            emit(parameter.name)
                         }
-                    emitLine(" ->")
-                    var assistedIndex = 0
-                    var nonAssistedIndex = 0
-                    emitCallableInvocation(
-                        callable,
-                        null,
-                        callable.valueParameters.map { parameter ->
-                            if (parameter.isAssisted) {
-                                { emit("p${assistedIndex++}") }
-                            } else {
-                                {
-                                    emit(parameter.name)
-                                    if (assistedParameters.isNotEmpty() || callable.isEager)
-                                        emit("()")
-                                }
-                            }
-                        }
-                    )
-                    emitLine()
-                    emitLine("}")
-                } else {
-                    emitCallableInvocation(
-                        callable,
-                        null,
-                        callable.valueParameters.map { parameter ->
-                            {
-                                emit(parameter.name)
-                            }
-                        }
-                    )
-                }
+                    }
+                )
             }
             callables += Callable(
                 packageFqName = packageName,
@@ -222,13 +189,13 @@ class BindingAdapterGenerator(
                 name = aliasedBindingName,
                 type = aliasedType,
                 typeParameters = emptyList(),
-                valueParameters = nonAssistedParameters,
+                valueParameters = parameters,
                 targetComponent = null,
                 contributionKind = Callable.ContributionKind.BINDING,
                 isCall = true,
                 callableKind = callableKind,
                 bindingAdapters = emptyList(),
-                isEager = assistedParameters.isNotEmpty() || callable.isEager,
+                isEager = callable.isEager,
                 isExternal = false,
                 isInline = true
             )
@@ -260,7 +227,7 @@ class BindingAdapterGenerator(
                 .forEach { (bindingAdapter, callable) ->
                     when (callable.contributionKind) {
                         Callable.ContributionKind.BINDING -> {
-                            if (assistedParameters.isNotEmpty() || callable.isEager)
+                            if (callable.isEager)
                                 emitLine("@${InjektFqNames.Eager}")
                             emit("@Binding")
                             if (callable.targetComponent != null) {
@@ -300,41 +267,15 @@ class BindingAdapterGenerator(
                     emit("): ${callable.type.render()} ")
                     braced {
                         emit("return ")
-                        if (callable.valueParameters.any { it.isAssisted }) {
-                            emit("{ ")
-                            callable.valueParameters
-                                .filter { it.isAssisted }
-                                .forEachIndexed { index, parameter ->
-                                    emit("p$index: ${parameter.type.renderExpanded()}")
-                                    if (index != callable.valueParameters.lastIndex) emit(", ")
+                        emitCallableInvocation(
+                            callable,
+                            { emit("${bindingAdapter.fqNameSafe}") },
+                            callable.valueParameters.map { parameter ->
+                                {
+                                    emit(parameter.name)
                                 }
-                            emitLine(" ->")
-                            var assistedIndex = 0
-                            var nonAssistedIndex = 0
-                            emitCallableInvocation(
-                                callable,
-                                { emit("${bindingAdapter.fqNameSafe}") },
-                                callable.valueParameters.map { parameter ->
-                                    if (parameter.isAssisted) {
-                                        { emit("p${assistedIndex++}") }
-                                    } else {
-                                        { emit(parameter.name) }
-                                    }
-                                }
-                            )
-                            emitLine()
-                            emitLine("}")
-                        } else {
-                            emitCallableInvocation(
-                                callable,
-                                { emit("${bindingAdapter.fqNameSafe}") },
-                                callable.valueParameters.map { parameter ->
-                                    {
-                                        emit(parameter.name)
-                                    }
-                                }
-                            )
-                        }
+                            }
+                        )
                     }
                     callables += Callable(
                         packageFqName = packageName,

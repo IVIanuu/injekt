@@ -46,7 +46,6 @@ data class Callable(
 data class ValueParameterRef(
     val type: TypeRef,
     val isExtensionReceiver: Boolean = false,
-    val isAssisted: Boolean = false,
     val inlineKind: InlineKind,
     val name: Name,
 ) {

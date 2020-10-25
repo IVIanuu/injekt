@@ -181,14 +181,18 @@ class FunBindingGenerator(
                         if (index != assistedValueParameters.lastIndex) emit(", ")
                     }
                 emitLine(" ->")
-                var assistedIndex = 0
                 val callable = declarationStore.callableForDescriptor(descriptor)
+                var assistedIndex = 0
                 emitCallableInvocation(
                     callable,
                     null,
                     callable.valueParameters.map { parameter ->
                         when {
-                            parameter.isAssisted -> {
+                            (descriptor.allParameters.single {
+                                (it == descriptor.extensionReceiverParameter &&
+                                        parameter.name == "_receiver".asNameId()) ||
+                                        it.name == parameter.name
+                            }.type.hasAnnotation(InjektFqNames.Assisted)) -> {
                                 {
                                     if (parameter.isExtensionReceiver) {
                                         emit("this")
@@ -248,7 +252,6 @@ class FunBindingGenerator(
                             .toProviderType()
                             .substitute(bindingCallableSubstitutionMap),
                         isExtensionReceiver = false,
-                        isAssisted = it.type.hasAnnotation(InjektFqNames.Assisted),
                         inlineKind = ValueParameterRef.InlineKind.CROSSINLINE,
                         name = if (it == descriptor.extensionReceiverParameter)
                             "_receiver".asNameId() else it.name
