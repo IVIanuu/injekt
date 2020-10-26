@@ -17,32 +17,11 @@
 package com.ivianuu.injekt.samples.android
 
 import android.app.Application
-import androidx.compose.runtime.Composable
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.BindingAdapter
 import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.merge.ApplicationComponent
 import com.ivianuu.injekt.merge.GenerateMergeComponents
 import com.ivianuu.injekt.merge.MergeInto
 import com.ivianuu.injekt.merge.mergeComponent
-
-interface Store<S, A>
-
-@BindingAdapter
-annotation class StoreSupport {
-    companion object {
-
-        @Binding
-        fun <T : @Composable () -> Unit, SS, SA> decorate0(
-            value: @Composable (SS, (SA) -> Unit) -> Unit,
-            store: Store<SS, SA>
-        ): T {
-            return (@Composable {
-            }) as T
-        }
-
-    }
-}
 
 @GenerateMergeComponents
 class App : Application() {
