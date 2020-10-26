@@ -172,12 +172,14 @@ class BindingGraph(
     }
 
     fun getBinding(request: BindingRequest): BindingNode {
-        var binding = getBindingOrNull(request)
+        val finalRequest = if (request.type.isInlineProvider)
+            request.copy(type = request.type.typeArguments.single()) else request
+        var binding = getBindingOrNull(finalRequest)
         if (binding != null) return binding
 
-        if (request.type.isMarkedNullable) {
-            binding = NullBindingNode(request.type, owner)
-            resolvedBindings[request.type] = binding
+        if (finalRequest.type.isMarkedNullable) {
+            binding = NullBindingNode(finalRequest.type, owner)
+            resolvedBindings[finalRequest.type] = binding
             return binding
         }
 
@@ -187,8 +189,8 @@ class BindingGraph(
                 fun indent() {
                     indendation = "$indendation    "
                 }
-                appendLine("No binding found for '${request.type.render()}' in '${componentType.render()}':")
-                appendLine("${request.origin.orUnknown()} requires '${request.type.render()}'")
+                appendLine("No binding found for '${finalRequest.type.render()}' in '${componentType.render()}':")
+                appendLine("${finalRequest.origin.orUnknown()} requires '${finalRequest.type.render()}'")
                 chain.forEach {
                     appendLine("chain $it" + it?.origin.orUnknown())
                 }
@@ -254,9 +256,7 @@ class BindingGraph(
         return null
     }
 
-    private fun getExplicitBindingsForType(
-        request: BindingRequest
-    ): List<BindingNode> = buildList<BindingNode> {
+    private fun getExplicitBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
         this += moduleBindingCallables
             .filter { request.type.isAssignable(it.callable.type) }
             .map { (callable, receiver) ->
@@ -269,8 +269,7 @@ class BindingGraph(
                         .map {
                             BindingRequest(
                                 it.type.substitute(substitutionMap),
-                                callable.fqName.child(it.name),
-                                callable.isInline && (it.type.isFunction || it.type.isSuspendFunction)
+                                callable.fqName.child(it.name)
                             )
                         },
                     origin = callable.fqName,
@@ -307,8 +306,7 @@ class BindingGraph(
                                 .map {
                                     BindingRequest(
                                         it.type.substitute(substitutionMap),
-                                        callable.fqName.child(it.name),
-                                        callable.isInline
+                                        callable.fqName.child(it.name)
                                     )
                                 },
                             assistedParameters = assistedParameters,
@@ -339,8 +337,7 @@ class BindingGraph(
                             .map {
                                 BindingRequest(
                                     it.type.substitute(substitutionMap),
-                                    callable.fqName.child(it.name),
-                                    callable.isInline && (it.type.isFunction || it.type.isSuspendFunction)
+                                    callable.fqName.child(it.name)
                                 )
                             },
                         assistedParameters = emptyList(),
@@ -378,8 +375,7 @@ class BindingGraph(
                                     .map {
                                         BindingRequest(
                                             it.type.substitute(substitutionMap),
-                                            callable.fqName.child(it.name),
-                                            callable.isInline
+                                            callable.fqName.child(it.name)
                                         )
                                     },
                                 assistedParameters = assistedParameters,
@@ -444,8 +440,7 @@ class BindingGraph(
                 dependencies = listOf(
                     BindingRequest(
                         request.type.typeArguments.single(),
-                        FqName.ROOT, // todo
-                        request.isInline
+                        FqName.ROOT // todo
                     )
                 ),
                 FqName.ROOT // todo
@@ -465,8 +460,7 @@ class BindingGraph(
                         .map {
                             BindingRequest(
                                 it.type.substitute(substitutionMap),
-                                callable.fqName.child(it.name),
-                                callable.isInline && (it.type.isFunction || it.type.isSuspendFunction)
+                                callable.fqName.child(it.name)
                             )
                         },
                     assistedParameters = emptyList(),
@@ -504,8 +498,7 @@ class BindingGraph(
                                 .map {
                                     BindingRequest(
                                         it.type.substitute(substitutionMap),
-                                        callable.fqName.child(it.name),
-                                        callable.isInline
+                                        callable.fqName.child(it.name)
                                     )
                                 },
                             assistedParameters = assistedParameters,
@@ -582,8 +575,7 @@ class BindingCollections(
                                 .map {
                                     BindingRequest(
                                         it.type.substitute(substitutionMap),
-                                        entry.fqName.child(it.name),
-                                        false
+                                        entry.fqName.child(it.name)
                                     )
                                 }
                         },
@@ -601,8 +593,7 @@ class BindingCollections(
                                 .map {
                                     BindingRequest(
                                         it.type.substitute(substitutionMap),
-                                        element.fqName.child(it.name),
-                                        false
+                                        element.fqName.child(it.name)
                                     )
                                 }
                         },

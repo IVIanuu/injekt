@@ -18,6 +18,7 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
 import org.jetbrains.kotlin.name.FqName
@@ -266,5 +267,71 @@ class FunBindingTest {
         """
     )
 
-    // todo test with composable
+    @Test
+    fun testFunBindingDependencyGetsCreatedOnInvocation() = codegen(
+        """
+            @FunBinding
+            fun function(foo: Foo) {
+            }
+
+            var fooCalled = false
+            @Binding
+            fun foo() = Foo().also { fooCalled = true }
+            
+            @Component
+            abstract class TestComponent {
+                abstract val function: function
+            }
+            
+            fun invoke() {
+                val component = component<TestComponent>()
+                junit.framework.Assert.assertFalse(fooCalled)
+                val function = component.function
+                junit.framework.Assert.assertFalse(fooCalled)
+                function()
+                junit.framework.Assert.assertTrue(fooCalled)
+            }
+        """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testFunBindingWithBindingAdapterDependencyGetsCreatedOnInvocation() = codegen(
+        """
+            @BindingAdapter
+            annotation class MyAdapter {
+                companion object {
+                    @Binding
+                    fun <T> alias(value: T):T = value
+                }
+            }
+            
+            @MyAdapter
+            @FunBinding
+            fun function(foo: Foo) {
+            }
+
+            var fooCalled = false
+            @Binding
+            fun foo() = Foo().also { fooCalled = true }
+            
+            @Component
+            abstract class TestComponent {
+                abstract val function: function
+            }
+            
+            fun invoke() {
+                val component = component<TestComponent>()
+                junit.framework.Assert.assertFalse(fooCalled)
+                val function = component.function
+                junit.framework.Assert.assertFalse(fooCalled)
+                function()
+                junit.framework.Assert.assertTrue(fooCalled)
+            }
+        """
+    ) {
+        invokeSingleFile()
+    }
+
 }

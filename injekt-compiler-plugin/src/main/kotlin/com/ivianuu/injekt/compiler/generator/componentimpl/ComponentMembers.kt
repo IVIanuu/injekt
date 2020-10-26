@@ -134,8 +134,6 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                 }
             })
 
-        if (binding is ProviderBindingNode && request.isInline) return rawExpression
-
         val requestForType = owner.requests
             .firstOrNull { it.type == binding.type }
 
@@ -183,8 +181,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                             getBindingExpression(
                                 BindingRequest(
                                     it.type,
-                                    callable.fqName.child(it.name),
-                                    false
+                                    callable.fqName.child(it.name)
                                 )
                             )
                         }
@@ -209,8 +206,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                             getBindingExpression(
                                 BindingRequest(
                                     it.type,
-                                    callable.fqName.child(it.name),
-                                    false
+                                    callable.fqName.child(it.name)
                                 )
                             )
                         }
@@ -241,7 +237,14 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                     if (parameter.type in binding.assistedParameters) {
                         { emit("p${assistedIndex++}") }
                     } else {
-                        getBindingExpression(binding.dependencies[nonAssistedIndex++])
+                        val raw = getBindingExpression(binding.dependencies[nonAssistedIndex++])
+                        if (parameter.type.isInlineProvider) {
+                            {
+                                emit("{ ")
+                                raw()
+                                emit(" }")
+                            }
+                        } else raw
                     }
                 }
             )
@@ -251,7 +254,16 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
             emitCallableInvocation(
                 binding.callable,
                 binding.receiver,
-                binding.dependencies.map { getBindingExpression(it) }
+                binding.callable.valueParameters.zip(binding.dependencies).map { (parameter, request) ->
+                    val raw = getBindingExpression(request)
+                    if (parameter.type.isInlineProvider) {
+                        {
+                            emit("{ ")
+                            raw()
+                            emit(" }")
+                        }
+                    } else raw
+                }
             )
         }
     }

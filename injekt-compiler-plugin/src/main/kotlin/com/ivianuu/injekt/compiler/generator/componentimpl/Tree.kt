@@ -223,8 +223,4 @@ class NullBindingNode(
         get() = false
 }
 
-data class BindingRequest(
-    val type: TypeRef,
-    val origin: FqName,
-    val isInline: Boolean
-)
+data class BindingRequest(val type: TypeRef, val origin: FqName)

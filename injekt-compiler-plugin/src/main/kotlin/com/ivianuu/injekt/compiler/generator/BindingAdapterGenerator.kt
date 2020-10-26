@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.componentimpl.emitCallableInvocation
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
@@ -36,7 +35,6 @@ class BindingAdapterGenerator(
     private val bindingContext: BindingContext,
     private val declarationStore: DeclarationStore,
     private val fileManager: FileManager,
-    private val moduleDescriptor: ModuleDescriptor,
     private val typeTranslator: TypeTranslator
 ) : Generator {
 
@@ -111,12 +109,6 @@ class BindingAdapterGenerator(
 
         val callables = mutableListOf<Callable>()
 
-        fun TypeRef.toProviderType(): TypeRef {
-            return moduleDescriptor.builtIns.getFunction(0)
-                .let { typeTranslator.toTypeRef(it.defaultType, file) }
-                .typeWith(listOf(this))
-        }
-
         val code = buildCodeString {
             emitLine("package $packageName")
             emitLine("import ${callable.fqName}")
@@ -134,7 +126,7 @@ class BindingAdapterGenerator(
                         (!valueParameter.type.isFunction ||
                                 valueParameter.type.typeArguments.size != 1)) {
                         valueParameter.copy(
-                            type = valueParameter.type.toProviderType(),
+                            type = valueParameter.type,
                             inlineKind = ValueParameterRef.InlineKind.CROSSINLINE
                         )
                     } else {

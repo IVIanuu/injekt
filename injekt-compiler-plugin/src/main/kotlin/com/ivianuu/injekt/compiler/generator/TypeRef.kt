@@ -60,6 +60,7 @@ sealed class TypeRef {
     abstract val isMergeChildComponent: Boolean
     abstract val isChildComponent: Boolean
     abstract val isComposable: Boolean
+    abstract val isInlineProvider: Boolean
     abstract val superTypes: List<TypeRef>
     abstract val expandedType: TypeRef?
     private val typeName by unsafeLazy { uniqueTypeName(includeNullability = false) }
@@ -108,6 +109,9 @@ class KotlinTypeRef(
         kotlinType.hasAnnotation(InjektFqNames.Composable) &&
             kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
     }
+    override val isInlineProvider: Boolean by unsafeLazy {
+        kotlinType.hasAnnotation(InjektFqNames.InlineProvider)
+    }
     override val superTypes: List<TypeRef> by unsafeLazy {
         kotlinType.constructor.supertypes.map {
             typeTranslator.toTypeRef(it,
@@ -155,6 +159,7 @@ class SimpleTypeRef(
     override val isMergeChildComponent: Boolean = false,
     override val isChildComponent: Boolean = false,
     override val isComposable: Boolean = false,
+    override val isInlineProvider: Boolean = false,
     override val superTypes: List<TypeRef> = emptyList(),
     override val expandedType: TypeRef? = null,
 ) : TypeRef() {
@@ -183,6 +188,7 @@ fun TypeRef.copy(
     isMergeChildComponent: Boolean = this.isMergeChildComponent,
     isChildComponent: Boolean = this.isChildComponent,
     isComposable: Boolean = this.isComposable,
+    isInlineProvider: Boolean = this.isInlineProvider,
     superTypes: List<TypeRef> = this.superTypes,
     expandedType: TypeRef? = this.expandedType,
 ) = SimpleTypeRef(
@@ -199,6 +205,7 @@ fun TypeRef.copy(
     isMergeChildComponent,
     isChildComponent,
     isComposable,
+    isInlineProvider,
     superTypes,
     expandedType
 )
@@ -215,7 +222,8 @@ fun TypeRef.render(): String {
     return buildString {
         val annotations = listOfNotNull(
             if (isComposable) "@${InjektFqNames.Composable}" else null,
-            if (isExtensionFunction) "@ExtensionFunctionType" else null
+            if (isExtensionFunction) "@ExtensionFunctionType" else null,
+            if (isInlineProvider) "@${InjektFqNames.InlineProvider}" else null,
         )
         if (annotations.isNotEmpty()) {
             annotations.forEach { annotation ->
