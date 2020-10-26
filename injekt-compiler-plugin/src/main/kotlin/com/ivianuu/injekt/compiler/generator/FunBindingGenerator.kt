@@ -96,6 +96,7 @@ class FunBindingGenerator(
         val code = buildCodeString {
             emitLine("package $packageFqName")
             emitLine("import ${InjektFqNames.Binding}")
+            emitLine("import ${InjektFqNames.FunBinding}")
             emitLine()
             val returnType = typeTranslator.toTypeRef(descriptor.returnType!!, descriptor)
 
@@ -137,6 +138,7 @@ class FunBindingGenerator(
 
             emitLine("@${InjektFqNames.Eager}")
             emitLine("@Binding")
+            emitLine("@FunBinding")
             emit("inline fun ")
             if (descriptor.typeParameters.isNotEmpty()) {
                 emit("<")
