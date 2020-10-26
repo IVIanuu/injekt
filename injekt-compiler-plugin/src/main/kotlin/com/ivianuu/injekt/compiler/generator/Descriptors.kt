@@ -33,7 +33,8 @@ data class Callable(
     val bindingAdapters: List<FqName>,
     val isEager: Boolean,
     val isExternal: Boolean,
-    val isInline: Boolean
+    val isInline: Boolean,
+    val isFunBinding: Boolean
 ) {
     enum class ContributionKind {
         BINDING, MAP_ENTRIES, SET_ELEMENTS, MODULE

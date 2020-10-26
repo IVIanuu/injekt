@@ -141,7 +141,8 @@ class ImplBindingGenerator(
             bindingAdapters = emptyList(),
             isEager = false,
             isExternal = false,
-            isInline = true
+            isInline = true,
+            isFunBinding = false
         )
         declarationStore.addGeneratedCallable(implCallable, descriptor.findPsi()!!.containingFile as KtFile)
         declarationStore.addGeneratedInternalIndex(
@@ -171,7 +172,8 @@ class ImplBindingGenerator(
             bindingAdapters = emptyList(),
             isEager = false,
             isExternal = false,
-            isInline = true
+            isInline = true,
+            isFunBinding = false
         )
 
         declarationStore.addGeneratedCallable(superTypeCallable, descriptor.findPsi()!!.containingFile as KtFile)

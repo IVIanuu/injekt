@@ -345,7 +345,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 .map { it.fqName!! }).distinct(),
             isEager = descriptor.hasAnnotation(InjektFqNames.Eager),
             isExternal = owner is DeserializedDescriptor,
-            isInline = descriptor.isInline
+            isInline = descriptor.isInline,
+            isFunBinding = descriptor.hasAnnotation(InjektFqNames.FunBinding)
         )
     }
 

@@ -265,7 +265,8 @@ class FunBindingGenerator(
                 .map { it.fqName!! },
             isEager = true,
             isExternal = false,
-            isInline = true
+            isInline = true,
+            isFunBinding = true
         )
         declarationStore.addGeneratedCallable(bindingCallable, descriptor.findPsi()!!.containingFile as KtFile)
         declarationStore.addGeneratedInternalIndex(

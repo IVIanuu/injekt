@@ -197,7 +197,8 @@ class BindingAdapterGenerator(
                 bindingAdapters = emptyList(),
                 isEager = callable.isEager,
                 isExternal = false,
-                isInline = true
+                isInline = true,
+                isFunBinding = false
             )
             bindingAdapters
                 .flatMap { bindingAdapter ->
@@ -292,7 +293,8 @@ class BindingAdapterGenerator(
                         bindingAdapters = emptyList(),
                         isEager = callable.isEager,
                         isExternal = false,
-                        isInline = true
+                        isInline = true,
+                        isFunBinding = false
                     )
                 }
         }
