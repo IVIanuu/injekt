@@ -348,4 +348,29 @@ class FunBindingTest {
         """
     )
 
+    @Test
+    fun testFunBindingWithBindingAdapterWithNonExplicitAssistedParameters() = codegen(
+        """
+            @BindingAdapter
+            annotation class MyAdapter {
+                companion object {
+                    @Binding
+                    fun <T, P1> withoutFooArg(value: (P1) -> T): T {
+                        return value(Foo() as P1)
+                    }
+                }
+            }
+
+            @MyAdapter
+            @FunBinding
+            fun function(foo: Foo) {
+            }
+            
+            @Component
+            abstract class TestComponent {
+                abstract val function: function
+            }
+        """
+    )
+
 }

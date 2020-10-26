@@ -293,7 +293,7 @@ class BindingGraph(
                     .filter { callableWithReceiver ->
                         assistedParameters.all { assistedParameterType ->
                             callableWithReceiver.callable.valueParameters
-                                .any { assistedParameterType.isAssignable(it.type) }
+                                .any { assistedParameterType.isAssignable(it.type.nonInlined()) }
                         }
                     }
                     .map { (callable, receiver) ->
@@ -303,10 +303,10 @@ class BindingGraph(
                             rawType = callable.type,
                             owner = owner,
                             dependencies = callable.valueParameters
-                                .filter { it.type !in assistedParameters }
+                                .filter { it.type.nonInlined() !in assistedParameters }
                                 .map {
                                     BindingRequest(
-                                        it.type.substitute(substitutionMap),
+                                        it.type.nonInlined().substitute(substitutionMap),
                                         callable.fqName.child(it.name)
                                     )
                                 },
@@ -362,7 +362,7 @@ class BindingGraph(
                         .filter { callableWithReceiver ->
                             assistedParameters.all { assistedParameterType ->
                                 callableWithReceiver.valueParameters
-                                    .any { assistedParameterType.isAssignable(it.type) }
+                                    .any { assistedParameterType.isAssignable(it.type.nonInlined()) }
                             }
                         }
                         .map { callable ->
@@ -372,10 +372,10 @@ class BindingGraph(
                                 rawType = callable.type,
                                 owner = owner,
                                 dependencies = callable.valueParameters
-                                    .filter { it.type !in assistedParameters }
+                                    .filter { it.type.nonInlined() !in assistedParameters }
                                     .map {
                                         BindingRequest(
-                                            it.type.substitute(substitutionMap),
+                                            it.type.nonInlined().substitute(substitutionMap),
                                             callable.fqName.child(it.name)
                                         )
                                     },

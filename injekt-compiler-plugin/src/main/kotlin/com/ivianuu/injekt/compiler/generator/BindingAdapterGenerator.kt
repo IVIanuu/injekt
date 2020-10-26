@@ -204,7 +204,7 @@ class BindingAdapterGenerator(
                             val substitutionMap = buildMap<ClassifierRef, TypeRef> {
                                 this += mapOf(adapterCallable.typeParameters.first() to aliasedType)
                                 this += adapterCallable.typeParameters.drop(1)
-                                    .zip(callable.valueParameters.map { it.type })
+                                    .zip(callable.valueParameters.map { it.type.nonInlined() })
                             }
                             adapterCallable.copy(
                                 type = adapterCallable.type
