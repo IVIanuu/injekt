@@ -206,19 +206,19 @@ class BindingAdapterGenerator(
                             .defaultType
                     ).callables
                         .filter { it.contributionKind != null }
-                        .map { callable ->
-                            val substitutionMap = mapOf(
-                                (callable.typeParameters.getOrNull(0)
-                                    ?: error("Unexpected callable $callable")) to aliasedType
-                            )
-                            callable.copy(
-                                type = callable.type
+                        .map { adapterCallable ->
+                            // todo find a way to dynamically resolve a type parameters
+                            val substitutionMap = buildMap<ClassifierRef, TypeRef> {
+                                this += mapOf(adapterCallable.typeParameters.first() to aliasedType)
+                                this += adapterCallable.typeParameters.drop(1)
+                                    .zip(callable.valueParameters.map { it.type })
+                            }
+                            adapterCallable.copy(
+                                type = adapterCallable.type
                                     .substitute(substitutionMap)
                                     .substitute(mapOf(aliasedType.classifier to rawBindingType)),
-                                valueParameters = callable.valueParameters.map {
-                                    it.copy(
-                                        type = it.type.substitute(substitutionMap)
-                                    )
+                                valueParameters = adapterCallable.valueParameters.map {
+                                    it.copy(type = it.type.substitute(substitutionMap))
                                 }
                             )
                         }
