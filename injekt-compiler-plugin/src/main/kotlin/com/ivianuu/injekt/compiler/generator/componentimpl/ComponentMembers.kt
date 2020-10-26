@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.asNameId
+import com.ivianuu.injekt.compiler.generator.nonInlined
 import com.ivianuu.injekt.compiler.generator.renderExpanded
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.name.FqName
@@ -234,8 +235,12 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                 binding.callable,
                 binding.receiver,
                 binding.callable.valueParameters.map { parameter ->
-                    if (parameter.type in binding.assistedParameters) {
-                        { emit("p${assistedIndex++}") }
+                    if (parameter.type.nonInlined() in binding.assistedParameters) {
+                        {
+                            if (parameter.type.isInlineProvider) emit("{ ")
+                            emit("p${assistedIndex++}")
+                            if (parameter.type.isInlineProvider) emit(" }")
+                        }
                     } else {
                         val raw = getBindingExpression(binding.dependencies[nonAssistedIndex++])
                         if (parameter.type.isInlineProvider) {

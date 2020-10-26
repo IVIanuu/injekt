@@ -334,4 +334,18 @@ class FunBindingTest {
         invokeSingleFile()
     }
 
+    @Test
+    fun testFunBindingWithNonExplicitAssistedParameters() = codegen(
+        """
+            @FunBinding
+            fun function(foo: Foo) {
+            }
+            
+            @Component
+            abstract class TestComponent {
+                abstract val function: (Foo) -> function
+            }
+        """
+    )
+
 }

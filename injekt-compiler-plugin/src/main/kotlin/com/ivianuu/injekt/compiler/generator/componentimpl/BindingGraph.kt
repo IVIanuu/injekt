@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.isAssignable
+import com.ivianuu.injekt.compiler.generator.nonInlined
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.substitute
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
@@ -173,7 +174,7 @@ class BindingGraph(
 
     fun getBinding(request: BindingRequest): BindingNode {
         val finalRequest = if (request.type.isInlineProvider)
-            request.copy(type = request.type.typeArguments.single()) else request
+            request.copy(type = request.type.nonInlined()) else request
         var binding = getBindingOrNull(finalRequest)
         if (binding != null) return binding
 
@@ -484,7 +485,7 @@ class BindingGraph(
                     .filter { callableWithReceiver ->
                         assistedParameters.all { assistedParameterType ->
                             callableWithReceiver.valueParameters
-                                .any { assistedParameterType.isAssignable(it.type) }
+                                .any { assistedParameterType.isAssignable(it.type.nonInlined()) }
                         }
                     }
                     .map { callable ->
@@ -494,10 +495,10 @@ class BindingGraph(
                             rawType = callable.type,
                             owner = owner,
                             dependencies = callable.valueParameters
-                                .filter { it.type !in assistedParameters }
+                                .filter { it.type.nonInlined() !in assistedParameters }
                                 .map {
                                     BindingRequest(
-                                        it.type.substitute(substitutionMap),
+                                        it.type.nonInlined().substitute(substitutionMap),
                                         callable.fqName.child(it.name)
                                     )
                                 },

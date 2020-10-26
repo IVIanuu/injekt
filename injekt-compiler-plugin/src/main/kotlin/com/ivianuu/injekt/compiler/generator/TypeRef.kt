@@ -297,6 +297,14 @@ fun TypeRef.getSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRef> {
     return substitutionMap
 }
 
+fun TypeRef.nonInlined(): TypeRef {
+    return if (isInlineProvider) {
+        typeArguments.single()
+    } else {
+        copy(typeArguments = typeArguments.map { it.nonInlined() })
+    }
+}
+
 fun TypeRef.isAssignable(superType: TypeRef): Boolean {
     if (this == superType) return true
 
