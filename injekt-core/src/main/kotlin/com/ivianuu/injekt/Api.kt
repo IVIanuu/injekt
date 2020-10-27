@@ -40,6 +40,9 @@ annotation class Binding(val scopeComponent: KClass<*> = Nothing::class)
 @Target(AnnotationTarget.FUNCTION)
 annotation class FunBinding
 
+@Target(AnnotationTarget.TYPE)
+annotation class Assisted
+
 @Target(AnnotationTarget.CLASS)
 annotation class ImplBinding(val scopeComponent: KClass<*> = Nothing::class)
 
@@ -48,9 +51,6 @@ annotation class MapEntries
 
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class SetElements
-
-@Target(AnnotationTarget.TYPE)
-annotation class Assisted
 
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class BindingAdapter

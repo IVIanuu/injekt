@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.assertCompileError
 import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
@@ -372,5 +373,30 @@ class FunBindingTest {
             }
         """
     )
+
+    @Test
+    fun testInternalFunBinding() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @FunBinding
+                    internal fun function() {
+                    }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Binding 
+                    fun usage(function: function) {
+                    }
+                """
+            )
+        )
+    ) { (a, b) ->
+        a.assertOk()
+        b.assertCompileError("internal")
+    }
 
 }

@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.generator.componentimpl.emitCallableInvocatio
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
@@ -101,6 +102,10 @@ class FunBindingGenerator(
             emitLine()
             val returnType = typeTranslator.toTypeRef(descriptor.returnType!!, descriptor)
 
+            if (descriptor.visibility == Visibilities.INTERNAL) {
+                emit("internal ")
+            }
+
             emit("typealias ${descriptor.name}")
 
             if (descriptor.typeParameters.isNotEmpty()) {
@@ -140,7 +145,10 @@ class FunBindingGenerator(
             emitLine("@${InjektFqNames.Eager}")
             emitLine("@Binding")
             emitLine("@FunBinding")
-            emit("inline fun ")
+            if (descriptor.visibility != Visibilities.INTERNAL) {
+                emit("inline ")
+            }
+            emit("fun ")
             if (descriptor.typeParameters.isNotEmpty()) {
                 emit("<")
                 descriptor.typeParameters
@@ -160,7 +168,10 @@ class FunBindingGenerator(
                     val typeRef = valueParameter.type
                         .let { typeTranslator.toTypeRef(it, descriptor) }
                         .toProviderType()
-                    emit("crossinline ${if (valueParameter != descriptor.extensionReceiverParameter) valueParameter.name else "_receiver"}: " +
+                    if (descriptor.visibility != Visibilities.INTERNAL) {
+                        emit("crossinline ")
+                    }
+                    emit("${if (valueParameter != descriptor.extensionReceiverParameter) valueParameter.name else "_receiver"}: " +
                             "${typeRef.render()}")
                     if (index != nonAssistedValueParameters.lastIndex) emit(", ")
                 }
