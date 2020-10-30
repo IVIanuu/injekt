@@ -164,7 +164,6 @@ class ComponentTest {
             fun invoke(): Pair<Any, Any> {
                 return component.stringOption to component.starOption
             }
-            
         """
     ) {
         val (a1, a2) = invokeSingleFile<Pair<Any, Any>>()
