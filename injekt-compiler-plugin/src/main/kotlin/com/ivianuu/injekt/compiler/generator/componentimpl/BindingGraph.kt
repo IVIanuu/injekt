@@ -263,7 +263,7 @@ class BindingGraph(
             .map { (callable, receiver) ->
                 val substitutionMap = request.type.getSubstitutionMap(callable.type)
                 CallableBindingNode(
-                    type = request.type,
+                    type = callable.type.substitute(substitutionMap),
                     rawType = callable.type,
                     owner = owner,
                     dependencies = callable.valueParameters
@@ -299,7 +299,7 @@ class BindingGraph(
                     .map { (callable, receiver) ->
                         val substitutionMap = request.type.getSubstitutionMap(callable.type)
                         CallableBindingNode(
-                            type = request.type,
+                            type = callable.type.substitute(substitutionMap),
                             rawType = callable.type,
                             owner = owner,
                             dependencies = callable.valueParameters
@@ -331,7 +331,7 @@ class BindingGraph(
                 .map { callable ->
                     val substitutionMap = request.type.getSubstitutionMap(callable.type)
                     CallableBindingNode(
-                        type = request.type,
+                        type = callable.type.substitute(substitutionMap),
                         rawType = callable.type,
                         owner = owner,
                         dependencies = callable.valueParameters
@@ -368,7 +368,7 @@ class BindingGraph(
                         .map { callable ->
                             val substitutionMap = request.type.getSubstitutionMap(callable.type)
                             CallableBindingNode(
-                                type = request.type,
+                                type = callable.type.substitute(substitutionMap),
                                 rawType = callable.type,
                                 owner = owner,
                                 dependencies = callable.valueParameters
@@ -454,7 +454,7 @@ class BindingGraph(
             .map { callable ->
                 val substitutionMap = request.type.getSubstitutionMap(callable.type)
                 CallableBindingNode(
-                    type = request.type,
+                    type = callable.type.substitute(substitutionMap),
                     rawType = callable.type,
                     owner = owner,
                     dependencies = callable.valueParameters
@@ -491,7 +491,7 @@ class BindingGraph(
                     .map { callable ->
                         val substitutionMap = request.type.getSubstitutionMap(callable.type)
                         CallableBindingNode(
-                            type = request.type,
+                            type = callable.type.substitute(substitutionMap),
                             rawType = callable.type,
                             owner = owner,
                             dependencies = callable.valueParameters

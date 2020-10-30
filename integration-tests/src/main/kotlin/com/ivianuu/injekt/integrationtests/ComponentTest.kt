@@ -144,6 +144,34 @@ class ComponentTest {
     }
 
     @Test
+    fun testStarProjectedBindingsHasSharedIdentity() = codegen(
+        """
+            @Binding(MyComponent::class)
+            class Option<T>(val value: T)
+            
+            @Binding(MyComponent::class)
+            fun stringOption(value: String) = Option(value)
+            
+            @Component
+            abstract class MyComponent {
+                abstract val stringOption: Option<String> 
+                abstract val starOption: Option<*>
+                @Binding protected fun string() = ""
+            }
+            
+            val component = component<MyComponent>()
+            
+            fun invoke(): Pair<Any, Any> {
+                return component.stringOption to component.starOption
+            }
+            
+        """
+    ) {
+        val (a1, a2) = invokeSingleFile<Pair<Any, Any>>()
+        assertSame(a1, a2)
+    }
+
+    @Test
     fun testParentScopedBinding() = codegen(
         """
             @Component
@@ -765,6 +793,21 @@ class ComponentTest {
             @Component
             abstract class MyComponent(@Binding protected val _list: List<*>) {
                 abstract val list: List<*>
+            }
+        """
+    )
+
+    @Test
+    fun testCanRequestStarProjectedType() = codegen(
+        """ 
+            class Store<S, A>
+            
+            @Binding
+            fun stringStore() = Store<String, String>()
+            
+            @Component
+            abstract class MyComponent {
+                abstract val store: Store<String, *>
             }
         """
     )

@@ -63,6 +63,7 @@ sealed class TypeRef {
     abstract val isInlineProvider: Boolean
     abstract val superTypes: List<TypeRef>
     abstract val expandedType: TypeRef?
+    abstract val isStarProjection: Boolean
     private val typeName by unsafeLazy { uniqueTypeName(includeNullability = false) }
     override fun equals(other: Any?) = other is TypeRef && typeName == other.typeName
     override fun hashCode() = typeName.hashCode()
@@ -73,6 +74,7 @@ class KotlinTypeRef(
     val kotlinType: KotlinType,
     val typeTranslator: TypeTranslator,
     override val variance: Variance = Variance.INVARIANT,
+    override val isStarProjection: Boolean = false,
 ) : TypeRef() {
     private val finalType by unsafeLazy { kotlinType.getAbbreviation() ?: kotlinType.prepare() }
     override val classifier: ClassifierRef by unsafeLazy {
@@ -127,6 +129,7 @@ class KotlinTypeRef(
             typeTranslator.toTypeRef(it.type,
                 finalType.constructor.declarationDescriptor,
                 it.projectionKind,
+                it.isStarProjection,
                 false)
         }
     }
@@ -162,6 +165,7 @@ class SimpleTypeRef(
     override val isInlineProvider: Boolean = false,
     override val superTypes: List<TypeRef> = emptyList(),
     override val expandedType: TypeRef? = null,
+    override val isStarProjection: Boolean = false
 ) : TypeRef() {
     init {
         check(typeArguments.size == classifier.typeParameters.size) {
@@ -191,6 +195,7 @@ fun TypeRef.copy(
     isInlineProvider: Boolean = this.isInlineProvider,
     superTypes: List<TypeRef> = this.superTypes,
     expandedType: TypeRef? = this.expandedType,
+    isStarProjection: Boolean = this.isStarProjection
 ) = SimpleTypeRef(
     classifier,
     isMarkedNullable,
@@ -207,7 +212,8 @@ fun TypeRef.copy(
     isComposable,
     isInlineProvider,
     superTypes,
-    expandedType
+    expandedType,
+    isStarProjection
 )
 
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
@@ -231,19 +237,23 @@ fun TypeRef.render(): String {
                 append(" ")
             }
         }
-        if (classifier.isTypeParameter) append(classifier.fqName.shortName())
-        else append(classifier.fqName)
+        when {
+            classifier.isTypeParameter -> append(classifier.fqName.shortName())
+            isStarProjection -> append("*")
+            else -> append(classifier.fqName)
+        }
         if (typeArguments.isNotEmpty()) {
             append("<")
             typeArguments.forEachIndexed { index, typeArgument ->
-                if (typeArgument.variance != Variance.INVARIANT)
+                if (typeArgument.variance != Variance.INVARIANT &&
+                        !typeArgument.isStarProjection)
                     append("${typeArgument.variance.label} ")
                 append(typeArgument.render())
                 if (index != typeArguments.lastIndex) append(", ")
             }
             append(">")
         }
-        if (isMarkedNullable) append("?")
+        if (isMarkedNullable && !isStarProjection) append("?")
     }
 }
 
@@ -254,7 +264,8 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
         return buildString {
             if (isComposable) append("composable_")
             // if (includeNullability && isMarkedNullable) append("nullable_")
-            append(classifier.fqName.pathSegments().joinToString("_") { it.asString() })
+            if (isStarProjection) append("star")
+            else append(classifier.fqName.pathSegments().joinToString("_") { it.asString() })
             if (includeArguments) {
                 typeArguments.forEachIndexed { index, typeArgument ->
                     if (index == 0) append("_")
@@ -283,7 +294,7 @@ fun TypeRef.getSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRef> {
         thisType: TypeRef,
         baseType: TypeRef,
     ) {
-        if (baseType.classifier.isTypeParameter) {
+        if (baseType.classifier.isTypeParameter && baseType == baseType.classifier.defaultType) {
             substitutionMap[baseType.classifier] = thisType
         } else {
             thisType.typeArguments.zip(baseType.typeArguments).forEach {
@@ -308,7 +319,10 @@ fun TypeRef.nonInlined(): TypeRef {
 fun TypeRef.isAssignable(superType: TypeRef): Boolean {
     if (this == superType) return true
 
-    if (superType.classifier.isTypeParameter) {
+    if ((isStarProjection && !superType.classifier.isTypeParameter) ||
+        (superType.isStarProjection && !classifier.isTypeParameter)) return true
+
+    if (superType.classifier.isTypeParameter && !isStarProjection) {
         return superType.classifier.superTypes.all { upperBound ->
             isSubTypeOf(upperBound)
         }

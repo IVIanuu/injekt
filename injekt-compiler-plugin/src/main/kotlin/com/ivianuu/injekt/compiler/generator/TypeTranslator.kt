@@ -17,7 +17,12 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
-import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -54,23 +59,26 @@ class TypeTranslator(
     fun toTypeRef2(
         type: KotlinType,
         variance: Variance = Variance.INVARIANT,
+        isStarProjection: Boolean = false,
         fixType: Boolean = true
-    ): TypeRef = toTypeRef(type, null as? KtFile, variance, fixType)
+    ): TypeRef = toTypeRef(type, null as? KtFile, variance, isStarProjection, fixType)
 
     fun toTypeRef(
         type: KotlinType,
         file: KtFile?,
         variance: Variance = Variance.INVARIANT,
+        isStarProjection: Boolean = false,
         fixType: Boolean = true
-    ): TypeRef = KotlinTypeRef(type, this, variance)
+    ): TypeRef = KotlinTypeRef(type, this, variance, isStarProjection)
         .let { if (fixType) fixType(it, file) else it }
 
     fun toTypeRef(
         type: KotlinType,
         fromDescriptor: DeclarationDescriptor?,
         variance: Variance = Variance.INVARIANT,
+        isStarProjection: Boolean = false,
         fixType: Boolean = true
-    ): TypeRef = toTypeRef(type, fromDescriptor?.findPsi()?.containingFile as? KtFile, variance, fixType)
+    ): TypeRef = toTypeRef(type, fromDescriptor?.findPsi()?.containingFile as? KtFile, variance, isStarProjection, fixType)
 
     fun fixType(type: TypeRef, file: KtFile?): TypeRef {
         if (type is KotlinTypeRef) {
