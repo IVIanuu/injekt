@@ -322,4 +322,22 @@ class BindingAdapterTest {
         it.last().invokeSingleFile()
     }
 
+    @Test
+    fun testBindingAdapterWithFunctionTypeAlias() = codegen(
+        """
+            @BindingAdapter
+            annotation class MyAdapter {
+                companion object {
+                    @Binding
+                    fun <T : () -> Unit> bind(instance: T): T = instance
+                }
+            }
+            
+            typealias MyFunction = () -> Unit
+            
+            @MyAdapter
+            fun myFunction(): MyFunction = {}
+        """
+    )
+
 }

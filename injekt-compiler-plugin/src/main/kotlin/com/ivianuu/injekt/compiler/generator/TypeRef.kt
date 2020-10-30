@@ -364,3 +364,6 @@ fun TypeRef.isSubTypeOf(superType: TypeRef): Boolean {
         return true
     return superTypes.any { it.isSubTypeOf(superType) }
 }
+
+val TypeRef.fullyExpandedType: TypeRef
+    get() = expandedType?.fullyExpandedType ?: this

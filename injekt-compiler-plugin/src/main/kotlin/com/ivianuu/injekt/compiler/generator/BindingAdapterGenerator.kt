@@ -153,10 +153,10 @@ class BindingAdapterGenerator(
                 val typeRef = valueParameter.type
                 if (valueParameter.inlineKind == ValueParameterRef.InlineKind.CROSSINLINE) {
                     emit("crossinline ")
-                } else if (((typeRef.isFunction || typeRef.isSuspendFunction) ||
-                            (typeRef.expandedType?.isFunction == true || typeRef.expandedType?.isSuspendFunction == true) ||
-                            declarationStore.generatedClassifierFor(typeRef.classifier.fqName) != null) ||
-                    (typeRef.expandedType?.let { declarationStore.generatedClassifierFor(it.classifier.fqName) }) != null) {
+                }  else if (typeRef.fullyExpandedType.isFunction || typeRef.fullyExpandedType.isSuspendFunction ||
+                    declarationStore.generatedClassifierFor(typeRef.classifier.fqName) != null ||
+                    declarationStore.generatedClassifierFor(typeRef.fullyExpandedType.classifier.fqName) != null ||
+                    (callable.isFunBinding && typeRef == aliasedType)) {
                     emit("noinline ")
                 }
                 emit("${valueParameter.name}: ${valueParameter.type.render()}")
@@ -217,24 +217,24 @@ class BindingAdapterGenerator(
                         }
                         .map { bindingAdapter to it }
                 }
-                .forEach { (bindingAdapter, callable) ->
-                    when (callable.contributionKind) {
+                .forEach { (bindingAdapter, bindingAdapterCallable) ->
+                    when (bindingAdapterCallable.contributionKind) {
                         Callable.ContributionKind.BINDING -> {
-                            if (callable.isEager)
+                            if (bindingAdapterCallable.isEager)
                                 emitLine("@${InjektFqNames.Eager}")
                             emit("@Binding")
-                            if (callable.targetComponent != null) {
-                                emitLine("${callable.targetComponent.classifier.fqName}")
+                            if (bindingAdapterCallable.targetComponent != null) {
+                                emitLine("${bindingAdapterCallable.targetComponent.classifier.fqName}")
                             }
                             emitLine()
                         }
                         Callable.ContributionKind.MAP_ENTRIES -> emitLine("@${InjektFqNames.MapEntries}")
                         Callable.ContributionKind.SET_ELEMENTS -> emitLine("@${InjektFqNames.SetElements}")
                     }
-                    val functionName = callable.fqName.pathSegments().joinToString("_") +
+                    val functionName = bindingAdapterCallable.fqName.pathSegments().joinToString("_") +
                             "_${bindingAdapterNameBaseName}"
 
-                    when (callable.callableKind) {
+                    when (bindingAdapterCallable.callableKind) {
                         Callable.CallableKind.DEFAULT -> {}
                         Callable.CallableKind.SUSPEND -> emit("suspend ")
                         Callable.CallableKind.COMPOSABLE -> emitLine("@${InjektFqNames.Composable}")
@@ -242,28 +242,29 @@ class BindingAdapterGenerator(
 
                     emit("inline fun $functionName(")
 
-                    callable.valueParameters
+                    bindingAdapterCallable.valueParameters
                         .forEachIndexed { index, valueParameter ->
                             val typeRef = valueParameter.type
                             if (valueParameter.inlineKind == ValueParameterRef.InlineKind.CROSSINLINE) {
                                 emit("crossinline ")
-                            } else if (((typeRef.isFunction || typeRef.isSuspendFunction) ||
-                                        (typeRef.expandedType?.isFunction == true || typeRef.expandedType?.isSuspendFunction == true) ||
-                                        declarationStore.generatedClassifierFor(typeRef.classifier.fqName) != null) ||
-                                (typeRef.expandedType?.let { declarationStore.generatedClassifierFor(it.classifier.fqName) }) != null) {
+                            } else if (typeRef.fullyExpandedType.isFunction ||
+                                typeRef.fullyExpandedType.isSuspendFunction ||
+                                declarationStore.generatedClassifierFor(typeRef.classifier.fqName) != null ||
+                                declarationStore.generatedClassifierFor(typeRef.fullyExpandedType.classifier.fqName) != null ||
+                                (callable.isFunBinding && typeRef == aliasedType)) {
                                 emit("noinline ")
                             }
                             emit("${valueParameter.name}: ${valueParameter.type.render()}")
-                            if (index != callable.valueParameters.lastIndex) emit(", ")
+                            if (index != bindingAdapterCallable.valueParameters.lastIndex) emit(", ")
                         }
 
-                    emit("): ${callable.type.render()} ")
+                    emit("): ${bindingAdapterCallable.type.render()} ")
                     braced {
                         emit("return ")
                         emitCallableInvocation(
-                            callable,
+                            bindingAdapterCallable,
                             { emit("${bindingAdapter.fqNameSafe}") },
-                            callable.valueParameters.map { parameter ->
+                            bindingAdapterCallable.valueParameters.map { parameter ->
                                 {
                                     emit(parameter.name)
                                 }
@@ -274,16 +275,16 @@ class BindingAdapterGenerator(
                         packageFqName = packageName,
                         fqName = packageName.child(functionName.asNameId()),
                         name = functionName.asNameId(),
-                        type = callable.type,
+                        type = bindingAdapterCallable.type,
                         typeParameters = emptyList(),
-                        valueParameters = callable.valueParameters
+                        valueParameters = bindingAdapterCallable.valueParameters
                             .map { it.copy(isExtensionReceiver = false) },
-                        targetComponent = callable.targetComponent,
-                        contributionKind = callable.contributionKind,
+                        targetComponent = bindingAdapterCallable.targetComponent,
+                        contributionKind = bindingAdapterCallable.contributionKind,
                         isCall = true,
                         callableKind = callableKind,
                         bindingAdapters = emptyList(),
-                        isEager = callable.isEager,
+                        isEager = bindingAdapterCallable.isEager,
                         isExternal = false,
                         isInline = true,
                         isFunBinding = false
