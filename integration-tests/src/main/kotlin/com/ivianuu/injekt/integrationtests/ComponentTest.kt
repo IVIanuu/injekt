@@ -1148,7 +1148,7 @@ class ComponentTest {
             
             interface Store<S, A> {
                 val state: S
-                val dispatch: (A) -> Unit
+                val dispatch: A
             }
             
             interface StoreState
@@ -1157,29 +1157,39 @@ class ComponentTest {
             @Binding
             val <S : StoreState> Store<S, *>.storeState: S get() = state
             @Binding
-            val <A : StoreAction> Store<*, A>.storeDispatch: (A) -> Unit get() = dispatch
+            val <A : StoreAction> Store<*, A>.storeDispatch: A get() = dispatch
             
             @Binding(MyComponent::class)
             fun <S, A> storeFromProvider(provider: (Scope) -> Store<S, A>): Store<S, A> = provider(object : Scope {})
             
-            class MyState : StoreState
-            class MyAction : StoreAction
+            class MyState(val store: Store<MyState, MyAction>) : StoreState
+            class MyAction(val store: Store<MyState, MyAction>) : StoreAction
             
             @Binding
             fun myStore(): (Scope) -> Store<MyState, MyAction> = {
                 object : Store<MyState, MyAction> {
-                    override val state: MyState = MyState()
-                    override val dispatch: (MyAction) -> Unit = {}
+                    override val state: MyState = MyState(this)
+                    override val dispatch: MyAction = MyAction(this)
                 }
+            }
+            
+            @FunBinding
+            fun MyPage(state: MyState, dispatch: MyAction): Pair<Any, Any> {
+                return state.store to dispatch.store
             }
             
             @Component
             abstract class MyComponent {
-                abstract val myState: MyState
-                abstract val dispatchMyAction: (MyAction) -> Unit
-                abstract val myStore: Store<MyState, MyAction>
+                abstract val myPage: MyPage
+            }
+            
+            fun invoke(): Pair<Any, Any> {
+                return component<MyComponent>().myPage()
             }
         """
-    )
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Any, Any>>()
+        assertSame(a, b)
+    }
 
 }

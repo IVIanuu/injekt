@@ -224,6 +224,18 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
     )
 }
 
+fun TypeRef.substituteStars(baseType: TypeRef): TypeRef {
+    if (isStarProjection && !baseType.classifier.isTypeParameter) return baseType
+    return copy(
+        typeArguments = typeArguments
+            .zip(baseType.typeArguments)
+            .map { (thisTypeArgument, baseTypeArgument) ->
+                thisTypeArgument.substituteStars(baseTypeArgument)
+            },
+        expandedType = expandedType?.substituteStars(baseType.expandedType!!)
+    )
+}
+
 fun TypeRef.render(): String {
     return buildString {
         val annotations = listOfNotNull(

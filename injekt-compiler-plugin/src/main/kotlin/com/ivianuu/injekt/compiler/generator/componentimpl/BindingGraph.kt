@@ -29,6 +29,7 @@ import com.ivianuu.injekt.compiler.generator.isAssignable
 import com.ivianuu.injekt.compiler.generator.nonInlined
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.substitute
+import com.ivianuu.injekt.compiler.generator.substituteStars
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
@@ -159,6 +160,7 @@ class BindingGraph(
         ) {
             val keysToReplace = mutableListOf<TypeRef>()
         }
+
         resolvedBindings.toList()
             .filter { it.second is CallableBindingNode }
             .map { it.first to it.second as CallableBindingNode }
@@ -171,28 +173,36 @@ class BindingGraph(
                 }
             }
             .mapValues { (_, bindings) ->
-                val bindingGroups = bindings
-                    .filterNot { (key) ->
-                        key.getAllRecursive().any { it.isStarProjection }
-                    }
-                    .map { (key, binding) -> MergeBindingGroup(key, binding) }
-
+                val bindingGroups = mutableListOf<MergeBindingGroup>()
                 bindings
-                    .filter { (key) ->
-                        key.getAllRecursive().any { it.isStarProjection }
+                    .sortedBy {
+                        it.first.getAllRecursive()
+                            .filter { it.isStarProjection }
+                            .size
                     }
-                    .forEach { keyBindingPair ->
-                        val bindingGroup = bindingGroups
-                            .singleOrNull { it.type.isAssignable(keyBindingPair.first) }
-                        bindingGroup?.keysToReplace?.add(keyBindingPair.first)
+                    .forEach { (key, binding) ->
+                        val bindingGroup = bindingGroups.singleOrNull {
+                            it.type.isAssignable(key)
+                        }
+                        if (bindingGroup != null) {
+                            bindingGroup.keysToReplace += key
+                        } else {
+                            bindingGroups += MergeBindingGroup(key, binding)
+                        }
                     }
-
                 bindingGroups
             }
             .forEach { (_, bindingGroups) ->
                 bindingGroups.forEach { bindingGroup ->
                     bindingGroup.keysToReplace.forEach { key ->
-                        resolvedBindings[key] = bindingGroup.bindingToUse
+                        resolvedBindings[key] = DelegateBindingNode(
+                            key,
+                            owner,
+                            BindingRequest(
+                                bindingGroup.bindingToUse.type,
+                                FqName.ROOT // todo
+                            )
+                        )
                     }
                 }
             }
@@ -314,14 +324,13 @@ class BindingGraph(
             .map { (callable, receiver) ->
                 val substitutionMap = request.type.getSubstitutionMap(callable.type)
                 CallableBindingNode(
-                    type = request.type,
+                    type = request.type.substituteStars(callable.type),
                     rawType = callable.type,
                     owner = owner,
                     dependencies = callable.valueParameters
                         .map {
                             BindingRequest(
-                                it.type.substitute(substitutionMap)
-                                    .substituteStars(it.type),
+                                it.type.substitute(substitutionMap),
                                 callable.fqName.child(it.name)
                             )
                         },
@@ -358,7 +367,8 @@ class BindingGraph(
                                 .filter { it.type.nonInlined() !in assistedParameters }
                                 .map {
                                     BindingRequest(
-                                        it.type.nonInlined().substitute(substitutionMap),
+                                        it.type.nonInlined()
+                                            .substitute(substitutionMap),
                                         callable.fqName.child(it.name)
                                     )
                                 },
@@ -382,15 +392,13 @@ class BindingGraph(
             .map { callable ->
                 val substitutionMap = request.type.getSubstitutionMap(callable.type)
                 CallableBindingNode(
-                    type = request.type,
+                    type = request.type.substituteStars(callable.type),
                     rawType = callable.type,
                     owner = owner,
                     dependencies = callable.valueParameters
                         .map {
                             BindingRequest(
-                                it.type
-                                    .substitute(substitutionMap)
-                                    .substituteStars(it.type),
+                                it.type.substitute(substitutionMap),
                                 callable.fqName.child(it.name)
                             )
                         },
@@ -504,15 +512,13 @@ class BindingGraph(
             .map { callable ->
                 val substitutionMap = request.type.getSubstitutionMap(callable.type)
                 CallableBindingNode(
-                    type = request.type,
+                    type = request.type.substituteStars(callable.type),
                     rawType = callable.type,
                     owner = owner,
                     dependencies = callable.valueParameters
                         .map {
                             BindingRequest(
-                                it.type
-                                    .substitute(substitutionMap)
-                                    .substituteStars(it.type),
+                                it.type.substitute(substitutionMap),
                                 callable.fqName.child(it.name)
                             )
                         },

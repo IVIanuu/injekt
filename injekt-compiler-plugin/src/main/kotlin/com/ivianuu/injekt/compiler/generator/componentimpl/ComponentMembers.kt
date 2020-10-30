@@ -95,6 +95,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
             when (binding) {
                 is ChildImplBindingNode -> childFactoryExpression(binding)
                 is CallableBindingNode -> callableExpression(binding)
+                is DelegateBindingNode -> delegateExpression(binding)
                 is MapBindingNode -> mapExpression(binding)
                 is NullBindingNode -> nullExpression()
                 is ProviderBindingNode -> providerExpression(binding)
@@ -166,6 +167,13 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
 
     private fun childFactoryExpression(binding: ChildImplBindingNode): ComponentExpression = {
         emit("::${binding.childComponentImpl.name}")
+    }
+
+    private fun delegateExpression(binding: DelegateBindingNode): ComponentExpression = {
+        val delegate = getBindingExpression(binding.dependencies.single())
+        emit("(")
+        delegate()
+        emit(" as ${binding.type})")
     }
 
     private fun mapExpression(binding: MapBindingNode): ComponentExpression = {

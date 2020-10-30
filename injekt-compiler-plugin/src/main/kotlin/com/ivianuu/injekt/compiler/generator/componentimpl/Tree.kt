@@ -139,6 +139,26 @@ class CallableBindingNode(
     override fun toString(): String = "Callable(${callable.type.render()})"
 }
 
+class DelegateBindingNode(
+    override val type: TypeRef,
+    override val owner: ComponentImpl,
+    private val delegate: BindingRequest
+) : BindingNode() {
+    override val rawType: TypeRef
+        get() = type
+    override val targetComponent: TypeRef?
+        get() = null
+    override val receiver: ComponentExpression?
+        get() = null
+    override val cacheable: Boolean
+        get() = false
+    override val dependencies = listOf(delegate)
+    override val isExternal: Boolean
+        get() = false
+    override val origin: FqName?
+        get() = null
+}
+
 class MapBindingNode(
     override val type: TypeRef,
     override val owner: ComponentImpl,
