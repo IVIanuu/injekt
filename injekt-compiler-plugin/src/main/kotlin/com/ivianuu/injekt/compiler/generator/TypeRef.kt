@@ -231,8 +231,7 @@ fun TypeRef.substituteStars(baseType: TypeRef): TypeRef {
             .zip(baseType.typeArguments)
             .map { (thisTypeArgument, baseTypeArgument) ->
                 thisTypeArgument.substituteStars(baseTypeArgument)
-            },
-        expandedType = expandedType?.substituteStars(baseType.expandedType!!)
+            }
     )
 }
 
