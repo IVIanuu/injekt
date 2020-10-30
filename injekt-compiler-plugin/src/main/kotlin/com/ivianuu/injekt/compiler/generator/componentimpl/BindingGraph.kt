@@ -198,6 +198,7 @@ class BindingGraph(
                         resolvedBindings[key] = DelegateBindingNode(
                             key,
                             owner,
+                            bindingGroup.bindingToUse.callableKind,
                             BindingRequest(
                                 bindingGroup.bindingToUse.type,
                                 FqName.ROOT // todo
@@ -340,7 +341,8 @@ class BindingGraph(
                     callable = callable,
                     isExternal = callable.isExternal,
                     assistedParameters = emptyList(),
-                    cacheable = callable.isEager
+                    cacheable = callable.isEager,
+                    callableKind = callable.callableKind
                 )
             }
 
@@ -378,7 +380,8 @@ class BindingGraph(
                             receiver = receiver,
                             callable = callable,
                             isExternal = callable.isExternal,
-                            cacheable = true
+                            cacheable = true,
+                            callableKind = Callable.CallableKind.DEFAULT
                         )
                     }
             }
@@ -408,7 +411,8 @@ class BindingGraph(
                     receiver = null,
                     callable = callable,
                     isExternal = callable.isExternal,
-                    cacheable = callable.isEager
+                    cacheable = callable.isEager,
+                    callableKind = callable.callableKind
                 )
             }
 
@@ -446,7 +450,8 @@ class BindingGraph(
                             receiver = null,
                             callable = callable,
                             isExternal = callable.isExternal,
-                            cacheable = true
+                            cacheable = true,
+                            callableKind = Callable.CallableKind.DEFAULT
                         )
                     }
             }
@@ -528,7 +533,8 @@ class BindingGraph(
                     receiver = null,
                     callable = callable,
                     isExternal = callable.isExternal,
-                    cacheable = callable.isEager
+                    cacheable = callable.isEager,
+                    callableKind = callable.callableKind
                 )
             }
 
@@ -566,7 +572,8 @@ class BindingGraph(
                             receiver = null,
                             callable = callable,
                             isExternal = callable.isExternal,
-                            cacheable = true
+                            cacheable = true,
+                            callableKind = Callable.CallableKind.DEFAULT
                         )
                     }
             }

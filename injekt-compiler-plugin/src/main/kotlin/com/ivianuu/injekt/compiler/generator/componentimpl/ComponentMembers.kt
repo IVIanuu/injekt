@@ -69,13 +69,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
 
     fun getBindingExpression(request: BindingRequest): ComponentExpression {
         val binding = owner.graph.getBinding(request)
-        val callableKind = when (binding) {
-            is CallableBindingNode -> {
-                if (binding.assistedParameters.isEmpty()) binding.callable.callableKind
-                else Callable.CallableKind.DEFAULT
-            }
-            else -> Callable.CallableKind.DEFAULT
-        }
+        val callableKind = binding.callableKind
         expressionsByType[binding.type]?.let {
             getCallable(
                 type = binding.type,

@@ -83,12 +83,15 @@ sealed class BindingNode {
     abstract val receiver: ComponentExpression?
     abstract val isExternal: Boolean
     abstract val cacheable: Boolean
+    abstract val callableKind: Callable.CallableKind
 }
 
 class SelfBindingNode(
     override val type: TypeRef,
     val component: ComponentImpl,
 ) : BindingNode() {
+    override val callableKind: Callable.CallableKind
+        get() = Callable.CallableKind.DEFAULT
     override val dependencies: List<BindingRequest>
         get() = emptyList()
     override val rawType: TypeRef
@@ -109,6 +112,8 @@ class ChildImplBindingNode(
     override val origin: FqName?,
     val childComponentImpl: ComponentImpl,
 ) : BindingNode() {
+    override val callableKind: Callable.CallableKind
+        get() = Callable.CallableKind.DEFAULT
     override val dependencies: List<BindingRequest>
         get() = emptyList()
     override val rawType: TypeRef
@@ -133,8 +138,9 @@ class CallableBindingNode(
     override val receiver: ComponentExpression?,
     override val isExternal: Boolean,
     override val cacheable: Boolean,
+    override val callableKind: Callable.CallableKind,
     val assistedParameters: List<TypeRef>,
-    val callable: Callable,
+    val callable: Callable
 ) : BindingNode() {
     override fun toString(): String = "Callable(${callable.type.render()})"
 }
@@ -142,6 +148,7 @@ class CallableBindingNode(
 class DelegateBindingNode(
     override val type: TypeRef,
     override val owner: ComponentImpl,
+    override val callableKind: Callable.CallableKind,
     private val delegate: BindingRequest
 ) : BindingNode() {
     override val rawType: TypeRef
@@ -165,6 +172,8 @@ class MapBindingNode(
     override val dependencies: List<BindingRequest>,
     val entries: List<CallableWithReceiver>,
 ) : BindingNode() {
+    override val callableKind: Callable.CallableKind
+        get() = Callable.CallableKind.DEFAULT
     override val rawType: TypeRef
         get() = type
     override val origin: FqName?
@@ -185,6 +194,8 @@ class ProviderBindingNode(
     override val dependencies: List<BindingRequest>,
     override val origin: FqName?,
 ) : BindingNode() {
+    override val callableKind: Callable.CallableKind
+        get() = Callable.CallableKind.DEFAULT
     override val receiver: ComponentExpression?
         get() = null
     override val rawType: TypeRef
@@ -203,6 +214,8 @@ class SetBindingNode(
     override val dependencies: List<BindingRequest>,
     val elements: List<CallableWithReceiver>,
 ) : BindingNode() {
+    override val callableKind: Callable.CallableKind
+        get() = Callable.CallableKind.DEFAULT
     override val rawType: TypeRef
         get() = type
     override val origin: FqName?
@@ -227,6 +240,8 @@ class NullBindingNode(
     override val type: TypeRef,
     override val owner: ComponentImpl,
 ) : BindingNode() {
+    override val callableKind: Callable.CallableKind
+        get() = Callable.CallableKind.DEFAULT
     override val rawType: TypeRef
         get() = type
     override val dependencies: List<BindingRequest>
