@@ -316,13 +316,25 @@ fun TypeRef.nonInlined(): TypeRef {
     }
 }
 
+fun TypeRef.getAllRecursive(): List<TypeRef> {
+    val all = mutableListOf<TypeRef>()
+    fun collect(type: TypeRef) {
+        all += type
+        type.typeArguments.forEach { collect(it) }
+    }
+    collect(this)
+    return all
+}
+
 fun TypeRef.isAssignable(superType: TypeRef): Boolean {
     if (this == superType) return true
 
     if ((isStarProjection && !superType.classifier.isTypeParameter) ||
         (superType.isStarProjection && !classifier.isTypeParameter)) return true
 
-    if (superType.classifier.isTypeParameter && !isStarProjection) {
+    if (isStarProjection || superType.isStarProjection) return true
+
+    if (superType.classifier.isTypeParameter) {
         return superType.classifier.superTypes.all { upperBound ->
             isSubTypeOf(upperBound)
         }

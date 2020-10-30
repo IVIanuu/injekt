@@ -146,7 +146,6 @@ class ComponentTest {
     @Test
     fun testStarProjectedBindingsHasSharedIdentity() = codegen(
         """
-            @Binding(MyComponent::class)
             class Option<T>(val value: T)
             
             @Binding(MyComponent::class)
@@ -498,7 +497,7 @@ class ComponentTest {
             abstract class MyComponent { 
                 abstract val dep: Dep<Foo, Foo, Foo>
                 @Binding protected fun <A, B : A, C : B> dep(a: A) = Dep<A, A, A>(a)
-                @Binding protected fun foo() = Foo() 
+                @Binding protected fun foo() = Foo()
             }
     """
     )
@@ -1140,6 +1139,47 @@ class ComponentTest {
                 """
             )
         )
+    )
+
+    @Test
+    fun testStore() = codegen(
+        """
+            interface Scope
+            
+            interface Store<S, A> {
+                val state: S
+                val dispatch: (A) -> Unit
+            }
+            
+            interface StoreState
+            interface StoreAction
+            
+            @Binding
+            val <S : StoreState> Store<S, *>.storeState: S get() = state
+            @Binding
+            val <A : StoreAction> Store<*, A>.storeDispatch: (A) -> Unit get() = dispatch
+            
+            @Binding(MyComponent::class)
+            fun <S, A> storeFromProvider(provider: (Scope) -> Store<S, A>): Store<S, A> = provider(object : Scope {})
+            
+            class MyState : StoreState
+            class MyAction : StoreAction
+            
+            @Binding
+            fun myStore(): (Scope) -> Store<MyState, MyAction> = {
+                object : Store<MyState, MyAction> {
+                    override val state: MyState = MyState()
+                    override val dispatch: (MyAction) -> Unit = {}
+                }
+            }
+            
+            @Component
+            abstract class MyComponent {
+                abstract val myState: MyState
+                abstract val dispatchMyAction: (MyAction) -> Unit
+                abstract val myStore: Store<MyState, MyAction>
+            }
+        """
     )
 
 }
