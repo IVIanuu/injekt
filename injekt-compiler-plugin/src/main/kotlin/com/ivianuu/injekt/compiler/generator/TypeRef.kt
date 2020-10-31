@@ -365,7 +365,8 @@ fun TypeRef.isSubTypeOf(superType: TypeRef): Boolean {
     if (classifier.fqName == superType.classifier.fqName) return true
     if (superType.classifier.fqName.asString() == KotlinBuiltIns.FQ_NAMES.any.asString() && superType.isMarkedNullable)
         return true
-    return fullyExpandedType.superTypes.any { it.isSubTypeOf(superType) }
+    return fullyExpandedType.superTypes.any { it.isSubTypeOf(superType) } ||
+            fullyExpandedType != this && fullyExpandedType.isSubTypeOf(superType)
 }
 
 val TypeRef.fullyExpandedType: TypeRef
