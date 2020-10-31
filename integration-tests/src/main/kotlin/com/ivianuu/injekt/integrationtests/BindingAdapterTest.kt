@@ -236,7 +236,7 @@ class BindingAdapterTest {
 
             @AnyBinding
             @FunBinding
-            fun myService(foo: @Assisted Foo) {
+            fun myService(@FunApi foo: Foo) {
             }
             
             @MergeComponent

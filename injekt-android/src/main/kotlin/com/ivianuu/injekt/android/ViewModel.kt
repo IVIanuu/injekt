@@ -19,17 +19,15 @@ package com.ivianuu.injekt.android
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
-import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingAdapter
 import com.ivianuu.injekt.FunBinding
-import kotlin.reflect.KClass
 
 annotation class ActivityViewModelBinding {
     companion object {
         @Binding
-        inline fun <reified VM : ViewModel> viewModel(getViewModel: getViewModel<VM, ActivityViewModelStoreOwner>): VM =
-            getViewModel(VM::class)
+        fun <VM : ViewModel> viewModel(getViewModel: getViewModel<VM, ActivityViewModelStoreOwner>): VM =
+            getViewModel()
     }
 }
 
@@ -37,16 +35,15 @@ annotation class ActivityViewModelBinding {
 annotation class FragmentViewModelBinding {
     companion object {
         @Binding
-        inline fun <reified VM : ViewModel> viewModel(getViewModel: getViewModel<VM, FragmentViewModelStoreOwner>): VM =
-            getViewModel(VM::class)
+        fun <VM : ViewModel> viewModel(getViewModel: getViewModel<VM, FragmentViewModelStoreOwner>): VM =
+            getViewModel()
     }
 }
 
 @FunBinding
-fun <VM : ViewModel, VMSO : ViewModelStoreOwner> getViewModel(
+inline fun <reified VM : ViewModel, VMSO : ViewModelStoreOwner> getViewModel(
     viewModelStoreOwner: VMSO,
-    viewModelFactory: () -> VM,
-    viewModelClass: @Assisted KClass<VM>
+    noinline viewModelFactory: () -> VM
 ): VM {
     return ViewModelProvider(
         viewModelStoreOwner,
@@ -54,5 +51,5 @@ fun <VM : ViewModel, VMSO : ViewModelStoreOwner> getViewModel(
             override fun <T : ViewModel?> create(modelClass: Class<T>): T =
                 viewModelFactory() as T
         }
-    )[viewModelClass.java]
+    )[VM::class.java]
 }

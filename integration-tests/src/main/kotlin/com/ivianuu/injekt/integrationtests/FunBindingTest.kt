@@ -122,7 +122,7 @@ class FunBindingTest {
     fun testAssistedFunBinding() = codegen(
         """
             @FunBinding
-            fun function(string: String, assistedString: @Assisted String) {
+            fun function(string: String, @FunApi assistedString: String) {
             }
             
             @Component
@@ -136,7 +136,7 @@ class FunBindingTest {
     fun testAssistedExtensionFunBinding() = codegen(
         """
             @FunBinding
-            fun @Assisted String.function(string: String) {
+            fun @receiver:FunApi String.function(string: String) {
             }
             
             @Component
@@ -150,7 +150,7 @@ class FunBindingTest {
     fun testAssistedExtensionSuspendFunBinding() = codegen(
         """
             @FunBinding
-            suspend fun @Assisted String.function(string: String) {
+            suspend fun @receiver:FunApi String.function(string: String) {
             }
             
             @Component
@@ -164,7 +164,7 @@ class FunBindingTest {
     fun testSuspendFunBinding() = codegen(
         """
             @FunBinding
-            suspend fun function(string: String, assistedString: @Assisted String) {
+            suspend fun function(string: String, @FunApi assistedString: String) {
             }
             
             @Component
@@ -179,7 +179,7 @@ class FunBindingTest {
         """
             @Composable
             @FunBinding
-            fun function(string: String, assistedString: @Assisted String) {
+            fun function(string: String, @FunApi assistedString: String) {
             }
             
             @Component
@@ -195,7 +195,7 @@ class FunBindingTest {
             source(
                 """
                     @FunBinding
-                    suspend fun function(string: String, assistedString: @Assisted String) {
+                    suspend fun function(string: String, @FunApi assistedString: String) {
                     }
                     
                     @FunBinding

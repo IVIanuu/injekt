@@ -24,8 +24,8 @@ import androidx.compose.ui.platform.setContent
 import androidx.lifecycle.ViewModel
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.FunApi
 import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityContext
@@ -61,7 +61,7 @@ interface MainActivityComponent {
 @FunBinding
 fun WithMainViewModel(
     viewModelFactory: () -> MainViewModel,
-    children: @Assisted @Composable (MainViewModel) -> Unit,
+    @FunApi children: @Composable (MainViewModel) -> Unit,
 ) {
     val viewModel = remember { viewModelFactory() }
     children(viewModel)

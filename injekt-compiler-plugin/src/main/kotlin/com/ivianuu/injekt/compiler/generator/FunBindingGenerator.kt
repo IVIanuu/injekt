@@ -121,10 +121,10 @@ class FunBindingGenerator(
             if (isComposable) emit("@${InjektFqNames.Composable} ")
             if (isSuspend) emit("suspend ")
 
-            val assistedValueParameters = descriptor.allParameters
-                .filter { it.type.hasAnnotation(InjektFqNames.Assisted) }
+            val funApiValueParameters = descriptor.allParameters
+                .filter { it.hasAnnotation(InjektFqNames.FunApi) }
 
-            assistedValueParameters
+            funApiValueParameters
                 .singleOrNull { it == descriptor.extensionReceiverParameter }
                 ?.let {
                     emit("${typeTranslator.toTypeRef(it.type, descriptor).render()}.")
@@ -132,11 +132,11 @@ class FunBindingGenerator(
 
             emit("(")
 
-            assistedValueParameters
+            funApiValueParameters
                 .filter { it != descriptor.extensionReceiverParameter }
                 .forEachIndexed { index, param ->
                     emit(typeTranslator.toTypeRef(param.type, descriptor).render())
-                    if (index != assistedValueParameters.lastIndex) emit(", ")
+                    if (index != funApiValueParameters.lastIndex) emit(", ")
                 }
             emitLine(") -> ${returnType.render()}")
 
@@ -161,9 +161,9 @@ class FunBindingGenerator(
 
             emitLine("$bindingFunctionName(")
 
-            val nonAssistedValueParameters = descriptor.allParameters
-                .filterNot { it.type.hasAnnotation(InjektFqNames.Assisted) }
-            nonAssistedValueParameters
+            val dependencyValueParameters = descriptor.allParameters
+                .filterNot { it.hasAnnotation(InjektFqNames.FunApi) }
+            dependencyValueParameters
                 .forEachIndexed { index, valueParameter ->
                     val typeRef = valueParameter.type
                         .let { typeTranslator.toTypeRef(it, descriptor) }
@@ -173,7 +173,7 @@ class FunBindingGenerator(
                     }
                     emit("${if (valueParameter != descriptor.extensionReceiverParameter) valueParameter.name else "_receiver"}: " +
                             "${typeRef.render()}")
-                    if (index != nonAssistedValueParameters.lastIndex) emit(", ")
+                    if (index != dependencyValueParameters.lastIndex) emit(", ")
                 }
             emit("): ${descriptor.name}")
             if (descriptor.typeParameters.isNotEmpty()) {
@@ -188,15 +188,15 @@ class FunBindingGenerator(
             emitSpace()
             braced {
                 emit("return { ")
-                assistedValueParameters
+                funApiValueParameters
                     .filter { it != descriptor.extensionReceiverParameter }
                     .forEachIndexed { index, parameter ->
                         emit("p$index: ${typeTranslator.toTypeRef(parameter.type, descriptor).renderExpanded()}")
-                        if (index != assistedValueParameters.lastIndex) emit(", ")
+                        if (index != funApiValueParameters.lastIndex) emit(", ")
                     }
                 emitLine(" ->")
                 val callable = declarationStore.callableForDescriptor(descriptor)
-                var assistedIndex = 0
+                var funApiParamIndex = 0
                 emitCallableInvocation(
                     callable,
                     null,
@@ -206,12 +206,12 @@ class FunBindingGenerator(
                                 (it == descriptor.extensionReceiverParameter &&
                                         parameter.name == "_receiver".asNameId()) ||
                                         it.name == parameter.name
-                            }.type.hasAnnotation(InjektFqNames.Assisted)) -> {
+                            }.hasAnnotation(InjektFqNames.FunApi)) -> {
                                 {
                                     if (parameter.isExtensionReceiver) {
                                         emit("this")
                                     } else {
-                                        emit("p${assistedIndex++}")
+                                        emit("p${funApiParamIndex++}")
                                     }
                                 }
                             }
@@ -258,7 +258,7 @@ class FunBindingGenerator(
                 .typeWith(callableTypeParameters.map { it.defaultType }),
             typeParameters = callableTypeParameters,
             valueParameters = (listOfNotNull(descriptor.extensionReceiverParameter) + descriptor.valueParameters)
-                .filterNot { it.type.hasAnnotation(InjektFqNames.Assisted) }
+                .filterNot { it.hasAnnotation(InjektFqNames.FunApi) }
                 .map {
                     ValueParameterRef(
                         type = it.type

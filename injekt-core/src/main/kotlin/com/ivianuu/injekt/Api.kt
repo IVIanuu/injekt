@@ -40,8 +40,8 @@ annotation class Binding(val scopeComponent: KClass<*> = Nothing::class)
 @Target(AnnotationTarget.FUNCTION)
 annotation class FunBinding
 
-@Target(AnnotationTarget.TYPE)
-annotation class Assisted
+@Target(AnnotationTarget.VALUE_PARAMETER)
+annotation class FunApi
 
 @Target(AnnotationTarget.CLASS)
 annotation class ImplBinding(val scopeComponent: KClass<*> = Nothing::class)

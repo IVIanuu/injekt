@@ -22,7 +22,6 @@ import org.jetbrains.kotlin.name.FqName
 object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
 
-    val Assisted = InjektPackage.child("Assisted".asNameId())
     val Binding = InjektPackage.child("Binding".asNameId())
     val BindingAdapter = InjektPackage.child("BindingAdapter".asNameId())
     val Component = InjektPackage.child("Component".asNameId())
@@ -32,6 +31,7 @@ object InjektFqNames {
     val SetElements = InjektPackage.child("SetElements".asNameId())
 
     val CommonPackage = InjektPackage//.child("common".asNameId())
+    val FunApi = CommonPackage.child("FunApi".asNameId())
     val FunBinding = CommonPackage.child("FunBinding".asNameId())
     val ImplBinding = CommonPackage.child("ImplBinding".asNameId())
 
