@@ -111,7 +111,9 @@ class BindingAdapterGenerator(
         val rawBindingType = callable.type
         val aliasedType = SimpleTypeRef(
             classifier = ClassifierRef(
-                fqName = packageName.child("${bindingAdapterNameBaseName}Alias".asNameId())
+                fqName = packageName.child("${bindingAdapterNameBaseName}Alias".asNameId()),
+                superTypes = listOf(rawBindingType),
+                isTypeAlias = true
             ),
             expandedType = rawBindingType
         )

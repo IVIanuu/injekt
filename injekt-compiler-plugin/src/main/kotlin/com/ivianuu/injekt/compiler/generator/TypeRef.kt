@@ -32,9 +32,11 @@ import org.jetbrains.kotlin.types.getAbbreviation
 data class ClassifierRef(
     val fqName: FqName,
     val typeParameters: List<ClassifierRef> = emptyList(),
-    val superTypes: List<TypeRef> = emptyList(),
+    // todo make this immutable
+    var superTypes: List<TypeRef> = emptyList(),
     val isTypeParameter: Boolean = false,
-    val isObject: Boolean = false
+    val isObject: Boolean = false,
+    val isTypeAlias: Boolean = false
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
     override fun hashCode(): Int = fqName.hashCode()
@@ -43,7 +45,8 @@ data class ClassifierRef(
 val ClassifierRef.defaultType: TypeRef
     get() = SimpleTypeRef(
         this,
-        typeArguments = typeParameters.map { it.defaultType }
+        typeArguments = typeParameters.map { it.defaultType },
+        expandedType = if (isTypeAlias) superTypes.single() else null
     )
 
 sealed class TypeRef {

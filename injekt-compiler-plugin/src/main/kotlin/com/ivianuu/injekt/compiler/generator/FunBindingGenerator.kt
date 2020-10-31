@@ -58,7 +58,8 @@ class FunBindingGenerator(
                             fqName = descriptor.fqNameSafe,
                             typeParameters = descriptor.typeParameters.map {
                                 typeTranslator.toClassifierRef(it)
-                            }
+                            },
+                            isTypeAlias = true
                         )
                     )
                 }
@@ -110,6 +111,10 @@ class FunBindingGenerator(
                 typeTranslator.toTypeRef(it.type, descriptor)
             } + typeTranslator.toTypeRef(descriptor.returnType!!, descriptor))
             .copy(isComposable = isComposable)
+            .copy(isExtensionFunction = funApiValueParameters.any {
+                it == descriptor.extensionReceiverParameter
+            })
+        declarationStore.generatedClassifierFor(descriptor.fqNameSafe)!!.superTypes += expandedFunType
 
         val code = buildCodeString {
             emitLine("package $packageFqName")

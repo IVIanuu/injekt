@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtFile
@@ -45,14 +46,16 @@ class TypeTranslator(
         fixType: Boolean = true
     ): ClassifierRef {
         return ClassifierRef(
-            descriptor.original.fqNameSafe,
-            (descriptor.original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
+            fqName = descriptor.original.fqNameSafe,
+            typeParameters = (descriptor.original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
                 ?.map { toClassifierRef(it, fixType) } ?: emptyList(),
-            (descriptor.original as? TypeParameterDescriptor)?.upperBounds?.map {
+            superTypes = ((descriptor.original as? TypeParameterDescriptor)?.upperBounds?.map {
                 toTypeRef(it, descriptor, Variance.INVARIANT)
-            } ?: emptyList(),
-            descriptor is TypeParameterDescriptor,
-            descriptor is ClassDescriptor && descriptor.kind == ClassKind.OBJECT
+            }) ?: ((descriptor.original as? TypeAliasDescriptor)?.expandedType
+                ?.let { listOf(toTypeRef(it, descriptor).fullyExpandedType) }) ?: emptyList(),
+            isTypeParameter = descriptor is TypeParameterDescriptor,
+            isObject = descriptor is ClassDescriptor && descriptor.kind == ClassKind.OBJECT,
+            isTypeAlias = descriptor is TypeAliasDescriptor
         )
     }
 
