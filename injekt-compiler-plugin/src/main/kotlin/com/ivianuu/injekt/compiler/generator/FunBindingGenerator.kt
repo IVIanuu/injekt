@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 @Binding(GenerationComponent::class)
 class FunBindingGenerator(
@@ -95,13 +96,26 @@ class FunBindingGenerator(
                 .copy(isInlineProvider = true)
         }
 
+        val funApiValueParameters = descriptor.allParameters
+            .filter { it.hasAnnotation(InjektFqNames.FunApi) }
+
+        val expandedFunType = (if (isSuspend) {
+            descriptor.module.builtIns.getSuspendFunction(funApiValueParameters.size)
+                .defaultType
+        } else {
+            descriptor.module.builtIns.getFunction(funApiValueParameters.size)
+                .defaultType
+        }).let { typeTranslator.toTypeRef(it, descriptor) }
+            .typeWith(funApiValueParameters.map {
+                typeTranslator.toTypeRef(it.type, descriptor)
+            } + typeTranslator.toTypeRef(descriptor.returnType!!, descriptor))
+            .copy(isComposable = isComposable)
+
         val code = buildCodeString {
             emitLine("package $packageFqName")
             emitLine("import ${InjektFqNames.Binding}")
             emitLine("import ${InjektFqNames.FunBinding}")
             emitLine()
-            val returnType = typeTranslator.toTypeRef(descriptor.returnType!!, descriptor)
-
             if (descriptor.visibility == Visibilities.INTERNAL) {
                 emit("internal ")
             }
@@ -118,27 +132,8 @@ class FunBindingGenerator(
                 emit(">")
             }
             emit(" = ")
-            if (isComposable) emit("@${InjektFqNames.Composable} ")
-            if (isSuspend) emit("suspend ")
 
-            val funApiValueParameters = descriptor.allParameters
-                .filter { it.hasAnnotation(InjektFqNames.FunApi) }
-
-            funApiValueParameters
-                .singleOrNull { it == descriptor.extensionReceiverParameter }
-                ?.let {
-                    emit("${typeTranslator.toTypeRef(it.type, descriptor).render()}.")
-                }
-
-            emit("(")
-
-            funApiValueParameters
-                .filter { it != descriptor.extensionReceiverParameter }
-                .forEachIndexed { index, param ->
-                    emit(typeTranslator.toTypeRef(param.type, descriptor).render())
-                    if (index != funApiValueParameters.lastIndex) emit(", ")
-                }
-            emitLine(") -> ${returnType.render()}")
+            emit(expandedFunType.render())
 
             emitLine()
 
