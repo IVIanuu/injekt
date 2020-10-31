@@ -38,15 +38,11 @@ class BindingAdapterTest {
             @AnyBinding
             class AnnotatedBar(val foo: Foo)
             
-            @MergeComponent
+            @Component
             abstract class MyComponent {
                 abstract val any: Any
                 
                 @Binding protected fun foo() = Foo()
-            }
-            
-            @GenerateMergeComponents
-            fun invoke() {
             }
         """
     )
@@ -65,15 +61,11 @@ class BindingAdapterTest {
             @AnyBinding
             class AnnotatedBar(val foo: Foo)
             
-            @MergeComponent
+            @Component
             abstract class MyComponent {
                 abstract val annotatedBar: AnnotatedBar
                 
                 @Binding protected fun foo() = Foo()
-            }
-            
-            @GenerateMergeComponents
-            fun invoke() {
             }
         """
     )
@@ -93,15 +85,11 @@ class BindingAdapterTest {
             fun myService(foo: Foo) {
             }
 
-            @MergeComponent
+            @Component
             abstract class MyComponent {
                 abstract val any: Any
                 
                 @Binding protected fun foo() = Foo()
-            }
-            
-            @GenerateMergeComponents
-            fun invoke() {
             }
         """
     )
@@ -121,15 +109,11 @@ class BindingAdapterTest {
             suspend fun myService(foo: Foo) {
             }
 
-            @MergeComponent
+            @Component
             abstract class MyComponent {
                 abstract suspend fun any(): Any
                 
                 @Binding protected fun foo() = Foo()
-            }
-            
-            @GenerateMergeComponents
-            fun invoke() {
             }
         """
     )
@@ -150,16 +134,12 @@ class BindingAdapterTest {
             fun myService(foo: Foo) {
             }
 
-            @MergeComponent
+            @Component
             abstract class MyComponent {
                 @Composable
                 abstract val any: Any
                 
                 @Binding protected fun foo() = Foo()
-            }
-            
-            @GenerateMergeComponents
-            fun invoke() {
             }
         """
     )
@@ -181,15 +161,11 @@ class BindingAdapterTest {
                 }
             }
             
-            @MergeComponent
+            @Component
             abstract class MyComponent {
                 abstract val any: Any
                 
                 @Binding protected fun foo() = Foo()
-            }
-            
-            @GenerateMergeComponents
-            fun invoke() {
             }
         """
     )
@@ -210,15 +186,11 @@ class BindingAdapterTest {
             fun myService(foo: Foo) {
             }
 
-            @MergeComponent
+            @Component
             abstract class MyComponent {
                 abstract val any: Any
                 
                 @Binding protected fun foo() = Foo()
-            }
-            
-            @GenerateMergeComponents
-            fun invoke() {
             }
         """
     )
@@ -239,13 +211,9 @@ class BindingAdapterTest {
             fun myService(@FunApi foo: Foo) {
             }
             
-            @MergeComponent
+            @Component
             abstract class MyComponent {
                 abstract val any: Any
-            }
-            
-            @GenerateMergeComponents
-            fun invoke() {
             }
         """
     )
@@ -267,12 +235,11 @@ class BindingAdapterTest {
             fun MyUiComponent() {
             }
             
-            @MergeComponent
+            @Component
             abstract class MyComponent {
                 abstract val uiComponents: Set<@Composable () -> Unit>
             }
             
-            @GenerateMergeComponents
             fun invoke() {
                 val uiComponents = component<MyComponent>().uiComponents
             }
@@ -294,7 +261,7 @@ class BindingAdapterTest {
                         }
                     }
                     
-                    @MergeComponent
+                    @Component
                     abstract class MyComponent {
                         abstract val uiComponents: Set<@Composable () -> Unit>
                     }
@@ -310,7 +277,6 @@ class BindingAdapterTest {
         listOf(
             source(
                 """
-                    @GenerateMergeComponents
                     fun invoke() {
                         val uiComponents = component<MyComponent>().uiComponents
                     }
@@ -354,13 +320,9 @@ class BindingAdapterTest {
             @AnyBinding
             val myBinding: Foo get() = Foo()
 
-            @MergeComponent
+            @Component
             abstract class MyComponent {
                 abstract val any: Any
-            }
-            
-            @GenerateMergeComponents
-            fun invoke() {
             }
         """
     )
@@ -379,14 +341,10 @@ class BindingAdapterTest {
             @AnyBinding
             fun Foo.myBinding(): Bar = Bar(this)
 
-            @MergeComponent
+            @Component
             abstract class MyComponent {
                 abstract val any: Any
                 @Binding protected fun foo() = Foo()
-            }
-            
-            @GenerateMergeComponents
-            fun invoke() {
             }
         """
     )
@@ -405,14 +363,10 @@ class BindingAdapterTest {
             @AnyBinding
             val Foo.myBinding: Bar get() = Bar(this)
 
-            @MergeComponent
+            @Component
             abstract class MyComponent {
                 abstract val any: Any
                 @Binding protected fun foo() = Foo()
-            }
-            
-            @GenerateMergeComponents
-            fun invoke() {
             }
         """
     )
@@ -434,43 +388,349 @@ class BindingAdapterTest {
             @ImplBinding
             class MyServiceImpl(foo: Foo) : MyService
 
-            @MergeComponent
+            @Component
             abstract class MyComponent {
                 abstract val any: Any
                 
                 @Binding protected fun foo() = Foo()
             }
-            
-            @GenerateMergeComponents
-            fun invoke() {
+        """
+    )
+
+    @Test
+    fun testBindingAdapterWithArrayArg() = codegen(
+        """
+            @BindingAdapter
+            annotation class MyAdapter(val arg: Array<String>) {
+                companion object {
+                    @Binding
+                    fun <T> bindArg(@BindingAdapterArg("arg") arg: Array<String>, instance: T) = arg
+                }
+            }
+
+            @MyAdapter(arrayOf("a"))
+            class MyService
+
+            @Component
+            abstract class MyComponent {
+                abstract val arg: Array<String>
             }
         """
     )
 
     @Test
-    fun testBindingAdapterWithArgs() = codegen(
+    fun testBindingAdapterWithBooleanArg() = codegen(
         """
             @BindingAdapter
-            annotation class MyAdapter(val name: String) {
+            annotation class MyAdapter(val arg: Boolean) {
                 companion object {
-                    @MapEntries
-                    fun <T> bind(
-                        @BindingAdapterArg("name") name: String,
-                        instance: T
-                    ): Map<String, Any?> = mapOf(name to instance)
+                    @Binding
+                    fun <T> bindArg(@BindingAdapterArg("arg") arg: Boolean, instance: T) = arg
+                }
+            }
+
+            @MyAdapter(true)
+            class MyService
+
+            @Component
+            abstract class MyComponent {
+                abstract val arg: Boolean
+            }
+        """
+    )
+
+    @Test
+    fun testBindingAdapterWithByteArg() = codegen(
+        """
+            @BindingAdapter
+            annotation class MyAdapter(val arg: Byte) {
+                companion object {
+                    @Binding
+                    fun <T> bindArg(@BindingAdapterArg("arg") arg: Byte, instance: T) = arg
+                }
+            }
+
+            @MyAdapter(0)
+            class MyService
+
+            @Component
+            abstract class MyComponent {
+                abstract val arg: Byte
+            }
+        """
+    )
+
+    @Test
+    fun testBindingAdapterWithCharArg() = codegen(
+        """
+            @BindingAdapter
+            annotation class MyAdapter(val arg: Char) {
+                companion object {
+                    @Binding
+                    fun <T> bindArg(@BindingAdapterArg("arg") arg: Char, instance: T) = arg
+                }
+            }
+
+            @MyAdapter('a')
+            class MyService
+
+            @Component
+            abstract class MyComponent {
+                abstract val arg: Char
+            }
+        """
+    )
+
+    @Test
+    fun testBindingAdapterWithDoubleArg() = codegen(
+        """
+            @BindingAdapter
+            annotation class MyAdapter(val arg: Double) {
+                companion object {
+                    @Binding
+                    fun <T> bindArg(@BindingAdapterArg("arg") arg: Double, instance: T) = arg
+                }
+            }
+
+            @MyAdapter(0.0)
+            class MyService
+
+            @Component
+            abstract class MyComponent {
+                abstract val arg: Double
+            }
+        """
+    )
+
+    @Test
+    fun testBindingAdapterWithEnumArg() = codegen(
+        """
+            enum class MyEnum { A, B }
+            
+            @BindingAdapter
+            annotation class MyAdapter(val arg: MyEnum) {
+                companion object {
+                    @Binding
+                    fun <T> bindArg(@BindingAdapterArg("arg") arg: MyEnum, instance: T) = arg
+                }
+            }
+
+            @MyAdapter(MyEnum.A)
+            class MyService
+
+            @Component
+            abstract class MyComponent {
+                abstract val arg: MyEnum
+            }
+        """
+    )
+
+    @Test
+    fun testBindingAdapterWithFloatArg() = codegen(
+        """
+            @BindingAdapter
+            annotation class MyAdapter(val arg: Float) {
+                companion object {
+                    @Binding
+                    fun <T> bindArg(@BindingAdapterArg("arg") arg: Float, instance: T) = arg
+                }
+            }
+
+            @MyAdapter(0f)
+            class MyService
+
+            @Component
+            abstract class MyComponent {
+                abstract val arg: Float
+            }
+        """
+    )
+
+    @Test
+    fun testBindingAdapterWithIntArg() = codegen(
+        """
+            @BindingAdapter
+            annotation class MyAdapter(val arg: Int) {
+                companion object {
+                    @Binding
+                    fun <T> bindArg(@BindingAdapterArg("arg") arg: Int, instance: T) = arg
+                }
+            }
+
+            @MyAdapter(0)
+            class MyService
+
+            @Component
+            abstract class MyComponent {
+                abstract val arg: Int
+            }
+        """
+    )
+
+    @Test
+    fun testBindingAdapterWithClassArg() = codegen(
+        """
+            @BindingAdapter
+            annotation class MyAdapter(val arg: KClass<*>) {
+                companion object {
+                    @Binding
+                    fun <T> bindArg(@BindingAdapterArg("arg") arg: KClass<*>, instance: T) = arg
+                }
+            }
+
+            @MyAdapter(Any::class)
+            class MyService
+
+            @Component
+            abstract class MyComponent {
+                abstract val arg: KClass<*>
+            }
+        """
+    )
+
+    @Test
+    fun testBindingAdapterWithLongArg() = codegen(
+        """
+            @BindingAdapter
+            annotation class MyAdapter(val arg: Long) {
+                companion object {
+                    @Binding
+                    fun <T> bindArg(@BindingAdapterArg("arg") arg: Long, instance: T) = arg
+                }
+            }
+
+            @MyAdapter(0L)
+            class MyService
+
+            @Component
+            abstract class MyComponent {
+                abstract val arg: Long
+            }
+        """
+    )
+
+    @Test
+    fun testBindingAdapterWithShortArg() = codegen(
+        """
+            @BindingAdapter
+            annotation class MyAdapter(val arg: Short) {
+                companion object {
+                    @Binding
+                    fun <T> bindArg(@BindingAdapterArg("arg") arg: Short, instance: T) = arg
+                }
+            }
+
+            @MyAdapter(0)
+            class MyService
+
+            @Component
+            abstract class MyComponent {
+                abstract val arg: Short
+            }
+        """
+    )
+
+    @Test
+    fun testBindingAdapterWithStringArg() = codegen(
+        """
+            @BindingAdapter
+            annotation class MyAdapter(val arg: String) {
+                companion object {
+                    @Binding
+                    fun <T> bindArg(@BindingAdapterArg("arg") arg: String, instance: T) = arg
                 }
             }
 
             @MyAdapter("my_name")
             class MyService
 
-            @MergeComponent
+            @Component
             abstract class MyComponent {
-                abstract val map: Map<String, Any?> 
+                abstract val arg: String
             }
-            
-            @GenerateMergeComponents
-            fun invoke() {
+        """
+    )
+
+    @Test
+    fun testBindingAdapterWithUByteArg() = codegen(
+        """
+            @BindingAdapter
+            annotation class MyAdapter(val arg: UByte) {
+                companion object {
+                    @Binding
+                    fun <T> bindArg(@BindingAdapterArg("arg") arg: UByte, instance: T) = arg
+                }
+            }
+
+            @MyAdapter(0u)
+            class MyService
+
+            @Component
+            abstract class MyComponent {
+                abstract val arg: UByte
+            }
+        """
+    )
+
+    @Test
+    fun testBindingAdapterWithUIntArg() = codegen(
+        """
+            @BindingAdapter
+            annotation class MyAdapter(val arg: UInt) {
+                companion object {
+                    @Binding
+                    fun <T> bindArg(@BindingAdapterArg("arg") arg: UInt, instance: T) = arg
+                }
+            }
+
+            @MyAdapter(0u)
+            class MyService
+
+            @Component
+            abstract class MyComponent {
+                abstract val arg: UInt
+            }
+        """
+    )
+
+    @Test
+    fun testBindingAdapterWithULongArg() = codegen(
+        """
+            @BindingAdapter
+            annotation class MyAdapter(val arg: ULong) {
+                companion object {
+                    @Binding
+                    fun <T> bindArg(@BindingAdapterArg("arg") arg: ULong, instance: T) = arg
+                }
+            }
+
+            @MyAdapter(0UL)
+            class MyService
+
+            @Component
+            abstract class MyComponent {
+                abstract val arg: ULong
+            }
+        """
+    )
+
+    @Test
+    fun testBindingAdapterWithUShortArg() = codegen(
+        """
+            @BindingAdapter
+            annotation class MyAdapter(val arg: UShort) {
+                companion object {
+                    @Binding
+                    fun <T> bindArg(@BindingAdapterArg("arg") arg: UShort, instance: T) = arg
+                }
+            }
+
+            @MyAdapter(0u)
+            class MyService
+
+            @Component
+            abstract class MyComponent {
+                abstract val arg: UShort
             }
         """
     )
