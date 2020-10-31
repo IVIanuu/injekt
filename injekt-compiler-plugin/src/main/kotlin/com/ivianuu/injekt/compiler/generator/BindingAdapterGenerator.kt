@@ -30,14 +30,12 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 @Binding
 class BindingAdapterGenerator(
     private val bindingContext: BindingContext,
     private val declarationStore: DeclarationStore,
-    private val fileManager: FileManager,
-    private val typeTranslator: TypeTranslator
+    private val fileManager: FileManager
 ) : Generator {
 
     override fun generate(files: List<KtFile>) {
@@ -103,12 +101,6 @@ class BindingAdapterGenerator(
         file: KtFile
     ) {
         val bindingAdapters = callable.bindingAdapters
-            .map { declarationStore.classDescriptorForFqName(it) }
-            .map {
-                it.unsubstitutedMemberScope.getContributedDescriptors()
-                    .filterIsInstance<ClassDescriptor>()
-                    .single()
-            }
 
         val packageName = callable.packageFqName
         val bindingAdapterNameBaseName = joinedNameOf(
@@ -212,13 +204,10 @@ class BindingAdapterGenerator(
             )
             bindingAdapters
                 .flatMap { bindingAdapter ->
-                    declarationStore.moduleForType(
-                        typeTranslator.toClassifierRef(bindingAdapter)
-                            .defaultType
-                    ).callables
+                    bindingAdapter.module.callables
                         .filter { it.contributionKind != null }
                         .map { adapterCallable ->
-                            // todo find a way to dynamically resolve a type parameters
+                            // todo find a way to dynamically resolve type parameters
                             val substitutionMap = buildMap<ClassifierRef, TypeRef> {
                                 this += mapOf(adapterCallable.typeParameters.first() to aliasedType)
                                 this += adapterCallable.typeParameters.drop(1)
@@ -248,6 +237,8 @@ class BindingAdapterGenerator(
                         }
                         Callable.ContributionKind.MAP_ENTRIES -> emitLine("@${InjektFqNames.MapEntries}")
                         Callable.ContributionKind.SET_ELEMENTS -> emitLine("@${InjektFqNames.SetElements}")
+                        Callable.ContributionKind.MODULE -> {}
+                        null -> {}
                     }
                     val functionName = bindingAdapterCallable.fqName.pathSegments().joinToString("_") +
                             "_${bindingAdapterNameBaseName}"
@@ -261,6 +252,7 @@ class BindingAdapterGenerator(
                     emit("inline fun $functionName(")
 
                     bindingAdapterCallable.valueParameters
+                        .filter { it.bindingAdapterArgName == null }
                         .forEachIndexed { index, valueParameter ->
                             val typeRef = valueParameter.type
                             if (valueParameter.inlineKind == ValueParameterRef.InlineKind.CROSSINLINE) {
@@ -281,12 +273,22 @@ class BindingAdapterGenerator(
                         emit("return ")
                         emitCallableInvocation(
                             bindingAdapterCallable,
-                            { emit("${bindingAdapter.fqNameSafe}") },
-                            bindingAdapterCallable.valueParameters.map { parameter ->
-                                {
-                                    emit(parameter.name)
+                            { emit("${bindingAdapter.module.type.classifier.fqName}") },
+                            bindingAdapterCallable.valueParameters
+                                .map { parameter ->
+                                    {
+                                        if (parameter.bindingAdapterArgName != null) {
+                                            val arg = bindingAdapter.args[parameter.bindingAdapterArgName]
+                                            when {
+                                                arg != null -> arg()
+                                                parameter.type.isMarkedNullable -> emit("null")
+                                                else -> error("No argument provided for non null binding arg ${parameter.name}")
+                                            }
+                                        } else {
+                                            emit(parameter.name)
+                                        }
+                                    }
                                 }
-                            }
                         )
                     }
                     callables += Callable(
@@ -296,6 +298,7 @@ class BindingAdapterGenerator(
                         type = bindingAdapterCallable.type,
                         typeParameters = emptyList(),
                         valueParameters = bindingAdapterCallable.valueParameters
+                            .filter { it.bindingAdapterArgName == null }
                             .map { it.copy(isExtensionReceiver = false) },
                         targetComponent = bindingAdapterCallable.targetComponent,
                         contributionKind = bindingAdapterCallable.contributionKind,

@@ -241,9 +241,6 @@ class FunBindingGenerator(
             .map { typeTranslator.toClassifierRef(it) }
             .zip(callableTypeParameters.map { it.defaultType })
             .toMap()
-        val bindingAdapters = descriptor
-            .annotations
-            .filter { it.hasAnnotation(InjektFqNames.BindingAdapter) }
         val bindingCallable = Callable(
             packageFqName = packageFqName,
             fqName = packageFqName.child(bindingFunctionName),
@@ -263,15 +260,18 @@ class FunBindingGenerator(
                         isExtensionReceiver = false,
                         inlineKind = ValueParameterRef.InlineKind.CROSSINLINE,
                         name = if (it == descriptor.extensionReceiverParameter)
-                            "_receiver".asNameId() else it.name
+                            "_receiver".asNameId() else it.name,
+                        bindingAdapterArgName = it.getBindingAdapterArgName()
                     )
                 },
             targetComponent = null,
             contributionKind = Callable.ContributionKind.BINDING,
             isCall = true,
             callableKind = Callable.CallableKind.DEFAULT,
-            bindingAdapters = bindingAdapters
-                .map { it.fqName!! },
+            bindingAdapters = descriptor
+                .annotations
+                .filter { it.hasAnnotation(InjektFqNames.BindingAdapter) }
+                .map { declarationStore.bindingAdapterDescriptorForAnnotation(it) },
             isEager = true,
             isExternal = false,
             isInline = true,

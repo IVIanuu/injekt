@@ -29,10 +29,27 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.resolve.constants.ArrayValue
+import org.jetbrains.kotlin.resolve.constants.BooleanValue
+import org.jetbrains.kotlin.resolve.constants.ByteValue
+import org.jetbrains.kotlin.resolve.constants.CharValue
+import org.jetbrains.kotlin.resolve.constants.ConstantValue
+import org.jetbrains.kotlin.resolve.constants.DoubleValue
+import org.jetbrains.kotlin.resolve.constants.EnumValue
+import org.jetbrains.kotlin.resolve.constants.FloatValue
+import org.jetbrains.kotlin.resolve.constants.IntValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
+import org.jetbrains.kotlin.resolve.constants.LongValue
+import org.jetbrains.kotlin.resolve.constants.ShortValue
+import org.jetbrains.kotlin.resolve.constants.StringValue
+import org.jetbrains.kotlin.resolve.constants.UByteValue
+import org.jetbrains.kotlin.resolve.constants.UIntValue
+import org.jetbrains.kotlin.resolve.constants.ULongValue
+import org.jetbrains.kotlin.resolve.constants.UShortValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
@@ -275,6 +292,51 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         }
     }
 
+    fun bindingAdapterDescriptorForAnnotation(annotation: AnnotationDescriptor): BindingAdapterDescriptor {
+        return BindingAdapterDescriptor(
+            module = moduleForType(
+                typeTranslator.toClassifierRef(
+                    classDescriptorForFqName(annotation.fqName!!)
+                        .companionObjectDescriptor!!
+                ).defaultType
+            ),
+            args = annotation.allValueArguments.mapValues { (_, bindingArg) ->
+                {
+                    fun ConstantValue<*>.emit() {
+                        when (this) {
+                            is ArrayValue -> {
+                                // todo avoid boxing
+                                emit("arrayOf(")
+                                value.forEachIndexed { index, itemValue ->
+                                    itemValue.emit()
+                                    if (index != value.lastIndex) emit(", ")
+                                }
+                            }
+                            is BooleanValue -> emit(value)
+                            is ByteValue -> emit("${value}.toByte()")
+                            is CharValue -> emit("'${value}'")
+                            is DoubleValue -> emit("${value}")
+                            is EnumValue -> emit("${enumClassId.asSingleFqName()}.${enumEntryName}")
+                            is FloatValue -> emit("${value}f")
+                            is IntValue -> emit("$value")
+                            is KClassValue -> emit("$value")
+                            is LongValue -> emit("${value}L")
+                            is ShortValue -> emit("${value}.toShort()")
+                            is StringValue -> emit("\"${value}\"")
+                            is UByteValue -> emit("${value}.toUByte()")
+                            is UIntValue -> emit("${value}.toUInt()")
+                            is ULongValue -> emit("(${value}L).toULong()")
+                            is UShortValue -> emit("${value}.toUShort()")
+                            else -> error("Unsupported bindingArg type $value")
+                        }.let {}
+                    }
+
+                    bindingArg.emit()
+                }
+            }
+        )
+    }
+
     private val callablesByDescriptor = mutableMapOf<CallableDescriptor, Callable>()
     fun callableForDescriptor(descriptor: FunctionDescriptor): Callable = callablesByDescriptor.getOrPut(descriptor) {
         val owner = when (descriptor) {
@@ -282,6 +344,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             is PropertyAccessorDescriptor -> descriptor.correspondingProperty
             else -> descriptor
         }
+
         Callable(
             name = owner.name,
             packageFqName = descriptor.findPackage().fqName,
@@ -314,7 +377,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         type = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
                         isExtensionReceiver = true,
                         name = "_receiver".asNameId(),
-                        inlineKind = ValueParameterRef.InlineKind.NONE
+                        inlineKind = ValueParameterRef.InlineKind.NONE,
+                        bindingAdapterArgName = it.getBindingAdapterArgName()
                     )
                 }
             ) + descriptor.valueParameters.map {
@@ -326,7 +390,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         it.isNoinline -> ValueParameterRef.InlineKind.NOINLINE
                         it.isCrossinline -> ValueParameterRef.InlineKind.CROSSINLINE
                         else -> ValueParameterRef.InlineKind.NONE
-                    }
+                    },
+                    bindingAdapterArgName = it.getBindingAdapterArgName()
                 )
             },
             isCall = owner !is PropertyDescriptor &&
@@ -339,10 +404,9 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 }
             } else Callable.CallableKind.DEFAULT,
             bindingAdapters = (descriptor
-                .getAnnotatedAnnotations(InjektFqNames.BindingAdapter)
-                .map { it.fqName!! } + owner
-                .getAnnotatedAnnotations(InjektFqNames.BindingAdapter)
-                .map { it.fqName!! }).distinct(),
+                .getAnnotatedAnnotations(InjektFqNames.BindingAdapter) + owner
+                .getAnnotatedAnnotations(InjektFqNames.BindingAdapter))
+                .map { bindingAdapterDescriptorForAnnotation(it) },
             isEager = descriptor.hasAnnotation(InjektFqNames.Eager),
             isExternal = owner is DeserializedDescriptor,
             isInline = descriptor.isInline,

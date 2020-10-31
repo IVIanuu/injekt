@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.generator
 
+import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentExpression
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -30,7 +31,7 @@ data class Callable(
     val contributionKind: ContributionKind?,
     val isCall: Boolean,
     val callableKind: CallableKind,
-    val bindingAdapters: List<FqName>,
+    val bindingAdapters: List<BindingAdapterDescriptor>,
     val isEager: Boolean,
     val isExternal: Boolean,
     val isInline: Boolean,
@@ -46,9 +47,10 @@ data class Callable(
 
 data class ValueParameterRef(
     val type: TypeRef,
-    val isExtensionReceiver: Boolean = false,
+    val isExtensionReceiver: Boolean,
     val inlineKind: InlineKind,
     val name: Name,
+    val bindingAdapterArgName: Name?
 ) {
     enum class InlineKind {
         NONE, NOINLINE, CROSSINLINE
@@ -58,4 +60,9 @@ data class ValueParameterRef(
 data class ModuleDescriptor(
     val type: TypeRef,
     val callables: List<Callable>,
+)
+
+data class BindingAdapterDescriptor(
+    val module: ModuleDescriptor,
+    val args: Map<Name, ComponentExpression>
 )

@@ -54,3 +54,6 @@ annotation class SetElements
 
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class BindingAdapter
+
+@Target(AnnotationTarget.VALUE_PARAMETER)
+annotation class BindingAdapterArg(val name: String)

@@ -68,7 +68,7 @@ fun WithMainViewModel(
 }
 
 @FunBinding
-fun enqueueWork(context: ActivityContext) {
+suspend fun enqueueWork(context: ActivityContext) {
     WorkManager.getInstance(context)
         .enqueue(
             OneTimeWorkRequestBuilder<TestWorker>()

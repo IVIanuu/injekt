@@ -447,4 +447,32 @@ class BindingAdapterTest {
         """
     )
 
+    @Test
+    fun testBindingAdapterWithArgs() = codegen(
+        """
+            @BindingAdapter
+            annotation class MyAdapter(val name: String) {
+                companion object {
+                    @MapEntries
+                    fun <T> bind(
+                        @BindingAdapterArg("name") name: String,
+                        instance: T
+                    ): Map<String, Any?> = mapOf(name to instance)
+                }
+            }
+
+            @MyAdapter("my_name")
+            class MyService
+
+            @MergeComponent
+            abstract class MyComponent {
+                abstract val map: Map<String, Any?> 
+            }
+            
+            @GenerateMergeComponents
+            fun invoke() {
+            }
+        """
+    )
+
 }

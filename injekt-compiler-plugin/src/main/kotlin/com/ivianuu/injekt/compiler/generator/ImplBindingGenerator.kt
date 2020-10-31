@@ -131,7 +131,8 @@ class ImplBindingGenerator(
                             it.isCrossinline -> ValueParameterRef.InlineKind.CROSSINLINE
                             else -> ValueParameterRef.InlineKind.NONE
                         },
-                        name = it.name
+                        name = it.name,
+                        bindingAdapterArgName = it.getBindingAdapterArgName()
                     )
                 },
             targetComponent = targetComponent,
@@ -162,7 +163,8 @@ class ImplBindingGenerator(
                         .let { typeTranslator.toTypeRef(it, descriptor) },
                     isExtensionReceiver = true,
                     inlineKind = ValueParameterRef.InlineKind.NONE,
-                    name = "_receiver".asNameId()
+                    name = "_receiver".asNameId(),
+                    bindingAdapterArgName = null
                 )
             ),
             targetComponent = null,
@@ -172,7 +174,7 @@ class ImplBindingGenerator(
             bindingAdapters = descriptor
                 .annotations
                 .filter { it.hasAnnotation(InjektFqNames.BindingAdapter) }
-                .map { it.fqName!! },
+                .map { declarationStore.bindingAdapterDescriptorForAnnotation(it) },
             isEager = false,
             isExternal = false,
             isInline = true,
