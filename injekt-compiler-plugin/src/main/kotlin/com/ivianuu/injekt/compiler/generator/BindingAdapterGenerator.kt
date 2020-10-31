@@ -209,9 +209,12 @@ class BindingAdapterGenerator(
                         .map { adapterCallable ->
                             // todo find a way to dynamically resolve type parameters
                             val substitutionMap = buildMap<ClassifierRef, TypeRef> {
-                                this += mapOf(adapterCallable.typeParameters.first() to aliasedType)
-                                this += adapterCallable.typeParameters.drop(1)
-                                    .zip(callable.valueParameters.map { it.type.nonInlined() })
+                                bindingAdapter.type.typeArguments
+                                    .zip(adapterCallable.typeParameters)
+                                    .forEach { (typeArgument, typeParameter) ->
+                                        this[typeParameter] = typeArgument
+                                    }
+                                this[adapterCallable.typeParameters[bindingAdapter.type.typeArguments.size]] = aliasedType
                             }
                             adapterCallable.copy(
                                 type = adapterCallable.type

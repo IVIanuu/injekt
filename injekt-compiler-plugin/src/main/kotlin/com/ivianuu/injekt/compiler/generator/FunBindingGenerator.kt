@@ -271,7 +271,7 @@ class FunBindingGenerator(
             bindingAdapters = descriptor
                 .annotations
                 .filter { it.hasAnnotation(InjektFqNames.BindingAdapter) }
-                .map { declarationStore.bindingAdapterDescriptorForAnnotation(it) },
+                .map { declarationStore.bindingAdapterDescriptorForAnnotation(it, descriptor) },
             isEager = true,
             isExternal = false,
             isInline = true,

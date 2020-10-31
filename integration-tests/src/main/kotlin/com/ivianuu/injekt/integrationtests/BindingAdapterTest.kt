@@ -735,4 +735,25 @@ class BindingAdapterTest {
         """
     )
 
+    @Test
+    fun testBindingAdapterWithTypeArg() = codegen(
+        """
+            @BindingAdapter
+            annotation class Alias<T> {
+                companion object {
+                    @Binding
+                    fun <T, S : T> bindAlias(instance: S): T = instance
+                }
+            }
+
+            @Alias<Any>
+            class MyService
+
+            @Component
+            abstract class MyComponent {
+                abstract val arg: Any
+            }
+        """
+    )
+
 }

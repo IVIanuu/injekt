@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DeserializedDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -292,8 +293,12 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         }
     }
 
-    fun bindingAdapterDescriptorForAnnotation(annotation: AnnotationDescriptor): BindingAdapterDescriptor {
+    fun bindingAdapterDescriptorForAnnotation(
+        annotation: AnnotationDescriptor,
+        source: DeclarationDescriptor
+    ): BindingAdapterDescriptor {
         return BindingAdapterDescriptor(
+            type = typeTranslator.toTypeRef(annotation.type, source),
             module = moduleForType(
                 typeTranslator.toClassifierRef(
                     classDescriptorForFqName(annotation.fqName!!)
@@ -408,7 +413,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 .getAnnotatedAnnotations(InjektFqNames.BindingAdapter) + owner
                 .getAnnotatedAnnotations(InjektFqNames.BindingAdapter))
                 .distinct()
-                .map { bindingAdapterDescriptorForAnnotation(it) },
+                .map { bindingAdapterDescriptorForAnnotation(it, descriptor) },
             isEager = descriptor.hasAnnotation(InjektFqNames.Eager),
             isExternal = owner is DeserializedDescriptor,
             isInline = descriptor.isInline,

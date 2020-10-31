@@ -63,6 +63,7 @@ data class ModuleDescriptor(
 )
 
 data class BindingAdapterDescriptor(
+    val type: TypeRef,
     val module: ModuleDescriptor,
     val args: Map<Name, ComponentExpression>
 )
