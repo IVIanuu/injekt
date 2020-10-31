@@ -424,7 +424,7 @@ class BindingAdapterTest {
             annotation class AnyBinding {
                 companion object {
                     @Binding
-                    val <T> T.any: Any get() = this
+                    val <T : Any> T.any: Any get() = this
                 }
             }
             
