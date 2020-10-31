@@ -21,11 +21,13 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.componentimpl.emitCallableInvocation
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -46,7 +48,8 @@ class BindingAdapterGenerator(
                         super.visitClass(klass)
                         val descriptor = klass.descriptor<ClassDescriptor>(bindingContext)
                             ?: return
-                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter)) {
+                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter)
+                            && !descriptor.hasAnnotation(InjektFqNames.ImplBinding)) {
                             runExitCatching {
                                 generateBindingAdapterForCallable(
                                     declarationStore.callableForDescriptor(
@@ -67,6 +70,20 @@ class BindingAdapterGenerator(
                             runExitCatching {
                                 generateBindingAdapterForCallable(
                                     declarationStore.callableForDescriptor(descriptor),
+                                    descriptor.findPsi()!!.containingFile as KtFile
+                                )
+                            }
+                        }
+                    }
+
+                    override fun visitProperty(property: KtProperty) {
+                        super.visitProperty(property)
+                        val descriptor = property.descriptor<PropertyDescriptor>(bindingContext)
+                            ?: return
+                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter)) {
+                            runExitCatching {
+                                generateBindingAdapterForCallable(
+                                    declarationStore.callableForDescriptor(descriptor.getter!!),
                                     descriptor.findPsi()!!.containingFile as KtFile
                                 )
                             }
@@ -127,10 +144,11 @@ class BindingAdapterGenerator(
                                 valueParameter.type.typeArguments.size != 1)) {
                         valueParameter.copy(
                             type = valueParameter.type,
-                            inlineKind = ValueParameterRef.InlineKind.CROSSINLINE
+                            inlineKind = ValueParameterRef.InlineKind.CROSSINLINE,
+                            isExtensionReceiver = false
                         )
                     } else {
-                        valueParameter
+                        valueParameter.copy(isExtensionReceiver = false)
                     }
                 }
 

@@ -169,7 +169,10 @@ class ImplBindingGenerator(
             contributionKind = Callable.ContributionKind.BINDING,
             isCall = false,
             callableKind = Callable.CallableKind.DEFAULT,
-            bindingAdapters = emptyList(),
+            bindingAdapters = descriptor
+                .annotations
+                .filter { it.hasAnnotation(InjektFqNames.BindingAdapter) }
+                .map { it.fqName!! },
             isEager = false,
             isExternal = false,
             isInline = true,

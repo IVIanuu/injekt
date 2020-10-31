@@ -340,4 +340,111 @@ class BindingAdapterTest {
         """
     )
 
+    @Test
+    fun testBindingAdapterOnPropertyBinding() = codegen(
+        """
+            @BindingAdapter
+            annotation class AnyBinding {
+                companion object {
+                    @Binding
+                    val <T : Any> T.any: Any get() = this
+                }
+            }
+            
+            @AnyBinding
+            val myBinding: Foo get() = Foo()
+
+            @MergeComponent
+            abstract class MyComponent {
+                abstract val any: Any
+            }
+            
+            @GenerateMergeComponents
+            fun invoke() {
+            }
+        """
+    )
+
+    @Test
+    fun testBindingAdapterOnExtensionFunctionBinding() = codegen(
+        """
+            @BindingAdapter
+            annotation class AnyBinding {
+                companion object {
+                    @Binding
+                    val <T : Any> T.any: Any get() = this
+                }
+            }
+            
+            @AnyBinding
+            fun Foo.myBinding(): Bar = Bar(this)
+
+            @MergeComponent
+            abstract class MyComponent {
+                abstract val any: Any
+                @Binding protected fun foo() = Foo()
+            }
+            
+            @GenerateMergeComponents
+            fun invoke() {
+            }
+        """
+    )
+
+    @Test
+    fun testBindingAdapterOnExtensionPropertyBinding() = codegen(
+        """
+            @BindingAdapter
+            annotation class AnyBinding {
+                companion object {
+                    @Binding
+                    val <T : Any> T.any: Any get() = this
+                }
+            }
+            
+            @AnyBinding
+            val Foo.myBinding: Bar get() = Bar(this)
+
+            @MergeComponent
+            abstract class MyComponent {
+                abstract val any: Any
+                @Binding protected fun foo() = Foo()
+            }
+            
+            @GenerateMergeComponents
+            fun invoke() {
+            }
+        """
+    )
+
+    @Test
+    fun testBindingAdapterWithImplBinding() = codegen(
+        """
+            @BindingAdapter
+            annotation class AnyBinding {
+                companion object {
+                    @Binding
+                    val <T> T.any: Any get() = this
+                }
+            }
+            
+            interface MyService
+            
+            @AnyBinding
+            @ImplBinding
+            class MyServiceImpl(foo: Foo) : MyService
+
+            @MergeComponent
+            abstract class MyComponent {
+                abstract val any: Any
+                
+                @Binding protected fun foo() = Foo()
+            }
+            
+            @GenerateMergeComponents
+            fun invoke() {
+            }
+        """
+    )
+
 }
