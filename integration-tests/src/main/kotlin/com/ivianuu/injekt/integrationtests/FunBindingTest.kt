@@ -356,8 +356,8 @@ class FunBindingTest {
             annotation class MyAdapter {
                 companion object {
                     @Binding
-                    fun <T, P1> withoutFooArg(value: (P1) -> T): T {
-                        return value(Foo() as P1)
+                    fun <T> withoutFooArg(value: (Foo) -> T): T {
+                        return value(Foo())
                     }
                 }
             }
