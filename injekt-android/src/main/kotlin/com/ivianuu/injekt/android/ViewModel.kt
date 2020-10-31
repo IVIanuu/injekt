@@ -23,6 +23,7 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingAdapter
 import com.ivianuu.injekt.FunBinding
 
+@BindingAdapter
 annotation class ActivityViewModelBinding {
     companion object {
         @Binding

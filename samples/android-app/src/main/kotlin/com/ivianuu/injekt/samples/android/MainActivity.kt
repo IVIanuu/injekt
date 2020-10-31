@@ -24,11 +24,11 @@ import androidx.compose.ui.platform.setContent
 import androidx.lifecycle.ViewModel
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.FunApi
 import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityContext
+import com.ivianuu.injekt.android.ActivityViewModelBinding
 import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.merge.MergeInto
 import com.ivianuu.injekt.merge.mergeComponent
@@ -36,7 +36,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -68,7 +67,7 @@ fun WithMainViewModel(
 }
 
 @FunBinding
-suspend fun enqueueWork(context: ActivityContext) {
+fun enqueueWork(context: ActivityContext) {
     WorkManager.getInstance(context)
         .enqueue(
             OneTimeWorkRequestBuilder<TestWorker>()
@@ -76,7 +75,7 @@ suspend fun enqueueWork(context: ActivityContext) {
         )
 }
 
-@Binding
+@ActivityViewModelBinding
 class MainViewModel : ViewModel() {
     init {
         println("init")

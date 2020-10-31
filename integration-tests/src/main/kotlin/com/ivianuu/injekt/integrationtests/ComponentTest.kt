@@ -1192,4 +1192,61 @@ class ComponentTest {
         assertSame(a, b)
     }
 
+    @Test
+    fun testBoundedGenericWithAlias() = multiCodegen(
+        listOf(
+            source(
+                """
+                    interface ViewModel
+            
+                    interface ViewModelStore
+            
+                    @Binding
+                    class DefaultViewModelStore : ViewModelStore
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @BindingAdapter
+                    annotation class ViewModelBinding {
+                        companion object {
+                            @Binding
+                            fun <T : ViewModel> bind(
+                                getViewModel: getViewModel<T, DefaultViewModelStore>
+                            ): T = getViewModel()
+                        }
+                    }
+                    
+                    @FunBinding
+                    inline fun <reified VM : ViewModel, VMSO : ViewModelStore> getViewModel(
+                        store: VMSO,
+                        noinline provider: () -> VM
+                    ) = provider()
+                    """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @ViewModelBinding
+                    class MyViewModel : ViewModel
+                    
+                    @FunBinding
+                    fun WithMyViewModel(
+                        viewModelFactory: () -> MyViewModel,
+                        @FunApi children: (MyViewModel) -> Unit 
+                    ) {
+                    }
+                    
+                    @Component
+                    abstract class MyComponent {
+                        abstract val withMyViewModel: WithMyViewModel
+                    }
+                """
+            )
+        )
+    )
+
 }
