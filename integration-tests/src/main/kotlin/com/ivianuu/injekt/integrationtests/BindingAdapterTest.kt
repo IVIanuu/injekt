@@ -756,4 +756,37 @@ class BindingAdapterTest {
         """
     )
 
+    @Test
+    fun testBindingAdapterUsesAnotherBindingAdapter() = codegen(
+        """
+            @BindingAdapter
+            annotation class A {
+                companion object {
+                    @B
+                    @Binding
+                    fun <T : CharSequence> b(instance: T): CharSequence = instance
+                }
+            }
+            
+            @BindingAdapter
+            annotation class B {
+                companion object {
+                    @Binding
+                    fun <T : Any> any(instance: T): Any = instance
+                }
+            }
+
+            @A
+            @Binding
+            fun string() = "hello"
+
+            @Component
+            abstract class MyComponent {
+                abstract val string: String
+                abstract val charSequence: CharSequence
+                abstract val any: Any
+            }
+        """
+    )
+
 }

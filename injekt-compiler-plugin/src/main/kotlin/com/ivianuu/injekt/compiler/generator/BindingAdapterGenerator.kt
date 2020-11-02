@@ -65,7 +65,9 @@ class BindingAdapterGenerator(
                         val descriptor = function.descriptor<FunctionDescriptor>(bindingContext)
                             ?: return
                         if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter) &&
-                            !descriptor.hasAnnotation(InjektFqNames.FunBinding)) {
+                            !descriptor.hasAnnotation(InjektFqNames.FunBinding) &&
+                            descriptor.containingDeclaration.containingDeclaration
+                                ?.hasAnnotation(InjektFqNames.BindingAdapter) != true) {
                             runExitCatching {
                                 generateBindingAdapterForCallable(
                                     declarationStore.callableForDescriptor(descriptor),
@@ -79,7 +81,9 @@ class BindingAdapterGenerator(
                         super.visitProperty(property)
                         val descriptor = (property.descriptor<DeclarationDescriptor>(bindingContext) as? PropertyDescriptor)
                             ?: return
-                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter)) {
+                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter) &&
+                            descriptor.containingDeclaration.containingDeclaration
+                                ?.hasAnnotation(InjektFqNames.BindingAdapter) != true) {
                             runExitCatching {
                                 generateBindingAdapterForCallable(
                                     declarationStore.callableForDescriptor(descriptor.getter!!),
@@ -92,9 +96,17 @@ class BindingAdapterGenerator(
             )
         }
 
-        declarationStore.generatedCallables
-            .filter { it.first.bindingAdapters.isNotEmpty() }
-            .forEach { generateBindingAdapterForCallable(it.first, it.second) }
+        val processedCallables = mutableSetOf<Pair<Callable, KtFile>>()
+        while (true) {
+            val unprocessedCallables = declarationStore.generatedCallables - processedCallables
+            if (unprocessedCallables.isEmpty()) break
+            unprocessedCallables.forEach { (callable, file) ->
+                if (callable.bindingAdapters.isNotEmpty()) {
+                    generateBindingAdapterForCallable(callable, file)
+                }
+            }
+            processedCallables += unprocessedCallables
+        }
     }
 
     private fun generateBindingAdapterForCallable(
@@ -312,7 +324,7 @@ class BindingAdapterGenerator(
                         contributionKind = bindingAdapterCallable.contributionKind,
                         isCall = true,
                         callableKind = callableKind,
-                        bindingAdapters = emptyList(),
+                        bindingAdapters = bindingAdapterCallable.bindingAdapters,
                         isEager = bindingAdapterCallable.isEager,
                         isExternal = false,
                         isInline = true,
