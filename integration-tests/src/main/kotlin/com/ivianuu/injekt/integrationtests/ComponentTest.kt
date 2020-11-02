@@ -1109,6 +1109,26 @@ class ComponentTest {
     }
 
     @Test
+    fun testFunBindingBreaksCircularDependency() = codegen(
+        """
+            @FunBinding
+            fun A(b: B) {
+            }
+            
+            @FunBinding
+            fun B(a: A) {
+            }
+            
+            @Component
+            abstract class MyComponent {
+                abstract val b: B
+            }
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
     fun testBindingsCanBeInternalizedViaInternalTypeAliases() = multiCodegen(
         listOf(
             source(

@@ -216,7 +216,8 @@ class BindingGraph(
             )
             if (relevantSubchain.any {
                     it is ProviderBindingNode ||
-                            it.type.classifier.fqName.asString().startsWith("kotlin.Function")
+                            it.type.classifier.fqName.asString().startsWith("kotlin.Function") ||
+                            (it is CallableBindingNode && it.callable.isFunBinding)
                 }) return
             error(
                 "Circular dependency ${relevantSubchain.map { it.type.render() }} already contains ${binding.type.render()} $chain"
