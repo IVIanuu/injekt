@@ -20,6 +20,7 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.componentimpl.emitCallableInvocation
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
@@ -76,7 +77,7 @@ class BindingAdapterGenerator(
 
                     override fun visitProperty(property: KtProperty) {
                         super.visitProperty(property)
-                        val descriptor = property.descriptor<PropertyDescriptor>(bindingContext)
+                        val descriptor = (property.descriptor<DeclarationDescriptor>(bindingContext) as? PropertyDescriptor)
                             ?: return
                         if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter)) {
                             runExitCatching {
