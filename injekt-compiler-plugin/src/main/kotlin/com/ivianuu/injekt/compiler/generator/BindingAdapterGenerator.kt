@@ -222,7 +222,9 @@ class BindingAdapterGenerator(
             bindingAdapters
                 .flatMap { bindingAdapter ->
                     bindingAdapter.module.callables
-                        .filter { it.contributionKind != null }
+                        .filter {
+                            it.contributionKind != null || it.bindingAdapters.isNotEmpty()
+                        }
                         .map { adapterCallable ->
                             // todo find a way to dynamically resolve type parameters
                             val substitutionMap = buildMap<ClassifierRef, TypeRef> {
