@@ -262,6 +262,16 @@ class BindingAdapterGenerator(
                         Callable.ContributionKind.MODULE -> {}
                         null -> {}
                     }
+                    bindingAdapterCallable.bindingAdapters
+                        .forEach { innerBindingAdapter ->
+                            emit("@${innerBindingAdapter.type.classifier.fqName}(")
+                            innerBindingAdapter.args.toList().forEachIndexed { index, (argName, argExpression) ->
+                                emit("$argName = ")
+                                argExpression()
+                                if (index != innerBindingAdapter.args.toList().lastIndex) emit(", ")
+                            }
+                            emitLine(")")
+                        }
                     val functionName = bindingAdapterCallable.fqName.pathSegments().joinToString("_") +
                             "_${bindingAdapterNameBaseName}"
 

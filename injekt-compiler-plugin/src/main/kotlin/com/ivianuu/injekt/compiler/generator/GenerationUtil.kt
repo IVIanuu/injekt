@@ -53,6 +53,12 @@ fun DeclarationDescriptor.hasAnnotationWithPropertyAndClass(
     (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotation(fqName)) ||
     (this is ConstructorDescriptor && constructedClass.hasAnnotation(fqName))
 
+fun DeclarationDescriptor.hasAnnotatedAnnotationsWithPropertyAndClass(
+    fqName: FqName
+): Boolean = hasAnnotatedAnnotations(fqName) ||
+        (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotatedAnnotations(fqName)) ||
+        (this is ConstructorDescriptor && constructedClass.hasAnnotatedAnnotations(fqName))
+
 fun ClassDescriptor.getInjectConstructor(): ConstructorDescriptor? {
     if (hasAnnotation(InjektFqNames.Binding) ||
         hasAnnotation(InjektFqNames.ImplBinding) ||

@@ -434,7 +434,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     it.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
-                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.Module)
+                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) ||
+                            it.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.BindingAdapter)
                 }
                     .mapNotNull {
                         when (it) {
