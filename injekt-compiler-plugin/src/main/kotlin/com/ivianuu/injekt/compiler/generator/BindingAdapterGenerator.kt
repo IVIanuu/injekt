@@ -149,6 +149,8 @@ class BindingAdapterGenerator(
 
             if (callable.isEager)
                 emitLine("@${InjektFqNames.Eager}")
+            if (callable.isFunBinding)
+                emitLine("@${InjektFqNames.FunBinding}")
             emitLine("@Binding")
 
             val callableKind = callable.callableKind
@@ -203,7 +205,7 @@ class BindingAdapterGenerator(
                 isEager = callable.isEager,
                 isExternal = false,
                 isInline = true,
-                isFunBinding = false
+                isFunBinding = callable.isFunBinding
             )
             bindingAdapters
                 .flatMap { bindingAdapter ->
