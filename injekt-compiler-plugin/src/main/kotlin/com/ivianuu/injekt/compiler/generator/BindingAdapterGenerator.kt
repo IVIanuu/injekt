@@ -302,7 +302,7 @@ class BindingAdapterGenerator(
                                             when {
                                                 arg != null -> arg()
                                                 parameter.type.isMarkedNullable -> emit("null")
-                                                else -> error("No argument provided for non null binding arg ${parameter.name}")
+                                                else -> error("No argument provided for non null binding arg ${parameter.name} in ${file.virtualFilePath}")
                                             }
                                         } else {
                                             emit(parameter.name)
