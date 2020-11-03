@@ -28,7 +28,6 @@ import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.TypeTranslator
 import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.defaultType
-import com.ivianuu.injekt.compiler.generator.nonInlined
 import com.ivianuu.injekt.compiler.generator.renderExpanded
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.name.FqName
@@ -95,9 +94,11 @@ class ComponentStatements(
             parent!!.getBindingExpression(request)
         } else {
             when (binding) {
-                is ChildImplBindingNode -> childFactoryExpression(binding)
+                is AssistedBindingNode -> assistedExpression(binding)
+                is ChildComponentBindingNode -> childFactoryExpression(binding)
                 is CallableBindingNode -> callableExpression(binding)
                 is DelegateBindingNode -> delegateExpression(binding)
+                is InputBindingNode -> inputExpression(binding)
                 is MapBindingNode -> mapExpression(binding)
                 is NullBindingNode -> nullExpression()
                 is ProviderBindingNode -> providerExpression(binding)
@@ -121,13 +122,14 @@ class ComponentStatements(
         val callableName = requestForType
             ?.name ?: binding.type.uniqueTypeName()
 
-        val isProperty = requestForType?.isCall?.not() ?: if (binding is CallableBindingNode)
-            binding.callable.callableKind != Callable.CallableKind.SUSPEND else true
+        val isProperty = if (requestForType != null) !requestForType.isCall
+        else binding.callableKind != Callable.CallableKind.SUSPEND
 
         getCallable(
             type = binding.type,
             name = callableName,
-            isOverride = requestForType != null,
+            isOverride = requestForType != null &&
+                    requestForType !in owner.assistedRequests,
             body = finalExpression,
             isProperty = isProperty,
             callableKind = requestForType?.callableKind ?: callableKind,
@@ -144,8 +146,36 @@ class ComponentStatements(
         return expression
     }
 
-    private fun childFactoryExpression(binding: ChildImplBindingNode): ComponentExpression = {
-        emit("::${binding.childComponentImpl.name}")
+    private fun assistedExpression(binding: AssistedBindingNode): ComponentExpression = {
+        emit("{ ")
+        binding.assistedTypes
+            .forEachIndexed { index, assistedType ->
+                emit("p$index: ${assistedType.renderExpanded()}")
+                if (index != binding.assistedTypes.lastIndex) emit(", ")
+            }
+        emitLine(" ->")
+        fun emitNewInstance() {
+            emit("${binding.childComponent.name}(")
+            binding.assistedTypes.forEachIndexed { index, assistedType ->
+                emit("p$index")
+                if (index != binding.assistedTypes.lastIndex) emit(", ")
+            }
+            emit(")")
+            emitLine(".invoke()")
+        }
+        if (binding.targetComponent != null) {
+            scoped(binding.type.typeArguments.last(), binding.callableKind, false) {
+                emitNewInstance()
+            }
+        } else {
+            emitNewInstance()
+        }
+        emitLine()
+        emitLine("}")
+    }
+
+    private fun childFactoryExpression(binding: ChildComponentBindingNode): ComponentExpression = {
+        emit("::${binding.childComponent.name}")
     }
 
     private fun delegateExpression(binding: DelegateBindingNode): ComponentExpression = {
@@ -153,6 +183,10 @@ class ComponentStatements(
         emit("(")
         delegate()
         emit(" as ${binding.type})")
+    }
+
+    private fun inputExpression(binding: InputBindingNode): ComponentExpression = {
+        emit("input${binding.index}")
     }
 
     private fun mapExpression(binding: MapBindingNode): ComponentExpression = {
@@ -208,65 +242,20 @@ class ComponentStatements(
     private fun nullExpression(): ComponentExpression = { emit("null") }
 
     private fun callableExpression(binding: CallableBindingNode): ComponentExpression = {
-        if (binding.assistedParameters.isNotEmpty()) {
-            emit("{ ")
-            binding.assistedParameters
-                .forEachIndexed { index, parameter ->
-                    emit("p$index: ${parameter.renderExpanded()}")
-                    if (index != binding.assistedParameters.lastIndex) emit(", ")
-                }
-            emitLine(" ->")
-            val emitCallableInvocation = {
-                var assistedIndex = 0
-                var nonAssistedIndex = 0
-                emitCallableInvocation(
-                    binding.callable,
-                    binding.receiver,
-                    binding.callable.valueParameters.map { parameter ->
-                        if (parameter.type.nonInlined() in binding.assistedParameters) {
-                            {
-                                if (parameter.type.isInlineProvider) emit("{ ")
-                                emit("p${assistedIndex++}")
-                                if (parameter.type.isInlineProvider) emit(" }")
-                            }
-                        } else {
-                            val raw = getBindingExpression(binding.dependencies[nonAssistedIndex++])
-                            if (parameter.type.isInlineProvider) {
-                                {
-                                    emit("{ ")
-                                    raw()
-                                    emit(" }")
-                                }
-                            } else raw
-                        }
+        emitCallableInvocation(
+            binding.callable,
+            binding.receiver,
+            binding.callable.valueParameters.zip(binding.dependencies).map { (parameter, request) ->
+                val raw = getBindingExpression(request)
+                if (parameter.type.isInlineProvider) {
+                    {
+                        emit("{ ")
+                        raw()
+                        emit(" }")
                     }
-                )
+                } else raw
             }
-            if (binding.targetComponent != null) {
-                scoped(binding.type.typeArguments.last(), binding.callableKind, false) {
-                    emitCallableInvocation()
-                }
-            } else {
-                emitCallableInvocation()
-            }
-            emitLine()
-            emitLine("}")
-        } else {
-            emitCallableInvocation(
-                binding.callable,
-                binding.receiver,
-                binding.callable.valueParameters.zip(binding.dependencies).map { (parameter, request) ->
-                    val raw = getBindingExpression(request)
-                    if (parameter.type.isInlineProvider) {
-                        {
-                            emit("{ ")
-                            raw()
-                            emit(" }")
-                        }
-                    } else raw
-                }
-            )
-        }
+        )
     }
 
     private fun providerExpression(binding: ProviderBindingNode): ComponentExpression = {
@@ -295,7 +284,7 @@ class ComponentStatements(
             isOverride = false,
             isProperty = true,
             callableKind = Callable.CallableKind.DEFAULT,
-        ).also { owner.members += it }
+        ).also { owner.nonAssistedComponent.members += it }
 
         if (callableKind == Callable.CallableKind.SUSPEND) {
             val mutexType = typeTranslator.toClassifierRef(
@@ -327,15 +316,15 @@ class ComponentStatements(
 
         emit("run ")
         braced {
-            emitLine("var value = this@${owner.name}.${cacheProperty.name}")
-            emitLine("if (value !== this@${owner.name}) return@run value as ${type.renderExpanded()}")
+            emitLine("var value = this@${owner.nonAssistedComponent.name}.${cacheProperty.name}")
+            emitLine("if (value !== this@${owner.nonAssistedComponent.name}) return@run value as ${type.renderExpanded()}")
             fun emitInvocation() {
-                emitLine("value = this@${owner.name}.${cacheProperty.name}")
-                emitLine("if (value !== this@${owner.name}) return@run value as ${type.renderExpanded()}")
+                emitLine("value = this@${owner.nonAssistedComponent.name}.${cacheProperty.name}")
+                emitLine("if (value !== this@${owner.nonAssistedComponent.name}) return@run value as ${type.renderExpanded()}")
                 emit("value = ")
                 create()
                 emitLine()
-                emitLine("this@${owner.name}.${cacheProperty.name} = value")
+                emitLine("this@${owner.nonAssistedComponent.name}.${cacheProperty.name} = value")
                 emitLine("return@run value as ${type.renderExpanded()}")
             }
             when (callableKind) {

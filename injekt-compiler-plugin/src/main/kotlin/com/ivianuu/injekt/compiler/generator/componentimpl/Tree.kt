@@ -106,11 +106,35 @@ class SelfBindingNode(
         get() = false
 }
 
-class ChildImplBindingNode(
+class AssistedBindingNode(
+    override val type: TypeRef,
+    override val owner: ComponentImpl,
+    val childComponent: ComponentImpl,
+    val assistedTypes: List<TypeRef>
+) : BindingNode() {
+    override val cacheable: Boolean
+        get() = true
+    override val callableKind: Callable.CallableKind
+        get() = Callable.CallableKind.DEFAULT
+    override val dependencies: List<BindingRequest>
+        get() = emptyList()
+    override val isExternal: Boolean
+        get() = false
+    override val origin: FqName?
+        get() = null
+    override val rawType: TypeRef
+        get() = type
+    override val receiver: ComponentExpression?
+        get() = null
+    override val targetComponent: TypeRef?
+        get() = null
+}
+
+class ChildComponentBindingNode(
     override val type: TypeRef,
     override val owner: ComponentImpl,
     override val origin: FqName?,
-    val childComponentImpl: ComponentImpl,
+    val childComponent: ComponentImpl,
 ) : BindingNode() {
     override val callableKind: Callable.CallableKind
         get() = Callable.CallableKind.DEFAULT
@@ -128,20 +152,48 @@ class ChildImplBindingNode(
         get() = true
 }
 
+class InputBindingNode(
+    override val type: TypeRef,
+    override val owner: ComponentImpl,
+    val index: Int
+) : BindingNode() {
+    override val cacheable: Boolean
+        get() = false
+    override val callableKind: Callable.CallableKind
+        get() = Callable.CallableKind.DEFAULT
+    override val dependencies: List<BindingRequest>
+        get() = emptyList()
+    override val isExternal: Boolean
+        get() = false
+    override val origin: FqName?
+        get() = null
+    override val rawType: TypeRef
+        get() = type
+    override val receiver: ComponentExpression?
+        get() = null
+    override val targetComponent: TypeRef?
+        get() = null
+}
+
 class CallableBindingNode(
     override val type: TypeRef,
     override val rawType: TypeRef,
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
-    override val origin: FqName?,
-    override val targetComponent: TypeRef?,
     override val receiver: ComponentExpression?,
-    override val isExternal: Boolean,
-    override val cacheable: Boolean,
-    override val callableKind: Callable.CallableKind,
-    val assistedParameters: List<TypeRef>,
     val callable: Callable
 ) : BindingNode() {
+    override val callableKind: Callable.CallableKind
+        get() = callable.callableKind
+    override val isExternal: Boolean
+        get() = callable.isExternal
+    override val targetComponent: TypeRef?
+        get() = callable.targetComponent
+    override val origin: FqName?
+        get() = callable.fqName
+    override val cacheable: Boolean
+        get() = callable.isEager
+
     override fun toString(): String = "Callable(${callable.type.render()})"
 }
 

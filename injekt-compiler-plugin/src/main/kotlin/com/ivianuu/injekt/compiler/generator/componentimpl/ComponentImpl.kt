@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.generator.componentimpl
 import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.UniqueNameProvider
+import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.TypeRef
@@ -31,13 +32,21 @@ import org.jetbrains.kotlin.name.Name
 
 @Binding
 class ComponentImpl(
-    val componentType: @Assisted TypeRef,
-    val name: @Assisted Name,
-    val parent: @Assisted ComponentImpl?,
     private val declarationStore: DeclarationStore,
     statementsFactory: (ComponentImpl) -> ComponentStatements,
     graphFactory: (ComponentImpl) -> BindingGraph,
+    val componentType: @Assisted TypeRef,
+    val name: @Assisted Name,
+    val inputTypes: @Assisted List<TypeRef>,
+    val assistedRequests: @Assisted List<Callable>,
+    val parent: @Assisted ComponentImpl?,
 ) : ComponentMember {
+
+    val isAssisted: Boolean
+        get() = assistedRequests.isNotEmpty()
+
+    val nonAssistedComponent: ComponentImpl
+        get() = if (isAssisted) parent!!.nonAssistedComponent else this
 
     val contextTreeNameProvider: UniqueNameProvider =
         parent?.contextTreeNameProvider ?: UniqueNameProvider()
@@ -65,7 +74,7 @@ class ComponentImpl(
     val requests = (listOf(componentType) + mergeDeclarations
         .filterNot { it.isModule })
         .flatMap { declarationStore.allCallablesForType(it) }
-        .filter { it.contributionKind == null }
+        .filter { it.contributionKind == null } + assistedRequests
 
     fun initialize() {
         parent?.members?.add(this)
@@ -76,10 +85,8 @@ class ComponentImpl(
             statements.getCallable(
                 type = it.type,
                 name = it.name,
-                isOverride = true,
-                body = statements.getBindingExpression(
-                    BindingRequest(it.type, it.fqName)
-                ),
+                isOverride = it !in assistedRequests,
+                body = statements.getBindingExpression(BindingRequest(it.type, it.fqName)),
                 isProperty = !it.isCall,
                 callableKind = it.callableKind,
                 cacheable = binding.cacheable
@@ -96,6 +103,13 @@ class ComponentImpl(
             constructorParameters.forEachIndexed { index, param ->
                 emit("${param.name}: ${param.type.renderExpanded()}")
                 if (index != constructorParameters.lastIndex) emit(", ")
+            }
+            emit(")")
+        } else if (inputTypes.isNotEmpty()) {
+            emit("(")
+            inputTypes.forEachIndexed { index, inputType ->
+                emit("val input$index: ${inputType.renderExpanded()}")
+                if (index != inputTypes.lastIndex) emit(", ")
             }
             emit(")")
         }

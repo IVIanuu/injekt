@@ -36,6 +36,8 @@ class ComponentGenerator(
     private val componentImplFactory: (
         TypeRef,
         Name,
+        List<TypeRef>,
+        List<Callable>,
         ComponentImpl?,
     ) -> ComponentImpl,
     private val typeTranslator: TypeTranslator
@@ -75,6 +77,8 @@ class ComponentGenerator(
         val componentImpl = componentImplFactory(
             componentType,
             componentImplFqName.shortName(),
+            emptyList(),
+            emptyList(),
             null
         )
         componentImpl.initialize()
