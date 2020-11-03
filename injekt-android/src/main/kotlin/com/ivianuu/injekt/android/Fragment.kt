@@ -31,27 +31,27 @@ abstract class FragmentComponent(@Binding protected val fragment: Fragment)
 
 typealias FragmentContext = Context
 @Binding
-val Fragment.fragmentContext: FragmentContext
+inline val Fragment.fragmentContext: FragmentContext
     get() = requireContext()
 
 typealias FragmentResources = Resources
 @Binding
-val FragmentContext.fragmentResources: FragmentResources
+inline val FragmentContext.fragmentResources: FragmentResources
     get() = resources
 
 typealias FragmentLifecycleOwner = LifecycleOwner
 @Binding
-val Fragment.fragmentLifecycleOwner: FragmentLifecycleOwner
+inline val Fragment.fragmentLifecycleOwner: FragmentLifecycleOwner
     get() = this
 
 typealias FragmentSavedStateRegistryOwner = SavedStateRegistryOwner
 @Binding
-val Fragment.fragmentSavedStateRegistryOwner: FragmentSavedStateRegistryOwner
+inline val Fragment.fragmentSavedStateRegistryOwner: FragmentSavedStateRegistryOwner
     get() = this
 
 typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
 @Binding
-val Fragment.fragmentViewModelStoreOwner: FragmentViewModelStoreOwner
+inline val Fragment.fragmentViewModelStoreOwner: FragmentViewModelStoreOwner
     get() = this
 
 @MergeInto(ActivityComponent::class)

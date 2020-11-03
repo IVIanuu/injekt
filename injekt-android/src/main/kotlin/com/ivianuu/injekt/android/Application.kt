@@ -32,20 +32,20 @@ val Application.applicationComponent: ApplicationComponent
     }
 
 @Binding
-val App.application: Application
+inline val App.application: Application
     get() = this as Application
 
 typealias ApplicationContext = Context
 @Binding
-val Application.appContext: ApplicationContext
+inline val Application.appContext: ApplicationContext
     get() = this
 
 typealias ApplicationResources = Resources
 @Binding
-val Application.applicationResources: ApplicationResources
+inline val Application.applicationResources: ApplicationResources
     get() = resources
 
 typealias ApplicationLifecycleOwner = LifecycleOwner
 @Binding
-val Application.applicationLifecycleOwner: ApplicationLifecycleOwner
+inline val Application.applicationLifecycleOwner: ApplicationLifecycleOwner
     get() = ProcessLifecycleOwner.get()

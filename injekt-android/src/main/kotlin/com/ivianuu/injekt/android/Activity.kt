@@ -39,27 +39,27 @@ abstract class ActivityComponent(@Binding protected val activity: ComponentActiv
 
 typealias ActivityContext = Context
 @Binding
-val ComponentActivity.activityContext: ActivityContext
+inline val ComponentActivity.activityContext: ActivityContext
     get() = this
 
 typealias ActivityResources = Resources
 @Binding
-val ComponentActivity.activityResources: ActivityResources
+inline val ComponentActivity.activityResources: ActivityResources
     get() = resources
 
 typealias ActivityLifecycleOwner = LifecycleOwner
 @Binding
-val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
+inline val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
     get() = this
 
 typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
 @Binding
-val ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
+inline val ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
     get() = this
 
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 @Binding
-val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
+inline val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
     get() = this
 
 @MergeInto(RetainedActivityComponent::class)

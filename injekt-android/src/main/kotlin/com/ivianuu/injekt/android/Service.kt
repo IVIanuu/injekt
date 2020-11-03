@@ -35,12 +35,12 @@ abstract class ServiceComponent(@Binding protected val service: Service)
 
 typealias ServiceContext = Context
 @Binding
-val Service.serviceContext: ServiceContext
+inline val Service.serviceContext: ServiceContext
     get() = this
 
 typealias ServiceResources = Resources
 @Binding
-val Service.serviceResources: ServiceResources
+inline val Service.serviceResources: ServiceResources
     get() = resources
 
 @MergeInto(ApplicationComponent::class)

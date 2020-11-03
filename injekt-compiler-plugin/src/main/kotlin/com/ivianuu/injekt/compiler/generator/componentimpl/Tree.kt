@@ -84,6 +84,7 @@ sealed class BindingNode {
     abstract val isExternal: Boolean
     abstract val cacheable: Boolean
     abstract val callableKind: Callable.CallableKind
+    abstract val inlineable: Boolean
 }
 
 class SelfBindingNode(
@@ -104,6 +105,8 @@ class SelfBindingNode(
         get() = false
     override val cacheable: Boolean
         get() = false
+    override val inlineable: Boolean
+        get() = true
 }
 
 class AssistedBindingNode(
@@ -128,6 +131,8 @@ class AssistedBindingNode(
         get() = null
     override val targetComponent: TypeRef?
         get() = null
+    override val inlineable: Boolean
+        get() = false
 }
 
 class ChildComponentBindingNode(
@@ -150,6 +155,8 @@ class ChildComponentBindingNode(
         get() = false
     override val cacheable: Boolean
         get() = true
+    override val inlineable: Boolean
+        get() = false
 }
 
 class InputBindingNode(
@@ -173,6 +180,8 @@ class InputBindingNode(
         get() = null
     override val targetComponent: TypeRef?
         get() = null
+    override val inlineable: Boolean
+        get() = true
 }
 
 class CallableBindingNode(
@@ -193,6 +202,8 @@ class CallableBindingNode(
         get() = callable.fqName
     override val cacheable: Boolean
         get() = callable.isEager
+    override val inlineable: Boolean
+        get() = !cacheable && callable.isInline
 
     override fun toString(): String = "Callable(${callable.type.render()})"
 }
@@ -216,6 +227,8 @@ class DelegateBindingNode(
         get() = false
     override val origin: FqName?
         get() = null
+    override val inlineable: Boolean
+        get() = true
 }
 
 class MapBindingNode(
@@ -238,6 +251,8 @@ class MapBindingNode(
         get() = false
     override val cacheable: Boolean
         get() = false
+    override val inlineable: Boolean
+        get() = false
 }
 
 class ProviderBindingNode(
@@ -258,6 +273,8 @@ class ProviderBindingNode(
         get() = false
     override val cacheable: Boolean
         get() = true
+    override val inlineable: Boolean
+        get() = false
 }
 
 class SetBindingNode(
@@ -279,6 +296,8 @@ class SetBindingNode(
     override val isExternal: Boolean
         get() = false
     override val cacheable: Boolean
+        get() = false
+    override val inlineable: Boolean
         get() = false
 }
 
@@ -308,6 +327,8 @@ class NullBindingNode(
         get() = false
     override val cacheable: Boolean
         get() = false
+    override val inlineable: Boolean
+        get() = true
 }
 
 data class BindingRequest(val type: TypeRef, val origin: FqName)
