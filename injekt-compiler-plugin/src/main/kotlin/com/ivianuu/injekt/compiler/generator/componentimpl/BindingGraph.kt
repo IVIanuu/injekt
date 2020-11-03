@@ -173,9 +173,7 @@ class BindingGraph(
         }
 
         resolvedBindings.toList()
-            .filter { it.second is CallableBindingNode }
-            .map { it.first to it.second as CallableBindingNode }
-            .groupBy { it.second.callable.fqName }
+            .groupBy { it.first.classifier.defaultType }
             .filterValues { bindings ->
                 bindings.any { (type) ->
                     type.getAllRecursive().any {
@@ -196,6 +194,11 @@ class BindingGraph(
                             it.type.isAssignable(key)
                         }
                         if (bindingGroup != null) {
+                            // The components aren't needed if we get delegate to another binding
+                            if (binding is AssistedBindingNode)
+                                owner.members -= binding.childComponent
+                            if (binding is ChildComponentBindingNode)
+                                owner.members -= binding.childComponent
                             bindingGroup.keysToReplace += key
                         } else {
                             bindingGroups += MergeBindingGroup(key, binding)
