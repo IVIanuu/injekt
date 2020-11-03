@@ -245,7 +245,8 @@ class BindingGraph(
     }
 
     private fun check(request: BindingRequest) {
-        check(getBinding(request))
+        val binding = getBinding(request)
+        binding.owner.graph.check(binding)
     }
 
     fun getBinding(request: BindingRequest): BindingNode {
@@ -522,7 +523,7 @@ class BindingGraph(
                 )
                 val childComponent = componentImplFactory(
                     childComponentType,
-                    owner.contextTreeNameProvider("${request.type.uniqueTypeName()}Component").asNameId(),
+                    owner.contextTreeNameProvider("AC").asNameId(),
                     assistedTypes,
                     listOf(bindingCallable),
                     owner

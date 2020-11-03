@@ -273,7 +273,7 @@ class ComponentStatements(
         create: CodeBuilder.() -> Unit
     ) {
         val name = "${if (frameworkType) "_" else ""}_${type.uniqueTypeName()}".asNameId()
-        val cacheProperty = owner.members.firstOrNull {
+        val cacheProperty = owner.nonAssistedComponent.members.firstOrNull {
             it is ComponentCallable && it.name == name
         } as? ComponentCallable ?: ComponentCallable(
             name = name,
