@@ -870,10 +870,31 @@ class ComponentTest {
             
             @Component
             abstract class MyComponent {
-                abstract val store: Store<String, *>
+                abstract val storeS: Store<String, *>
+                abstract val storeA: Store<*, String>
             }
         """
     )
+
+    @Test
+    fun testStarProjectedTypeAmbiguity() = codegen(
+        """ 
+            class Store<S, A>
+            
+            @Binding
+            fun stringStringStore() = Store<String, String>()
+            
+            @Binding
+            fun stringIntStore() = Store<String, Int>()
+            
+            @Component
+            abstract class MyComponent {
+                abstract val store: Store<String, *>
+            }
+        """
+    ) {
+        assertInternalError("multiple")
+    }
 
     @Test
     fun testPrefersExplicitOverImplicitBinding() = codegen(
