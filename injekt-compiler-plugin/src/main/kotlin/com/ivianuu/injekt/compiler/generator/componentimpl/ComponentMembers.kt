@@ -102,31 +102,8 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
             binding.owner != owner || binding.cacheable
         ) rawExpression else (
             {
-                val property = ComponentCallable(
-                    name = "_${binding.type.uniqueTypeName()}".asNameId(),
-                    type = SimpleTypeRef(ClassifierRef(FqName("kotlin.Any")), isMarkedNullable = true),
-                    initializer = { emit("this") },
-                    isMutable = true,
-                    body = null,
-                    isOverride = false,
-                    isProperty = true,
-                    callableKind = Callable.CallableKind.DEFAULT,
-                ).also { owner.members += it }
-
-                emit("run ")
-                braced {
-                    emitLine("var value = this@${owner.name}.${property.name}")
-                    emitLine("if (value !== this@${owner.name}) return@run value as ${binding.type.renderExpanded()}")
-                    emit("synchronized(this) ")
-                    braced {
-                        emitLine("value = this@${owner.name}.${property.name}")
-                        emitLine("if (value !== this@${owner.name}) return@run value as ${binding.type.renderExpanded()}")
-                        emit("value = ")
-                        rawExpression()
-                        emitLine()
-                        emitLine("this@${owner.name}.${property.name} = value")
-                        emitLine("return@run value as ${binding.type.renderExpanded()}")
-                    }
+                scoped(binding.type) {
+                    rawExpression()
                 }
             })
 
@@ -231,30 +208,39 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                     if (index != binding.assistedParameters.lastIndex) emit(", ")
                 }
             emitLine(" ->")
-            var assistedIndex = 0
-            var nonAssistedIndex = 0
-            emitCallableInvocation(
-                binding.callable,
-                binding.receiver,
-                binding.callable.valueParameters.map { parameter ->
-                    if (parameter.type.nonInlined() in binding.assistedParameters) {
-                        {
-                            if (parameter.type.isInlineProvider) emit("{ ")
-                            emit("p${assistedIndex++}")
-                            if (parameter.type.isInlineProvider) emit(" }")
-                        }
-                    } else {
-                        val raw = getBindingExpression(binding.dependencies[nonAssistedIndex++])
-                        if (parameter.type.isInlineProvider) {
+            val emitCallableInvocation = {
+                var assistedIndex = 0
+                var nonAssistedIndex = 0
+                emitCallableInvocation(
+                    binding.callable,
+                    binding.receiver,
+                    binding.callable.valueParameters.map { parameter ->
+                        if (parameter.type.nonInlined() in binding.assistedParameters) {
                             {
-                                emit("{ ")
-                                raw()
-                                emit(" }")
+                                if (parameter.type.isInlineProvider) emit("{ ")
+                                emit("p${assistedIndex++}")
+                                if (parameter.type.isInlineProvider) emit(" }")
                             }
-                        } else raw
+                        } else {
+                            val raw = getBindingExpression(binding.dependencies[nonAssistedIndex++])
+                            if (parameter.type.isInlineProvider) {
+                                {
+                                    emit("{ ")
+                                    raw()
+                                    emit(" }")
+                                }
+                            } else raw
+                        }
                     }
+                )
+            }
+            if (binding.targetComponent != null) {
+                scoped(binding.type.typeArguments.last()) {
+                    emitCallableInvocation()
                 }
-            )
+            } else {
+                emitCallableInvocation()
+            }
             emitLine()
             emitLine("}")
         } else {
@@ -281,6 +267,40 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
 
     private fun selfContextExpression(binding: SelfBindingNode): ComponentExpression = {
         emit("this@${binding.component.name}")
+    }
+
+    private fun CodeBuilder.scoped(
+        type: TypeRef,
+        create: CodeBuilder.() -> Unit
+    ) {
+        val name = "_${type.uniqueTypeName()}".asNameId()
+        val property = owner.members.firstOrNull {
+            it is ComponentCallable && it.name == name
+        } as? ComponentCallable ?: ComponentCallable(
+            name = name,
+            type = SimpleTypeRef(ClassifierRef(FqName("kotlin.Any")), isMarkedNullable = true),
+            initializer = { emit("this") },
+            isMutable = true,
+            body = null,
+            isOverride = false,
+            isProperty = true,
+            callableKind = Callable.CallableKind.DEFAULT,
+        ).also { owner.members += it }
+        emit("run ")
+        braced {
+            emitLine("var value = this@${owner.name}.${property.name}")
+            emitLine("if (value !== this@${owner.name}) return@run value as ${type.renderExpanded()}")
+            emit("synchronized(this) ")
+            braced {
+                emitLine("value = this@${owner.name}.${property.name}")
+                emitLine("if (value !== this@${owner.name}) return@run value as ${type.renderExpanded()}")
+                emit("value = ")
+                create()
+                emitLine()
+                emitLine("this@${owner.name}.${property.name} = value")
+                emitLine("return@run value as ${type.renderExpanded()}")
+            }
+        }
     }
 }
 

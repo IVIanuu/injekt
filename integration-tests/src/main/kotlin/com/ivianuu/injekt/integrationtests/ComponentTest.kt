@@ -436,6 +436,28 @@ class ComponentTest {
     }
 
     @Test
+    fun testScopedAssistedBinding() = codegen(
+        """
+            @Component
+            abstract class BarComponent {
+                abstract val barFactory: (Foo) -> Bar
+                
+                @Binding(BarComponent::class)
+                protected fun bar(foo: Foo) = Bar(foo)
+            }
+            
+            private val component = component<BarComponent>()
+
+            fun invoke(): Pair<Bar, Bar> { 
+                return component.barFactory(Foo()) to component.barFactory(Foo())
+            }
+    """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Bar, Bar>>()
+        assertSame(a, b)
+    }
+
+    @Test
     fun testAssistedBindingClass() = codegen(
         """
             @Binding
