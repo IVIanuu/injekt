@@ -489,7 +489,7 @@ class BindingGraph(
             request.type.typeArguments.last().let {
                 !it.isChildComponent && !it.isMergeChildComponent
             }) {
-            val assistedTypes = request.type.typeArguments.dropLast(1)
+            val assistedTypes = request.type.typeArguments.dropLast(1).distinct()
             if (assistedTypes.isNotEmpty()) {
                 val returnType = request.type.typeArguments.last()
                 val childComponentType = typeTranslator.toClassifierRef(
