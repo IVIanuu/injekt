@@ -50,7 +50,9 @@ class ComponentStatements(
         body: ComponentExpression,
         isProperty: Boolean,
         callableKind: Callable.CallableKind,
-        cacheable: Boolean
+        cacheable: Boolean,
+        isInline: Boolean,
+        canBePrivate: Boolean
     ): ComponentCallable {
         val existing = owner.members.firstOrNull {
             it is ComponentCallable && it.name == name
@@ -68,7 +70,9 @@ class ComponentStatements(
             isProperty = isProperty,
             callableKind = callableKind,
             initializer = if (cache) body else null,
-            isMutable = false
+            isMutable = false,
+            isInline = isInline,
+            canBePrivate = canBePrivate
         )
         owner.members += callable
         return callable
@@ -78,6 +82,7 @@ class ComponentStatements(
         val binding = owner.graph.getBinding(request)
         val callableKind = binding.callableKind
         expressionsByType[binding.type]?.let {
+            // todo not sure why we do this :D
             getCallable(
                 type = binding.type,
                 name = binding.type.uniqueTypeName(),
@@ -85,7 +90,9 @@ class ComponentStatements(
                 body = it,
                 callableKind = callableKind,
                 isProperty = callableKind != Callable.CallableKind.SUSPEND,
-                cacheable = binding.cacheable
+                cacheable = binding.cacheable,
+                isInline = false,
+                canBePrivate = false
             )
             return it
         }
@@ -119,7 +126,7 @@ class ComponentStatements(
         val requestForType = owner.requests
             .firstOrNull { it.type == binding.type }
 
-        if (binding.inlineable &&
+        if (binding.inlineMode == BindingNode.InlineMode.EXPRESSION &&
             requestForType == null &&
             rawExpression == finalExpression) {
             return finalExpression
@@ -131,15 +138,20 @@ class ComponentStatements(
         val isProperty = if (requestForType != null) !requestForType.isCall
         else binding.callableKind != Callable.CallableKind.SUSPEND
 
+        val isOverride = requestForType != null &&
+                requestForType !in owner.assistedRequests
+
         getCallable(
             type = binding.type,
             name = callableName,
-            isOverride = requestForType != null &&
-                    requestForType !in owner.assistedRequests,
+            isOverride = isOverride,
             body = finalExpression,
             isProperty = isProperty,
             callableKind = requestForType?.callableKind ?: callableKind,
-            cacheable = binding.cacheable
+            cacheable = binding.cacheable,
+            isInline = !isOverride &&
+                    binding.inlineMode == BindingNode.InlineMode.FUNCTION,
+            canBePrivate = !isOverride && requestForType !in owner.assistedRequests
         )
 
         val expression: ComponentExpression = {
@@ -290,6 +302,8 @@ class ComponentStatements(
             isOverride = false,
             isProperty = true,
             callableKind = Callable.CallableKind.DEFAULT,
+            isInline = false,
+            canBePrivate = true
         ).also { owner.nonAssistedComponent.members += it }
 
         if (callableKind == Callable.CallableKind.SUSPEND) {
@@ -317,6 +331,8 @@ class ComponentStatements(
                 isOverride = false,
                 isProperty = false,
                 callableKind = Callable.CallableKind.DEFAULT,
+                isInline = false,
+                canBePrivate = true
             ).also { owner.members += it }
         }
 

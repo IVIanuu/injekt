@@ -89,7 +89,9 @@ class ComponentImpl(
                 body = statements.getBindingExpression(BindingRequest(it.type, it.fqName)),
                 isProperty = !it.isCall,
                 callableKind = it.callableKind,
-                cacheable = binding.cacheable
+                cacheable = binding.cacheable,
+                isInline = false,
+                canBePrivate = false
             )
         }
     }

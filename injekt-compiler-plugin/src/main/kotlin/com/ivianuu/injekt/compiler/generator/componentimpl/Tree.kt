@@ -41,10 +41,13 @@ class ComponentCallable(
     val body: ComponentExpression?,
     val isMutable: Boolean,
     var isOverride: Boolean,
+    val isInline: Boolean,
+    val canBePrivate: Boolean
 ) : ComponentMember {
     override fun CodeBuilder.emit() {
         if (callableKind == Callable.CallableKind.COMPOSABLE) emitLine("@${InjektFqNames.Composable}")
-        if (isOverride) emit("override ")
+        if (isOverride) emit("override ") else if (canBePrivate) emit("private ")
+        if (!isOverride && isInline) emit("inline ")
         if (callableKind == Callable.CallableKind.SUSPEND) emit("suspend ")
         if (isProperty) {
             if (isMutable) emit("var ") else emit("val ")
@@ -84,7 +87,10 @@ sealed class BindingNode {
     abstract val isExternal: Boolean
     abstract val cacheable: Boolean
     abstract val callableKind: Callable.CallableKind
-    abstract val inlineable: Boolean
+    abstract val inlineMode: InlineMode
+    enum class InlineMode {
+        NONE, FUNCTION, EXPRESSION
+    }
 }
 
 class SelfBindingNode(
@@ -105,8 +111,8 @@ class SelfBindingNode(
         get() = false
     override val cacheable: Boolean
         get() = false
-    override val inlineable: Boolean
-        get() = true
+    override val inlineMode: InlineMode
+        get() = InlineMode.EXPRESSION
 }
 
 class AssistedBindingNode(
@@ -131,8 +137,8 @@ class AssistedBindingNode(
         get() = null
     override val targetComponent: TypeRef?
         get() = null
-    override val inlineable: Boolean
-        get() = false
+    override val inlineMode: InlineMode
+        get() = InlineMode.NONE
 }
 
 class ChildComponentBindingNode(
@@ -155,8 +161,8 @@ class ChildComponentBindingNode(
         get() = false
     override val cacheable: Boolean
         get() = true
-    override val inlineable: Boolean
-        get() = false
+    override val inlineMode: InlineMode
+        get() = InlineMode.NONE
 }
 
 class InputBindingNode(
@@ -180,8 +186,8 @@ class InputBindingNode(
         get() = null
     override val targetComponent: TypeRef?
         get() = null
-    override val inlineable: Boolean
-        get() = true
+    override val inlineMode: InlineMode
+        get() = InlineMode.EXPRESSION
 }
 
 class CallableBindingNode(
@@ -202,9 +208,13 @@ class CallableBindingNode(
         get() = callable.fqName
     override val cacheable: Boolean
         get() = callable.isEager
-    override val inlineable: Boolean
-        get() = !cacheable && callable.isInline
-
+    override val inlineMode: InlineMode = when {
+        cacheable -> InlineMode.NONE
+        // object or top level properties
+        !callable.isCall && callable.valueParameters.isEmpty() -> InlineMode.EXPRESSION
+        (!callable.isCall || callable.valueParameters.isEmpty()) && targetComponent == null -> InlineMode.FUNCTION
+        else -> InlineMode.NONE
+    }
     override fun toString(): String = "Callable(${callable.type.render()})"
 }
 
@@ -227,8 +237,8 @@ class DelegateBindingNode(
         get() = false
     override val origin: FqName?
         get() = null
-    override val inlineable: Boolean
-        get() = true
+    override val inlineMode: InlineMode
+        get() = InlineMode.EXPRESSION
 }
 
 class MapBindingNode(
@@ -251,8 +261,8 @@ class MapBindingNode(
         get() = false
     override val cacheable: Boolean
         get() = false
-    override val inlineable: Boolean
-        get() = false
+    override val inlineMode: InlineMode
+        get() = InlineMode.NONE
 }
 
 class ProviderBindingNode(
@@ -273,8 +283,8 @@ class ProviderBindingNode(
         get() = false
     override val cacheable: Boolean
         get() = true
-    override val inlineable: Boolean
-        get() = false
+    override val inlineMode: InlineMode
+        get() = InlineMode.NONE
 }
 
 class SetBindingNode(
@@ -297,8 +307,8 @@ class SetBindingNode(
         get() = false
     override val cacheable: Boolean
         get() = false
-    override val inlineable: Boolean
-        get() = false
+    override val inlineMode: InlineMode
+        get() = InlineMode.NONE
 }
 
 data class CallableWithReceiver(
@@ -327,8 +337,8 @@ class NullBindingNode(
         get() = false
     override val cacheable: Boolean
         get() = false
-    override val inlineable: Boolean
-        get() = true
+    override val inlineMode: InlineMode
+        get() = InlineMode.EXPRESSION
 }
 
 data class BindingRequest(val type: TypeRef, val origin: FqName)

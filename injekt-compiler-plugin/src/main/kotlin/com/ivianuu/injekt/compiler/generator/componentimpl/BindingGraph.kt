@@ -144,7 +144,9 @@ class BindingGraph(
                             if (!includedModule.type.classifier.isObject)
                                 emit("()")
                         },
-                        isMutable = false
+                        isMutable = false,
+                        isInline = false,
+                        canBePrivate = true
                     ).also { owner.members += it }
 
                     includedModule.collectContributions(null) {
