@@ -76,14 +76,18 @@ class ComponentImpl(
         .flatMap { declarationStore.allCallablesForType(it) }
         .filter { it.contributionKind == null } + assistedRequests
 
+    private var initialized = false
+
     fun initialize() {
+        if (initialized) return
+        initialized = true
         parent?.members?.add(this)
         parent?.children?.add(this)
         graph.checkRequests(requests.map { BindingRequest(it.type, it.fqName) })
         requests.forEach {
             val binding = graph.resolvedBindings[it.type]!!
             statements.getCallable(
-                type = it.type,
+                type = if (it in assistedRequests) binding.type else it.type,
                 name = it.name,
                 isOverride = it !in assistedRequests,
                 body = statements.getBindingExpression(BindingRequest(it.type, it.fqName)),

@@ -68,6 +68,7 @@ class BindingGraph(
     private val checkedBindings = mutableSetOf<BindingNode>()
 
     private val chain = mutableListOf<BindingNode>()
+    private var locked = false
 
     init {
         fun ModuleDescriptor.collectContributions(
@@ -159,10 +160,11 @@ class BindingGraph(
     fun checkRequests(requests: List<BindingRequest>) {
         requests.forEach { check(it) }
         postProcess()
+        locked = true
     }
 
     // temporary function because it's not possible to properly inline '*' star types
-    // with our binding resolution algorithm
+    // with our current binding resolution algorithm.
     // we collect all duplicated bindings and rewrite the graph to point to a single binding
     private fun postProcess() {
         class MergeBindingGroup(
@@ -202,6 +204,7 @@ class BindingGraph(
                             bindingGroup.keysToReplace += key
                         } else {
                             bindingGroups += MergeBindingGroup(key, binding)
+                                .also { it.keysToReplace += binding.type }
                         }
                     }
                 bindingGroups
@@ -209,15 +212,7 @@ class BindingGraph(
             .forEach { (_, bindingGroups) ->
                 bindingGroups.forEach { bindingGroup ->
                     bindingGroup.keysToReplace.forEach { key ->
-                        resolvedBindings[key] = DelegateBindingNode(
-                            key,
-                            owner,
-                            bindingGroup.bindingToUse.callableKind,
-                            BindingRequest(
-                                bindingGroup.bindingToUse.type,
-                                FqName.ROOT // todo
-                            )
-                        )
+                        resolvedBindings[key] = bindingGroup.bindingToUse
                     }
                 }
             }
@@ -237,16 +232,17 @@ class BindingGraph(
                 "Circular dependency ${relevantSubchain.map { it.type.render() }} already contains ${binding.type.render()} $chain"
             )
         }
-        if (binding !in checkedBindings) {
-            checkedBindings += binding
-            chain.push(binding)
-            binding
-                .dependencies
-                .forEach { check(it) }
-            (binding as? ChildComponentBindingNode)?.childComponent?.initialize()
-            (binding as? AssistedBindingNode)?.childComponent?.initialize()
-            chain.pop()
-        }
+
+        checkedBindings += binding
+        chain.push(binding)
+        binding
+            .dependencies
+            .forEach { check(it) }
+        (binding as? ChildComponentBindingNode)?.childComponent?.initialize()
+        (binding as? AssistedBindingNode)?.childComponent?.initialize()
+        chain.pop()
+
+        binding.refineType(binding.dependencies.map { getBinding(it) })
     }
 
     private fun check(request: BindingRequest) {
@@ -288,6 +284,11 @@ class BindingGraph(
     private fun getBindingOrNull(request: BindingRequest): BindingNode? {
         var binding = resolvedBindings[request.type]
         if (binding != null) return binding
+
+        check(!locked) {
+            "Cannot create request new bindings in ${owner.componentType} for $request " +
+                    "existing ${resolvedBindings.keys}"
+        }
 
         fun List<BindingNode>.mostSpecificOrFail(bindingType: String): BindingNode? {
             return if (size > 1) {

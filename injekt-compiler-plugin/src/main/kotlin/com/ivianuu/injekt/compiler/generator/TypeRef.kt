@@ -322,6 +322,27 @@ fun TypeRef.getSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRef> {
     return substitutionMap
 }
 
+fun TypeRef.getStarSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRef> {
+    val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
+
+    fun visitType(
+        thisType: TypeRef,
+        baseType: TypeRef,
+    ) {
+        if (baseType.isStarProjection && !thisType.isStarProjection && !thisType.classifier.isTypeParameter) {
+            substitutionMap[baseType.classifier] = thisType
+        } else {
+            thisType.typeArguments.zip(baseType.typeArguments).forEach {
+                visitType(it.first, it.second)
+            }
+        }
+    }
+
+    visitType(this, baseType)
+
+    return substitutionMap
+}
+
 fun TypeRef.nonInlined(): TypeRef {
     return if (isInlineProvider) {
         typeArguments.single()

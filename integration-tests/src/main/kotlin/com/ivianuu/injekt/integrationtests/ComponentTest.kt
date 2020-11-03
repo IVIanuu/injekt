@@ -1299,6 +1299,60 @@ class ComponentTest {
     }
 
     @Test
+    fun testStore2() = codegen(
+        """
+            interface Scope
+            
+            interface Store<S, A> {
+                val state: S
+                val dispatch: A
+            }
+            
+            interface StoreState
+            interface StoreAction
+            
+            @Binding
+            val <S : StoreState> ComposableStore<S, *>.storeState: S get() = state
+            @Binding
+            val <A : StoreAction> ComposableStore<*, A>.storeDispatch: A get() = dispatch
+            
+            typealias ComposableStore<S, A> = Store<S, A>
+            
+            @Binding(MyComponent::class)
+            fun <S, A> storeFromProvider(provider: (Scope) -> Store<S, A>): ComposableStore<S, A> =
+                provider(object : Scope {})
+            
+            class MyState(val store: Store<MyState, MyAction>) : StoreState
+            class MyAction(val store: Store<MyState, MyAction>) : StoreAction
+            
+            @Binding
+            fun Scope.myStore(): Store<MyState, MyAction> {
+                return object : Store<MyState, MyAction> {
+                    override val state: MyState = MyState(this)
+                    override val dispatch: MyAction = MyAction(this)
+                }
+            }
+            
+            @FunBinding
+            fun MyPage(state: MyState, dispatch: MyAction): Pair<Any, Any> {
+                return state.store to dispatch.store
+            }
+            
+            @Component
+            abstract class MyComponent {
+                abstract val myPage: MyPage
+            }
+            
+            fun invoke(): Pair<Any, Any> {
+                return component<MyComponent>().myPage()
+            }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Any, Any>>()
+        assertSame(a, b)
+    }
+
+    @Test
     fun testBoundedGenericWithAlias() = multiCodegen(
         listOf(
             source(
