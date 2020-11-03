@@ -51,4 +51,6 @@ object InjektFqNames {
     val GenerateMergeComponents = MergePackage.child("GenerateMergeComponents".asNameId())
 
     val Composable = FqName("androidx.compose.runtime.Composable")
+
+    val Mutex = FqName("kotlinx.coroutines.sync.Mutex")
 }

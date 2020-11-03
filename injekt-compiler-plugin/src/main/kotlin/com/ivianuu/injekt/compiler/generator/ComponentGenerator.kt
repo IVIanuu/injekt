@@ -96,6 +96,13 @@ class ComponentGenerator(
                         ?.isExtensionReceiver == true) && it.first.receiver == null
                 }
                 .map { it.second.fqName }
+            if (graph.resolvedBindings.values
+                    .filter {
+                        it.targetComponent != null && it.callableKind == Callable.CallableKind.SUSPEND
+                    }
+                    .any()) {
+                imports += FqName("kotlinx.coroutines.sync.withLock")
+            }
             children.forEach { it.collectImports() }
         }
 

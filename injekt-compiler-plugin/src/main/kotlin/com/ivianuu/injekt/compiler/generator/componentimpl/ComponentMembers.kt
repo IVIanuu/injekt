@@ -18,12 +18,16 @@ package com.ivianuu.injekt.compiler.generator.componentimpl
 
 import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.ClassifierRef
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
+import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
 import com.ivianuu.injekt.compiler.generator.TypeRef
+import com.ivianuu.injekt.compiler.generator.TypeTranslator
 import com.ivianuu.injekt.compiler.generator.asNameId
+import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.nonInlined
 import com.ivianuu.injekt.compiler.generator.renderExpanded
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
@@ -31,7 +35,11 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 @Binding
-class ComponentStatements(private val owner: @Assisted ComponentImpl) {
+class ComponentStatements(
+    private val declarationStore: DeclarationStore,
+    private val owner: @Assisted ComponentImpl,
+    private val typeTranslator: TypeTranslator
+) {
 
     private val parent = owner.parent?.statements
     private val expressionsByType = mutableMapOf<TypeRef, ComponentExpression>()
@@ -102,7 +110,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
             binding.owner != owner || binding.cacheable
         ) rawExpression else (
             {
-                scoped(binding.type) {
+                scoped(binding.type, binding.callableKind, false) {
                     rawExpression()
                 }
             })
@@ -235,7 +243,7 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
                 )
             }
             if (binding.targetComponent != null) {
-                scoped(binding.type.typeArguments.last()) {
+                scoped(binding.type.typeArguments.last(), binding.callableKind, false) {
                     emitCallableInvocation()
                 }
             } else {
@@ -271,10 +279,12 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
 
     private fun CodeBuilder.scoped(
         type: TypeRef,
+        callableKind: Callable.CallableKind,
+        frameworkType: Boolean,
         create: CodeBuilder.() -> Unit
     ) {
-        val name = "_${type.uniqueTypeName()}".asNameId()
-        val property = owner.members.firstOrNull {
+        val name = "${if (frameworkType) "_" else ""}_${type.uniqueTypeName()}".asNameId()
+        val cacheProperty = owner.members.firstOrNull {
             it is ComponentCallable && it.name == name
         } as? ComponentCallable ?: ComponentCallable(
             name = name,
@@ -286,19 +296,59 @@ class ComponentStatements(private val owner: @Assisted ComponentImpl) {
             isProperty = true,
             callableKind = Callable.CallableKind.DEFAULT,
         ).also { owner.members += it }
+
+        if (callableKind == Callable.CallableKind.SUSPEND) {
+            val mutexType = typeTranslator.toClassifierRef(
+                declarationStore.classDescriptorForFqName(InjektFqNames.Mutex)
+            ).defaultType
+            owner.members.firstOrNull {
+                it is ComponentCallable &&
+                        !it.isProperty &&
+                        it.name.asString() == "_mutex"
+            } as? ComponentCallable ?: ComponentCallable(
+                name = "_mutex".asNameId(),
+                type = mutexType,
+                initializer = null,
+                isMutable = true,
+                body = {
+                    scoped(
+                        mutexType,
+                        Callable.CallableKind.DEFAULT,
+                        true
+                    ) {
+                        emit("${InjektFqNames.Mutex}()")
+                    }
+                },
+                isOverride = false,
+                isProperty = false,
+                callableKind = Callable.CallableKind.DEFAULT,
+            ).also { owner.members += it }
+        }
+
         emit("run ")
         braced {
-            emitLine("var value = this@${owner.name}.${property.name}")
+            emitLine("var value = this@${owner.name}.${cacheProperty.name}")
             emitLine("if (value !== this@${owner.name}) return@run value as ${type.renderExpanded()}")
-            emit("synchronized(this) ")
-            braced {
-                emitLine("value = this@${owner.name}.${property.name}")
+            fun emitInvocation() {
+                emitLine("value = this@${owner.name}.${cacheProperty.name}")
                 emitLine("if (value !== this@${owner.name}) return@run value as ${type.renderExpanded()}")
                 emit("value = ")
                 create()
                 emitLine()
-                emitLine("this@${owner.name}.${property.name} = value")
+                emitLine("this@${owner.name}.${cacheProperty.name} = value")
                 emitLine("return@run value as ${type.renderExpanded()}")
+            }
+            when (callableKind) {
+                Callable.CallableKind.SUSPEND -> {
+                    emit("_mutex().withLock ")
+                    braced { emitInvocation() }
+                }
+                Callable.CallableKind.DEFAULT -> {
+                    emit("synchronized(this) ")
+                    braced { emitInvocation() }
+                }
+                // todo what to do here?
+                Callable.CallableKind.COMPOSABLE -> emitInvocation()
             }
         }
     }

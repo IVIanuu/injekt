@@ -552,6 +552,26 @@ class ComponentTest {
     )
 
     @Test
+    fun testScopedSuspendFunction() = codegen(
+        """
+            @Component
+            abstract class SuspendFunctionComponent {
+                abstract suspend fun foo(): Foo
+                @Binding(SuspendFunctionComponent::class)
+                protected suspend fun _suspendFoo() = Foo()
+            }
+            
+            private val component = component<SuspendFunctionComponent>()
+            fun invoke(): Pair<Foo, Foo> {
+                return runBlocking { component.foo() to component.foo() }
+            }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Foo, Foo>>()
+        assertSame(a, b)
+    }
+
+    @Test
     fun testComponentComposableFunction() = codegen(
         """
             @Component
@@ -567,6 +587,29 @@ class ComponentTest {
             }
         """
     )
+
+    // todo @Test
+    // todo find a way to invoke composables
+    fun testScopedComposableFunction() = codegen(
+        """
+            @Component
+            abstract class ComposableFunctionComponent {
+                @Composable
+                abstract fun foo(): Foo
+                @Binding(ComposableFunctionComponent::class)
+                @Composable
+                protected fun _composableFoo() = Foo()
+            }
+            
+            private val component = component<ComposableFunctionComponent>()
+            fun invoke(): Pair<Foo, Foo> {
+                return component.foo() to component.foo()
+            }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Foo, Foo>>()
+        assertSame(a, b)
+    }
 
     @Test
     fun testComponentWithConstructorParameters() = codegen(
