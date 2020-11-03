@@ -762,8 +762,9 @@ class BindingAdapterTest {
             @BindingAdapter
             annotation class A {
                 companion object {
-                    @B
                     @Binding
+                    fun <T : CharSequence> asCharSequence(instance: T): CharSequence = instance
+                    @B
                     fun <T : CharSequence> b(instance: T): CharSequence = instance
                 }
             }
