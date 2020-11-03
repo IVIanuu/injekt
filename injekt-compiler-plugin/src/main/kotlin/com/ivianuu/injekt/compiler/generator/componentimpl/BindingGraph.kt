@@ -65,6 +65,7 @@ class BindingGraph(
     private val collections: BindingCollections = collectionsFactory(owner, parent?.collections)
 
     val resolvedBindings = mutableMapOf<TypeRef, BindingNode>()
+    private val checkedBindings = mutableSetOf<BindingNode>()
 
     private val chain = mutableListOf<BindingNode>()
 
@@ -231,13 +232,16 @@ class BindingGraph(
                 "Circular dependency ${relevantSubchain.map { it.type.render() }} already contains ${binding.type.render()} $chain"
             )
         }
-        chain.push(binding)
-        binding
-            .dependencies
-            .forEach { check(it) }
-        (binding as? ChildComponentBindingNode)?.childComponent?.initialize()
-        (binding as? AssistedBindingNode)?.childComponent?.initialize()
-        chain.pop()
+        if (binding !in checkedBindings) {
+            checkedBindings += binding
+            chain.push(binding)
+            binding
+                .dependencies
+                .forEach { check(it) }
+            (binding as? ChildComponentBindingNode)?.childComponent?.initialize()
+            (binding as? AssistedBindingNode)?.childComponent?.initialize()
+            chain.pop()
+        }
     }
 
     private fun check(request: BindingRequest) {
