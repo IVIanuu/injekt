@@ -125,11 +125,10 @@ class ComponentStatements(
         val requestForType = owner.requests
             .firstOrNull { it.type == binding.type }
 
-        if (binding.inlineMode == BindingNode.InlineMode.EXPRESSION &&
-            requestForType == null &&
-            rawExpression == finalExpression) {
-            return finalExpression
-        }
+        if (binding.owner != owner ||
+            (binding.inlineMode == BindingNode.InlineMode.EXPRESSION &&
+                    requestForType == null &&
+                    binding.targetComponent == null)) return finalExpression
 
         val callableName = requestForType
             ?.name ?: binding.type.uniqueTypeName()
