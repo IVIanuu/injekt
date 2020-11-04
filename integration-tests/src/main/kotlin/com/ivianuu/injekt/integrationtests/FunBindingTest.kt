@@ -399,4 +399,20 @@ class FunBindingTest {
         b.assertCompileError("internal")
     }
 
+    @Test
+    fun testFunBindingWithDefaultValue() = codegen(
+        """
+            @FunBinding
+            fun function(string: String, @FunApi assisted: String = "") {
+            }
+            
+            @Component
+            abstract class TestComponent(@Binding val string: String) {
+                abstract val function: function
+            }
+        """
+    ) {
+        assertOk()
+    }
+
 }

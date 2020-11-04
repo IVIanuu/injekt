@@ -22,9 +22,11 @@ import com.ivianuu.injekt.compiler.generator.componentimpl.emitCallableInvocatio
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
@@ -118,8 +120,19 @@ class FunBindingGenerator(
 
         val code = buildCodeString {
             emitLine("package $packageFqName")
-            emitLine("import ${InjektFqNames.Binding}")
-            emitLine("import ${InjektFqNames.FunBinding}")
+
+            val imports = mutableSetOf(
+                "import ${InjektFqNames.Binding.asString()}",
+                "import ${InjektFqNames.FunBinding.asString()}"
+            )
+            imports += (descriptor.findPsi()!!.containingFile as KtFile)
+                .importDirectives
+                .map { it.text }
+
+            imports.forEach {
+                emitLine(it)
+            }
+
             emitLine()
             if (descriptor.visibility == Visibilities.INTERNAL) {
                 emit("internal ")
@@ -225,6 +238,68 @@ class FunBindingGenerator(
                 )
                 emitLine()
                 emitLine("}")
+            }
+
+            if (isComposable) emitLine("@${InjektFqNames.Composable}")
+
+            if (descriptor.visibility == Visibilities.INTERNAL) {
+                emit("internal ")
+            }
+
+            if (isSuspend) emit("suspend ")
+
+            emit("inline fun ")
+            if (descriptor.typeParameters.isNotEmpty()) {
+                emit("<")
+                descriptor.typeParameters
+                    .forEachIndexed { index, typeParameter ->
+                        emit("reified ${typeParameter.name} : ${typeTranslator.toTypeRef(typeParameter.upperBounds.single(), descriptor).render()}")
+                        if (index != descriptor.typeParameters.lastIndex) emit(", ")
+                    }
+                emit("> ")
+            }
+
+            emit(descriptor.name)
+            if (descriptor.typeParameters.isNotEmpty()) {
+                emit("<")
+                descriptor.typeParameters
+                    .forEachIndexed { index, typeParameter ->
+                        emit(typeParameter.name)
+                        if (index != descriptor.typeParameters.lastIndex) emit(", ")
+                    }
+                emit(">")
+            }
+
+            emit(".invoke${descriptor.name.asString().capitalize()}(")
+            funApiValueParameters.forEachIndexed { index, valueParameter ->
+                val typeRef = typeTranslator.toTypeRef(valueParameter.type, descriptor)
+                if (valueParameter is ValueParameterDescriptor && valueParameter.isCrossinline) {
+                    emit("crossinline ")
+                }  else if (typeRef.fullyExpandedType.isFunction || typeRef.fullyExpandedType.isSuspendFunction ||
+                    declarationStore.generatedClassifierFor(typeRef.classifier.fqName) != null ||
+                    declarationStore.generatedClassifierFor(typeRef.fullyExpandedType.classifier.fqName) != null) {
+                    emit("noinline ")
+                }
+                emit("${if (valueParameter == descriptor.extensionReceiverParameter) "_receiver" 
+                else valueParameter.name.asString()}: ${typeTranslator.toTypeRef(valueParameter.type, descriptor)}")
+                if (valueParameter is ValueParameterDescriptor && valueParameter.declaresDefaultValue()) {
+                    emit(" = ${(valueParameter.findPsi() as KtParameter).defaultValue!!.text}")
+                }
+                if (index != funApiValueParameters.lastIndex) emit(", ")
+
+            }
+            emit("): ${expandedFunType.typeArguments.last()} ")
+            braced {
+                emit("return invoke(")
+                funApiValueParameters.forEachIndexed { index, valueParameter ->
+                    emit(
+                        if (valueParameter == descriptor.extensionReceiverParameter) "_receiver"
+                        else valueParameter.name.asString()
+                    )
+                    if (index != funApiValueParameters.lastIndex) emit(", ")
+
+                }
+                emitLine(")")
             }
         }
 
