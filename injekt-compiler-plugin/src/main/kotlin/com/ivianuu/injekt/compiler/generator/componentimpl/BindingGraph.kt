@@ -196,12 +196,12 @@ class BindingGraph(
                             it.type.isAssignable(key)
                         }
                         if (bindingGroup != null) {
+                            bindingGroup.keysToReplace += key
                             // The components aren't needed if we get delegate to another binding
                             if (binding is AssistedBindingNode)
                                 owner.members -= binding.childComponent
                             if (binding is ChildComponentBindingNode)
                                 owner.members -= binding.childComponent
-                            bindingGroup.keysToReplace += key
                         } else {
                             bindingGroups += MergeBindingGroup(key, binding)
                                 .also { it.keysToReplace += binding.type }
