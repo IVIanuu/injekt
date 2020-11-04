@@ -790,4 +790,27 @@ class BindingAdapterTest {
         """
     )
 
+    @Test
+    fun testBindingAdapterWithComplexTypeParameters() = codegen(
+        """
+            interface Store<S, A>
+            
+            @BindingAdapter
+            annotation class StoreBinding {
+                companion object {
+                    @Binding
+                    fun <T : Store<S, A>, S, A> state(instance: T): S = error("")
+                }
+            }
+            
+            @StoreBinding
+            fun myStore(): Store<String, Int> = error("")
+
+            @Component
+            abstract class MyComponent {
+                abstract val string: String
+            }
+        """
+    )
+
 }

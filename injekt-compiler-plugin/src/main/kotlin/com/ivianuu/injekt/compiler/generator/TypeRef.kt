@@ -46,6 +46,7 @@ val ClassifierRef.defaultType: TypeRef
     get() = SimpleTypeRef(
         this,
         typeArguments = typeParameters.map { it.defaultType },
+        superTypes = superTypes,
         expandedType = if (isTypeAlias) superTypes.single() else null
     )
 
@@ -308,8 +309,15 @@ fun TypeRef.getSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRef> {
         thisType: TypeRef,
         baseType: TypeRef,
     ) {
-        if (baseType.classifier.isTypeParameter && baseType == baseType.classifier.defaultType) {
+        if (baseType.classifier.isTypeParameter) {
             substitutionMap[baseType.classifier] = thisType
+            baseType.superTypes
+                .filter { it.classifier == thisType.classifier }
+                .forEach { baseSuperType ->
+                    thisType.typeArguments.zip(baseSuperType.typeArguments).forEach {
+                        visitType(it.first, it.second)
+                    }
+                }
         } else {
             thisType.typeArguments.zip(baseType.typeArguments).forEach {
                 visitType(it.first, it.second)
@@ -317,7 +325,11 @@ fun TypeRef.getSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRef> {
         }
     }
 
-    visitType(this, baseType)
+    var lastSubstitutionMap: Map<ClassifierRef, TypeRef>? = null
+    while (lastSubstitutionMap != substitutionMap) {
+        visitType(this, baseType)
+        lastSubstitutionMap = substitutionMap.toMap()
+    }
 
     return substitutionMap
 }

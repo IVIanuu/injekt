@@ -227,17 +227,29 @@ class BindingAdapterGenerator(
                         }
                         .map { adapterCallable ->
                             // todo find a way to dynamically resolve type parameters
-                            val substitutionMap = buildMap<ClassifierRef, TypeRef> {
-                                bindingAdapter.type.typeArguments
-                                    .zip(adapterCallable.typeParameters)
-                                    .forEach { (typeArgument, typeParameter) ->
-                                        this[typeParameter] = typeArgument
-                                    }
-                                this[adapterCallable.typeParameters[bindingAdapter.type.typeArguments.size]] = aliasedType
+                            val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
+
+                            val bindingAdapterTypeParameters = adapterCallable.typeParameters
+                                .take(bindingAdapter.type.typeArguments.size)
+                                .zip(bindingAdapter.type.typeArguments)
+                                .toMap()
+
+                            substitutionMap += bindingAdapterTypeParameters
+
+                            val subjectTypeParameter = adapterCallable.typeParameters[bindingAdapterTypeParameters.size]
+
+                            substitutionMap += rawBindingType.getSubstitutionMap(subjectTypeParameter.defaultType)
+
+                            check(adapterCallable.typeParameters.all { it in substitutionMap }) {
+                                "Couldn't resolve all type arguments $substitutionMap in ${file.virtualFilePath}"
                             }
+                            substitutionMap[subjectTypeParameter] = aliasedType
+
                             adapterCallable.copy(
                                 type = adapterCallable.type
                                     .substitute(substitutionMap)
+                                    // map the aliased to type to the raw binding type
+                                    // if the callable returns the alias
                                     .substitute(mapOf(aliasedType.classifier to rawBindingType)),
                                 valueParameters = adapterCallable.valueParameters.map {
                                     it.copy(type = it.type.substitute(substitutionMap))
@@ -253,7 +265,7 @@ class BindingAdapterGenerator(
                                 emitLine("@${InjektFqNames.Eager}")
                             emit("@Binding")
                             if (bindingAdapterCallable.targetComponent != null) {
-                                emitLine("${bindingAdapterCallable.targetComponent.classifier.fqName}")
+                                emitLine("(${bindingAdapterCallable.targetComponent.classifier.fqName}::class)")
                             }
                             emitLine()
                         }
