@@ -235,9 +235,11 @@ class BindingAdapterGenerator(
                                 .toMap()
 
                             substitutionMap += bindingAdapterTypeParameters
+                            bindingAdapterTypeParameters.forEach { (typeParameter, typeArgument) ->
+                                substitutionMap += typeArgument.getSubstitutionMap(typeParameter.defaultType)
+                            }
 
                             val subjectTypeParameter = adapterCallable.typeParameters[bindingAdapterTypeParameters.size]
-
                             substitutionMap += rawBindingType.getSubstitutionMap(subjectTypeParameter.defaultType)
 
                             check(adapterCallable.typeParameters.all { it in substitutionMap }) {
@@ -245,7 +247,7 @@ class BindingAdapterGenerator(
                             }
                             substitutionMap[subjectTypeParameter] = aliasedType
 
-                            adapterCallable.copy(
+                            substitutionMap to adapterCallable.copy(
                                 type = adapterCallable.type
                                     .substitute(substitutionMap)
                                     // map the aliased to type to the raw binding type
@@ -256,9 +258,9 @@ class BindingAdapterGenerator(
                                 }
                             )
                         }
-                        .map { bindingAdapter to it }
+                        .map { Triple(bindingAdapter, it.first, it.second) }
                 }
-                .forEach { (bindingAdapter, bindingAdapterCallable) ->
+                .forEach { (bindingAdapter, substitutionMap, bindingAdapterCallable) ->
                     when (bindingAdapterCallable.contributionKind) {
                         Callable.ContributionKind.BINDING -> {
                             if (bindingAdapterCallable.isEager)
@@ -332,7 +334,9 @@ class BindingAdapterGenerator(
                                             emit(parameter.name)
                                         }
                                     }
-                                }
+                                },
+                            bindingAdapterCallable.typeParameters
+                                .map { substitutionMap.getValue(it) }
                         )
                     }
                     callables += Callable(

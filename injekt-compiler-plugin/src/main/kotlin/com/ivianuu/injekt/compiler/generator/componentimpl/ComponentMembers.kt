@@ -28,6 +28,7 @@ import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.TypeTranslator
 import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.defaultType
+import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.renderExpanded
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.name.FqName
@@ -359,10 +360,19 @@ class ComponentStatements(
 fun CodeBuilder.emitCallableInvocation(
     callable: Callable,
     receiver: ComponentExpression?,
-    arguments: List<ComponentExpression>
+    arguments: List<ComponentExpression>,
+    typeArguments: List<TypeRef> = emptyList()
 ) {
     fun emitArguments() {
         if (callable.isCall) {
+            if (typeArguments.isNotEmpty()) {
+                emit("<")
+                typeArguments.forEachIndexed { index, typeRef ->
+                    emit(typeRef.render())
+                    if (index != typeArguments.lastIndex) emit(", ")
+                }
+                emit(">")
+            }
             emit("(")
             arguments
                 .drop(if (callable.valueParameters.firstOrNull()?.isExtensionReceiver == true) 1 else 0)

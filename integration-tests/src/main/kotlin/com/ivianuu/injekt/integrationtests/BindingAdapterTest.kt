@@ -791,7 +791,7 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithComplexTypeParameters() = codegen(
+    fun testBindingAdapterWithDerivedBindingTypeParameters() = codegen(
         """
             interface Store<S, A>
             
@@ -809,6 +809,48 @@ class BindingAdapterTest {
             @Component
             abstract class MyComponent {
                 abstract val string: String
+            }
+        """
+    )
+
+    @Test
+    fun testBindingAdapterWithDerivedAnnotationTypeParameters() = codegen(
+        """
+            @BindingAdapter
+            annotation class MapBinding<M : Map<*, *>> {
+                companion object {
+                    @Binding
+                    fun <M : Map<K, V>, T, K, V> state(): K = error("")
+                }
+            }
+            
+            @MapBinding<Map<String, Int>>
+            fun myStore(): Unit = error("")
+
+            @Component
+            abstract class MyComponent {
+                abstract val string: String
+            }
+        """
+    )
+
+    @Test
+    fun testBindingAdapterWithDerivedBindingAndAnnotationTypeParameters() = codegen(
+        """
+            @BindingAdapter
+            annotation class MapBinding<M : Map<*, *>> {
+                companion object {
+                    @Binding
+                    fun <M : Map<K, V>, T : Set<E>, K, V, E> state(): Pair<E, K> = error("")
+                }
+            }
+            
+            @MapBinding<Map<String, Int>>
+            fun myStore(): Set<Int> = error("")
+
+            @Component
+            abstract class MyComponent {
+                abstract val pair: Pair<Int, String>
             }
         """
     )
