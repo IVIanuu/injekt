@@ -25,7 +25,6 @@ import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.TypeTranslator
 import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.defaultType
-import com.ivianuu.injekt.compiler.generator.getAllRecursive
 import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.isAssignable
 import com.ivianuu.injekt.compiler.generator.nonInlined
@@ -174,48 +173,29 @@ class BindingGraph(
             val keysToReplace = mutableListOf<TypeRef>()
         }
 
-        resolvedBindings.toList()
-            .groupBy { it.first.classifier.defaultType }
-            .filterValues { bindings ->
-                bindings.any { (type) ->
-                    type.getAllRecursive().any {
-                        it.isStarProjection
-                    }
-                }
+        val bindingGroups = mutableListOf<MergeBindingGroup>()
+        resolvedBindings.forEach { (key, binding) ->
+            val bindingGroup = bindingGroups.singleOrNull {
+                it.type == binding.type
             }
-            .mapValues { (_, bindings) ->
-                val bindingGroups = mutableListOf<MergeBindingGroup>()
-                bindings
-                    .sortedBy {
-                        it.first.getAllRecursive()
-                            .filter { it.isStarProjection }
-                            .size
-                    }
-                    .forEach { (key, binding) ->
-                        val bindingGroup = bindingGroups.singleOrNull {
-                            it.type.isAssignable(key)
-                        }
-                        if (bindingGroup != null) {
-                            bindingGroup.keysToReplace += key
-                            // The components aren't needed if we get delegate to another binding
-                            if (binding is AssistedBindingNode)
-                                owner.members -= binding.childComponent
-                            if (binding is ChildComponentBindingNode)
-                                owner.members -= binding.childComponent
-                        } else {
-                            bindingGroups += MergeBindingGroup(key, binding)
-                                .also { it.keysToReplace += binding.type }
-                        }
-                    }
-                bindingGroups
+            if (bindingGroup != null) {
+                bindingGroup.keysToReplace += key
+                // The components aren't needed if we get delegate to another binding
+                if (binding is AssistedBindingNode)
+                    owner.members -= binding.childComponent
+                if (binding is ChildComponentBindingNode)
+                    owner.members -= binding.childComponent
+            } else {
+                bindingGroups += MergeBindingGroup(key, binding)
+                    .also { it.keysToReplace += binding.type }
             }
-            .forEach { (_, bindingGroups) ->
-                bindingGroups.forEach { bindingGroup ->
-                    bindingGroup.keysToReplace.forEach { key ->
-                        resolvedBindings[key] = bindingGroup.bindingToUse
-                    }
-                }
+        }
+
+        bindingGroups.forEach { bindingGroup ->
+            bindingGroup.keysToReplace.forEach { key ->
+                resolvedBindings[key] = bindingGroup.bindingToUse
             }
+        }
     }
 
     private fun check(binding: BindingNode) {
