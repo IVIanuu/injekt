@@ -20,6 +20,7 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class BindingAdapterTest {
@@ -390,6 +391,86 @@ class BindingAdapterTest {
 
             @Component
             abstract class MyComponent {
+                abstract val any: Any
+                
+                @Binding protected fun foo() = Foo()
+            }
+        """
+    )
+
+    @Test
+    fun testScopedBindingAdapterFunction() = codegen(
+        """
+            @BindingAdapter
+            annotation class AnyBinding { 
+                companion object {
+                    @Binding(MyComponent::class)
+                    val <T : Any> T.any: Any get() = this
+                }
+            }
+            
+            @AnyBinding
+            class AnnotatedBar(val foo: Foo)
+            
+            @Component
+            abstract class MyComponent {
+                abstract val any: Any
+                
+                @Binding protected fun foo() = Foo()
+            }
+            
+            private val component = component<MyComponent>()
+            
+            fun invoke(): Pair<Any, Any> {
+                return component.any to component.any
+            }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Any, Any>>()
+        assertSame(a, b)
+    }
+
+    @Test
+    fun testSuspendBindingAdapterFunction() = codegen(
+        """
+            @BindingAdapter
+            annotation class AnyBinding { 
+                companion object {
+                    @Binding
+                    suspend fun <T : Any> T.any(): Any = this
+                }
+            }
+            
+            @AnyBinding
+            class AnnotatedBar(val foo: Foo)
+            
+            @Component
+            abstract class MyComponent {
+                abstract suspend fun any(): Any
+                
+                @Binding protected fun foo() = Foo()
+            }
+        """
+    )
+
+    @Test
+    fun testComposableBindingAdapterFunction() = codegen(
+        """
+            @BindingAdapter
+            annotation class AnyBinding { 
+                companion object {
+                    @Binding
+                    @Composable
+                    val <T : Any> T.any: Any get() = this
+                }
+            }
+            
+            @AnyBinding
+            class AnnotatedBar(val foo: Foo)
+            
+            @Component
+            abstract class MyComponent {
+                @Composable
                 abstract val any: Any
                 
                 @Binding protected fun foo() = Foo()

@@ -351,7 +351,7 @@ class BindingAdapterGenerator(
                         targetComponent = bindingAdapterCallable.targetComponent,
                         contributionKind = bindingAdapterCallable.contributionKind,
                         isCall = true,
-                        callableKind = callableKind,
+                        callableKind = bindingAdapterCallable.callableKind,
                         bindingAdapters = bindingAdapterCallable.bindingAdapters,
                         isEager = bindingAdapterCallable.isEager,
                         isExternal = false,
