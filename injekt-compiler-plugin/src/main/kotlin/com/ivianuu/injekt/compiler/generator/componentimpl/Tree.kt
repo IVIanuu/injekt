@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.ClassifierRef
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.TypeRef
-import com.ivianuu.injekt.compiler.generator.copy
 import com.ivianuu.injekt.compiler.generator.getStarSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.renderExpanded
@@ -160,7 +159,6 @@ class AssistedBindingNode(
         val returnType = type.typeArguments.last()
         val substitutionMap = childComponent.graph.getBinding(BindingRequest(returnType, FqName.ROOT))
             .type.getStarSubstitutionMap(returnType)
-        val prev = _type.copy()
         _type = _type.substitute(substitutionMap)
     }
 }
@@ -233,10 +231,10 @@ class CallableBindingNode(
     override val cacheable: Boolean
         get() = callable.isEager
     override val inlineMode: InlineMode = when {
-        cacheable -> InlineMode.NONE
-        // object or top level properties
-        !callable.isCall && callable.valueParameters.isEmpty() -> InlineMode.EXPRESSION
-        (!callable.isCall || callable.valueParameters.isEmpty()) && targetComponent == null -> InlineMode.FUNCTION
+        ((!callable.isCall || callable.valueParameters.isEmpty()) ||
+                callable.isInline) &&
+                !cacheable &&
+                targetComponent == null -> InlineMode.FUNCTION
         else -> InlineMode.NONE
     }
 
