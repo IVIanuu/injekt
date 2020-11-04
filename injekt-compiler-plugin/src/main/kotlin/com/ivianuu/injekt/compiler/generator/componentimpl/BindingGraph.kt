@@ -327,12 +327,9 @@ class BindingGraph(
     }
 
     private fun getExplicitBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
-        this += owner.inputTypes
-            .withIndex()
-            .filter { request.type.isAssignable(it.value) }
-            .map { (index, inputType) ->
-                InputBindingNode(inputType, owner, index)
-            }
+        this += owner.additionalInputTypes
+            .filter { request.type.isAssignable(it) }
+            .map { InputBindingNode(it, owner) }
 
         this += moduleBindingCallables
             .filter { request.type.isAssignable(it.callable.type) }
@@ -413,6 +410,14 @@ class BindingGraph(
             }) {
             // todo check if the arguments match the constructor arguments of the child component
             val childComponentType = request.type.typeArguments.last()
+            val childComponentConstructor = declarationStore.constructorForComponent(childComponentType)
+            val additionalInputTypes = request.type.typeArguments.dropLast(1)
+                .filter { inputType ->
+                    childComponentConstructor == null ||
+                            childComponentConstructor.valueParameters.none {
+                                it.type == inputType
+                            }
+                }
             val existingComponents = mutableSetOf<TypeRef>()
             var currentComponent: ComponentImpl? = owner
             while (currentComponent != null) {
@@ -425,7 +430,7 @@ class BindingGraph(
                     owner.contextTreeNameProvider(
                         childComponentType.classifier.fqName.shortName().asString()
                     ).asNameId(),
-                    emptyList(),
+                    additionalInputTypes,
                     emptyList(),
                     owner
                 )

@@ -28,6 +28,7 @@ import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.renderExpanded
 import com.ivianuu.injekt.compiler.generator.substitute
+import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.name.Name
 
 @Binding
@@ -37,7 +38,7 @@ class ComponentImpl(
     graphFactory: (ComponentImpl) -> BindingGraph,
     val componentType: @Assisted TypeRef,
     val name: @Assisted Name,
-    val inputTypes: @Assisted List<TypeRef>,
+    val additionalInputTypes: @Assisted List<TypeRef>,
     val assistedRequests: @Assisted List<Callable>,
     val parent: @Assisted ComponentImpl?,
 ) : ComponentMember {
@@ -60,11 +61,11 @@ class ComponentImpl(
     val statements = statementsFactory(this)
     val graph = graphFactory(this)
 
-    private val componentConstructor = declarationStore.constructorForComponent(componentType)
+    private val superComponentConstructor = declarationStore.constructorForComponent(componentType)
 
-    private val constructorParameters = if (componentConstructor != null) {
+    private val superConstructorParameters = if (superComponentConstructor != null) {
         val substitutionMap = componentType.getSubstitutionMap(componentType.classifier.defaultType)
-        componentConstructor
+        superComponentConstructor
             .valueParameters
             .map { it.copy(type = it.type.substitute(substitutionMap)) }
     } else {
@@ -104,28 +105,25 @@ class ComponentImpl(
         if (parent != null) emit("private inner ")
         emit("class $name")
 
-        if (constructorParameters.isNotEmpty()) {
+        val inputTypes = superConstructorParameters
+            .map { it.type } + additionalInputTypes
+
+        if (inputTypes.isNotEmpty()) {
             emit("(")
-            constructorParameters.forEachIndexed { index, param ->
-                emit("${param.name}: ${param.type.renderExpanded()}")
-                if (index != constructorParameters.lastIndex) emit(", ")
-            }
-            emit(")")
-        } else if (inputTypes.isNotEmpty()) {
-            emit("(")
-            inputTypes.forEachIndexed { index, inputType ->
-                emit("val input$index: ${inputType.renderExpanded()}")
+            inputTypes.forEachIndexed { index, input ->
+                if (input in additionalInputTypes) emit("val ")
+                emit("${input.uniqueTypeName()} : ${input.renderExpanded()}")
                 if (index != inputTypes.lastIndex) emit(", ")
             }
             emit(")")
         }
 
         emit(" : ${componentType.renderExpanded()}")
-        if (componentConstructor != null) {
+        if (superComponentConstructor != null) {
             emit("(")
-            constructorParameters.forEachIndexed { index, param ->
-                emit(param.name)
-                if (index != constructorParameters.lastIndex) emit(", ")
+            superConstructorParameters.forEachIndexed { index, param ->
+                emit(param.type.uniqueTypeName())
+                if (index != superConstructorParameters.lastIndex) emit(", ")
             }
             emit(") ")
         }

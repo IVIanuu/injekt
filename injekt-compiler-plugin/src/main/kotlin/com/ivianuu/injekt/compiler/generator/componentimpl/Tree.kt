@@ -189,8 +189,7 @@ class ChildComponentBindingNode(
 
 class InputBindingNode(
     type: TypeRef,
-    override val owner: ComponentImpl,
-    val index: Int
+    override val owner: ComponentImpl
 ) : BindingNode(type) {
     override val cacheable: Boolean
         get() = false

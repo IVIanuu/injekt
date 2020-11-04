@@ -74,6 +74,28 @@ class ComponentTest {
     }
 
     @Test
+    fun testChildWithAdditionalArguments() = codegen(
+        """
+            @Component
+            abstract class ParentComponent {
+                abstract val childComponentFactory: (Foo) -> MyChildComponent
+            }
+            
+            @ChildComponent
+            abstract class MyChildComponent {
+                abstract val foo: Foo
+            }
+
+            fun invoke(foo: Foo): Foo {
+                return component<ParentComponent>().childComponentFactory(foo).foo
+            }
+    """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
+    }
+
+    @Test
     fun testUnscopedBindingReturnsDifferentInstance() = codegen(
         """
             @Component

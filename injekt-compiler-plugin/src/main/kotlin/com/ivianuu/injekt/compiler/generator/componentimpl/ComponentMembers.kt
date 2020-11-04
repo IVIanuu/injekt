@@ -195,7 +195,7 @@ class ComponentStatements(
     }
 
     private fun inputExpression(binding: InputBindingNode): ComponentExpression = {
-        emit("this@${binding.owner.name}.input${binding.index}")
+        emit("this@${binding.owner.name}.${binding.type.uniqueTypeName()}")
     }
 
     private fun mapExpression(binding: MapBindingNode): ComponentExpression = {
