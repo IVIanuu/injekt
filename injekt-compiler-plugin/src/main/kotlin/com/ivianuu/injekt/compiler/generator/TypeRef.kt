@@ -229,7 +229,9 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
 }
 
 fun TypeRef.substituteStars(baseType: TypeRef): TypeRef {
+    if (this == baseType) return this
     if (isStarProjection && !baseType.classifier.isTypeParameter) return baseType
+    if (classifier != baseType.classifier) return this
     return copy(
         typeArguments = typeArguments
             .zip(baseType.typeArguments)
