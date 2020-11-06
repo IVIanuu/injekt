@@ -827,6 +827,85 @@ class ComponentTest {
     }
 
     @Test
+    fun testDistinctQualifier() = codegen(
+        """
+            @Target(AnnotationTarget.TYPE)
+            @Qualifier
+            annotation class MyQualifier
+            
+            @Component
+            abstract class FooComponent {
+                abstract val foo1: Foo
+                abstract val foo2: @MyQualifier Foo
+                @Binding protected fun _foo1(): Foo = Foo()
+                @Binding protected fun _foo2(): @MyQualifier Foo = Foo()
+            }
+       
+            fun invoke(): Pair<Foo, Foo> {
+                val component = component<FooComponent>()
+                return component.foo1 to component.foo2
+            }
+            """
+    ) {
+        val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
+        assertNotSame(foo1, foo2)
+    }
+
+    @Test
+    fun testDistinctQualifierMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Target(AnnotationTarget.TYPE)
+                    @Qualifier
+                    annotation class MyQualifier
+                    @Module
+                    object Foo1Module {
+                        @Binding fun foo1(): @MyQualifier Foo = Foo()
+                    }
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Module
+                    object Foo2Module {
+                        @Binding fun foo2(): Foo = Foo()
+                    }
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Component
+                    abstract class MyComponent {
+                        abstract val foo1: @MyQualifier Foo
+                        abstract val foo2: Foo
+                        
+                        @Module protected val foo1Module = Foo1Module
+                        @Module protected val foo2Module = Foo2Module
+                    }
+                    fun invoke(): Pair<Foo, Foo> {
+                        val component = component<MyComponent>()
+                        return component.foo1 to component.foo2
+                    }
+            """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        val (foo1, foo2) = it.last().invokeSingleFile<Pair<Foo, Foo>>()
+        assertNotSame(foo1, foo2)
+    }
+
+    // todo distinct qualified type parameter
+    // todo distinct qualified type alias
+    // todo distinct qualifier args
+    // todo distinct qualifier type arguments
+
+    @Test
     fun testIgnoresNullability() = codegen(
         """
             @Component

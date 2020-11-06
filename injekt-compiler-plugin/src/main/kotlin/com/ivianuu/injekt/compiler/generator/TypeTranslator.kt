@@ -33,7 +33,7 @@ import org.jetbrains.kotlin.types.Variance
 
 @Binding
 class TypeTranslator(
-    private val declarationStore: DeclarationStore,
+    val declarationStore: DeclarationStore,
     private val errorCollector: ErrorCollector
 ) {
 

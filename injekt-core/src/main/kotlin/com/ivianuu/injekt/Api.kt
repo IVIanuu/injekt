@@ -37,6 +37,9 @@ annotation class Module
 )
 annotation class Binding(val scopeComponent: KClass<*> = Nothing::class)
 
+@Target(AnnotationTarget.ANNOTATION_CLASS)
+annotation class Qualifier
+
 @Target(AnnotationTarget.FUNCTION)
 annotation class FunBinding
 

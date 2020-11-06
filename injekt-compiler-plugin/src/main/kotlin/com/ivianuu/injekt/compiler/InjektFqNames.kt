@@ -29,6 +29,7 @@ object InjektFqNames {
     val ChildComponent = InjektPackage.child("ChildComponent".asNameId())
     val MapEntries = InjektPackage.child("MapEntries".asNameId())
     val Module = InjektPackage.child("Module".asNameId())
+    val Qualifier = InjektPackage.child("Qualifier".asNameId())
     val SetElements = InjektPackage.child("SetElements".asNameId())
 
     val CommonPackage = InjektPackage//.child("common".asNameId())

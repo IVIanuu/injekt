@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentExpression
 import org.jetbrains.kotlin.backend.common.descriptors.isSuspend
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -340,6 +341,51 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
                     bindingArg.emit()
                 }
+            }
+        )
+    }
+
+    fun qualifierDescriptorForAnnotation(
+        annotation: AnnotationDescriptor,
+        source: DeclarationDescriptor?
+    ): QualifierDescriptor {
+        return QualifierDescriptor(
+            type = typeTranslator.toTypeRef(annotation.type, source),
+            args = annotation.allValueArguments.mapValues { (_, bindingArg) ->
+                val expr: ComponentExpression = {
+                    fun ConstantValue<*>.emit() {
+                        when (this) {
+                            is ArrayValue -> {
+                                // todo avoid boxing
+                                emit("arrayOf(")
+                                value.forEachIndexed { index, itemValue ->
+                                    itemValue.emit()
+                                    if (index != value.lastIndex) emit(", ")
+                                }
+                                emit(")")
+                            }
+                            is BooleanValue -> emit(value)
+                            is ByteValue -> emit("$value")
+                            is CharValue -> emit("'${value}'")
+                            is DoubleValue -> emit("$value")
+                            is EnumValue -> emit("${enumClassId.asSingleFqName()}.${enumEntryName}")
+                            is FloatValue -> emit("${value}f")
+                            is IntValue -> emit("$value")
+                            is KClassValue -> emit("${(value as KClassValue.Value.NormalClass).classId.asSingleFqName()}::class")
+                            is LongValue -> emit("${value}L")
+                            is ShortValue -> emit("$value")
+                            is StringValue -> emit("\"${value}\"")
+                            is UByteValue -> emit("${value}u")
+                            is UIntValue -> emit("${value}u")
+                            is ULongValue -> emit("(${value}UL)")
+                            is UShortValue -> emit("${value}u")
+                            else -> error("Unsupported bindingArg type $value")
+                        }.let {}
+                    }
+
+                    bindingArg.emit()
+                }
+                buildCodeString { expr() }
             }
         )
     }

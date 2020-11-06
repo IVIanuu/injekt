@@ -68,6 +68,7 @@ sealed class TypeRef {
     abstract val superTypes: List<TypeRef>
     abstract val expandedType: TypeRef?
     abstract val isStarProjection: Boolean
+    abstract val qualifiers: List<QualifierDescriptor>
     private val typeName by unsafeLazy { uniqueTypeName(includeNullability = false) }
     override fun equals(other: Any?) = other is TypeRef && typeName == other.typeName
     override fun hashCode() = typeName.hashCode()
@@ -150,6 +151,15 @@ class KotlinTypeRef(
                     fixType = false)
             }
     }
+    override val qualifiers: List<QualifierDescriptor> by lazy {
+        kotlinType.getAnnotatedAnnotations(InjektFqNames.Qualifier)
+            .map {
+                typeTranslator.declarationStore.qualifierDescriptorForAnnotation(
+                    it,
+                    kotlinType.constructor.declarationDescriptor
+                )
+            }
+    }
 }
 
 class SimpleTypeRef(
@@ -169,7 +179,8 @@ class SimpleTypeRef(
     override val isInlineProvider: Boolean = false,
     override val superTypes: List<TypeRef> = emptyList(),
     override val expandedType: TypeRef? = null,
-    override val isStarProjection: Boolean = false
+    override val isStarProjection: Boolean = false,
+    override val qualifiers: List<QualifierDescriptor> = emptyList()
 ) : TypeRef() {
     init {
         check(typeArguments.size == classifier.typeParameters.size) {
@@ -199,7 +210,8 @@ fun TypeRef.copy(
     isInlineProvider: Boolean = this.isInlineProvider,
     superTypes: List<TypeRef> = this.superTypes,
     expandedType: TypeRef? = this.expandedType,
-    isStarProjection: Boolean = this.isStarProjection
+    isStarProjection: Boolean = this.isStarProjection,
+    qualifiers: List<QualifierDescriptor> = this.qualifiers
 ) = SimpleTypeRef(
     classifier,
     isMarkedNullable,
@@ -217,7 +229,8 @@ fun TypeRef.copy(
     isInlineProvider,
     superTypes,
     expandedType,
-    isStarProjection
+    isStarProjection,
+    qualifiers
 )
 
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
@@ -243,7 +256,9 @@ fun TypeRef.substituteStars(baseType: TypeRef): TypeRef {
 
 fun TypeRef.render(): String {
     return buildString {
-        val annotations = listOfNotNull(
+        val annotations = qualifiers.map {
+            "@${it.type}(${it.args.toList().joinToString { "${it.first}=${it.second}" }})"
+        } + listOfNotNull(
             if (isComposable) "@${InjektFqNames.Composable}" else null,
             if (isExtensionFunction) "@ExtensionFunctionType" else null,
             if (isInlineProvider) "@${InjektFqNames.InlineProvider}" else null,
@@ -279,6 +294,11 @@ fun TypeRef.renderExpanded() = expandedType?.render() ?: render()
 fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
     fun TypeRef.renderName(includeArguments: Boolean = true): String {
         return buildString {
+            qualifiers.forEach {
+                append(it.type.uniqueTypeName())
+                append(it.args.hashCode())
+                append("_")
+            }
             if (isComposable) append("composable_")
             // if (includeNullability && isMarkedNullable) append("nullable_")
             if (isStarProjection) append("star")
@@ -365,16 +385,6 @@ fun TypeRef.nonInlined(): TypeRef {
     }
 }
 
-fun TypeRef.getAllRecursive(): List<TypeRef> {
-    val all = mutableListOf<TypeRef>()
-    fun collect(type: TypeRef) {
-        all += type
-        type.typeArguments.forEach { collect(it) }
-    }
-    collect(this)
-    return all
-}
-
 fun TypeRef.isAssignable(superType: TypeRef): Boolean {
     if (this == superType) return true
 
@@ -391,15 +401,21 @@ fun TypeRef.isAssignable(superType: TypeRef): Boolean {
 
     if (classifier.fqName != superType.classifier.fqName) return false
 
-    return typeArguments.zip(superType.typeArguments).all { (a, b) ->
-        a.isAssignable(b)
-    }
+    if (qualifiers != superType.qualifiers) return false
+
+    if (!typeArguments.zip(superType.typeArguments).all { (a, b) -> a.isAssignable(b) })
+        return false
+
+    return true
 }
 
 fun TypeRef.isSubTypeOf(superType: TypeRef): Boolean {
-    if (classifier.fqName == superType.classifier.fqName) return true
     if (superType.classifier.fqName.asString() == KotlinBuiltIns.FQ_NAMES.any.asString() && superType.isMarkedNullable)
         return true
+
+    if (qualifiers != superType.qualifiers) return false
+    if (classifier.fqName == superType.classifier.fqName) return true
+
     return fullyExpandedType.superTypes.any { it.isSubTypeOf(superType) } ||
             (fullyExpandedType != this && fullyExpandedType.isSubTypeOf(superType))
 }

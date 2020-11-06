@@ -67,3 +67,8 @@ data class BindingAdapterDescriptor(
     val module: ModuleDescriptor,
     val args: Map<Name, ComponentExpression>
 )
+
+data class QualifierDescriptor(
+    val type: TypeRef,
+    val args: Map<Name, String>
+)
