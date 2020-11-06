@@ -109,6 +109,45 @@ class CollectionsTest {
     }
 
     @Test
+    fun testChildMapOverridesParent() = codegen(
+        """
+            @Component
+            abstract class ParentMapComponent {
+                abstract val map: Map<String, String>
+
+                abstract val childMapComponentFactory: () -> ChildMapComponent
+            
+                @Binding
+                protected fun value() = "parent"
+                
+                @MapEntries
+                protected fun valueIntoMap(value: String): Map<String, String> = 
+                    mapOf("key" to value)
+            }
+            
+            @ChildComponent
+            abstract class ChildMapComponent {
+                abstract val map: Map<String, String>
+
+                @Binding
+                protected fun value() = "child"
+                
+                @MapEntries
+                protected fun valueIntoMap(value: String): Map<String, String> = 
+                    mapOf("key" to value)
+            }
+         
+            fun invoke(): Map<String, String> {
+                val parent = component<ParentMapComponent>()
+                return parent.childMapComponentFactory().map
+            }
+        """
+    ) {
+        val map = invokeSingleFile<Map<String, String>>()
+        assertEquals("child", map["key"])
+    }
+
+    @Test
     fun testAssistedMap() = codegen(
         """
             @Component
@@ -277,6 +316,4 @@ class CollectionsTest {
         assertInternalError("no binding")
     }
 
-    // todo test child overrides parent
-    // todo test input overrides implicit
 }
