@@ -56,8 +56,6 @@ class BindingGraph(
 
     private val parent = owner.parent?.graph
 
-    private val componentType = owner.componentType
-
     private val moduleBindingCallables = mutableListOf<CallableWithReceiver>()
     private val parentModuleBindingCallables = owner.parent?.graph?.moduleBindingCallables
         ?: emptyList()
@@ -122,7 +120,7 @@ class BindingGraph(
             }
         }
 
-        declarationStore.moduleForType(componentType)
+        declarationStore.moduleForType(owner.componentType)
             .collectContributions(null) { emit("this@${owner.name}") }
         owner.mergeDeclarations
             .filter { it.isModule }
@@ -249,7 +247,7 @@ class BindingGraph(
                 fun indent() {
                     indendation = "$indendation    "
                 }
-                appendLine("No binding found for '${finalRequest.type.render()}' in '${componentType.render()}':")
+                appendLine("No binding found for '${finalRequest.type.render()}' in '${owner.nonAssistedComponent.componentType.render()}':")
                 appendLine("${finalRequest.origin.orUnknown()} requires '${finalRequest.type.render()}'")
                 chain.forEach {
                     appendLine("chain $it" + it.origin.orUnknown())
@@ -267,7 +265,7 @@ class BindingGraph(
         if (binding != null) return binding
 
         check(!locked) {
-            "Cannot create request new bindings in ${owner.componentType} for $request " +
+            "Cannot create request new bindings in ${owner.nonAssistedComponent.componentType} for $request " +
                     "existing ${resolvedBindings.keys}"
         }
 
@@ -418,7 +416,7 @@ class BindingGraph(
     }
 
     private fun getImplicitFrameworkBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
-        if (request.type == componentType) {
+        if (request.type == owner.componentType) {
             this += SelfBindingNode(
                 type = request.type,
                 component = owner
@@ -514,7 +512,7 @@ class BindingGraph(
                 ).defaultType
                 val bindingCallable = Callable(
                     packageFqName = FqName.ROOT,
-                    fqName = FqName.ROOT,
+                    fqName = request.origin,
                     name = "invoke".asNameId(),
                     type = returnType,
                     typeParameters = emptyList(),
