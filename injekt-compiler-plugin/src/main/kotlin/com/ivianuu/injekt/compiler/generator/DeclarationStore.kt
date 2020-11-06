@@ -128,6 +128,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .filter { it.first.contributionKind == Callable.ContributionKind.BINDING }
             .map { it.first })
             .filter { type.isAssignable(it.type) }
+            .distinct()
     }
 
     val generatedCallables = mutableListOf<Pair<Callable, KtFile>>()

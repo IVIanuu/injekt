@@ -273,6 +273,18 @@ class BindingGraph(
         fun List<BindingNode>.mostSpecificOrFail(bindingType: String): BindingNode? {
             return if (size > 1) {
                 getExact(request.type)
+                    .singleOrNull()
+                    ?: getExact(request.type)
+                        .singleOrNull { candidate ->
+                            candidate.dependencies.all { dependency ->
+                                getBindingOrNull(dependency) != null
+                            }
+                        }
+                    ?: singleOrNull { candidate ->
+                        candidate.dependencies.all { dependency ->
+                            getBindingOrNull(dependency) != null
+                        }
+                    }
                     ?: error(
                         "Multiple $bindingType bindings found for '${request.type.render()}' at:\n${
                             joinToString("\n") { "    '${it.origin.orUnknown()}'" }
@@ -531,8 +543,8 @@ class BindingGraph(
         this += collections.getNodes(request)
     }
 
-    private fun List<BindingNode>.getExact(requested: TypeRef): BindingNode? =
-        singleOrNull { it.rawType == requested }
+    private fun List<BindingNode>.getExact(requested: TypeRef): List<BindingNode> =
+        filter { it.rawType == requested }
 }
 
 private fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"

@@ -940,7 +940,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testMultipleExplicitBindingFails() = codegen(
+    fun testMultipleResolvableExplicitBindingFails() = codegen(
         """
             @Component
             abstract class MyComponent(
@@ -996,7 +996,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testMultipleInternalImplicitBindingFails() = codegen(
+    fun testMultipleResolvableInternalImplicitBindingFails() = codegen(
         """
         @Binding fun foo1() = Foo()
         @Binding fun foo2() = Foo()
@@ -1015,7 +1015,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testMultipleExternalImplicitBindingsFails() = multiCodegen(
+    fun testMultipleResolvableExternalImplicitBindingsFails() = multiCodegen(
         listOf(
             source(
                 """
@@ -1113,6 +1113,31 @@ class ComponentTest {
     }
 
     @Test
+    fun testPrefersResolvableBinding() = codegen(
+        """
+            val defaultFoo = Foo()
+            
+            @Binding
+            fun bar() = Bar(defaultFoo)
+            
+            @Binding
+            fun bar(foo: Foo) = Bar(foo)
+            
+            @Component
+            abstract class MyComponent { 
+                abstract val bar: Bar
+            }
+            
+            fun invoke(): Pair<Any, Any> {
+                return defaultFoo to component<MyComponent>().bar.foo
+            }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Any, Any>>()
+        assertSame(a, b)
+    }
+
+    @Test
     fun testPrefersExactType() = codegen(
         """
             class Dep<T>(val value: T)
@@ -1122,7 +1147,7 @@ class ComponentTest {
                 abstract val fooDep: Dep<Foo>
                 
                 @Binding
-                protected fun <T> genericDep(t: T): Dep<T> = Dep(t)
+                protected fun <T> genericDep(t: T): Dep<T> = error("")
                 
                 @Binding
                 protected fun fooDep(foo: Foo): Dep<Foo> = Dep(foo)
@@ -1130,8 +1155,14 @@ class ComponentTest {
                 @Binding
                 protected fun foo() = Foo()
             }
+            
+            fun invoke() {
+                component<FooComponent>().fooDep
+            }
         """
-    )
+    ) {
+        invokeSingleFile()
+    }
 
     @Test
     fun testGenericTypeAlias() = codegen(
