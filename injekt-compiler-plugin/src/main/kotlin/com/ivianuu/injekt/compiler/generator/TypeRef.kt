@@ -400,7 +400,6 @@ fun TypeRef.isAssignable(superType: TypeRef): Boolean {
     }
 
     if (classifier.fqName != superType.classifier.fqName) return false
-
     if (qualifiers != superType.qualifiers) return false
 
     if (!typeArguments.zip(superType.typeArguments).all { (a, b) -> a.isAssignable(b) })
@@ -410,11 +409,12 @@ fun TypeRef.isAssignable(superType: TypeRef): Boolean {
 }
 
 fun TypeRef.isSubTypeOf(superType: TypeRef): Boolean {
-    if (superType.classifier.fqName.asString() == KotlinBuiltIns.FQ_NAMES.any.asString() && superType.isMarkedNullable)
+    if (superType.classifier.fqName.asString() == KotlinBuiltIns.FQ_NAMES.any.asString() &&
+        superType.isMarkedNullable && qualifiers == superType.qualifiers)
         return true
 
-    if (qualifiers != superType.qualifiers) return false
     if (classifier.fqName == superType.classifier.fqName) return true
+    if (qualifiers != superType.qualifiers) return false
 
     return fullyExpandedType.superTypes.any { it.isSubTypeOf(superType) } ||
             (fullyExpandedType != this && fullyExpandedType.isSubTypeOf(superType))

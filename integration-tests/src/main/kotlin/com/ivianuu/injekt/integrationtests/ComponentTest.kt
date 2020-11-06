@@ -950,8 +950,25 @@ class ComponentTest {
         assertNotSame(foo1, foo2)
     }
 
-    // todo distinct qualified type parameter
-    // todo distinct qualified type alias
+    @Test
+    fun testTypeParameterWithQualifierUpperBound() = codegen(
+        """
+            @Target(AnnotationTarget.TYPE)
+            @Qualifier
+            annotation class MyQualifier
+            
+            @Binding
+            class Dep<T : @MyQualifier Any?>(val value: T)
+            
+            @Binding
+            fun qualified(): @MyQualifier String = ""
+            
+            @Component
+            abstract class FooComponent {
+                abstract val dep: Dep<@MyQualifier String>
+            }
+            """
+    )
 
     @Test
     fun testIgnoresNullability() = codegen(
