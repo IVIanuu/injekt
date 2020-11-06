@@ -270,29 +270,33 @@ class BindingGraph(
                     "existing ${resolvedBindings.keys}"
         }
 
-        fun List<BindingNode>.mostSpecificOrFail(bindingType: String): BindingNode? {
-            return if (size > 1) {
-                getExact(request.type)
-                    .singleOrNull()
-                    ?: getExact(request.type)
-                        .singleOrNull { candidate ->
-                            candidate.dependencies.all { dependency ->
-                                getBindingOrNull(dependency) != null
-                            }
-                        }
-                    ?: singleOrNull { candidate ->
-                        candidate.dependencies.all { dependency ->
-                            getBindingOrNull(dependency) != null
-                        }
+        fun List<BindingNode>.mostSpecificOrFail(bindingKind: String): BindingNode? {
+            if (isEmpty()) return null
+
+            if (size == 1) return single()
+
+            val exact = filter { it.rawType == request.type }
+            if (exact.size == 1) return exact.single()
+
+            exact
+                .singleOrNull { candidate ->
+                    candidate.dependencies.all { dependency ->
+                        getBindingOrNull(dependency) != null
                     }
-                    ?: error(
-                        "Multiple $bindingType bindings found for '${request.type.render()}' at:\n${
-                            joinToString("\n") { "    '${it.origin.orUnknown()}'" }
-                        }"
-                    )
-            } else {
-                singleOrNull()
-            }
+                }
+                ?.let { return it }
+
+            singleOrNull { candidate ->
+                candidate.dependencies.all { dependency ->
+                    getBindingOrNull(dependency) != null
+                }
+            }?.let { return it }
+
+            error(
+                "Multiple $bindingKind bindings found for '${request.type.render()}' required by ${request.origin} at:\n${
+                    joinToString("\n") { "    '${it.origin.orUnknown()}'" }
+                }"
+            )
         }
 
         val explicitBindings = getExplicitBindingsForType(request)
@@ -543,8 +547,6 @@ class BindingGraph(
         this += collections.getNodes(request)
     }
 
-    private fun List<BindingNode>.getExact(requested: TypeRef): List<BindingNode> =
-        filter { it.rawType == requested }
 }
 
 private fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"

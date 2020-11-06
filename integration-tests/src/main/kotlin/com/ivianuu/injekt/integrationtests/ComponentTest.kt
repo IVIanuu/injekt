@@ -918,6 +918,42 @@ class ComponentTest {
         assertInternalError("multiple")
     }
 
+    // todo @Test
+    fun testGenericBindingWithStarProjection() = codegen(
+        """
+            class Store<S, A>
+            
+            @Binding
+            fun store() = Store<String, Int>()
+            
+            @Binding
+            fun <S> Store<S, *>.storeState(): S = error("")
+            
+            @Component
+            abstract class MyComponent {
+                abstract val state: String
+            }
+        """
+    )
+
+    // todo @Test
+    fun testGenericBindingWithIrrelevantTypeParameters() = codegen(
+        """
+            class Store<S, A>
+            
+            @Binding
+            fun store() = Store<String, Int>()
+            
+            @Binding
+            fun <S, A> Store<S, A>.storeState(): S = error("")
+            
+            @Component
+            abstract class MyComponent {
+                abstract val state: String
+            }
+        """
+    )
+
     @Test
     fun testPrefersExplicitOverImplicitBinding() = codegen(
         """
