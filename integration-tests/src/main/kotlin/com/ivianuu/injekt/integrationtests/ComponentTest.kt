@@ -900,10 +900,58 @@ class ComponentTest {
         assertNotSame(foo1, foo2)
     }
 
+    @Test
+    fun testDistinctQualifierAnnotationWithArguments() = codegen(
+        """
+            @Target(AnnotationTarget.TYPE)
+            @Qualifier
+            annotation class MyQualifier(val value: String)
+            
+            @Component
+            abstract class FooComponent {
+                abstract val foo1: @MyQualifier("1") Foo
+                abstract val foo2: @MyQualifier("2") Foo
+                @Binding protected fun _foo1(): @MyQualifier("1") Foo = Foo()
+                @Binding protected fun _foo2(): @MyQualifier("2") Foo = Foo()
+            }
+       
+            fun invoke(): Pair<Foo, Foo> {
+                val component = component<FooComponent>()
+                return component.foo1 to component.foo2
+            }
+            """
+    ) {
+        val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
+        assertNotSame(foo1, foo2)
+    }
+
+    @Test
+    fun testDistinctQualifierAnnotationWithTypeArguments() = codegen(
+        """
+            @Target(AnnotationTarget.TYPE)
+            @Qualifier
+            annotation class MyQualifier<T>
+            
+            @Component
+            abstract class FooComponent {
+                abstract val foo1: @MyQualifier<String> Foo
+                abstract val foo2: @MyQualifier<Int> Foo
+                @Binding protected fun _foo1(): @MyQualifier<String> Foo = Foo()
+                @Binding protected fun _foo2(): @MyQualifier<Int> Foo = Foo()
+            }
+       
+            fun invoke(): Pair<Foo, Foo> {
+                val component = component<FooComponent>()
+                return component.foo1 to component.foo2
+            }
+            """
+    ) {
+        val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
+        assertNotSame(foo1, foo2)
+    }
+
     // todo distinct qualified type parameter
     // todo distinct qualified type alias
-    // todo distinct qualifier args
-    // todo distinct qualifier type arguments
 
     @Test
     fun testIgnoresNullability() = codegen(
