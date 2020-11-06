@@ -243,7 +243,11 @@ class BindingAdapterGenerator(
                             substitutionMap += rawBindingType.getSubstitutionMap(subjectTypeParameter.defaultType)
 
                             check(adapterCallable.typeParameters.all { it in substitutionMap }) {
-                                "Couldn't resolve all type arguments $substitutionMap in ${file.virtualFilePath}"
+                                "Couldn't resolve all type arguments ${substitutionMap.map { 
+                                    it.key.fqName to it.value
+                                }} missing ${adapterCallable.typeParameters.filter { 
+                                    it !in substitutionMap
+                                }.map { it.fqName }} in ${file.virtualFilePath}"
                             }
                             substitutionMap[subjectTypeParameter] = aliasedType
 

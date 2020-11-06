@@ -872,6 +872,39 @@ class BindingAdapterTest {
     )
 
     @Test
+    fun testBindingAdapterWithTypeAliasWithDerivedTypeParameters() = codegen(
+        """
+            typealias StringIntMap = Map<String, Int>
+            
+            @MapBindings
+            @Binding
+            fun map(): StringIntMap = mapOf("a" to 0)
+
+            @BindingAdapter
+            annotation class MapBindings {
+                companion object {
+                    @Binding
+                    val <T : Map<K, V>, K, V> T.map: Map<K, V> get() = this
+                
+                    @Binding
+                    val <T : Map<K, V>, K, V> T.firstKey: K get() = keys.first()
+                    
+                    @Binding
+                    val <T : Map<K, V>, K, V> T.firstValue: V get() = values.first()
+                }
+            }
+
+            @Component
+            abstract class MyComponent {
+                abstract val key: String
+                abstract val value: Int
+                abstract val map: Map<String, Int>
+                abstract val aliasedMap: StringIntMap
+            }
+        """
+    )
+
+    @Test
     fun testBindingAdapterWithDerivedBindingTypeParameters() = codegen(
         """
             interface Store<S, A>

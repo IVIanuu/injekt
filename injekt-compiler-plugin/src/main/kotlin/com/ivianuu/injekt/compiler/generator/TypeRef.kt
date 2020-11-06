@@ -334,9 +334,9 @@ fun TypeRef.getSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRef> {
         if (baseType.classifier.isTypeParameter) {
             substitutionMap[baseType.classifier] = thisType
             baseType.superTypes
-                .filter { it.classifier == thisType.classifier }
-                .forEach { baseSuperType ->
-                    thisType.typeArguments.zip(baseSuperType.typeArguments).forEach {
+                .map { it to thisType.expandTo(it.classifier) }
+                .forEach { (baseSuperType, expandedThisType) ->
+                    expandedThisType?.typeArguments?.zip(baseSuperType.typeArguments)?.forEach {
                         visitType(it.first, it.second)
                     }
                 }
@@ -422,3 +422,8 @@ fun TypeRef.isSubTypeOf(superType: TypeRef): Boolean {
 
 val TypeRef.fullyExpandedType: TypeRef
     get() = expandedType?.fullyExpandedType ?: this
+
+fun TypeRef.expandTo(classifier: ClassifierRef): TypeRef? {
+    if (this.classifier == classifier) return this
+    return expandedType?.expandTo(classifier)
+}
