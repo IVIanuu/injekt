@@ -172,6 +172,60 @@ class EssentialsTest {
     }
 
     @Test
+    fun testStore4() = codegen(
+        """
+            interface Scope
+            
+            interface Store<S, A> {
+                val state: S
+                val dispatch: A
+            }
+            
+            @Qualifier
+            @Target(AnnotationTarget.TYPE)
+            annotation class State
+            
+            @Binding
+            operator fun <S : Any?> Store<S, *>.component1(): @State S = state
+            
+            /*@Qualifier
+            @Target(AnnotationTarget.TYPE)
+            annotation class Dispatch
+            
+            @Binding
+            operator fun <A : @Dispatch Any> Store<*, A>.component2(): A = dispatch*/
+
+            class MyState(val store: Store<MyState, MyAction>)
+            class MyAction(val store: Store<MyState, MyAction>)
+            
+            @Binding(MyComponent::class)
+            fun myStore(): Store<MyState, MyAction> {
+                return object : Store<MyState, MyAction> {
+                    override val state: MyState = MyState(this)
+                    override val dispatch: MyAction = MyAction(this)
+                }
+            }
+            
+            @FunBinding
+            fun MyPage(state: @State MyState): Pair<Any, Any> {
+                return state.store to state.store
+            }
+            
+            @Component
+            abstract class MyComponent {
+                abstract val myPage: MyPage
+            }
+            
+            fun invoke(): Pair<Any, Any> {
+                return component<MyComponent>().myPage()
+            }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Any, Any>>()
+        assertSame(a, b)
+    }
+
+    @Test
     fun testBoundedGenericWithAlias() = multiCodegen(
         listOf(
             source(

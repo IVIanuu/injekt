@@ -251,7 +251,7 @@ class BindingGraph(
                 appendLine("No binding found for '${finalRequest.type.render()}' in '${componentType.render()}':")
                 appendLine("${finalRequest.origin.orUnknown()} requires '${finalRequest.type.render()}'")
                 chain.forEach {
-                    appendLine("chain $it" + it?.origin.orUnknown())
+                    appendLine("chain $it" + it.origin.orUnknown())
                 }
                 /*chain.forEachIndexed { index, binding ->
                     appendLine("${indendation}${binding.origin.orUnknown()} requires binding '${binding.type.render()}'")

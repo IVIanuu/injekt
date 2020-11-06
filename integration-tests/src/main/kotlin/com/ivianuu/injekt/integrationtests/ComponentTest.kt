@@ -958,14 +958,14 @@ class ComponentTest {
             annotation class MyQualifier
             
             @Binding
-            class Dep<T : @MyQualifier Any?>(val value: T)
+            class Dep<T>(val value: @MyQualifier T)
             
             @Binding
             fun qualified(): @MyQualifier String = ""
             
             @Component
             abstract class FooComponent {
-                abstract val dep: Dep<@MyQualifier String>
+                abstract val dep: Dep<String>
             }
             """
     )

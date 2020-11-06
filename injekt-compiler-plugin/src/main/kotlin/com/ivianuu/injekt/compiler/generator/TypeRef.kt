@@ -234,7 +234,10 @@ fun TypeRef.copy(
 )
 
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
-    map[classifier]?.let { return it }
+    map[classifier]?.let {
+        // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
+        return it.copy(qualifiers = qualifiers)
+    }
     return copy(
         typeArguments = typeArguments.map { it.substitute(map) },
         expandedType = expandedType?.substitute(map)
@@ -393,6 +396,8 @@ fun TypeRef.isAssignable(superType: TypeRef): Boolean {
 
     if (isStarProjection || superType.isStarProjection) return true
 
+    if (qualifiers != superType.qualifiers) return false
+
     if (superType.classifier.isTypeParameter) {
         return superType.classifier.superTypes.all { upperBound ->
             isSubTypeOf(upperBound)
@@ -400,7 +405,6 @@ fun TypeRef.isAssignable(superType: TypeRef): Boolean {
     }
 
     if (classifier.fqName != superType.classifier.fqName) return false
-    if (qualifiers != superType.qualifiers) return false
 
     if (!typeArguments.zip(superType.typeArguments).all { (a, b) -> a.isAssignable(b) })
         return false
@@ -410,11 +414,16 @@ fun TypeRef.isAssignable(superType: TypeRef): Boolean {
 
 fun TypeRef.isSubTypeOf(superType: TypeRef): Boolean {
     if (superType.classifier.fqName.asString() == KotlinBuiltIns.FQ_NAMES.any.asString() &&
-        superType.isMarkedNullable && qualifiers == superType.qualifiers)
+        superType.isMarkedNullable)
         return true
 
-    if (classifier.fqName == superType.classifier.fqName) return true
     if (qualifiers != superType.qualifiers) return false
+    if (classifier.fqName == superType.classifier.fqName) return true
+
+    if (superType.classifier.isTypeParameter && superType.superTypes.all {
+            isSubTypeOf(it)
+        }
+    ) return true
 
     return fullyExpandedType.superTypes.any { it.isSubTypeOf(superType) } ||
             (fullyExpandedType != this && fullyExpandedType.isSubTypeOf(superType))
