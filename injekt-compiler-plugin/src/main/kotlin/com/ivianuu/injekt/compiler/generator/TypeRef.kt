@@ -238,9 +238,34 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
         // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
         return it.copy(qualifiers = qualifiers)
     }
-    return copy(
+
+    val substituted = copy(
         typeArguments = typeArguments.map { it.substitute(map) },
         expandedType = expandedType?.substitute(map)
+    )
+
+    if (classifier.isTypeParameter && substituted == this) {
+        val superType = classifier.defaultType.superTypes.singleOrNull() // todo support multiple
+        if (superType != null) {
+            val substitutedSuperType = superType.substitute(map)
+            if (substitutedSuperType != superType) return substitutedSuperType
+        }
+    }
+
+    return substituted
+}
+
+val STAR_PROJECTION_TYPE = SimpleTypeRef(
+    classifier = ClassifierRef(KotlinBuiltIns.FQ_NAMES.any.toSafe()),
+    isStarProjection = true
+)
+
+fun TypeRef.replaceTypeParametersWithStars(): TypeRef {
+    if (classifier.isTypeParameter) return STAR_PROJECTION_TYPE
+    if (typeArguments.isEmpty() && expandedType == null) return this
+    return copy(
+        typeArguments = typeArguments.map { it.replaceTypeParametersWithStars() },
+        expandedType = expandedType?.replaceTypeParametersWithStars()
     )
 }
 
@@ -327,7 +352,9 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
         .asNameId()
 }
 
-fun TypeRef.getSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRef> {
+fun TypeRef.getSubstitutionMap(
+    baseType: TypeRef
+): Map<ClassifierRef, TypeRef> {
     val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
 
     fun visitType(

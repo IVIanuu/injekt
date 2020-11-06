@@ -29,6 +29,7 @@ import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.isAssignable
 import com.ivianuu.injekt.compiler.generator.nonInlined
 import com.ivianuu.injekt.compiler.generator.render
+import com.ivianuu.injekt.compiler.generator.replaceTypeParametersWithStars
 import com.ivianuu.injekt.compiler.generator.substitute
 import com.ivianuu.injekt.compiler.generator.substituteStars
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
@@ -358,7 +359,8 @@ class BindingGraph(
                     dependencies = callable.valueParameters
                         .map {
                             BindingRequest(
-                                it.type.substitute(substitutionMap),
+                                it.type.substitute(substitutionMap)
+                                    .replaceTypeParametersWithStars(),
                                 callable.fqName.child(it.name)
                             )
                         },
@@ -380,7 +382,8 @@ class BindingGraph(
                     dependencies = callable.valueParameters
                         .map {
                             BindingRequest(
-                                it.type.substitute(substitutionMap),
+                                it.type.substitute(substitutionMap)
+                                    .replaceTypeParametersWithStars(),
                                 callable.fqName.child(it.name)
                             )
                         },
@@ -403,7 +406,8 @@ class BindingGraph(
                     dependencies = callable.valueParameters
                         .map {
                             BindingRequest(
-                                it.type.substitute(substitutionMap),
+                                it.type.substitute(substitutionMap)
+                                    .replaceTypeParametersWithStars(),
                                 callable.fqName.child(it.name)
                             )
                         },
@@ -488,7 +492,8 @@ class BindingGraph(
                     dependencies = callable.valueParameters
                         .map {
                             BindingRequest(
-                                it.type.substitute(substitutionMap),
+                                it.type.substitute(substitutionMap)
+                                    .replaceTypeParametersWithStars(),
                                 callable.fqName.child(it.name)
                             )
                         },
