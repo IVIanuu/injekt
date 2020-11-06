@@ -74,6 +74,16 @@ class ImplBindingGenerator(
             ?.getArgumentType(descriptor.module)
             ?.let { typeTranslator.toTypeRef(it, descriptor) }
         val injectConstructor = descriptor.getInjectConstructor()!!
+        val typeParametersWithUpperBound = descriptor.declaredTypeParameters
+            .flatMap { typeParameter ->
+                typeParameter.upperBounds
+                    .map {
+                        typeTranslator.toClassifierRef(
+                            typeParameter
+                        ).copy(fqName = packageFqName.child(implFunctionName).child(typeParameter.name)) to
+                                typeTranslator.toTypeRef(it, descriptor)
+                    }
+            }
         fileManager.generateFile(
             packageFqName = packageFqName,
             fileName = fileName,
@@ -84,7 +94,16 @@ class ImplBindingGenerator(
                 emit("@Binding")
                 if (targetComponent != null) emitLine("(${targetComponent.classifier.fqName}::class)")
                 else emitLine()
-                emitLine("fun $implFunctionName(")
+                emit("fun ")
+                if (descriptor.declaredTypeParameters.isNotEmpty()) {
+                    emit("<")
+                    descriptor.declaredTypeParameters.forEachIndexed { index, typeParameter ->
+                        emit(typeParameter.name)
+                        if (index != descriptor.declaredTypeParameters.lastIndex) emit(", ")
+                    }
+                    emit("> ")
+                }
+                emitLine("$implFunctionName(")
                 injectConstructor.valueParameters
                     .forEachIndexed { index, valueParameter ->
                         emit("${valueParameter.name}: ${valueParameter.type
@@ -92,6 +111,14 @@ class ImplBindingGenerator(
                         if (index != injectConstructor.valueParameters.lastIndex) emit(", ")
                     }
                 emit("): ${descriptor.defaultType.let { typeTranslator.toTypeRef(it, descriptor) }.render()} ")
+                if (typeParametersWithUpperBound.isNotEmpty()) {
+                    emit("where ")
+                    typeParametersWithUpperBound.forEachIndexed { index, (typeParameter, upperBound) ->
+                        emit("${typeParameter.fqName.shortName()} : $upperBound")
+                        if (index != typeParametersWithUpperBound.lastIndex) emit(", ")
+                    }
+                    emitSpace()
+                }
                 braced {
                     emit("return ${descriptor.name}")
                     if (descriptor.kind != ClassKind.OBJECT) {
@@ -108,23 +135,62 @@ class ImplBindingGenerator(
                 }
                 emitLine()
                 emitLine("@Binding")
-                emitLine("val ${descriptor.name}.$superTypeFunctionName: ${singleSuperType.render()}")
+                emit("val ")
+                if (descriptor.declaredTypeParameters.isNotEmpty()) {
+                    emit("<")
+                    descriptor.declaredTypeParameters.forEachIndexed { index, typeParameter ->
+                        emit(typeParameter.name)
+                        if (index != descriptor.declaredTypeParameters.lastIndex) emit(", ")
+                    }
+                    emit("> ")
+                }
+                emit("${descriptor.defaultType
+                    .let { typeTranslator.toTypeRef(it, descriptor) }}.$superTypeFunctionName: ${singleSuperType.render()} ")
+                if (typeParametersWithUpperBound.isNotEmpty()) {
+                    emit("where ")
+                    typeParametersWithUpperBound.forEachIndexed { index, (typeParameter, upperBound) ->
+                        emit("${typeParameter.fqName.shortName()} : $upperBound")
+                        if (index != typeParametersWithUpperBound.lastIndex) emit(", ")
+                    }
+                    emitSpace()
+                }
+                emitLine()
                 indented { emitLine("get() = this") }
             }
         )
 
+        val implCallableTypeParameters = descriptor.declaredTypeParameters
+            .map {
+                val raw = typeTranslator.toClassifierRef(it)
+                raw.copy(
+                    fqName = packageFqName.child(implFunctionName).child(it.name),
+                    superTypes = raw.superTypes.map {
+                        if (it.classifier.isTypeParameter &&
+                            it.classifier.fqName.parent() == packageFqName.child(descriptor.name))
+                            it.copy(classifier = it.classifier.copy(
+                                fqName = packageFqName.child(implFunctionName).child(it.classifier.fqName.shortName())
+                            )) else it
+                    }
+                )
+            }
+        val implCallableSubstitutionMap = descriptor.declaredTypeParameters
+            .map { typeTranslator.toClassifierRef(it) }
+            .zip(implCallableTypeParameters.map { it.defaultType })
+            .toMap()
         val implCallable = Callable(
             packageFqName = packageFqName,
             fqName = packageFqName.child(implFunctionName),
             name = implFunctionName,
             type = descriptor.defaultType
-                .let { typeTranslator.toTypeRef(it, descriptor) },
-            typeParameters = emptyList(),
+                .let { typeTranslator.toTypeRef(it, descriptor) }
+                .substitute(implCallableSubstitutionMap),
+            typeParameters = implCallableTypeParameters,
             valueParameters = injectConstructor.valueParameters
                 .map {
                     ValueParameterRef(
                         type = it.type
-                            .let { typeTranslator.toTypeRef(it, descriptor) },
+                            .let { typeTranslator.toTypeRef(it, descriptor) }
+                            .substitute(implCallableSubstitutionMap),
                         isExtensionReceiver = false,
                         inlineKind = when {
                             it.isNoinline -> ValueParameterRef.InlineKind.NOINLINE
@@ -151,16 +217,35 @@ class ImplBindingGenerator(
             Index(implCallable.fqName, "function")
         )
 
+        val superTypeCallableTypeParameters = descriptor.declaredTypeParameters
+            .map {
+                val raw = typeTranslator.toClassifierRef(it)
+                raw.copy(
+                    fqName = packageFqName.child(implFunctionName).child(it.name),
+                    superTypes = raw.superTypes.map {
+                        if (it.classifier.isTypeParameter &&
+                            it.classifier.fqName.parent() == packageFqName.child(descriptor.name))
+                            it.copy(classifier = it.classifier.copy(
+                                fqName = packageFqName.child(implFunctionName).child(it.classifier.fqName.shortName())
+                            )) else it
+                    }
+                )
+            }
+        val superTypeCallableSubstitutionMap = descriptor.declaredTypeParameters
+            .map { typeTranslator.toClassifierRef(it) }
+            .zip(implCallableTypeParameters.map { it.defaultType })
+            .toMap()
         val superTypeCallable = Callable(
             packageFqName = packageFqName,
             fqName = packageFqName.child(superTypeFunctionName),
             name = superTypeFunctionName,
-            type = singleSuperType,
-            typeParameters = emptyList(),
+            type = singleSuperType.substitute(superTypeCallableSubstitutionMap),
+            typeParameters = superTypeCallableTypeParameters,
             valueParameters = listOf(
                 ValueParameterRef(
                     type = descriptor.defaultType
-                        .let { typeTranslator.toTypeRef(it, descriptor) },
+                        .let { typeTranslator.toTypeRef(it, descriptor) }
+                        .substitute(superTypeCallableSubstitutionMap),
                     isExtensionReceiver = true,
                     inlineKind = ValueParameterRef.InlineKind.NONE,
                     name = "_receiver".asNameId(),

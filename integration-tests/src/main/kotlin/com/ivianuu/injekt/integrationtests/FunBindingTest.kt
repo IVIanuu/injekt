@@ -233,6 +233,21 @@ class FunBindingTest {
     )
 
     @Test
+    fun testFunBindingWithTypeParametersWithMultipleUpperBounds() = codegen(
+        """
+            @FunBinding
+            inline fun <reified T, S> function(t: T): S where T : CharSequence, T : String {
+                return error("")
+            }
+            
+            @Component
+            abstract class TestComponent(@Binding val string: String) {
+                abstract val function: function<String, String>
+            }
+        """
+    )
+
+    @Test
     fun testComposableFunBindingWithComposableDependency() = codegen(
         """
             @FunBinding

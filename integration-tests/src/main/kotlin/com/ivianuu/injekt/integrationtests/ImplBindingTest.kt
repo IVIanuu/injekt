@@ -51,4 +51,34 @@ class ImplBindingTest {
         """
     )
 
+    @Test
+    fun testImplBindingWithTypeParameters() = codegen(
+        """
+            interface Repository<T>
+            
+            @ImplBinding
+            class RepositoryImpl<T> : Repository<T>
+            
+            @Component
+            abstract class MyComponent {
+                abstract val repository: Repository<String>
+            }
+        """
+    )
+
+    @Test
+    fun testImplBindingWithTypeParametersWithMultipleUpperBounds() = codegen(
+        """
+            interface Repository<T, S> where T : String, T : CharSequence
+            
+            @ImplBinding
+            class RepositoryImpl<T, S> : Repository<T, S> where T : String, T : CharSequence
+            
+            @Component
+            abstract class MyComponent {
+                abstract val repository: Repository<String, String>
+            }
+        """
+    )
+
 }

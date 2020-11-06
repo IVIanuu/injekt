@@ -60,6 +60,7 @@ class FunBindingGenerator(
                             fqName = descriptor.fqNameSafe,
                             typeParameters = descriptor.typeParameters.map {
                                 typeTranslator.toClassifierRef(it)
+                                    .copy(superTypes = emptyList())
                             },
                             isTypeAlias = true
                         )
@@ -166,7 +167,7 @@ class FunBindingGenerator(
                 emit("<")
                 descriptor.typeParameters
                     .forEachIndexed { index, typeParameter ->
-                        emit("reified ${typeParameter.name} : ${typeTranslator.toTypeRef(typeParameter.upperBounds.single(), descriptor).render()}")
+                        emit("reified ${typeParameter.name}")
                         if (index != descriptor.typeParameters.lastIndex) emit(", ")
                     }
                 emit("> ")
@@ -196,7 +197,22 @@ class FunBindingGenerator(
                         emit(typeParameter.name)
                         if (index != descriptor.typeParameters.lastIndex) emit(", ")
                     }
-                emit(">")
+                emit("> where ")
+                val typeParametersWithUpperBound = descriptor.typeParameters
+                    .flatMap { typeParameter ->
+                        typeParameter.upperBounds
+                            .map {
+                                typeTranslator.toClassifierRef(
+                                    typeParameter
+                                ).copy(fqName = packageFqName.child(bindingFunctionName).child(typeParameter.name)) to
+                                        typeTranslator.toTypeRef(it, descriptor)
+                            }
+                    }
+                typeParametersWithUpperBound.forEachIndexed { index, (typeParameter, upperBound) ->
+                    emit("${typeParameter.fqName.shortName()} : $upperBound")
+                    if (index != typeParametersWithUpperBound.lastIndex) emit(", ")
+                }
+                emitSpace()
             }
             emitSpace()
             braced {
@@ -253,7 +269,7 @@ class FunBindingGenerator(
                 emit("<")
                 descriptor.typeParameters
                     .forEachIndexed { index, typeParameter ->
-                        emit("reified ${typeParameter.name} : ${typeTranslator.toTypeRef(typeParameter.upperBounds.single(), descriptor).render()}")
+                        emit("reified ${typeParameter.name}")
                         if (index != descriptor.typeParameters.lastIndex) emit(", ")
                     }
                 emit("> ")
@@ -270,7 +286,9 @@ class FunBindingGenerator(
                 emit(">")
             }
 
-            emit(".invoke${descriptor.name.asString().capitalize()}(")
+            val invokeFunctionName = "invoke${descriptor.name.asString().capitalize()}".asNameId()
+
+            emit(".$invokeFunctionName(")
             funApiValueParameters.forEachIndexed { index, valueParameter ->
                 val typeRef = typeTranslator.toTypeRef(valueParameter.type, descriptor)
                 if (valueParameter is ValueParameterDescriptor && valueParameter.isCrossinline) {
@@ -289,6 +307,24 @@ class FunBindingGenerator(
 
             }
             emit("): ${expandedFunType.typeArguments.last()} ")
+            if (descriptor.typeParameters.isNotEmpty()) {
+                emit(" where ")
+                val typeParametersWithUpperBound = descriptor.typeParameters
+                    .flatMap { typeParameter ->
+                        typeParameter.upperBounds
+                            .map {
+                                typeTranslator.toClassifierRef(
+                                    typeParameter
+                                ).copy(fqName = packageFqName.child(invokeFunctionName).child(typeParameter.name)) to
+                                        typeTranslator.toTypeRef(it, descriptor)
+                            }
+                    }
+                typeParametersWithUpperBound.forEachIndexed { index, (typeParameter, upperBound) ->
+                    emit("${typeParameter.fqName.shortName()} : $upperBound")
+                    if (index != typeParametersWithUpperBound.lastIndex) emit(", ")
+                }
+                emitSpace()
+            }
             braced {
                 emit("return invoke(")
                 funApiValueParameters.forEachIndexed { index, valueParameter ->
@@ -307,14 +343,16 @@ class FunBindingGenerator(
 
         val callableTypeParameters = descriptor.typeParameters
             .map {
-                ClassifierRef(
-                    packageFqName.child(bindingFunctionName)
-                        .child(it.name),
-                    superTypes = /*it.upperBounds
-                        .map {
-                            typeTranslator.toTypeRef(it, descriptor)
-                        }*/ emptyList(),
-                    isTypeParameter = true
+                val raw = typeTranslator.toClassifierRef(it)
+                raw.copy(
+                    fqName = packageFqName.child(bindingFunctionName).child(it.name),
+                    superTypes = raw.superTypes.map {
+                        if (it.classifier.isTypeParameter &&
+                            it.classifier.fqName.parent() == packageFqName.child(descriptor.name))
+                            it.copy(classifier = it.classifier.copy(
+                                fqName = packageFqName.child(bindingFunctionName).child(it.classifier.fqName.shortName())
+                            )) else it
+                    }
                 )
             }
         val bindingCallableSubstitutionMap = descriptor.typeParameters
@@ -327,7 +365,7 @@ class FunBindingGenerator(
             name = bindingFunctionName,
             type = declarationStore.generatedClassifierFor(descriptor.fqNameSafe)!!
                 .defaultType
-                .typeWith(callableTypeParameters.map { it.defaultType }),
+                .substitute(bindingCallableSubstitutionMap),
             typeParameters = callableTypeParameters,
             valueParameters = (listOfNotNull(descriptor.extensionReceiverParameter) + descriptor.valueParameters)
                 .filterNot { it.hasAnnotation(InjektFqNames.FunApi) }
