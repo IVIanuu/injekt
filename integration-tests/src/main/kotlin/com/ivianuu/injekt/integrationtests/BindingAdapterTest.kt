@@ -872,7 +872,7 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithTypeAliasWithDerivedTypeParameters() = codegen(
+    fun testBindingAdapterWithTypeAliasTypeParameterInference() = codegen(
         """
             typealias StringIntMap = Map<String, Int>
             
@@ -905,7 +905,7 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithDerivedBindingTypeParameters() = codegen(
+    fun testBindingAdapterWithTypeParameters() = codegen(
         """
             interface Store<S, A>
             
@@ -928,7 +928,7 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithDerivedAnnotationTypeParameters() = codegen(
+    fun testBindingAdapterTypeParameterInference() = codegen(
         """
             @BindingAdapter
             annotation class MapBinding<M : Map<*, *>> {
@@ -949,7 +949,7 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithDerivedBindingAndAnnotationTypeParameters() = codegen(
+    fun testBindingAdapterBindingAndAnnotationTypeParameterInference() = codegen(
         """
             @BindingAdapter
             annotation class MapBinding<M : Map<*, *>> {

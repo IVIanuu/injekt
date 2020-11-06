@@ -1480,4 +1480,20 @@ class ComponentTest {
         )
     )
 
+    // todo @Test
+    fun testBindingTypeParameterInference() = codegen(
+        """
+            @Binding
+            fun map() = mapOf("a" to 0)
+            
+            @Binding
+            fun <M : Map<K, *>, K : CharSequence> firstKey(map: M): K = map.keys.first()
+
+            @Component
+            abstract class MyComponent {
+                abstract val key: String
+            }
+        """
+    )
+
 }
