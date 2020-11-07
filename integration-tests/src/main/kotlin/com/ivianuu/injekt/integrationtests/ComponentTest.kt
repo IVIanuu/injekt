@@ -52,7 +52,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testWithChild() = codegen(
+    fun testChild() = codegen(
         """
             @Component
             abstract class ParentComponent {
@@ -472,6 +472,33 @@ class ComponentTest {
 
             fun invoke(): Pair<Bar, Bar> { 
                 return component.barFactory(Foo()) to component.barFactory(Foo())
+            }
+    """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Bar, Bar>>()
+        assertSame(a, b)
+    }
+
+    @Test
+    fun testScopedAssistedBindingInChild() = codegen(
+        """
+            @Component
+            abstract class ParentComponent {
+                abstract val childFactory: () -> MyChildComponent
+                @Binding(BarComponent::class)
+                protected fun bar(foo: Foo) = Bar(foo)
+            }
+            
+            @ChildComponent
+            abstract class MyChildComponent {
+                abstract val barFactory: (Foo) -> Bar
+            }
+            
+            private val parentComponent = component<BarComponent>()
+            private val childComponent = parentComponent.childFactory()
+
+            fun invoke(): Pair<Bar, Bar> { 
+                return childComponent.barFactory(Foo()) to childComponent.barFactory(Foo())
             }
     """
     ) {
