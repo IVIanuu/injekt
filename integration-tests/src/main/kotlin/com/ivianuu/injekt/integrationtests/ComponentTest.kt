@@ -74,6 +74,47 @@ class ComponentTest {
     }
 
     @Test
+    fun testChildOverridesParentBinding() = codegen(
+        """
+            class Context
+            
+            val parentContext = Context()
+            @Binding(ParentComponent::class) fun parentContext() = parentContext
+            
+            val childContext = Context()
+            @Binding(MyChildComponent::class) fun childContext() = childContext
+            
+            @Component
+            abstract class ParentComponent {
+                abstract val childComponentFactory: () -> MyChildComponent
+                abstract val context: Context
+            }
+            
+            @ChildComponent
+            abstract class MyChildComponent {
+                abstract val context: Context
+            }
+
+            fun invoke(): List<Any> {
+                val parentComponent = component<ParentComponent>()
+                val childComponent = parentComponent.childComponentFactory()
+                
+                return listOf(
+                    parentComponent.context,
+                    parentComponent.context,
+                    childComponent.context,
+                    childComponent.context
+                )
+            }
+    """
+    ) {
+        val (a1, a2, b1, b2) = invokeSingleFile<List<Any>>()
+        assertSame(a1, a2)
+        assertSame(b1, b2)
+        assertNotSame(a1, b1)
+    }
+
+    @Test
     fun testChildWithAdditionalArguments() = codegen(
         """
             @Component
