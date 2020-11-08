@@ -112,10 +112,33 @@ class ComponentGenerator(
 
         componentImpl.collectImports()
 
+        val allComponents = buildList<ComponentImpl> {
+            fun ComponentImpl.collectComponents() {
+                this@buildList += this
+                children.forEach { it.collectComponents() }
+            }
+            componentImpl.collectComponents()
+        }
+
+        // it's important to first emit the children because the may add
+        // additional properties to the parent in the code building step
+        // this should be changed in the future
+        val componentsCode = allComponents.reversed().map { component ->
+            buildCodeString {
+                with(component) {
+                    emit()
+                }
+            }
+        }.reversed()
+
         val code = buildCodeString {
             emitLine("package ${componentImplFqName.parent()}")
             imports.forEach { emitLine("import $it") }
-            with(componentImpl) { emit() }
+
+            componentsCode.forEach {
+                emit(it)
+                emitLine()
+            }
         }
 
         fileManager.generateFile(

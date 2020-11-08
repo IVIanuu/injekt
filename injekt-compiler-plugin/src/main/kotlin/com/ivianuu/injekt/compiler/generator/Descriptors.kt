@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentExpression
+import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -35,7 +36,9 @@ data class Callable(
     val isEager: Boolean,
     val isExternal: Boolean,
     val isInline: Boolean,
-    val isFunBinding: Boolean
+    val isFunBinding: Boolean,
+    val visibility: Visibility,
+    val receiver: ClassifierRef?
 ) {
     enum class ContributionKind {
         BINDING, MAP_ENTRIES, SET_ELEMENTS, MODULE

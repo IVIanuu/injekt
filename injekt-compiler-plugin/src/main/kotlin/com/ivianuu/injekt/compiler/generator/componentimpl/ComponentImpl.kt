@@ -41,13 +41,16 @@ class ComponentImpl(
     val additionalInputTypes: @Assisted List<TypeRef>,
     val assistedRequests: @Assisted List<Callable>,
     val parent: @Assisted ComponentImpl?,
-) : ComponentMember {
+) {
 
     val isAssisted: Boolean
         get() = assistedRequests.isNotEmpty()
 
     val nonAssistedComponent: ComponentImpl
         get() = if (isAssisted) parent!!.nonAssistedComponent else this
+
+    val rootComponent: ComponentImpl
+        get() = parent?.rootComponent ?: this
 
     val contextTreeNameProvider: UniqueNameProvider =
         parent?.contextTreeNameProvider ?: UniqueNameProvider()
@@ -82,7 +85,6 @@ class ComponentImpl(
     fun initialize() {
         if (initialized) return
         initialized = true
-        parent?.members?.add(this)
         parent?.children?.add(this)
         graph.checkRequests(requests.map { BindingRequest(it.type, it.fqName) })
         requests.forEach {
@@ -101,18 +103,22 @@ class ComponentImpl(
         }
     }
 
-    override fun CodeBuilder.emit() {
-        if (parent != null) emit("private inner ")
+    fun CodeBuilder.emit() {
+        if (parent != null) emit("private ")
         emit("class $name")
 
         val inputTypes = superConstructorParameters
             .map { it.type } + additionalInputTypes
 
-        if (inputTypes.isNotEmpty()) {
+        if (parent != null || inputTypes.isNotEmpty()) {
             emit("(")
+            if (parent != null) {
+                emit("val parent: ${parent.name}")
+                if (inputTypes.isNotEmpty()) emit(", ")
+            }
             inputTypes.forEachIndexed { index, input ->
                 if (input in additionalInputTypes) emit("val ")
-                emit("${input.uniqueTypeName()} : ${input.renderExpanded()}")
+                emit("i_${input.uniqueTypeName()}: ${input.renderExpanded()}")
                 if (index != inputTypes.lastIndex) emit(", ")
             }
             emit(")")
@@ -122,7 +128,7 @@ class ComponentImpl(
         if (superComponentConstructor != null) {
             emit("(")
             superConstructorParameters.forEachIndexed { index, param ->
-                emit(param.type.uniqueTypeName())
+                emit("i_${param.type.uniqueTypeName()}")
                 if (index != superConstructorParameters.lastIndex) emit(", ")
             }
             emit(") ")

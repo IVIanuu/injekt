@@ -32,17 +32,17 @@ class CollectionsTest {
     @Test
     fun testSimpleMap() = codegen(
         """
+            @Binding 
+            fun commandA() = CommandA()
+            
+            @MapEntries
+            fun commandAIntoMap(
+                commandA: CommandA
+            ): Map<KClass<out Command>, Command> = mapOf(CommandA::class to commandA)
+            
             @Component
             abstract class MapComponent {
                 abstract val map: Map<KClass<out Command>, Command>
-            
-                @Binding 
-                protected fun commandA() = CommandA()
-                
-                @MapEntries
-                protected fun commandAIntoMap(
-                    commandA: CommandA
-                ): Map<KClass<out Command>, Command> = mapOf(CommandA::class to commandA)
                 
                 @Binding 
                 protected fun commandB() = CommandB()
@@ -198,15 +198,15 @@ class CollectionsTest {
     @Test
     fun testSimpleSet() = codegen(
         """
+            @Binding 
+            fun commandA() = CommandA()
+            
+            @SetElements
+            fun commandAIntoSet(commandA: CommandA): Set<Command> = setOf(commandA)
+            
             @Component
             abstract class SetComponent {
                 abstract val set: Set<Command>
-            
-                @Binding 
-                protected fun commandA() = CommandA()
-                
-                @SetElements
-                protected fun commandAIntoSet(commandA: CommandA): Set<Command> = setOf(commandA)
                 
                 @Binding 
                 protected fun commandB() = CommandB()

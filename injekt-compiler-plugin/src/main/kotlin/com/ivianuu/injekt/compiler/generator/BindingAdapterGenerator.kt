@@ -18,11 +18,11 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.generator.componentimpl.emitCallableInvocation
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
@@ -217,7 +217,9 @@ class BindingAdapterGenerator(
                 isEager = callable.isEager,
                 isExternal = false,
                 isInline = true,
-                isFunBinding = callable.isFunBinding
+                isFunBinding = callable.isFunBinding,
+                visibility = Visibilities.PUBLIC,
+                receiver = null
             )
             bindingAdapters
                 .flatMap { bindingAdapter ->
@@ -360,7 +362,9 @@ class BindingAdapterGenerator(
                         isEager = bindingAdapterCallable.isEager,
                         isExternal = false,
                         isInline = true,
-                        isFunBinding = false
+                        isFunBinding = false,
+                        visibility = Visibilities.PUBLIC,
+                        receiver = null
                     )
                 }
         }

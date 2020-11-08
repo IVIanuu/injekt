@@ -464,7 +464,10 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             isEager = descriptor.hasAnnotation(InjektFqNames.Eager),
             isExternal = owner is DeserializedDescriptor,
             isInline = descriptor.isInline,
-            isFunBinding = descriptor.hasAnnotation(InjektFqNames.FunBinding)
+            isFunBinding = descriptor.hasAnnotation(InjektFqNames.FunBinding),
+            visibility = descriptor.visibility,
+            receiver = descriptor.dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
+                ?.let { typeTranslator.toClassifierRef(it) }
         )
     }
 

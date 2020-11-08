@@ -81,4 +81,31 @@ class MergeTest {
         """
     )
 
+    @Test
+    fun testMergeComponentObjectModule() = codegen(
+        """
+            @MergeComponent
+            abstract class MyComponent
+            
+            @MergeInto(MyComponent::class)
+            @Module
+            object ProvideFooModule {
+                @Binding
+                fun foo() = Foo()
+            }
+            
+            @MergeInto(MyComponent::class)
+            interface FooComponent {
+                val foo: Foo
+            }
+            
+            @GenerateMergeComponents
+            fun invoke() {
+                val component = component<MyComponent>()
+                val fooComponent = component.mergeComponent<FooComponent>()
+                fooComponent.foo
+            }
+        """
+    )
+
 }

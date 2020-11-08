@@ -73,7 +73,9 @@ class ComponentStatements(
             initializer = if (cache) body else null,
             isMutable = false,
             isInline = isInline,
-            canBePrivate = canBePrivate
+            canBePrivate = canBePrivate,
+            valueParameters = emptyList(),
+            typeParameters = emptyList()
         )
         owner.members += callable
         return callable
@@ -98,38 +100,35 @@ class ComponentStatements(
             return it
         }
 
-        val rawExpression = if (binding.owner != owner) {
-            parent!!.getBindingExpression(request)
-        } else {
-            when (binding) {
-                is AssistedBindingNode -> assistedExpression(binding)
-                is ChildComponentBindingNode -> childFactoryExpression(binding)
-                is CallableBindingNode -> callableExpression(binding)
-                is InputBindingNode -> inputExpression(binding)
-                is MapBindingNode -> mapExpression(binding)
-                is NullBindingNode -> nullExpression()
-                is ProviderBindingNode -> providerExpression(binding)
-                is SelfBindingNode -> selfContextExpression(binding)
-                is SetBindingNode -> setExpression(binding)
+        if (binding.owner != owner) {
+            return {
+                componentExpression(parent!!.owner)()
+                emit(".")
+                parent!!.getBindingExpression(request)()
             }
         }
 
-        val finalExpression = if (binding.targetComponent == null ||
-            binding.owner != owner || binding.cacheable
-        ) rawExpression else (
-            {
-                scoped(binding.type, binding.callableKind, false) {
-                    rawExpression()
-                }
-            })
+        val rawExpression = when (binding) {
+            is AssistedBindingNode -> assistedExpression(binding)
+            is ChildComponentBindingNode -> childFactoryExpression(binding)
+            is CallableBindingNode -> callableExpression(binding)
+            is InputBindingNode -> inputExpression(binding)
+            is MapBindingNode -> mapExpression(binding)
+            is NullBindingNode -> nullExpression()
+            is ProviderBindingNode -> providerExpression(binding)
+            is SelfBindingNode -> selfExpression(binding)
+            is SetBindingNode -> setExpression(binding)
+        }
+
+        val maybeScopedExpression = if (binding.targetComponent == null || binding.cacheable)
+            rawExpression else ({
+            scoped(binding.type, binding.callableKind, false, binding.targetComponent!!) {
+                rawExpression()
+            }
+        })
 
         val requestForType = owner.requests
             .firstOrNull { it.type == binding.type }
-
-        if (binding.owner != owner ||
-            (binding.inlineMode == BindingNode.InlineMode.EXPRESSION &&
-                    requestForType == null &&
-                    binding.targetComponent == null)) return finalExpression
 
         val callableName = requestForType
             ?.name ?: binding.type.uniqueTypeName()
@@ -144,17 +143,16 @@ class ComponentStatements(
             type = binding.type,
             name = callableName,
             isOverride = isOverride,
-            body = finalExpression,
+            body = maybeScopedExpression,
             isProperty = isProperty,
             callableKind = requestForType?.callableKind ?: callableKind,
             cacheable = binding.cacheable,
-            isInline = !isOverride &&
-                    binding.inlineMode == BindingNode.InlineMode.FUNCTION,
+            isInline = !isOverride && binding.inline,
             canBePrivate = !isOverride && requestForType !in owner.assistedRequests
         )
 
         val expression: ComponentExpression = {
-            emit("this@${owner.name}.$callableName")
+            emit("$callableName")
             if (callableKind == Callable.CallableKind.SUSPEND) emit("()")
         }
 
@@ -172,7 +170,7 @@ class ComponentStatements(
             }
         emitLine(" ->")
         fun emitNewInstance() {
-            emit("${binding.childComponent.name}(")
+            emit("${binding.childComponent.name}(this, ")
             binding.assistedTypes.forEachIndexed { index, assistedType ->
                 emit("p$index")
                 if (index != binding.assistedTypes.lastIndex) emit(", ")
@@ -181,7 +179,7 @@ class ComponentStatements(
             emitLine(".invoke()")
         }
         if (binding.targetComponent != null) {
-            scoped(binding.type.typeArguments.last(), binding.callableKind, false) {
+            scoped(binding.type.typeArguments.last(), binding.callableKind, false, binding.targetComponent!!) {
                 emitNewInstance()
             }
         } else {
@@ -192,22 +190,42 @@ class ComponentStatements(
     }
 
     private fun childFactoryExpression(binding: ChildComponentBindingNode): ComponentExpression = {
-        emit("::${binding.childComponent.name}")
+        emit("{ ")
+        val params = binding.type.typeArguments.dropLast(1)
+        params.indices.forEach { paramIndex ->
+            emit("p$paramIndex")
+            if (paramIndex != params.lastIndex) emit(", ")
+            else emitLine(" ->")
+        }
+        emitLine()
+
+        emit("${binding.childComponent.name}(this")
+        if (params.isNotEmpty()) {
+            emit(", ")
+            params.indices.forEach { paramIndex ->
+                emit("p$paramIndex")
+                if (paramIndex != params.lastIndex) emit(", ")
+            }
+        }
+        emitLine(")")
+
+        emit("}")
     }
 
     private fun inputExpression(binding: InputBindingNode): ComponentExpression = {
-        emit("this@${binding.owner.name}.${binding.type.uniqueTypeName()}")
+        emit("i_${binding.type.uniqueTypeName()}")
     }
 
     private fun mapExpression(binding: MapBindingNode): ComponentExpression = {
         emit("run ")
         braced {
             emitLine("val result = mutableMapOf<Any?, Any?>()")
-            binding.entries.forEach { (callable, receiver) ->
+            binding.entries.forEach { (callable, receiver, entryOwner) ->
                 emit("result.putAll(")
                 emitCallableInvocation(
                     callable,
                     receiver,
+                    entryOwner,
                     callable.valueParameters
                         .map {
                             getBindingExpression(
@@ -228,11 +246,12 @@ class ComponentStatements(
         emit("run ")
         braced {
             emitLine("val result = mutableSetOf<Any?>()")
-            binding.elements.forEach { (callable, receiver) ->
+            binding.elements.forEach { (callable, receiver, elementOwner) ->
                 emit("result.addAll(")
                 emitCallableInvocation(
                     callable,
                     receiver,
+                    elementOwner,
                     callable.valueParameters
                         .map {
                             getBindingExpression(
@@ -255,6 +274,7 @@ class ComponentStatements(
         emitCallableInvocation(
             binding.callable,
             binding.receiver,
+            binding.declaredInComponent,
             binding.callable.valueParameters.zip(binding.dependencies).map { (parameter, request) ->
                 val raw = getBindingExpression(request)
                 if (parameter.type.isInlineProvider) {
@@ -272,18 +292,25 @@ class ComponentStatements(
         braced { getBindingExpression(binding.dependencies.single())() }
     }
 
-    private fun selfContextExpression(binding: SelfBindingNode): ComponentExpression = {
-        emit("this@${binding.component.name}")
+    private fun selfExpression(binding: SelfBindingNode): ComponentExpression = {
+        emit("this")
     }
 
     private fun CodeBuilder.scoped(
         type: TypeRef,
         callableKind: Callable.CallableKind,
         frameworkType: Boolean,
+        scopeComponentType: TypeRef,
         create: CodeBuilder.() -> Unit
     ) {
+        var scopeComponent = owner
+        while(scopeComponent.componentType != scopeComponentType) {
+            scopeComponent = scopeComponent.parent!!
+        }
+        val scopeComponentExpression = componentExpression(scopeComponent)
+
         val name = "${if (frameworkType) "_" else ""}_${type.uniqueTypeName()}".asNameId()
-        val cacheProperty = owner.nonAssistedComponent.members.firstOrNull {
+        val cacheProperty = scopeComponent.members.firstOrNull {
             it is ComponentCallable && it.name == name
         } as? ComponentCallable ?: ComponentCallable(
             name = name,
@@ -295,14 +322,16 @@ class ComponentStatements(
             isProperty = true,
             callableKind = Callable.CallableKind.DEFAULT,
             isInline = false,
-            canBePrivate = true
-        ).also { owner.nonAssistedComponent.members += it }
+            canBePrivate = true,
+            valueParameters = emptyList(),
+            typeParameters = emptyList()
+        ).also { scopeComponent.members += it }
 
         if (callableKind == Callable.CallableKind.SUSPEND) {
             val mutexType = typeTranslator.toClassifierRef(
                 declarationStore.classDescriptorForFqName(InjektFqNames.Mutex)
             ).defaultType
-            owner.members.firstOrNull {
+            scopeComponent.members.firstOrNull {
                 it is ComponentCallable &&
                         !it.isProperty &&
                         it.name.asString() == "_mutex"
@@ -315,7 +344,8 @@ class ComponentStatements(
                     scoped(
                         mutexType,
                         Callable.CallableKind.DEFAULT,
-                        true
+                        true,
+                        scopeComponentType
                     ) {
                         emit("${InjektFqNames.Mutex}()")
                     }
@@ -324,21 +354,32 @@ class ComponentStatements(
                 isProperty = false,
                 callableKind = Callable.CallableKind.DEFAULT,
                 isInline = false,
-                canBePrivate = true
-            ).also { owner.members += it }
+                canBePrivate = true,
+                valueParameters = emptyList(),
+                typeParameters = emptyList()
+            ).also { scopeComponent.members += it }
         }
 
         emit("run ")
         braced {
-            emitLine("var value = this@${owner.nonAssistedComponent.name}.${cacheProperty.name}")
-            emitLine("if (value !== this@${owner.nonAssistedComponent.name}) return@run value as ${type.renderExpanded()}")
+            emit("var value = ")
+            scopeComponentExpression()
+            emitLine(".${cacheProperty.name}")
+            emit("if (value !== ")
+            scopeComponentExpression()
+            emitLine(") return@run value as ${type.renderExpanded()}")
             fun emitInvocation() {
-                emitLine("value = this@${owner.nonAssistedComponent.name}.${cacheProperty.name}")
-                emitLine("if (value !== this@${owner.nonAssistedComponent.name}) return@run value as ${type.renderExpanded()}")
+                emit("value = ")
+                scopeComponentExpression()
+                emitLine(".${cacheProperty.name}")
+                emit("if (value !== ")
+                scopeComponentExpression()
+                emitLine(") return@run value as ${type.renderExpanded()}")
                 emit("value = ")
                 create()
                 emitLine()
-                emitLine("this@${owner.nonAssistedComponent.name}.${cacheProperty.name} = value")
+                scopeComponentExpression()
+                emitLine(".${cacheProperty.name} = value")
                 emitLine("return@run value as ${type.renderExpanded()}")
             }
             when (callableKind) {
@@ -347,7 +388,9 @@ class ComponentStatements(
                     braced { emitInvocation() }
                 }
                 Callable.CallableKind.DEFAULT -> {
-                    emit("synchronized(this) ")
+                    emit("synchronized(")
+                    scopeComponentExpression()
+                    emit(")")
                     braced { emitInvocation() }
                 }
                 // todo what to do here?
@@ -355,39 +398,73 @@ class ComponentStatements(
             }
         }
     }
-}
 
-fun CodeBuilder.emitCallableInvocation(
-    callable: Callable,
-    receiver: ComponentExpression?,
-    arguments: List<ComponentExpression>,
-    typeArguments: List<TypeRef> = emptyList()
-) {
-    fun emitArguments() {
-        if (callable.isCall) {
-            if (typeArguments.isNotEmpty()) {
-                emit("<")
-                typeArguments.forEachIndexed { index, typeRef ->
-                    emit(typeRef.render())
-                    if (index != typeArguments.lastIndex) emit(", ")
+    private fun componentExpression(component: ComponentImpl): ComponentExpression {
+        return {
+            if (component == owner) {
+                emit("this")
+            } else {
+                var current = owner
+                while (current != component) {
+                    emit("parent")
+                    current = current.parent!!
+                    if (current != component) emit(".")
                 }
-                emit(">")
             }
-            emit("(")
-            arguments
-                .drop(if (callable.valueParameters.firstOrNull()?.isExtensionReceiver == true) 1 else 0)
-                .forEachIndexed { index, parameter ->
-                    parameter()
-                    if (index != arguments.lastIndex) emit(", ")
-                }
-            emit(")")
         }
     }
-    if (receiver != null) {
-        emit("with(")
-        receiver()
-        emit(") ")
-        braced {
+
+    private fun CodeBuilder.emitCallableInvocation(
+        callable: Callable,
+        receiver: ComponentExpression?,
+        owner: ComponentImpl?,
+        arguments: List<ComponentExpression>,
+        typeArguments: List<TypeRef> = emptyList()
+    ) {
+        fun emitArguments() {
+            if (callable.isCall) {
+                if (typeArguments.isNotEmpty()) {
+                    emit("<")
+                    typeArguments.forEachIndexed { index, typeRef ->
+                        emit(typeRef.render())
+                        if (index != typeArguments.lastIndex) emit(", ")
+                    }
+                    emit(">")
+                }
+                emit("(")
+                arguments
+                    .drop(if (callable.valueParameters.firstOrNull()?.isExtensionReceiver == true) 1 else 0)
+                    .forEachIndexed { index, parameter ->
+                        parameter()
+                        if (index != arguments.lastIndex) emit(", ")
+                    }
+                emit(")")
+            }
+        }
+        if (owner != null) {
+            emit("with(")
+            val isObjectCallable = callable.receiver?.isObject ?: false
+            if (!isObjectCallable) componentExpression(owner)()
+            if (receiver != null) {
+                if (!isObjectCallable) emit(".")
+                receiver()
+            }
+            emit(") ")
+            braced {
+                if (callable.valueParameters.any { it.isExtensionReceiver }) {
+                    emit("with(")
+                    arguments.first()()
+                    emit(") ")
+                    braced {
+                        emit(callable.name)
+                        emitArguments()
+                    }
+                } else {
+                    emit(callable.name)
+                    emitArguments()
+                }
+            }
+        } else {
             if (callable.valueParameters.any { it.isExtensionReceiver }) {
                 emit("with(")
                 arguments.first()()
@@ -397,22 +474,10 @@ fun CodeBuilder.emitCallableInvocation(
                     emitArguments()
                 }
             } else {
-                emit(callable.name)
+                emit(callable.fqName)
                 emitArguments()
             }
-        }
-    } else {
-        if (callable.valueParameters.any { it.isExtensionReceiver }) {
-            emit("with(")
-            arguments.first()()
-            emit(") ")
-            braced {
-                emit(callable.name)
-                emitArguments()
-            }
-        } else {
-            emit(callable.fqName)
-            emitArguments()
         }
     }
+
 }

@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.classOrObjectRecursiveVisitor
@@ -209,7 +210,9 @@ class ImplBindingGenerator(
             isEager = false,
             isExternal = false,
             isInline = true,
-            isFunBinding = false
+            isFunBinding = false,
+            visibility = Visibilities.PUBLIC,
+            receiver = null
         )
         declarationStore.addGeneratedCallable(implCallable, descriptor.findPsi()!!.containingFile as KtFile)
         declarationStore.addGeneratedInternalIndex(
@@ -263,7 +266,9 @@ class ImplBindingGenerator(
             isEager = false,
             isExternal = false,
             isInline = true,
-            isFunBinding = false
+            isFunBinding = false,
+            visibility = Visibilities.PUBLIC,
+            receiver = null
         )
 
         declarationStore.addGeneratedCallable(superTypeCallable, descriptor.findPsi()!!.containingFile as KtFile)

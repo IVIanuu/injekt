@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.generator.componentimpl.emitCallableInvocation
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -393,7 +392,9 @@ class FunBindingGenerator(
             isEager = true,
             isExternal = false,
             isInline = true,
-            isFunBinding = true
+            isFunBinding = true,
+            visibility = Visibilities.PUBLIC,
+            receiver = null
         )
         declarationStore.addGeneratedCallable(bindingCallable, descriptor.findPsi()!!.containingFile as KtFile)
         declarationStore.addGeneratedInternalIndex(

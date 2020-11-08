@@ -344,6 +344,30 @@ class ComponentTest {
     }
 
     @Test
+    fun testFunctionBindingInObject() = codegen(
+        """
+            object BarDeps {
+                @Binding
+                fun Foo.bar() = Bar(this)
+                
+                @Binding
+                fun foo() = Foo()
+            }
+            
+            @Component
+            abstract class BarComponent {
+                abstract val bar: Bar
+            }
+
+            fun invoke() {
+                component<BarComponent>().bar
+            }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
     fun testTopLevelPropertyBinding() = codegen(
         """
             @Binding
@@ -520,7 +544,7 @@ class ComponentTest {
         assertSame(a, b)
     }
 
-    @Test
+    // todo @Test
     fun testScopedAssistedBindingInChild() = codegen(
         """
             @Component
@@ -732,7 +756,7 @@ class ComponentTest {
                 protected val nested = NestedModule()
                 
                 @Module
-                protected class NestedModule {
+                class NestedModule {
                     @Binding
                     fun bar(foo: Foo) = Bar(foo)
                 }
@@ -757,7 +781,7 @@ class ComponentTest {
                 protected val fooModule = InstanceModule<Foo>(Foo())
                 
                 @Module
-                protected class InstanceModule<T>(@Binding val instance: T)
+                class InstanceModule<T>(@Binding val instance: T)
             }
 
             fun invoke(): Foo {
