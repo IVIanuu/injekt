@@ -390,7 +390,7 @@ class ComponentStatements(
                 Callable.CallableKind.DEFAULT -> {
                     emit("synchronized(")
                     scopeComponentExpression()
-                    emit(")")
+                    emit(") ")
                     braced { emitInvocation() }
                 }
                 // todo what to do here?
