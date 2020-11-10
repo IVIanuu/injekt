@@ -28,6 +28,7 @@ import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.TypeTranslator
 import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.defaultType
+import com.ivianuu.injekt.compiler.generator.fullyExpandedType
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.renderExpanded
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
@@ -219,16 +220,16 @@ class ComponentStatements(
     }
 
     private fun mapExpression(binding: MapBindingNode): ComponentExpression = {
-        emit("run ")
+        emit("mutableMapOf<${binding.type.fullyExpandedType.typeArguments[0]}, ${binding.type.fullyExpandedType.typeArguments[1]}>().apply ")
         braced {
-            emit("val result = ")
             val parentBinding = parent?.owner?.graph?.getBinding(binding.dependencies.first())
             if (parentBinding != null && parentBinding !is MissingBindingNode) {
+                emit("this += ")
                 getBindingExpression(binding.dependencies.first())()
-                emitLine(".toMutableMap()")
-            } else emitLine("mutableMapOf<Any?, Any?>()")
+                emitLine()
+            }
             binding.entries.forEach { (callable, receiver, entryOwner) ->
-                emit("result.putAll(")
+                emit("this += ")
                 emitCallableInvocation(
                     callable,
                     receiver,
@@ -248,23 +249,22 @@ class ComponentStatements(
                             getBindingExpression(dependency)
                         }
                 )
-                emitLine(")")
+                emitLine()
             }
-            emitLine("result as ${binding.type.renderExpanded()}")
         }
     }
 
     private fun setExpression(binding: SetBindingNode): ComponentExpression = {
-        emit("run ")
+        emit("mutableSetOf<${binding.type.fullyExpandedType.typeArguments[0]}>().apply ")
         braced {
-            emit("val result = ")
             val parentBinding = parent?.owner?.graph?.getBinding(binding.dependencies.first())
             if (parentBinding != null && parentBinding !is MissingBindingNode) {
+                emit("this += ")
                 getBindingExpression(binding.dependencies.first())()
-                emitLine(".toMutableSet()")
-            } else emitLine("mutableSetOf<Any?>()")
+                emitLine()
+            }
             binding.elements.forEach { (callable, receiver, elementOwner) ->
-                emit("result.addAll(")
+                emit("this += ")
                 emitCallableInvocation(
                     callable,
                     receiver,
@@ -284,9 +284,8 @@ class ComponentStatements(
                             getBindingExpression(dependency)
                         }
                 )
-                emitLine(")")
+                emitLine()
             }
-            emitLine("result as ${binding.type.renderExpanded()}")
         }
     }
 
