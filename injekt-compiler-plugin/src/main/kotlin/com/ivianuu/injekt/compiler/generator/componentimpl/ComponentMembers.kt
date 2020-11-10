@@ -220,7 +220,8 @@ class ComponentStatements(
     }
 
     private fun mapExpression(binding: MapBindingNode): ComponentExpression = {
-        emit("mutableMapOf<${binding.type.fullyExpandedType.typeArguments[0]}, ${binding.type.fullyExpandedType.typeArguments[1]}>().apply ")
+        emit("mutableMapOf<${binding.type.fullyExpandedType.typeArguments[0]}, " +
+                "${binding.type.fullyExpandedType.typeArguments[1]}>().also ")
         braced {
             val parentBinding = parent?.owner?.graph?.getBinding(binding.dependencies.first())
             if (parentBinding != null && parentBinding !is MissingBindingNode) {
@@ -229,7 +230,7 @@ class ComponentStatements(
                 emitLine()
             }
             binding.entries.forEach { (callable, receiver, entryOwner) ->
-                emit("this += ")
+                emit("it.putAll(")
                 emitCallableInvocation(
                     callable,
                     receiver,
@@ -248,7 +249,7 @@ class ComponentStatements(
                             getBindingExpression(dependency)
                         }
                 )
-                emitLine()
+                emitLine(")")
             }
         }
     }
@@ -263,7 +264,7 @@ class ComponentStatements(
                 emitLine()
             }
             binding.elements.forEach { (callable, receiver, elementOwner) ->
-                emit("it += ")
+                emit("it.addAll(")
                 emitCallableInvocation(
                     callable,
                     receiver,
@@ -282,7 +283,7 @@ class ComponentStatements(
                             getBindingExpression(dependency)
                         }
                 )
-                emitLine()
+                emitLine(")")
             }
         }
     }
@@ -294,7 +295,11 @@ class ComponentStatements(
             binding.declaredInComponent,
             binding.callable.valueParameters.zip(binding.dependencies).map { (parameter, request) ->
                 val dependencyBinding = owner.graph.getBinding(request)
-                if (dependencyBinding is MissingBindingNode) return@map null
+                if (dependencyBinding is MissingBindingNode) {
+                    return@map if (parameter.type.isInlineProvider) ({
+                        emit("{ null }")
+                    }) else null
+                }
                 val raw = getBindingExpression(request)
                 if (parameter.type.isInlineProvider) {
                     {
