@@ -239,8 +239,7 @@ class ComponentStatements(
                             BindingRequest(
                                 it.type,
                                 callable.fqName.child(it.name),
-                                !it.hasDefault,
-                                null
+                                !it.hasDefault
                             )
                         }
                         .map { dependency ->
@@ -255,7 +254,7 @@ class ComponentStatements(
     }
 
     private fun setExpression(binding: SetBindingNode): ComponentExpression = {
-        emit("mutableSetOf<${binding.type.fullyExpandedType.typeArguments[0]}>().apply ")
+        emit("mutableSetOf<${binding.type.fullyExpandedType.typeArguments[0]}>().also ")
         braced {
             val parentBinding = parent?.owner?.graph?.getBinding(binding.dependencies.first())
             if (parentBinding != null && parentBinding !is MissingBindingNode) {
@@ -264,7 +263,7 @@ class ComponentStatements(
                 emitLine()
             }
             binding.elements.forEach { (callable, receiver, elementOwner) ->
-                emit("this += ")
+                emit("it += ")
                 emitCallableInvocation(
                     callable,
                     receiver,
@@ -274,8 +273,7 @@ class ComponentStatements(
                             BindingRequest(
                                 it.type,
                                 callable.fqName.child(it.name),
-                                !it.hasDefault,
-                                null
+                                !it.hasDefault
                             )
                         }
                         .map { dependency ->
