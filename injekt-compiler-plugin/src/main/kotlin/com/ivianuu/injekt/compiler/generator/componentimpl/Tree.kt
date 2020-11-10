@@ -199,7 +199,7 @@ class AssistedBindingNode(
     override fun refineType(dependencyBindings: List<BindingNode>) {
         super.refineType(dependencyBindings)
         val returnType = type.typeArguments.last()
-        val substitutionMap = childComponent.graph.getBinding(BindingRequest(returnType, FqName.ROOT))
+        val substitutionMap = childComponent.graph.getBinding(BindingRequest(returnType, FqName.ROOT, false))
             .type.getStarSubstitutionMap(returnType)
         _type = _type.substitute(substitutionMap)
     }
@@ -316,6 +316,32 @@ class MapBindingNode(
         get() = false
 }
 
+class MissingBindingNode(
+    type: TypeRef,
+    override val owner: ComponentImpl
+) : BindingNode(type) {
+    override val cacheable: Boolean
+        get() = false
+    override val callableKind: Callable.CallableKind
+        get() = Callable.CallableKind.DEFAULT
+    override val declaredInComponent: ComponentImpl?
+        get() = null
+    override val dependencies: List<BindingRequest>
+        get() = emptyList()
+    override val inline: Boolean
+        get() = false
+    override val isExternal: Boolean
+        get() = false
+    override val origin: FqName?
+        get() = null
+    override val rawType: TypeRef
+        get() = type
+    override val receiver: ComponentExpression?
+        get() = null
+    override val targetComponent: TypeRef?
+        get() = null
+}
+
 class ProviderBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl,
@@ -373,30 +399,8 @@ data class CallableWithReceiver(
     val substitutionMap: Map<ClassifierRef, TypeRef>
 )
 
-class NullBindingNode(
-    type: TypeRef,
-    override val owner: ComponentImpl,
-) : BindingNode(type) {
-    override val callableKind: Callable.CallableKind
-        get() = Callable.CallableKind.DEFAULT
-    override val rawType: TypeRef
-        get() = type
-    override val dependencies: List<BindingRequest>
-        get() = emptyList()
-    override val declaredInComponent: ComponentImpl?
-        get() = null
-    override val receiver: ComponentExpression?
-        get() = null
-    override val origin: FqName?
-        get() = null
-    override val targetComponent: TypeRef?
-        get() = null
-    override val isExternal: Boolean
-        get() = false
-    override val cacheable: Boolean
-        get() = false
-    override val inline: Boolean
-        get() = true
-}
-
-data class BindingRequest(val type: TypeRef, val origin: FqName)
+data class BindingRequest(
+    val type: TypeRef,
+    val origin: FqName,
+    val hasDefault: Boolean
+)

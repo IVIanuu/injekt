@@ -969,4 +969,25 @@ class BindingAdapterTest {
         """
     )
 
+    @Test
+    fun testBindingAdapterWithDefaultValueDependency() = codegen(
+        """
+            @BindingAdapter
+            annotation class AnyBinding { 
+                companion object {
+                    @Binding
+                    val <T : Any> T.any: Any get() = this
+                }
+            }
+            
+            @AnyBinding
+            class AnnotatedBar(val foo: Foo = Foo())
+            
+            @Component
+            abstract class MyComponent {
+                abstract val any: Any
+            }
+        """
+    )
+
 }

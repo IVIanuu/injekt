@@ -415,7 +415,7 @@ class FunBindingTest {
     }
 
     @Test
-    fun testFunBindingWithDefaultValue() = codegen(
+    fun testFunBindingWithFunApiDefaultValue() = codegen(
         """
             @FunBinding
             fun function(string: String, @FunApi assisted: String = "") {
@@ -423,6 +423,22 @@ class FunBindingTest {
             
             @Component
             abstract class TestComponent(@Binding val string: String) {
+                abstract val function: function
+            }
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testFunBindingWithDependencyDefaultValue() = codegen(
+        """
+            @FunBinding
+            fun function(string: String = "", @FunApi assisted: String) {
+            }
+            
+            @Component
+            abstract class TestComponent {
                 abstract val function: function
             }
         """

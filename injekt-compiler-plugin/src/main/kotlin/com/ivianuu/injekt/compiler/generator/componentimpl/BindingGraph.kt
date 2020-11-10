@@ -35,6 +35,7 @@ import com.ivianuu.injekt.compiler.generator.substituteStars
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -279,8 +280,8 @@ class BindingGraph(
         var binding = getBindingOrNull(finalRequest)
         if (binding != null) return binding
 
-        if (finalRequest.type.isMarkedNullable) {
-            binding = NullBindingNode(finalRequest.type, owner)
+        if (finalRequest.type.isMarkedNullable || finalRequest.hasDefault) {
+            binding = MissingBindingNode(finalRequest.type, owner)
             resolvedBindings[finalRequest.type] = binding
             return binding
         }
@@ -406,7 +407,8 @@ class BindingGraph(
                             BindingRequest(
                                 it.type.substitute(substitutionMap)
                                     .replaceTypeParametersWithStars(),
-                                callable.fqName.child(it.name)
+                                callable.fqName.child(it.name),
+                                it.hasDefault
                             )
                         },
                     receiver = receiver,
@@ -430,7 +432,8 @@ class BindingGraph(
                             BindingRequest(
                                 it.type.substitute(substitutionMap)
                                     .replaceTypeParametersWithStars(),
-                                callable.fqName.child(it.name)
+                                callable.fqName.child(it.name),
+                                it.hasDefault
                             )
                         },
                     receiver = receiver,
@@ -458,7 +461,8 @@ class BindingGraph(
                             BindingRequest(
                                 it.type.substitute(substitutionMap)
                                     .replaceTypeParametersWithStars(),
-                                callable.fqName.child(it.name)
+                                callable.fqName.child(it.name),
+                                it.hasDefault
                             )
                         },
                     receiver = null,
@@ -523,7 +527,8 @@ class BindingGraph(
                 dependencies = listOf(
                     BindingRequest(
                         request.type.typeArguments.single(),
-                        FqName.ROOT // todo
+                        FqName.ROOT, // todo
+                        false
                     )
                 ),
                 FqName.ROOT // todo
@@ -548,7 +553,8 @@ class BindingGraph(
                             BindingRequest(
                                 it.type.substitute(substitutionMap)
                                     .replaceTypeParametersWithStars(),
-                                callable.fqName.child(it.name)
+                                callable.fqName.child(it.name),
+                                it.hasDefault
                             )
                         },
                     receiver = null,
@@ -587,6 +593,7 @@ class BindingGraph(
                     isInline = false,
                     isFunBinding = false,
                     visibility = Visibilities.INTERNAL,
+                    modality = Modality.FINAL,
                     receiver = null
                 )
                 val childComponent = componentImplFactory(
@@ -665,7 +672,8 @@ class BindingCollections(
                                 .map {
                                     BindingRequest(
                                         it.type.substitute(substitutionMap),
-                                        entry.fqName.child(it.name)
+                                        entry.fqName.child(it.name),
+                                        it.hasDefault
                                     )
                                 }
                         },
@@ -683,7 +691,8 @@ class BindingCollections(
                                 .map {
                                     BindingRequest(
                                         it.type.substitute(substitutionMap),
-                                        element.fqName.child(it.name)
+                                        element.fqName.child(it.name),
+                                        it.hasDefault
                                     )
                                 }
                         },

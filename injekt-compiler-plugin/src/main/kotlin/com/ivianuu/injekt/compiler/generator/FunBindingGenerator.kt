@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
@@ -186,6 +187,10 @@ class FunBindingGenerator(
                     }
                     emit("${if (valueParameter != descriptor.extensionReceiverParameter) valueParameter.name else "_receiver"}: " +
                             "${typeRef.render()}")
+                    if (valueParameter is ValueParameterDescriptor &&
+                            valueParameter.declaresDefaultValue()) {
+                        emit(" = { ${(valueParameter.findPsi() as KtParameter).defaultValue!!.text} }")
+                    }
                     if (index != dependencyValueParameters.lastIndex) emit(", ")
                 }
             emit("): ${descriptor.name}")
@@ -378,7 +383,14 @@ class FunBindingGenerator(
                         inlineKind = ValueParameterRef.InlineKind.CROSSINLINE,
                         name = if (it == descriptor.extensionReceiverParameter)
                             "_receiver".asNameId() else it.name,
-                        bindingAdapterArgName = it.getBindingAdapterArgName()
+                        bindingAdapterArgName = it.getBindingAdapterArgName(),
+                        hasDefault = it is ValueParameterDescriptor && it.declaresDefaultValue(),
+                        defaultExpression = if (it !is ValueParameterDescriptor ||
+                            !it.declaresDefaultValue()) null else ({
+                            emit("{ ")
+                            emit((it.findPsi() as KtParameter).defaultValue!!.text)
+                            emit(" }")
+                        })
                     )
                 },
             targetComponent = null,
@@ -394,6 +406,7 @@ class FunBindingGenerator(
             isInline = true,
             isFunBinding = true,
             visibility = Visibilities.PUBLIC,
+            modality = Modality.FINAL,
             receiver = null
         )
         declarationStore.addGeneratedCallable(bindingCallable, descriptor.findPsi()!!.containingFile as KtFile)

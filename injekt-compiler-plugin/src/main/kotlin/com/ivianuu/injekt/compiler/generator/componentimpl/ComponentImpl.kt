@@ -29,6 +29,7 @@ import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.renderExpanded
 import com.ivianuu.injekt.compiler.generator.substitute
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.name.Name
 
 @Binding
@@ -86,16 +87,23 @@ class ComponentImpl(
         if (initialized) return
         initialized = true
         parent?.children?.add(this)
-        graph.checkRequests(requests.map { BindingRequest(it.type, it.fqName) })
-        requests.forEach {
-            val binding = graph.resolvedBindings[it.type]!!
+        graph.checkRequests(requests.map {
+            BindingRequest(it.type, it.fqName, it.modality == Modality.OPEN)
+        })
+        requests.forEach { requestCallable ->
+            val binding = graph.resolvedBindings[requestCallable.type]!!
+            if (binding is MissingBindingNode && requestCallable.modality == Modality.OPEN) return
+            val body = if (binding is MissingBindingNode) ({
+                emit("null")
+            }) else statements.getBindingExpression(BindingRequest(
+                requestCallable.type, requestCallable.fqName, false))
             statements.getCallable(
-                type = if (it in assistedRequests) binding.type else it.type,
-                name = it.name,
-                isOverride = it !in assistedRequests,
-                body = statements.getBindingExpression(BindingRequest(it.type, it.fqName)),
-                isProperty = !it.isCall,
-                callableKind = it.callableKind,
+                type = if (requestCallable in assistedRequests) binding.type else requestCallable.type,
+                name = requestCallable.name,
+                isOverride = requestCallable !in assistedRequests,
+                body = body,
+                isProperty = !requestCallable.isCall,
+                callableKind = requestCallable.callableKind,
                 cacheable = binding.cacheable,
                 isInline = false,
                 canBePrivate = false

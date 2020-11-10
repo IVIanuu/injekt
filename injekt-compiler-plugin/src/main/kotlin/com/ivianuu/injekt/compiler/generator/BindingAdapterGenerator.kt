@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
@@ -135,10 +136,20 @@ class BindingAdapterGenerator(
 
         val code = buildCodeString {
             emitLine("package $packageName")
-            emitLine("import ${callable.fqName}")
-            emitLine("import ${InjektFqNames.Binding}")
-            emitLine("import ${InjektFqNames.MergeInto}")
-            emitLine("import ${InjektFqNames.Module}")
+            val imports = mutableSetOf(
+                "import ${callable.fqName}",
+                "import ${InjektFqNames.Binding}",
+                "import ${InjektFqNames.MergeInto}",
+                "import ${InjektFqNames.Module}"
+            )
+            imports += file
+                .importDirectives
+                .map { it.text }
+
+            imports.forEach {
+                emitLine(it)
+            }
+
             emitLine()
             emitLine("typealias ${aliasedType.classifier.fqName.shortName()} = ${rawBindingType.render()}")
             emitLine()
@@ -187,6 +198,10 @@ class BindingAdapterGenerator(
                     emit("noinline ")
                 }
                 emit("${valueParameter.name}: ${valueParameter.type.render()}")
+                if (valueParameter.defaultExpression != null) {
+                    emit(" = ")
+                    valueParameter.defaultExpression!!()
+                }
                 if (index != parameters.lastIndex) emit(", ")
             }
             emit("): ${aliasedType.render()} ")
@@ -219,6 +234,7 @@ class BindingAdapterGenerator(
                 isInline = true,
                 isFunBinding = callable.isFunBinding,
                 visibility = Visibilities.PUBLIC,
+                modality = Modality.FINAL,
                 receiver = null
             )
             bindingAdapters
@@ -364,6 +380,7 @@ class BindingAdapterGenerator(
                         isInline = true,
                         isFunBinding = false,
                         visibility = Visibilities.PUBLIC,
+                        modality = Modality.FINAL,
                         receiver = null
                     )
                 }

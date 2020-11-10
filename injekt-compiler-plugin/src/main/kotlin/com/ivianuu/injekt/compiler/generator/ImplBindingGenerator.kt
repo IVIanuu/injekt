@@ -21,9 +21,12 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.classOrObjectRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.constants.KClassValue
@@ -109,6 +112,10 @@ class ImplBindingGenerator(
                     .forEachIndexed { index, valueParameter ->
                         emit("${valueParameter.name}: ${valueParameter.type
                             .let { typeTranslator.toTypeRef(it, descriptor) }.render()}")
+                        if (valueParameter is ValueParameterDescriptor &&
+                            valueParameter.declaresDefaultValue()) {
+                            emit(" = ${(valueParameter.findPsi() as KtParameter).defaultValue!!.text}")
+                        }
                         if (index != injectConstructor.valueParameters.lastIndex) emit(", ")
                     }
                 emit("): ${descriptor.defaultType.let { typeTranslator.toTypeRef(it, descriptor) }.render()} ")
@@ -199,7 +206,11 @@ class ImplBindingGenerator(
                             else -> ValueParameterRef.InlineKind.NONE
                         },
                         name = it.name,
-                        bindingAdapterArgName = it.getBindingAdapterArgName()
+                        bindingAdapterArgName = it.getBindingAdapterArgName(),
+                        hasDefault = it.declaresDefaultValue(),
+                        defaultExpression = if (!it.declaresDefaultValue()) null else ({
+                            emit((it.findPsi() as KtParameter).defaultValue!!.text)
+                        })
                     )
                 },
             targetComponent = targetComponent,
@@ -212,6 +223,7 @@ class ImplBindingGenerator(
             isInline = true,
             isFunBinding = false,
             visibility = Visibilities.PUBLIC,
+            modality = Modality.FINAL,
             receiver = null
         )
         declarationStore.addGeneratedCallable(implCallable, descriptor.findPsi()!!.containingFile as KtFile)
@@ -252,7 +264,9 @@ class ImplBindingGenerator(
                     isExtensionReceiver = true,
                     inlineKind = ValueParameterRef.InlineKind.NONE,
                     name = "_receiver".asNameId(),
-                    bindingAdapterArgName = null
+                    bindingAdapterArgName = null,
+                    hasDefault = false,
+                    defaultExpression = null
                 )
             ),
             targetComponent = null,
@@ -268,6 +282,7 @@ class ImplBindingGenerator(
             isInline = true,
             isFunBinding = false,
             visibility = Visibilities.PUBLIC,
+            modality = Modality.FINAL,
             receiver = null
         )
 

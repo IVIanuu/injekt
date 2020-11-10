@@ -33,8 +33,10 @@ import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
 import org.jetbrains.kotlin.resolve.constants.ByteValue
@@ -431,7 +433,9 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         isExtensionReceiver = true,
                         name = "_receiver".asNameId(),
                         inlineKind = ValueParameterRef.InlineKind.NONE,
-                        bindingAdapterArgName = it.getBindingAdapterArgName()
+                        bindingAdapterArgName = it.getBindingAdapterArgName(),
+                        hasDefault = false,
+                        defaultExpression = null
                     )
                 }
             ) + descriptor.valueParameters.map {
@@ -444,7 +448,11 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         it.isCrossinline -> ValueParameterRef.InlineKind.CROSSINLINE
                         else -> ValueParameterRef.InlineKind.NONE
                     },
-                    bindingAdapterArgName = it.getBindingAdapterArgName()
+                    bindingAdapterArgName = it.getBindingAdapterArgName(),
+                    hasDefault = it.declaresDefaultValue(),
+                    defaultExpression = if (!it.declaresDefaultValue()) null else ({
+                        emit((it.findPsi() as KtParameter).defaultValue!!.text)
+                    })
                 )
             },
             isCall = owner !is PropertyDescriptor &&
@@ -466,6 +474,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             isInline = descriptor.isInline,
             isFunBinding = descriptor.hasAnnotation(InjektFqNames.FunBinding),
             visibility = descriptor.visibility,
+            modality = descriptor.modality,
             receiver = descriptor.dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
                 ?.let { typeTranslator.toClassifierRef(it) }
         )

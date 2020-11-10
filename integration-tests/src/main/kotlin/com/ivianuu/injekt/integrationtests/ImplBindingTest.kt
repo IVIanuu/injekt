@@ -81,4 +81,19 @@ class ImplBindingTest {
         """
     )
 
+    @Test
+    fun testImplBindingWithDefaultValue() = codegen(
+        """
+            interface Repository<T, S> where T : String, T : CharSequence
+            
+            @ImplBinding
+            class RepositoryImpl<T, S>(val something: String = "") : Repository<T, S> where T : String, T : CharSequence
+            
+            @Component
+            abstract class MyComponent {
+                abstract val repository: Repository<String, String>
+            }
+        """
+    )
+
 }

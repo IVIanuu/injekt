@@ -1094,7 +1094,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testReturnsNullOnMissingNullableBinding() = codegen(
+    fun testReturnsNullOnMissingNullableRequest() = codegen(
         """
             @Component
             abstract class FooComponent {
@@ -1106,6 +1106,100 @@ class ComponentTest {
         """
     ) {
         assertNull(invokeSingleFile())
+    }
+
+    @Test
+    fun testReturnsDefaultOnMissingOpenRequest() = codegen(
+        """
+            val DEFAULT_FOO = Foo()
+            @Component
+            abstract class FooComponent {
+                open val foo: Foo = DEFAULT_FOO
+            }
+            fun invoke(): Pair<Foo, Foo> { 
+                return DEFAULT_FOO to component<FooComponent>().foo
+            }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Foo, Foo>>()
+        assertSame(a, b)
+    }
+
+    @Test
+    fun testReturnsDefaultOnMissingOpenNullableRequest() = codegen(
+        """
+            val DEFAULT_FOO = Foo()
+            @Component
+            abstract class FooComponent {
+                open val foo: Foo? = DEFAULT_FOO
+            }
+            fun invoke(): Pair<Foo?, Foo?> { 
+                return DEFAULT_FOO to component<FooComponent>().foo
+            }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Foo?, Foo?>>()
+        assertSame(a, b)
+    }
+
+    @Test
+    fun testUsesNullOnMissingNullableDependency() = codegen(
+        """
+            @Binding
+            class Dep(val foo: Foo?)
+            
+            @Component
+            abstract class FooComponent {
+                abstract val dep: Dep
+            }
+            
+            fun invoke(): Foo? { 
+                return component<FooComponent>().dep.foo
+            }
+        """
+    ) {
+        assertNull(invokeSingleFile())
+    }
+
+    @Test
+    fun testUsesDefaultOnMissingDependency() = codegen(
+        """
+            @Binding            
+            class Dep(val foo: Foo = DEFAULT_FOO)
+            val DEFAULT_FOO = Foo()
+            
+            @Component
+            abstract class FooComponent {
+                abstract val dep: Dep
+            }
+            fun invoke(): Pair<Foo, Foo> { 
+                return DEFAULT_FOO to component<FooComponent>().dep.foo
+            }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Foo, Foo>>()
+        assertSame(a, b)
+    }
+
+    @Test
+    fun testUsesDefaultOnMissingNullableDependency() = codegen(
+        """
+            @Binding
+            class Dep(val foo: Foo? = DEFAULT_FOO)
+            val DEFAULT_FOO = Foo()
+            
+            @Component
+            abstract class FooComponent {
+                abstract val dep: Dep
+            }
+            
+            fun invoke(): Pair<Foo?, Foo?> { 
+                return DEFAULT_FOO to component<FooComponent>().dep.foo
+            }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Foo?, Foo?>>()
+        assertSame(a, b)
     }
 
     @Test

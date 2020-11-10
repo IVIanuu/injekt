@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentExpression
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -38,6 +39,7 @@ data class Callable(
     val isInline: Boolean,
     val isFunBinding: Boolean,
     val visibility: Visibility,
+    val modality: Modality,
     val receiver: ClassifierRef?
 ) {
     enum class ContributionKind {
@@ -53,7 +55,9 @@ data class ValueParameterRef(
     val isExtensionReceiver: Boolean,
     val inlineKind: InlineKind,
     val name: Name,
-    val bindingAdapterArgName: Name?
+    val bindingAdapterArgName: Name?,
+    val hasDefault: Boolean,
+    val defaultExpression: ComponentExpression?
 ) {
     enum class InlineKind {
         NONE, NOINLINE, CROSSINLINE
