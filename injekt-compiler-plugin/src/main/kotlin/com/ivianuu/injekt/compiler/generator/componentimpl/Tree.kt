@@ -199,7 +199,7 @@ class AssistedBindingNode(
     override fun refineType(dependencyBindings: List<BindingNode>) {
         super.refineType(dependencyBindings)
         val returnType = type.typeArguments.last()
-        val substitutionMap = childComponent.graph.getBinding(BindingRequest(returnType, FqName.ROOT, false))
+        val substitutionMap = childComponent.graph.getBinding(BindingRequest(returnType, FqName.ROOT, false, null))
             .type.getStarSubstitutionMap(returnType)
         _type = _type.substitute(substitutionMap)
     }
@@ -402,5 +402,6 @@ data class CallableWithReceiver(
 data class BindingRequest(
     val type: TypeRef,
     val origin: FqName,
-    val hasDefault: Boolean
+    val required: Boolean,
+    val owner: ComponentImpl?
 )

@@ -82,22 +82,24 @@ class ComponentStatements(
     }
 
     fun getBindingExpression(request: BindingRequest): ComponentExpression {
-        val binding = owner.graph.getBinding(request)
+        val binding = (request.owner ?: owner).graph.getBinding(request)
         val callableKind = binding.callableKind
-        expressionsByType[binding.type]?.let {
-            // todo not sure why we do this :D
-            getCallable(
-                type = binding.type,
-                name = binding.type.uniqueTypeName(),
-                isOverride = false,
-                body = it,
-                callableKind = callableKind,
-                isProperty = callableKind != Callable.CallableKind.SUSPEND,
-                cacheable = binding.cacheable,
-                isInline = false,
-                canBePrivate = false
-            )
-            return it
+        if (request.owner == null || request.owner == owner) {
+            expressionsByType[binding.type]?.let {
+                // todo not sure why we do this :D
+                getCallable(
+                    type = binding.type,
+                    name = binding.type.uniqueTypeName(),
+                    isOverride = false,
+                    body = it,
+                    callableKind = callableKind,
+                    isProperty = callableKind != Callable.CallableKind.SUSPEND,
+                    cacheable = binding.cacheable,
+                    isInline = false,
+                    canBePrivate = false
+                )
+                return it
+            }
         }
 
         if (binding.owner != owner) {
@@ -219,7 +221,12 @@ class ComponentStatements(
     private fun mapExpression(binding: MapBindingNode): ComponentExpression = {
         emit("run ")
         braced {
-            emitLine("val result = mutableMapOf<Any?, Any?>()")
+            emit("val result = ")
+            val parentBinding = parent?.owner?.graph?.getBinding(binding.dependencies.first())
+            if (parentBinding != null && parentBinding !is MissingBindingNode) {
+                getBindingExpression(binding.dependencies.first())()
+                emitLine(".toMutableMap()")
+            } else emitLine("mutableMapOf<Any?, Any?>()")
             binding.entries.forEach { (callable, receiver, entryOwner) ->
                 emit("result.putAll(")
                 emitCallableInvocation(
@@ -231,7 +238,8 @@ class ComponentStatements(
                             BindingRequest(
                                 it.type,
                                 callable.fqName.child(it.name),
-                                it.hasDefault
+                                !it.hasDefault,
+                                null
                             )
                         }
                         .map { dependency ->
@@ -249,7 +257,12 @@ class ComponentStatements(
     private fun setExpression(binding: SetBindingNode): ComponentExpression = {
         emit("run ")
         braced {
-            emitLine("val result = mutableSetOf<Any?>()")
+            emit("val result = ")
+            val parentBinding = parent?.owner?.graph?.getBinding(binding.dependencies.first())
+            if (parentBinding != null && parentBinding !is MissingBindingNode) {
+                getBindingExpression(binding.dependencies.first())()
+                emitLine(".toMutableSet()")
+            } else emitLine("mutableSetOf<Any?>()")
             binding.elements.forEach { (callable, receiver, elementOwner) ->
                 emit("result.addAll(")
                 emitCallableInvocation(
@@ -261,7 +274,8 @@ class ComponentStatements(
                             BindingRequest(
                                 it.type,
                                 callable.fqName.child(it.name),
-                                it.hasDefault
+                                !it.hasDefault,
+                                null
                             )
                         }
                         .map { dependency ->
