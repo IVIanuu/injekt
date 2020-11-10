@@ -43,6 +43,7 @@ import org.jetbrains.kotlin.name.Name
 @Binding
 class BindingGraph(
     private val owner: @Assisted ComponentImpl,
+    collectionsFactory: (ComponentImpl, BindingCollections?) -> BindingCollections,
     private val declarationStore: DeclarationStore,
     private val componentImplFactory: (
         TypeRef,
@@ -60,8 +61,8 @@ class BindingGraph(
     private val moduleBindingCallables = mutableListOf<CallableWithReceiver>()
     private val parentModuleBindingCallables = owner.parent?.graph?.moduleBindingCallables
         ?: emptyList()
-    private val moduleMapEntries = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
-    private val moduleSetElements = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
+
+    private val collections: BindingCollections = collectionsFactory(owner, parent?.collections)
 
     val resolvedBindings = mutableMapOf<TypeRef, BindingNode>()
     private val checkedBindings = mutableSetOf<BindingNode>()
@@ -126,19 +127,23 @@ class BindingGraph(
                         emptyMap()
                     )
                     Callable.ContributionKind.MAP_ENTRIES -> {
-                        moduleMapEntries.getOrPut(finalCallable.type) { mutableListOf() } += CallableWithReceiver(
-                            finalCallable,
-                            parentAccessExpression,
-                            owner,
-                            emptyMap()
+                        collections.addMapEntries(
+                            CallableWithReceiver(
+                                finalCallable,
+                                parentAccessExpression,
+                                owner,
+                                emptyMap()
+                            )
                         )
                     }
                     Callable.ContributionKind.SET_ELEMENTS -> {
-                        moduleSetElements.getOrPut(finalCallable.type) { mutableListOf() } += CallableWithReceiver(
-                            finalCallable,
-                            parentAccessExpression,
-                            owner,
-                            emptyMap()
+                        collections.addSetElements(
+                            CallableWithReceiver(
+                                finalCallable,
+                                parentAccessExpression,
+                                owner,
+                                emptyMap()
+                            )
                         )
                     }
                     Callable.ContributionKind.MODULE -> {
@@ -256,7 +261,6 @@ class BindingGraph(
         chain.push(binding)
         binding
             .dependencies
-            .filter { it.owner == null || it.owner == owner }
             .forEach { check(it) }
         (binding as? ChildComponentBindingNode)?.childComponent?.initialize()
         (binding as? AssistedBindingNode)?.childComponent?.initialize()
@@ -305,14 +309,8 @@ class BindingGraph(
         var binding = resolvedBindings[request.type]
         if (binding != null) return binding
 
-        if (request.owner != null && request.owner != owner) {
-            binding = request.owner.graph.getBinding(request)
-            resolvedBindings[request.type] = binding
-            return binding
-        }
-
         check(!locked) {
-            "Cannot create new bindings in ${owner.nonAssistedComponent.componentType} for $request " +
+            "Cannot create request new bindings in ${owner.nonAssistedComponent.componentType} for $request " +
                     "existing ${resolvedBindings.keys}"
         }
 
@@ -410,8 +408,7 @@ class BindingGraph(
                                 it.type.substitute(substitutionMap)
                                     .replaceTypeParametersWithStars(),
                                 callable.fqName.child(it.name),
-                                !it.hasDefault,
-                                null
+                                !it.hasDefault
                             )
                         },
                     receiver = receiver,
@@ -436,8 +433,7 @@ class BindingGraph(
                                 it.type.substitute(substitutionMap)
                                     .replaceTypeParametersWithStars(),
                                 callable.fqName.child(it.name),
-                                !it.hasDefault,
-                                null
+                                !it.hasDefault
                             )
                         },
                     receiver = receiver,
@@ -466,8 +462,7 @@ class BindingGraph(
                                 it.type.substitute(substitutionMap)
                                     .replaceTypeParametersWithStars(),
                                 callable.fqName.child(it.name),
-                                !it.hasDefault,
-                                null
+                                !it.hasDefault
                             )
                         },
                     receiver = null,
@@ -533,8 +528,7 @@ class BindingGraph(
                     BindingRequest(
                         request.type.typeArguments.single(),
                         FqName.ROOT, // todo
-                        true,
-                        null
+                        true
                     )
                 ),
                 FqName.ROOT // todo
@@ -560,8 +554,7 @@ class BindingGraph(
                                 it.type.substitute(substitutionMap)
                                     .replaceTypeParametersWithStars(),
                                 callable.fqName.child(it.name),
-                                !it.hasDefault,
-                                null
+                                !it.hasDefault
                             )
                         },
                     receiver = null,
@@ -619,72 +612,93 @@ class BindingGraph(
             }
         }
 
-        val moduleMapEntries = moduleMapEntries[request.type]
-        val implicitMapEntries = if (parent == null) declarationStore.mapEntriesByType(request.type)
-        else emptyList()
-        if (moduleMapEntries != null || implicitMapEntries.isNotEmpty()) {
-            val entries = (implicitMapEntries.map {
-                CallableWithReceiver(it, null, null, emptyMap())
-            } + (moduleMapEntries ?: emptyList()))
-            val dependencies = listOfNotNull(
-                if (parent != null) BindingRequest(
-                    request.type,
-                    request.origin,
-                    false,
-                    parent.owner
-                ) else null
-            ) + entries.flatMap { (entry, _, _, substitutionMap) ->
-                entry.valueParameters
-                    .map {
-                        BindingRequest(
-                            it.type.substitute(substitutionMap),
-                            entry.fqName.child(it.name),
-                            !it.hasDefault,
-                            null
-                        )
-                    }
-            }
-            this += MapBindingNode(
-                type = request.type,
-                owner = owner,
-                dependencies = dependencies,
-                entries = entries
-            )
-        }
-
-        val moduleSetElements = moduleSetElements[request.type]
-        val implicitSetElements = if (parent == null) declarationStore.setElementsByType(request.type)
-        else emptyList()
-        if (moduleSetElements != null || implicitSetElements.isNotEmpty()) {
-            val elements = (implicitSetElements.map {
-                CallableWithReceiver(it, null, null, emptyMap())
-            } + (moduleSetElements ?: emptyList()))
-            val dependencies = listOfNotNull(
-                if (parent != null) BindingRequest(
-                    request.type,
-                    request.origin,
-                    false,
-                    parent.owner
-                ) else null
-            ) + elements.flatMap { (element, _, _, substitutionMap) ->
-                element.valueParameters
-                    .map {
-                        BindingRequest(
-                            it.type.substitute(substitutionMap),
-                            element.fqName.child(it.name),
-                            !it.hasDefault,
-                            null
-                        )
-                    }
-            }
-            this += SetBindingNode(
-                type = request.type,
-                owner = owner,
-                dependencies = dependencies,
-                elements = elements
-            )
-        }
+        this += collections.getNodes(request)
     }
+
 }
 
 private fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"
+
+@Binding
+class BindingCollections(
+    private val declarationStore: DeclarationStore,
+    private val owner: @Assisted ComponentImpl,
+    private val parent: @Assisted BindingCollections?,
+) {
+
+    private val thisMapEntries = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
+    private val thisSetElements = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
+
+    fun addMapEntries(entries: CallableWithReceiver) {
+        thisMapEntries.getOrPut(entries.callable.type) { mutableListOf() } += entries
+    }
+
+    fun addSetElements(elements: CallableWithReceiver) {
+        thisSetElements.getOrPut(elements.callable.type) { mutableListOf() } += elements
+    }
+
+    private val mapEntriesByType = mutableMapOf<TypeRef, List<CallableWithReceiver>>()
+    private fun getMapEntries(type: TypeRef): List<CallableWithReceiver> {
+        return mapEntriesByType.getOrPut(type) {
+            (parent?.getMapEntries(type) ?: emptyList()) +
+                    (if (parent == null) declarationStore.mapEntriesByType(type)
+                        .map { CallableWithReceiver(it, null, null, emptyMap()) }
+                    else emptyList()) +
+                    (thisMapEntries[type] ?: emptyList())
+        }
+    }
+
+    private val setElementsByType = mutableMapOf<TypeRef, List<CallableWithReceiver>>()
+    private fun getSetElements(type: TypeRef): List<CallableWithReceiver> {
+        return setElementsByType.getOrPut(type) {
+            (parent?.getSetElements(type) ?: emptyList()) +
+                    (if (parent == null) declarationStore.setElementsByType(type)
+                        .map { CallableWithReceiver(it, null, null, emptyMap()) }
+                    else emptyList()) +
+                (thisSetElements[type] ?: emptyList())
+        }
+    }
+
+    fun getNodes(request: BindingRequest): List<BindingNode> {
+        return listOfNotNull(
+            getMapEntries(request.type)
+                .takeIf { it.isNotEmpty() }
+                ?.let { entries ->
+                    MapBindingNode(
+                        type = request.type,
+                        owner = owner,
+                        dependencies = entries.flatMap { (entry, _, _, substitutionMap) ->
+                            entry.valueParameters
+                                .map {
+                                    BindingRequest(
+                                        it.type.substitute(substitutionMap),
+                                        entry.fqName.child(it.name),
+                                        it.hasDefault
+                                    )
+                                }
+                        },
+                        entries = entries
+                    )
+                },
+            getSetElements(request.type)
+                .takeIf { it.isNotEmpty() }
+                ?.let { elements ->
+                    SetBindingNode(
+                        type = request.type,
+                        owner = owner,
+                        dependencies = elements.flatMap { (element, _, _, substitutionMap) ->
+                            element.valueParameters
+                                .map {
+                                    BindingRequest(
+                                        it.type.substitute(substitutionMap),
+                                        element.fqName.child(it.name),
+                                        it.hasDefault
+                                    )
+                                }
+                        },
+                        elements = elements
+                    )
+                }
+        )
+    }
+}

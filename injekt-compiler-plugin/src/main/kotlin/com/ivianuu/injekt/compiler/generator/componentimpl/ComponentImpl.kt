@@ -88,7 +88,7 @@ class ComponentImpl(
         initialized = true
         parent?.children?.add(this)
         graph.checkRequests(requests.map {
-            BindingRequest(it.type, it.fqName, it.modality != Modality.OPEN, null)
+            BindingRequest(it.type, it.fqName, it.modality != Modality.OPEN)
         })
         requests.forEach { requestCallable ->
             val binding = graph.resolvedBindings[requestCallable.type]!!
@@ -96,7 +96,7 @@ class ComponentImpl(
             val body = if (binding is MissingBindingNode) ({
                 emit("null")
             }) else statements.getBindingExpression(BindingRequest(
-                requestCallable.type, requestCallable.fqName, true, null))
+                requestCallable.type, requestCallable.fqName, true))
             statements.getCallable(
                 type = if (requestCallable in assistedRequests) binding.type else requestCallable.type,
                 name = requestCallable.name,
