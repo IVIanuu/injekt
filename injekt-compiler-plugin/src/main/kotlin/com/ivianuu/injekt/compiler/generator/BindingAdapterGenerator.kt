@@ -135,6 +135,7 @@ class BindingAdapterGenerator(
         val callables = mutableListOf<Callable>()
 
         val code = buildCodeString {
+            emitLine("@file:Suppress(\"UNCHECKED_CAST\", \"NOTHING_TO_INLINE\")")
             emitLine("package $packageName")
             val imports = mutableSetOf(
                 "import ${callable.fqName}",

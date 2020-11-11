@@ -92,6 +92,7 @@ class ImplBindingGenerator(
             packageFqName = packageFqName,
             fileName = fileName,
             code = buildCodeString {
+                emitLine("@file:Suppress(\"UNCHECKED_CAST\", \"NOTHING_TO_INLINE\")")
                 emitLine("package $packageFqName")
                 emitLine("import ${InjektFqNames.Binding}")
 

@@ -93,6 +93,7 @@ class IndexGenerator(
                     packageFqName = InjektFqNames.IndexPackage,
                     fileName = fileName,
                     code = buildCodeString {
+                        emitLine("@file:Suppress(\"UNCHECKED_CAST\", \"NOTHING_TO_INLINE\")")
                         emitLine("package ${InjektFqNames.IndexPackage}")
                         emitLine("import ${InjektFqNames.Index}")
                         indices

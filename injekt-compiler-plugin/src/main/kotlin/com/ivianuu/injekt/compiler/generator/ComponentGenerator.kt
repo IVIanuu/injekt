@@ -132,6 +132,7 @@ class ComponentGenerator(
         }.reversed()
 
         val code = buildCodeString {
+            emitLine("@file:Suppress(\"UNCHECKED_CAST\", \"NOTHING_TO_INLINE\")")
             emitLine("package ${componentImplFqName.parent()}")
             imports.forEach { emitLine("import $it") }
 

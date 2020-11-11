@@ -119,6 +119,7 @@ class FunBindingGenerator(
         declarationStore.generatedClassifierFor(descriptor.fqNameSafe)!!.superTypes += expandedFunType
 
         val code = buildCodeString {
+            emitLine("@file:Suppress(\"UNCHECKED_CAST\", \"NOTHING_TO_INLINE\")")
             emitLine("package $packageFqName")
 
             val imports = mutableSetOf(
