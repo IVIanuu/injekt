@@ -281,19 +281,12 @@ class ComponentStatements(
             binding.callable,
             binding.receiver,
             binding.declaredInComponent,
-            binding.callable.valueParameters.zip(binding.dependencies).map { (parameter, request) ->
+            binding.dependencies.map { request ->
                 val dependencyBinding = owner.graph.getBinding(request)
                 if (dependencyBinding is MissingBindingNode) {
                     return@map null
                 }
-                val raw = getBindingExpression(request)
-                if (binding.callable.isFunBinding) {
-                    {
-                        emit("{ ")
-                        raw()
-                        emit(" }")
-                    }
-                } else raw
+                getBindingExpression(request)
             }
         )
     }
@@ -451,11 +444,15 @@ class ComponentStatements(
                                 if (callable.valueParameters.firstOrNull()?.isExtensionReceiver == true) index - 1
                                 else index]
                         if (argument != null) {
+                            if (callable.isFunBinding) emit("{ ")
                             argument()
+                            if (callable.isFunBinding) emit(" }")
                             if (argumentsIndex++ != nonNullArgumentsCount) emit(", ")
                         }
                         else if (!parameter.hasDefault) {
+                            if (callable.isFunBinding) emit("{ ")
                             emit("null")
+                            if (callable.isFunBinding) emit(" }")
                             if (argumentsIndex++ != nonNullArgumentsCount) emit(", ")
                         }
                     }
@@ -474,7 +471,7 @@ class ComponentStatements(
             braced {
                 if (callable.valueParameters.any { it.isExtensionReceiver }) {
                     emit("with(")
-                    emitOrNull(arguments.first())
+                    emitOrNull(arguments.first(), false)
                     emit(") ")
                     braced {
                         emit(callable.name)
@@ -488,7 +485,7 @@ class ComponentStatements(
         } else {
             if (callable.valueParameters.any { it.isExtensionReceiver }) {
                 emit("with(")
-                emitOrNull(arguments.first())
+                emitOrNull(arguments.first(), false)
                 emit(") ")
                 braced {
                     emit(callable.name)
@@ -501,7 +498,10 @@ class ComponentStatements(
         }
     }
 
-    private fun CodeBuilder.emitOrNull(expression: ComponentExpression?) {
+    private fun CodeBuilder.emitOrNull(
+        expression: ComponentExpression?,
+        forInlineProvider: Boolean
+    ) {
         expression?.invoke(this) ?: emit("null")
     }
 

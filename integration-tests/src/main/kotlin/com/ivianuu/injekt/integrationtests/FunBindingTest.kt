@@ -435,6 +435,20 @@ class FunBindingTest {
     )
 
     @Test
+    fun testFunBindingWithNullableDependencyDefaultValue() = codegen(
+        """
+            @FunBinding
+            fun function(string: String?, @FunApi assisted: String) {
+            }
+            
+            @Component
+            abstract class TestComponent {
+                abstract val function: function
+            }
+        """
+    )
+
+    @Test
     fun testSuspendFunBindingCanRequestSuspendDependencies() = codegen(
         """
             @Binding 
