@@ -643,7 +643,8 @@ class BindingGraph(
                 )
                 val childComponent = componentImplFactory(
                     childComponentType,
-                    owner.contextTreeNameProvider("${owner.rootComponent.name}_AC").asNameId(),
+                    owner.contextTreeNameProvider("${owner.rootComponent.name}__${request.origin.pathSegments()
+                        .joinToString("_")}").asNameId(),
                     assistedTypes,
                     listOf(bindingCallable),
                     owner
