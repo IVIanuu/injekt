@@ -19,7 +19,6 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.assertInternalError
-import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
@@ -1578,9 +1577,7 @@ class ComponentTest {
                 abstract val b: B
             }
         """
-    ) {
-        assertOk()
-    }
+    )
 
     @Test
     fun testIrrelevantProviderInChainDoesNotBreakCircularDependecy() = codegen(
@@ -1609,9 +1606,7 @@ class ComponentTest {
                 abstract val b: B
             }
         """
-    ) {
-        assertOk()
-    }
+    )
 
     @Test
     fun testFunBindingBreaksCircularDependency() = codegen(
@@ -1629,9 +1624,7 @@ class ComponentTest {
                 abstract val b: B
             }
         """
-    ) {
-        assertOk()
-    }
+    )
 
     @Test
     fun testBindingsCanBeInternalizedViaInternalTypeAliases() = multiCodegen(

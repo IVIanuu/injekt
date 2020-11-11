@@ -39,9 +39,7 @@ class FunBindingTest {
                 abstract val function: function
             }
         """
-    ) {
-        assertOk()
-    }
+    )
 
     @Test
     fun testFunBindingWithExtension() = codegen(
@@ -55,9 +53,7 @@ class FunBindingTest {
                 abstract val function: function
             }
         """
-    ) {
-        assertOk()
-    }
+    )
 
     @Test
     fun testSimpleFunBindingInDifferentPackage() = codegen(
@@ -79,9 +75,7 @@ class FunBindingTest {
             """,
             packageFqName = FqName("com.ivianuu.injekt")
         )
-    ) {
-        assertOk()
-    }
+    )
 
     @Test
     fun testSimpleFunBindingInDifferentPackageComplex() = codegen(
@@ -114,9 +108,7 @@ class FunBindingTest {
             """,
             packageFqName = FqName("com.ivianuu.injekt")
         )
-    ) {
-        assertOk()
-    }
+    )
 
     @Test
     fun testAssistedFunBinding() = codegen(
@@ -426,9 +418,7 @@ class FunBindingTest {
                 abstract val function: function
             }
         """
-    ) {
-        assertOk()
-    }
+    )
 
     @Test
     fun testFunBindingWithDependencyDefaultValue() = codegen(
@@ -442,8 +432,42 @@ class FunBindingTest {
                 abstract val function: function
             }
         """
-    ) {
-        assertOk()
-    }
+    )
+
+    @Test
+    fun testSuspendFunBindingCanRequestSuspendDependencies() = codegen(
+        """
+            @Binding 
+            suspend fun foo() = Foo()
+            
+            @FunBinding
+            suspend fun function(foo: Foo) {
+            }
+            
+            @Component
+            abstract class TestComponent {
+                abstract val function: function
+            }
+        """
+    )
+
+    @Test
+    fun testComposableFunBindingCanRequestComposableDependencies() = codegen(
+        """
+            @Binding
+            @Composable
+            fun foo() = Foo()
+            
+            @FunBinding
+            @Composable
+            fun function(foo: Foo) {
+            }
+            
+            @Component
+            abstract class TestComponent {
+                abstract val function: function
+            }
+        """
+    )
 
 }

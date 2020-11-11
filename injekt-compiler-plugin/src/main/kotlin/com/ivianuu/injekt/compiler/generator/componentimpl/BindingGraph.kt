@@ -280,9 +280,10 @@ class BindingGraph(
         // check that all calling contexts are the same
         if (binding.callableKind == Callable.CallableKind.DEFAULT) {
             val dependenciesByCallableKind = binding.dependencies
-                .map { getBinding(it) }
-                .filter { it.callableKind != Callable.CallableKind.DEFAULT }
-                .groupBy { it.callableKind }
+                .map { it to getBinding(it) }
+                .filter { it.first.callableKind != it.second.callableKind }
+                .filter { it.second.callableKind != Callable.CallableKind.DEFAULT }
+                .groupBy { it.second.callableKind }
             if (dependenciesByCallableKind.size > 1) {
                 error("Dependencies call context mismatch. Dependencies of '${binding.origin.orUnknown()}' have different call contexts\n" +
                         binding.dependencies.joinToString("\n") { dependency ->
@@ -295,12 +296,13 @@ class BindingGraph(
 
         // adapt call context of dependencies or throw if not possible
         binding.dependencies
-            .map { getBinding(it) }
-            .filter { it.callableKind != Callable.CallableKind.DEFAULT }
-            .forEach { dependency ->
-                if (binding.callableKind != Callable.CallableKind.DEFAULT &&
-                        binding.callableKind != dependency.callableKind) {
-                    error("Call context mismatch. '${binding.origin.orUnknown()}' is a ${binding.callableKind.name} callable but " +
+            .map { it to getBinding(it) }
+            .filter { it.second.callableKind != Callable.CallableKind.DEFAULT }
+            .filter { it.first.callableKind != it.second.callableKind }
+            .forEach { (request, dependency) ->
+                if (request.callableKind != Callable.CallableKind.DEFAULT &&
+                    request.callableKind != dependency.callableKind) {
+                    error("Call context mismatch. '${request.origin.orUnknown()}' is a ${request.callableKind.name} callable but " +
                             "dependency '${dependency.origin.orUnknown()}' is a ${dependency.callableKind.name} callable.")
                 } else {
                     binding.callableKind = dependency.callableKind
@@ -602,7 +604,7 @@ class BindingGraph(
                                     .replaceTypeParametersWithStars(),
                                 callable.fqName.child(it.name),
                                 !it.hasDefault,
-                                callable.callableKind
+                                it.type.callableKind
                             )
                         },
                     receiver = null,

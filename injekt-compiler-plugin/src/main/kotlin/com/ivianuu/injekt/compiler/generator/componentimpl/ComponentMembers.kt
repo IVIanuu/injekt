@@ -284,9 +284,7 @@ class ComponentStatements(
             binding.callable.valueParameters.zip(binding.dependencies).map { (parameter, request) ->
                 val dependencyBinding = owner.graph.getBinding(request)
                 if (dependencyBinding is MissingBindingNode) {
-                    return@map if (parameter.type.isInlineProvider) ({
-                        emit("{ null }")
-                    }) else null
+                    return@map null
                 }
                 val raw = getBindingExpression(request)
                 if (parameter.type.isInlineProvider) {
