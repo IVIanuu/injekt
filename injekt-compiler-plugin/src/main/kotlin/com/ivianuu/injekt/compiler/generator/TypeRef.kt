@@ -64,7 +64,6 @@ sealed class TypeRef {
     abstract val isMergeChildComponent: Boolean
     abstract val isChildComponent: Boolean
     abstract val isComposable: Boolean
-    abstract val isInlineProvider: Boolean
     abstract val superTypes: List<TypeRef>
     abstract val expandedType: TypeRef?
     abstract val isStarProjection: Boolean
@@ -115,9 +114,6 @@ class KotlinTypeRef(
     override val isComposable: Boolean by unsafeLazy {
         kotlinType.hasAnnotation(InjektFqNames.Composable) &&
             kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
-    }
-    override val isInlineProvider: Boolean by unsafeLazy {
-        kotlinType.hasAnnotation(InjektFqNames.InlineProvider)
     }
     override val superTypes: List<TypeRef> by unsafeLazy {
         kotlinType.constructor.supertypes.map {
@@ -176,7 +172,6 @@ class SimpleTypeRef(
     override val isMergeChildComponent: Boolean = false,
     override val isChildComponent: Boolean = false,
     override val isComposable: Boolean = false,
-    override val isInlineProvider: Boolean = false,
     override val superTypes: List<TypeRef> = emptyList(),
     override val expandedType: TypeRef? = null,
     override val isStarProjection: Boolean = false,
@@ -207,7 +202,6 @@ fun TypeRef.copy(
     isMergeChildComponent: Boolean = this.isMergeChildComponent,
     isChildComponent: Boolean = this.isChildComponent,
     isComposable: Boolean = this.isComposable,
-    isInlineProvider: Boolean = this.isInlineProvider,
     superTypes: List<TypeRef> = this.superTypes,
     expandedType: TypeRef? = this.expandedType,
     isStarProjection: Boolean = this.isStarProjection,
@@ -226,7 +220,6 @@ fun TypeRef.copy(
     isMergeChildComponent,
     isChildComponent,
     isComposable,
-    isInlineProvider,
     superTypes,
     expandedType,
     isStarProjection,
@@ -289,7 +282,6 @@ fun TypeRef.render(): String {
         } + listOfNotNull(
             if (isComposable) "@${InjektFqNames.Composable}" else null,
             if (isExtensionFunction) "@ExtensionFunctionType" else null,
-            if (isInlineProvider) "@${InjektFqNames.InlineProvider}" else null,
         )
         if (annotations.isNotEmpty()) {
             annotations.forEach { annotation ->
@@ -405,14 +397,6 @@ fun TypeRef.getStarSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRe
     visitType(this, baseType)
 
     return substitutionMap
-}
-
-fun TypeRef.nonInlined(): TypeRef {
-    return if (isInlineProvider) {
-        typeArguments.single()
-    } else {
-        copy(typeArguments = typeArguments.map { it.nonInlined() })
-    }
 }
 
 fun TypeRef.isAssignable(superType: TypeRef): Boolean {

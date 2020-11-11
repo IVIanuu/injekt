@@ -287,7 +287,7 @@ class ComponentStatements(
                     return@map null
                 }
                 val raw = getBindingExpression(request)
-                if (parameter.type.isInlineProvider) {
+                if (binding.callable.isFunBinding) {
                     {
                         emit("{ ")
                         raw()

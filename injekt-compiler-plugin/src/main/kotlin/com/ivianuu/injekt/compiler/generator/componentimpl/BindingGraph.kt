@@ -28,7 +28,6 @@ import com.ivianuu.injekt.compiler.generator.callableKind
 import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.isAssignable
-import com.ivianuu.injekt.compiler.generator.nonInlined
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.replaceTypeParametersWithStars
 import com.ivianuu.injekt.compiler.generator.substitute
@@ -320,14 +319,12 @@ class BindingGraph(
     }
 
     fun getBinding(request: BindingRequest): BindingNode {
-        val finalRequest = if (request.type.isInlineProvider)
-            request.copy(type = request.type.nonInlined()) else request
-        var binding = getBindingOrNull(finalRequest)
+        var binding = getBindingOrNull(request)
         if (binding != null) return binding
 
-        if (finalRequest.type.isMarkedNullable || !finalRequest.required) {
-            binding = MissingBindingNode(finalRequest.type, owner)
-            resolvedBindings[finalRequest.type] = binding
+        if (request.type.isMarkedNullable || !request.required) {
+            binding = MissingBindingNode(request.type, owner)
+            resolvedBindings[request.type] = binding
             return binding
         }
 
@@ -337,8 +334,8 @@ class BindingGraph(
                 fun indent() {
                     indendation = "$indendation    "
                 }
-                appendLine("No binding found for '${finalRequest.type.render()}' in '${owner.nonAssistedComponent.componentType.render()}':")
-                appendLine("${finalRequest.origin.orUnknown()} requires '${finalRequest.type.render()}'")
+                appendLine("No binding found for '${request.type.render()}' in '${owner.nonAssistedComponent.componentType.render()}':")
+                appendLine("${request.origin.orUnknown()} requires '${request.type.render()}'")
                 chain.forEach {
                     appendLine("chain $it" + it.origin.orUnknown())
                 }
@@ -600,7 +597,10 @@ class BindingGraph(
                     dependencies = callable.valueParameters
                         .map {
                             BindingRequest(
-                                it.type.substitute(substitutionMap)
+                                it.type
+                                    .typeArguments
+                                    .first()
+                                    .substitute(substitutionMap)
                                     .replaceTypeParametersWithStars(),
                                 callable.fqName.child(it.name),
                                 !it.hasDefault,

@@ -97,7 +97,6 @@ class FunBindingGenerator(
                         .copy(isComposable = isComposable)
                 }
                 .typeWith(listOf(this))
-                .copy(isInlineProvider = true)
         }
 
         val funApiValueParameters = descriptor.allParameters

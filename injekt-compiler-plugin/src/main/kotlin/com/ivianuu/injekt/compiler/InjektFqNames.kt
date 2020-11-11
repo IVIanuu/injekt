@@ -39,7 +39,6 @@ object InjektFqNames {
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
     val Index = InternalPackage.child("Index".asNameId())
-    val InlineProvider = InternalPackage.child("InlineProvider".asNameId())
 
     val IndexPackage = InternalPackage.child("index".asNameId())
 
