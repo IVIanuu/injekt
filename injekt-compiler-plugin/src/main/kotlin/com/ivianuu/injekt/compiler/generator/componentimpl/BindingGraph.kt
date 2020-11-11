@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.generator.ModuleDescriptor
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.TypeTranslator
 import com.ivianuu.injekt.compiler.generator.asNameId
+import com.ivianuu.injekt.compiler.generator.callableKind
 import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.isAssignable
@@ -202,6 +203,14 @@ class BindingGraph(
 
     fun checkRequests(requests: List<BindingRequest>) {
         requests.forEach { check(it) }
+        requests.forEach { request ->
+            val binding = getBinding(request)
+            if (binding.callableKind != Callable.CallableKind.DEFAULT &&
+                binding.callableKind != request.callableKind) {
+                error("Call context mismatch. '${request.origin.orUnknown()}' is a ${request.callableKind.name} callable but " +
+                        "dependency '${binding.origin.orUnknown()}' is a ${binding.callableKind.name} callable.")
+            }
+        }
         postProcess()
         locked = true
     }
@@ -258,12 +267,46 @@ class BindingGraph(
         }
 
         checkedBindings += binding
+
         chain.push(binding)
+
+        // recursive check all dependencies
         binding
             .dependencies
             .forEach { check(it) }
         (binding as? ChildComponentBindingNode)?.childComponent?.initialize()
         (binding as? AssistedBindingNode)?.childComponent?.initialize()
+
+        // check that all calling contexts are the same
+        if (binding.callableKind == Callable.CallableKind.DEFAULT) {
+            val dependenciesByCallableKind = binding.dependencies
+                .map { getBinding(it) }
+                .filter { it.callableKind != Callable.CallableKind.DEFAULT }
+                .groupBy { it.callableKind }
+            if (dependenciesByCallableKind.size > 1) {
+                error("Dependencies call context mismatch. Dependencies of '${binding.origin.orUnknown()}' have different call contexts\n" +
+                        binding.dependencies.joinToString("\n") { dependency ->
+                            val dependencyBinding = getBinding(dependency)
+                            "${dependency.origin} -> '${dependencyBinding.origin.orUnknown()}' = ${dependencyBinding.callableKind.name}"
+                        }
+                )
+            }
+        }
+
+        // adapt call context of dependencies or throw if not possible
+        binding.dependencies
+            .map { getBinding(it) }
+            .filter { it.callableKind != Callable.CallableKind.DEFAULT }
+            .forEach { dependency ->
+                if (binding.callableKind != Callable.CallableKind.DEFAULT &&
+                        binding.callableKind != dependency.callableKind) {
+                    error("Call context mismatch. '${binding.origin.orUnknown()}' is a ${binding.callableKind.name} callable but " +
+                            "dependency '${dependency.origin.orUnknown()}' is a ${dependency.callableKind.name} callable.")
+                } else {
+                    binding.callableKind = dependency.callableKind
+                }
+            }
+
         chain.pop()
 
         binding.refineType(binding.dependencies.map { getBinding(it) })
@@ -408,7 +451,8 @@ class BindingGraph(
                                 it.type.substitute(substitutionMap)
                                     .replaceTypeParametersWithStars(),
                                 callable.fqName.child(it.name),
-                                !it.hasDefault
+                                !it.hasDefault,
+                                callable.callableKind
                             )
                         },
                     receiver = receiver,
@@ -433,7 +477,8 @@ class BindingGraph(
                                 it.type.substitute(substitutionMap)
                                     .replaceTypeParametersWithStars(),
                                 callable.fqName.child(it.name),
-                                !it.hasDefault
+                                !it.hasDefault,
+                                callable.callableKind
                             )
                         },
                     receiver = receiver,
@@ -462,7 +507,8 @@ class BindingGraph(
                                 it.type.substitute(substitutionMap)
                                     .replaceTypeParametersWithStars(),
                                 callable.fqName.child(it.name),
-                                !it.hasDefault
+                                !it.hasDefault,
+                                callable.callableKind
                             )
                         },
                     receiver = null,
@@ -528,7 +574,8 @@ class BindingGraph(
                     BindingRequest(
                         request.type.typeArguments.single(),
                         FqName.ROOT, // todo
-                        true
+                        true,
+                        request.type.callableKind
                     )
                 ),
                 FqName.ROOT // todo
@@ -554,7 +601,8 @@ class BindingGraph(
                                 it.type.substitute(substitutionMap)
                                     .replaceTypeParametersWithStars(),
                                 callable.fqName.child(it.name),
-                                !it.hasDefault
+                                !it.hasDefault,
+                                callable.callableKind
                             )
                         },
                     receiver = null,
@@ -582,11 +630,7 @@ class BindingGraph(
                     targetComponent = null,
                     contributionKind = null,
                     isCall = true,
-                    callableKind = when {
-                        request.type.isSuspendFunction -> Callable.CallableKind.SUSPEND
-                        request.type.isComposable -> Callable.CallableKind.COMPOSABLE
-                        else -> Callable.CallableKind.DEFAULT
-                    },
+                    callableKind = request.type.callableKind,
                     bindingAdapters = emptyList(),
                     isEager = false,
                     isExternal = false,
@@ -673,7 +717,8 @@ class BindingCollections(
                                     BindingRequest(
                                         it.type.substitute(substitutionMap),
                                         entry.fqName.child(it.name),
-                                        it.hasDefault
+                                        it.hasDefault,
+                                        entry.callableKind
                                     )
                                 }
                         },
@@ -692,7 +737,8 @@ class BindingCollections(
                                     BindingRequest(
                                         it.type.substitute(substitutionMap),
                                         element.fqName.child(it.name),
-                                        it.hasDefault
+                                        it.hasDefault,
+                                        element.callableKind
                                     )
                                 }
                         },

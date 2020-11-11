@@ -232,7 +232,8 @@ class ComponentStatements(
                             BindingRequest(
                                 it.type,
                                 callable.fqName.child(it.name),
-                                !it.hasDefault
+                                !it.hasDefault,
+                                callable.callableKind
                             )
                         }
                         .map { dependency ->
@@ -260,7 +261,8 @@ class ComponentStatements(
                             BindingRequest(
                                 it.type,
                                 callable.fqName.child(it.name),
-                                !it.hasDefault
+                                !it.hasDefault,
+                                callable.callableKind
                             )
                         }
                         .map { dependency ->

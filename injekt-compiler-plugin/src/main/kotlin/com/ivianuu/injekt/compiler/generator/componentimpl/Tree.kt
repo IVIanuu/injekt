@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.ClassifierRef
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.TypeRef
+import com.ivianuu.injekt.compiler.generator.callableKind
 import com.ivianuu.injekt.compiler.generator.getStarSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.renderExpanded
@@ -120,7 +121,8 @@ class ComponentCallable(
 }
 
 sealed class BindingNode(
-    type: TypeRef
+    type: TypeRef,
+    var callableKind: Callable.CallableKind
 ) {
     abstract val dependencies: List<BindingRequest>
     abstract val rawType: TypeRef
@@ -131,7 +133,6 @@ sealed class BindingNode(
     abstract val receiver: ComponentExpression?
     abstract val isExternal: Boolean
     abstract val cacheable: Boolean
-    abstract val callableKind: Callable.CallableKind
     abstract val inline: Boolean
 
     protected var _type = type
@@ -148,9 +149,7 @@ sealed class BindingNode(
 class SelfBindingNode(
     type: TypeRef,
     val component: ComponentImpl,
-) : BindingNode(type) {
-    override val callableKind: Callable.CallableKind
-        get() = Callable.CallableKind.DEFAULT
+) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val dependencies: List<BindingRequest>
         get() = emptyList()
     override val rawType: TypeRef
@@ -174,11 +173,9 @@ class AssistedBindingNode(
     override val owner: ComponentImpl,
     val childComponent: ComponentImpl,
     val assistedTypes: List<TypeRef>
-) : BindingNode(type) {
+) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val cacheable: Boolean
         get() = true
-    override val callableKind: Callable.CallableKind
-        get() = Callable.CallableKind.DEFAULT
     override val dependencies: List<BindingRequest>
         get() = emptyList()
     override val isExternal: Boolean
@@ -199,7 +196,8 @@ class AssistedBindingNode(
     override fun refineType(dependencyBindings: List<BindingNode>) {
         super.refineType(dependencyBindings)
         val returnType = type.typeArguments.last()
-        val substitutionMap = childComponent.graph.getBinding(BindingRequest(returnType, FqName.ROOT, true))
+        val substitutionMap = childComponent.graph.getBinding(
+            BindingRequest(returnType, FqName.ROOT, true, type.callableKind))
             .type.getStarSubstitutionMap(returnType)
         _type = _type.substitute(substitutionMap)
     }
@@ -210,9 +208,7 @@ class ChildComponentBindingNode(
     override val owner: ComponentImpl,
     override val origin: FqName?,
     val childComponent: ComponentImpl,
-) : BindingNode(type) {
-    override val callableKind: Callable.CallableKind
-        get() = Callable.CallableKind.DEFAULT
+) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val dependencies: List<BindingRequest>
         get() = emptyList()
     override val rawType: TypeRef
@@ -234,13 +230,11 @@ class ChildComponentBindingNode(
 class InputBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl
-) : BindingNode(type) {
+) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val declaredInComponent: ComponentImpl
         get() = owner
     override val cacheable: Boolean
         get() = false
-    override val callableKind: Callable.CallableKind
-        get() = Callable.CallableKind.DEFAULT
     override val dependencies: List<BindingRequest>
         get() = emptyList()
     override val isExternal: Boolean
@@ -265,9 +259,7 @@ class CallableBindingNode(
     override val dependencies: List<BindingRequest>,
     override val receiver: ComponentExpression?,
     val callable: Callable
-) : BindingNode(type) {
-    override val callableKind: Callable.CallableKind
-        get() = callable.callableKind
+) : BindingNode(type, callable.callableKind) {
     override val isExternal: Boolean
         get() = callable.isExternal
     override val targetComponent: TypeRef?
@@ -295,9 +287,7 @@ class MapBindingNode(
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
     val entries: List<CallableWithReceiver>,
-) : BindingNode(type) {
-    override val callableKind: Callable.CallableKind
-        get() = Callable.CallableKind.DEFAULT
+) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val rawType: TypeRef
         get() = type
     override val origin: FqName?
@@ -319,11 +309,9 @@ class MapBindingNode(
 class MissingBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl
-) : BindingNode(type) {
+) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val cacheable: Boolean
         get() = false
-    override val callableKind: Callable.CallableKind
-        get() = Callable.CallableKind.DEFAULT
     override val declaredInComponent: ComponentImpl?
         get() = null
     override val dependencies: List<BindingRequest>
@@ -347,9 +335,7 @@ class ProviderBindingNode(
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
     override val origin: FqName?,
-) : BindingNode(type) {
-    override val callableKind: Callable.CallableKind
-        get() = Callable.CallableKind.DEFAULT
+) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val declaredInComponent: ComponentImpl?
         get() = null
     override val receiver: ComponentExpression?
@@ -371,9 +357,7 @@ class SetBindingNode(
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
     val elements: List<CallableWithReceiver>,
-) : BindingNode(type) {
-    override val callableKind: Callable.CallableKind
-        get() = Callable.CallableKind.DEFAULT
+) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val rawType: TypeRef
         get() = type
     override val origin: FqName?
@@ -402,5 +386,6 @@ data class CallableWithReceiver(
 data class BindingRequest(
     val type: TypeRef,
     val origin: FqName,
-    val required: Boolean
+    val required: Boolean,
+    val callableKind: Callable.CallableKind
 )

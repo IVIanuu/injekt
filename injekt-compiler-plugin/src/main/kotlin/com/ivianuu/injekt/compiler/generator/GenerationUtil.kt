@@ -178,3 +178,9 @@ fun CodeBuilder.emitCallableInvocation(
         }
     }
 }
+
+val TypeRef.callableKind: Callable.CallableKind get() = when {
+    isSuspendFunction -> Callable.CallableKind.SUSPEND
+    isComposable -> Callable.CallableKind.COMPOSABLE
+    else -> Callable.CallableKind.DEFAULT
+}
