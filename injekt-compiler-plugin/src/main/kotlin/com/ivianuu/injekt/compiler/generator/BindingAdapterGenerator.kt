@@ -156,7 +156,7 @@ class BindingAdapterGenerator(
 
             val parameters = callable.valueParameters
                 .map { valueParameter ->
-                    if (callable.isEager &&
+                    if (callable.isFunBinding &&
                         valueParameter.inlineKind == ValueParameterRef.InlineKind.NONE &&
                         (!valueParameter.type.isFunction ||
                                 valueParameter.type.typeArguments.size != 1)) {
@@ -170,8 +170,6 @@ class BindingAdapterGenerator(
                     }
                 }
 
-            if (callable.isEager)
-                emitLine("@${InjektFqNames.Eager}")
             if (callable.isFunBinding)
                 emitLine("@${InjektFqNames.FunBinding}")
             emitLine("@Binding")
@@ -229,7 +227,6 @@ class BindingAdapterGenerator(
                 isCall = true,
                 callableKind = callableKind,
                 bindingAdapters = emptyList(),
-                isEager = callable.isEager,
                 isExternal = false,
                 isInline = true,
                 isFunBinding = callable.isFunBinding,
@@ -285,8 +282,6 @@ class BindingAdapterGenerator(
                 .forEach { (bindingAdapter, substitutionMap, bindingAdapterCallable) ->
                     when (bindingAdapterCallable.contributionKind) {
                         Callable.ContributionKind.BINDING -> {
-                            if (bindingAdapterCallable.isEager)
-                                emitLine("@${InjektFqNames.Eager}")
                             emit("@Binding")
                             if (bindingAdapterCallable.targetComponent != null) {
                                 emitLine("(${bindingAdapterCallable.targetComponent.classifier.fqName}::class)")
@@ -375,10 +370,9 @@ class BindingAdapterGenerator(
                         isCall = true,
                         callableKind = bindingAdapterCallable.callableKind,
                         bindingAdapters = bindingAdapterCallable.bindingAdapters,
-                        isEager = bindingAdapterCallable.isEager,
                         isExternal = false,
                         isInline = true,
-                        isFunBinding = false,
+                        isFunBinding = bindingAdapterCallable.isFunBinding,
                         visibility = Visibilities.PUBLIC,
                         modality = Modality.FINAL,
                         receiver = null

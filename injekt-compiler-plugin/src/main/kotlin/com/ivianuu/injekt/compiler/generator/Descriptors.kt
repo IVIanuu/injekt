@@ -34,7 +34,6 @@ data class Callable(
     val isCall: Boolean,
     val callableKind: CallableKind,
     val bindingAdapters: List<BindingAdapterDescriptor>,
-    val isEager: Boolean,
     val isExternal: Boolean,
     val isInline: Boolean,
     val isFunBinding: Boolean,

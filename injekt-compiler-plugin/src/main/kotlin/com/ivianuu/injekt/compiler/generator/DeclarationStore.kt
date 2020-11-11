@@ -469,7 +469,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 .getAnnotatedAnnotations(InjektFqNames.BindingAdapter))
                 .distinct()
                 .map { bindingAdapterDescriptorForAnnotation(it, descriptor) },
-            isEager = descriptor.hasAnnotation(InjektFqNames.Eager),
             isExternal = owner is DeserializedDescriptor,
             isInline = descriptor.isInline,
             isFunBinding = descriptor.hasAnnotation(InjektFqNames.FunBinding),

@@ -156,7 +156,6 @@ class FunBindingGenerator(
 
             emitLine()
 
-            emitLine("@${InjektFqNames.Eager}")
             emitLine("@Binding")
             emitLine("@FunBinding")
             if (descriptor.visibility != Visibilities.INTERNAL) {
@@ -401,7 +400,6 @@ class FunBindingGenerator(
                 .annotations
                 .filter { it.hasAnnotation(InjektFqNames.BindingAdapter) }
                 .map { declarationStore.bindingAdapterDescriptorForAnnotation(it, descriptor) },
-            isEager = true,
             isExternal = false,
             isInline = true,
             isFunBinding = true,

@@ -267,7 +267,7 @@ class CallableBindingNode(
     override val origin: FqName?
         get() = callable.fqName
     override val cacheable: Boolean
-        get() = callable.isEager
+        get() = callable.isFunBinding
     override val inline: Boolean
         get() = callable.visibility != Visibilities.PROTECTED &&
                 (((!callable.isCall || callable.valueParameters.isEmpty()) ||

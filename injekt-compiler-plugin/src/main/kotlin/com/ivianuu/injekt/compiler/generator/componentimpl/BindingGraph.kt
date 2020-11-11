@@ -634,7 +634,6 @@ class BindingGraph(
                     isCall = true,
                     callableKind = request.type.callableKind,
                     bindingAdapters = emptyList(),
-                    isEager = false,
                     isExternal = false,
                     isInline = false,
                     isFunBinding = false,

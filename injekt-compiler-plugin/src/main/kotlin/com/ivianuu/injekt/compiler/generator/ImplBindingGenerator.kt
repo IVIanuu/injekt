@@ -218,7 +218,6 @@ class ImplBindingGenerator(
             isCall = true,
             callableKind = Callable.CallableKind.DEFAULT,
             bindingAdapters = emptyList(),
-            isEager = false,
             isExternal = false,
             isInline = true,
             isFunBinding = false,
@@ -277,7 +276,6 @@ class ImplBindingGenerator(
                 .annotations
                 .filter { it.hasAnnotation(InjektFqNames.BindingAdapter) }
                 .map { declarationStore.bindingAdapterDescriptorForAnnotation(it, descriptor) },
-            isEager = false,
             isExternal = false,
             isInline = true,
             isFunBinding = false,

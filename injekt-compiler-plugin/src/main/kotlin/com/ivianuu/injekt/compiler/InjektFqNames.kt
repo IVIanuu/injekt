@@ -38,7 +38,6 @@ object InjektFqNames {
     val ImplBinding = CommonPackage.child("ImplBinding".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
-    val Eager = InternalPackage.child("Eager".asNameId())
     val Index = InternalPackage.child("Index".asNameId())
     val InlineProvider = InternalPackage.child("InlineProvider".asNameId())
 
