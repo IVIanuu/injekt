@@ -56,7 +56,7 @@ annotation class MapEntries
 annotation class SetElements
 
 @Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class BindingAdapter
+annotation class Adapter
 
 @Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class BindingAdapterArg(val name: String)
+annotation class AdapterArg(val name: String)

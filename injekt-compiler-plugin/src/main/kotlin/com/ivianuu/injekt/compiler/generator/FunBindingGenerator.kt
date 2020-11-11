@@ -382,7 +382,7 @@ class FunBindingGenerator(
                         inlineKind = ValueParameterRef.InlineKind.CROSSINLINE,
                         name = if (it == descriptor.extensionReceiverParameter)
                             "_receiver".asNameId() else it.name,
-                        bindingAdapterArgName = it.getBindingAdapterArgName(),
+                        adapterArgName = it.getAdapterArgName(),
                         hasDefault = it is ValueParameterDescriptor && it.declaresDefaultValue(),
                         defaultExpression = if (it !is ValueParameterDescriptor ||
                             !it.declaresDefaultValue()) null else ({
@@ -396,10 +396,10 @@ class FunBindingGenerator(
             contributionKind = Callable.ContributionKind.BINDING,
             isCall = true,
             callableKind = Callable.CallableKind.DEFAULT,
-            bindingAdapters = descriptor
+            adapters = descriptor
                 .annotations
-                .filter { it.hasAnnotation(InjektFqNames.BindingAdapter) }
-                .map { declarationStore.bindingAdapterDescriptorForAnnotation(it, descriptor) },
+                .filter { it.hasAnnotation(InjektFqNames.Adapter) }
+                .map { declarationStore.adapterDescriptorForAnnotation(it, descriptor) },
             isExternal = false,
             isInline = true,
             isFunBinding = true,

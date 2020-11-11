@@ -297,11 +297,11 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         }
     }
 
-    fun bindingAdapterDescriptorForAnnotation(
+    fun adapterDescriptorForAnnotation(
         annotation: AnnotationDescriptor,
         source: DeclarationDescriptor
-    ): BindingAdapterDescriptor {
-        return BindingAdapterDescriptor(
+    ): AdapterDescriptor {
+        return AdapterDescriptor(
             type = typeTranslator.toTypeRef(annotation.type, source),
             module = moduleForType(
                 typeTranslator.toClassifierRef(
@@ -433,7 +433,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         isExtensionReceiver = true,
                         name = "_receiver".asNameId(),
                         inlineKind = ValueParameterRef.InlineKind.NONE,
-                        bindingAdapterArgName = it.getBindingAdapterArgName(),
+                        adapterArgName = it.getAdapterArgName(),
                         hasDefault = false,
                         defaultExpression = null
                     )
@@ -448,7 +448,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         it.isCrossinline -> ValueParameterRef.InlineKind.CROSSINLINE
                         else -> ValueParameterRef.InlineKind.NONE
                     },
-                    bindingAdapterArgName = it.getBindingAdapterArgName(),
+                    adapterArgName = it.getAdapterArgName(),
                     hasDefault = it.declaresDefaultValue(),
                     defaultExpression = if (!it.declaresDefaultValue()) null else ({
                         emit((it.findPsi() as KtParameter).defaultValue!!.text)
@@ -464,11 +464,11 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     else -> Callable.CallableKind.DEFAULT
                 }
             } else Callable.CallableKind.DEFAULT,
-            bindingAdapters = (descriptor
-                .getAnnotatedAnnotations(InjektFqNames.BindingAdapter) + owner
-                .getAnnotatedAnnotations(InjektFqNames.BindingAdapter))
+            adapters = (descriptor
+                .getAnnotatedAnnotations(InjektFqNames.Adapter) + owner
+                .getAnnotatedAnnotations(InjektFqNames.Adapter))
                 .distinct()
-                .map { bindingAdapterDescriptorForAnnotation(it, descriptor) },
+                .map { adapterDescriptorForAnnotation(it, descriptor) },
             isExternal = owner is DeserializedDescriptor,
             isInline = descriptor.isInline,
             isFunBinding = descriptor.hasAnnotation(InjektFqNames.FunBinding),
@@ -493,7 +493,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) ||
-                            it.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.BindingAdapter)
+                            it.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Adapter)
                 }
                     .mapNotNull {
                         when (it) {
@@ -508,7 +508,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
                         // todo tmp workaround for composables
                         if ((descriptor.containingDeclaration as? ClassDescriptor)
-                                ?.hasAnnotation(InjektFqNames.BindingAdapter) == true) {
+                                ?.hasAnnotation(InjektFqNames.Adapter) == true) {
                             substitutionMap += callable.typeParameters
                                 .zip(moduleSubstitutionMap.values)
                         }

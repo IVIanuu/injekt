@@ -33,7 +33,7 @@ data class Callable(
     val contributionKind: ContributionKind?,
     val isCall: Boolean,
     val callableKind: CallableKind,
-    val bindingAdapters: List<BindingAdapterDescriptor>,
+    val adapters: List<AdapterDescriptor>,
     val isExternal: Boolean,
     val isInline: Boolean,
     val isFunBinding: Boolean,
@@ -54,7 +54,7 @@ data class ValueParameterRef(
     val isExtensionReceiver: Boolean,
     val inlineKind: InlineKind,
     val name: Name,
-    val bindingAdapterArgName: Name?,
+    val adapterArgName: Name?,
     val hasDefault: Boolean,
     val defaultExpression: ComponentExpression?
 ) {
@@ -68,7 +68,7 @@ data class ModuleDescriptor(
     val callables: List<Callable>,
 )
 
-data class BindingAdapterDescriptor(
+data class AdapterDescriptor(
     val type: TypeRef,
     val module: ModuleDescriptor,
     val args: Map<Name, ComponentExpression>

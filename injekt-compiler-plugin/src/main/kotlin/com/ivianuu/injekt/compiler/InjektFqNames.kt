@@ -22,9 +22,9 @@ import org.jetbrains.kotlin.name.FqName
 object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
 
+    val Adapter = InjektPackage.child("Adapter".asNameId())
+    val AdapterArg = InjektPackage.child("AdapterArg".asNameId())
     val Binding = InjektPackage.child("Binding".asNameId())
-    val BindingAdapter = InjektPackage.child("BindingAdapter".asNameId())
-    val BindingAdapterArg = InjektPackage.child("BindingAdapterArg".asNameId())
     val Component = InjektPackage.child("Component".asNameId())
     val ChildComponent = InjektPackage.child("ChildComponent".asNameId())
     val MapEntries = InjektPackage.child("MapEntries".asNameId())

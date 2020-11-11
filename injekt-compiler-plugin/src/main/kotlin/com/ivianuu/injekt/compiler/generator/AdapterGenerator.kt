@@ -34,7 +34,7 @@ import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.resolve.BindingContext
 
 @Binding
-class BindingAdapterGenerator(
+class AdapterGenerator(
     private val bindingContext: BindingContext,
     private val declarationStore: DeclarationStore,
     private val fileManager: FileManager
@@ -48,10 +48,10 @@ class BindingAdapterGenerator(
                         super.visitClass(klass)
                         val descriptor = klass.descriptor<ClassDescriptor>(bindingContext)
                             ?: return
-                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter)
+                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.Adapter)
                             && !descriptor.hasAnnotation(InjektFqNames.ImplBinding)) {
                             runExitCatching {
-                                generateBindingAdapterForCallable(
+                                generateAdapterForCallable(
                                     declarationStore.callableForDescriptor(
                                         descriptor.getInjectConstructor()!!
                                     ),
@@ -65,12 +65,12 @@ class BindingAdapterGenerator(
                         super.visitNamedFunction(function)
                         val descriptor = function.descriptor<FunctionDescriptor>(bindingContext)
                             ?: return
-                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter) &&
+                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.Adapter) &&
                             !descriptor.hasAnnotation(InjektFqNames.FunBinding) &&
                             descriptor.containingDeclaration.containingDeclaration
-                                ?.hasAnnotation(InjektFqNames.BindingAdapter) != true) {
+                                ?.hasAnnotation(InjektFqNames.Adapter) != true) {
                             runExitCatching {
-                                generateBindingAdapterForCallable(
+                                generateAdapterForCallable(
                                     declarationStore.callableForDescriptor(descriptor),
                                     descriptor.findPsi()!!.containingFile as KtFile
                                 )
@@ -82,11 +82,11 @@ class BindingAdapterGenerator(
                         super.visitProperty(property)
                         val descriptor = (property.descriptor<DeclarationDescriptor>(bindingContext) as? PropertyDescriptor)
                             ?: return
-                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter) &&
+                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.Adapter) &&
                             descriptor.containingDeclaration.containingDeclaration
-                                ?.hasAnnotation(InjektFqNames.BindingAdapter) != true) {
+                                ?.hasAnnotation(InjektFqNames.Adapter) != true) {
                             runExitCatching {
-                                generateBindingAdapterForCallable(
+                                generateAdapterForCallable(
                                     declarationStore.callableForDescriptor(descriptor.getter!!),
                                     descriptor.findPsi()!!.containingFile as KtFile
                                 )
@@ -102,30 +102,30 @@ class BindingAdapterGenerator(
             val unprocessedCallables = declarationStore.generatedCallables - processedCallables
             if (unprocessedCallables.isEmpty()) break
             unprocessedCallables.forEach { (callable, file) ->
-                if (callable.bindingAdapters.isNotEmpty()) {
-                    generateBindingAdapterForCallable(callable, file)
+                if (callable.adapters.isNotEmpty()) {
+                    generateAdapterForCallable(callable, file)
                 }
             }
             processedCallables += unprocessedCallables
         }
     }
 
-    private fun generateBindingAdapterForCallable(
+    private fun generateAdapterForCallable(
         callable: Callable,
         file: KtFile
     ) {
-        val bindingAdapters = callable.bindingAdapters
+        val adapters = callable.adapters
 
         val packageName = callable.packageFqName
-        val bindingAdapterNameBaseName = joinedNameOf(
+        val adapterNameBaseName = joinedNameOf(
             packageName,
-            FqName("${callable.fqName.asString()}BindingAdapter")
+            FqName("${callable.fqName.asString()}Adapter")
         )
 
         val rawBindingType = callable.type
         val aliasedType = SimpleTypeRef(
             classifier = ClassifierRef(
-                fqName = packageName.child("${bindingAdapterNameBaseName}Alias".asNameId()),
+                fqName = packageName.child("${adapterNameBaseName}Alias".asNameId()),
                 superTypes = listOf(rawBindingType),
                 isTypeAlias = true
             ),
@@ -183,7 +183,7 @@ class BindingAdapterGenerator(
                 Callable.CallableKind.COMPOSABLE -> emitLine("@${InjektFqNames.Composable}")
             }.let {}
 
-            val aliasedBindingName = "${bindingAdapterNameBaseName}_aliasedBinding".asNameId()
+            val aliasedBindingName = "${adapterNameBaseName}_aliasedBinding".asNameId()
 
             emit("inline fun $aliasedBindingName(")
             parameters.forEachIndexed { index, valueParameter ->
@@ -227,7 +227,7 @@ class BindingAdapterGenerator(
                 contributionKind = Callable.ContributionKind.BINDING,
                 isCall = true,
                 callableKind = callableKind,
-                bindingAdapters = emptyList(),
+                adapters = emptyList(),
                 isExternal = false,
                 isInline = true,
                 isFunBinding = callable.isFunBinding,
@@ -235,27 +235,27 @@ class BindingAdapterGenerator(
                 modality = Modality.FINAL,
                 receiver = null
             )
-            bindingAdapters
-                .flatMap { bindingAdapter ->
-                    bindingAdapter.module.callables
+            adapters
+                .flatMap { adapter ->
+                    adapter.module.callables
                         .filter {
-                            it.contributionKind != null || it.bindingAdapters.isNotEmpty()
+                            it.contributionKind != null || it.adapters.isNotEmpty()
                         }
                         .map { adapterCallable ->
                             // todo find a way to dynamically resolve type parameters
                             val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
 
-                            val bindingAdapterTypeParameters = adapterCallable.typeParameters
-                                .take(bindingAdapter.type.typeArguments.size)
-                                .zip(bindingAdapter.type.typeArguments)
+                            val adapterTypeParameters = adapterCallable.typeParameters
+                                .take(adapter.type.typeArguments.size)
+                                .zip(adapter.type.typeArguments)
                                 .toMap()
 
-                            substitutionMap += bindingAdapterTypeParameters
-                            bindingAdapterTypeParameters.forEach { (typeParameter, typeArgument) ->
+                            substitutionMap += adapterTypeParameters
+                            adapterTypeParameters.forEach { (typeParameter, typeArgument) ->
                                 substitutionMap += typeArgument.getSubstitutionMap(typeParameter.defaultType)
                             }
 
-                            val subjectTypeParameter = adapterCallable.typeParameters[bindingAdapterTypeParameters.size]
+                            val subjectTypeParameter = adapterCallable.typeParameters[adapterTypeParameters.size]
                             substitutionMap += rawBindingType.getSubstitutionMap(subjectTypeParameter.defaultType)
 
                             check(adapterCallable.typeParameters.all { it in substitutionMap }) {
@@ -278,14 +278,14 @@ class BindingAdapterGenerator(
                                 }
                             )
                         }
-                        .map { Triple(bindingAdapter, it.first, it.second) }
+                        .map { Triple(adapter, it.first, it.second) }
                 }
-                .forEach { (bindingAdapter, substitutionMap, bindingAdapterCallable) ->
-                    when (bindingAdapterCallable.contributionKind) {
+                .forEach { (adapter, substitutionMap, adapterCallable) ->
+                    when (adapterCallable.contributionKind) {
                         Callable.ContributionKind.BINDING -> {
                             emit("@Binding")
-                            if (bindingAdapterCallable.targetComponent != null) {
-                                emitLine("(${bindingAdapterCallable.targetComponent.classifier.fqName}::class)")
+                            if (adapterCallable.targetComponent != null) {
+                                emitLine("(${adapterCallable.targetComponent.classifier.fqName}::class)")
                             }
                             emitLine()
                         }
@@ -294,20 +294,20 @@ class BindingAdapterGenerator(
                         Callable.ContributionKind.MODULE -> {}
                         null -> {}
                     }
-                    bindingAdapterCallable.bindingAdapters
-                        .forEach { innerBindingAdapter ->
-                            emit("@${innerBindingAdapter.type.classifier.fqName}(")
-                            innerBindingAdapter.args.toList().forEachIndexed { index, (argName, argExpression) ->
+                    adapterCallable.adapters
+                        .forEach { innerAdapter ->
+                            emit("@${innerAdapter.type.classifier.fqName}(")
+                            innerAdapter.args.toList().forEachIndexed { index, (argName, argExpression) ->
                                 emit("$argName = ")
                                 argExpression()
-                                if (index != innerBindingAdapter.args.toList().lastIndex) emit(", ")
+                                if (index != innerAdapter.args.toList().lastIndex) emit(", ")
                             }
                             emitLine(")")
                         }
-                    val functionName = bindingAdapterCallable.fqName.pathSegments().joinToString("_") +
-                            "_${bindingAdapterNameBaseName}"
+                    val functionName = adapterCallable.fqName.pathSegments().joinToString("_") +
+                            "_${adapterNameBaseName}"
 
-                    when (bindingAdapterCallable.callableKind) {
+                    when (adapterCallable.callableKind) {
                         Callable.CallableKind.DEFAULT -> {}
                         Callable.CallableKind.SUSPEND -> emit("suspend ")
                         Callable.CallableKind.COMPOSABLE -> emitLine("@${InjektFqNames.Composable}")
@@ -315,8 +315,8 @@ class BindingAdapterGenerator(
 
                     emit("inline fun $functionName(")
 
-                    bindingAdapterCallable.valueParameters
-                        .filter { it.bindingAdapterArgName == null }
+                    adapterCallable.valueParameters
+                        .filter { it.adapterArgName == null }
                         .forEachIndexed { index, valueParameter ->
                             val typeRef = valueParameter.type
                             if (valueParameter.inlineKind == ValueParameterRef.InlineKind.CROSSINLINE) {
@@ -329,20 +329,20 @@ class BindingAdapterGenerator(
                                 emit("noinline ")
                             }
                             emit("${valueParameter.name}: ${valueParameter.type.render()}")
-                            if (index != bindingAdapterCallable.valueParameters.lastIndex) emit(", ")
+                            if (index != adapterCallable.valueParameters.lastIndex) emit(", ")
                         }
 
-                    emit("): ${bindingAdapterCallable.type.render()} ")
+                    emit("): ${adapterCallable.type.render()} ")
                     braced {
                         emit("return ")
                         emitCallableInvocation(
-                            bindingAdapterCallable,
-                            { emit("${bindingAdapter.module.type.classifier.fqName}") },
-                            bindingAdapterCallable.valueParameters
+                            adapterCallable,
+                            { emit("${adapter.module.type.classifier.fqName}") },
+                            adapterCallable.valueParameters
                                 .map { parameter ->
                                     {
-                                        if (parameter.bindingAdapterArgName != null) {
-                                            val arg = bindingAdapter.args[parameter.bindingAdapterArgName]
+                                        if (parameter.adapterArgName != null) {
+                                            val arg = adapter.args[parameter.adapterArgName]
                                             when {
                                                 arg != null -> arg()
                                                 parameter.type.isMarkedNullable -> emit("null")
@@ -353,7 +353,7 @@ class BindingAdapterGenerator(
                                         }
                                     }
                                 },
-                            bindingAdapterCallable.typeParameters
+                            adapterCallable.typeParameters
                                 .map { substitutionMap.getValue(it) }
                         )
                     }
@@ -361,19 +361,19 @@ class BindingAdapterGenerator(
                         packageFqName = packageName,
                         fqName = packageName.child(functionName.asNameId()),
                         name = functionName.asNameId(),
-                        type = bindingAdapterCallable.type,
+                        type = adapterCallable.type,
                         typeParameters = emptyList(),
-                        valueParameters = bindingAdapterCallable.valueParameters
-                            .filter { it.bindingAdapterArgName == null }
+                        valueParameters = adapterCallable.valueParameters
+                            .filter { it.adapterArgName == null }
                             .map { it.copy(isExtensionReceiver = false) },
-                        targetComponent = bindingAdapterCallable.targetComponent,
-                        contributionKind = bindingAdapterCallable.contributionKind,
+                        targetComponent = adapterCallable.targetComponent,
+                        contributionKind = adapterCallable.contributionKind,
                         isCall = true,
-                        callableKind = bindingAdapterCallable.callableKind,
-                        bindingAdapters = bindingAdapterCallable.bindingAdapters,
+                        callableKind = adapterCallable.callableKind,
+                        adapters = adapterCallable.adapters,
                         isExternal = false,
                         isInline = true,
-                        isFunBinding = bindingAdapterCallable.isFunBinding,
+                        isFunBinding = adapterCallable.isFunBinding,
                         visibility = Visibilities.PUBLIC,
                         modality = Modality.FINAL,
                         receiver = null
@@ -383,7 +383,7 @@ class BindingAdapterGenerator(
 
         fileManager.generateFile(
             packageFqName = callable.packageFqName,
-            fileName = "$bindingAdapterNameBaseName.kt",
+            fileName = "$adapterNameBaseName.kt",
             code = code
         )
 

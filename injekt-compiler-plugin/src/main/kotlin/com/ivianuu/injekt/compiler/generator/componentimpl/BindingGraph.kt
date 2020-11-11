@@ -633,7 +633,7 @@ class BindingGraph(
                     contributionKind = null,
                     isCall = true,
                     callableKind = request.type.callableKind,
-                    bindingAdapters = emptyList(),
+                    adapters = emptyList(),
                     isExternal = false,
                     isInline = false,
                     isFunBinding = false,

@@ -20,10 +20,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.BindingAdapter
+import com.ivianuu.injekt.Adapter
 import com.ivianuu.injekt.FunBinding
 
-@BindingAdapter
+@Adapter
 annotation class ActivityViewModelBinding {
     companion object {
         @Binding
@@ -32,7 +32,7 @@ annotation class ActivityViewModelBinding {
     }
 }
 
-@BindingAdapter
+@Adapter
 annotation class FragmentViewModelBinding {
     companion object {
         @Binding

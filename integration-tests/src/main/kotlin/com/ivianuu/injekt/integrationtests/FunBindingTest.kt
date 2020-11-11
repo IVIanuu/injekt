@@ -305,9 +305,9 @@ class FunBindingTest {
     }
 
     @Test
-    fun testFunBindingWithBindingAdapterDependencyGetsCreatedOnInvocation() = codegen(
+    fun testFunBindingWithAdapterDependencyGetsCreatedOnInvocation() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter {
                 companion object {
                     @Binding
@@ -357,9 +357,9 @@ class FunBindingTest {
     )
 
     @Test
-    fun testFunBindingWithBindingAdapterWithNonExplicitAssistedParameters() = codegen(
+    fun testFunBindingWithAdapterWithNonExplicitAssistedParameters() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter {
                 companion object {
                     @Binding

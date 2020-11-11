@@ -126,7 +126,7 @@ class EssentialsTest {
             
             internal typealias BoundStore<S, A> = Store<S, A>
             
-            @BindingAdapter
+            @Adapter
             annotation class StoreBinding {
                 companion object { 
                     @Binding(MyComponent::class)
@@ -242,7 +242,7 @@ class EssentialsTest {
         listOf(
             source(
                 """
-                    @BindingAdapter
+                    @Adapter
                     annotation class ViewModelBinding {
                         companion object {
                             @Binding

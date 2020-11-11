@@ -207,7 +207,7 @@ class ImplBindingGenerator(
                             else -> ValueParameterRef.InlineKind.NONE
                         },
                         name = it.name,
-                        bindingAdapterArgName = it.getBindingAdapterArgName(),
+                        adapterArgName = it.getAdapterArgName(),
                         hasDefault = it.declaresDefaultValue(),
                         defaultExpression = if (!it.declaresDefaultValue()) null else ({
                             emit((it.findPsi() as KtParameter).defaultValue!!.text)
@@ -218,7 +218,7 @@ class ImplBindingGenerator(
             contributionKind = Callable.ContributionKind.BINDING,
             isCall = true,
             callableKind = Callable.CallableKind.DEFAULT,
-            bindingAdapters = emptyList(),
+            adapters = emptyList(),
             isExternal = false,
             isInline = true,
             isFunBinding = false,
@@ -264,7 +264,7 @@ class ImplBindingGenerator(
                     isExtensionReceiver = true,
                     inlineKind = ValueParameterRef.InlineKind.NONE,
                     name = "_receiver".asNameId(),
-                    bindingAdapterArgName = null,
+                    adapterArgName = null,
                     hasDefault = false,
                     defaultExpression = null
                 )
@@ -273,10 +273,10 @@ class ImplBindingGenerator(
             contributionKind = Callable.ContributionKind.BINDING,
             isCall = false,
             callableKind = Callable.CallableKind.DEFAULT,
-            bindingAdapters = descriptor
+            adapters = descriptor
                 .annotations
-                .filter { it.hasAnnotation(InjektFqNames.BindingAdapter) }
-                .map { declarationStore.bindingAdapterDescriptorForAnnotation(it, descriptor) },
+                .filter { it.hasAnnotation(InjektFqNames.Adapter) }
+                .map { declarationStore.adapterDescriptorForAnnotation(it, descriptor) },
             isExternal = false,
             isInline = true,
             isFunBinding = false,

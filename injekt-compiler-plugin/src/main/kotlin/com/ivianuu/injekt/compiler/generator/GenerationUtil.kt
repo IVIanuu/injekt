@@ -63,18 +63,18 @@ fun DeclarationDescriptor.hasAnnotatedAnnotationsWithPropertyAndClass(
 fun ClassDescriptor.getInjectConstructor(): ConstructorDescriptor? {
     if (hasAnnotation(InjektFqNames.Binding) ||
         hasAnnotation(InjektFqNames.ImplBinding) ||
-        hasAnnotatedAnnotations(InjektFqNames.BindingAdapter)) return unsubstitutedPrimaryConstructor
+        hasAnnotatedAnnotations(InjektFqNames.Adapter)) return unsubstitutedPrimaryConstructor
     constructors
         .firstOrNull {
             it.hasAnnotation(InjektFqNames.Binding) ||
                     it.hasAnnotation(InjektFqNames.ImplBinding) ||
-                    it.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter)
+                    it.hasAnnotatedAnnotations(InjektFqNames.Adapter)
         }?.let { return it }
     return null
 }
 
-fun ParameterDescriptor.getBindingAdapterArgName(): Name? =
-    ( annotations.findAnnotation(InjektFqNames.BindingAdapterArg)
+fun ParameterDescriptor.getAdapterArgName(): Name? =
+    ( annotations.findAnnotation(InjektFqNames.AdapterArg)
         ?.allValueArguments?.values?.single()?.value as? String)?.asNameId()
 
 fun String.asNameId() = Name.identifier(this)

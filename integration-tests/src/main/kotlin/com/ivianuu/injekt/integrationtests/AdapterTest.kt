@@ -23,12 +23,12 @@ import com.ivianuu.injekt.test.source
 import org.junit.Assert.assertSame
 import org.junit.Test
 
-class BindingAdapterTest {
+class AdapterTest {
 
     @Test
-    fun testBindingAdapterWithClass() = codegen(
+    fun testAdapterWithClass() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class AnyBinding { 
                 companion object {
                     @Binding
@@ -49,9 +49,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithSuperTypeArgument() = codegen(
+    fun testAdapterWithSuperTypeArgument() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class AnyBinding { 
                 companion object {
                     @Binding
@@ -72,9 +72,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithTopLevelFunction() = codegen(
+    fun testAdapterWithTopLevelFunction() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -96,9 +96,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithSuspendFunction() = codegen(
+    fun testAdapterWithSuspendFunction() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -120,9 +120,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithComposableFunction() = codegen(
+    fun testAdapterWithComposableFunction() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -146,9 +146,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithFunctionInObject() = codegen(
+    fun testAdapterWithFunctionInObject() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -172,9 +172,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithFunBinding() = codegen(
+    fun testAdapterWithFunBinding() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -197,9 +197,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithAssistedFunBinding() = codegen(
+    fun testAdapterWithAssistedFunBinding() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -220,9 +220,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testSetBindingAdapterWithComposableFunction() = codegen(
+    fun testSetAdapterWithComposableFunction() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class UiComponentBinding {
                 companion object {
                     @SetElements
@@ -250,11 +250,11 @@ class BindingAdapterTest {
     }
 
     @Test
-    fun testSetBindingAdapterWithComposableFunctionMulti() = multiCodegen(
+    fun testSetAdapterWithComposableFunctionMulti() = multiCodegen(
         listOf(
             source(
                 """
-                    @BindingAdapter
+                    @Adapter
                     annotation class UiComponentBinding {
                         companion object {
                             @SetElements
@@ -290,9 +290,9 @@ class BindingAdapterTest {
     }
 
     @Test
-    fun testBindingAdapterWithFunctionTypeAlias() = codegen(
+    fun testAdapterWithFunctionTypeAlias() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter {
                 companion object {
                     @Binding
@@ -308,9 +308,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterOnPropertyBinding() = codegen(
+    fun testAdapterOnPropertyBinding() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -329,9 +329,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterOnExtensionFunctionBinding() = codegen(
+    fun testAdapterOnExtensionFunctionBinding() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -351,9 +351,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterOnExtensionPropertyBinding() = codegen(
+    fun testAdapterOnExtensionPropertyBinding() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -373,9 +373,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithImplBinding() = codegen(
+    fun testAdapterWithImplBinding() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -399,9 +399,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testScopedBindingAdapterFunction() = codegen(
+    fun testScopedAdapterFunction() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class AnyBinding { 
                 companion object {
                     @Binding(MyComponent::class)
@@ -431,9 +431,9 @@ class BindingAdapterTest {
     }
 
     @Test
-    fun testSuspendBindingAdapterFunction() = codegen(
+    fun testSuspendAdapterFunction() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class AnyBinding { 
                 companion object {
                     @Binding
@@ -454,9 +454,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testComposableBindingAdapterFunction() = codegen(
+    fun testComposableAdapterFunction() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class AnyBinding { 
                 companion object {
                     @Binding
@@ -479,13 +479,13 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithArrayArg() = codegen(
+    fun testAdapterWithArrayArg() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter(val arg: Array<String>) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@BindingAdapterArg("arg") arg: Array<String>, instance: T) = arg
+                    fun <T> bindArg(@AdapterArg("arg") arg: Array<String>, instance: T) = arg
                 }
             }
 
@@ -500,13 +500,13 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithBooleanArg() = codegen(
+    fun testAdapterWithBooleanArg() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter(val arg: Boolean) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@BindingAdapterArg("arg") arg: Boolean, instance: T) = arg
+                    fun <T> bindArg(@AdapterArg("arg") arg: Boolean, instance: T) = arg
                 }
             }
 
@@ -521,13 +521,13 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithByteArg() = codegen(
+    fun testAdapterWithByteArg() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter(val arg: Byte) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@BindingAdapterArg("arg") arg: Byte, instance: T) = arg
+                    fun <T> bindArg(@AdapterArg("arg") arg: Byte, instance: T) = arg
                 }
             }
 
@@ -542,13 +542,13 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithCharArg() = codegen(
+    fun testAdapterWithCharArg() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter(val arg: Char) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@BindingAdapterArg("arg") arg: Char, instance: T) = arg
+                    fun <T> bindArg(@AdapterArg("arg") arg: Char, instance: T) = arg
                 }
             }
 
@@ -563,13 +563,13 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithDoubleArg() = codegen(
+    fun testAdapterWithDoubleArg() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter(val arg: Double) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@BindingAdapterArg("arg") arg: Double, instance: T) = arg
+                    fun <T> bindArg(@AdapterArg("arg") arg: Double, instance: T) = arg
                 }
             }
 
@@ -584,15 +584,15 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithEnumArg() = codegen(
+    fun testAdapterWithEnumArg() = codegen(
         """
             enum class MyEnum { A, B }
             
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter(val arg: MyEnum) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@BindingAdapterArg("arg") arg: MyEnum, instance: T) = arg
+                    fun <T> bindArg(@AdapterArg("arg") arg: MyEnum, instance: T) = arg
                 }
             }
 
@@ -607,13 +607,13 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithFloatArg() = codegen(
+    fun testAdapterWithFloatArg() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter(val arg: Float) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@BindingAdapterArg("arg") arg: Float, instance: T) = arg
+                    fun <T> bindArg(@AdapterArg("arg") arg: Float, instance: T) = arg
                 }
             }
 
@@ -628,13 +628,13 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithIntArg() = codegen(
+    fun testAdapterWithIntArg() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter(val arg: Int) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@BindingAdapterArg("arg") arg: Int, instance: T) = arg
+                    fun <T> bindArg(@AdapterArg("arg") arg: Int, instance: T) = arg
                 }
             }
 
@@ -649,13 +649,13 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithClassArg() = codegen(
+    fun testAdapterWithClassArg() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter(val arg: KClass<*>) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@BindingAdapterArg("arg") arg: KClass<*>, instance: T) = arg
+                    fun <T> bindArg(@AdapterArg("arg") arg: KClass<*>, instance: T) = arg
                 }
             }
 
@@ -670,13 +670,13 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithLongArg() = codegen(
+    fun testAdapterWithLongArg() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter(val arg: Long) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@BindingAdapterArg("arg") arg: Long, instance: T) = arg
+                    fun <T> bindArg(@AdapterArg("arg") arg: Long, instance: T) = arg
                 }
             }
 
@@ -691,13 +691,13 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithShortArg() = codegen(
+    fun testAdapterWithShortArg() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter(val arg: Short) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@BindingAdapterArg("arg") arg: Short, instance: T) = arg
+                    fun <T> bindArg(@AdapterArg("arg") arg: Short, instance: T) = arg
                 }
             }
 
@@ -712,13 +712,13 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithStringArg() = codegen(
+    fun testAdapterWithStringArg() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter(val arg: String) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@BindingAdapterArg("arg") arg: String, instance: T) = arg
+                    fun <T> bindArg(@AdapterArg("arg") arg: String, instance: T) = arg
                 }
             }
 
@@ -733,13 +733,13 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithUByteArg() = codegen(
+    fun testAdapterWithUByteArg() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter(val arg: UByte) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@BindingAdapterArg("arg") arg: UByte, instance: T) = arg
+                    fun <T> bindArg(@AdapterArg("arg") arg: UByte, instance: T) = arg
                 }
             }
 
@@ -754,13 +754,13 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithUIntArg() = codegen(
+    fun testAdapterWithUIntArg() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter(val arg: UInt) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@BindingAdapterArg("arg") arg: UInt, instance: T) = arg
+                    fun <T> bindArg(@AdapterArg("arg") arg: UInt, instance: T) = arg
                 }
             }
 
@@ -775,13 +775,13 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithULongArg() = codegen(
+    fun testAdapterWithULongArg() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter(val arg: ULong) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@BindingAdapterArg("arg") arg: ULong, instance: T) = arg
+                    fun <T> bindArg(@AdapterArg("arg") arg: ULong, instance: T) = arg
                 }
             }
 
@@ -796,13 +796,13 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithUShortArg() = codegen(
+    fun testAdapterWithUShortArg() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MyAdapter(val arg: UShort) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@BindingAdapterArg("arg") arg: UShort, instance: T) = arg
+                    fun <T> bindArg(@AdapterArg("arg") arg: UShort, instance: T) = arg
                 }
             }
 
@@ -817,9 +817,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithTypeArg() = codegen(
+    fun testAdapterWithTypeArg() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class Alias<T> {
                 companion object {
                     @Binding
@@ -838,9 +838,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterUsesAnotherBindingAdapter() = codegen(
+    fun testAdapterUsesAnotherAdapter() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class A {
                 companion object {
                     @Binding
@@ -850,7 +850,7 @@ class BindingAdapterTest {
                 }
             }
             
-            @BindingAdapter
+            @Adapter
             annotation class B {
                 companion object {
                     @Binding
@@ -872,7 +872,7 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithTypeAliasTypeParameterInference() = codegen(
+    fun testAdapterWithTypeAliasTypeParameterInference() = codegen(
         """
             typealias StringIntMap = Map<String, Int>
             
@@ -880,7 +880,7 @@ class BindingAdapterTest {
             @Binding
             fun map(): StringIntMap = mapOf("a" to 0)
 
-            @BindingAdapter
+            @Adapter
             annotation class MapBindings {
                 companion object {
                     @Binding
@@ -905,11 +905,11 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithTypeParameters() = codegen(
+    fun testAdapterWithTypeParameters() = codegen(
         """
             interface Store<S, A>
             
-            @BindingAdapter
+            @Adapter
             annotation class StoreBinding {
                 companion object {
                     @Binding
@@ -928,9 +928,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterTypeParameterInference() = codegen(
+    fun testAdapterTypeParameterInference() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MapBinding<M : Map<*, *>> {
                 companion object {
                     @Binding
@@ -949,9 +949,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterBindingAndAnnotationTypeParameterInference() = codegen(
+    fun testAdapterBindingAndAnnotationTypeParameterInference() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class MapBinding<M : Map<*, *>> {
                 companion object {
                     @Binding
@@ -970,9 +970,9 @@ class BindingAdapterTest {
     )
 
     @Test
-    fun testBindingAdapterWithDefaultValueDependency() = codegen(
+    fun testAdapterWithDefaultValueDependency() = codegen(
         """
-            @BindingAdapter
+            @Adapter
             annotation class AnyBinding { 
                 companion object {
                     @Binding
