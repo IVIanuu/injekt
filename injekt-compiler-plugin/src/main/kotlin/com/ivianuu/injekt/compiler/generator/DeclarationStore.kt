@@ -426,7 +426,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 ?.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
             contributionKind = when {
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
-                owner.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Decorator) -> Callable.ContributionKind.DECORATOR
+                owner.hasAnnotation(InjektFqNames.Decorator) -> Callable.ContributionKind.DECORATOR
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.ContributionKind.MAP_ENTRIES
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) -> Callable.ContributionKind.SET_ELEMENTS
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) -> Callable.ContributionKind.MODULE

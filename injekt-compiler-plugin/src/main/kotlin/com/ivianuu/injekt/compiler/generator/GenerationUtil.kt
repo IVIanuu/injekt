@@ -63,11 +63,13 @@ fun DeclarationDescriptor.hasAnnotatedAnnotationsWithPropertyAndClass(
 fun ClassDescriptor.getInjectConstructor(): ConstructorDescriptor? {
     if (hasAnnotation(InjektFqNames.Binding) ||
         hasAnnotation(InjektFqNames.ImplBinding) ||
+        hasAnnotatedAnnotations(InjektFqNames.Decorator) ||
         hasAnnotatedAnnotations(InjektFqNames.Effect)) return unsubstitutedPrimaryConstructor
     constructors
         .firstOrNull {
             it.hasAnnotation(InjektFqNames.Binding) ||
                     it.hasAnnotation(InjektFqNames.ImplBinding) ||
+                    it.hasAnnotatedAnnotations(InjektFqNames.Decorator) ||
                     it.hasAnnotatedAnnotations(InjektFqNames.Effect)
         }?.let { return it }
     return null
@@ -104,10 +106,18 @@ fun AnnotationDescriptor.hasAnnotation(annotation: FqName): Boolean =
 
 fun Annotated.hasAnnotatedAnnotations(
     annotation: FqName
-): Boolean = annotations.any { it.hasAnnotation(annotation) }
+): Boolean {
+    return annotations.any {
+        val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
+        inner.hasAnnotation(annotation)
+    }
+}
 
 fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescriptor> =
-    annotations.filter { it.hasAnnotation(annotation) }
+    annotations.filter {
+        val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
+        inner.hasAnnotation(annotation)
+    }
 
 fun joinedNameOf(
     packageFqName: FqName,
