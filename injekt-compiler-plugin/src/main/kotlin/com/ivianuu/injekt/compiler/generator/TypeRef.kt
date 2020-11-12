@@ -36,7 +36,8 @@ data class ClassifierRef(
     var superTypes: List<TypeRef> = emptyList(),
     val isTypeParameter: Boolean = false,
     val isObject: Boolean = false,
-    val isTypeAlias: Boolean = false
+    val isTypeAlias: Boolean = false,
+    val argName: Name? = null
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
     override fun hashCode(): Int = fqName.hashCode()

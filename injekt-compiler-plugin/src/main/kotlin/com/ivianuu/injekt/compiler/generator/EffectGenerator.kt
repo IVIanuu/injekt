@@ -246,20 +246,22 @@ class EffectGenerator(
                             it.contributionKind != null || it.effects.isNotEmpty()
                         }
                         .map { effectCallable ->
-                            // todo find a way to dynamically resolve type parameters
                             val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
 
-                            val effectTypeParameters = effectCallable.typeParameters
-                                .take(effect.type.typeArguments.size)
-                                .zip(effect.type.typeArguments)
+                            substitutionMap += effectCallable.typeParameters
+                                .filter { it.argName != null }
+                                .map {
+                                    it to (effect.typeArgs[it.argName]
+                                        ?: error("Couldn't get type argument for ${it.argName} in ${file.virtualFilePath}"))
+                                }
                                 .toMap()
-
-                            substitutionMap += effectTypeParameters
-                            effectTypeParameters.forEach { (typeParameter, typeArgument) ->
+                            substitutionMap.forEach { (typeParameter, typeArgument) ->
                                 substitutionMap += typeArgument.getSubstitutionMap(typeParameter.defaultType)
                             }
 
-                            val subjectTypeParameter = effectCallable.typeParameters[effectTypeParameters.size]
+                            // todo there might be a better way to resolve everything
+                            val subjectTypeParameter = effectCallable.typeParameters
+                                .first { it.argName == null }
                             substitutionMap += rawBindingType.getSubstitutionMap(subjectTypeParameter.defaultType)
 
                             check(effectCallable.typeParameters.all { it in substitutionMap }) {
@@ -301,10 +303,10 @@ class EffectGenerator(
                     effectCallable.effects
                         .forEach { innerEffect ->
                             emit("@${innerEffect.type.classifier.fqName}(")
-                            innerEffect.args.toList().forEachIndexed { index, (argName, argExpression) ->
+                            innerEffect.valueArgs.toList().forEachIndexed { index, (argName, argExpression) ->
                                 emit("$argName = ")
                                 argExpression()
-                                if (index != innerEffect.args.toList().lastIndex) emit(", ")
+                                if (index != innerEffect.valueArgs.toList().lastIndex) emit(", ")
                             }
                             emitLine(")")
                         }
@@ -346,7 +348,7 @@ class EffectGenerator(
                                 .map { parameter ->
                                     {
                                         if (parameter.argName != null) {
-                                            val arg = effect.args[parameter.argName]
+                                            val arg = effect.valueArgs[parameter.argName]
                                             when {
                                                 arg != null -> arg()
                                                 parameter.type.isMarkedNullable -> emit("null")

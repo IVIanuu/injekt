@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
@@ -84,6 +85,67 @@ class DecoratorTest {
     ) {
         val calls = invokeSingleFile<List<String>>()
         assertEquals(listOf("b", "a"), calls)
+    }
+
+    @Test
+    fun testExplicitDecoratorWithAnnotationValueParam() = codegen(
+        """
+            var arg = "off"
+            @Decorator
+            annotation class MyDecorator(val value: String) {
+                companion object {
+                    fun <T> a(@Arg("value") _arg: String, factory: () -> T): () -> T {
+                        return {
+                            arg = _arg
+                            factory()
+                        }
+                    }
+                }
+            }
+            
+            @MyDecorator("on")
+            @Binding
+            fun foo() = Foo()
+            
+            @Component
+            abstract class MyComponent {
+                abstract val foo: Foo
+            }
+            
+            fun invoke(): String {
+                component<MyComponent>().foo
+                return arg
+            }
+        """
+    ) {
+        assertEquals("on", invokeSingleFile<String>())
+    }
+
+    @Test
+    fun testExplicitDecoratorWithAnnotationTypeParam() = codegen(
+        """
+            @Decorator
+            annotation class MyDecorator<T> {
+                companion object {
+                    fun <@Arg("T") T, S> a(arg: T, factory: () -> S): () -> S {
+                        return {
+                            factory()
+                        }
+                    }
+                }
+            }
+            
+            @MyDecorator<String>
+            @Binding
+            fun foo() = Foo()
+            
+            @Component
+            abstract class MyComponent {
+                abstract val foo: Foo
+            }
+        """
+    ) {
+        assertInternalError("No binding found for 'kotlin.String'")
     }
 
     @Test

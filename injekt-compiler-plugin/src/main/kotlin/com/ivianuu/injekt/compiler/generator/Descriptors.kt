@@ -73,13 +73,15 @@ data class ModuleDescriptor(
 data class DecoratorDescriptor(
     val annotationType: TypeRef?,
     val callables: List<Callable>,
-    val args: Map<Name, ComponentExpression>
+    val typeArgs: Map<Name, TypeRef>,
+    val valueArgs: Map<Name, ComponentExpression>
 )
 
 data class EffectDescriptor(
     val type: TypeRef,
     val callables: List<Callable>,
-    val args: Map<Name, ComponentExpression>
+    val typeArgs: Map<Name, TypeRef>,
+    val valueArgs: Map<Name, ComponentExpression>
 )
 
 data class QualifierDescriptor(

@@ -456,7 +456,7 @@ class EffectTest {
     )
 
     @Test
-    fun testEffectWithArrayArg() = codegen(
+    fun testEffectWithArrayParam() = codegen(
         """
             @Effect
             annotation class MyEffect(val arg: Array<String>) {
@@ -477,7 +477,7 @@ class EffectTest {
     )
 
     @Test
-    fun testEffectWithBooleanArg() = codegen(
+    fun testEffectWithBooleanParam() = codegen(
         """
             @Effect
             annotation class MyEffect(val arg: Boolean) {
@@ -498,7 +498,7 @@ class EffectTest {
     )
 
     @Test
-    fun testEffectWithByteArg() = codegen(
+    fun testEffectWithByteParam() = codegen(
         """
             @Effect
             annotation class MyEffect(val arg: Byte) {
@@ -519,7 +519,7 @@ class EffectTest {
     )
 
     @Test
-    fun testEffectWithCharArg() = codegen(
+    fun testEffectWithCharParam() = codegen(
         """
             @Effect
             annotation class MyEffect(val arg: Char) {
@@ -540,7 +540,7 @@ class EffectTest {
     )
 
     @Test
-    fun testEffectWithDoubleArg() = codegen(
+    fun testEffectWithDoubleParam() = codegen(
         """
             @Effect
             annotation class MyEffect(val arg: Double) {
@@ -561,7 +561,7 @@ class EffectTest {
     )
 
     @Test
-    fun testEffectWithEnumArg() = codegen(
+    fun testEffectWithEnumParam() = codegen(
         """
             enum class MyEnum { A, B }
             
@@ -584,7 +584,7 @@ class EffectTest {
     )
 
     @Test
-    fun testEffectWithFloatArg() = codegen(
+    fun testEffectWithFloatParam() = codegen(
         """
             @Effect
             annotation class MyEffect(val arg: Float) {
@@ -605,7 +605,7 @@ class EffectTest {
     )
 
     @Test
-    fun testEffectWithIntArg() = codegen(
+    fun testEffectWithIntParam() = codegen(
         """
             @Effect
             annotation class MyEffect(val arg: Int) {
@@ -626,7 +626,7 @@ class EffectTest {
     )
 
     @Test
-    fun testEffectWithClassArg() = codegen(
+    fun testEffectWithClassParam() = codegen(
         """
             @Effect
             annotation class MyEffect(val arg: KClass<*>) {
@@ -647,7 +647,7 @@ class EffectTest {
     )
 
     @Test
-    fun testEffectWithLongArg() = codegen(
+    fun testEffectWithLongParam() = codegen(
         """
             @Effect
             annotation class MyEffect(val arg: Long) {
@@ -668,7 +668,7 @@ class EffectTest {
     )
 
     @Test
-    fun testEffectWithShortArg() = codegen(
+    fun testEffectWithShortParam() = codegen(
         """
             @Effect
             annotation class MyEffect(val arg: Short) {
@@ -689,7 +689,7 @@ class EffectTest {
     )
 
     @Test
-    fun testEffectWithStringArg() = codegen(
+    fun testEffectWithStringParam() = codegen(
         """
             @Effect
             annotation class MyEffect(val arg: String) {
@@ -710,7 +710,7 @@ class EffectTest {
     )
 
     @Test
-    fun testEffectWithUByteArg() = codegen(
+    fun testEffectWithUByteParam() = codegen(
         """
             @Effect
             annotation class MyEffect(val arg: UByte) {
@@ -731,7 +731,7 @@ class EffectTest {
     )
 
     @Test
-    fun testEffectWithUIntArg() = codegen(
+    fun testEffectWithUIntParam() = codegen(
         """
             @Effect
             annotation class MyEffect(val arg: UInt) {
@@ -752,7 +752,7 @@ class EffectTest {
     )
 
     @Test
-    fun testEffectWithULongArg() = codegen(
+    fun testEffectWithULongParam() = codegen(
         """
             @Effect
             annotation class MyEffect(val arg: ULong) {
@@ -773,7 +773,7 @@ class EffectTest {
     )
 
     @Test
-    fun testEffectWithUShortArg() = codegen(
+    fun testEffectWithUShortParam() = codegen(
         """
             @Effect
             annotation class MyEffect(val arg: UShort) {
@@ -794,13 +794,13 @@ class EffectTest {
     )
 
     @Test
-    fun testEffectWithTypeArg() = codegen(
+    fun testEffectWithTypeParam() = codegen(
         """
             @Effect
             annotation class Alias<T> {
                 companion object {
                     @Binding
-                    fun <T, S : T> bindAlias(instance: S): T = instance
+                    fun <@Arg("T") T, S : T> bindAlias(instance: S): T = instance
                 }
             }
 
@@ -911,7 +911,7 @@ class EffectTest {
             annotation class MapBinding<M : Map<*, *>> {
                 companion object {
                     @Binding
-                    fun <M : Map<K, V>, T, K, V> state(): K = error("")
+                    fun <@Arg("M") M : Map<K, V>, T, K, V> state(): K = error("")
                 }
             }
             
@@ -932,7 +932,7 @@ class EffectTest {
             annotation class MapBinding<M : Map<*, *>> {
                 companion object {
                     @Binding
-                    fun <M : Map<K, V>, T : Set<E>, K, V, E> state(): Pair<E, K> = error("")
+                    fun <@Arg("M") M : Map<K, V>, T : Set<E>, K, V, E> state(): Pair<E, K> = error("")
                 }
             }
             

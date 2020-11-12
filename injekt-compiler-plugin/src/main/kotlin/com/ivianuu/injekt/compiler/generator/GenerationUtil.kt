@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentExpression
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
@@ -75,8 +74,8 @@ fun ClassDescriptor.getInjectConstructor(): ConstructorDescriptor? {
     return null
 }
 
-fun ParameterDescriptor.getArgName(): Name? =
-    ( annotations.findAnnotation(InjektFqNames.Arg)
+fun DeclarationDescriptor.getArgName(): Name? =
+    (annotations.findAnnotation(InjektFqNames.Arg)
         ?.allValueArguments?.values?.single()?.value as? String)?.asNameId()
 
 fun String.asNameId() = Name.identifier(this)

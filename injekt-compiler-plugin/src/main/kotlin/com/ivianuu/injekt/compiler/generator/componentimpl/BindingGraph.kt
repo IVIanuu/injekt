@@ -131,6 +131,7 @@ class BindingGraph(
                         finalCallable,
                         parentAccessExpression,
                         finalCallable.getDependencies(finalCallable.type, true),
+                        emptyMap(),
                         emptyList() // todo support decorated decorators
                     )
                     Callable.ContributionKind.MAP_ENTRIES -> {
@@ -650,12 +651,23 @@ class BindingGraph(
         }
         return decorators.flatMap { decorator ->
             decorator.callables.map { callable ->
-                val substitutionMap = providerType.getSubstitutionMap(callable.type)
+                val substitutionMap = (providerType.getSubstitutionMap(callable.type) +
+                        callable.typeParameters
+                            .filter { it.argName != null }
+                            .map {
+                                it to (decorator.typeArgs[it.argName]
+                                    ?: error("Couldn't get type argument for ${it.argName} in $decorator $this"))
+                            }
+                            .toMap()).toMutableMap()
+                substitutionMap.forEach { (typeParameter, typeArgument) ->
+                    substitutionMap += typeArgument.getSubstitutionMap(typeParameter.defaultType)
+                }
                 val finalCallable = callable.substitute(substitutionMap)
                 DecoratorNode(
                     finalCallable,
                     null,
                     finalCallable.getDependencies(type, true),
+                    decorator.valueArgs,
                     emptyList() // todo support decorated decorators
                 )
             }
@@ -665,6 +677,7 @@ class BindingGraph(
     private fun Callable.getDependencies(type: TypeRef, isDecorator: Boolean): List<BindingRequest> {
         val substitutionMap = type.getSubstitutionMap(this.type)
         return valueParameters
+            .filter { it.argName == null }
             .map { it.toBindingRequest(this, substitutionMap) }
             .filter { !isDecorator || it.type != this.type.substitute(substitutionMap) }
     }
@@ -692,6 +705,7 @@ class BindingGraph(
                             decorator,
                             null,
                             decorator.getDependencies(decorator.type, true),
+                            emptyMap(),
                             emptyList() // todo support decorated decorators
                         )
                     })

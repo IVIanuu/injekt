@@ -326,8 +326,15 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         }
     }
 
-    fun argsForAnnotation(annotation: AnnotationDescriptor): Map<Name, ComponentExpression> {
-        return annotation.allValueArguments.mapValues { (_, bindingArg) ->
+    fun typeArgsForAnnotation(annotation: AnnotationDescriptor, source: DeclarationDescriptor?): Map<Name, TypeRef> {
+        return ((annotation.type.constructor.declarationDescriptor as ClassDescriptor).declaredTypeParameters)
+            .zip(annotation.type.arguments).map { (param, arg) ->
+                param.name to typeTranslator.toTypeRef(arg.type, source)
+        }.toMap()
+    }
+
+    fun valueArgsForAnnotation(annotation: AnnotationDescriptor): Map<Name, ComponentExpression> {
+        return annotation.allValueArguments.mapValues { (_, arg) ->
             {
                 fun ConstantValue<*>.emit() {
                     when (this) {
@@ -359,7 +366,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     }.let {}
                 }
 
-                bindingArg.emit()
+                arg.emit()
             }
         }
     }
@@ -380,7 +387,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 }
                 .map { callableForDescriptor(it as FunctionDescriptor) },
             annotationType = typeTranslator.toTypeRef(annotation.type, source),
-            args = argsForAnnotation(annotation)
+            valueArgs = valueArgsForAnnotation(annotation),
+            typeArgs = typeArgsForAnnotation(annotation, source)
         )
     }
 
@@ -396,7 +404,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         .companionObjectDescriptor!!
                 ).defaultType
             ).callables,
-            args = argsForAnnotation(annotation)
+            valueArgs = valueArgsForAnnotation(annotation),
+            typeArgs = typeArgsForAnnotation(annotation, source)
         )
     }
 
@@ -406,7 +415,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     ): QualifierDescriptor {
         return QualifierDescriptor(
             type = typeTranslator.toTypeRef(annotation.type, source),
-            args = argsForAnnotation(annotation)
+            args = valueArgsForAnnotation(annotation)
                 .mapValues { buildCodeString { it.value(this) } }
         )
     }

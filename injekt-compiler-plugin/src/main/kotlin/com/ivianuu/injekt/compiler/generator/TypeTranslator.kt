@@ -55,7 +55,8 @@ class TypeTranslator(
                 ?.let { listOf(toTypeRef(it, descriptor).fullyExpandedType) }) ?: emptyList(),
             isTypeParameter = descriptor is TypeParameterDescriptor,
             isObject = descriptor is ClassDescriptor && descriptor.kind == ClassKind.OBJECT,
-            isTypeAlias = descriptor is TypeAliasDescriptor
+            isTypeAlias = descriptor is TypeAliasDescriptor,
+            argName = descriptor.getArgName()
         )
     }
 

@@ -347,13 +347,29 @@ class ComponentStatements(
                     null,
                     decorator.callable.valueParameters
                         .map { valueParameter ->
-                            if (valueParameter.type == decorator.callable.type) {
-                                { emit("_prev") }
-                            } else {
-                                val dependencyRequest = decorator.dependencies[dependencyIndex++]
-                                val dependencyBinding = owner.graph.getBinding(dependencyRequest)
-                                if (dependencyBinding is MissingBindingNode) return@map null
-                                getBindingExpression(dependencyRequest)
+                            when {
+                                valueParameter.argName != null -> {
+                                    val arg = decorator.valueArgs[valueParameter.argName]
+                                    when {
+                                        arg != null -> arg
+                                        valueParameter.type.isMarkedNullable -> {
+                                            {
+                                                emit("null")
+                                            }
+                                        }
+                                        else -> error("No argument provided for non null binding arg ${valueParameter.name} for " +
+                                                "${decorator.callable.fqName}")
+                                    }
+                                }
+                                valueParameter.type == decorator.callable.type -> {
+                                    { emit("_prev") }
+                                }
+                                else -> {
+                                    val dependencyRequest = decorator.dependencies[dependencyIndex++]
+                                    val dependencyBinding = owner.graph.getBinding(dependencyRequest)
+                                    if (dependencyBinding is MissingBindingNode) return@map null
+                                    getBindingExpression(dependencyRequest)
+                                }
                             }
                         },
                     emptyList()

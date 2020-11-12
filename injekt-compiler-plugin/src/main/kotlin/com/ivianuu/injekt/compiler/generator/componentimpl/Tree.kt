@@ -424,6 +424,7 @@ data class DecoratorNode(
     val callable: Callable,
     val receiver: ComponentExpression?,
     val dependencies: List<BindingRequest>,
+    val valueArgs: Map<Name, ComponentExpression>,
     val decorators: List<DecoratorNode>
 )
 

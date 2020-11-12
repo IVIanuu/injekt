@@ -61,5 +61,5 @@ annotation class Decorator
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Effect
 
-@Target(AnnotationTarget.VALUE_PARAMETER)
+@Target(AnnotationTarget.TYPE_PARAMETER, AnnotationTarget.VALUE_PARAMETER)
 annotation class Arg(val name: String)
