@@ -311,6 +311,14 @@ class MapBindingNode(
         get() = false
     override val inline: Boolean
         get() = false
+
+    override fun refineType(dependencyBindings: List<BindingNode>) {
+        super.refineType(dependencyBindings)
+        entries.forEach { entry ->
+            val substitutionMap = entry.callable.type.getStarSubstitutionMap(type)
+            _type = _type.substitute(substitutionMap)
+        }
+    }
 }
 
 class MissingBindingNode(
@@ -385,6 +393,14 @@ class SetBindingNode(
         get() = false
     override val inline: Boolean
         get() = false
+
+    override fun refineType(dependencyBindings: List<BindingNode>) {
+        super.refineType(dependencyBindings)
+        elements.forEach { element ->
+            val substitutionMap = element.callable.type.getStarSubstitutionMap(type)
+            _type = _type.substitute(substitutionMap)
+        }
+    }
 }
 
 data class CallableWithReceiver(

@@ -26,6 +26,7 @@ import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.TypeTranslator
 import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.callableKind
+import com.ivianuu.injekt.compiler.generator.copy
 import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.isAssignable
@@ -448,10 +449,15 @@ class BindingGraph(
     }
 
     private fun getExplicitBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
-        val decorators = getDecoratorsForType(request.type)
         this += owner.additionalInputTypes
             .filter { request.type.isAssignable(it) }
-            .map { InputBindingNode(it, owner, decorators) }
+            .map {
+                InputBindingNode(
+                    type = it,
+                    owner = owner,
+                    decorators = getDecoratorsForType(request.type, Callable.CallableKind.DEFAULT)
+                )
+            }
 
         this += moduleBindingCallables
             .filter { request.type.isAssignable(it.callable.type) }
@@ -462,7 +468,7 @@ class BindingGraph(
                     owner = owner,
                     declaredInComponent = bindingOwner,
                     dependencies = callable.getDependencies(request.type),
-                    decorators = callable.decorators.map { it.toNode(request.type) } + decorators,
+                    decorators = callable.getDecorators(request),
                     receiver = receiver,
                     callable = callable
                 )
@@ -479,7 +485,7 @@ class BindingGraph(
                     owner = owner,
                     declaredInComponent = bindingOwner,
                     dependencies = callable.getDependencies(request.type),
-                    decorators = callable.decorators.map { it.toNode(request.type) } + getDecoratorsForType(request.type),
+                    decorators = callable.getDecorators(request),
                     receiver = receiver,
                     callable = callable
                 )
@@ -500,7 +506,7 @@ class BindingGraph(
                     owner = owner,
                     declaredInComponent = null,
                     dependencies = callable.getDependencies(request.type),
-                    decorators = callable.decorators.map { it.toNode(request.type) } + getDecoratorsForType(request.type),
+                    decorators = callable.getDecorators(request),
                     receiver = null,
                     callable = callable
                 )
@@ -508,12 +514,11 @@ class BindingGraph(
     }
 
     private fun getImplicitFrameworkBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
-        val decorators = getDecoratorsForType(request.type)
         if (request.type == owner.componentType) {
             this += SelfBindingNode(
                 type = request.type,
                 component = owner,
-                decorators = decorators
+                decorators = getDecoratorsForType(request.type, Callable.CallableKind.DEFAULT)
             )
         }
 
@@ -551,7 +556,7 @@ class BindingGraph(
                     owner = owner,
                     origin = null,
                     childComponent = componentImpl,
-                    decorators = decorators
+                    decorators = getDecoratorsForType(request.type, Callable.CallableKind.DEFAULT)
                 )
             }
         }
@@ -571,7 +576,7 @@ class BindingGraph(
                         request.type.callableKind
                     )
                 ),
-                decorators = decorators,
+                decorators = getDecoratorsForType(request.type, request.type.callableKind),
                 origin = FqName.ROOT // todo
             )
         }
@@ -589,7 +594,7 @@ class BindingGraph(
                     owner = owner,
                     declaredInComponent = null,
                     dependencies = callable.getDependencies(request.type),
-                    decorators = callable.decorators.map { it.toNode(request.type) } + getDecoratorsForType(request.type),
+                    decorators = callable.getDecorators(request),
                     receiver = null,
                     callable = callable
                 )
@@ -637,7 +642,7 @@ class BindingGraph(
                     owner = owner,
                     childComponent = childComponent,
                     assistedTypes = assistedTypes,
-                    decorators = decorators
+                    decorators = getDecoratorsForType(request.type, request.type.callableKind)
                 )
             }
         }
@@ -672,10 +677,21 @@ class BindingGraph(
         return dependencies.distinct()
     }
 
-    fun getDecoratorsForType(type: TypeRef): List<DecoratorNode> {
-        val providerType = typeTranslator.toClassifierRef(
-            moduleDescriptor.builtIns.getFunction(0)
-        ).defaultType.typeWith(listOf(type))
+    private fun Callable.getDecorators(request: BindingRequest) =
+        decorators.map { it.toNode(request.type) } + getDecoratorsForType(request.type, callableKind)
+
+    fun getDecoratorsForType(type: TypeRef, callableKind: Callable.CallableKind): List<DecoratorNode> {
+        val providerType = when (callableKind) {
+            Callable.CallableKind.DEFAULT -> typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getFunction(0)
+            ).defaultType.typeWith(listOf(type))
+            Callable.CallableKind.SUSPEND -> typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getSuspendFunction(0)
+            ).defaultType.typeWith(listOf(type))
+            Callable.CallableKind.COMPOSABLE -> typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getFunction(0)
+            ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
+        }
         return (moduleDecorators
             .filter { type.isAssignable(it.descriptor.callable.type) } +
                 declarationStore.decoratorsByType(type)
@@ -773,7 +789,7 @@ class BindingCollections(
                                 }
                         },
                         entries = entries,
-                        decorators = owner.graph.getDecoratorsForType(request.type)
+                        decorators = owner.graph.getDecoratorsForType(request.type, Callable.CallableKind.DEFAULT)
                     )
                 },
             getSetElements(request.type)
@@ -794,7 +810,7 @@ class BindingCollections(
                                 }
                         },
                         elements = elements,
-                        decorators = owner.graph.getDecoratorsForType(request.type)
+                        decorators = owner.graph.getDecoratorsForType(request.type, Callable.CallableKind.DEFAULT)
                     )
                 }
         )
