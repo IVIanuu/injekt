@@ -41,7 +41,7 @@ annotation class Binding(val scopeComponent: KClass<*> = Nothing::class)
 annotation class Qualifier
 
 @Target(AnnotationTarget.FUNCTION)
-annotation class FunBinding
+annotation class FunBinding(val targetComponent: KClass<*> = Nothing::class)
 
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class FunApi

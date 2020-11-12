@@ -42,6 +42,7 @@ object InjektFqNames {
     val Index = InternalPackage.child("Index".asNameId())
 
     val IndexPackage = InternalPackage.child("index".asNameId())
+    val FunApiName = InternalPackage.child("FunApiName".asNameId())
 
     val MergePackage = InjektPackage.child("merge".asNameId())
 

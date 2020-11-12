@@ -188,10 +188,14 @@ fun CodeBuilder.emitCallableInvocation(
     }
 }
 
-val TypeRef.callableKind: Callable.CallableKind get() = when {
-    isSuspendFunction -> Callable.CallableKind.SUSPEND
-    isComposable -> Callable.CallableKind.COMPOSABLE
-    else -> Callable.CallableKind.DEFAULT
+val TypeRef.callableKind: Callable.CallableKind get() {
+    val b = when {
+        fullyExpandedType.isSuspendFunction -> Callable.CallableKind.SUSPEND
+        fullyExpandedType.isComposable -> Callable.CallableKind.COMPOSABLE
+        else -> Callable.CallableKind.DEFAULT
+    }
+    b
+    return b
 }
 
 fun Callable.substitute(substitutionMap: Map<ClassifierRef, TypeRef>): Callable {

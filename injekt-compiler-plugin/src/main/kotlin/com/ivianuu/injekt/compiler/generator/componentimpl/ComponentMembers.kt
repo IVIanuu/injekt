@@ -131,6 +131,7 @@ class ComponentStatements(
             is AssistedBindingNode -> assistedExpression(binding)
             is ChildComponentBindingNode -> childFactoryExpression(binding)
             is CallableBindingNode -> callableExpression(binding)
+            is FunBindingNode -> funBindingExpression(binding)
             is InputBindingNode -> inputExpression(binding)
             is MapBindingNode -> mapExpression(binding)
             is MissingBindingNode -> error("Cannot create expression for a missing binding ${binding.type}")
@@ -227,6 +228,49 @@ class ComponentStatements(
             }
         }
         emitLine(")")
+
+        emit("}")
+    }
+
+    private fun funBindingExpression(binding: FunBindingNode): ComponentExpression = {
+        emit("{ ")
+
+        val funApiParameters = binding.type.fullyExpandedType.typeArguments
+            .mapNotNull { it.funApiName }
+            .map { funApiParameterName ->
+                if (funApiParameterName.asString() == "<this>") binding.callable.valueParameters.first()
+                else binding.callable.valueParameters.single { it.name == funApiParameterName }
+            }
+
+        funApiParameters
+            .filterNot { it.isExtensionReceiver }
+            .forEachIndexed { index, param ->
+                emit("${param.name}: ${param.type.renderExpanded()}")
+                if (index != funApiParameters.lastIndex) emit(", ")
+                else emitLine(" ->")
+            }
+
+        emitLine()
+
+        emitCallableInvocation(
+            callable = binding.callable,
+            receiver = null,
+            owner = null,
+            arguments = binding.callable.valueParameters.map { valueParameter ->
+                if (valueParameter in funApiParameters) {
+                    {
+                        if (valueParameter.isExtensionReceiver) emit("this")
+                        else emit(valueParameter.name)
+                    }
+                } else {
+                    val request = valueParameter.toBindingRequest(binding.callable, emptyMap())
+                    val dependencyBinding = owner.graph.getBinding(request)
+                    if (dependencyBinding is MissingBindingNode) null
+                    else getBindingExpression(request)
+                }
+            },
+            typeArguments = emptyList()
+        )
 
         emit("}")
     }
@@ -547,18 +591,15 @@ class ComponentStatements(
                     .drop(if (callable.valueParameters.firstOrNull()?.isExtensionReceiver == true) 1 else 0)
                     .forEachIndexed { index, argument ->
                         val parameter = callable.valueParameters[
-                                if (callable.valueParameters.firstOrNull()?.isExtensionReceiver == true) index - 1
+                                if (callable.valueParameters.firstOrNull()?.isExtensionReceiver == true) index + 1
                                 else index]
                         if (argument != null) {
-                            if (callable.isFunBinding) emit("{ ")
+                            emit("${parameter.name} = ")
                             argument()
-                            if (callable.isFunBinding) emit(" }")
                             if (argumentsIndex++ != nonNullArgumentsCount) emit(", ")
                         }
                         else if (!parameter.hasDefault) {
-                            if (callable.isFunBinding) emit("{ ")
-                            emit("null")
-                            if (callable.isFunBinding) emit(" }")
+                            emit("${parameter.name} = null")
                             if (argumentsIndex++ != nonNullArgumentsCount) emit(", ")
                         }
                     }

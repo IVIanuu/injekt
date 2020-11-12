@@ -27,6 +27,7 @@ import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.callableKind
 import com.ivianuu.injekt.compiler.generator.copy
 import com.ivianuu.injekt.compiler.generator.defaultType
+import com.ivianuu.injekt.compiler.generator.fullyExpandedType
 import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.isAssignable
 import com.ivianuu.injekt.compiler.generator.render
@@ -487,7 +488,6 @@ class BindingGraph(
 
     private fun getImplicitUserBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
         this += declarationStore.bindingsForType(request.type)
-            .filterNot { it.isFunBinding }
             .filter {
                 it.targetComponent == null || it.targetComponent == owner.componentType ||
                         (owner.isAssisted && request.type == owner.assistedRequests.single().type)
@@ -570,21 +570,20 @@ class BindingGraph(
             )
         }
 
-        this += declarationStore.bindingsForType(request.type)
-            .filter { it.isFunBinding }
+        this += declarationStore.funBindingsByType(request.type)
             .filter {
-                it.targetComponent == null || it.targetComponent == owner.componentType ||
+                it.callable.targetComponent == null || it.callable.targetComponent == owner.componentType ||
                         (owner.isAssisted && request.type == owner.assistedRequests.single().type)
             }
-            .map { callable ->
-                CallableBindingNode(
-                    type = request.type.substituteStars(callable.type),
-                    rawType = callable.type,
+            .map { funBinding ->
+                val substitutionMap = request.type.getSubstitutionMap(funBinding.type)
+                val finalCallable = funBinding.callable.substitute(substitutionMap)
+                FunBindingNode(
+                    type = request.type.substituteStars(funBinding.type),
+                    rawType = funBinding.type,
                     owner = owner,
-                    declaredInComponent = null,
-                    dependencies = callable.getDependencies(request.type, false),
-                    receiver = null,
-                    callable = callable
+                    dependencies = finalCallable.getDependencies(request.type, false),
+                    callable = finalCallable
                 )
             }
 
@@ -613,7 +612,6 @@ class BindingGraph(
                     effects = emptyList(),
                     isExternal = false,
                     isInline = false,
-                    isFunBinding = false,
                     visibility = Visibilities.INTERNAL,
                     modality = Modality.FINAL,
                     receiver = null
@@ -676,8 +674,14 @@ class BindingGraph(
 
     private fun Callable.getDependencies(type: TypeRef, isDecorator: Boolean): List<BindingRequest> {
         val substitutionMap = type.getSubstitutionMap(this.type)
+        var funApiIndex = 0
         return valueParameters
-            .filter { it.argName == null }
+            .filter { valueParameter ->
+                val isFunApiParameter = type.fullyExpandedType.typeArguments.getOrNull(funApiIndex)
+                    ?.funApiName == valueParameter.name
+                if (isFunApiParameter) funApiIndex++
+                valueParameter.argName == null && !isFunApiParameter
+            }
             .map { it.toBindingRequest(this, substitutionMap) }
             .filter { !isDecorator || it.type != this.type.substitute(substitutionMap) }
     }

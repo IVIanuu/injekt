@@ -68,6 +68,7 @@ sealed class TypeRef {
     abstract val superTypes: List<TypeRef>
     abstract val expandedType: TypeRef?
     abstract val isStarProjection: Boolean
+    abstract val funApiName: Name?
     abstract val qualifiers: List<QualifierDescriptor>
     private val typeName by unsafeLazy { uniqueTypeName(includeNullability = false) }
     override fun equals(other: Any?) = other is TypeRef && typeName == other.typeName
@@ -157,6 +158,10 @@ class KotlinTypeRef(
                 )
             }
     }
+    override val funApiName: Name? by lazy {
+        (kotlinType.annotations.findAnnotation(InjektFqNames.Arg)
+            ?.allValueArguments?.values?.single()?.value as? String)?.asNameId()
+    }
 }
 
 class SimpleTypeRef(
@@ -176,6 +181,7 @@ class SimpleTypeRef(
     override val superTypes: List<TypeRef> = emptyList(),
     override val expandedType: TypeRef? = null,
     override val isStarProjection: Boolean = false,
+    override val funApiName: Name? = null,
     override val qualifiers: List<QualifierDescriptor> = emptyList()
 ) : TypeRef() {
     init {
@@ -206,6 +212,7 @@ fun TypeRef.copy(
     superTypes: List<TypeRef> = this.superTypes,
     expandedType: TypeRef? = this.expandedType,
     isStarProjection: Boolean = this.isStarProjection,
+    funApiName: Name? = this.funApiName,
     qualifiers: List<QualifierDescriptor> = this.qualifiers
 ) = SimpleTypeRef(
     classifier,
@@ -224,6 +231,7 @@ fun TypeRef.copy(
     superTypes,
     expandedType,
     isStarProjection,
+    funApiName,
     qualifiers
 )
 
@@ -283,6 +291,7 @@ fun TypeRef.render(): String {
         } + listOfNotNull(
             if (isComposable) "@${InjektFqNames.Composable}" else null,
             if (isExtensionFunction) "@ExtensionFunctionType" else null,
+            if (funApiName != null) "@${InjektFqNames.FunApiName}(\"$funApiName\")" else null
         )
         if (annotations.isNotEmpty()) {
             annotations.forEach { annotation ->
@@ -448,7 +457,8 @@ val TypeRef.isComposableRecursive: Boolean
             superTypes.any { it.isComposableRecursive }
 
 val TypeRef.fullyExpandedType: TypeRef
-    get() = expandedType?.fullyExpandedType ?: this
+    get() = expandedType?.fullyExpandedType
+        ?: classifier.takeIf { it.isTypeAlias }?.superTypes?.single()?.fullyExpandedType ?: this
 
 fun TypeRef.expandTo(classifier: ClassifierRef): TypeRef? {
     if (this.classifier == classifier) return this

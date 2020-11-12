@@ -273,7 +273,7 @@ class CallableBindingNode(
     val callable: Callable
 ) : BindingNode(type, callable.callableKind) {
     override val lazyDependencies: Boolean
-        get() = callable.isFunBinding
+        get() = false
     override val isExternal: Boolean
         get() = callable.isExternal
     override val targetComponent: TypeRef?
@@ -281,7 +281,42 @@ class CallableBindingNode(
     override val origin: FqName?
         get() = callable.fqName
     override val cacheable: Boolean
-        get() = callable.isFunBinding
+        get() = false
+    override val inline: Boolean
+        get() = callable.visibility != Visibilities.PROTECTED &&
+                (((!callable.isCall || callable.valueParameters.isEmpty()) ||
+                        callable.isInline) &&!cacheable && targetComponent == null)
+
+    override fun refineType(dependencyBindings: List<BindingNode>) {
+        super.refineType(dependencyBindings)
+        val substitutionMap = callable.type.getStarSubstitutionMap(type)
+        _type = _type.substitute(substitutionMap)
+    }
+
+    override fun toString(): String = "Callable(${callable.type.render()})"
+}
+
+class FunBindingNode(
+    type: TypeRef,
+    override val rawType: TypeRef,
+    override val owner: ComponentImpl,
+    override val dependencies: List<BindingRequest>,
+    val callable: Callable
+) : BindingNode(type, Callable.CallableKind.DEFAULT) {
+    override val declaredInComponent: ComponentImpl?
+        get() = null
+    override val receiver: ComponentExpression?
+        get() = null
+    override val lazyDependencies: Boolean
+        get() = true
+    override val isExternal: Boolean
+        get() = callable.isExternal
+    override val targetComponent: TypeRef?
+        get() = callable.targetComponent
+    override val origin: FqName?
+        get() = callable.fqName
+    override val cacheable: Boolean
+        get() = true
     override val inline: Boolean
         get() = callable.visibility != Visibilities.PROTECTED &&
                 (((!callable.isCall || callable.valueParameters.isEmpty()) ||

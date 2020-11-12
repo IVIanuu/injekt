@@ -33,8 +33,10 @@ import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.descriptors.findClassifierAcrossModuleDependencies
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
@@ -165,6 +167,28 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     }
     fun generatedClassifierFor(fqName: FqName): ClassifierRef? = generatedClassifiers[fqName]
 
+    private val allFunBindings by unsafeLazy {
+        functionIndices
+            .filter { it.hasAnnotation(InjektFqNames.FunBinding) }
+            .map {
+                val callable = callableForDescriptor(it)
+                FunBindingDescriptor(
+                    callable,
+                    (generatedClassifiers[callable.fqName] ?:
+                    typeTranslator.toClassifierRef(
+                        module.findClassifierAcrossModuleDependencies(
+                            ClassId.topLevel(callable.fqName)
+                        )!!
+                    )).defaultType
+                )
+            }
+    }
+    private val funBindingsByType = mutableMapOf<TypeRef, List<FunBindingDescriptor>>()
+    fun funBindingsByType(type: TypeRef): List<FunBindingDescriptor> = funBindingsByType.getOrPut(type) {
+        allFunBindings
+            .filter { type.isAssignable(it.type) }
+    }
+
     private val allDecorators by unsafeLazy {
         functionIndices
             .filter { it.hasAnnotation(InjektFqNames.Decorator) }
@@ -188,7 +212,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 module.builtIns.getFunction(0)
             ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
         }
-        return allDecorators
+        allDecorators
             .filter { providerType.isAssignable(it.type) }
     }
 
@@ -204,7 +228,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     }
     private val mapEntriesForType = mutableMapOf<TypeRef, List<Callable>>()
     fun mapEntriesByType(type: TypeRef): List<Callable> = mapEntriesForType.getOrPut(type) {
-        return allMapEntries
+        allMapEntries
             .filter { type.isAssignable(it.type) }
     }
 
@@ -220,7 +244,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     }
     private val setElementsForType = mutableMapOf<TypeRef, List<Callable>>()
     fun setElementsByType(type: TypeRef): List<Callable> = setElementsForType.getOrPut(type) {
-        return allSetElements
+        allSetElements
             .filter { type.isAssignable(it.type) }
     }
 
@@ -323,15 +347,15 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         return memberScopeByFqName.getOrPut(fqName) {
             val pkg = module.getPackage(fqName)
 
-            if (fqName.isRoot || pkg.fragments.isNotEmpty()) return pkg.memberScope
+            if (fqName.isRoot || pkg.fragments.isNotEmpty()) return@getOrPut pkg.memberScope
 
-            val parentMemberScope = memberScopeForFqName(fqName.parent()) ?: return null
+            val parentMemberScope = memberScopeForFqName(fqName.parent()) ?: return@getOrPut null
 
             val classDescriptor =
                 parentMemberScope.getContributedClassifier(
                     fqName.shortName(),
                     NoLookupLocation.FROM_BACKEND
-                ) as? ClassDescriptor ?: return null
+                ) as? ClassDescriptor ?: return@getOrPut null
 
             classDescriptor.unsubstitutedMemberScope
         }
@@ -444,9 +468,14 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             packageFqName = descriptor.findPackage().fqName,
             fqName = owner.fqNameSafe,
             type =  descriptor.returnType!!.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
-            targetComponent = owner.annotations.findAnnotation(InjektFqNames.Binding)
+            targetComponent = (owner.annotations.findAnnotation(InjektFqNames.Binding) ?:
+                    owner.annotations.findAnnotation(InjektFqNames.ImplBinding) ?:
+                    owner.annotations.findAnnotation(InjektFqNames.FunBinding))
                 ?.allValueArguments
-                ?.get("scopeComponent".asNameId())
+                ?.let {
+                    it["scopeComponent".asNameId()]
+                        ?: it["targetComponent".asNameId()]
+                }
                 ?.let { it as KClassValue }
                 ?.getArgumentType(module)
                 ?.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
@@ -516,7 +545,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 .map { effectDescriptorForAnnotation(it, descriptor) },
             isExternal = owner is DeserializedDescriptor,
             isInline = descriptor.isInline,
-            isFunBinding = descriptor.hasAnnotation(InjektFqNames.FunBinding),
             visibility = descriptor.visibility,
             modality = descriptor.modality,
             receiver = descriptor.dispatchReceiverParameter?.type?.constructor?.declarationDescriptor

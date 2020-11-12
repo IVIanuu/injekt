@@ -38,7 +38,6 @@ data class Callable(
     val effects: List<EffectDescriptor>,
     val isExternal: Boolean,
     val isInline: Boolean,
-    val isFunBinding: Boolean,
     val visibility: Visibility,
     val modality: Modality,
     val receiver: ClassifierRef?
@@ -93,4 +92,9 @@ data class ImplBindingDescriptor(
     val callable: Callable,
     val implType: TypeRef,
     val superType: TypeRef
+)
+
+data class FunBindingDescriptor(
+    val callable: Callable,
+    val type: TypeRef
 )

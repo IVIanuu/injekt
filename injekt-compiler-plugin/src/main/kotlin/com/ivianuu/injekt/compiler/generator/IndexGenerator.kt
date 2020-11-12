@@ -69,6 +69,7 @@ class IndexGenerator(
                         if (((descriptor is ClassDescriptor || descriptor is ConstructorDescriptor || !inModuleLikeScope) &&
                                     (descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
                                             descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Decorator) ||
+                                            descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.FunBinding) ||
                                             descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.ImplBinding) ||
                                             descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
                                             descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||

@@ -159,22 +159,9 @@ class EffectGenerator(
 
             val parameters = callable.valueParameters
                 .map { valueParameter ->
-                    if (callable.isFunBinding &&
-                        valueParameter.inlineKind == ValueParameterRef.InlineKind.NONE &&
-                        (!valueParameter.type.isFunction ||
-                                valueParameter.type.typeArguments.size != 1)) {
-                        valueParameter.copy(
-                            type = valueParameter.type,
-                            inlineKind = ValueParameterRef.InlineKind.CROSSINLINE,
-                            isExtensionReceiver = false
-                        )
-                    } else {
-                        valueParameter.copy(isExtensionReceiver = false)
-                    }
+                    valueParameter.copy(isExtensionReceiver = false)
                 }
 
-            if (callable.isFunBinding)
-                emitLine("@${InjektFqNames.FunBinding}")
             emitLine("@Binding")
 
             val callableKind = callable.callableKind
@@ -194,8 +181,7 @@ class EffectGenerator(
                     emit("crossinline ")
                 }  else if (typeRef.fullyExpandedType.isFunction || typeRef.fullyExpandedType.isSuspendFunction ||
                     declarationStore.generatedClassifierFor(typeRef.classifier.fqName) != null ||
-                    declarationStore.generatedClassifierFor(typeRef.fullyExpandedType.classifier.fqName) != null ||
-                    (callable.isFunBinding && typeRef == aliasedType)) {
+                    declarationStore.generatedClassifierFor(typeRef.fullyExpandedType.classifier.fqName) != null) {
                     emit("noinline ")
                 }
                 emit("${valueParameter.name}: ${valueParameter.type.render()}")
@@ -233,7 +219,6 @@ class EffectGenerator(
                 decorators = emptyList(),
                 isExternal = false,
                 isInline = true,
-                isFunBinding = callable.isFunBinding,
                 visibility = Visibilities.PUBLIC,
                 modality = Modality.FINAL,
                 receiver = null
@@ -330,8 +315,7 @@ class EffectGenerator(
                             } else if (typeRef.fullyExpandedType.isFunction ||
                                 typeRef.fullyExpandedType.isSuspendFunction ||
                                 declarationStore.generatedClassifierFor(typeRef.classifier.fqName) != null ||
-                                declarationStore.generatedClassifierFor(typeRef.fullyExpandedType.classifier.fqName) != null ||
-                                (callable.isFunBinding && typeRef == aliasedType)) {
+                                declarationStore.generatedClassifierFor(typeRef.fullyExpandedType.classifier.fqName) != null) {
                                 emit("noinline ")
                             }
                             emit("${valueParameter.name}: ${valueParameter.type.render()}")
@@ -380,7 +364,6 @@ class EffectGenerator(
                         effects = effectCallable.effects,
                         isExternal = false,
                         isInline = true,
-                        isFunBinding = effectCallable.isFunBinding,
                         visibility = Visibilities.PUBLIC,
                         modality = Modality.FINAL,
                         receiver = null
