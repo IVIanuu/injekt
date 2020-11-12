@@ -105,6 +105,7 @@ class ComponentStatements(
             return it
         }
 
+        // ask the parent for the expression if were not the owners members
         if (binding.owner != owner) {
             return {
                 componentExpression(parent!!.owner)()
@@ -112,6 +113,17 @@ class ComponentStatements(
                 parent!!.getBindingExpression(request)()
             }
         }
+
+        // ensure all dependencies will get initialized before us
+        binding
+            .decorators
+            .flatMap { it.dependencies }
+            .filter { owner.graph.getBinding(it) !is MissingBindingNode }
+            .forEach { getBindingExpression(it) }
+        binding
+            .dependencies
+            .filter { owner.graph.getBinding(it) !is MissingBindingNode }
+            .forEach { getBindingExpression(it) }
 
         val rawExpression = when (binding) {
             is AssistedBindingNode -> assistedExpression(binding)
@@ -320,40 +332,38 @@ class ComponentStatements(
         }
 
         val initializer: CodeBuilder.() -> Unit = {
-            emit("run ")
-            braced {
-                val decoratorFactoryType = typeTranslator.toClassifierRef(
-                    moduleDescriptor.builtIns.getFunction(1)
-                ).defaultType.typeWith(listOf(providerType, providerType))
-                emit("listOf<${decoratorFactoryType.renderExpanded()}>(")
-                decorators.forEachIndexed { index, decorator ->
-                    emit("{ _prev -> ")
-                    emitCallableInvocation(
-                        decorator.descriptor.callable,
-                        decorator.receiver,
-                        null,
-                        decorator.descriptor.callable.valueParameters
-                            .map { valueParameter ->
-                                if (valueParameter.type == decorator.descriptor.callable.type) {
-                                    { emit("_prev") }
-                                } else {
-                                    val request = valueParameter.toBindingRequest(decorator.descriptor.callable, emptyMap())
-                                    val dependencyBinding = owner.graph.getBinding(request)
-                                    if (dependencyBinding is MissingBindingNode) return@map null
-                                    getBindingExpression(request)
-                                }
-                            },
-                        emptyList()
-                    )
-                    emit(" }")
-                    if (index != decorators.lastIndex) emitLine(", ")
-                }
-                emit(").fold({ ")
-                create()
-                emitLine(" }) { acc, next -> ")
-                emitLine("next(acc)")
-                emitLine("}")
+            val decoratorFactoryType = typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getFunction(1)
+            ).defaultType.typeWith(listOf(providerType, providerType))
+            emit("listOf<${decoratorFactoryType.renderExpanded()}>(")
+            decorators.forEachIndexed { index, decorator ->
+                emit("{ _prev -> ")
+                var dependencyIndex = 0
+                emitCallableInvocation(
+                    decorator.descriptor.callable,
+                    decorator.receiver,
+                    null,
+                    decorator.descriptor.callable.valueParameters
+                        .map { valueParameter ->
+                            if (valueParameter.type == decorator.descriptor.callable.type) {
+                                { emit("_prev") }
+                            } else {
+                                val dependencyRequest = decorator.dependencies[dependencyIndex++]
+                                val dependencyBinding = owner.graph.getBinding(dependencyRequest)
+                                if (dependencyBinding is MissingBindingNode) return@map null
+                                getBindingExpression(dependencyRequest)
+                            }
+                        },
+                    emptyList()
+                )
+                emit(" }")
+                if (index != decorators.lastIndex) emitLine(", ")
             }
+            emit(").fold({ ")
+            create()
+            emitLine(" }) { acc, next -> ")
+            emitLine("next(acc)")
+            emitLine("}")
         }
         val name = "${type.uniqueTypeName()}_Provider".asNameId()
         val providerProperty = ComponentCallable(
@@ -439,27 +449,27 @@ class ComponentStatements(
         }
 
         return {
-            emit("run ")
+            emit("run scope@ ")
             braced {
                 emit("var value = ")
                 scopeComponentExpression()
                 emitLine(".${cacheProperty.name}")
                 emit("if (value !== ")
                 scopeComponentExpression()
-                emitLine(") return@run value as ${type.renderExpanded()}")
+                emitLine(") return@scope value as ${type.renderExpanded()}")
                 fun emitInvocation() {
                     emit("value = ")
                     scopeComponentExpression()
                     emitLine(".${cacheProperty.name}")
                     emit("if (value !== ")
                     scopeComponentExpression()
-                    emitLine(") return@run value as ${type.renderExpanded()}")
+                    emitLine(") return@scope value as ${type.renderExpanded()}")
                     emit("value = ")
                     create()
                     emitLine()
                     scopeComponentExpression()
                     emitLine(".${cacheProperty.name} = value")
-                    emitLine("return@run value as ${type.renderExpanded()}")
+                    emitLine("return@scope value as ${type.renderExpanded()}")
                 }
                 when (callableKind) {
                     Callable.CallableKind.SUSPEND -> {

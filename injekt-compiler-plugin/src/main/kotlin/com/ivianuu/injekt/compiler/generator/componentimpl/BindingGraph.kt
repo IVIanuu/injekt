@@ -131,7 +131,8 @@ class BindingGraph(
                     Callable.ContributionKind.DECORATOR -> moduleDecorators += DecoratorNode(
                         DecoratorDescriptor(finalCallable, null, emptyMap()),
                         parentAccessExpression,
-                        finalCallable.decorators.map { it.toNode(it.callable.type) }
+                        finalCallable.getDependencies(finalCallable.type, true),
+                        emptyList() // todo support decorated decorators
                     )
                     Callable.ContributionKind.MAP_ENTRIES -> {
                         collections.addMapEntries(
@@ -278,13 +279,7 @@ class BindingGraph(
             }
 
         binding.decorators
-            .flatMap { decorator ->
-                decorator.descriptor.callable.getDependencies(binding.type)
-                    .filter { decoratorDependency ->
-                        // todo might be unsafe
-                        decoratorDependency.type != decorator.descriptor.callable.type
-                    }
-            }
+            .flatMap { it.dependencies }
             .forEach { check(it) }
 
         chain.pop()
@@ -467,7 +462,7 @@ class BindingGraph(
                     rawType = callable.type,
                     owner = owner,
                     declaredInComponent = bindingOwner,
-                    dependencies = callable.getDependencies(request.type),
+                    dependencies = callable.getDependencies(request.type, false),
                     decorators = callable.getDecorators(request),
                     receiver = receiver,
                     callable = callable
@@ -484,7 +479,7 @@ class BindingGraph(
                     rawType = callable.type,
                     owner = owner,
                     declaredInComponent = bindingOwner,
-                    dependencies = callable.getDependencies(request.type),
+                    dependencies = callable.getDependencies(request.type, false),
                     decorators = callable.getDecorators(request),
                     receiver = receiver,
                     callable = callable
@@ -505,7 +500,7 @@ class BindingGraph(
                     rawType = callable.type,
                     owner = owner,
                     declaredInComponent = null,
-                    dependencies = callable.getDependencies(request.type),
+                    dependencies = callable.getDependencies(request.type, false),
                     decorators = callable.getDecorators(request),
                     receiver = null,
                     callable = callable
@@ -571,13 +566,13 @@ class BindingGraph(
                 dependencies = listOf(
                     BindingRequest(
                         request.type.typeArguments.single(),
-                        FqName.ROOT, // todo
+                        request.origin,
                         true,
                         request.type.callableKind
                     )
                 ),
                 decorators = getDecoratorsForType(request.type, request.type.callableKind),
-                origin = FqName.ROOT // todo
+                origin = request.origin
             )
         }
 
@@ -593,7 +588,7 @@ class BindingGraph(
                     rawType = callable.type,
                     owner = owner,
                     declaredInComponent = null,
-                    dependencies = callable.getDependencies(request.type),
+                    dependencies = callable.getDependencies(request.type, false),
                     decorators = callable.getDecorators(request),
                     receiver = null,
                     callable = callable
@@ -657,24 +652,20 @@ class BindingGraph(
             moduleDescriptor.builtIns.getFunction(0)
         ).defaultType.typeWith(listOf(type))
         val substitutionMap = providerType.getSubstitutionMap(callable.type)
+        val finalCallable = callable.substitute(substitutionMap)
         return DecoratorNode(
-            copy(callable = callable.substitute(substitutionMap)),
+            copy(callable = finalCallable),
             null,
+            finalCallable.getDependencies(type, true),
             emptyList() // todo support decorated decorators
         )
     }
 
-    private fun Callable.getDependencies(type: TypeRef): List<BindingRequest> {
-        val dependencies = mutableListOf<BindingRequest>()
-        fun Callable.collect(requestedType: TypeRef) {
-            val substitutionMap = requestedType.getSubstitutionMap(this.type)
-            dependencies += valueParameters
-                .map { it.toBindingRequest(this, substitutionMap) }
-        }
-
-        collect(type)
-
-        return dependencies.distinct()
+    private fun Callable.getDependencies(type: TypeRef, isDecorator: Boolean): List<BindingRequest> {
+        val substitutionMap = type.getSubstitutionMap(this.type)
+        return valueParameters
+            .map { it.toBindingRequest(this, substitutionMap) }
+            .filter { !isDecorator || it.type != this.type.substitute(substitutionMap) }
     }
 
     private fun Callable.getDecorators(request: BindingRequest) =
@@ -695,10 +686,11 @@ class BindingGraph(
         return (moduleDecorators
             .filter { type.isAssignable(it.descriptor.callable.type) } +
                 declarationStore.decoratorsByType(type)
-                    .map {
+                    .map { decorator ->
                         DecoratorNode(
-                            DecoratorDescriptor(it, null, emptyMap()),
+                            DecoratorDescriptor(decorator, null, emptyMap()),
                             null,
+                            decorator.getDependencies(type, true),
                             emptyList() // todo support decorated decorators
                         )
                     })

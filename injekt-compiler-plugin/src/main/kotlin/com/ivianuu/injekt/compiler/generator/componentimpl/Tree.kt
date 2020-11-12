@@ -412,6 +412,7 @@ data class CallableWithReceiver(
 data class DecoratorNode(
     val descriptor: DecoratorDescriptor,
     val receiver: ComponentExpression?,
+    val dependencies: List<BindingRequest>,
     val decorators: List<DecoratorNode>
 )
 
