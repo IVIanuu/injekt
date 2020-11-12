@@ -114,6 +114,26 @@ class DecoratorTest {
     }
 
     @Test
+    fun testDecoratorWithGenericReturnType() = codegen(
+        """
+            @Decorator
+            annotation class MyDecorator {
+                companion object {
+                    fun <S> decorate(factory: S): S = factory
+                }
+            }
+
+            @MyDecorator
+            fun foo() = Foo()
+            
+            @Component
+            abstract class MyComponent {
+                abstract val foo: Foo
+            }
+        """
+    )
+
+    @Test
     fun testSuspendDecorator() = codegen(
         """
             @Decorator
