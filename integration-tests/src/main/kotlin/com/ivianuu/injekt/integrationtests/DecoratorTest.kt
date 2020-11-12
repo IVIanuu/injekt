@@ -1,8 +1,10 @@
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -75,6 +77,40 @@ class DecoratorTest {
         """
     ) {
         assertEquals(4, invokeSingleFile<Int>())
+    }
+
+    @Test
+    fun testDecoratorHasState() = codegen(
+        """
+            @Decorator
+            annotation class Scoped {
+                companion object {
+                    fun <T> decorate(factory: () -> T): () -> T { 
+                        var instance: T? = null
+                        return {
+                            if (instance == null) instance = factory()
+                            instance as T
+                        }
+                    }
+                }
+            }
+            
+            @Scoped
+            fun foo() = Foo()
+            
+            @Component
+            abstract class MyComponent {
+                abstract val foo: Foo
+            }
+            
+            fun invoke(): Pair<Foo, Foo> {
+                val component = component<MyComponent>()
+                return component.foo to component.foo
+            }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Foo, Foo>>()
+        assertSame(a, b)
     }
 
 }
