@@ -69,11 +69,11 @@ class IndexGenerator(
                         if (((descriptor is ClassDescriptor || descriptor is ConstructorDescriptor || !inModuleLikeScope) &&
                                     (descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
                                             descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Decorator) ||
+                                            descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.ImplBinding) ||
                                             descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
                                             descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
                                             descriptor.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Decorator) ||
-                                            descriptor.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect)) &&
-                                    !descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.ImplBinding)) ||
+                                            descriptor.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect))) ||
                             descriptor.hasAnnotation(InjektFqNames.MergeComponent) ||
                             descriptor.hasAnnotation(InjektFqNames.MergeChildComponent) ||
                             descriptor.hasAnnotation(InjektFqNames.MergeInto)) {

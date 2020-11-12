@@ -38,6 +38,5 @@ abstract class GenerationComponent(
     abstract val fileManager: FileManager
     abstract val effectGenerator: EffectGenerator
     abstract val componentGenerator: ComponentGenerator
-    abstract val implBindingGenerator: ImplBindingGenerator
     abstract val indexGenerator: IndexGenerator
 }

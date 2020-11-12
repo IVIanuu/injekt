@@ -88,3 +88,9 @@ data class QualifierDescriptor(
     val type: TypeRef,
     val args: Map<Name, String>
 )
+
+data class ImplBindingDescriptor(
+    val callable: Callable,
+    val implType: TypeRef,
+    val superType: TypeRef
+)
