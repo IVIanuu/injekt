@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.generator.componentimpl
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
-import com.ivianuu.injekt.compiler.generator.DecoratorDescriptor
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.callableKind
 import com.ivianuu.injekt.compiler.generator.getStarSubstitutionMap
@@ -422,7 +421,7 @@ data class CallableWithReceiver(
 )
 
 data class DecoratorNode(
-    val descriptor: DecoratorDescriptor,
+    val callable: Callable,
     val receiver: ComponentExpression?,
     val dependencies: List<BindingRequest>,
     val decorators: List<DecoratorNode>

@@ -369,16 +369,16 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         source: DeclarationDescriptor?
     ): DecoratorDescriptor {
         return DecoratorDescriptor(
-            callable =  classDescriptorForFqName(annotation.fqName!!)
+            callables = classDescriptorForFqName(annotation.fqName!!)
                 .companionObjectDescriptor!!
                 .unsubstitutedMemberScope
                 .getContributedDescriptors()
                 .filterIsInstance<CallableDescriptor>()
-                .single {
+                .filter {
                     it.visibility == Visibilities.PUBLIC &&
                             it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() != true
                 }
-                .let { callableForDescriptor(it as FunctionDescriptor) },
+                .map { callableForDescriptor(it as FunctionDescriptor) },
             annotationType = typeTranslator.toTypeRef(annotation.type, source),
             args = argsForAnnotation(annotation)
         )

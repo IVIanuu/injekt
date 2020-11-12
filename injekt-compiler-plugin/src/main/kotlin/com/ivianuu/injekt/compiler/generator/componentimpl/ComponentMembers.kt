@@ -337,17 +337,17 @@ class ComponentStatements(
             val decoratorFactoryType = typeTranslator.toClassifierRef(
                 moduleDescriptor.builtIns.getFunction(1)
             ).defaultType.typeWith(listOf(providerType, providerType))
-            emit("listOf<${decoratorFactoryType.renderExpanded()}>(")
+            emitLine("listOf<${decoratorFactoryType.renderExpanded()}>(")
             decorators.forEachIndexed { index, decorator ->
                 emit("{ _prev -> ")
                 var dependencyIndex = 0
                 emitCallableInvocation(
-                    decorator.descriptor.callable,
+                    decorator.callable,
                     decorator.receiver,
                     null,
-                    decorator.descriptor.callable.valueParameters
+                    decorator.callable.valueParameters
                         .map { valueParameter ->
-                            if (valueParameter.type == decorator.descriptor.callable.type) {
+                            if (valueParameter.type == decorator.callable.type) {
                                 { emit("_prev") }
                             } else {
                                 val dependencyRequest = decorator.dependencies[dependencyIndex++]
@@ -361,7 +361,8 @@ class ComponentStatements(
                 emit(" }")
                 if (index != decorators.lastIndex) emitLine(", ")
             }
-            emit(").fold({ ")
+            emitLine(")")
+            emit(".fold({ ")
             create()
             emitLine(" }) { acc, next -> ")
             emitLine("next(acc)")

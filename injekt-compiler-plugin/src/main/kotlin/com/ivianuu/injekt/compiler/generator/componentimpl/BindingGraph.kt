@@ -20,7 +20,6 @@ import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
-import com.ivianuu.injekt.compiler.generator.DecoratorDescriptor
 import com.ivianuu.injekt.compiler.generator.ModuleDescriptor
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.TypeTranslator
@@ -129,7 +128,7 @@ class BindingGraph(
                         owner
                     )
                     Callable.ContributionKind.DECORATOR -> moduleDecorators += DecoratorNode(
-                        DecoratorDescriptor(finalCallable, null, emptyMap()),
+                        finalCallable,
                         parentAccessExpression,
                         finalCallable.getDependencies(finalCallable.type, true),
                         emptyList() // todo support decorated decorators
@@ -649,16 +648,18 @@ class BindingGraph(
                 moduleDescriptor.builtIns.getFunction(0)
             ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
         }
-        return decorators.map { decorator ->
-            val substitutionMap = providerType.getSubstitutionMap(decorator.callable.type)
-            val finalCallable = decorator.callable.substitute(substitutionMap)
-            DecoratorNode(
-                decorator.copy(callable = finalCallable),
-                null,
-                finalCallable.getDependencies(type, true),
-                emptyList() // todo support decorated decorators
-            )
-        }
+        return decorators.flatMap { decorator ->
+            decorator.callables.map { callable ->
+                val substitutionMap = providerType.getSubstitutionMap(callable.type)
+                val finalCallable = callable.substitute(substitutionMap)
+                DecoratorNode(
+                    finalCallable,
+                    null,
+                    finalCallable.getDependencies(type, true),
+                    emptyList() // todo support decorated decorators
+                )
+            }
+        }.filter { providerType.isAssignable(it.callable.type) }
     }
 
     private fun Callable.getDependencies(type: TypeRef, isDecorator: Boolean): List<BindingRequest> {
@@ -684,24 +685,21 @@ class BindingGraph(
             ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
         }
         return (moduleDecorators
-            .filter { providerType.isAssignable(it.descriptor.callable.type) } +
+            .filter { providerType.isAssignable(it.callable.type) } +
                 declarationStore.decoratorsByType(type, callableKind)
                     .map { decorator ->
                         DecoratorNode(
-                            DecoratorDescriptor(decorator, null, emptyMap()),
+                            decorator,
                             null,
                             decorator.getDependencies(decorator.type, true),
                             emptyList() // todo support decorated decorators
                         )
                     })
             .map { decorator ->
-                val substitutionMap = providerType.getSubstitutionMap(
-                    decorator.descriptor.callable.originalType
-                )
-                val finalCallable = decorator.descriptor.callable
-                    .substitute(substitutionMap)
+                val substitutionMap = providerType.getSubstitutionMap(decorator.callable.originalType)
+                val finalCallable = decorator.callable.substitute(substitutionMap)
                 decorator.copy(
-                    descriptor = decorator.descriptor.copy(callable = finalCallable),
+                    callable = finalCallable,
                     dependencies = finalCallable.getDependencies(type, true)
                 )
             }

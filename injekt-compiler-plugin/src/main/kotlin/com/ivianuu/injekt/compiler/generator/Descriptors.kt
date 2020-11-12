@@ -71,8 +71,8 @@ data class ModuleDescriptor(
 )
 
 data class DecoratorDescriptor(
-    val callable: Callable,
     val annotationType: TypeRef?,
+    val callables: List<Callable>,
     val args: Map<Name, ComponentExpression>
 )
 

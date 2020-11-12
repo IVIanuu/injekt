@@ -46,6 +46,47 @@ class DecoratorTest {
     }
 
     @Test
+    fun testExplicitDecoratorWithMultipleCallables() = codegen(
+        """
+            val calls = mutableListOf<String>()
+            @Decorator
+            annotation class MyDecorator {
+                companion object {
+                    fun <T> a(myComponent: MyComponent, factory: () -> T): () -> T {
+                        return {
+                            calls += "a"
+                            factory()
+                        }
+                    }
+                    fun <T> b(myComponent: MyComponent, factory: () -> T): () -> T {
+                        return {
+                            calls += "b"
+                            factory()
+                        }
+                    }
+                }
+            }
+            
+            @MyDecorator
+            @Binding
+            fun foo() = Foo()
+            
+            @Component
+            abstract class MyComponent {
+                abstract val foo: Foo
+            }
+            
+            fun invoke(): List<String> {
+                component<MyComponent>().foo
+                return calls
+            }
+        """
+    ) {
+        val calls = invokeSingleFile<List<String>>()
+        assertEquals(listOf("b", "a"), calls)
+    }
+
+    @Test
     fun testImplicitDecorator() = codegen(
         """
             var callCount = 0
