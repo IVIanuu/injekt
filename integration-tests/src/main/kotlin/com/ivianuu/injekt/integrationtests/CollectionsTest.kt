@@ -205,12 +205,12 @@ class CollectionsTest {
             fun int() = 0
             
             @MapEntries
-            fun <V> genericSet(instance: V): Map<Int, V> = mapOf(instance.hashCode() to instance)
+            fun <V> genericMap(instance: V): Map<Int, V> = mapOf(instance.hashCode() to instance)
             
             @Component
-            abstract class SetComponent {
-                abstract val stringSet: Map<Int, String>
-                abstract val intSet: Map<Int, Int>
+            abstract class MapComponent {
+                abstract val stringMap: Map<Int, String>
+                abstract val intMap: Map<Int, Int>
             }
         """
     )
