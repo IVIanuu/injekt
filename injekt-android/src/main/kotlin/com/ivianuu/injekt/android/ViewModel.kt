@@ -20,15 +20,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
 import com.ivianuu.injekt.Decorator
-import kotlin.reflect.KClass
 
 @Decorator
 annotation class ActivityViewModel {
     companion object {
         inline fun <reified VM : ViewModel> decorate(
             storeOwner: ActivityViewModelStoreOwner,
-            noinline factory: () -> VM
-        ): VM = storeOwner.get(VM::class, factory)
+            crossinline factory: () -> VM
+        ): () -> VM = { storeOwner.get(factory) }
     }
 }
 
@@ -37,15 +36,14 @@ annotation class FragmentViewModel {
     companion object {
         inline fun <reified VM : ViewModel> decorate(
             storeOwner: FragmentViewModelStoreOwner,
-            noinline factory: () -> VM
-        ): VM = storeOwner.get(VM::class, factory)
+            crossinline factory: () -> VM
+        ): () -> VM = { storeOwner.get(factory) }
     }
 }
 
 @PublishedApi
-internal fun <VM : ViewModel> ViewModelStoreOwner.get(
-    klass: KClass<VM>,
-    viewModelFactory: () -> VM
+internal inline fun <reified VM : ViewModel> ViewModelStoreOwner.get(
+    crossinline viewModelFactory: () -> VM
 ): VM {
     return ViewModelProvider(
         this,
@@ -53,5 +51,5 @@ internal fun <VM : ViewModel> ViewModelStoreOwner.get(
             override fun <T : ViewModel?> create(modelClass: Class<T>): T =
                 viewModelFactory() as T
         }
-    )[klass.java]
+    )[VM::class.java]
 }

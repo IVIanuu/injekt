@@ -125,14 +125,11 @@ class ComponentStatements(
         }
 
         val maybeScopedExpression = if (binding.targetComponent == null || binding.cacheable)
-            rawExpression else ({
+            rawExpression else
             scoped(binding.type, binding.callableKind, false, binding.targetComponent!!, rawExpression)
-        })
 
         val maybeDecoratedExpression = if (binding.decorators.isEmpty()) maybeScopedExpression
-        else ({
-            decorated(binding.type, binding.decorators, maybeScopedExpression)
-        })
+        else decorated(binding.type, binding.decorators, maybeScopedExpression)
 
         val requestForType = owner.requests
             .firstOrNull { it.type == binding.type }
@@ -199,9 +196,9 @@ class ComponentStatements(
     private fun childFactoryExpression(binding: ChildComponentBindingNode): ComponentExpression = {
         emit("{ ")
         val params = binding.type.typeArguments.dropLast(1)
-        params.indices.forEach { paramIndex ->
-            emit("p$paramIndex")
-            if (paramIndex != params.lastIndex) emit(", ")
+        params.forEachIndexed { index, param ->
+            emit("p$index: ${param.renderExpanded()}")
+            if (index != params.lastIndex) emit(", ")
             else emitLine(" ->")
         }
         emitLine()
@@ -305,53 +302,43 @@ class ComponentStatements(
         emit("this")
     }
 
-    private fun CodeBuilder.decorated(
+    private fun decorated(
         type: TypeRef,
         decorators: List<DecoratorNode>,
         create: ComponentExpression
-    ) {
-        fun CodeBuilder.decorate(
-            decorator: DecoratorNode,
-            expression: ComponentExpression
-        ) {
-            decorator.decorators.fold<DecoratorNode, ComponentExpression>({
-                emitCallableInvocation(
-                    decorator.descriptor.callable,
-                    decorator.receiver,
-                    null,
-                    decorator.descriptor.callable.valueParameters
-                        .map { valueParameter ->
-                            if (valueParameter.type.isFunction &&
-                                    valueParameter.type.typeArguments.singleOrNull() == type) {
-                                expression
-                            } else {
-                                getBindingExpression(
-                                    valueParameter.toBindingRequest(decorator.descriptor.callable, emptyMap())
-                                )
-                            }
-                        },
-                    emptyList()
-                )
-            }) { acc, nextDecorator ->
-                {
-                    decorate(nextDecorator, acc)
-                }
-            }()
-        }
+    ): ComponentExpression {
         val initializer: CodeBuilder.() -> Unit = {
-            emitLine("{ ")
-            decorators.fold<DecoratorNode, ComponentExpression>({
-                emit("{ ")
-                create()
-                emit(" }")
-            }) { acc, innerDecorator ->
-                {
-                    decorate(innerDecorator, acc)
+            emit("run ")
+            braced {
+                emit("listOf<(() -> ${type.renderExpanded()}) -> () -> ${type.renderExpanded()}>(")
+                decorators.forEachIndexed { index, decorator ->
+                    emit("{ _prev -> ")
+                    emitCallableInvocation(
+                        decorator.descriptor.callable,
+                        decorator.receiver,
+                        null,
+                        decorator.descriptor.callable.valueParameters
+                            .map { valueParameter ->
+                                if (valueParameter.type.isFunction &&
+                                    valueParameter.type.typeArguments.singleOrNull() == type) {
+                                    { emit("_prev") }
+                                } else {
+                                    getBindingExpression(
+                                        valueParameter.toBindingRequest(decorator.descriptor.callable, emptyMap())
+                                    )
+                                }
+                            },
+                        emptyList()
+                    )
+                    emit(" }")
+                    if (index != decorators.lastIndex) emitLine(", ")
                 }
-            }()
-            emit("()")
-            emitLine()
-            emit(" }")
+                emit(").fold({ ")
+                create()
+                emitLine(" }) { acc, next -> ")
+                emitLine("next(acc)")
+                emitLine("}")
+            }
         }
         val name = "${type.uniqueTypeName()}_Provider".asNameId()
         val providerProperty = ComponentCallable(
@@ -371,16 +358,18 @@ class ComponentStatements(
             typeParameters = emptyList()
         ).also { owner.members += it }
 
-        emit("${providerProperty.name}()")
+        return {
+            emit("${providerProperty.name}()")
+        }
     }
 
-    private fun CodeBuilder.scoped(
+    private fun scoped(
         type: TypeRef,
         callableKind: Callable.CallableKind,
         frameworkType: Boolean,
         scopeComponentType: TypeRef,
         create: ComponentExpression
-    ) {
+    ): ComponentExpression {
         var scopeComponent = owner
         while(scopeComponent.componentType != scopeComponentType) {
             scopeComponent = scopeComponent.parent!!
@@ -418,15 +407,13 @@ class ComponentStatements(
                 type = mutexType,
                 initializer = null,
                 isMutable = true,
-                body = {
-                    scoped(
-                        mutexType,
-                        Callable.CallableKind.DEFAULT,
-                        true,
-                        scopeComponentType
-                    ) {
-                        emit("${InjektFqNames.Mutex}()")
-                    }
+                body = scoped(
+                    mutexType,
+                    Callable.CallableKind.DEFAULT,
+                    true,
+                    scopeComponentType
+                ) {
+                    emit("${InjektFqNames.Mutex}()")
                 },
                 isOverride = false,
                 isProperty = false,
@@ -438,41 +425,43 @@ class ComponentStatements(
             ).also { scopeComponent.members += it }
         }
 
-        emit("run ")
-        braced {
-            emit("var value = ")
-            scopeComponentExpression()
-            emitLine(".${cacheProperty.name}")
-            emit("if (value !== ")
-            scopeComponentExpression()
-            emitLine(") return@run value as ${type.renderExpanded()}")
-            fun emitInvocation() {
-                emit("value = ")
+        return {
+            emit("run ")
+            braced {
+                emit("var value = ")
                 scopeComponentExpression()
                 emitLine(".${cacheProperty.name}")
                 emit("if (value !== ")
                 scopeComponentExpression()
                 emitLine(") return@run value as ${type.renderExpanded()}")
-                emit("value = ")
-                create()
-                emitLine()
-                scopeComponentExpression()
-                emitLine(".${cacheProperty.name} = value")
-                emitLine("return@run value as ${type.renderExpanded()}")
-            }
-            when (callableKind) {
-                Callable.CallableKind.SUSPEND -> {
-                    emit("_mutex().withLock ")
-                    braced { emitInvocation() }
-                }
-                Callable.CallableKind.DEFAULT -> {
-                    emit("synchronized(")
+                fun emitInvocation() {
+                    emit("value = ")
                     scopeComponentExpression()
-                    emit(") ")
-                    braced { emitInvocation() }
+                    emitLine(".${cacheProperty.name}")
+                    emit("if (value !== ")
+                    scopeComponentExpression()
+                    emitLine(") return@run value as ${type.renderExpanded()}")
+                    emit("value = ")
+                    create()
+                    emitLine()
+                    scopeComponentExpression()
+                    emitLine(".${cacheProperty.name} = value")
+                    emitLine("return@run value as ${type.renderExpanded()}")
                 }
-                // todo what to do here?
-                Callable.CallableKind.COMPOSABLE -> emitInvocation()
+                when (callableKind) {
+                    Callable.CallableKind.SUSPEND -> {
+                        emit("_mutex().withLock ")
+                        braced { emitInvocation() }
+                    }
+                    Callable.CallableKind.DEFAULT -> {
+                        emit("synchronized(")
+                        scopeComponentExpression()
+                        emit(") ")
+                        braced { emitInvocation() }
+                    }
+                    // todo what to do here?
+                    Callable.CallableKind.COMPOSABLE -> emitInvocation()
+                }
             }
         }
     }

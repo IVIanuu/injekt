@@ -20,12 +20,12 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.Adapter
+import com.ivianuu.injekt.Effect
 import com.ivianuu.injekt.ImplBinding
 import com.ivianuu.injekt.MapEntries
 import kotlin.reflect.KClass
 
-@Adapter
+@Effect
 annotation class WorkerBinding {
     companion object {
         @MapEntries
