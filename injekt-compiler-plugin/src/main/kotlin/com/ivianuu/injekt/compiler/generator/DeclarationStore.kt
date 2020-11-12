@@ -125,7 +125,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     .map { callableForDescriptor(it.getter!!) })
             .filter {
                 it.contributionKind == Callable.ContributionKind.BINDING ||
-                        it.effects.isNotEmpty() ||
                         (it.contributionKind != Callable.ContributionKind.DECORATOR &&
                                 it.decorators.isNotEmpty())
             }
@@ -136,7 +135,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         (allBindings + generatedCallables
             .filter {
                 it.first.contributionKind == Callable.ContributionKind.BINDING ||
-                        it.first.effects.isNotEmpty() ||
                         (it.first.contributionKind != Callable.ContributionKind.DECORATOR &&
                                 it.first.decorators.isNotEmpty())
             }
