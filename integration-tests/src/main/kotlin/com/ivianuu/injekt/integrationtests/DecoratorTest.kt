@@ -4,6 +4,7 @@ import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -132,6 +133,35 @@ class DecoratorTest {
             }
         """
     )
+
+    @Test
+    fun testDecoratorWithDifferentCallContextIsNotApplicable() = codegen(
+        """
+            var called = false
+            @Decorator
+            fun <T> decorate(factory: suspend () -> T): suspend () -> T { 
+                return {
+                    called = true
+                    factory()
+                }
+            }
+            
+            @Binding
+            fun foo() = Foo()
+
+            @Component
+            abstract class MyComponent {
+                abstract val foo: Foo
+            }
+            
+            fun invoke(): Boolean {
+                component<MyComponent>().foo
+                return called
+            }
+        """
+    ) {
+        assertFalse(invokeSingleFile<Boolean>())
+    }
 
     @Test
     fun testSuspendDecorator() = codegen(
