@@ -287,9 +287,7 @@ class ComponentStatements(
             binding.declaredInComponent,
             binding.dependencies.map { request ->
                 val dependencyBinding = owner.graph.getBinding(request)
-                if (dependencyBinding is MissingBindingNode) {
-                    return@map null
-                }
+                if (dependencyBinding is MissingBindingNode) return@map null
                 getBindingExpression(request)
             }
         )
@@ -339,9 +337,10 @@ class ComponentStatements(
                                 if (valueParameter.type == decorator.descriptor.callable.type) {
                                     { emit("_prev") }
                                 } else {
-                                    getBindingExpression(
-                                        valueParameter.toBindingRequest(decorator.descriptor.callable, emptyMap())
-                                    )
+                                    val request = valueParameter.toBindingRequest(decorator.descriptor.callable, emptyMap())
+                                    val dependencyBinding = owner.graph.getBinding(request)
+                                    if (dependencyBinding is MissingBindingNode) return@map null
+                                    getBindingExpression(request)
                                 }
                             },
                         emptyList()
