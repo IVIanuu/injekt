@@ -283,8 +283,8 @@ class BindingGraph(
             .flatMap { decorator ->
                 decorator.descriptor.callable.getDependencies(binding.type)
                     .filter { decoratorDependency ->
-                        !decoratorDependency.type.isFunction ||
-                                decoratorDependency.type.typeArguments.singleOrNull() != binding.type
+                        // todo might be unsafe
+                        decoratorDependency.type != decorator.descriptor.callable.type
                     }
             }
             .forEach { check(it) }

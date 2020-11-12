@@ -27,6 +27,7 @@ import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.TypeTranslator
 import com.ivianuu.injekt.compiler.generator.asNameId
+import com.ivianuu.injekt.compiler.generator.copy
 import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.fullyExpandedType
 import com.ivianuu.injekt.compiler.generator.render
@@ -129,7 +130,7 @@ class ComponentStatements(
             scoped(binding.type, binding.callableKind, false, binding.targetComponent!!, rawExpression)
 
         val maybeDecoratedExpression = if (binding.decorators.isEmpty()) maybeScopedExpression
-        else decorated(binding.type, binding.decorators, maybeScopedExpression)
+        else decorated(binding.type, binding.callableKind, binding.decorators, maybeScopedExpression)
 
         val requestForType = owner.requests
             .firstOrNull { it.type == binding.type }
@@ -304,13 +305,29 @@ class ComponentStatements(
 
     private fun decorated(
         type: TypeRef,
+        callableKind: Callable.CallableKind,
         decorators: List<DecoratorNode>,
         create: ComponentExpression
     ): ComponentExpression {
+        val providerType = when (callableKind) {
+            Callable.CallableKind.DEFAULT -> typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getFunction(0)
+            ).defaultType.typeWith(listOf(type))
+            Callable.CallableKind.SUSPEND -> typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getSuspendFunction(0)
+            ).defaultType.typeWith(listOf(type))
+            Callable.CallableKind.COMPOSABLE -> typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getFunction(0)
+            ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
+        }
+
         val initializer: CodeBuilder.() -> Unit = {
             emit("run ")
             braced {
-                emit("listOf<(() -> ${type.renderExpanded()}) -> () -> ${type.renderExpanded()}>(")
+                val decoratorFactoryType = typeTranslator.toClassifierRef(
+                    moduleDescriptor.builtIns.getFunction(1)
+                ).defaultType.typeWith(listOf(providerType, providerType))
+                emit("listOf<${decoratorFactoryType.renderExpanded()}>(")
                 decorators.forEachIndexed { index, decorator ->
                     emit("{ _prev -> ")
                     emitCallableInvocation(
@@ -319,8 +336,7 @@ class ComponentStatements(
                         null,
                         decorator.descriptor.callable.valueParameters
                             .map { valueParameter ->
-                                if (valueParameter.type.isFunction &&
-                                    valueParameter.type.typeArguments.singleOrNull() == type) {
+                                if (valueParameter.type == decorator.descriptor.callable.type) {
                                     { emit("_prev") }
                                 } else {
                                     getBindingExpression(
@@ -343,9 +359,7 @@ class ComponentStatements(
         val name = "${type.uniqueTypeName()}_Provider".asNameId()
         val providerProperty = ComponentCallable(
             name = name,
-            type = typeTranslator.toClassifierRef(
-                moduleDescriptor.builtIns.getFunction(0)
-            ).defaultType.typeWith(listOf(type)),
+            type = providerType,
             initializer = initializer,
             isMutable = false,
             body = null,

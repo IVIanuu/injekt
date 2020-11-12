@@ -113,4 +113,46 @@ class DecoratorTest {
         assertSame(a, b)
     }
 
+    @Test
+    fun testSuspendDecorator() = codegen(
+        """
+            @Decorator
+            annotation class MyDecorator {
+                companion object {
+                    fun <T> decorate(factory: suspend () -> T): suspend () -> T = factory
+                }
+            }
+            
+            @MyDecorator
+            suspend fun foo() = Foo()
+            
+            @Component
+            abstract class MyComponent {
+                abstract suspend fun foo(): Foo
+            }
+        """
+    )
+
+    @Test
+    fun testComposableDecorator() = codegen(
+        """
+            @Decorator
+            annotation class MyDecorator {
+                companion object {
+                    fun <T> decorate(factory: @Composable () -> T): @Composable () -> T = factory
+                }
+            }
+            
+            @MyDecorator
+            @Composable
+            fun foo() = Foo()
+            
+            @Component
+            abstract class MyComponent {
+                @Composable
+                abstract val foo: Foo
+            }
+        """
+    )
+
 }
