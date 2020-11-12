@@ -381,6 +381,9 @@ class BindingGraph(
             val exact = filter { it.rawType == request.type }
             if (exact.size == 1) return exact.single()
 
+            // todo include most concrete
+
+            // todo guard against stackoverflow
             exact
                 .singleOrNull { candidate ->
                     candidate.dependencies.all { dependency ->
