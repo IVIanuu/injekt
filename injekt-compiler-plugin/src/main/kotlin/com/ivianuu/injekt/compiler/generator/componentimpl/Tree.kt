@@ -125,6 +125,7 @@ sealed class BindingNode(
     var callableKind: Callable.CallableKind
 ) {
     abstract val dependencies: List<BindingRequest>
+    abstract val lazyDependencies: Boolean
     abstract val rawType: TypeRef
     abstract val owner: ComponentImpl
     abstract val origin: FqName?
@@ -170,6 +171,8 @@ class SelfBindingNode(
         get() = false
     override val inline: Boolean
         get() = true
+    override val lazyDependencies: Boolean
+        get() = false
 }
 
 class AssistedBindingNode(
@@ -182,6 +185,8 @@ class AssistedBindingNode(
         get() = true
     override val dependencies: List<BindingRequest>
         get() = emptyList()
+    override val lazyDependencies: Boolean
+        get() = false
     override val isExternal: Boolean
         get() = false
     override val origin: FqName?
@@ -215,6 +220,8 @@ class ChildComponentBindingNode(
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val dependencies: List<BindingRequest>
         get() = emptyList()
+    override val lazyDependencies: Boolean
+        get() = false
     override val rawType: TypeRef
         get() = type
     override val receiver: ComponentExpression?
@@ -241,6 +248,8 @@ class InputBindingNode(
         get() = false
     override val dependencies: List<BindingRequest>
         get() = emptyList()
+    override val lazyDependencies: Boolean
+        get() = false
     override val isExternal: Boolean
         get() = false
     override val origin: FqName?
@@ -264,6 +273,8 @@ class CallableBindingNode(
     override val receiver: ComponentExpression?,
     val callable: Callable
 ) : BindingNode(type, callable.callableKind) {
+    override val lazyDependencies: Boolean
+        get() = callable.isFunBinding
     override val isExternal: Boolean
         get() = callable.isExternal
     override val targetComponent: TypeRef?
@@ -292,6 +303,8 @@ class MapBindingNode(
     override val dependencies: List<BindingRequest>,
     val entries: List<CallableWithReceiver>,
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
+    override val lazyDependencies: Boolean
+        get() = false
     override val rawType: TypeRef
         get() = type
     override val origin: FqName?
@@ -328,6 +341,8 @@ class MissingBindingNode(
         get() = null
     override val dependencies: List<BindingRequest>
         get() = emptyList()
+    override val lazyDependencies: Boolean
+        get() = false
     override val inline: Boolean
         get() = false
     override val isExternal: Boolean
@@ -348,6 +363,8 @@ class ProviderBindingNode(
     override val dependencies: List<BindingRequest>,
     override val origin: FqName?,
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
+    override val lazyDependencies: Boolean
+        get() = true
     override val declaredInComponent: ComponentImpl?
         get() = null
     override val receiver: ComponentExpression?
@@ -370,6 +387,8 @@ class SetBindingNode(
     override val dependencies: List<BindingRequest>,
     val elements: List<CallableWithReceiver>,
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
+    override val lazyDependencies: Boolean
+        get() = false
     override val rawType: TypeRef
         get() = type
     override val origin: FqName?
