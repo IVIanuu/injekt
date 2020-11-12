@@ -238,7 +238,7 @@ class EssentialsTest {
             annotation class State
             
             @Binding
-            operator fun <S : Any?> Store<S, *>.component1(): @State S = state
+            operator fun <S> Store<S, *>.component1(): @State S = state
 
             @Effect
             annotation class StateEffect {

@@ -125,7 +125,6 @@ sealed class BindingNode(
     var callableKind: Callable.CallableKind
 ) {
     abstract val dependencies: List<BindingRequest>
-    abstract val decorators: List<DecoratorNode>
     abstract val rawType: TypeRef
     abstract val owner: ComponentImpl
     abstract val origin: FqName?
@@ -136,10 +135,14 @@ sealed class BindingNode(
     abstract val cacheable: Boolean
     abstract val inline: Boolean
 
+    lateinit var decorators: List<DecoratorNode>
+
     protected var _type = type
     val type: TypeRef by this::_type
     
-    open fun refineType(dependencyBindings: List<BindingNode>) {
+    open fun refineType(
+        dependencyBindings: List<BindingNode>
+    ) {
         dependencies.zip(dependencyBindings).forEach { (request, binding) ->
             val substitutionMap = binding.type.getStarSubstitutionMap(request.type)
             _type = _type.substitute(substitutionMap)
@@ -149,7 +152,6 @@ sealed class BindingNode(
 
 class SelfBindingNode(
     type: TypeRef,
-    override val decorators: List<DecoratorNode>,
     val component: ComponentImpl
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val dependencies: List<BindingRequest>
@@ -173,7 +175,6 @@ class SelfBindingNode(
 class AssistedBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl,
-    override val decorators: List<DecoratorNode>,
     val childComponent: ComponentImpl,
     val assistedTypes: List<TypeRef>
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
@@ -210,7 +211,6 @@ class ChildComponentBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl,
     override val origin: FqName?,
-    override val decorators: List<DecoratorNode>,
     val childComponent: ComponentImpl,
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val dependencies: List<BindingRequest>
@@ -233,8 +233,7 @@ class ChildComponentBindingNode(
 
 class InputBindingNode(
     type: TypeRef,
-    override val owner: ComponentImpl,
-    override val decorators: List<DecoratorNode>
+    override val owner: ComponentImpl
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val declaredInComponent: ComponentImpl
         get() = owner
@@ -262,7 +261,6 @@ class CallableBindingNode(
     override val owner: ComponentImpl,
     override val declaredInComponent: ComponentImpl?,
     override val dependencies: List<BindingRequest>,
-    override val decorators: List<DecoratorNode>,
     override val receiver: ComponentExpression?,
     val callable: Callable
 ) : BindingNode(type, callable.callableKind) {
@@ -292,7 +290,6 @@ class MapBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
-    override val decorators: List<DecoratorNode>,
     val entries: List<CallableWithReceiver>,
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val rawType: TypeRef
@@ -331,8 +328,6 @@ class MissingBindingNode(
         get() = null
     override val dependencies: List<BindingRequest>
         get() = emptyList()
-    override val decorators: List<DecoratorNode>
-        get() = emptyList()
     override val inline: Boolean
         get() = false
     override val isExternal: Boolean
@@ -351,7 +346,6 @@ class ProviderBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
-    override val decorators: List<DecoratorNode>,
     override val origin: FqName?,
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val declaredInComponent: ComponentImpl?
@@ -374,7 +368,6 @@ class SetBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
-    override val decorators: List<DecoratorNode>,
     val elements: List<CallableWithReceiver>,
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val rawType: TypeRef

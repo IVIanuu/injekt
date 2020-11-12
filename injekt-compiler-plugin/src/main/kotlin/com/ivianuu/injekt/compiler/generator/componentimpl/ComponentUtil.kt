@@ -12,7 +12,7 @@ fun ValueParameterRef.toBindingRequest(
     callable: Callable,
     substitutionMap: Map<ClassifierRef, TypeRef>
 ) = BindingRequest(
-    if (callable.isFunBinding) {
+    type = if (callable.isFunBinding) {
         type
             .typeArguments
             .first()
@@ -22,8 +22,8 @@ fun ValueParameterRef.toBindingRequest(
         type.substitute(substitutionMap)
             .replaceTypeParametersWithStars()
     },
-    callable.fqName.child(name),
-    !hasDefault,
-    if (callable.isFunBinding) type.callableKind
+    origin = callable.fqName.child(name),
+    required = !hasDefault,
+    callableKind = if (callable.isFunBinding) type.callableKind
     else callable.callableKind
 )

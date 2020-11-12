@@ -27,6 +27,7 @@ data class Callable(
     val fqName: FqName,
     val name: Name,
     val type: TypeRef,
+    val originalType: TypeRef = type,
     val typeParameters: List<ClassifierRef>,
     val valueParameters: List<ValueParameterRef>,
     val targetComponent: TypeRef?,
