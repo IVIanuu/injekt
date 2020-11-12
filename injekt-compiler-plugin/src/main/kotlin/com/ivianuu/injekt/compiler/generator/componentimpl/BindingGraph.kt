@@ -225,11 +225,7 @@ class BindingGraph(
             val relevantSubchain = chain.subList(
                 chain.indexOf(binding), chain.lastIndex
             )
-            if (relevantSubchain.any {
-                    it is ProviderBindingNode ||
-                            it.type.classifier.fqName.asString().startsWith("kotlin.Function") ||
-                            (it is CallableBindingNode && it.callable.isFunBinding)
-                }) return
+            if (relevantSubchain.any { it.lazyDependencies }) return
             error(
                 "Circular dependency ${relevantSubchain.map { it.type.render() }} already contains ${binding.type.render()} $chain"
             )
