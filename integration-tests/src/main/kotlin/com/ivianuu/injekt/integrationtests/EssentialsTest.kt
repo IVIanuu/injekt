@@ -280,7 +280,7 @@ class EssentialsTest {
             }
             
             @Binding(MyComponent::class)
-            fun myStore2(): Store<MyState2, MyAction2> {
+            suspend fun myStore2(): Store<MyState2, MyAction2> {
                 return object : Store<MyState2, MyAction2> {
                     override val state: MyState2 = MyState2(this)
                     override val dispatch: MyAction2 = MyAction2(this)
@@ -288,7 +288,7 @@ class EssentialsTest {
             }
             
             @FunBinding
-            fun MyPage2(state: @State MyState2): Pair<Any, Any> {
+            suspend fun MyPage2(state: @State MyState2): Pair<Any, Any> {
                 return state.store to state.store
             }
             

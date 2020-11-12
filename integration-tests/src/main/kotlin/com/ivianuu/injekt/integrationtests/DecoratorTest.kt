@@ -164,6 +164,35 @@ class DecoratorTest {
     }
 
     @Test
+    fun testDecoratorWithDifferentCallContextIsNotApplicable2() = codegen(
+        """
+            var called = false
+            @Decorator
+            fun <T> decorate(factory: () -> T): () -> T { 
+                return {
+                    called = true
+                    factory()
+                }
+            }
+            
+            @Binding
+            suspend fun foo() = Foo()
+
+            @Component
+            abstract class MyComponent {
+                abstract suspend fun foo(): Foo
+            }
+            
+            fun invoke(): Boolean {
+                runBlocking { component<MyComponent>().foo() }
+                return called
+            }
+        """
+    ) {
+        assertFalse(invokeSingleFile<Boolean>())
+    }
+
+    @Test
     fun testSuspendDecorator() = codegen(
         """
             @Decorator

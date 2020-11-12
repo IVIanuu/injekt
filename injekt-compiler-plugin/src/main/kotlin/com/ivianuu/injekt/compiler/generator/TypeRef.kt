@@ -408,6 +408,7 @@ fun TypeRef.isAssignable(superType: TypeRef): Boolean {
     if (isStarProjection || superType.isStarProjection) return true
 
     if (qualifiers != superType.qualifiers) return false
+    if (isComposableRecursive != superType.isComposableRecursive) return false
 
     if (superType.classifier.isTypeParameter) {
         return superType.classifier.superTypes.all { upperBound ->
@@ -429,6 +430,7 @@ fun TypeRef.isSubTypeOf(superType: TypeRef): Boolean {
         return true
 
     if (qualifiers != superType.qualifiers) return false
+    if (isComposableRecursive != superType.isComposableRecursive) return false
     if (classifier.fqName == superType.classifier.fqName) return true
 
     if (superType.classifier.isTypeParameter && superType.superTypes.all {
@@ -439,6 +441,10 @@ fun TypeRef.isSubTypeOf(superType: TypeRef): Boolean {
     return fullyExpandedType.superTypes.any { it.isSubTypeOf(superType) } ||
             (fullyExpandedType != this && fullyExpandedType.isSubTypeOf(superType))
 }
+
+val TypeRef.isComposableRecursive: Boolean
+    get() = isComposable || expandedType?.isComposableRecursive == true ||
+            superTypes.any { it.isComposableRecursive }
 
 val TypeRef.fullyExpandedType: TypeRef
     get() = expandedType?.fullyExpandedType ?: this

@@ -637,19 +637,19 @@ class BindingGraph(
         this += collections.getNodes(request)
     }
 
-    private fun Callable.getCallableDecorators(type: TypeRef) =
-        decorators.map { decorator ->
-            val providerType = when (callableKind) {
-                Callable.CallableKind.DEFAULT -> typeTranslator.toClassifierRef(
-                    moduleDescriptor.builtIns.getFunction(0)
-                ).defaultType.typeWith(listOf(type))
-                Callable.CallableKind.SUSPEND -> typeTranslator.toClassifierRef(
-                    moduleDescriptor.builtIns.getSuspendFunction(0)
-                ).defaultType.typeWith(listOf(type))
-                Callable.CallableKind.COMPOSABLE -> typeTranslator.toClassifierRef(
-                    moduleDescriptor.builtIns.getFunction(0)
-                ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
-            }
+    private fun Callable.getCallableDecorators(type: TypeRef): List<DecoratorNode> {
+        val providerType = when (callableKind) {
+            Callable.CallableKind.DEFAULT -> typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getFunction(0)
+            ).defaultType.typeWith(listOf(type))
+            Callable.CallableKind.SUSPEND -> typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getSuspendFunction(0)
+            ).defaultType.typeWith(listOf(type))
+            Callable.CallableKind.COMPOSABLE -> typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getFunction(0)
+            ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
+        }
+        return decorators.map { decorator ->
             val substitutionMap = providerType.getSubstitutionMap(decorator.callable.type)
             val finalCallable = decorator.callable.substitute(substitutionMap)
             DecoratorNode(
@@ -659,6 +659,7 @@ class BindingGraph(
                 emptyList() // todo support decorated decorators
             )
         }
+    }
 
     private fun Callable.getDependencies(type: TypeRef, isDecorator: Boolean): List<BindingRequest> {
         val substitutionMap = type.getSubstitutionMap(this.type)
@@ -683,8 +684,8 @@ class BindingGraph(
             ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
         }
         return (moduleDecorators
-            .filter { type.isAssignable(it.descriptor.callable.type) } +
-                declarationStore.decoratorsByType(type)
+            .filter { providerType.isAssignable(it.descriptor.callable.type) } +
+                declarationStore.decoratorsByType(type, callableKind)
                     .map { decorator ->
                         DecoratorNode(
                             DecoratorDescriptor(decorator, null, emptyMap()),

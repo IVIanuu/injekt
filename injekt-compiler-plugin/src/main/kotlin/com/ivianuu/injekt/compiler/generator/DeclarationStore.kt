@@ -165,10 +165,18 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .map { it.first })
     }
     private val decoratorsForType = mutableMapOf<TypeRef, List<Callable>>()
-    fun decoratorsByType(type: TypeRef): List<Callable> = decoratorsForType.getOrPut(type) {
-        val providerType = typeTranslator.toClassifierRef(
-            module.builtIns.getFunction(0)
-        ).defaultType.typeWith(listOf(type))
+    fun decoratorsByType(type: TypeRef, callableKind: Callable.CallableKind): List<Callable> = decoratorsForType.getOrPut(type) {
+        val providerType = when (callableKind) {
+            Callable.CallableKind.DEFAULT -> typeTranslator.toClassifierRef(
+                module.builtIns.getFunction(0)
+            ).defaultType.typeWith(listOf(type))
+            Callable.CallableKind.SUSPEND -> typeTranslator.toClassifierRef(
+                module.builtIns.getSuspendFunction(0)
+            ).defaultType.typeWith(listOf(type))
+            Callable.CallableKind.COMPOSABLE -> typeTranslator.toClassifierRef(
+                module.builtIns.getFunction(0)
+            ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
+        }
         return allDecorators
             .filter { providerType.isAssignable(it.type) }
     }
