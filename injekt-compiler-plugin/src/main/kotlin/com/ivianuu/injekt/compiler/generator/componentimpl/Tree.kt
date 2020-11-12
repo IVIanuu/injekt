@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.generator.componentimpl
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.Callable
-import com.ivianuu.injekt.compiler.generator.ClassifierRef
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.DecoratorDescriptor
 import com.ivianuu.injekt.compiler.generator.TypeRef
@@ -391,8 +390,7 @@ class SetBindingNode(
 data class CallableWithReceiver(
     val callable: Callable,
     val receiver: ComponentExpression?,
-    val declaredInComponent: ComponentImpl?,
-    val substitutionMap: Map<ClassifierRef, TypeRef>
+    val declaredInComponent: ComponentImpl?
 )
 
 data class DecoratorNode(

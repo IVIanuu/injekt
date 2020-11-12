@@ -125,8 +125,7 @@ class BindingGraph(
                     Callable.ContributionKind.BINDING -> moduleBindingCallables += CallableWithReceiver(
                         finalCallable,
                         parentAccessExpression,
-                        owner,
-                        emptyMap()
+                        owner
                     )
                     Callable.ContributionKind.DECORATOR -> moduleDecorators += DecoratorNode(
                         DecoratorDescriptor(finalCallable, null, emptyMap()),
@@ -138,8 +137,7 @@ class BindingGraph(
                             CallableWithReceiver(
                                 finalCallable,
                                 parentAccessExpression,
-                                owner,
-                                emptyMap()
+                                owner
                             )
                         )
                     }
@@ -148,8 +146,7 @@ class BindingGraph(
                             CallableWithReceiver(
                                 finalCallable,
                                 parentAccessExpression,
-                                owner,
-                                emptyMap()
+                                owner
                             )
                         )
                     }
@@ -723,22 +720,36 @@ class BindingCollections(
     private val mapEntriesByType = mutableMapOf<TypeRef, List<CallableWithReceiver>>()
     private fun getMapEntries(type: TypeRef): List<CallableWithReceiver> {
         return mapEntriesByType.getOrPut(type) {
-            (parent?.getMapEntries(type) ?: emptyList()) +
+            ((parent?.getMapEntries(type) ?: emptyList()) +
                     (if (parent == null) declarationStore.mapEntriesByType(type)
-                        .map { CallableWithReceiver(it, null, null, emptyMap()) }
+                        .map { CallableWithReceiver(it, null, null) }
                     else emptyList()) +
-                    (thisMapEntries[type] ?: emptyList())
+                    (thisMapEntries[type] ?: emptyList()))
+                .map { entry ->
+                    entry.copy(
+                        callable = entry.callable.substitute(
+                            type.getSubstitutionMap(entry.callable.type)
+                        )
+                    )
+                }
         }
     }
 
     private val setElementsByType = mutableMapOf<TypeRef, List<CallableWithReceiver>>()
     private fun getSetElements(type: TypeRef): List<CallableWithReceiver> {
         return setElementsByType.getOrPut(type) {
-            (parent?.getSetElements(type) ?: emptyList()) +
+            ((parent?.getSetElements(type) ?: emptyList()) +
                     (if (parent == null) declarationStore.setElementsByType(type)
-                        .map { CallableWithReceiver(it, null, null, emptyMap()) }
+                        .map { CallableWithReceiver(it, null, null) }
                     else emptyList()) +
-                (thisSetElements[type] ?: emptyList())
+                    (thisSetElements[type] ?: emptyList()))
+                .map { element ->
+                    element.copy(
+                        callable = element.callable.substitute(
+                            type.getSubstitutionMap(element.callable.type)
+                        )
+                    )
+                }
         }
     }
 
@@ -750,11 +761,11 @@ class BindingCollections(
                     MapBindingNode(
                         type = request.type,
                         owner = owner,
-                        dependencies = entries.flatMap { (entry, _, _, substitutionMap) ->
+                        dependencies = entries.flatMap { (entry) ->
                             entry.valueParameters
                                 .map {
                                     BindingRequest(
-                                        it.type.substitute(substitutionMap),
+                                        it.type,
                                         entry.fqName.child(it.name),
                                         it.hasDefault,
                                         entry.callableKind
@@ -771,11 +782,11 @@ class BindingCollections(
                     SetBindingNode(
                         type = request.type,
                         owner = owner,
-                        dependencies = elements.flatMap { (element, _, _, substitutionMap) ->
+                        dependencies = elements.flatMap { (element) ->
                             element.valueParameters
                                 .map {
                                     BindingRequest(
-                                        it.type.substitute(substitutionMap),
+                                        it.type,
                                         element.fqName.child(it.name),
                                         it.hasDefault,
                                         element.callableKind
