@@ -2,8 +2,6 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.multiCodegen
-import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertSame
 import org.junit.Test
 
@@ -126,7 +124,7 @@ class EssentialsTest {
             
             internal typealias BoundStore<S, A> = Store<S, A>
             
-            @Adapter
+            @Effect
             annotation class StoreBinding {
                 companion object { 
                     @Binding(MyComponent::class)
@@ -226,60 +224,87 @@ class EssentialsTest {
     }
 
     @Test
-    fun testBoundedGenericWithAlias() = multiCodegen(
-        listOf(
-            source(
-                """
-                    interface ViewModel
+    fun testStore5() = codegen(
+        """
+            interface Scope
             
-                    interface ViewModelStore
+            interface Store<S, A> {
+                val state: S
+                val dispatch: A
+            }
             
-                    @Binding
-                    class DefaultViewModelStore : ViewModelStore
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    @Adapter
-                    annotation class ViewModelBinding {
-                        companion object {
-                            @Binding
-                            fun <T : ViewModel> bind(
-                                getViewModel: getViewModel<T, DefaultViewModelStore>
-                            ): T = getViewModel()
-                        }
-                    }
-                    
-                    @FunBinding
-                    inline fun <reified VM : ViewModel, VMSO : ViewModelStore> getViewModel(
-                        store: VMSO,
-                        noinline provider: () -> VM
-                    ) = provider()
-                    """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    @ViewModelBinding
-                    class MyViewModel : ViewModel
-                    
-                    @FunBinding
-                    fun WithMyViewModel(
-                        viewModelFactory: () -> MyViewModel,
-                        @FunApi children: (MyViewModel) -> Unit 
-                    ) {
-                    }
-                    
-                    @Component
-                    abstract class MyComponent {
-                        abstract val withMyViewModel: WithMyViewModel
-                    }
-                """
-            )
-        )
-    )
+            @Qualifier
+            @Target(AnnotationTarget.TYPE)
+            annotation class State
+            
+            @Binding
+            operator fun <S> Store<S, *>.component1(): @State S = state
+
+            @Effect
+            annotation class StateEffect {
+                companion object {
+                    @SetElements
+                    fun <T : (S) -> Unit, S> intoSet(block: T) = setOf<(S) -> Unit>(block)
+                }
+            }
+            
+            @Decorator
+            fun <T : Store<S, A>, S, A> stateEffectStoreDecorator(
+                stateEffects: Set<(S) -> Unit>?,
+                factory: () -> T
+            ): () -> T = factory
+
+            class MyState(val store: Store<MyState, MyAction>)
+            class MyAction(val store: Store<MyState, MyAction>)
+            
+            @Binding(MyComponent::class)
+            fun myStore(): Store<MyState, MyAction> {
+                return object : Store<MyState, MyAction> {
+                    override val state: MyState = MyState(this)
+                    override val dispatch: MyAction = MyAction(this)
+                }
+            }
+            
+            @FunBinding
+            fun MyPage(state: @State MyState): Pair<Any, Any> {
+                return state.store to state.store
+            }
+            
+            class MyState2(val store: Store<MyState2, MyAction2>)
+            class MyAction2(val store: Store<MyState2, MyAction2>)
+            
+            @StateEffect
+            @FunBinding
+            fun MyStateEffect2(@FunApi myState2: MyState2) {
+            
+            }
+            
+            @Binding(MyComponent::class)
+            suspend fun myStore2(): Store<MyState2, MyAction2> {
+                return object : Store<MyState2, MyAction2> {
+                    override val state: MyState2 = MyState2(this)
+                    override val dispatch: MyAction2 = MyAction2(this)
+                }
+            }
+            
+            @FunBinding
+            suspend fun MyPage2(state: @State MyState2): Pair<Any, Any> {
+                return state.store to state.store
+            }
+            
+            @Component
+            abstract class MyComponent {
+                abstract val myPage: MyPage
+                abstract val myPage2: MyPage2
+            }
+            
+            fun invoke(): Pair<Any, Any> {
+                return component<MyComponent>().myPage()
+            }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Any, Any>>()
+        assertSame(a, b)
+    }
 
 }

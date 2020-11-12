@@ -34,7 +34,7 @@ import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.resolve.BindingContext
 
 @Binding
-class AdapterGenerator(
+class EffectGenerator(
     private val bindingContext: BindingContext,
     private val declarationStore: DeclarationStore,
     private val fileManager: FileManager
@@ -48,10 +48,10 @@ class AdapterGenerator(
                         super.visitClass(klass)
                         val descriptor = klass.descriptor<ClassDescriptor>(bindingContext)
                             ?: return
-                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.Adapter)
+                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.Effect)
                             && !descriptor.hasAnnotation(InjektFqNames.ImplBinding)) {
                             runExitCatching {
-                                generateAdapterForCallable(
+                                generateEffectForCallable(
                                     declarationStore.callableForDescriptor(
                                         descriptor.getInjectConstructor()!!
                                     ),
@@ -65,12 +65,12 @@ class AdapterGenerator(
                         super.visitNamedFunction(function)
                         val descriptor = function.descriptor<FunctionDescriptor>(bindingContext)
                             ?: return
-                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.Adapter) &&
+                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.Effect) &&
                             !descriptor.hasAnnotation(InjektFqNames.FunBinding) &&
                             descriptor.containingDeclaration.containingDeclaration
-                                ?.hasAnnotation(InjektFqNames.Adapter) != true) {
+                                ?.hasAnnotation(InjektFqNames.Effect) != true) {
                             runExitCatching {
-                                generateAdapterForCallable(
+                                generateEffectForCallable(
                                     declarationStore.callableForDescriptor(descriptor),
                                     descriptor.findPsi()!!.containingFile as KtFile
                                 )
@@ -82,11 +82,11 @@ class AdapterGenerator(
                         super.visitProperty(property)
                         val descriptor = (property.descriptor<DeclarationDescriptor>(bindingContext) as? PropertyDescriptor)
                             ?: return
-                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.Adapter) &&
+                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.Effect) &&
                             descriptor.containingDeclaration.containingDeclaration
-                                ?.hasAnnotation(InjektFqNames.Adapter) != true) {
+                                ?.hasAnnotation(InjektFqNames.Effect) != true) {
                             runExitCatching {
-                                generateAdapterForCallable(
+                                generateEffectForCallable(
                                     declarationStore.callableForDescriptor(descriptor.getter!!),
                                     descriptor.findPsi()!!.containingFile as KtFile
                                 )
@@ -102,30 +102,30 @@ class AdapterGenerator(
             val unprocessedCallables = declarationStore.generatedCallables - processedCallables
             if (unprocessedCallables.isEmpty()) break
             unprocessedCallables.forEach { (callable, file) ->
-                if (callable.adapters.isNotEmpty()) {
-                    generateAdapterForCallable(callable, file)
+                if (callable.effects.isNotEmpty()) {
+                    generateEffectForCallable(callable, file)
                 }
             }
             processedCallables += unprocessedCallables
         }
     }
 
-    private fun generateAdapterForCallable(
+    private fun generateEffectForCallable(
         callable: Callable,
         file: KtFile
     ) {
-        val adapters = callable.adapters
+        val effects = callable.effects
 
         val packageName = callable.packageFqName
-        val adapterNameBaseName = joinedNameOf(
+        val effectNameBaseName = joinedNameOf(
             packageName,
-            FqName("${callable.fqName.asString()}Adapter")
+            FqName("${callable.fqName.asString()}Effect")
         )
 
         val rawBindingType = callable.type
         val aliasedType = SimpleTypeRef(
             classifier = ClassifierRef(
-                fqName = packageName.child("${adapterNameBaseName}Alias".asNameId()),
+                fqName = packageName.child("${effectNameBaseName}Alias".asNameId()),
                 superTypes = listOf(rawBindingType),
                 isTypeAlias = true
             ),
@@ -150,6 +150,8 @@ class AdapterGenerator(
             imports.forEach {
                 emitLine(it)
             }
+
+            emitLine()
 
             emitLine()
             emitLine("typealias ${aliasedType.classifier.fqName.shortName()} = ${rawBindingType.render()}")
@@ -183,7 +185,7 @@ class AdapterGenerator(
                 Callable.CallableKind.COMPOSABLE -> emitLine("@${InjektFqNames.Composable}")
             }.let {}
 
-            val aliasedBindingName = "${adapterNameBaseName}_aliasedBinding".asNameId()
+            val aliasedBindingName = "${effectNameBaseName}_aliasedBinding".asNameId()
 
             emit("inline fun $aliasedBindingName(")
             parameters.forEachIndexed { index, valueParameter ->
@@ -227,7 +229,8 @@ class AdapterGenerator(
                 contributionKind = Callable.ContributionKind.BINDING,
                 isCall = true,
                 callableKind = callableKind,
-                adapters = emptyList(),
+                effects = emptyList(),
+                decorators = emptyList(),
                 isExternal = false,
                 isInline = true,
                 isFunBinding = callable.isFunBinding,
@@ -235,57 +238,60 @@ class AdapterGenerator(
                 modality = Modality.FINAL,
                 receiver = null
             )
-            adapters
-                .flatMap { adapter ->
-                    adapter.module.callables
+
+            effects
+                .flatMap { effect ->
+                    effect.callables
                         .filter {
-                            it.contributionKind != null || it.adapters.isNotEmpty()
+                            it.contributionKind != null || it.effects.isNotEmpty()
                         }
-                        .map { adapterCallable ->
-                            // todo find a way to dynamically resolve type parameters
+                        .map { effectCallable ->
                             val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
 
-                            val adapterTypeParameters = adapterCallable.typeParameters
-                                .take(adapter.type.typeArguments.size)
-                                .zip(adapter.type.typeArguments)
+                            substitutionMap += effectCallable.typeParameters
+                                .filter { it.argName != null }
+                                .map {
+                                    it to (effect.typeArgs[it.argName]
+                                        ?: error("Couldn't get type argument for ${it.argName} in ${file.virtualFilePath}"))
+                                }
                                 .toMap()
-
-                            substitutionMap += adapterTypeParameters
-                            adapterTypeParameters.forEach { (typeParameter, typeArgument) ->
+                            substitutionMap.forEach { (typeParameter, typeArgument) ->
                                 substitutionMap += typeArgument.getSubstitutionMap(typeParameter.defaultType)
                             }
 
-                            val subjectTypeParameter = adapterCallable.typeParameters[adapterTypeParameters.size]
+                            // todo there might be a better way to resolve everything
+                            val subjectTypeParameter = effectCallable.typeParameters
+                                .first { it.argName == null }
                             substitutionMap += rawBindingType.getSubstitutionMap(subjectTypeParameter.defaultType)
 
-                            check(adapterCallable.typeParameters.all { it in substitutionMap }) {
+                            check(effectCallable.typeParameters.all { it in substitutionMap }) {
                                 "Couldn't resolve all type arguments ${substitutionMap.map { 
                                     it.key.fqName to it.value
-                                }} missing ${adapterCallable.typeParameters.filter { 
+                                }} missing ${effectCallable.typeParameters.filter { 
                                     it !in substitutionMap
                                 }.map { it.fqName }} in ${file.virtualFilePath}"
                             }
                             substitutionMap[subjectTypeParameter] = aliasedType
 
-                            substitutionMap to adapterCallable.copy(
-                                type = adapterCallable.type
+                            substitutionMap to effectCallable.copy(
+                                type = effectCallable.type
                                     .substitute(substitutionMap)
                                     // map the aliased to type to the raw binding type
                                     // if the callable returns the alias
                                     .substitute(mapOf(aliasedType.classifier to rawBindingType)),
-                                valueParameters = adapterCallable.valueParameters.map {
+                                valueParameters = effectCallable.valueParameters.map {
                                     it.copy(type = it.type.substitute(substitutionMap))
                                 }
                             )
                         }
-                        .map { Triple(adapter, it.first, it.second) }
+                        .map { Triple(effect, it.first, it.second) }
                 }
-                .forEach { (adapter, substitutionMap, adapterCallable) ->
-                    when (adapterCallable.contributionKind) {
+                .forEach { (effect, substitutionMap, effectCallable) ->
+                    when (effectCallable.contributionKind) {
                         Callable.ContributionKind.BINDING -> {
                             emit("@Binding")
-                            if (adapterCallable.targetComponent != null) {
-                                emitLine("(${adapterCallable.targetComponent.classifier.fqName}::class)")
+                            if (effectCallable.targetComponent != null) {
+                                emitLine("(${effectCallable.targetComponent.classifier.fqName}::class)")
                             }
                             emitLine()
                         }
@@ -294,20 +300,20 @@ class AdapterGenerator(
                         Callable.ContributionKind.MODULE -> {}
                         null -> {}
                     }
-                    adapterCallable.adapters
-                        .forEach { innerAdapter ->
-                            emit("@${innerAdapter.type.classifier.fqName}(")
-                            innerAdapter.args.toList().forEachIndexed { index, (argName, argExpression) ->
+                    effectCallable.effects
+                        .forEach { innerEffect ->
+                            emit("@${innerEffect.type.classifier.fqName}(")
+                            innerEffect.valueArgs.toList().forEachIndexed { index, (argName, argExpression) ->
                                 emit("$argName = ")
                                 argExpression()
-                                if (index != innerAdapter.args.toList().lastIndex) emit(", ")
+                                if (index != innerEffect.valueArgs.toList().lastIndex) emit(", ")
                             }
                             emitLine(")")
                         }
-                    val functionName = adapterCallable.fqName.pathSegments().joinToString("_") +
-                            "_${adapterNameBaseName}"
+                    val functionName = effectCallable.fqName.pathSegments().joinToString("_") +
+                            "_${effectNameBaseName}"
 
-                    when (adapterCallable.callableKind) {
+                    when (effectCallable.callableKind) {
                         Callable.CallableKind.DEFAULT -> {}
                         Callable.CallableKind.SUSPEND -> emit("suspend ")
                         Callable.CallableKind.COMPOSABLE -> emitLine("@${InjektFqNames.Composable}")
@@ -315,8 +321,8 @@ class AdapterGenerator(
 
                     emit("inline fun $functionName(")
 
-                    adapterCallable.valueParameters
-                        .filter { it.adapterArgName == null }
+                    effectCallable.valueParameters
+                        .filter { it.argName == null }
                         .forEachIndexed { index, valueParameter ->
                             val typeRef = valueParameter.type
                             if (valueParameter.inlineKind == ValueParameterRef.InlineKind.CROSSINLINE) {
@@ -329,20 +335,20 @@ class AdapterGenerator(
                                 emit("noinline ")
                             }
                             emit("${valueParameter.name}: ${valueParameter.type.render()}")
-                            if (index != adapterCallable.valueParameters.lastIndex) emit(", ")
+                            if (index != effectCallable.valueParameters.lastIndex) emit(", ")
                         }
 
-                    emit("): ${adapterCallable.type.render()} ")
+                    emit("): ${effectCallable.type.render()} ")
                     braced {
                         emit("return ")
                         emitCallableInvocation(
-                            adapterCallable,
-                            { emit("${adapter.module.type.classifier.fqName}") },
-                            adapterCallable.valueParameters
+                            effectCallable,
+                            { emit("${effect.type.classifier.fqName}") },
+                            effectCallable.valueParameters
                                 .map { parameter ->
                                     {
-                                        if (parameter.adapterArgName != null) {
-                                            val arg = adapter.args[parameter.adapterArgName]
+                                        if (parameter.argName != null) {
+                                            val arg = effect.valueArgs[parameter.argName]
                                             when {
                                                 arg != null -> arg()
                                                 parameter.type.isMarkedNullable -> emit("null")
@@ -353,7 +359,7 @@ class AdapterGenerator(
                                         }
                                     }
                                 },
-                            adapterCallable.typeParameters
+                            effectCallable.typeParameters
                                 .map { substitutionMap.getValue(it) }
                         )
                     }
@@ -361,19 +367,20 @@ class AdapterGenerator(
                         packageFqName = packageName,
                         fqName = packageName.child(functionName.asNameId()),
                         name = functionName.asNameId(),
-                        type = adapterCallable.type,
+                        type = effectCallable.type,
                         typeParameters = emptyList(),
-                        valueParameters = adapterCallable.valueParameters
-                            .filter { it.adapterArgName == null }
+                        valueParameters = effectCallable.valueParameters
+                            .filter { it.argName == null }
                             .map { it.copy(isExtensionReceiver = false) },
-                        targetComponent = adapterCallable.targetComponent,
-                        contributionKind = adapterCallable.contributionKind,
+                        targetComponent = effectCallable.targetComponent,
+                        contributionKind = effectCallable.contributionKind,
                         isCall = true,
-                        callableKind = adapterCallable.callableKind,
-                        adapters = adapterCallable.adapters,
+                        callableKind = effectCallable.callableKind,
+                        decorators = effectCallable.decorators,
+                        effects = effectCallable.effects,
                         isExternal = false,
                         isInline = true,
-                        isFunBinding = adapterCallable.isFunBinding,
+                        isFunBinding = effectCallable.isFunBinding,
                         visibility = Visibilities.PUBLIC,
                         modality = Modality.FINAL,
                         receiver = null
@@ -383,7 +390,7 @@ class AdapterGenerator(
 
         fileManager.generateFile(
             packageFqName = callable.packageFqName,
-            fileName = "$adapterNameBaseName.kt",
+            fileName = "$effectNameBaseName.kt",
             code = code
         )
 

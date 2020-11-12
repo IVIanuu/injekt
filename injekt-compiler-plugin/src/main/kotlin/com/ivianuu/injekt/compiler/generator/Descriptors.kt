@@ -27,13 +27,15 @@ data class Callable(
     val fqName: FqName,
     val name: Name,
     val type: TypeRef,
+    val originalType: TypeRef = type,
     val typeParameters: List<ClassifierRef>,
     val valueParameters: List<ValueParameterRef>,
     val targetComponent: TypeRef?,
     val contributionKind: ContributionKind?,
     val isCall: Boolean,
     val callableKind: CallableKind,
-    val adapters: List<AdapterDescriptor>,
+    val decorators: List<DecoratorDescriptor>,
+    val effects: List<EffectDescriptor>,
     val isExternal: Boolean,
     val isInline: Boolean,
     val isFunBinding: Boolean,
@@ -42,7 +44,7 @@ data class Callable(
     val receiver: ClassifierRef?
 ) {
     enum class ContributionKind {
-        BINDING, MAP_ENTRIES, SET_ELEMENTS, MODULE
+        BINDING, DECORATOR, MAP_ENTRIES, SET_ELEMENTS, MODULE
     }
     enum class CallableKind {
         DEFAULT, SUSPEND, COMPOSABLE
@@ -54,7 +56,7 @@ data class ValueParameterRef(
     val isExtensionReceiver: Boolean,
     val inlineKind: InlineKind,
     val name: Name,
-    val adapterArgName: Name?,
+    val argName: Name?,
     val hasDefault: Boolean,
     val defaultExpression: ComponentExpression?
 ) {
@@ -68,10 +70,18 @@ data class ModuleDescriptor(
     val callables: List<Callable>,
 )
 
-data class AdapterDescriptor(
+data class DecoratorDescriptor(
+    val annotationType: TypeRef?,
+    val callables: List<Callable>,
+    val typeArgs: Map<Name, TypeRef>,
+    val valueArgs: Map<Name, ComponentExpression>
+)
+
+data class EffectDescriptor(
     val type: TypeRef,
-    val module: ModuleDescriptor,
-    val args: Map<Name, ComponentExpression>
+    val callables: List<Callable>,
+    val typeArgs: Map<Name, TypeRef>,
+    val valueArgs: Map<Name, ComponentExpression>
 )
 
 data class QualifierDescriptor(

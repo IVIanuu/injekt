@@ -25,13 +25,14 @@ import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.TypeTranslator
 import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.callableKind
+import com.ivianuu.injekt.compiler.generator.copy
 import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.isAssignable
 import com.ivianuu.injekt.compiler.generator.render
-import com.ivianuu.injekt.compiler.generator.replaceTypeParametersWithStars
 import com.ivianuu.injekt.compiler.generator.substitute
 import com.ivianuu.injekt.compiler.generator.substituteStars
+import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
@@ -61,6 +62,7 @@ class BindingGraph(
     private val moduleBindingCallables = mutableListOf<CallableWithReceiver>()
     private val parentModuleBindingCallables = owner.parent?.graph?.moduleBindingCallables
         ?: emptyList()
+    private val moduleDecorators = mutableListOf<DecoratorNode>()
 
     private val collections: BindingCollections = collectionsFactory(owner, parent?.collections)
 
@@ -123,16 +125,21 @@ class BindingGraph(
                     Callable.ContributionKind.BINDING -> moduleBindingCallables += CallableWithReceiver(
                         finalCallable,
                         parentAccessExpression,
-                        owner,
-                        emptyMap()
+                        owner
+                    )
+                    Callable.ContributionKind.DECORATOR -> moduleDecorators += DecoratorNode(
+                        finalCallable,
+                        parentAccessExpression,
+                        finalCallable.getDependencies(finalCallable.type, true),
+                        emptyMap(),
+                        emptyList() // todo support decorated decorators
                     )
                     Callable.ContributionKind.MAP_ENTRIES -> {
                         collections.addMapEntries(
                             CallableWithReceiver(
                                 finalCallable,
                                 parentAccessExpression,
-                                owner,
-                                emptyMap()
+                                owner
                             )
                         )
                     }
@@ -141,8 +148,7 @@ class BindingGraph(
                             CallableWithReceiver(
                                 finalCallable,
                                 parentAccessExpression,
-                                owner,
-                                emptyMap()
+                                owner
                             )
                         )
                     }
@@ -214,52 +220,12 @@ class BindingGraph(
         locked = true
     }
 
-    // temporary function because it's not possible to properly inline '*' star types
-    // with our current binding resolution algorithm.
-    // we collect all duplicated bindings and rewrite the graph to point to a single binding
-    private fun postProcess() {
-        class MergeBindingGroup(
-            val type: TypeRef,
-            val bindingToUse: BindingNode
-        ) {
-            val keysToReplace = mutableListOf<TypeRef>()
-        }
-
-        val bindingGroups = mutableListOf<MergeBindingGroup>()
-        resolvedBindings.forEach { (key, binding) ->
-            val bindingGroup = bindingGroups.singleOrNull {
-                it.type == binding.type
-            }
-            if (bindingGroup != null) {
-                bindingGroup.keysToReplace += key
-                // The components aren't needed if we get delegate to another binding
-                if (binding is AssistedBindingNode)
-                    owner.children -= binding.childComponent
-                if (binding is ChildComponentBindingNode)
-                    owner.children -= binding.childComponent
-            } else {
-                bindingGroups += MergeBindingGroup(key, binding)
-                    .also { it.keysToReplace += binding.type }
-            }
-        }
-
-        bindingGroups.forEach { bindingGroup ->
-            bindingGroup.keysToReplace.forEach { key ->
-                resolvedBindings[key] = bindingGroup.bindingToUse
-            }
-        }
-    }
-
     private fun check(binding: BindingNode) {
         if (binding in chain) {
             val relevantSubchain = chain.subList(
                 chain.indexOf(binding), chain.lastIndex
             )
-            if (relevantSubchain.any {
-                    it is ProviderBindingNode ||
-                            it.type.classifier.fqName.asString().startsWith("kotlin.Function") ||
-                            (it is CallableBindingNode && it.callable.isFunBinding)
-                }) return
+            if (relevantSubchain.any { it.lazyDependencies }) return
             error(
                 "Circular dependency ${relevantSubchain.map { it.type.render() }} already contains ${binding.type.render()} $chain"
             )
@@ -308,14 +274,59 @@ class BindingGraph(
                 }
             }
 
-        chain.pop()
-
         binding.refineType(binding.dependencies.map { getBinding(it) })
+
+        // todo callable decorators
+        binding.decorators = (if (binding is CallableBindingNode)
+            binding.callable.getCallableDecorators(binding.type) else emptyList()) +
+                getDecoratorsForType(binding.type, binding.callableKind)
+
+        binding.decorators
+            .flatMap { it.dependencies }
+            .forEach { check(it) }
+
+        chain.pop()
     }
 
     private fun check(request: BindingRequest) {
         val binding = getBinding(request)
         binding.owner.graph.check(binding)
+    }
+
+    // temporary function because it's not possible to properly inline '*' star types
+    // with our current binding resolution algorithm.
+    // we collect all duplicated bindings and rewrite the graph to point to a single binding
+    private fun postProcess() {
+        class MergeBindingGroup(
+            val type: TypeRef,
+            val bindingToUse: BindingNode
+        ) {
+            val keysToReplace = mutableListOf<TypeRef>()
+        }
+
+        val bindingGroups = mutableListOf<MergeBindingGroup>()
+        resolvedBindings.forEach { (key, binding) ->
+            val bindingGroup = bindingGroups.singleOrNull {
+                it.type == binding.type
+            }
+            if (bindingGroup != null) {
+                bindingGroup.keysToReplace += key
+                // The components aren't needed if we get delegate to another binding
+                if (binding is AssistedBindingNode)
+                    owner.children -= binding.childComponent
+                if (binding is ChildComponentBindingNode)
+                    owner.children -= binding.childComponent
+            } else {
+                bindingGroups += MergeBindingGroup(key, binding)
+                    .also { it.keysToReplace += binding.type }
+            }
+        }
+
+        bindingGroups.forEach { bindingGroup ->
+            bindingGroup.keysToReplace.forEach { key ->
+                resolvedBindings[key] = bindingGroup.bindingToUse
+            }
+        }
     }
 
     fun getBinding(request: BindingRequest): BindingNode {
@@ -364,6 +375,9 @@ class BindingGraph(
             val exact = filter { it.rawType == request.type }
             if (exact.size == 1) return exact.single()
 
+            // todo pick most concrete
+
+            // todo guard against stack overflow
             exact
                 .singleOrNull { candidate ->
                     candidate.dependencies.all { dependency ->
@@ -433,27 +447,22 @@ class BindingGraph(
     private fun getExplicitBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
         this += owner.additionalInputTypes
             .filter { request.type.isAssignable(it) }
-            .map { InputBindingNode(it, owner) }
+            .map {
+                InputBindingNode(
+                    type = it,
+                    owner = owner
+                )
+            }
 
         this += moduleBindingCallables
             .filter { request.type.isAssignable(it.callable.type) }
             .map { (callable, receiver, bindingOwner) ->
-                val substitutionMap = request.type.getSubstitutionMap(callable.type)
                 CallableBindingNode(
                     type = request.type.substituteStars(callable.type),
                     rawType = callable.type,
                     owner = owner,
                     declaredInComponent = bindingOwner,
-                    dependencies = callable.valueParameters
-                        .map {
-                            BindingRequest(
-                                it.type.substitute(substitutionMap)
-                                    .replaceTypeParametersWithStars(),
-                                callable.fqName.child(it.name),
-                                !it.hasDefault,
-                                callable.callableKind
-                            )
-                        },
+                    dependencies = callable.getDependencies(request.type, false),
                     receiver = receiver,
                     callable = callable
                 )
@@ -464,22 +473,12 @@ class BindingGraph(
         this += parentModuleBindingCallables
             .filter { request.type.isAssignable(it.callable.type) }
             .map { (callable, receiver, bindingOwner) ->
-                val substitutionMap = request.type.getSubstitutionMap(callable.type)
                 CallableBindingNode(
                     type = request.type.substituteStars(callable.type),
                     rawType = callable.type,
                     owner = owner,
                     declaredInComponent = bindingOwner,
-                    dependencies = callable.valueParameters
-                        .map {
-                            BindingRequest(
-                                it.type.substitute(substitutionMap)
-                                    .replaceTypeParametersWithStars(),
-                                callable.fqName.child(it.name),
-                                !it.hasDefault,
-                                callable.callableKind
-                            )
-                        },
+                    dependencies = callable.getDependencies(request.type, false),
                     receiver = receiver,
                     callable = callable
                 )
@@ -494,22 +493,12 @@ class BindingGraph(
                         (owner.isAssisted && request.type == owner.assistedRequests.single().type)
             }
             .map { callable ->
-                val substitutionMap = request.type.getSubstitutionMap(callable.type)
                 CallableBindingNode(
                     type = request.type.substituteStars(callable.type),
                     rawType = callable.type,
                     owner = owner,
                     declaredInComponent = null,
-                    dependencies = callable.valueParameters
-                        .map {
-                            BindingRequest(
-                                it.type.substitute(substitutionMap)
-                                    .replaceTypeParametersWithStars(),
-                                callable.fqName.child(it.name),
-                                !it.hasDefault,
-                                callable.callableKind
-                            )
-                        },
+                    dependencies = callable.getDependencies(request.type, false),
                     receiver = null,
                     callable = callable
                 )
@@ -572,12 +561,12 @@ class BindingGraph(
                 dependencies = listOf(
                     BindingRequest(
                         request.type.typeArguments.single(),
-                        FqName.ROOT, // todo
+                        request.origin,
                         true,
                         request.type.callableKind
                     )
                 ),
-                FqName.ROOT // todo
+                origin = request.origin
             )
         }
 
@@ -588,25 +577,12 @@ class BindingGraph(
                         (owner.isAssisted && request.type == owner.assistedRequests.single().type)
             }
             .map { callable ->
-                val substitutionMap = request.type.getSubstitutionMap(callable.type)
                 CallableBindingNode(
                     type = request.type.substituteStars(callable.type),
                     rawType = callable.type,
                     owner = owner,
                     declaredInComponent = null,
-                    dependencies = callable.valueParameters
-                        .map {
-                            BindingRequest(
-                                it.type
-                                    .typeArguments
-                                    .first()
-                                    .substitute(substitutionMap)
-                                    .replaceTypeParametersWithStars(),
-                                callable.fqName.child(it.name),
-                                !it.hasDefault,
-                                it.type.callableKind
-                            )
-                        },
+                    dependencies = callable.getDependencies(request.type, false),
                     receiver = null,
                     callable = callable
                 )
@@ -633,7 +609,8 @@ class BindingGraph(
                     contributionKind = null,
                     isCall = true,
                     callableKind = request.type.callableKind,
-                    adapters = emptyList(),
+                    decorators = emptyList(),
+                    effects = emptyList(),
                     isExternal = false,
                     isInline = false,
                     isFunBinding = false,
@@ -660,6 +637,87 @@ class BindingGraph(
         this += collections.getNodes(request)
     }
 
+    private fun Callable.getCallableDecorators(type: TypeRef): List<DecoratorNode> {
+        val providerType = when (callableKind) {
+            Callable.CallableKind.DEFAULT -> typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getFunction(0)
+            ).defaultType.typeWith(listOf(type))
+            Callable.CallableKind.SUSPEND -> typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getSuspendFunction(0)
+            ).defaultType.typeWith(listOf(type))
+            Callable.CallableKind.COMPOSABLE -> typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getFunction(0)
+            ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
+        }
+        return decorators.flatMap { decorator ->
+            decorator.callables.map { callable ->
+                val substitutionMap = (providerType.getSubstitutionMap(callable.type) +
+                        callable.typeParameters
+                            .filter { it.argName != null }
+                            .map {
+                                it to (decorator.typeArgs[it.argName]
+                                    ?: error("Couldn't get type argument for ${it.argName} in $decorator $this"))
+                            }
+                            .toMap()).toMutableMap()
+                substitutionMap.forEach { (typeParameter, typeArgument) ->
+                    substitutionMap += typeArgument.getSubstitutionMap(typeParameter.defaultType)
+                }
+                val finalCallable = callable.substitute(substitutionMap)
+                DecoratorNode(
+                    finalCallable,
+                    null,
+                    finalCallable.getDependencies(type, true),
+                    decorator.valueArgs,
+                    emptyList() // todo support decorated decorators
+                )
+            }
+        }.filter { providerType.isAssignable(it.callable.type) }
+    }
+
+    private fun Callable.getDependencies(type: TypeRef, isDecorator: Boolean): List<BindingRequest> {
+        val substitutionMap = type.getSubstitutionMap(this.type)
+        return valueParameters
+            .filter { it.argName == null }
+            .map { it.toBindingRequest(this, substitutionMap) }
+            .filter { !isDecorator || it.type != this.type.substitute(substitutionMap) }
+    }
+
+    private fun getDecoratorsForType(
+        type: TypeRef,
+        callableKind: Callable.CallableKind
+    ): List<DecoratorNode> {
+        val providerType = when (callableKind) {
+            Callable.CallableKind.DEFAULT -> typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getFunction(0)
+            ).defaultType.typeWith(listOf(type))
+            Callable.CallableKind.SUSPEND -> typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getSuspendFunction(0)
+            ).defaultType.typeWith(listOf(type))
+            Callable.CallableKind.COMPOSABLE -> typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getFunction(0)
+            ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
+        }
+        return (moduleDecorators
+            .filter { providerType.isAssignable(it.callable.type) } +
+                declarationStore.decoratorsByType(type, callableKind)
+                    .map { decorator ->
+                        DecoratorNode(
+                            decorator,
+                            null,
+                            decorator.getDependencies(decorator.type, true),
+                            emptyMap(),
+                            emptyList() // todo support decorated decorators
+                        )
+                    })
+            .map { decorator ->
+                val substitutionMap = providerType.getSubstitutionMap(decorator.callable.originalType)
+                val finalCallable = decorator.callable.substitute(substitutionMap)
+                decorator.copy(
+                    callable = finalCallable,
+                    dependencies = finalCallable.getDependencies(type, true)
+                )
+            }
+    }
 }
 
 private fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"
@@ -685,22 +743,36 @@ class BindingCollections(
     private val mapEntriesByType = mutableMapOf<TypeRef, List<CallableWithReceiver>>()
     private fun getMapEntries(type: TypeRef): List<CallableWithReceiver> {
         return mapEntriesByType.getOrPut(type) {
-            (parent?.getMapEntries(type) ?: emptyList()) +
+            ((parent?.getMapEntries(type) ?: emptyList()) +
                     (if (parent == null) declarationStore.mapEntriesByType(type)
-                        .map { CallableWithReceiver(it, null, null, emptyMap()) }
+                        .map { CallableWithReceiver(it, null, null) }
                     else emptyList()) +
-                    (thisMapEntries[type] ?: emptyList())
+                    (thisMapEntries[type] ?: emptyList()))
+                .map { entry ->
+                    entry.copy(
+                        callable = entry.callable.substitute(
+                            type.getSubstitutionMap(entry.callable.type)
+                        )
+                    )
+                }
         }
     }
 
     private val setElementsByType = mutableMapOf<TypeRef, List<CallableWithReceiver>>()
     private fun getSetElements(type: TypeRef): List<CallableWithReceiver> {
         return setElementsByType.getOrPut(type) {
-            (parent?.getSetElements(type) ?: emptyList()) +
+            ((parent?.getSetElements(type) ?: emptyList()) +
                     (if (parent == null) declarationStore.setElementsByType(type)
-                        .map { CallableWithReceiver(it, null, null, emptyMap()) }
+                        .map { CallableWithReceiver(it, null, null) }
                     else emptyList()) +
-                (thisSetElements[type] ?: emptyList())
+                    (thisSetElements[type] ?: emptyList()))
+                .map { element ->
+                    element.copy(
+                        callable = element.callable.substitute(
+                            type.getSubstitutionMap(element.callable.type)
+                        )
+                    )
+                }
         }
     }
 
@@ -712,11 +784,11 @@ class BindingCollections(
                     MapBindingNode(
                         type = request.type,
                         owner = owner,
-                        dependencies = entries.flatMap { (entry, _, _, substitutionMap) ->
+                        dependencies = entries.flatMap { (entry) ->
                             entry.valueParameters
                                 .map {
                                     BindingRequest(
-                                        it.type.substitute(substitutionMap),
+                                        it.type,
                                         entry.fqName.child(it.name),
                                         it.hasDefault,
                                         entry.callableKind
@@ -732,11 +804,11 @@ class BindingCollections(
                     SetBindingNode(
                         type = request.type,
                         owner = owner,
-                        dependencies = elements.flatMap { (element, _, _, substitutionMap) ->
+                        dependencies = elements.flatMap { (element) ->
                             element.valueParameters
                                 .map {
                                     BindingRequest(
-                                        it.type.substitute(substitutionMap),
+                                        it.type,
                                         element.fqName.child(it.name),
                                         it.hasDefault,
                                         element.callableKind

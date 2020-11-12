@@ -196,6 +196,26 @@ class CollectionsTest {
     }
 
     @Test
+    fun testGenericMap() = codegen(
+        """ 
+            @Binding
+            fun string() = ""
+            
+            @Binding
+            fun int() = 0
+            
+            @MapEntries
+            fun <V> genericMap(instance: V): Map<Int, V> = mapOf(instance.hashCode() to instance)
+            
+            @Component
+            abstract class MapComponent {
+                abstract val stringMap: Map<Int, String>
+                abstract val intMap: Map<Int, Int>
+            }
+        """
+    )
+
+    @Test
     fun testSimpleSet() = codegen(
         """
             @Binding 
@@ -315,5 +335,25 @@ class CollectionsTest {
     ) {
         assertInternalError("no binding")
     }
+
+    @Test
+    fun testGenericSet() = codegen(
+        """ 
+            @Binding
+            fun string() = ""
+            
+            @Binding
+            fun int() = 0
+            
+            @SetElements
+            fun <T> genericSet(instance: T) = setOf(instance)
+            
+            @Component
+            abstract class SetComponent {
+                abstract val stringSet: Set<String>
+                abstract val intSet: Set<Int>
+            }
+        """
+    )
 
 }

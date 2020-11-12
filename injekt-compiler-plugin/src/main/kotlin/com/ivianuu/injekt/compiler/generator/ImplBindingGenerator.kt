@@ -207,7 +207,7 @@ class ImplBindingGenerator(
                             else -> ValueParameterRef.InlineKind.NONE
                         },
                         name = it.name,
-                        adapterArgName = it.getAdapterArgName(),
+                        argName = it.getArgName(),
                         hasDefault = it.declaresDefaultValue(),
                         defaultExpression = if (!it.declaresDefaultValue()) null else ({
                             emit((it.findPsi() as KtParameter).defaultValue!!.text)
@@ -218,7 +218,8 @@ class ImplBindingGenerator(
             contributionKind = Callable.ContributionKind.BINDING,
             isCall = true,
             callableKind = Callable.CallableKind.DEFAULT,
-            adapters = emptyList(),
+            decorators = emptyList(),
+            effects = emptyList(),
             isExternal = false,
             isInline = true,
             isFunBinding = false,
@@ -264,7 +265,7 @@ class ImplBindingGenerator(
                     isExtensionReceiver = true,
                     inlineKind = ValueParameterRef.InlineKind.NONE,
                     name = "_receiver".asNameId(),
-                    adapterArgName = null,
+                    argName = null,
                     hasDefault = false,
                     defaultExpression = null
                 )
@@ -273,10 +274,14 @@ class ImplBindingGenerator(
             contributionKind = Callable.ContributionKind.BINDING,
             isCall = false,
             callableKind = Callable.CallableKind.DEFAULT,
-            adapters = descriptor
+            decorators = descriptor
                 .annotations
-                .filter { it.hasAnnotation(InjektFqNames.Adapter) }
-                .map { declarationStore.adapterDescriptorForAnnotation(it, descriptor) },
+                .filter { it.hasAnnotation(InjektFqNames.Decorator) }
+                .map { declarationStore.decoratorDescriptorForAnnotation(it, descriptor) },
+            effects = descriptor
+                .annotations
+                .filter { it.hasAnnotation(InjektFqNames.Effect) }
+                .map { declarationStore.effectDescriptorForAnnotation(it, descriptor) },
             isExternal = false,
             isInline = true,
             isFunBinding = false,

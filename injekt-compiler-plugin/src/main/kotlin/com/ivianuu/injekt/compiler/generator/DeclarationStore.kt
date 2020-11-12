@@ -31,10 +31,12 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
@@ -114,21 +116,28 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     }
 
     private val allBindings by unsafeLazy {
-        classIndices
+        (classIndices
             .mapNotNull { it.getInjectConstructor() }
             .map { callableForDescriptor(it) } +
                 functionIndices
-                    .filter { it.hasAnnotation(InjektFqNames.Binding) }
                     .map { callableForDescriptor(it) } +
                 propertyIndices
-                    .filter { it.hasAnnotation(InjektFqNames.Binding) }
-                    .map { callableForDescriptor(it.getter!!) }
+                    .map { callableForDescriptor(it.getter!!) })
+            .filter {
+                it.contributionKind == Callable.ContributionKind.BINDING ||
+                        (it.contributionKind != Callable.ContributionKind.DECORATOR &&
+                                it.decorators.isNotEmpty())
+            }
     }
 
     private val bindingsByType = mutableMapOf<TypeRef, List<Callable>>()
     fun bindingsForType(type: TypeRef): List<Callable> = bindingsByType.getOrPut(type) {
         (allBindings + generatedCallables
-            .filter { it.first.contributionKind == Callable.ContributionKind.BINDING }
+            .filter {
+                it.first.contributionKind == Callable.ContributionKind.BINDING ||
+                        (it.first.contributionKind != Callable.ContributionKind.DECORATOR &&
+                                it.first.decorators.isNotEmpty())
+            }
             .map { it.first })
             .filter { type.isAssignable(it.type) }
             .distinct()
@@ -144,6 +153,33 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         generatedClassifiers[classifier.fqName] = classifier
     }
     fun generatedClassifierFor(fqName: FqName): ClassifierRef? = generatedClassifiers[fqName]
+
+    private val allDecorators by unsafeLazy {
+        functionIndices
+            .filter { it.hasAnnotation(InjektFqNames.Decorator) }
+            .map { callableForDescriptor(it) } +
+                propertyIndices
+                    .filter { it.hasAnnotation(InjektFqNames.Decorator) }
+                    .map { callableForDescriptor(it.getter!!) } + (generatedCallables
+            .filter { it.first.contributionKind == Callable.ContributionKind.DECORATOR }
+            .map { it.first })
+    }
+    private val decoratorsForType = mutableMapOf<TypeRef, List<Callable>>()
+    fun decoratorsByType(type: TypeRef, callableKind: Callable.CallableKind): List<Callable> = decoratorsForType.getOrPut(type) {
+        val providerType = when (callableKind) {
+            Callable.CallableKind.DEFAULT -> typeTranslator.toClassifierRef(
+                module.builtIns.getFunction(0)
+            ).defaultType.typeWith(listOf(type))
+            Callable.CallableKind.SUSPEND -> typeTranslator.toClassifierRef(
+                module.builtIns.getSuspendFunction(0)
+            ).defaultType.typeWith(listOf(type))
+            Callable.CallableKind.COMPOSABLE -> typeTranslator.toClassifierRef(
+                module.builtIns.getFunction(0)
+            ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
+        }
+        return allDecorators
+            .filter { providerType.isAssignable(it.type) }
+    }
 
     private val allMapEntries by unsafeLazy {
         functionIndices
@@ -231,14 +267,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                             else -> null
                         }
                     }
-                    .map { callable ->
-                        callable.copy(
-                            type = callable.type.substitute(substitutionMap),
-                            valueParameters = callable.valueParameters.map {
-                                it.copy(type = it.type.substitute(substitutionMap))
-                            }
-                        )
-                    }
+                    .map { it.substitute(substitutionMap) }
 
                 superTypes
                     .map { it.substitute(substitutionMap) }
@@ -297,53 +326,86 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         }
     }
 
-    fun adapterDescriptorForAnnotation(
+    fun typeArgsForAnnotation(annotation: AnnotationDescriptor, source: DeclarationDescriptor?): Map<Name, TypeRef> {
+        return ((annotation.type.constructor.declarationDescriptor as ClassDescriptor).declaredTypeParameters)
+            .zip(annotation.type.arguments).map { (param, arg) ->
+                param.name to typeTranslator.toTypeRef(arg.type, source)
+        }.toMap()
+    }
+
+    fun valueArgsForAnnotation(annotation: AnnotationDescriptor): Map<Name, ComponentExpression> {
+        return annotation.allValueArguments.mapValues { (_, arg) ->
+            {
+                fun ConstantValue<*>.emit() {
+                    when (this) {
+                        is ArrayValue -> {
+                            // todo avoid boxing
+                            emit("arrayOf(")
+                            value.forEachIndexed { index, itemValue ->
+                                itemValue.emit()
+                                if (index != value.lastIndex) emit(", ")
+                            }
+                            emit(")")
+                        }
+                        is BooleanValue -> emit(value)
+                        is ByteValue -> emit("$value")
+                        is CharValue -> emit("'${value}'")
+                        is DoubleValue -> emit("$value")
+                        is EnumValue -> emit("${enumClassId.asSingleFqName()}.${enumEntryName}")
+                        is FloatValue -> emit("${value}f")
+                        is IntValue -> emit("$value")
+                        is KClassValue -> emit("${(value as KClassValue.Value.NormalClass).classId.asSingleFqName()}::class")
+                        is LongValue -> emit("${value}L")
+                        is ShortValue -> emit("$value")
+                        is StringValue -> emit("\"${value}\"")
+                        is UByteValue -> emit("${value}u")
+                        is UIntValue -> emit("${value}u")
+                        is ULongValue -> emit("(${value}UL)")
+                        is UShortValue -> emit("${value}u")
+                        else -> error("Unsupported bindingArg type $value")
+                    }.let {}
+                }
+
+                arg.emit()
+            }
+        }
+    }
+
+    fun decoratorDescriptorForAnnotation(
+        annotation: AnnotationDescriptor,
+        source: DeclarationDescriptor?
+    ): DecoratorDescriptor {
+        return DecoratorDescriptor(
+            callables = classDescriptorForFqName(annotation.fqName!!)
+                .companionObjectDescriptor!!
+                .unsubstitutedMemberScope
+                .getContributedDescriptors()
+                .filterIsInstance<CallableDescriptor>()
+                .filter {
+                    it.visibility == Visibilities.PUBLIC &&
+                            it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() != true
+                }
+                .map { callableForDescriptor(it as FunctionDescriptor) },
+            annotationType = typeTranslator.toTypeRef(annotation.type, source),
+            valueArgs = valueArgsForAnnotation(annotation),
+            typeArgs = typeArgsForAnnotation(annotation, source)
+        )
+    }
+
+    fun effectDescriptorForAnnotation(
         annotation: AnnotationDescriptor,
         source: DeclarationDescriptor
-    ): AdapterDescriptor {
-        return AdapterDescriptor(
+    ): EffectDescriptor {
+        return EffectDescriptor(
             type = typeTranslator.toTypeRef(annotation.type, source),
-            module = moduleForType(
+            callables = moduleForType(
                 typeTranslator.toClassifierRef(
                     classDescriptorForFqName(annotation.fqName!!)
                         .companionObjectDescriptor!!
                 ).defaultType
-            ),
-            args = annotation.allValueArguments.mapValues { (_, bindingArg) ->
-                {
-                    fun ConstantValue<*>.emit() {
-                        when (this) {
-                            is ArrayValue -> {
-                                // todo avoid boxing
-                                emit("arrayOf(")
-                                value.forEachIndexed { index, itemValue ->
-                                    itemValue.emit()
-                                    if (index != value.lastIndex) emit(", ")
-                                }
-                                emit(")")
-                            }
-                            is BooleanValue -> emit(value)
-                            is ByteValue -> emit("$value")
-                            is CharValue -> emit("'${value}'")
-                            is DoubleValue -> emit("$value")
-                            is EnumValue -> emit("${enumClassId.asSingleFqName()}.${enumEntryName}")
-                            is FloatValue -> emit("${value}f")
-                            is IntValue -> emit("$value")
-                            is KClassValue -> emit("${(value as KClassValue.Value.NormalClass).classId.asSingleFqName()}::class")
-                            is LongValue -> emit("${value}L")
-                            is ShortValue -> emit("$value")
-                            is StringValue -> emit("\"${value}\"")
-                            is UByteValue -> emit("${value}u")
-                            is UIntValue -> emit("${value}u")
-                            is ULongValue -> emit("(${value}UL)")
-                            is UShortValue -> emit("${value}u")
-                            else -> error("Unsupported bindingArg type $value")
-                        }.let {}
-                    }
-
-                    bindingArg.emit()
-                }
-            }
+            ).callables,
+            valueArgs = valueArgsForAnnotation(annotation),
+            typeArgs = typeArgsForAnnotation(annotation, source)
         )
     }
 
@@ -353,42 +415,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     ): QualifierDescriptor {
         return QualifierDescriptor(
             type = typeTranslator.toTypeRef(annotation.type, source),
-            args = annotation.allValueArguments.mapValues { (_, bindingArg) ->
-                val expr: ComponentExpression = {
-                    fun ConstantValue<*>.emit() {
-                        when (this) {
-                            is ArrayValue -> {
-                                // todo avoid boxing
-                                emit("arrayOf(")
-                                value.forEachIndexed { index, itemValue ->
-                                    itemValue.emit()
-                                    if (index != value.lastIndex) emit(", ")
-                                }
-                                emit(")")
-                            }
-                            is BooleanValue -> emit(value)
-                            is ByteValue -> emit("$value")
-                            is CharValue -> emit("'${value}'")
-                            is DoubleValue -> emit("$value")
-                            is EnumValue -> emit("${enumClassId.asSingleFqName()}.${enumEntryName}")
-                            is FloatValue -> emit("${value}f")
-                            is IntValue -> emit("$value")
-                            is KClassValue -> emit("${(value as KClassValue.Value.NormalClass).classId.asSingleFqName()}::class")
-                            is LongValue -> emit("${value}L")
-                            is ShortValue -> emit("$value")
-                            is StringValue -> emit("\"${value}\"")
-                            is UByteValue -> emit("${value}u")
-                            is UIntValue -> emit("${value}u")
-                            is ULongValue -> emit("(${value}UL)")
-                            is UShortValue -> emit("${value}u")
-                            else -> error("Unsupported bindingArg type $value")
-                        }.let {}
-                    }
-
-                    bindingArg.emit()
-                }
-                buildCodeString { expr() }
-            }
+            args = valueArgsForAnnotation(annotation)
+                .mapValues { buildCodeString { it.value(this) } }
         )
     }
 
@@ -413,6 +441,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 ?.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
             contributionKind = when {
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
+                owner.hasAnnotation(InjektFqNames.Decorator) -> Callable.ContributionKind.DECORATOR
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.ContributionKind.MAP_ENTRIES
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) -> Callable.ContributionKind.SET_ELEMENTS
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) -> Callable.ContributionKind.MODULE
@@ -433,7 +462,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         isExtensionReceiver = true,
                         name = "_receiver".asNameId(),
                         inlineKind = ValueParameterRef.InlineKind.NONE,
-                        adapterArgName = it.getAdapterArgName(),
+                        argName = it.getArgName(),
                         hasDefault = false,
                         defaultExpression = null
                     )
@@ -448,7 +477,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         it.isCrossinline -> ValueParameterRef.InlineKind.CROSSINLINE
                         else -> ValueParameterRef.InlineKind.NONE
                     },
-                    adapterArgName = it.getAdapterArgName(),
+                    argName = it.getArgName(),
                     hasDefault = it.declaresDefaultValue(),
                     defaultExpression = if (!it.declaresDefaultValue()) null else ({
                         emit((it.findPsi() as KtParameter).defaultValue!!.text)
@@ -464,11 +493,16 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     else -> Callable.CallableKind.DEFAULT
                 }
             } else Callable.CallableKind.DEFAULT,
-            adapters = (descriptor
-                .getAnnotatedAnnotations(InjektFqNames.Adapter) + owner
-                .getAnnotatedAnnotations(InjektFqNames.Adapter))
+            decorators = (descriptor
+                .getAnnotatedAnnotations(InjektFqNames.Decorator) + owner
+                .getAnnotatedAnnotations(InjektFqNames.Decorator))
                 .distinct()
-                .map { adapterDescriptorForAnnotation(it, descriptor) },
+                .map { decoratorDescriptorForAnnotation(it, descriptor) },
+            effects = (descriptor
+                .getAnnotatedAnnotations(InjektFqNames.Effect) + owner
+                .getAnnotatedAnnotations(InjektFqNames.Effect))
+                .distinct()
+                .map { effectDescriptorForAnnotation(it, descriptor) },
             isExternal = owner is DeserializedDescriptor,
             isInline = descriptor.isInline,
             isFunBinding = descriptor.hasAnnotation(InjektFqNames.FunBinding),
@@ -493,7 +527,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) ||
-                            it.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Adapter)
+                            it.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect)
                 }
                     .mapNotNull {
                         when (it) {
@@ -508,7 +542,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
                         // todo tmp workaround for composables
                         if ((descriptor.containingDeclaration as? ClassDescriptor)
-                                ?.hasAnnotation(InjektFqNames.Adapter) == true) {
+                                ?.hasAnnotation(InjektFqNames.Effect) == true) {
                             substitutionMap += callable.typeParameters
                                 .zip(moduleSubstitutionMap.values)
                         }

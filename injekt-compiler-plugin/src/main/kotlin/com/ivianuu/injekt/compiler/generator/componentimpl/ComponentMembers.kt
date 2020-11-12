@@ -27,17 +27,21 @@ import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.TypeTranslator
 import com.ivianuu.injekt.compiler.generator.asNameId
+import com.ivianuu.injekt.compiler.generator.copy
 import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.fullyExpandedType
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.renderExpanded
+import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 @Binding
 class ComponentStatements(
     private val declarationStore: DeclarationStore,
+    private val moduleDescriptor: ModuleDescriptor,
     private val owner: @Assisted ComponentImpl,
     private val typeTranslator: TypeTranslator
 ) {
@@ -101,12 +105,26 @@ class ComponentStatements(
             return it
         }
 
+        // ask the parent for the expression if were not the owners members
         if (binding.owner != owner) {
             return {
                 componentExpression(parent!!.owner)()
                 emit(".")
                 parent!!.getBindingExpression(request)()
             }
+        }
+
+        // ensure all dependencies will get initialized before us
+        binding
+            .decorators
+            .flatMap { it.dependencies }
+            .filter { owner.graph.getBinding(it) !is MissingBindingNode }
+            .forEach { getBindingExpression(it) }
+        if (!binding.lazyDependencies) {
+            binding
+                .dependencies
+                .filter { owner.graph.getBinding(it) !is MissingBindingNode }
+                .forEach { getBindingExpression(it) }
         }
 
         val rawExpression = when (binding) {
@@ -122,11 +140,11 @@ class ComponentStatements(
         }
 
         val maybeScopedExpression = if (binding.targetComponent == null || binding.cacheable)
-            rawExpression else ({
-            scoped(binding.type, binding.callableKind, false, binding.targetComponent!!) {
-                rawExpression()
-            }
-        })
+            rawExpression else
+            scoped(binding.type, binding.callableKind, false, binding.targetComponent!!, rawExpression)
+
+        val maybeDecoratedExpression = if (binding.decorators.isEmpty()) maybeScopedExpression
+        else decorated(binding.type, binding.callableKind, binding.decorators, maybeScopedExpression)
 
         val requestForType = owner.requests
             .firstOrNull { it.type == binding.type }
@@ -144,7 +162,7 @@ class ComponentStatements(
             type = binding.type,
             name = callableName,
             isOverride = isOverride,
-            body = maybeScopedExpression,
+            body = maybeDecoratedExpression,
             isProperty = isProperty,
             callableKind = requestForType?.callableKind ?: callableKind,
             cacheable = binding.cacheable,
@@ -152,14 +170,14 @@ class ComponentStatements(
             canBePrivate = !isOverride && requestForType !in owner.assistedRequests
         )
 
-        val expression: ComponentExpression = {
+        val accessExpression: ComponentExpression = {
             emit("$callableName")
             if (callableKind == Callable.CallableKind.SUSPEND) emit("()")
         }
 
-        expressionsByType[binding.type] = expression
+        expressionsByType[binding.type] = accessExpression
 
-        return expression
+        return accessExpression
     }
 
     private fun assistedExpression(binding: AssistedBindingNode): ComponentExpression = {
@@ -193,9 +211,9 @@ class ComponentStatements(
     private fun childFactoryExpression(binding: ChildComponentBindingNode): ComponentExpression = {
         emit("{ ")
         val params = binding.type.typeArguments.dropLast(1)
-        params.indices.forEach { paramIndex ->
-            emit("p$paramIndex")
-            if (paramIndex != params.lastIndex) emit(", ")
+        params.forEachIndexed { index, param ->
+            emit("p$index: ${param.renderExpanded()}")
+            if (index != params.lastIndex) emit(", ")
             else emitLine(" ->")
         }
         emitLine()
@@ -283,9 +301,7 @@ class ComponentStatements(
             binding.declaredInComponent,
             binding.dependencies.map { request ->
                 val dependencyBinding = owner.graph.getBinding(request)
-                if (dependencyBinding is MissingBindingNode) {
-                    return@map null
-                }
+                if (dependencyBinding is MissingBindingNode) return@map null
                 getBindingExpression(request)
             }
         )
@@ -299,13 +315,103 @@ class ComponentStatements(
         emit("this")
     }
 
-    private fun CodeBuilder.scoped(
+    private fun decorated(
+        type: TypeRef,
+        callableKind: Callable.CallableKind,
+        decorators: List<DecoratorNode>,
+        create: ComponentExpression
+    ): ComponentExpression {
+        val providerType = when (callableKind) {
+            Callable.CallableKind.DEFAULT -> typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getFunction(0)
+            ).defaultType.typeWith(listOf(type))
+            Callable.CallableKind.SUSPEND -> typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getSuspendFunction(0)
+            ).defaultType.typeWith(listOf(type))
+            Callable.CallableKind.COMPOSABLE -> typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getFunction(0)
+            ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
+        }
+
+        val initializer: CodeBuilder.() -> Unit = {
+            val decoratorFactoryType = typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getFunction(1)
+            ).defaultType.typeWith(listOf(providerType, providerType))
+            emitLine("listOf<${decoratorFactoryType.renderExpanded()}>(")
+            decorators.forEachIndexed { index, decorator ->
+                emit("{ _prev -> ")
+                var dependencyIndex = 0
+                emitCallableInvocation(
+                    decorator.callable,
+                    decorator.receiver,
+                    null,
+                    decorator.callable.valueParameters
+                        .map { valueParameter ->
+                            when {
+                                valueParameter.argName != null -> {
+                                    val arg = decorator.valueArgs[valueParameter.argName]
+                                    when {
+                                        arg != null -> arg
+                                        valueParameter.type.isMarkedNullable -> {
+                                            {
+                                                emit("null")
+                                            }
+                                        }
+                                        else -> error("No argument provided for non null binding arg ${valueParameter.name} for " +
+                                                "${decorator.callable.fqName}")
+                                    }
+                                }
+                                valueParameter.type == decorator.callable.type -> {
+                                    { emit("_prev") }
+                                }
+                                else -> {
+                                    val dependencyRequest = decorator.dependencies[dependencyIndex++]
+                                    val dependencyBinding = owner.graph.getBinding(dependencyRequest)
+                                    if (dependencyBinding is MissingBindingNode) return@map null
+                                    getBindingExpression(dependencyRequest)
+                                }
+                            }
+                        },
+                    emptyList()
+                )
+                emit(" }")
+                if (index != decorators.lastIndex) emitLine(", ")
+            }
+            emitLine(")")
+            emit(".fold({ ")
+            create()
+            emitLine(" }) { acc, next -> ")
+            emitLine("next(acc)")
+            emitLine("}")
+        }
+        val name = "${type.uniqueTypeName()}_Provider".asNameId()
+        val providerProperty = ComponentCallable(
+            name = name,
+            type = providerType,
+            initializer = initializer,
+            isMutable = false,
+            body = null,
+            isOverride = false,
+            isProperty = true,
+            callableKind = Callable.CallableKind.DEFAULT,
+            isInline = false,
+            canBePrivate = true,
+            valueParameters = emptyList(),
+            typeParameters = emptyList()
+        ).also { owner.members += it }
+
+        return {
+            emit("${providerProperty.name}()")
+        }
+    }
+
+    private fun scoped(
         type: TypeRef,
         callableKind: Callable.CallableKind,
         frameworkType: Boolean,
         scopeComponentType: TypeRef,
-        create: CodeBuilder.() -> Unit
-    ) {
+        create: ComponentExpression
+    ): ComponentExpression {
         var scopeComponent = owner
         while(scopeComponent.componentType != scopeComponentType) {
             scopeComponent = scopeComponent.parent!!
@@ -343,15 +449,13 @@ class ComponentStatements(
                 type = mutexType,
                 initializer = null,
                 isMutable = true,
-                body = {
-                    scoped(
-                        mutexType,
-                        Callable.CallableKind.DEFAULT,
-                        true,
-                        scopeComponentType
-                    ) {
-                        emit("${InjektFqNames.Mutex}()")
-                    }
+                body = scoped(
+                    mutexType,
+                    Callable.CallableKind.DEFAULT,
+                    true,
+                    scopeComponentType
+                ) {
+                    emit("${InjektFqNames.Mutex}()")
                 },
                 isOverride = false,
                 isProperty = false,
@@ -363,41 +467,43 @@ class ComponentStatements(
             ).also { scopeComponent.members += it }
         }
 
-        emit("run ")
-        braced {
-            emit("var value = ")
-            scopeComponentExpression()
-            emitLine(".${cacheProperty.name}")
-            emit("if (value !== ")
-            scopeComponentExpression()
-            emitLine(") return@run value as ${type.renderExpanded()}")
-            fun emitInvocation() {
-                emit("value = ")
+        return {
+            emit("run scope@ ")
+            braced {
+                emit("var value = ")
                 scopeComponentExpression()
                 emitLine(".${cacheProperty.name}")
                 emit("if (value !== ")
                 scopeComponentExpression()
-                emitLine(") return@run value as ${type.renderExpanded()}")
-                emit("value = ")
-                create()
-                emitLine()
-                scopeComponentExpression()
-                emitLine(".${cacheProperty.name} = value")
-                emitLine("return@run value as ${type.renderExpanded()}")
-            }
-            when (callableKind) {
-                Callable.CallableKind.SUSPEND -> {
-                    emit("_mutex().withLock ")
-                    braced { emitInvocation() }
-                }
-                Callable.CallableKind.DEFAULT -> {
-                    emit("synchronized(")
+                emitLine(") return@scope value as ${type.renderExpanded()}")
+                fun emitInvocation() {
+                    emit("value = ")
                     scopeComponentExpression()
-                    emit(") ")
-                    braced { emitInvocation() }
+                    emitLine(".${cacheProperty.name}")
+                    emit("if (value !== ")
+                    scopeComponentExpression()
+                    emitLine(") return@scope value as ${type.renderExpanded()}")
+                    emit("value = ")
+                    create()
+                    emitLine()
+                    scopeComponentExpression()
+                    emitLine(".${cacheProperty.name} = value")
+                    emitLine("return@scope value as ${type.renderExpanded()}")
                 }
-                // todo what to do here?
-                Callable.CallableKind.COMPOSABLE -> emitInvocation()
+                when (callableKind) {
+                    Callable.CallableKind.SUSPEND -> {
+                        emit("_mutex().withLock ")
+                        braced { emitInvocation() }
+                    }
+                    Callable.CallableKind.DEFAULT -> {
+                        emit("synchronized(")
+                        scopeComponentExpression()
+                        emit(") ")
+                        braced { emitInvocation() }
+                    }
+                    // todo what to do here?
+                    Callable.CallableKind.COMPOSABLE -> emitInvocation()
+                }
             }
         }
     }
@@ -471,7 +577,7 @@ class ComponentStatements(
             braced {
                 if (callable.valueParameters.any { it.isExtensionReceiver }) {
                     emit("with(")
-                    emitOrNull(arguments.first(), false)
+                    emitOrNull(arguments.first())
                     emit(") ")
                     braced {
                         emit(callable.name)
@@ -485,7 +591,7 @@ class ComponentStatements(
         } else {
             if (callable.valueParameters.any { it.isExtensionReceiver }) {
                 emit("with(")
-                emitOrNull(arguments.first(), false)
+                emitOrNull(arguments.first())
                 emit(") ")
                 braced {
                     emit(callable.name)
@@ -498,10 +604,7 @@ class ComponentStatements(
         }
     }
 
-    private fun CodeBuilder.emitOrNull(
-        expression: ComponentExpression?,
-        forInlineProvider: Boolean
-    ) {
+    private fun CodeBuilder.emitOrNull(expression: ComponentExpression?) {
         expression?.invoke(this) ?: emit("null")
     }
 

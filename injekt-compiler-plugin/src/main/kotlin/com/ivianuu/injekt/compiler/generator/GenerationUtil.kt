@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentExpression
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
@@ -63,18 +62,20 @@ fun DeclarationDescriptor.hasAnnotatedAnnotationsWithPropertyAndClass(
 fun ClassDescriptor.getInjectConstructor(): ConstructorDescriptor? {
     if (hasAnnotation(InjektFqNames.Binding) ||
         hasAnnotation(InjektFqNames.ImplBinding) ||
-        hasAnnotatedAnnotations(InjektFqNames.Adapter)) return unsubstitutedPrimaryConstructor
+        hasAnnotatedAnnotations(InjektFqNames.Decorator) ||
+        hasAnnotatedAnnotations(InjektFqNames.Effect)) return unsubstitutedPrimaryConstructor
     constructors
         .firstOrNull {
             it.hasAnnotation(InjektFqNames.Binding) ||
                     it.hasAnnotation(InjektFqNames.ImplBinding) ||
-                    it.hasAnnotatedAnnotations(InjektFqNames.Adapter)
+                    it.hasAnnotatedAnnotations(InjektFqNames.Decorator) ||
+                    it.hasAnnotatedAnnotations(InjektFqNames.Effect)
         }?.let { return it }
     return null
 }
 
-fun ParameterDescriptor.getAdapterArgName(): Name? =
-    ( annotations.findAnnotation(InjektFqNames.AdapterArg)
+fun DeclarationDescriptor.getArgName(): Name? =
+    (annotations.findAnnotation(InjektFqNames.Arg)
         ?.allValueArguments?.values?.single()?.value as? String)?.asNameId()
 
 fun String.asNameId() = Name.identifier(this)
@@ -104,10 +105,18 @@ fun AnnotationDescriptor.hasAnnotation(annotation: FqName): Boolean =
 
 fun Annotated.hasAnnotatedAnnotations(
     annotation: FqName
-): Boolean = annotations.any { it.hasAnnotation(annotation) }
+): Boolean {
+    return annotations.any {
+        val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
+        inner.hasAnnotation(annotation)
+    }
+}
 
 fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescriptor> =
-    annotations.filter { it.hasAnnotation(annotation) }
+    annotations.filter {
+        val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
+        inner.hasAnnotation(annotation)
+    }
 
 fun joinedNameOf(
     packageFqName: FqName,
@@ -183,4 +192,13 @@ val TypeRef.callableKind: Callable.CallableKind get() = when {
     isSuspendFunction -> Callable.CallableKind.SUSPEND
     isComposable -> Callable.CallableKind.COMPOSABLE
     else -> Callable.CallableKind.DEFAULT
+}
+
+fun Callable.substitute(substitutionMap: Map<ClassifierRef, TypeRef>): Callable {
+    return copy(
+        type = type.substitute(substitutionMap),
+        valueParameters = valueParameters.map {
+            it.copy(type = it.type.substitute(substitutionMap))
+        }
+    )
 }
