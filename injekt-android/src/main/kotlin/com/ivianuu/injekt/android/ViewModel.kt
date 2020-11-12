@@ -19,38 +19,39 @@ package com.ivianuu.injekt.android
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Adapter
-import com.ivianuu.injekt.FunBinding
+import com.ivianuu.injekt.Decorator
+import kotlin.reflect.KClass
 
-@Adapter
-annotation class ActivityViewModelBinding {
+@Decorator
+annotation class ActivityViewModel {
     companion object {
-        @Binding
-        fun <VM : ViewModel> viewModel(getViewModel: getViewModel<VM, ActivityViewModelStoreOwner>): VM =
-            getViewModel()
+        inline fun <reified VM : ViewModel> decorate(
+            storeOwner: ActivityViewModelStoreOwner,
+            noinline factory: () -> VM
+        ): VM = storeOwner.get(VM::class, factory)
     }
 }
 
-@Adapter
-annotation class FragmentViewModelBinding {
+@Decorator
+annotation class FragmentViewModel {
     companion object {
-        @Binding
-        fun <VM : ViewModel> viewModel(getViewModel: getViewModel<VM, FragmentViewModelStoreOwner>): VM =
-            getViewModel()
+        inline fun <reified VM : ViewModel> decorate(
+            storeOwner: FragmentViewModelStoreOwner,
+            noinline factory: () -> VM
+        ): VM = storeOwner.get(VM::class, factory)
     }
 }
 
-@FunBinding
-inline fun <reified VM : ViewModel, VMSO : ViewModelStoreOwner> getViewModel(
-    viewModelStoreOwner: VMSO,
-    noinline viewModelFactory: () -> VM
+@PublishedApi
+internal fun <VM : ViewModel> ViewModelStoreOwner.get(
+    klass: KClass<VM>,
+    viewModelFactory: () -> VM
 ): VM {
     return ViewModelProvider(
-        viewModelStoreOwner,
+        this,
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel?> create(modelClass: Class<T>): T =
                 viewModelFactory() as T
         }
-    )[VM::class.java]
+    )[klass.java]
 }

@@ -305,17 +305,17 @@ class FunBindingTest {
     }
 
     @Test
-    fun testFunBindingWithAdapterDependencyGetsCreatedOnInvocation() = codegen(
+    fun testFunBindingWithEffectDependencyGetsCreatedOnInvocation() = codegen(
         """
-            @Adapter
-            annotation class MyAdapter {
+            @Effect
+            annotation class MyEffect {
                 companion object {
                     @Binding
-                    fun <T> alias(value: T):T = value
+                    fun <T : () -> Unit> asFunc(value: T): () -> Unit = value
                 }
             }
             
-            @MyAdapter
+            @MyEffect
             @FunBinding
             fun function(foo: Foo) {
             }
@@ -326,7 +326,7 @@ class FunBindingTest {
             
             @Component
             abstract class TestComponent {
-                abstract val function: function
+                abstract val function: () -> Unit
             }
             
             fun invoke() {
@@ -352,31 +352,6 @@ class FunBindingTest {
             @Component
             abstract class TestComponent {
                 abstract val function: (Foo) -> function
-            }
-        """
-    )
-
-    @Test
-    fun testFunBindingWithAdapterWithNonExplicitAssistedParameters() = codegen(
-        """
-            @Adapter
-            annotation class MyAdapter {
-                companion object {
-                    @Binding
-                    fun <T> withoutFooArg(value: (Foo) -> T): T {
-                        return value(Foo())
-                    }
-                }
-            }
-
-            @MyAdapter
-            @FunBinding
-            fun function(foo: Foo) {
-            }
-            
-            @Component
-            abstract class TestComponent {
-                abstract val function: function
             }
         """
     )

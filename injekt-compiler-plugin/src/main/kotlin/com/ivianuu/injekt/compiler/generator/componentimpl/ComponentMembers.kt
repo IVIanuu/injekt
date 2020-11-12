@@ -31,13 +31,16 @@ import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.fullyExpandedType
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.renderExpanded
+import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 @Binding
 class ComponentStatements(
     private val declarationStore: DeclarationStore,
+    private val moduleDescriptor: ModuleDescriptor,
     private val owner: @Assisted ComponentImpl,
     private val typeTranslator: TypeTranslator
 ) {
@@ -123,9 +126,12 @@ class ComponentStatements(
 
         val maybeScopedExpression = if (binding.targetComponent == null || binding.cacheable)
             rawExpression else ({
-            scoped(binding.type, binding.callableKind, false, binding.targetComponent!!) {
-                rawExpression()
-            }
+            scoped(binding.type, binding.callableKind, false, binding.targetComponent!!, rawExpression)
+        })
+
+        val maybeDecoratedExpression = if (binding.decorators.isEmpty()) maybeScopedExpression
+        else ({
+            decorated(binding.type, binding.decorators, maybeScopedExpression)
         })
 
         val requestForType = owner.requests
@@ -144,7 +150,7 @@ class ComponentStatements(
             type = binding.type,
             name = callableName,
             isOverride = isOverride,
-            body = maybeScopedExpression,
+            body = maybeDecoratedExpression,
             isProperty = isProperty,
             callableKind = requestForType?.callableKind ?: callableKind,
             cacheable = binding.cacheable,
@@ -152,14 +158,14 @@ class ComponentStatements(
             canBePrivate = !isOverride && requestForType !in owner.assistedRequests
         )
 
-        val expression: ComponentExpression = {
+        val accessExpression: ComponentExpression = {
             emit("$callableName")
             if (callableKind == Callable.CallableKind.SUSPEND) emit("()")
         }
 
-        expressionsByType[binding.type] = expression
+        expressionsByType[binding.type] = accessExpression
 
-        return expression
+        return accessExpression
     }
 
     private fun assistedExpression(binding: AssistedBindingNode): ComponentExpression = {
@@ -299,12 +305,81 @@ class ComponentStatements(
         emit("this")
     }
 
+    private fun CodeBuilder.decorated(
+        type: TypeRef,
+        decorators: List<DecoratorNode>,
+        create: ComponentExpression
+    ) {
+        fun CodeBuilder.decorate(
+            decorator: DecoratorNode,
+            expression: ComponentExpression
+        ) {
+            decorator.decorators.fold<DecoratorNode, ComponentExpression>({
+                emitCallableInvocation(
+                    decorator.descriptor.callable,
+                    decorator.receiver,
+                    null,
+                    decorator.descriptor.callable.valueParameters
+                        .map { valueParameter ->
+                            if (valueParameter.type.isFunction &&
+                                    valueParameter.type.typeArguments.singleOrNull() == type) {
+                                expression
+                            } else {
+                                getBindingExpression(
+                                    valueParameter.toBindingRequest(decorator.descriptor.callable, emptyMap())
+                                )
+                            }
+                        },
+                    emptyList()
+                )
+            }) { acc, nextDecorator ->
+                {
+                    decorate(nextDecorator, acc)
+                }
+            }()
+        }
+        val initializer: CodeBuilder.() -> Unit = {
+            emitLine("{ ")
+            decorators.fold<DecoratorNode, ComponentExpression>({
+                emit("{ ")
+                create()
+                emit(" }")
+            }) { acc, innerDecorator ->
+                {
+                    decorate(innerDecorator, acc)
+                }
+            }()
+            emit("()")
+            emitLine()
+            emit(" }")
+        }
+        val name = "${type.uniqueTypeName()}_Provider".asNameId()
+        val providerProperty = ComponentCallable(
+            name = name,
+            type = typeTranslator.toClassifierRef(
+                moduleDescriptor.builtIns.getFunction(0)
+            ).defaultType.typeWith(listOf(type)),
+            initializer = initializer,
+            isMutable = false,
+            body = null,
+            isOverride = false,
+            isProperty = true,
+            callableKind = Callable.CallableKind.DEFAULT,
+            isInline = false,
+            canBePrivate = true,
+            valueParameters = emptyList(),
+            typeParameters = emptyList()
+        ).also { owner.members += it }
+
+        emit("${providerProperty.name}()")
+    }
+
     private fun CodeBuilder.scoped(
         type: TypeRef,
         callableKind: Callable.CallableKind,
         frameworkType: Boolean,
         scopeComponentType: TypeRef,
-        create: CodeBuilder.() -> Unit
+        create: ComponentExpression
     ) {
         var scopeComponent = owner
         while(scopeComponent.componentType != scopeComponentType) {
@@ -471,7 +546,7 @@ class ComponentStatements(
             braced {
                 if (callable.valueParameters.any { it.isExtensionReceiver }) {
                     emit("with(")
-                    emitOrNull(arguments.first(), false)
+                    emitOrNull(arguments.first())
                     emit(") ")
                     braced {
                         emit(callable.name)
@@ -485,7 +560,7 @@ class ComponentStatements(
         } else {
             if (callable.valueParameters.any { it.isExtensionReceiver }) {
                 emit("with(")
-                emitOrNull(arguments.first(), false)
+                emitOrNull(arguments.first())
                 emit(") ")
                 braced {
                     emit(callable.name)
@@ -498,10 +573,7 @@ class ComponentStatements(
         }
     }
 
-    private fun CodeBuilder.emitOrNull(
-        expression: ComponentExpression?,
-        forInlineProvider: Boolean
-    ) {
+    private fun CodeBuilder.emitOrNull(expression: ComponentExpression?) {
         expression?.invoke(this) ?: emit("null")
     }
 

@@ -55,8 +55,11 @@ annotation class MapEntries
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class SetElements
 
+@Target(AnnotationTarget.ANNOTATION_CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+annotation class Decorator
+
 @Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class Adapter
+annotation class Effect
 
 @Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class AdapterArg(val name: String)
+annotation class Arg(val name: String)

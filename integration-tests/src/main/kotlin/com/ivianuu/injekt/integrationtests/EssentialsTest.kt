@@ -2,8 +2,6 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.multiCodegen
-import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertSame
 import org.junit.Test
 
@@ -126,7 +124,7 @@ class EssentialsTest {
             
             internal typealias BoundStore<S, A> = Store<S, A>
             
-            @Adapter
+            @Effect
             annotation class StoreBinding {
                 companion object { 
                     @Binding(MyComponent::class)
@@ -224,62 +222,5 @@ class EssentialsTest {
         val (a, b) = invokeSingleFile<Pair<Any, Any>>()
         assertSame(a, b)
     }
-
-    @Test
-    fun testBoundedGenericWithAlias() = multiCodegen(
-        listOf(
-            source(
-                """
-                    interface ViewModel
-            
-                    interface ViewModelStore
-            
-                    @Binding
-                    class DefaultViewModelStore : ViewModelStore
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    @Adapter
-                    annotation class ViewModelBinding {
-                        companion object {
-                            @Binding
-                            fun <T : ViewModel> bind(
-                                getViewModel: getViewModel<T, DefaultViewModelStore>
-                            ): T = getViewModel()
-                        }
-                    }
-                    
-                    @FunBinding
-                    inline fun <reified VM : ViewModel, VMSO : ViewModelStore> getViewModel(
-                        store: VMSO,
-                        noinline provider: () -> VM
-                    ) = provider()
-                    """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    @ViewModelBinding
-                    class MyViewModel : ViewModel
-                    
-                    @FunBinding
-                    fun WithMyViewModel(
-                        viewModelFactory: () -> MyViewModel,
-                        @FunApi children: (MyViewModel) -> Unit 
-                    ) {
-                    }
-                    
-                    @Component
-                    abstract class MyComponent {
-                        abstract val withMyViewModel: WithMyViewModel
-                    }
-                """
-            )
-        )
-    )
 
 }

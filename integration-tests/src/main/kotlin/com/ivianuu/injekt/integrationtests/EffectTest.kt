@@ -23,12 +23,12 @@ import com.ivianuu.injekt.test.source
 import org.junit.Assert.assertSame
 import org.junit.Test
 
-class AdapterTest {
+class EffectTest {
 
     @Test
-    fun testAdapterWithClass() = codegen(
+    fun testEffectWithClass() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class AnyBinding { 
                 companion object {
                     @Binding
@@ -49,32 +49,9 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithSuperTypeArgument() = codegen(
+    fun testEffectWithTopLevelFunction() = codegen(
         """
-            @Adapter
-            annotation class AnyBinding { 
-                companion object {
-                    @Binding
-                    val <T> T.any: T get() = this
-                }
-            }
-            
-            @AnyBinding
-            class AnnotatedBar(val foo: Foo)
-            
-            @Component
-            abstract class MyComponent {
-                abstract val annotatedBar: AnnotatedBar
-                
-                @Binding protected fun foo() = Foo()
-            }
-        """
-    )
-
-    @Test
-    fun testAdapterWithTopLevelFunction() = codegen(
-        """
-            @Adapter
+            @Effect
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -96,9 +73,9 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithSuspendFunction() = codegen(
+    fun testEffectWithSuspendFunction() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -120,9 +97,9 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithComposableFunction() = codegen(
+    fun testEffectWithComposableFunction() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -146,9 +123,9 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithFunctionInObject() = codegen(
+    fun testEffectWithFunctionInObject() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -172,9 +149,9 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithFunBinding() = codegen(
+    fun testEffectWithFunBinding() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -197,9 +174,9 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithAssistedFunBinding() = codegen(
+    fun testEffectWithAssistedFunBinding() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -220,9 +197,9 @@ class AdapterTest {
     )
 
     @Test
-    fun testSetAdapterWithComposableFunction() = codegen(
+    fun testSetEffectWithComposableFunction() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class UiComponentBinding {
                 companion object {
                     @SetElements
@@ -250,11 +227,11 @@ class AdapterTest {
     }
 
     @Test
-    fun testSetAdapterWithComposableFunctionMulti() = multiCodegen(
+    fun testSetEffectWithComposableFunctionMulti() = multiCodegen(
         listOf(
             source(
                 """
-                    @Adapter
+                    @Effect
                     annotation class UiComponentBinding {
                         companion object {
                             @SetElements
@@ -290,10 +267,10 @@ class AdapterTest {
     }
 
     @Test
-    fun testAdapterWithFunctionTypeAlias() = codegen(
+    fun testEffectWithFunctionTypeAlias() = codegen(
         """
-            @Adapter
-            annotation class MyAdapter {
+            @Effect
+            annotation class MyEffect {
                 companion object {
                     @Binding
                     fun <T : () -> Unit> bind(instance: T): T = instance
@@ -302,15 +279,15 @@ class AdapterTest {
             
             typealias MyFunction = () -> Unit
             
-            @MyAdapter
+            @MyEffect
             fun myFunction(): MyFunction = {}
         """
     )
 
     @Test
-    fun testAdapterOnPropertyBinding() = codegen(
+    fun testEffectOnPropertyBinding() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -329,9 +306,9 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterOnExtensionFunctionBinding() = codegen(
+    fun testEffectOnExtensionFunctionBinding() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -351,9 +328,9 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterOnExtensionPropertyBinding() = codegen(
+    fun testEffectOnExtensionPropertyBinding() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -373,9 +350,9 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithImplBinding() = codegen(
+    fun testEffectWithImplBinding() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class AnyBinding {
                 companion object {
                     @Binding
@@ -399,9 +376,9 @@ class AdapterTest {
     )
 
     @Test
-    fun testScopedAdapterFunction() = codegen(
+    fun testScopedEffectFunction() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class AnyBinding { 
                 companion object {
                     @Binding(MyComponent::class)
@@ -431,9 +408,9 @@ class AdapterTest {
     }
 
     @Test
-    fun testSuspendAdapterFunction() = codegen(
+    fun testSuspendEffectFunction() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class AnyBinding { 
                 companion object {
                     @Binding
@@ -454,9 +431,9 @@ class AdapterTest {
     )
 
     @Test
-    fun testComposableAdapterFunction() = codegen(
+    fun testComposableEffectFunction() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class AnyBinding { 
                 companion object {
                     @Binding
@@ -479,17 +456,17 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithArrayArg() = codegen(
+    fun testEffectWithArrayArg() = codegen(
         """
-            @Adapter
-            annotation class MyAdapter(val arg: Array<String>) {
+            @Effect
+            annotation class MyEffect(val arg: Array<String>) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@AdapterArg("arg") arg: Array<String>, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: Array<String>, instance: T) = arg
                 }
             }
 
-            @MyAdapter(arrayOf("a"))
+            @MyEffect(arrayOf("a"))
             class MyService
 
             @Component
@@ -500,17 +477,17 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithBooleanArg() = codegen(
+    fun testEffectWithBooleanArg() = codegen(
         """
-            @Adapter
-            annotation class MyAdapter(val arg: Boolean) {
+            @Effect
+            annotation class MyEffect(val arg: Boolean) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@AdapterArg("arg") arg: Boolean, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: Boolean, instance: T) = arg
                 }
             }
 
-            @MyAdapter(true)
+            @MyEffect(true)
             class MyService
 
             @Component
@@ -521,17 +498,17 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithByteArg() = codegen(
+    fun testEffectWithByteArg() = codegen(
         """
-            @Adapter
-            annotation class MyAdapter(val arg: Byte) {
+            @Effect
+            annotation class MyEffect(val arg: Byte) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@AdapterArg("arg") arg: Byte, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: Byte, instance: T) = arg
                 }
             }
 
-            @MyAdapter(0)
+            @MyEffect(0)
             class MyService
 
             @Component
@@ -542,17 +519,17 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithCharArg() = codegen(
+    fun testEffectWithCharArg() = codegen(
         """
-            @Adapter
-            annotation class MyAdapter(val arg: Char) {
+            @Effect
+            annotation class MyEffect(val arg: Char) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@AdapterArg("arg") arg: Char, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: Char, instance: T) = arg
                 }
             }
 
-            @MyAdapter('a')
+            @MyEffect('a')
             class MyService
 
             @Component
@@ -563,17 +540,17 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithDoubleArg() = codegen(
+    fun testEffectWithDoubleArg() = codegen(
         """
-            @Adapter
-            annotation class MyAdapter(val arg: Double) {
+            @Effect
+            annotation class MyEffect(val arg: Double) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@AdapterArg("arg") arg: Double, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: Double, instance: T) = arg
                 }
             }
 
-            @MyAdapter(0.0)
+            @MyEffect(0.0)
             class MyService
 
             @Component
@@ -584,19 +561,19 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithEnumArg() = codegen(
+    fun testEffectWithEnumArg() = codegen(
         """
             enum class MyEnum { A, B }
             
-            @Adapter
-            annotation class MyAdapter(val arg: MyEnum) {
+            @Effect
+            annotation class MyEffect(val arg: MyEnum) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@AdapterArg("arg") arg: MyEnum, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: MyEnum, instance: T) = arg
                 }
             }
 
-            @MyAdapter(MyEnum.A)
+            @MyEffect(MyEnum.A)
             class MyService
 
             @Component
@@ -607,17 +584,17 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithFloatArg() = codegen(
+    fun testEffectWithFloatArg() = codegen(
         """
-            @Adapter
-            annotation class MyAdapter(val arg: Float) {
+            @Effect
+            annotation class MyEffect(val arg: Float) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@AdapterArg("arg") arg: Float, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: Float, instance: T) = arg
                 }
             }
 
-            @MyAdapter(0f)
+            @MyEffect(0f)
             class MyService
 
             @Component
@@ -628,17 +605,17 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithIntArg() = codegen(
+    fun testEffectWithIntArg() = codegen(
         """
-            @Adapter
-            annotation class MyAdapter(val arg: Int) {
+            @Effect
+            annotation class MyEffect(val arg: Int) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@AdapterArg("arg") arg: Int, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: Int, instance: T) = arg
                 }
             }
 
-            @MyAdapter(0)
+            @MyEffect(0)
             class MyService
 
             @Component
@@ -649,17 +626,17 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithClassArg() = codegen(
+    fun testEffectWithClassArg() = codegen(
         """
-            @Adapter
-            annotation class MyAdapter(val arg: KClass<*>) {
+            @Effect
+            annotation class MyEffect(val arg: KClass<*>) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@AdapterArg("arg") arg: KClass<*>, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: KClass<*>, instance: T) = arg
                 }
             }
 
-            @MyAdapter(Any::class)
+            @MyEffect(Any::class)
             class MyService
 
             @Component
@@ -670,17 +647,17 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithLongArg() = codegen(
+    fun testEffectWithLongArg() = codegen(
         """
-            @Adapter
-            annotation class MyAdapter(val arg: Long) {
+            @Effect
+            annotation class MyEffect(val arg: Long) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@AdapterArg("arg") arg: Long, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: Long, instance: T) = arg
                 }
             }
 
-            @MyAdapter(0L)
+            @MyEffect(0L)
             class MyService
 
             @Component
@@ -691,17 +668,17 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithShortArg() = codegen(
+    fun testEffectWithShortArg() = codegen(
         """
-            @Adapter
-            annotation class MyAdapter(val arg: Short) {
+            @Effect
+            annotation class MyEffect(val arg: Short) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@AdapterArg("arg") arg: Short, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: Short, instance: T) = arg
                 }
             }
 
-            @MyAdapter(0)
+            @MyEffect(0)
             class MyService
 
             @Component
@@ -712,17 +689,17 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithStringArg() = codegen(
+    fun testEffectWithStringArg() = codegen(
         """
-            @Adapter
-            annotation class MyAdapter(val arg: String) {
+            @Effect
+            annotation class MyEffect(val arg: String) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@AdapterArg("arg") arg: String, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: String, instance: T) = arg
                 }
             }
 
-            @MyAdapter("my_name")
+            @MyEffect("my_name")
             class MyService
 
             @Component
@@ -733,17 +710,17 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithUByteArg() = codegen(
+    fun testEffectWithUByteArg() = codegen(
         """
-            @Adapter
-            annotation class MyAdapter(val arg: UByte) {
+            @Effect
+            annotation class MyEffect(val arg: UByte) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@AdapterArg("arg") arg: UByte, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: UByte, instance: T) = arg
                 }
             }
 
-            @MyAdapter(0u)
+            @MyEffect(0u)
             class MyService
 
             @Component
@@ -754,17 +731,17 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithUIntArg() = codegen(
+    fun testEffectWithUIntArg() = codegen(
         """
-            @Adapter
-            annotation class MyAdapter(val arg: UInt) {
+            @Effect
+            annotation class MyEffect(val arg: UInt) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@AdapterArg("arg") arg: UInt, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: UInt, instance: T) = arg
                 }
             }
 
-            @MyAdapter(0u)
+            @MyEffect(0u)
             class MyService
 
             @Component
@@ -775,17 +752,17 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithULongArg() = codegen(
+    fun testEffectWithULongArg() = codegen(
         """
-            @Adapter
-            annotation class MyAdapter(val arg: ULong) {
+            @Effect
+            annotation class MyEffect(val arg: ULong) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@AdapterArg("arg") arg: ULong, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: ULong, instance: T) = arg
                 }
             }
 
-            @MyAdapter(0UL)
+            @MyEffect(0UL)
             class MyService
 
             @Component
@@ -796,17 +773,17 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithUShortArg() = codegen(
+    fun testEffectWithUShortArg() = codegen(
         """
-            @Adapter
-            annotation class MyAdapter(val arg: UShort) {
+            @Effect
+            annotation class MyEffect(val arg: UShort) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@AdapterArg("arg") arg: UShort, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: UShort, instance: T) = arg
                 }
             }
 
-            @MyAdapter(0u)
+            @MyEffect(0u)
             class MyService
 
             @Component
@@ -817,9 +794,9 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithTypeArg() = codegen(
+    fun testEffectWithTypeArg() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class Alias<T> {
                 companion object {
                     @Binding
@@ -838,19 +815,17 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterUsesAnotherAdapter() = codegen(
+    fun testEffectUsesAnotherEffect() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class A {
                 companion object {
-                    @Binding
-                    fun <T : CharSequence> asCharSequence(instance: T): CharSequence = instance
                     @B
                     fun <T : CharSequence> b(instance: T): CharSequence = instance
                 }
             }
             
-            @Adapter
+            @Effect
             annotation class B {
                 companion object {
                     @Binding
@@ -872,7 +847,7 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithTypeAliasTypeParameterInference() = codegen(
+    fun testEffectWithTypeAliasTypeParameterInference() = codegen(
         """
             typealias StringIntMap = Map<String, Int>
             
@@ -880,7 +855,7 @@ class AdapterTest {
             @Binding
             fun map(): StringIntMap = mapOf("a" to 0)
 
-            @Adapter
+            @Effect
             annotation class MapBindings {
                 companion object {
                     @Binding
@@ -905,11 +880,11 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithTypeParameters() = codegen(
+    fun testEffectWithTypeParameters() = codegen(
         """
             interface Store<S, A>
             
-            @Adapter
+            @Effect
             annotation class StoreBinding {
                 companion object {
                     @Binding
@@ -928,9 +903,9 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterTypeParameterInference() = codegen(
+    fun testEffectTypeParameterInference() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class MapBinding<M : Map<*, *>> {
                 companion object {
                     @Binding
@@ -949,9 +924,9 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterBindingAndAnnotationTypeParameterInference() = codegen(
+    fun testEffectBindingAndAnnotationTypeParameterInference() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class MapBinding<M : Map<*, *>> {
                 companion object {
                     @Binding
@@ -970,9 +945,9 @@ class AdapterTest {
     )
 
     @Test
-    fun testAdapterWithDefaultValueDependency() = codegen(
+    fun testEffectWithDefaultValueDependency() = codegen(
         """
-            @Adapter
+            @Effect
             annotation class AnyBinding { 
                 companion object {
                     @Binding

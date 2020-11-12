@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -54,7 +55,8 @@ class IndexGenerator(
                                 descriptor.hasAnnotation(InjektFqNames.ChildComponent) ||
                                 descriptor.hasAnnotation(InjektFqNames.MergeComponent) ||
                                 descriptor.hasAnnotation(InjektFqNames.MergeChildComponent) ||
-                                descriptor.containingDeclaration?.hasAnnotation(InjektFqNames.Adapter) == true
+                                descriptor.containingDeclaration?.hasAnnotation(InjektFqNames.Effect) == true ||
+                                descriptor.containingDeclaration?.hasAnnotation(InjektFqNames.Decorator) == true
                         super.visitClassOrObject(classOrObject)
                         inModuleLikeScope = prevInModuleLikeScope
                     }
@@ -65,15 +67,24 @@ class IndexGenerator(
                             ?: return
 
                         if (((descriptor is ClassDescriptor || descriptor is ConstructorDescriptor || !inModuleLikeScope) &&
-                                    (descriptor.hasAnnotation(InjektFqNames.Binding) ||
-                                            descriptor.hasAnnotation(InjektFqNames.MapEntries) ||
-                                            descriptor.hasAnnotation(InjektFqNames.SetElements))) ||
+                                    (descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
+                                            descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Decorator) ||
+                                            descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
+                                            descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
+                                            descriptor.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Decorator) ||
+                                            descriptor.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect)) &&
+                                    !descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.ImplBinding)) ||
                             descriptor.hasAnnotation(InjektFqNames.MergeComponent) ||
                             descriptor.hasAnnotation(InjektFqNames.MergeChildComponent) ||
                             descriptor.hasAnnotation(InjektFqNames.MergeInto)) {
+                            val owner = when (descriptor) {
+                                is ConstructorDescriptor -> descriptor.constructedClass
+                                is PropertyAccessorDescriptor -> descriptor.correspondingProperty
+                                else -> descriptor
+                            }
                             val index = Index(
-                                descriptor.fqNameSafe,
-                                when (descriptor) {
+                                owner.fqNameSafe,
+                                when (owner) {
                                     is ClassDescriptor -> "class"
                                     is FunctionDescriptor -> "function"
                                     is PropertyDescriptor -> "property"

@@ -63,18 +63,18 @@ fun DeclarationDescriptor.hasAnnotatedAnnotationsWithPropertyAndClass(
 fun ClassDescriptor.getInjectConstructor(): ConstructorDescriptor? {
     if (hasAnnotation(InjektFqNames.Binding) ||
         hasAnnotation(InjektFqNames.ImplBinding) ||
-        hasAnnotatedAnnotations(InjektFqNames.Adapter)) return unsubstitutedPrimaryConstructor
+        hasAnnotatedAnnotations(InjektFqNames.Effect)) return unsubstitutedPrimaryConstructor
     constructors
         .firstOrNull {
             it.hasAnnotation(InjektFqNames.Binding) ||
                     it.hasAnnotation(InjektFqNames.ImplBinding) ||
-                    it.hasAnnotatedAnnotations(InjektFqNames.Adapter)
+                    it.hasAnnotatedAnnotations(InjektFqNames.Effect)
         }?.let { return it }
     return null
 }
 
-fun ParameterDescriptor.getAdapterArgName(): Name? =
-    ( annotations.findAnnotation(InjektFqNames.AdapterArg)
+fun ParameterDescriptor.getArgName(): Name? =
+    ( annotations.findAnnotation(InjektFqNames.Arg)
         ?.allValueArguments?.values?.single()?.value as? String)?.asNameId()
 
 fun String.asNameId() = Name.identifier(this)
@@ -183,4 +183,13 @@ val TypeRef.callableKind: Callable.CallableKind get() = when {
     isSuspendFunction -> Callable.CallableKind.SUSPEND
     isComposable -> Callable.CallableKind.COMPOSABLE
     else -> Callable.CallableKind.DEFAULT
+}
+
+fun Callable.substitute(substitutionMap: Map<ClassifierRef, TypeRef>): Callable {
+    return copy(
+        type = type.substitute(substitutionMap),
+        valueParameters = valueParameters.map {
+            it.copy(type = it.type.substitute(substitutionMap))
+        }
+    )
 }

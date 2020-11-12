@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.ClassifierRef
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
+import com.ivianuu.injekt.compiler.generator.DecoratorDescriptor
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.callableKind
 import com.ivianuu.injekt.compiler.generator.getStarSubstitutionMap
@@ -125,6 +126,7 @@ sealed class BindingNode(
     var callableKind: Callable.CallableKind
 ) {
     abstract val dependencies: List<BindingRequest>
+    abstract val decorators: List<DecoratorNode>
     abstract val rawType: TypeRef
     abstract val owner: ComponentImpl
     abstract val origin: FqName?
@@ -148,7 +150,8 @@ sealed class BindingNode(
 
 class SelfBindingNode(
     type: TypeRef,
-    val component: ComponentImpl,
+    override val decorators: List<DecoratorNode>,
+    val component: ComponentImpl
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val dependencies: List<BindingRequest>
         get() = emptyList()
@@ -171,6 +174,7 @@ class SelfBindingNode(
 class AssistedBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl,
+    override val decorators: List<DecoratorNode>,
     val childComponent: ComponentImpl,
     val assistedTypes: List<TypeRef>
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
@@ -207,6 +211,7 @@ class ChildComponentBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl,
     override val origin: FqName?,
+    override val decorators: List<DecoratorNode>,
     val childComponent: ComponentImpl,
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val dependencies: List<BindingRequest>
@@ -229,7 +234,8 @@ class ChildComponentBindingNode(
 
 class InputBindingNode(
     type: TypeRef,
-    override val owner: ComponentImpl
+    override val owner: ComponentImpl,
+    override val decorators: List<DecoratorNode>
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val declaredInComponent: ComponentImpl
         get() = owner
@@ -257,6 +263,7 @@ class CallableBindingNode(
     override val owner: ComponentImpl,
     override val declaredInComponent: ComponentImpl?,
     override val dependencies: List<BindingRequest>,
+    override val decorators: List<DecoratorNode>,
     override val receiver: ComponentExpression?,
     val callable: Callable
 ) : BindingNode(type, callable.callableKind) {
@@ -286,6 +293,7 @@ class MapBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
+    override val decorators: List<DecoratorNode>,
     val entries: List<CallableWithReceiver>,
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val rawType: TypeRef
@@ -316,6 +324,8 @@ class MissingBindingNode(
         get() = null
     override val dependencies: List<BindingRequest>
         get() = emptyList()
+    override val decorators: List<DecoratorNode>
+        get() = emptyList()
     override val inline: Boolean
         get() = false
     override val isExternal: Boolean
@@ -334,6 +344,7 @@ class ProviderBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
+    override val decorators: List<DecoratorNode>,
     override val origin: FqName?,
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val declaredInComponent: ComponentImpl?
@@ -356,6 +367,7 @@ class SetBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
+    override val decorators: List<DecoratorNode>,
     val elements: List<CallableWithReceiver>,
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val rawType: TypeRef
@@ -381,6 +393,12 @@ data class CallableWithReceiver(
     val receiver: ComponentExpression?,
     val declaredInComponent: ComponentImpl?,
     val substitutionMap: Map<ClassifierRef, TypeRef>
+)
+
+data class DecoratorNode(
+    val descriptor: DecoratorDescriptor,
+    val receiver: ComponentExpression?,
+    val decorators: List<DecoratorNode>
 )
 
 data class BindingRequest(

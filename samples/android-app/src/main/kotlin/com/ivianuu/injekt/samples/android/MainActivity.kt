@@ -28,7 +28,7 @@ import com.ivianuu.injekt.FunApi
 import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityContext
-import com.ivianuu.injekt.android.ActivityViewModelBinding
+import com.ivianuu.injekt.android.ActivityViewModel
 import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.merge.MergeInto
 import com.ivianuu.injekt.merge.mergeComponent
@@ -75,7 +75,7 @@ fun enqueueWork(context: ActivityContext) {
         )
 }
 
-@ActivityViewModelBinding
+@ActivityViewModel
 class MainViewModel : ViewModel() {
     init {
         println("init")
