@@ -519,7 +519,7 @@ class BindingGraph(
             )
         }
 
-        if (request.type.isFunction && request.type.typeArguments.last().let {
+        if (request.type.effect == 0 && request.type.isFunction && request.type.typeArguments.last().let {
                 it.isChildComponent || it.isMergeChildComponent
             }) {
             // todo check if the arguments match the constructor arguments of the child component
@@ -557,7 +557,8 @@ class BindingGraph(
             }
         }
 
-        if ((request.type.isFunction || request.type.isSuspendFunction) && request.type.typeArguments.size == 1 &&
+        if (request.type.effect == 0 &&
+            (request.type.isFunction || request.type.isSuspendFunction) && request.type.typeArguments.size == 1 &&
             request.type.typeArguments.last().let {
                 !it.isChildComponent && !it.isMergeChildComponent
             }) {
@@ -594,7 +595,7 @@ class BindingGraph(
                 )
             }
 
-        if ((request.type.isFunction || request.type.isSuspendFunction) &&
+        if (request.type.effect == 0 && (request.type.isFunction || request.type.isSuspendFunction) &&
             request.type.typeArguments.last().let {
                 !it.isChildComponent && !it.isMergeChildComponent
             }) {

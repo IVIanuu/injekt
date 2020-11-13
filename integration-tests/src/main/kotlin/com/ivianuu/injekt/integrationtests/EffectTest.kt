@@ -234,6 +234,37 @@ class EffectTest {
     }
 
     @Test
+    fun testSetEffectWithReturnedFunction() = codegen(
+        """
+            @Effect
+            annotation class SetEffect {
+                companion object {
+                    @SetElements
+                    fun <T : () -> Unit> intoSet(instance: T): Set<() -> Unit> = setOf(instance)
+                }
+            }
+            
+            @SetEffect
+            fun SetEffectElement(string: String): () -> Unit = {
+            }
+            
+            @Binding
+            fun string() = ""
+            
+            @Component
+            abstract class MyComponent {
+                abstract val set: Set<() -> Unit>
+            }
+            
+            fun invoke() {
+                component<MyComponent>().set
+            }
+        """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
     fun testSetEffectWithComposableFunction() = codegen(
         """
             @Effect
