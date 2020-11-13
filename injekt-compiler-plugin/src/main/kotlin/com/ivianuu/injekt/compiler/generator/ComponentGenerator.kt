@@ -20,6 +20,7 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.componentimpl.CallableBindingNode
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentImpl
+import com.ivianuu.injekt.compiler.generator.componentimpl.FunBindingNode
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.name.FqName
@@ -81,6 +82,7 @@ class ComponentGenerator(
             emptyList(),
             null
         )
+
         componentImpl.initialize()
 
         // extensions functions cannot be called by their fully qualified name
@@ -92,6 +94,7 @@ class ComponentGenerator(
                 .mapNotNull {
                     it to (when (it) {
                         is CallableBindingNode -> it.callable
+                        is FunBindingNode -> it.callable
                         else -> null
                     } ?: return@mapNotNull null)
                 }

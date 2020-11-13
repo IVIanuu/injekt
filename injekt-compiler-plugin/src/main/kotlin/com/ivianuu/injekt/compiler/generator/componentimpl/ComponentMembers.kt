@@ -289,9 +289,8 @@ class ComponentStatements(
                             parameter.name to if (parameter.argName != null) {
                                 callable.valueArgs[parameter.argName]
                             } else {
-                                val request = binding.dependencies.first {
-                                    it.origin == callable.fqName.child(parameter.name)
-                                }
+                                val requests = binding.dependenciesByEntry[callable]!!
+                                val request = requests.first { it.origin.shortName() == parameter.name }
                                 val dependencyBinding = owner.graph.getBinding(request)
                                 if (dependencyBinding is MissingBindingNode) return@mapNotNull null
                                 getBindingExpression(request)
@@ -318,9 +317,8 @@ class ComponentStatements(
                             parameter.name to if (parameter.argName != null) {
                                 callable.valueArgs[parameter.argName]
                             } else {
-                                val request = binding.dependencies.first {
-                                    it.origin == callable.fqName.child(parameter.name)
-                                }
+                                val requests = binding.dependenciesByElement[callable]!!
+                                val request = requests.first { it.origin.shortName() == parameter.name }
                                 val dependencyBinding = owner.graph.getBinding(request)
                                 if (dependencyBinding is MissingBindingNode) return@mapNotNull null
                                 getBindingExpression(request)

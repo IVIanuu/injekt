@@ -805,43 +805,47 @@ class BindingCollections(
             getMapEntries(request.type)
                 .takeIf { it.isNotEmpty() }
                 ?.let { entries ->
+                    val dependenciesByEntry = entries.map { (entry) ->
+                        entry to entry.valueParameters
+                            .map {
+                                BindingRequest(
+                                    it.type,
+                                    entry.fqName.child(it.name),
+                                    it.hasDefault,
+                                    entry.callableKind,
+                                    entry.isFunBinding
+                                )
+                            }
+                    }.toMap()
                     MapBindingNode(
                         type = request.type,
                         owner = owner,
-                        dependencies = entries.flatMap { (entry) ->
-                            entry.valueParameters
-                                .map {
-                                    BindingRequest(
-                                        it.type,
-                                        entry.fqName.child(it.name),
-                                        it.hasDefault,
-                                        entry.callableKind,
-                                        entry.isFunBinding
-                                    )
-                                }
-                        },
-                        entries = entries
+                        dependencies = dependenciesByEntry.flatMap { it.value },
+                        entries = entries,
+                        dependenciesByEntry = dependenciesByEntry
                     )
                 },
             getSetElements(request.type)
                 .takeIf { it.isNotEmpty() }
                 ?.let { elements ->
+                    val dependenciesByElement = elements.map { (element) ->
+                        element to element.valueParameters
+                            .map {
+                                BindingRequest(
+                                    it.type,
+                                    element.fqName.child(it.name),
+                                    it.hasDefault,
+                                    element.callableKind,
+                                    element.isFunBinding
+                                )
+                            }
+                    }.toMap()
                     SetBindingNode(
                         type = request.type,
                         owner = owner,
-                        dependencies = elements.flatMap { (element) ->
-                            element.valueParameters
-                                .map {
-                                    BindingRequest(
-                                        it.type,
-                                        element.fqName.child(it.name),
-                                        it.hasDefault,
-                                        element.callableKind,
-                                        element.isFunBinding
-                                    )
-                                }
-                        },
-                        elements = elements
+                        dependencies = dependenciesByElement.flatMap { it.value },
+                        elements = elements,
+                        dependenciesByElement = dependenciesByElement
                     )
                 }
         )

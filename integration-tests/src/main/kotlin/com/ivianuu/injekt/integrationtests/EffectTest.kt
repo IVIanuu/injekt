@@ -197,6 +197,43 @@ class EffectTest {
     )
 
     @Test
+    fun testSetEffectWithClass() = codegen(
+        """
+            interface MyInterface
+            @Effect
+            annotation class SetEffect {
+                companion object {
+                    @SetElements
+                    fun <T : MyInterface> intoSet(instance: T): Set<MyInterface> = setOf(instance)
+                }
+            }
+            
+            @SetEffect
+            class A(string: String) : MyInterface
+            
+            @Binding
+            fun string() = ""
+            
+            @SetEffect
+            class B(int: Int) : MyInterface
+            
+            @Binding
+            fun int() = 0
+            
+            @Component
+            abstract class MyComponent {
+                abstract val set: Set<MyInterface>
+            }
+            
+            fun invoke() {
+                component<MyComponent>().set
+            }
+        """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
     fun testSetEffectWithComposableFunction() = codegen(
         """
             @Effect

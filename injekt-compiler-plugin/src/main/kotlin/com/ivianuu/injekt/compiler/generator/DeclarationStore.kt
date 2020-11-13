@@ -545,16 +545,12 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     }
                     .toMap()
 
-                val r = effectCallable.substitute(substitutionMap)
+                effectCallable.substitute(substitutionMap)
                     .copy(
                         valueArgs = callableValueArgs,
                         typeArgs = effectCallable.typeParameters
                             .map { substitutionMap[it]!! }
                     )
-
-                r
-
-                r
             }
     }
 

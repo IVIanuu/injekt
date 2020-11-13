@@ -318,6 +318,7 @@ class MapBindingNode(
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
     val entries: List<CallableWithReceiver>,
+    val dependenciesByEntry: Map<Callable, List<BindingRequest>>
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val rawType: TypeRef
         get() = type
@@ -396,6 +397,7 @@ class SetBindingNode(
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
     val elements: List<CallableWithReceiver>,
+    val dependenciesByElement: Map<Callable, List<BindingRequest>>
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val rawType: TypeRef
         get() = type
