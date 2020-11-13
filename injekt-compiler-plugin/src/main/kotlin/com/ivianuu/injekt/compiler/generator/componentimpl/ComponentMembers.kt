@@ -235,12 +235,8 @@ class ComponentStatements(
     private fun funBindingExpression(binding: FunBindingNode): ComponentExpression = {
         emit("{ ")
 
-        val funApiParameters = binding.type.fullyExpandedType.typeArguments
-            .mapNotNull { it.funApiName }
-            .map { funApiParameterName ->
-                if (funApiParameterName.asString() == "<this>") binding.callable.valueParameters.first()
-                else binding.callable.valueParameters.single { it.name == funApiParameterName }
-            }
+        val funApiParameters = binding.callable.valueParameters
+            .filter { it.isFunApi }
 
         funApiParameters
             .filterNot { it.isExtensionReceiver }

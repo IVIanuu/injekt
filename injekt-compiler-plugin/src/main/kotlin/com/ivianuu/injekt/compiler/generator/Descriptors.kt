@@ -58,6 +58,7 @@ data class ValueParameterRef(
     val inlineKind: InlineKind,
     val name: Name,
     val argName: Name?,
+    val isFunApi: Boolean,
     val hasDefault: Boolean,
     val defaultExpression: ComponentExpression?
 ) {

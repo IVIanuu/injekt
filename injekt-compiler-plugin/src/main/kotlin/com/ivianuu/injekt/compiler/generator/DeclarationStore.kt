@@ -562,6 +562,17 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         }
 
         val type = descriptor.returnType!!.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) }
+
+        val funApiParams = if (descriptor.hasAnnotation(InjektFqNames.FunBinding)) {
+            val classifier = (generatedClassifiers[owner.fqNameSafe] ?:
+            typeTranslator.toClassifierRef(
+                module.findClassifierAcrossModuleDependencies(
+                    ClassId.topLevel(owner.fqNameSafe)
+                )!!
+            ))
+            classifier.funApiParams
+        } else emptyList()
+
         Callable(
             name = owner.name,
             packageFqName = descriptor.findPackage().fqName,
@@ -602,6 +613,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         name = "_receiver".asNameId(),
                         inlineKind = ValueParameterRef.InlineKind.NONE,
                         argName = it.getArgName(),
+                        isFunApi = "<this>" in funApiParams.map { it.asString() },
                         hasDefault = false,
                         defaultExpression = null
                     )
@@ -617,6 +629,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         else -> ValueParameterRef.InlineKind.NONE
                     },
                     argName = it.getArgName(),
+                    isFunApi = it.name in funApiParams,
                     hasDefault = it.declaresDefaultValue(),
                     defaultExpression = if (!it.declaresDefaultValue()) null else ({
                         emit((it.findPsi() as KtParameter).defaultValue!!.text)

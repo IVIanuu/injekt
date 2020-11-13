@@ -27,7 +27,6 @@ import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.callableKind
 import com.ivianuu.injekt.compiler.generator.copy
 import com.ivianuu.injekt.compiler.generator.defaultType
-import com.ivianuu.injekt.compiler.generator.fullyExpandedType
 import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.isAssignable
 import com.ivianuu.injekt.compiler.generator.render
@@ -675,14 +674,8 @@ class BindingGraph(
 
     private fun Callable.getDependencies(type: TypeRef, isDecorator: Boolean): List<BindingRequest> {
         val substitutionMap = type.getSubstitutionMap(this.type)
-        var funApiIndex = 0
         return valueParameters
-            .filter { valueParameter ->
-                val isFunApiParameter = type.fullyExpandedType.typeArguments.getOrNull(funApiIndex)
-                    ?.funApiName == valueParameter.name
-                if (isFunApiParameter) funApiIndex++
-                valueParameter.argName == null && !isFunApiParameter
-            }
+            .filter { it.argName == null && !it.isFunApi }
             .map { it.toBindingRequest(this, substitutionMap) }
             .filter { !isDecorator || it.type != this.type.substitute(substitutionMap) }
     }

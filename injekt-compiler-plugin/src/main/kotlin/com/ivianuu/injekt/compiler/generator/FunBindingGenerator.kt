@@ -88,6 +88,8 @@ class FunBindingGenerator(
 
         val funApiValueParameters = descriptor.allParameters
             .filter { it.hasAnnotation(InjektFqNames.FunApi) }
+        declarationStore.generatedClassifierFor(descriptor.fqNameSafe)!!.funApiParams += funApiValueParameters
+            .map { it.name }
 
         val expandedFunType = (if (isSuspend) {
             descriptor.module.builtIns.getSuspendFunction(funApiValueParameters.size)
@@ -98,7 +100,6 @@ class FunBindingGenerator(
         }).let { typeTranslator.toTypeRef(it, descriptor) }
             .typeWith(funApiValueParameters.map {
                 typeTranslator.toTypeRef(it.type, descriptor)
-                    .copy(funApiName = it.name)
             } + typeTranslator.toTypeRef(descriptor.returnType!!, descriptor))
             .copy(isComposable = isComposable)
             .copy(isExtensionFunction = funApiValueParameters.any {
@@ -123,6 +124,14 @@ class FunBindingGenerator(
             }
 
             emitLine()
+
+            emit("@${InjektFqNames.FunApiParams}([")
+            funApiValueParameters.forEachIndexed { index, parameter ->
+                emit("\"${parameter.name}\"")
+                if (index != funApiValueParameters.lastIndex) emit(", ")
+            }
+            emitLine("])")
+
             if (descriptor.visibility == Visibilities.INTERNAL) {
                 emit("internal ")
             }

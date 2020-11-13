@@ -37,7 +37,8 @@ data class ClassifierRef(
     val isTypeParameter: Boolean = false,
     val isObject: Boolean = false,
     val isTypeAlias: Boolean = false,
-    val argName: Name? = null
+    val argName: Name? = null,
+    var funApiParams: List<Name> = emptyList()
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
     override fun hashCode(): Int = fqName.hashCode()
@@ -68,7 +69,6 @@ sealed class TypeRef {
     abstract val superTypes: List<TypeRef>
     abstract val expandedType: TypeRef?
     abstract val isStarProjection: Boolean
-    abstract val funApiName: Name?
     abstract val qualifiers: List<QualifierDescriptor>
     private val typeName by unsafeLazy { uniqueTypeName(includeNullability = false) }
     override fun equals(other: Any?) = other is TypeRef && typeName == other.typeName
@@ -158,10 +158,6 @@ class KotlinTypeRef(
                 )
             }
     }
-    override val funApiName: Name? by unsafeLazy {
-        (kotlinType.annotations.findAnnotation(InjektFqNames.Arg)
-            ?.allValueArguments?.values?.single()?.value as? String)?.asNameId()
-    }
 }
 
 class SimpleTypeRef(
@@ -181,7 +177,6 @@ class SimpleTypeRef(
     override val superTypes: List<TypeRef> = emptyList(),
     override val expandedType: TypeRef? = null,
     override val isStarProjection: Boolean = false,
-    override val funApiName: Name? = null,
     override val qualifiers: List<QualifierDescriptor> = emptyList()
 ) : TypeRef() {
     init {
@@ -212,7 +207,6 @@ fun TypeRef.copy(
     superTypes: List<TypeRef> = this.superTypes,
     expandedType: TypeRef? = this.expandedType,
     isStarProjection: Boolean = this.isStarProjection,
-    funApiName: Name? = this.funApiName,
     qualifiers: List<QualifierDescriptor> = this.qualifiers
 ) = SimpleTypeRef(
     classifier,
@@ -231,7 +225,6 @@ fun TypeRef.copy(
     superTypes,
     expandedType,
     isStarProjection,
-    funApiName,
     qualifiers
 )
 
@@ -290,8 +283,7 @@ fun TypeRef.render(): String {
             "@${it.type}(${it.args.toList().joinToString { "${it.first}=${it.second}" }})"
         } + listOfNotNull(
             if (isComposable) "@${InjektFqNames.Composable}" else null,
-            if (isExtensionFunction) "@ExtensionFunctionType" else null,
-            if (funApiName != null) "@${InjektFqNames.FunApiName}(\"$funApiName\")" else null
+            if (isExtensionFunction) "@ExtensionFunctionType" else null
         )
         if (annotations.isNotEmpty()) {
             annotations.forEach { annotation ->

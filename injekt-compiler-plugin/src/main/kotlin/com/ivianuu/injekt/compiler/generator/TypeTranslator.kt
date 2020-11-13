@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
@@ -26,6 +27,7 @@ import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.ErrorType
 import org.jetbrains.kotlin.types.KotlinType
@@ -56,7 +58,16 @@ class TypeTranslator(
             isTypeParameter = descriptor is TypeParameterDescriptor,
             isObject = descriptor is ClassDescriptor && descriptor.kind == ClassKind.OBJECT,
             isTypeAlias = descriptor is TypeAliasDescriptor,
-            argName = descriptor.getArgName()
+            argName = descriptor.getArgName(),
+            funApiParams = descriptor.annotations.findAnnotation(InjektFqNames.FunApiParams)
+                ?.allValueArguments
+                ?.values
+                ?.single()
+                ?.let { it as ArrayValue }
+                ?.value
+                ?.map { it.value as String }
+                ?.map { it.asNameId() }
+                ?: emptyList()
         )
     }
 
