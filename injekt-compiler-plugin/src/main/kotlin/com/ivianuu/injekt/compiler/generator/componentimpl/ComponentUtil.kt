@@ -15,5 +15,6 @@ fun ValueParameterRef.toBindingRequest(
         .replaceTypeParametersWithStars(),
     origin = callable.fqName.child(name),
     required = !hasDefault,
-    callableKind = callable.callableKind
+    callableKind = callable.callableKind,
+    lazy = callable.isFunBinding
 )

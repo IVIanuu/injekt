@@ -672,6 +672,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             modality = descriptor.modality,
             receiver = descriptor.dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
                 ?.let { typeTranslator.toClassifierRef(it) },
+            isFunBinding = descriptor.hasAnnotation(InjektFqNames.FunBinding),
             valueArgs = emptyMap(),
             typeArgs = emptyList()
         )

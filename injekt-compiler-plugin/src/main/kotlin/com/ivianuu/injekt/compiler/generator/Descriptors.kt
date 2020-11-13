@@ -41,6 +41,7 @@ data class Callable(
     val visibility: Visibility,
     val modality: Modality,
     val receiver: ClassifierRef?,
+    val isFunBinding: Boolean,
     val valueArgs: Map<Name, ComponentExpression>,
     val typeArgs: List<TypeRef>
 ) {

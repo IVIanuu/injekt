@@ -120,12 +120,11 @@ class ComponentStatements(
             .flatMap { it.dependencies }
             .filter { owner.graph.getBinding(it) !is MissingBindingNode }
             .forEach { getBindingExpression(it) }
-        if (!binding.lazyDependencies) {
-            binding
-                .dependencies
-                .filter { owner.graph.getBinding(it) !is MissingBindingNode }
-                .forEach { getBindingExpression(it) }
-        }
+        binding
+            .dependencies
+            .filterNot { it.lazy }
+            .filter { owner.graph.getBinding(it) !is MissingBindingNode }
+            .forEach { getBindingExpression(it) }
 
         val rawExpression = when (binding) {
             is AssistedBindingNode -> assistedExpression(binding)

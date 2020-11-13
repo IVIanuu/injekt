@@ -69,7 +69,7 @@ class BindingGraph(
     val resolvedBindings = mutableMapOf<TypeRef, BindingNode>()
     private val checkedBindings = mutableSetOf<BindingNode>()
 
-    private val chain = mutableListOf<BindingNode>()
+    private val chain = mutableListOf<BindingRequest>()
     private var locked = false
 
     init {
@@ -220,19 +220,7 @@ class BindingGraph(
     }
 
     private fun check(binding: BindingNode) {
-        if (binding in chain) {
-            val relevantSubchain = chain.subList(
-                chain.indexOf(binding), chain.lastIndex
-            )
-            if (relevantSubchain.any { it.lazyDependencies }) return
-            error(
-                "Circular dependency ${relevantSubchain.map { it.type.render() }} already contains ${binding.type.render()} $chain"
-            )
-        }
-
         checkedBindings += binding
-
-        chain.push(binding)
 
         // recursive check all dependencies
         binding
@@ -283,13 +271,22 @@ class BindingGraph(
         binding.decorators
             .flatMap { it.dependencies }
             .forEach { check(it) }
-
-        chain.pop()
     }
 
     private fun check(request: BindingRequest) {
+        if (request in chain) {
+            val relevantSubchain = chain.subList(
+                chain.indexOf(request), chain.lastIndex
+            )
+            if (relevantSubchain.any { it.lazy }) return
+            error(
+                "Circular dependency ${relevantSubchain.joinToString("\n")} already contains $request\n\nDebug: $chain"
+            )
+        }
+        chain.push(request)
         val binding = getBinding(request)
         binding.owner.graph.check(binding)
+        chain.pop()
     }
 
     // temporary function because it's not possible to properly inline '*' star types
@@ -558,10 +555,11 @@ class BindingGraph(
                 owner = owner,
                 dependencies = listOf(
                     BindingRequest(
-                        request.type.typeArguments.single(),
-                        request.origin,
-                        true,
-                        request.type.callableKind
+                        type = request.type.typeArguments.single(),
+                        origin = request.origin,
+                        required = true,
+                        callableKind = request.type.callableKind,
+                        lazy = true
                     )
                 ),
                 origin = request.origin
@@ -614,7 +612,8 @@ class BindingGraph(
                     modality = Modality.FINAL,
                     receiver = null,
                     valueArgs = emptyMap(),
-                    typeArgs = emptyList()
+                    typeArgs = emptyList(),
+                    isFunBinding = false
                 )
                 val childComponent = componentImplFactory(
                     childComponentType,
@@ -788,7 +787,8 @@ class BindingCollections(
                                         it.type,
                                         entry.fqName.child(it.name),
                                         it.hasDefault,
-                                        entry.callableKind
+                                        entry.callableKind,
+                                        entry.isFunBinding
                                     )
                                 }
                         },
@@ -808,7 +808,8 @@ class BindingCollections(
                                         it.type,
                                         element.fqName.child(it.name),
                                         it.hasDefault,
-                                        element.callableKind
+                                        element.callableKind,
+                                        element.isFunBinding
                                     )
                                 }
                         },
