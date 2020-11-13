@@ -67,7 +67,6 @@ class BindingGraph(
     private val collections: BindingCollections = collectionsFactory(owner, parent?.collections)
 
     val resolvedBindings = mutableMapOf<TypeRef, BindingNode>()
-    private val checkedBindings = mutableSetOf<BindingNode>()
 
     private val chain = mutableListOf<BindingRequest>()
     private var locked = false
@@ -220,8 +219,6 @@ class BindingGraph(
     }
 
     private fun check(binding: BindingNode) {
-        checkedBindings += binding
-
         // recursive check all dependencies
         binding
             .dependencies
@@ -269,18 +266,32 @@ class BindingGraph(
                 getDecoratorsForType(binding.type, binding.callableKind)
 
         binding.decorators
-            .flatMap { it.dependencies }
-            .forEach { check(it) }
+            .forEach { decorator ->
+                chain.push(
+                    BindingRequest(
+                        decorator.callable.type,
+                        decorator.callable.fqName,
+                        true,
+                        decorator.callable.callableKind,
+                        false
+                    )
+                )
+                decorator.dependencies.forEach { dependency ->
+                    check(dependency)
+                }
+                chain.pop()
+            }
     }
 
     private fun check(request: BindingRequest) {
         if (request in chain) {
             val relevantSubchain = chain.subList(
-                chain.indexOf(request), chain.lastIndex
+                chain.indexOf(request), chain.size
             )
-            if (relevantSubchain.any { it.lazy }) return
+            if (request.lazy || relevantSubchain.any { it.lazy }) return
             error(
-                "Circular dependency ${relevantSubchain.joinToString("\n")} already contains $request\n\nDebug: $chain"
+                "Circular dependency\n${relevantSubchain.joinToString("\n")} " +
+                        "already contains\n$request\n\nDebug:\n${chain.joinToString("\n")}"
             )
         }
         chain.push(request)
