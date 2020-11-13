@@ -671,13 +671,13 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 .getAnnotatedAnnotations(InjektFqNames.Decorator) + owner
                 .getAnnotatedAnnotations(InjektFqNames.Decorator))
                 .distinct()
-                .flatMap { decoratorCallablesForAnnotation(it, descriptor) },
+                .flatMap { decoratorCallablesForAnnotation(it, descriptor) }
+                .distinct(),
             effects = (descriptor
                 .getAnnotatedAnnotations(InjektFqNames.Effect) + owner
                 .getAnnotatedAnnotations(InjektFqNames.Effect))
-                .flatMap {
-                    effectCallablesForAnnotation(it, descriptor, effectType)
-                }
+                .distinct()
+                .flatMap { effectCallablesForAnnotation(it, descriptor, effectType) }
                 .distinct(),
             effectType = effectType,
             isExternal = owner is DeserializedDescriptor,
