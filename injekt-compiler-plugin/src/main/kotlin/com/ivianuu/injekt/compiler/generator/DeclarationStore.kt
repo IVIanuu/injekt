@@ -112,7 +112,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     }
 
     private val effectCallables: List<Callable> by unsafeLazy {
-        val generatedBindings = mutableListOf<Callable>()
+        val generatedBindings = mutableSetOf<Callable>()
 
         var newBindings = (classIndices
             .mapNotNull { it.getInjectConstructor() }
@@ -138,7 +138,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             generatedBindings += newBindings
         }
 
-        generatedBindings
+        generatedBindings.toList()
     }
 
     private val effectBindings = mutableMapOf<TypeRef, Callable>()
@@ -638,7 +638,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             effects = (descriptor
                 .getAnnotatedAnnotations(InjektFqNames.Effect) + owner
                 .getAnnotatedAnnotations(InjektFqNames.Effect))
-                .distinct()
                 .flatMap {
                     // use the fun binding type if possible
                     val effectType = if (descriptor.hasAnnotation(InjektFqNames.FunBinding)) {
@@ -650,7 +649,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         )).defaultType
                     } else type
                     effectCallablesForAnnotation(it, descriptor, effectType)
-                },
+                }
+                .distinct(),
             isExternal = owner is DeserializedDescriptor,
             isInline = descriptor.isInline,
             visibility = descriptor.visibility,
