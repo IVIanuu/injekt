@@ -149,7 +149,7 @@ class KotlinTypeRef(
                     fixType = false)
             }
     }
-    override val qualifiers: List<QualifierDescriptor> by lazy {
+    override val qualifiers: List<QualifierDescriptor> by unsafeLazy {
         kotlinType.getAnnotatedAnnotations(InjektFqNames.Qualifier)
             .map {
                 typeTranslator.declarationStore.qualifierDescriptorForAnnotation(
@@ -158,7 +158,7 @@ class KotlinTypeRef(
                 )
             }
     }
-    override val funApiName: Name? by lazy {
+    override val funApiName: Name? by unsafeLazy {
         (kotlinType.annotations.findAnnotation(InjektFqNames.Arg)
             ?.allValueArguments?.values?.single()?.value as? String)?.asNameId()
     }

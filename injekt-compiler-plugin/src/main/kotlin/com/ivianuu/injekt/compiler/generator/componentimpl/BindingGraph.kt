@@ -132,7 +132,6 @@ class BindingGraph(
                         finalCallable,
                         parentAccessExpression,
                         finalCallable.getDependencies(finalCallable.type, true),
-                        emptyMap(),
                         emptyList() // todo support decorated decorators
                     )
                     Callable.ContributionKind.MAP_ENTRIES -> {
@@ -614,7 +613,9 @@ class BindingGraph(
                     isInline = false,
                     visibility = Visibilities.INTERNAL,
                     modality = Modality.FINAL,
-                    receiver = null
+                    receiver = null,
+                    valueArgs = emptyMap(),
+                    typeArgs = emptyList()
                 )
                 val childComponent = componentImplFactory(
                     childComponentType,
@@ -633,6 +634,19 @@ class BindingGraph(
         }
 
         this += collections.getNodes(request)
+
+        this += declarationStore.effectBindingsFor(request.type)
+            .map { callable ->
+                CallableBindingNode(
+                    type = request.type.substituteStars(callable.type),
+                    rawType = callable.type,
+                    owner = owner,
+                    declaredInComponent = null,
+                    dependencies = callable.getDependencies(request.type, false),
+                    receiver = null,
+                    callable = callable
+                )
+            }
     }
 
     private fun Callable.getCallableDecorators(type: TypeRef): List<DecoratorNode> {
@@ -647,28 +661,15 @@ class BindingGraph(
                 moduleDescriptor.builtIns.getFunction(0)
             ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
         }
-        return decorators.flatMap { decorator ->
-            decorator.callables.map { callable ->
-                val substitutionMap = (providerType.getSubstitutionMap(callable.type) +
-                        callable.typeParameters
-                            .filter { it.argName != null }
-                            .map {
-                                it to (decorator.typeArgs[it.argName]
-                                    ?: error("Couldn't get type argument for ${it.argName} in $decorator $this"))
-                            }
-                            .toMap()).toMutableMap()
-                substitutionMap.forEach { (typeParameter, typeArgument) ->
-                    substitutionMap += typeArgument.getSubstitutionMap(typeParameter.defaultType)
-                }
-                val finalCallable = callable.substitute(substitutionMap)
-                DecoratorNode(
-                    finalCallable,
-                    null,
-                    finalCallable.getDependencies(type, true),
-                    decorator.valueArgs,
-                    emptyList() // todo support decorated decorators
-                )
-            }
+        return decorators.map { decorator ->
+            val substitutionMap = providerType.getSubstitutionMap(decorator.type)
+            val finalDecorator = decorator.substitute(substitutionMap)
+            DecoratorNode(
+                finalDecorator,
+                null,
+                finalDecorator.getDependencies(type, true),
+                emptyList() // todo support decorated decorators
+            )
         }.filter { providerType.isAssignable(it.callable.type) }
     }
 
@@ -709,7 +710,6 @@ class BindingGraph(
                             decorator,
                             null,
                             decorator.getDependencies(decorator.type, true),
-                            emptyMap(),
                             emptyList() // todo support decorated decorators
                         )
                     })

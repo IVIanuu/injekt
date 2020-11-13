@@ -36,7 +36,6 @@ abstract class GenerationComponent(
     abstract val errorCollector: ErrorCollector
     abstract val funBindingAliasGenerator: FunBindingAliasGenerator
     abstract val fileManager: FileManager
-    abstract val effectGenerator: EffectGenerator
     abstract val componentGenerator: ComponentGenerator
     abstract val indexGenerator: IndexGenerator
 }

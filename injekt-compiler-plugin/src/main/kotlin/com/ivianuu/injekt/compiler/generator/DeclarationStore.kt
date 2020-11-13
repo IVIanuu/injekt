@@ -70,15 +70,9 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     lateinit var typeTranslator: TypeTranslator
 
     private val internalIndices = mutableListOf<Index>()
-    val internalGeneratedIndices: Map<KtFile, List<Index>> get() = _internalGeneratedIndices
-    private val _internalGeneratedIndices = mutableMapOf<KtFile, MutableList<Index>>()
 
     fun addInternalIndex(index: Index) {
         internalIndices += index
-    }
-
-    fun addGeneratedInternalIndex(file: KtFile, index: Index) {
-        _internalGeneratedIndices.getOrPut(file) { mutableListOf() } += index
     }
 
     fun constructorForComponent(type: TypeRef): Callable? {
@@ -117,6 +111,39 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .flatMap { propertyDescriptorsForFqName(it.fqName) }
     }
 
+    private val effectCallables: List<Callable> by unsafeLazy {
+        val generatedBindings = mutableListOf<Callable>()
+
+        var newBindings = (classIndices
+            .mapNotNull { it.getInjectConstructor() }
+            .map { callableForDescriptor(it) } +
+                functionIndices
+                    .map { callableForDescriptor(it) } +
+                propertyIndices
+                    .map { callableForDescriptor(it.getter!!) } + implBindings.flatMap { implBinding ->
+            listOf(implBinding.callable, implBinding.callable.copy(type = implBinding.superType))
+        } + allFunBindings
+            .map { it.callable })
+            .filter { it.effects.isNotEmpty() }
+
+        while (newBindings.isNotEmpty()) {
+            val currentBindings = newBindings.toList()
+            newBindings = currentBindings
+                .onEach {
+                    if ((it.contributionKind == null && it.effects.isEmpty()) ||
+                        it.contributionKind == Callable.ContributionKind.BINDING)
+                        effectBindings[it.type] = it
+                }
+                .flatMap { it.effects }
+            generatedBindings += newBindings
+        }
+
+        generatedBindings
+    }
+
+    private val effectBindings = mutableMapOf<TypeRef, Callable>()
+    fun effectBindingsFor(type: TypeRef) = listOfNotNull(effectBindings[type])
+
     private val allBindings by unsafeLazy {
         (classIndices
             .mapNotNull { it.getInjectConstructor() }
@@ -131,34 +158,24 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                                 it.decorators.isNotEmpty())
             } + implBindings.flatMap { implBinding ->
             listOf(implBinding.callable, implBinding.callable.copy(type = implBinding.superType))
-        }
+        } + effectCallables
+            .filter { it.contributionKind == Callable.ContributionKind.BINDING }
     }
 
     private val bindingsByType = mutableMapOf<TypeRef, List<Callable>>()
     fun bindingsForType(type: TypeRef): List<Callable> = bindingsByType.getOrPut(type) {
-        (allBindings + generatedCallables
-            .filter {
-                it.first.contributionKind == Callable.ContributionKind.BINDING ||
-                        (it.first.contributionKind != Callable.ContributionKind.DECORATOR &&
-                                it.first.decorators.isNotEmpty())
-            }
-            .map { it.first })
+        allBindings
             .filter { type.isAssignable(it.type) }
             .distinct()
     }
 
-    private val implBindings by lazy {
+    private val implBindings by unsafeLazy {
         classIndices
             .filter { it.hasAnnotation(InjektFqNames.ImplBinding) }
             .map {
                 val callable = callableForDescriptor(it.getInjectConstructor()!!)
                 ImplBindingDescriptor(callable, callable.type, callable.type.superTypes.first())
             }
-    }
-
-    val generatedCallables = mutableListOf<Pair<Callable, KtFile>>()
-    fun addGeneratedCallable(callable: Callable, file: KtFile) {
-        generatedCallables += callable to file
     }
 
     private val generatedClassifiers = mutableMapOf<FqName, ClassifierRef>()
@@ -195,9 +212,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .map { callableForDescriptor(it) } +
                 propertyIndices
                     .filter { it.hasAnnotation(InjektFqNames.Decorator) }
-                    .map { callableForDescriptor(it.getter!!) } + (generatedCallables
-            .filter { it.first.contributionKind == Callable.ContributionKind.DECORATOR }
-            .map { it.first })
+                    .map { callableForDescriptor(it.getter!!) } + effectCallables
+            .filter { it.contributionKind == Callable.ContributionKind.DECORATOR }
     }
     private val decoratorsForType = mutableMapOf<TypeRef, List<Callable>>()
     fun decoratorsByType(type: TypeRef, callableKind: Callable.CallableKind): List<Callable> = decoratorsForType.getOrPut(type) {
@@ -222,9 +238,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .map { callableForDescriptor(it) } +
                 propertyIndices
                     .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
-                    .map { callableForDescriptor(it.getter!!) } + (generatedCallables
-            .filter { it.first.contributionKind == Callable.ContributionKind.MAP_ENTRIES }
-            .map { it.first })
+                    .map { callableForDescriptor(it.getter!!) } + effectCallables
+            .filter { it.contributionKind == Callable.ContributionKind.MAP_ENTRIES }
     }
     private val mapEntriesForType = mutableMapOf<TypeRef, List<Callable>>()
     fun mapEntriesByType(type: TypeRef): List<Callable> = mapEntriesForType.getOrPut(type) {
@@ -238,9 +253,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .map { callableForDescriptor(it) } +
                 propertyIndices
                     .filter { it.hasAnnotation(InjektFqNames.SetElements) }
-                    .map { callableForDescriptor(it.getter!!) } + (generatedCallables
-            .filter { it.first.contributionKind == Callable.ContributionKind.SET_ELEMENTS }
-            .map { it.first })
+                    .map { callableForDescriptor(it.getter!!) } + effectCallables
+            .filter { it.contributionKind == Callable.ContributionKind.SET_ELEMENTS }
     }
     private val setElementsForType = mutableMapOf<TypeRef, List<Callable>>()
     fun setElementsByType(type: TypeRef): List<Callable> = setElementsForType.getOrPut(type) {
@@ -365,7 +379,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         return ((annotation.type.constructor.declarationDescriptor as ClassDescriptor).declaredTypeParameters)
             .zip(annotation.type.arguments).map { (param, arg) ->
                 param.name to typeTranslator.toTypeRef(arg.type, source)
-        }.toMap()
+            }.toMap()
     }
 
     fun valueArgsForAnnotation(annotation: AnnotationDescriptor): Map<Name, ComponentExpression> {
@@ -406,42 +420,124 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         }
     }
 
-    fun decoratorDescriptorForAnnotation(
-        annotation: AnnotationDescriptor,
-        source: DeclarationDescriptor?
-    ): DecoratorDescriptor {
-        return DecoratorDescriptor(
-            callables = classDescriptorForFqName(annotation.fqName!!)
-                .companionObjectDescriptor!!
-                .unsubstitutedMemberScope
-                .getContributedDescriptors()
-                .filterIsInstance<CallableDescriptor>()
-                .filter {
-                    it.visibility == Visibilities.PUBLIC &&
-                            it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() != true
-                }
-                .map { callableForDescriptor(it as FunctionDescriptor) },
-            annotationType = typeTranslator.toTypeRef(annotation.type, source),
-            valueArgs = valueArgsForAnnotation(annotation),
-            typeArgs = typeArgsForAnnotation(annotation, source)
-        )
-    }
-
-    fun effectDescriptorForAnnotation(
+    fun decoratorCallablesForAnnotation(
         annotation: AnnotationDescriptor,
         source: DeclarationDescriptor
-    ): EffectDescriptor {
-        return EffectDescriptor(
-            type = typeTranslator.toTypeRef(annotation.type, source),
-            callables = moduleForType(
-                typeTranslator.toClassifierRef(
-                    classDescriptorForFqName(annotation.fqName!!)
-                        .companionObjectDescriptor!!
-                ).defaultType
-            ).callables,
-            valueArgs = valueArgsForAnnotation(annotation),
-            typeArgs = typeArgsForAnnotation(annotation, source)
-        )
+    ): List<Callable> {
+        val typeArgs = typeArgsForAnnotation(annotation, source)
+        val valueArgs = valueArgsForAnnotation(annotation)
+        val file = (source.findPsi()!!.containingFile as KtFile).virtualFilePath
+        return classDescriptorForFqName(annotation.fqName!!)
+            .companionObjectDescriptor!!
+            .unsubstitutedMemberScope
+            .getContributedDescriptors()
+            .filterIsInstance<CallableDescriptor>()
+            .filter {
+                it.visibility == Visibilities.PUBLIC &&
+                        it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() != true
+            }
+            .map { callableForDescriptor(it as FunctionDescriptor) }
+            .map { callable ->
+                val substitutionMap = callable.typeParameters
+                    .filter { it.argName != null }
+                    .map {
+                        it to (typeArgs[it.argName]
+                            ?: error("Couldn't get type argument for ${it.argName} in $annotation"))
+                    }
+                    .toMap().toMutableMap()
+
+                substitutionMap.forEach { (typeParameter, typeArgument) ->
+                    substitutionMap += typeArgument.getSubstitutionMap(typeParameter.defaultType)
+                }
+
+                val callableValueArgs = callable.valueParameters
+                    .filter { it.argName != null }
+                    .map { parameter ->
+                        val arg = valueArgs[parameter.argName]
+                        parameter.name to when {
+                            arg != null -> arg
+                            parameter.type.isMarkedNullable -> { { emit("null") } }
+                            else -> error("No argument provided for non null binding arg ${parameter.name} in $file")
+                        }
+                    }
+                    .toMap()
+
+                callable.substitute(substitutionMap)
+                    .copy(
+                        valueArgs = callableValueArgs
+                    )
+            }
+    }
+
+    fun effectCallablesForAnnotation(
+        annotation: AnnotationDescriptor,
+        source: DeclarationDescriptor,
+        bindingType: TypeRef
+    ): List<Callable> {
+        val file = (source.findPsi()!!.containingFile as KtFile).virtualFilePath
+        val typeArgs = typeArgsForAnnotation(annotation, source)
+        val valueArgs = valueArgsForAnnotation(annotation)
+        return classDescriptorForFqName(annotation.fqName!!)
+            .companionObjectDescriptor!!
+            .unsubstitutedMemberScope
+            .getContributedDescriptors()
+            .filterIsInstance<CallableDescriptor>()
+            .map {
+                callableForDescriptor(
+                    when (it) {
+                        is ClassDescriptor -> it.getInjectConstructor()!!
+                        is PropertyDescriptor -> it.getter!!
+                        else -> it as FunctionDescriptor
+                    }
+                )
+            }
+            .filter { it.contributionKind != null || it.effects.isNotEmpty() }
+            .map { effectCallable ->
+                val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
+                substitutionMap += effectCallable.typeParameters
+                    .filter { it.argName != null }
+                    .map {
+                        it to (typeArgs[it.argName]
+                            ?: error("Couldn't get type argument for ${it.argName} in $file"))
+                    }
+                    .toMap()
+                substitutionMap.forEach { (typeParameter, typeArgument) ->
+                    substitutionMap += typeArgument.getSubstitutionMap(typeParameter.defaultType)
+                }
+
+                // todo there might be a better way to resolve everything
+                val subjectTypeParameter = effectCallable.typeParameters
+                    .first { it.argName == null }
+                substitutionMap += bindingType.getSubstitutionMap(subjectTypeParameter.defaultType)
+
+                check(effectCallable.typeParameters.all { it in substitutionMap }) {
+                    "Couldn't resolve all type arguments ${substitutionMap.map {
+                        it.key.fqName to it.value
+                    }} missing ${effectCallable.typeParameters.filter {
+                        it !in substitutionMap
+                    }.map { it.fqName }} in $file"
+                }
+                substitutionMap[subjectTypeParameter] = bindingType
+
+                val callableValueArgs = effectCallable.valueParameters
+                    .filter { it.argName != null }
+                    .map { parameter ->
+                        val arg = valueArgs[parameter.argName]
+                        parameter.name to when {
+                            arg != null -> arg
+                            parameter.type.isMarkedNullable -> { { emit("null") } }
+                            else -> error("No argument provided for non null binding arg ${parameter.name} in $file")
+                        }
+                    }
+                    .toMap()
+
+                effectCallable.substitute(substitutionMap)
+                    .copy(
+                        valueArgs = callableValueArgs,
+                        typeArgs = effectCallable.typeParameters
+                            .map { substitutionMap[it]!! }
+                    )
+            }
     }
 
     fun qualifierDescriptorForAnnotation(
@@ -463,14 +559,15 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             else -> descriptor
         }
 
+        val type = descriptor.returnType!!.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) }
         Callable(
             name = owner.name,
             packageFqName = descriptor.findPackage().fqName,
             fqName = owner.fqNameSafe,
-            type =  descriptor.returnType!!.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
+            type = type,
             targetComponent = (owner.annotations.findAnnotation(InjektFqNames.Binding) ?:
-                    owner.annotations.findAnnotation(InjektFqNames.ImplBinding) ?:
-                    owner.annotations.findAnnotation(InjektFqNames.FunBinding))
+            owner.annotations.findAnnotation(InjektFqNames.ImplBinding) ?:
+            owner.annotations.findAnnotation(InjektFqNames.FunBinding))
                 ?.allValueArguments
                 ?.let {
                     it["scopeComponent".asNameId()]
@@ -537,18 +634,20 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 .getAnnotatedAnnotations(InjektFqNames.Decorator) + owner
                 .getAnnotatedAnnotations(InjektFqNames.Decorator))
                 .distinct()
-                .map { decoratorDescriptorForAnnotation(it, descriptor) },
+                .flatMap { decoratorCallablesForAnnotation(it, descriptor) },
             effects = (descriptor
                 .getAnnotatedAnnotations(InjektFqNames.Effect) + owner
                 .getAnnotatedAnnotations(InjektFqNames.Effect))
                 .distinct()
-                .map { effectDescriptorForAnnotation(it, descriptor) },
+                .flatMap { effectCallablesForAnnotation(it, descriptor, type) },
             isExternal = owner is DeserializedDescriptor,
             isInline = descriptor.isInline,
             visibility = descriptor.visibility,
             modality = descriptor.modality,
             receiver = descriptor.dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
-                ?.let { typeTranslator.toClassifierRef(it) }
+                ?.let { typeTranslator.toClassifierRef(it) },
+            valueArgs = emptyMap(),
+            typeArgs = emptyList()
         )
     }
 

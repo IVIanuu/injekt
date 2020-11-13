@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.callableKind
 import com.ivianuu.injekt.compiler.generator.getStarSubstitutionMap
-import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.renderExpanded
 import com.ivianuu.injekt.compiler.generator.substitute
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -292,8 +291,6 @@ class CallableBindingNode(
         val substitutionMap = callable.type.getStarSubstitutionMap(type)
         _type = _type.substitute(substitutionMap)
     }
-
-    override fun toString(): String = "Callable(${callable.type.render()})"
 }
 
 class FunBindingNode(
@@ -327,8 +324,6 @@ class FunBindingNode(
         val substitutionMap = callable.type.getStarSubstitutionMap(type)
         _type = _type.substitute(substitutionMap)
     }
-
-    override fun toString(): String = "Callable(${callable.type.render()})"
 }
 
 class MapBindingNode(
@@ -459,7 +454,6 @@ data class DecoratorNode(
     val callable: Callable,
     val receiver: ComponentExpression?,
     val dependencies: List<BindingRequest>,
-    val valueArgs: Map<Name, ComponentExpression>,
     val decorators: List<DecoratorNode>
 )
 
