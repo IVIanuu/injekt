@@ -114,7 +114,7 @@ class FunBindingTest {
     fun testAssistedFunBinding() = codegen(
         """
             @FunBinding
-            fun function(string: String, @FunApi assistedString: String) {
+            fun function(string: String, @FunApi assisted: Int) {
             }
             
             @Component
@@ -122,6 +122,29 @@ class FunBindingTest {
                 abstract val function: function
             }
         """
+    )
+
+    @Test
+    fun testAssistedFunBindingMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @FunBinding
+                    fun function(string: String, @FunApi assisted: Int) {
+                    }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Component
+                    abstract class TestComponent(@Binding val string: String) {
+                        abstract val function: function
+                    }
+                """
+            )
+        )
     )
 
     @Test
@@ -459,4 +482,20 @@ class FunBindingTest {
         """
     )
 
+    @Test
+    fun testFunBindingExtension() = codegen(
+        """
+            @FunBinding
+            fun function(string: String) {
+            }
+            
+            @Component
+            abstract class TestComponent(@Binding val string: String) {
+                abstract val function: function
+                fun invoke() {
+                    function.invokeFunction()
+                }
+            }
+        """
+    )
 }

@@ -235,12 +235,8 @@ class ComponentStatements(
     private fun funBindingExpression(binding: FunBindingNode): ComponentExpression = {
         emit("{ ")
 
-        val funApiParameters = binding.type.fullyExpandedType.typeArguments
-            .mapNotNull { it.funApiName }
-            .map { funApiParameterName ->
-                if (funApiParameterName.asString() == "<this>") binding.callable.valueParameters.first()
-                else binding.callable.valueParameters.single { it.name == funApiParameterName }
-            }
+        val funApiParameters = binding.callable.valueParameters
+            .filter { it.isFunApi }
 
         funApiParameters
             .filterNot { it.isExtensionReceiver }
@@ -256,20 +252,20 @@ class ComponentStatements(
             callable = binding.callable,
             receiver = null,
             owner = null,
-            arguments = binding.callable.valueParameters.map { valueParameter ->
+            arguments = binding.callable.valueParameters.mapNotNull { valueParameter ->
                 if (valueParameter in funApiParameters) {
-                    {
+                    val expression: ComponentExpression = {
                         if (valueParameter.isExtensionReceiver) emit("this")
                         else emit(valueParameter.name)
                     }
+                    valueParameter.name to expression
                 } else {
                     val request = valueParameter.toBindingRequest(binding.callable, emptyMap())
                     val dependencyBinding = owner.graph.getBinding(request)
-                    if (dependencyBinding is MissingBindingNode) null
-                    else getBindingExpression(request)
+                    if (dependencyBinding is MissingBindingNode) return@mapNotNull null
+                    valueParameter.name to getBindingExpression(request)
                 }
-            },
-            typeArguments = emptyList()
+            }.toMap()
         )
 
         emit("}")
@@ -290,19 +286,19 @@ class ComponentStatements(
                     receiver,
                     entryOwner,
                     callable.valueParameters
-                        .map {
-                            BindingRequest(
-                                it.type,
-                                callable.fqName.child(it.name),
-                                !it.hasDefault,
-                                callable.callableKind
-                            )
+                        .mapNotNull { parameter ->
+                            parameter.name to if (parameter.argName != null) {
+                                callable.valueArgs[parameter.argName]
+                            } else {
+                                val request = binding.dependencies.first {
+                                    it.origin == callable.fqName.child(parameter.name)
+                                }
+                                val dependencyBinding = owner.graph.getBinding(request)
+                                if (dependencyBinding is MissingBindingNode) return@mapNotNull null
+                                getBindingExpression(request)
+                            }
                         }
-                        .map { dependency ->
-                            val dependencyBinding = owner.graph.getBinding(dependency)
-                            if (dependencyBinding is MissingBindingNode) return@map null
-                            getBindingExpression(dependency)
-                        }
+                        .toMap()
                 )
                 emitLine(")")
             }
@@ -319,19 +315,19 @@ class ComponentStatements(
                     receiver,
                     elementOwner,
                     callable.valueParameters
-                        .map {
-                            BindingRequest(
-                                it.type,
-                                callable.fqName.child(it.name),
-                                !it.hasDefault,
-                                callable.callableKind
-                            )
+                        .mapNotNull { parameter ->
+                            parameter.name to if (parameter.argName != null) {
+                                callable.valueArgs[parameter.argName]
+                            } else {
+                                val request = binding.dependencies.first {
+                                    it.origin == callable.fqName.child(parameter.name)
+                                }
+                                val dependencyBinding = owner.graph.getBinding(request)
+                                if (dependencyBinding is MissingBindingNode) return@mapNotNull null
+                                getBindingExpression(request)
+                            }
                         }
-                        .map { dependency ->
-                            val dependencyBinding = owner.graph.getBinding(dependency)
-                            if (dependencyBinding is MissingBindingNode) return@map null
-                            getBindingExpression(dependency)
-                        }
+                        .toMap()
                 )
                 emitLine(")")
             }
@@ -343,11 +339,20 @@ class ComponentStatements(
             binding.callable,
             binding.receiver,
             binding.declaredInComponent,
-            binding.dependencies.map { request ->
-                val dependencyBinding = owner.graph.getBinding(request)
-                if (dependencyBinding is MissingBindingNode) return@map null
-                getBindingExpression(request)
-            }
+            binding.callable.valueParameters
+                .mapNotNull { parameter ->
+                    parameter.name to if (parameter.argName != null) {
+                        binding.callable.valueArgs[parameter.argName]
+                    } else {
+                        val request = binding.dependencies.single {
+                            it.origin.shortName() == parameter.name
+                        }
+                        val dependencyBinding = owner.graph.getBinding(request)
+                        if (dependencyBinding is MissingBindingNode) return@mapNotNull null
+                        getBindingExpression(request)
+                    }
+                }
+                .toMap()
         )
     }
 
@@ -390,20 +395,10 @@ class ComponentStatements(
                     decorator.receiver,
                     null,
                     decorator.callable.valueParameters
-                        .map { valueParameter ->
-                            when {
-                                valueParameter.argName != null -> {
-                                    val arg = decorator.valueArgs[valueParameter.argName]
-                                    when {
-                                        arg != null -> arg
-                                        valueParameter.type.isMarkedNullable -> {
-                                            {
-                                                emit("null")
-                                            }
-                                        }
-                                        else -> error("No argument provided for non null binding arg ${valueParameter.name} for " +
-                                                "${decorator.callable.fqName}")
-                                    }
+                        .mapNotNull { valueParameter ->
+                            valueParameter.name to (when {
+                                valueParameter.name in decorator.callable.valueArgs -> {
+                                    decorator.callable.valueArgs[valueParameter.name]
                                 }
                                 valueParameter.type == decorator.callable.type -> {
                                     { emit("_prev") }
@@ -411,12 +406,12 @@ class ComponentStatements(
                                 else -> {
                                     val dependencyRequest = decorator.dependencies[dependencyIndex++]
                                     val dependencyBinding = owner.graph.getBinding(dependencyRequest)
-                                    if (dependencyBinding is MissingBindingNode) return@map null
+                                    if (dependencyBinding is MissingBindingNode) return@mapNotNull null
                                     getBindingExpression(dependencyRequest)
                                 }
-                            }
-                        },
-                    emptyList()
+                            })
+                        }
+                        .toMap()
                 )
                 emit(" }")
                 if (index != decorators.lastIndex) emitLine(", ")
@@ -571,28 +566,27 @@ class ComponentStatements(
         callable: Callable,
         receiver: ComponentExpression?,
         owner: ComponentImpl?,
-        arguments: List<ComponentExpression?>,
-        typeArguments: List<TypeRef> = emptyList()
+        arguments: Map<Name, ComponentExpression?>
     ) {
         fun emitArguments() {
             if (callable.isCall) {
-                if (typeArguments.isNotEmpty()) {
+                if (callable.typeArgs.isNotEmpty()) {
                     emit("<")
-                    typeArguments.forEachIndexed { index, typeRef ->
+                    callable.typeArgs.forEachIndexed { index, typeRef ->
                         emit(typeRef.render())
-                        if (index != typeArguments.lastIndex) emit(", ")
+                        if (index != callable.typeArgs.lastIndex) emit(", ")
                     }
                     emit(">")
                 }
                 emit("(")
                 var argumentsIndex = 0
-                val nonNullArgumentsCount = arguments.count { it != null }
-                arguments
-                    .drop(if (callable.valueParameters.firstOrNull()?.isExtensionReceiver == true) 1 else 0)
-                    .forEachIndexed { index, argument ->
-                        val parameter = callable.valueParameters[
-                                if (callable.valueParameters.firstOrNull()?.isExtensionReceiver == true) index + 1
-                                else index]
+                val nonNullArgumentsCount = callable.valueParameters
+                    .filterNot { it.isExtensionReceiver }
+                    .count { it.name in arguments }
+                callable.valueParameters
+                    .filterNot { it.isExtensionReceiver }
+                    .forEach { parameter ->
+                        val argument = arguments[parameter.name]
                         if (argument != null) {
                             emit("${parameter.name} = ")
                             argument()
@@ -618,7 +612,7 @@ class ComponentStatements(
             braced {
                 if (callable.valueParameters.any { it.isExtensionReceiver }) {
                     emit("with(")
-                    emitOrNull(arguments.first())
+                    emitOrNull(arguments[callable.valueParameters.first().name])
                     emit(") ")
                     braced {
                         emit(callable.name)
@@ -632,7 +626,7 @@ class ComponentStatements(
         } else {
             if (callable.valueParameters.any { it.isExtensionReceiver }) {
                 emit("with(")
-                emitOrNull(arguments.first())
+                emitOrNull(arguments[callable.valueParameters.first().name])
                 emit(") ")
                 braced {
                     emit(callable.name)

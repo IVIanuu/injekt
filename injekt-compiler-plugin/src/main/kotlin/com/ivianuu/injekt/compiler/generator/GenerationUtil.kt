@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentExpression
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -128,74 +127,10 @@ fun joinedNameOf(
     return joinedSegments.joinToString("_").asNameId()
 }
 
-fun CodeBuilder.emitCallableInvocation(
-    callable: Callable,
-    receiver: ComponentExpression?,
-    arguments: List<ComponentExpression>,
-    typeArguments: List<TypeRef> = emptyList()
-) {
-    fun emitArguments() {
-        if (callable.isCall) {
-            if (typeArguments.isNotEmpty()) {
-                emit("<")
-                typeArguments.forEachIndexed { index, typeRef ->
-                    emit(typeRef.render())
-                    if (index != typeArguments.lastIndex) emit(", ")
-                }
-                emit(">")
-            }
-            emit("(")
-            arguments
-                .drop(if (callable.valueParameters.firstOrNull()?.isExtensionReceiver == true) 1 else 0)
-                .forEachIndexed { index, parameter ->
-                    parameter()
-                    if (index != arguments.lastIndex) emit(", ")
-                }
-            emit(")")
-        }
-    }
-    if (receiver != null) {
-        emit("with(")
-        receiver()
-        emit(") ")
-        braced {
-            if (callable.valueParameters.any { it.isExtensionReceiver }) {
-                emit("with(")
-                arguments.first()()
-                emit(") ")
-                braced {
-                    emit(callable.name)
-                    emitArguments()
-                }
-            } else {
-                emit(callable.name)
-                emitArguments()
-            }
-        }
-    } else {
-        if (callable.valueParameters.any { it.isExtensionReceiver }) {
-            emit("with(")
-            arguments.first()()
-            emit(") ")
-            braced {
-                emit(callable.name)
-                emitArguments()
-            }
-        } else {
-            emit(callable.fqName)
-            emitArguments()
-        }
-    }
-}
-
-val TypeRef.callableKind: Callable.CallableKind get() {
-    val b = when {
-        fullyExpandedType.isSuspendFunction -> Callable.CallableKind.SUSPEND
-        fullyExpandedType.isComposable -> Callable.CallableKind.COMPOSABLE
-        else -> Callable.CallableKind.DEFAULT
-    }
-    b
-    return b
+val TypeRef.callableKind: Callable.CallableKind get() = when {
+    fullyExpandedType.isSuspendFunction -> Callable.CallableKind.SUSPEND
+    fullyExpandedType.isComposable -> Callable.CallableKind.COMPOSABLE
+    else -> Callable.CallableKind.DEFAULT
 }
 
 fun Callable.substitute(substitutionMap: Map<ClassifierRef, TypeRef>): Callable {
@@ -203,6 +138,8 @@ fun Callable.substitute(substitutionMap: Map<ClassifierRef, TypeRef>): Callable 
         type = type.substitute(substitutionMap),
         valueParameters = valueParameters.map {
             it.copy(type = it.type.substitute(substitutionMap))
-        }
+        },
+        effects = effects.map { it.substitute(substitutionMap) },
+        typeArgs = typeArgs.map { it.substitute(substitutionMap) }
     )
 }

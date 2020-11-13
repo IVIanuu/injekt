@@ -50,8 +50,7 @@ class InjektKtGenerationExtension(
             module, bindingTrace.bindingContext
         )
         val generators = listOf(
-            generationComponent.funBindingAliasGenerator,
-            generationComponent.effectGenerator,
+            generationComponent.funBindingGenerator,
             generationComponent.indexGenerator,
             generationComponent.componentGenerator
         )

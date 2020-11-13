@@ -34,13 +34,15 @@ data class Callable(
     val contributionKind: ContributionKind?,
     val isCall: Boolean,
     val callableKind: CallableKind,
-    val decorators: List<DecoratorDescriptor>,
-    val effects: List<EffectDescriptor>,
+    val decorators: List<Callable>,
+    val effects: List<Callable>,
     val isExternal: Boolean,
     val isInline: Boolean,
     val visibility: Visibility,
     val modality: Modality,
-    val receiver: ClassifierRef?
+    val receiver: ClassifierRef?,
+    val valueArgs: Map<Name, ComponentExpression>,
+    val typeArgs: List<TypeRef>
 ) {
     enum class ContributionKind {
         BINDING, DECORATOR, MAP_ENTRIES, SET_ELEMENTS, MODULE
@@ -56,6 +58,7 @@ data class ValueParameterRef(
     val inlineKind: InlineKind,
     val name: Name,
     val argName: Name?,
+    val isFunApi: Boolean,
     val hasDefault: Boolean,
     val defaultExpression: ComponentExpression?
 ) {
@@ -67,20 +70,6 @@ data class ValueParameterRef(
 data class ModuleDescriptor(
     val type: TypeRef,
     val callables: List<Callable>,
-)
-
-data class DecoratorDescriptor(
-    val annotationType: TypeRef?,
-    val callables: List<Callable>,
-    val typeArgs: Map<Name, TypeRef>,
-    val valueArgs: Map<Name, ComponentExpression>
-)
-
-data class EffectDescriptor(
-    val type: TypeRef,
-    val callables: List<Callable>,
-    val typeArgs: Map<Name, TypeRef>,
-    val valueArgs: Map<Name, ComponentExpression>
 )
 
 data class QualifierDescriptor(

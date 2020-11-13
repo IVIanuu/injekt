@@ -1769,4 +1769,13 @@ class ComponentTest {
         assertInternalError("Call context mismatch")
     }
 
+    @Test
+    fun testComponentDoesNotImplementFinalFunction() = codegen(
+        """
+            @Component
+            abstract class MyComponent {
+                fun string() = ""
+            }
+        """
+    )
 }
