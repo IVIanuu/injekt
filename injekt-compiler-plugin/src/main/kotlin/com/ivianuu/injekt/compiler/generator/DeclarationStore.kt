@@ -129,10 +129,17 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         while (newBindings.isNotEmpty()) {
             val currentBindings = newBindings.toList()
             newBindings = currentBindings
-                .onEach {
-                    if ((it.contributionKind == null && it.effects.isNotEmpty()) ||
-                        it.contributionKind == Callable.ContributionKind.BINDING)
-                        effectBindings[it.type] = it
+                .onEach { binding ->
+                    if ((binding.contributionKind == null && binding.effects.isNotEmpty()) ||
+                        binding.contributionKind == Callable.ContributionKind.BINDING) {
+                        if (binding.isFunBinding) {
+                            effectFunBindings[binding.effectType] =
+                                allFunBindings
+                                    .single { it.callable == binding }
+                        } else {
+                            effectBindings[binding.effectType] = binding
+                        }
+                    }
                 }
                 .flatMap { it.effects }
             generatedBindings += newBindings
@@ -143,6 +150,9 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
     private val effectBindings = mutableMapOf<TypeRef, Callable>()
     fun effectBindingsFor(type: TypeRef) = listOfNotNull(effectBindings[type])
+
+    private val effectFunBindings = mutableMapOf<TypeRef, FunBindingDescriptor>()
+    fun effectFunBindingsFor(type: TypeRef) = listOfNotNull(effectFunBindings[type])
 
     private val allBindings by unsafeLazy {
         (classIndices
@@ -470,6 +480,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             }
     }
 
+    private var effect = 0
     fun effectCallablesForAnnotation(
         annotation: AnnotationDescriptor,
         source: DeclarationDescriptor,
@@ -503,14 +514,15 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                             ?: error("Couldn't get type argument for ${it.argName} in $origin"))
                     }
                     .toMap()
-                substitutionMap.forEach { (typeParameter, typeArgument) ->
-                    substitutionMap += typeArgument.getSubstitutionMap(typeParameter.defaultType)
-                }
 
                 // todo there might be a better way to resolve everything
                 val subjectTypeParameter = effectCallable.typeParameters
                     .first { it.argName == null }
+
                 substitutionMap += bindingType.getSubstitutionMap(subjectTypeParameter.defaultType)
+                substitutionMap.toList().forEach { (typeParameter, typeArgument) ->
+                    substitutionMap += typeArgument.getSubstitutionMap(typeParameter.defaultType)
+                }
 
                 check(effectCallable.typeParameters.all { it in substitutionMap }) {
                     "Couldn't resolve all type arguments ${substitutionMap.map {
@@ -533,12 +545,16 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     }
                     .toMap()
 
-                effectCallable.substitute(substitutionMap)
+                val r = effectCallable.substitute(substitutionMap)
                     .copy(
                         valueArgs = callableValueArgs,
                         typeArgs = effectCallable.typeParameters
                             .map { substitutionMap[it]!! }
                     )
+
+                r
+
+                r
             }
     }
 
@@ -572,6 +588,16 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             ))
             classifier.funApiParams
         } else emptyList()
+
+        // use the fun binding type if possible
+        val effectType = (if (descriptor.hasAnnotation(InjektFqNames.FunBinding)) {
+            (generatedClassifiers[owner.fqNameSafe] ?:
+            typeTranslator.toClassifierRef(
+                module.findClassifierAcrossModuleDependencies(
+                    ClassId.topLevel(owner.fqNameSafe)
+                )!!
+            )).defaultType
+        } else type).copy(effect = effect++)
 
         Callable(
             name = owner.name,
@@ -654,18 +680,10 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 .getAnnotatedAnnotations(InjektFqNames.Effect) + owner
                 .getAnnotatedAnnotations(InjektFqNames.Effect))
                 .flatMap {
-                    // use the fun binding type if possible
-                    val effectType = if (descriptor.hasAnnotation(InjektFqNames.FunBinding)) {
-                        (generatedClassifiers[owner.fqNameSafe] ?:
-                        typeTranslator.toClassifierRef(
-                            module.findClassifierAcrossModuleDependencies(
-                                ClassId.topLevel(owner.fqNameSafe)
-                            )!!
-                        )).defaultType
-                    } else type
                     effectCallablesForAnnotation(it, descriptor, effectType)
                 }
                 .distinct(),
+            effectType = effectType,
             isExternal = owner is DeserializedDescriptor,
             isInline = descriptor.isInline,
             visibility = descriptor.visibility,

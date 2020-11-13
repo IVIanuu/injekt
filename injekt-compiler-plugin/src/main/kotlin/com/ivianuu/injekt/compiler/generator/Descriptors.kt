@@ -35,6 +35,7 @@ data class Callable(
     val isCall: Boolean,
     val callableKind: CallableKind,
     val decorators: List<Callable>,
+    val effectType: TypeRef,
     val effects: List<Callable>,
     val isExternal: Boolean,
     val isInline: Boolean,

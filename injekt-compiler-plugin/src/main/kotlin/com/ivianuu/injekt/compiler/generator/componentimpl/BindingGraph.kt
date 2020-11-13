@@ -609,6 +609,7 @@ class BindingGraph(
                     fqName = request.origin,
                     name = "invoke".asNameId(),
                     type = returnType,
+                    effectType = returnType,
                     typeParameters = emptyList(),
                     valueParameters = emptyList(),
                     targetComponent = null,
@@ -654,6 +655,22 @@ class BindingGraph(
                     dependencies = callable.getDependencies(request.type, false),
                     receiver = null,
                     callable = callable
+                )
+            }
+        this += declarationStore.effectFunBindingsFor(request.type)
+            .filter {
+                it.callable.targetComponent == null || it.callable.targetComponent == owner.componentType ||
+                        (owner.isAssisted && request.type == owner.assistedRequests.single().type)
+            }
+            .map { funBinding ->
+                val substitutionMap = request.type.getSubstitutionMap(funBinding.type)
+                val finalCallable = funBinding.callable.substitute(substitutionMap)
+                FunBindingNode(
+                    type = request.type.substituteStars(funBinding.type),
+                    rawType = funBinding.type,
+                    owner = owner,
+                    dependencies = finalCallable.getDependencies(request.type, false),
+                    callable = finalCallable
                 )
             }
     }
