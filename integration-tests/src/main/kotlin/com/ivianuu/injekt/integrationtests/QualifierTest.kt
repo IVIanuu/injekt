@@ -154,5 +154,21 @@ class QualifierTest {
             """
     )
 
+    @Test
+    fun testQualifierWithFunctionTypeParameter() = codegen(
+        """
+            @Target(AnnotationTarget.TYPE)
+            @Qualifier
+            annotation class MyQualifier<T>
+            
+            @Binding
+            fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
+             
+            @Component
+            abstract class FooComponent {
+                abstract val foo: @MyQualifier<String> Foo
+            }
+            """
+    )
 
 }

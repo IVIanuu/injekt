@@ -1201,7 +1201,6 @@ class ComponentTest {
             @FunBinding
             fun <T> compare(@FunApi a: T, @FunApi b: T, comparator: AliasComparator<T>): Int = comparator
                 .compare(a, b)
-
         """
     )
 
