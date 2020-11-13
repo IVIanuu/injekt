@@ -79,7 +79,7 @@ class ComponentImpl(
     val requests = (listOf(componentType) + mergeDeclarations
         .filterNot { it.isModule })
         .flatMap { declarationStore.allCallablesForType(it) }
-        .filter { it.contributionKind == null } + assistedRequests
+        .filter { it.modality != Modality.FINAL } + assistedRequests
 
     private var initialized = false
 
