@@ -426,7 +426,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     ): List<Callable> {
         val typeArgs = typeArgsForAnnotation(annotation, source)
         val valueArgs = valueArgsForAnnotation(annotation)
-        val file = (source.findPsi()!!.containingFile as KtFile).virtualFilePath
+        val origin = (source.findPsi()?.containingFile as? KtFile)?.virtualFilePath
+            ?: source.fqNameSafe
         return classDescriptorForFqName(annotation.fqName!!)
             .companionObjectDescriptor!!
             .unsubstitutedMemberScope
@@ -457,7 +458,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         parameter.name to when {
                             arg != null -> arg
                             parameter.type.isMarkedNullable -> { { emit("null") } }
-                            else -> error("No argument provided for non null binding arg ${parameter.name} in $file")
+                            else -> error("No argument provided for non null binding arg ${parameter.name} in $origin")
                         }
                     }
                     .toMap()
@@ -474,7 +475,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         source: DeclarationDescriptor,
         bindingType: TypeRef
     ): List<Callable> {
-        val file = (source.findPsi()!!.containingFile as KtFile).virtualFilePath
+        val origin = (source.findPsi()?.containingFile as? KtFile)?.virtualFilePath
+            ?: source.fqNameSafe
         val typeArgs = typeArgsForAnnotation(annotation, source)
         val valueArgs = valueArgsForAnnotation(annotation)
         return classDescriptorForFqName(annotation.fqName!!)
@@ -498,7 +500,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     .filter { it.argName != null }
                     .map {
                         it to (typeArgs[it.argName]
-                            ?: error("Couldn't get type argument for ${it.argName} in $file"))
+                            ?: error("Couldn't get type argument for ${it.argName} in $origin"))
                     }
                     .toMap()
                 substitutionMap.forEach { (typeParameter, typeArgument) ->
@@ -515,7 +517,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         it.key.fqName to it.value
                     }} missing ${effectCallable.typeParameters.filter {
                         it !in substitutionMap
-                    }.map { it.fqName }} in $file"
+                    }.map { it.fqName }} in $origin"
                 }
                 substitutionMap[subjectTypeParameter] = bindingType
 
@@ -526,7 +528,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         parameter.name to when {
                             arg != null -> arg
                             parameter.type.isMarkedNullable -> { { emit("null") } }
-                            else -> error("No argument provided for non null binding arg ${parameter.name} in $file")
+                            else -> error("No argument provided for non null binding arg ${parameter.name} in $origin")
                         }
                     }
                     .toMap()
