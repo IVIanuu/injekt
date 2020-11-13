@@ -22,7 +22,7 @@ import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.callableKind
 import com.ivianuu.injekt.compiler.generator.getStarSubstitutionMap
-import com.ivianuu.injekt.compiler.generator.renderExpanded
+import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.substitute
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.name.FqName
@@ -70,12 +70,12 @@ class ComponentCallable(
         if (!isProperty) {
             emit("(")
             valueParameters.forEachIndexed { index, parameter ->
-                emit("${parameter.name}: ${parameter.type.renderExpanded()}")
+                emit("${parameter.name}: ${parameter.type.render(expanded = true)}")
                 if (index != valueParameters.lastIndex) emit(", ")
             }
             emit(")")
         }
-        emit(": ${type.renderExpanded()}")
+        emit(": ${type.render(expanded = true)}")
         if (typeParameters.isNotEmpty()) {
             emit(" where ")
             val typeParametersWithUpperBound = typeParameters
@@ -84,7 +84,7 @@ class ComponentCallable(
                         .map { typeParameter to it }
                 }
             typeParametersWithUpperBound.forEachIndexed { index, (typeParameter, upperBound) ->
-                emit("${typeParameter.name} : ${upperBound.renderExpanded()}")
+                emit("${typeParameter.name} : ${upperBound.render(expanded = true)}")
                 if (index != typeParametersWithUpperBound.lastIndex) emit(", ")
             }
             emitSpace()

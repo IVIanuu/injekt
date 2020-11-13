@@ -283,41 +283,42 @@ fun TypeRef.substituteStars(baseType: TypeRef): TypeRef {
     )
 }
 
-fun TypeRef.render(): String {
+fun TypeRef.render(expanded: Boolean = false): String {
     return buildString {
-        val annotations = qualifiers.map {
-            "@${it.type}(${it.args.toList().joinToString { "${it.first}=${it.second}" }})"
-        } + listOfNotNull(
-            if (isComposable) "@${InjektFqNames.Composable}" else null,
-            if (isExtensionFunction) "@ExtensionFunctionType" else null
-        )
-        if (annotations.isNotEmpty()) {
-            annotations.forEach { annotation ->
-                append(annotation)
-                append(" ")
+        fun TypeRef.inner() {
+            val annotations = (if (!expanded) qualifiers.map {
+                "@${it.type}(${it.args.toList().joinToString { "${it.first}=${it.second}" }})"
+            } else emptyList()) + listOfNotNull(
+                if (isComposable) "@${InjektFqNames.Composable}" else null,
+                if (isExtensionFunction) "@ExtensionFunctionType" else null
+            )
+            if (annotations.isNotEmpty()) {
+                annotations.forEach { annotation ->
+                    append(annotation)
+                    append(" ")
+                }
             }
-        }
-        when {
-            classifier.isTypeParameter -> append(classifier.fqName.shortName())
-            isStarProjection -> append("*")
-            else -> append(classifier.fqName)
-        }
-        if (typeArguments.isNotEmpty()) {
-            append("<")
-            typeArguments.forEachIndexed { index, typeArgument ->
-                if (typeArgument.variance != Variance.INVARIANT &&
+            when {
+                classifier.isTypeParameter -> append(classifier.fqName.shortName())
+                isStarProjection -> append("*")
+                else -> append(classifier.fqName)
+            }
+            if (typeArguments.isNotEmpty()) {
+                append("<")
+                typeArguments.forEachIndexed { index, typeArgument ->
+                    if (typeArgument.variance != Variance.INVARIANT &&
                         !typeArgument.isStarProjection)
-                    append("${typeArgument.variance.label} ")
-                append(typeArgument.render())
-                if (index != typeArguments.lastIndex) append(", ")
+                        append("${typeArgument.variance.label} ")
+                    append(typeArgument.render(expanded = expanded))
+                    if (index != typeArguments.lastIndex) append(", ")
+                }
+                append(">")
             }
-            append(">")
+            if (isMarkedNullable && !isStarProjection) append("?")
         }
-        if (isMarkedNullable && !isStarProjection) append("?")
+        fullyExpandedType.inner()
     }
 }
-
-fun TypeRef.renderExpanded() = expandedType?.render() ?: render()
 
 fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
     fun TypeRef.renderName(includeArguments: Boolean = true): String {

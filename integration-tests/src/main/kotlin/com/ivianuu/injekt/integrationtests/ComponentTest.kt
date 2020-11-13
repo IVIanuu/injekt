@@ -1564,7 +1564,42 @@ class ComponentTest {
                         fun foo(): InternalFoo = Foo()
                         
                         @Binding
-                        fun bar(foo: InternalFoo) = Bar(foo)
+                        fun bar(foo: () -> InternalFoo) = Bar(foo())
+                    }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Component 
+                    abstract class MyComponent {
+                        abstract val bar: Bar
+                        
+                        @Module
+                        protected val fooBarModule = FooBarModule
+                    }
+                """
+            )
+        )
+    )
+
+    @Test
+    fun testBindingsCanBeInternalizedViaInternalQualifiers() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Qualifier
+                    @Target(AnnotationTarget.TYPE)
+                    internal annotation class Internal
+
+                    @Module
+                    object FooBarModule {
+                        @Binding
+                        fun foo(): @Internal Foo = Foo()
+                        
+                        @Binding
+                        fun bar(foo: () -> @Internal Foo) = Bar(foo())
                     }
                 """
             )

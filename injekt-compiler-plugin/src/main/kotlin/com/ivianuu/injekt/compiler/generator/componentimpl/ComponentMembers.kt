@@ -31,7 +31,6 @@ import com.ivianuu.injekt.compiler.generator.copy
 import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.fullyExpandedType
 import com.ivianuu.injekt.compiler.generator.render
-import com.ivianuu.injekt.compiler.generator.renderExpanded
 import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -184,7 +183,7 @@ class ComponentStatements(
         emit("{ ")
         binding.assistedTypes
             .forEachIndexed { index, assistedType ->
-                emit("p$index: ${assistedType.renderExpanded()}")
+                emit("p$index: ${assistedType.render(expanded = true)}")
                 if (index != binding.assistedTypes.lastIndex) emit(", ")
             }
         emitLine(" ->")
@@ -212,7 +211,7 @@ class ComponentStatements(
         emit("{ ")
         val params = binding.type.typeArguments.dropLast(1)
         params.forEachIndexed { index, param ->
-            emit("p$index: ${param.renderExpanded()}")
+            emit("p$index: ${param.render(expanded = true)}")
             if (index != params.lastIndex) emit(", ")
             else emitLine(" ->")
         }
@@ -240,7 +239,7 @@ class ComponentStatements(
         funApiParameters
             .filterNot { it.isExtensionReceiver }
             .forEachIndexed { index, param ->
-                emit("${param.name}: ${param.type.renderExpanded()}")
+                emit("${param.name}: ${param.type.render(expanded = true)}")
                 if (index != funApiParameters.lastIndex) emit(", ")
                 else emitLine(" ->")
             }
@@ -383,7 +382,7 @@ class ComponentStatements(
             val decoratorFactoryType = typeTranslator.toClassifierRef(
                 moduleDescriptor.builtIns.getFunction(1)
             ).defaultType.typeWith(listOf(providerType, providerType))
-            emitLine("listOf<${decoratorFactoryType.renderExpanded()}>(")
+            emitLine("listOf<${decoratorFactoryType.render(expanded = true)}>(")
             decorators.forEachIndexed { index, decorator ->
                 emit("{ _prev -> ")
                 var dependencyIndex = 0
@@ -511,20 +510,20 @@ class ComponentStatements(
                 emitLine(".${cacheProperty.name}")
                 emit("if (value !== ")
                 scopeComponentExpression()
-                emitLine(") return@scope value as ${type.renderExpanded()}")
+                emitLine(") return@scope value as ${type.render(expanded = true)}")
                 fun emitInvocation() {
                     emit("value = ")
                     scopeComponentExpression()
                     emitLine(".${cacheProperty.name}")
                     emit("if (value !== ")
                     scopeComponentExpression()
-                    emitLine(") return@scope value as ${type.renderExpanded()}")
+                    emitLine(") return@scope value as ${type.render(expanded = true)}")
                     emit("value = ")
                     create()
                     emitLine()
                     scopeComponentExpression()
                     emitLine(".${cacheProperty.name} = value")
-                    emitLine("return@scope value as ${type.renderExpanded()}")
+                    emitLine("return@scope value as ${type.render(expanded = true)}")
                 }
                 when (callableKind) {
                     Callable.CallableKind.SUSPEND -> {

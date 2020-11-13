@@ -26,7 +26,6 @@ import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.render
-import com.ivianuu.injekt.compiler.generator.renderExpanded
 import com.ivianuu.injekt.compiler.generator.substitute
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.descriptors.Modality
@@ -126,13 +125,13 @@ class ComponentImpl(
             }
             inputTypes.forEachIndexed { index, input ->
                 if (input in additionalInputTypes) emit("internal val ")
-                emit("i_${input.uniqueTypeName()}: ${input.renderExpanded()}")
+                emit("i_${input.uniqueTypeName()}: ${input.render(expanded = true)}")
                 if (index != inputTypes.lastIndex) emit(", ")
             }
             emit(")")
         }
 
-        emit(" : ${componentType.renderExpanded()}")
+        emit(" : ${componentType.render(expanded = true)}")
         if (superComponentConstructor != null) {
             emit("(")
             superConstructorParameters.forEachIndexed { index, param ->
