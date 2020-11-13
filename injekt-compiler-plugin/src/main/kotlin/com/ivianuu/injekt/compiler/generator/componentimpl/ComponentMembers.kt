@@ -166,8 +166,8 @@ class ComponentStatements(
             isProperty = isProperty,
             callableKind = requestForType?.callableKind ?: callableKind,
             cacheable = binding.cacheable,
-            isInline = !isOverride && binding.inline,
-            canBePrivate = !isOverride && requestForType !in owner.assistedRequests
+            isInline = requestForType in owner.assistedRequests || (!isOverride && binding.inline),
+            canBePrivate = requestForType in owner.assistedRequests || !isOverride
         )
 
         val accessExpression: ComponentExpression = {

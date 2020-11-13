@@ -619,7 +619,7 @@ class BindingGraph(
                     decorators = emptyList(),
                     effects = emptyList(),
                     isExternal = false,
-                    isInline = false,
+                    isInline = true,
                     visibility = Visibilities.INTERNAL,
                     modality = Modality.FINAL,
                     receiver = null,

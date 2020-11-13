@@ -105,8 +105,8 @@ class ComponentImpl(
                 isProperty = !requestCallable.isCall,
                 callableKind = requestCallable.callableKind,
                 cacheable = binding.cacheable,
-                isInline = false,
-                canBePrivate = false
+                isInline = requestCallable in assistedRequests,
+                canBePrivate = requestCallable in assistedRequests
             )
         }
     }
@@ -121,11 +121,11 @@ class ComponentImpl(
         if (parent != null || inputTypes.isNotEmpty()) {
             emit("(")
             if (parent != null) {
-                emit("val parent: ${parent.name}")
+                emit("internal val parent: ${parent.name}")
                 if (inputTypes.isNotEmpty()) emit(", ")
             }
             inputTypes.forEachIndexed { index, input ->
-                if (input in additionalInputTypes) emit("val ")
+                if (input in additionalInputTypes) emit("internal val ")
                 emit("i_${input.uniqueTypeName()}: ${input.renderExpanded()}")
                 if (index != inputTypes.lastIndex) emit(", ")
             }
