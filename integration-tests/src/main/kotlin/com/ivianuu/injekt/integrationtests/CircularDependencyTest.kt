@@ -81,4 +81,46 @@ class CircularDependencyTest {
         """
     )
 
+    @Test
+    fun testLazyRequestInSetBreaksCircularDependency() = codegen(
+        """
+            @FunBinding
+            fun A(b: B) {
+            }
+            
+            @FunBinding
+            fun B(a: A) {
+            }
+            
+            @SetElements
+            fun set(a: A, b: B): Set<Any> = setOf(a, b)
+            
+            @Component
+            abstract class MyComponent {
+                abstract val set: Set<Any>
+            }
+        """
+    )
+
+    @Test
+    fun testLazyRequestInMapBreaksCircularDependency() = codegen(
+        """
+            @FunBinding
+            fun A(b: B) {
+            }
+            
+            @FunBinding
+            fun B(a: A) {
+            }
+            
+            @MapEntries
+            fun map(a: A, b: B): Map<String, Any> = mapOf("a" to a, "b" to b)
+            
+            @Component
+            abstract class MyComponent {
+                abstract val map: Map<String, Any>
+            }
+        """
+    )
+
 }
