@@ -2,7 +2,15 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/injekt.iml" filepath="$PROJECT_DIR$/.idea/injekt.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/samples/android-app/android-app.iml" filepath="$PROJECT_DIR$/.idea/modules/samples/android-app/android-app.iml" group="injekt/samples/android-app" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/samples/coffee-maker/coffee-maker.iml" filepath="$PROJECT_DIR$/.idea/modules/samples/coffee-maker/coffee-maker.iml" group="injekt/samples/coffee-maker" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/injekt.iml" filepath="$PROJECT_DIR$/.idea/injekt.iml" group="injekt" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-android/injekt-android.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-android/injekt-android.iml" group="injekt/injekt-android" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-android-work/injekt-android-work.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-android-work/injekt-android-work.iml" group="injekt/injekt-android-work" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-compiler-plugin/injekt-compiler-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-compiler-plugin/injekt-compiler-plugin.iml" group="injekt/injekt-compiler-plugin" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-core/injekt-core.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-core/injekt-core.iml" group="injekt/injekt-core" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-gradle-plugin/injekt-gradle-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-gradle-plugin/injekt-gradle-plugin.iml" group="injekt/injekt-gradle-plugin" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-merge/injekt-merge.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-merge/injekt-merge.iml" group="injekt/injekt-merge" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt.buildSrc.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt.buildSrc.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-android/injekt.injekt-android.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-android/injekt.injekt-android.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-android-work/injekt.injekt-android-work.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-android-work/injekt.injekt-android-work.iml" />
@@ -16,6 +24,11 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/samples/coffee-maker/injekt.samples.coffee-maker.iml" filepath="$PROJECT_DIR$/.idea/modules/samples/coffee-maker/injekt.samples.coffee-maker.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/samples/performance-comparison/injekt.samples.performance-comparison.iml" filepath="$PROJECT_DIR$/.idea/modules/samples/performance-comparison/injekt.samples.performance-comparison.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/test-util/injekt.test-util.iml" filepath="$PROJECT_DIR$/.idea/modules/test-util/injekt.test-util.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt_buildSrc.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt_buildSrc.iml" group="injekt/injekt_buildSrc" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/integration-tests/integration-tests.iml" filepath="$PROJECT_DIR$/.idea/modules/integration-tests/integration-tests.iml" group="injekt/integration-tests" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/samples/performance-comparison/performance-comparison.iml" filepath="$PROJECT_DIR$/.idea/modules/samples/performance-comparison/performance-comparison.iml" group="injekt/samples/performance-comparison" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/samples/samples.iml" filepath="$PROJECT_DIR$/.idea/modules/samples/samples.iml" group="injekt/samples" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/test-util/test-util.iml" filepath="$PROJECT_DIR$/.idea/modules/test-util/test-util.iml" group="injekt/test-util" />
     </modules>
   </component>
 </project>
