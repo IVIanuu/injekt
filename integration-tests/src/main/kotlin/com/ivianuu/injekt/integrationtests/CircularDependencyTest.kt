@@ -123,4 +123,30 @@ class CircularDependencyTest {
         """
     )
 
+    @Test
+    fun testLazyRequestInDecoratorBreaksCircularDependency() = codegen(
+        """
+            @Decorator
+            fun decorator(a: A, factory: () -> B): () -> B {
+                return factory
+            }
+            
+            @FunBinding
+            fun A(b: B) {
+            }
+            
+            @FunBinding
+            fun B(a: A) {
+            }
+            
+            @MapEntries
+            fun map(a: A, b: B): Map<String, Any> = mapOf("a" to a, "b" to b)
+            
+            @Component
+            abstract class MyComponent {
+                abstract val map: Map<String, Any>
+            }
+        """
+    )
+
 }
