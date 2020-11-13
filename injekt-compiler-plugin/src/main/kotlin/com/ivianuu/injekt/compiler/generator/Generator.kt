@@ -34,7 +34,7 @@ abstract class GenerationComponent(
     @Binding protected val bindingContext: BindingContext
 ) {
     abstract val errorCollector: ErrorCollector
-    abstract val funBindingAliasGenerator: FunBindingAliasGenerator
+    abstract val funBindingGenerator: FunBindingGenerator
     abstract val fileManager: FileManager
     abstract val componentGenerator: ComponentGenerator
     abstract val indexGenerator: IndexGenerator
