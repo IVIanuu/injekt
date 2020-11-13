@@ -130,7 +130,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             val currentBindings = newBindings.toList()
             newBindings = currentBindings
                 .onEach {
-                    if ((it.contributionKind == null && it.effects.isEmpty()) ||
+                    if ((it.contributionKind == null && it.effects.isNotEmpty()) ||
                         it.contributionKind == Callable.ContributionKind.BINDING)
                         effectBindings[it.type] = it
                 }
@@ -639,7 +639,18 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 .getAnnotatedAnnotations(InjektFqNames.Effect) + owner
                 .getAnnotatedAnnotations(InjektFqNames.Effect))
                 .distinct()
-                .flatMap { effectCallablesForAnnotation(it, descriptor, type) },
+                .flatMap {
+                    // use the fun binding type if possible
+                    val effectType = if (descriptor.hasAnnotation(InjektFqNames.FunBinding)) {
+                        (generatedClassifiers[owner.fqNameSafe] ?:
+                        typeTranslator.toClassifierRef(
+                            module.findClassifierAcrossModuleDependencies(
+                                ClassId.topLevel(owner.fqNameSafe)
+                            )!!
+                        )).defaultType
+                    } else type
+                    effectCallablesForAnnotation(it, descriptor, effectType)
+                },
             isExternal = owner is DeserializedDescriptor,
             isInline = descriptor.isInline,
             visibility = descriptor.visibility,

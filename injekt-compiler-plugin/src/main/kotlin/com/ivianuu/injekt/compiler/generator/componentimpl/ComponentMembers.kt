@@ -294,7 +294,7 @@ class ComponentStatements(
                             parameter.name to if (parameter.argName != null) {
                                 callable.valueArgs[parameter.argName]
                             } else {
-                                val request = binding.dependencies.single {
+                                val request = binding.dependencies.first {
                                     it.origin == callable.fqName.child(parameter.name)
                                 }
                                 val dependencyBinding = owner.graph.getBinding(request)
@@ -323,7 +323,7 @@ class ComponentStatements(
                             parameter.name to if (parameter.argName != null) {
                                 callable.valueArgs[parameter.argName]
                             } else {
-                                val request = binding.dependencies.single {
+                                val request = binding.dependencies.first {
                                     it.origin == callable.fqName.child(parameter.name)
                                 }
                                 val dependencyBinding = owner.graph.getBinding(request)
