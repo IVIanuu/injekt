@@ -329,6 +329,7 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
                 append(it.args.hashCode())
                 append("_")
             }
+            if (effect != 0) append("_${effect}_")
             if (isComposable) append("composable_")
             // if (includeNullability && isMarkedNullable) append("nullable_")
             if (isStarProjection) append("star")
