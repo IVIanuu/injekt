@@ -407,4 +407,61 @@ class DecoratorTest {
         """
     )
 
+    @Test
+    fun testDecoratorWithDifferentTargetComponentFails() = codegen(
+        """
+            @Decorator(Any::class)
+            annotation class MyDecorator {
+                companion object {
+                    fun <T> decorate(factory: @Composable () -> T): @Composable () -> T = factory
+                }
+            }
+            
+            @MyDecorator
+            @Binding(MyComponent::class)
+            @Composable
+            fun foo() = Foo()
+            
+            @Component
+            abstract class MyComponent {
+                @Composable
+                abstract val foo: Foo
+            }
+        """
+    ) {
+        assertInternalError("Target component mismatch")
+    }
+
+    @Test
+    fun testDecoratorsWithDifferentTargetComponentFails() = codegen(
+        """
+            @Decorator(Any::class)
+            annotation class MyDecorator1 {
+                companion object {
+                    fun <T> decorate(factory: @Composable () -> T): @Composable () -> T = factory
+                }
+            }
+            
+            @Decorator(String::class)
+            annotation class MyDecorator2 {
+                companion object {
+                    fun <T> decorate(factory: @Composable () -> T): @Composable () -> T = factory
+                }
+            }
+            
+            @MyDecorator1
+            @MyDecorator2
+            @Composable
+            fun foo() = Foo()
+            
+            @Component
+            abstract class MyComponent {
+                @Composable
+                abstract val foo: Foo
+            }
+        """
+    ) {
+        assertInternalError("Target component mismatch")
+    }
+
 }

@@ -56,7 +56,7 @@ annotation class MapEntries
 annotation class SetElements
 
 @Target(AnnotationTarget.ANNOTATION_CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
-annotation class Decorator
+annotation class Decorator(val targetComponent: KClass<*> = Nothing::class)
 
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Effect

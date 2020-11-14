@@ -587,22 +587,57 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             )).defaultType
         } else type)
 
+        val callableTargetComponent = (owner.annotations.findAnnotation(InjektFqNames.Binding) ?:
+        owner.annotations.findAnnotation(InjektFqNames.ImplBinding) ?:
+        owner.annotations.findAnnotation(InjektFqNames.FunBinding) ?:
+        descriptor.containingDeclaration.containingDeclaration?.annotations
+            ?.findAnnotation(InjektFqNames.Decorator))
+            ?.allValueArguments
+            ?.let {
+                it["scopeComponent".asNameId()]
+                    ?: it["targetComponent".asNameId()]
+            }
+            ?.let { it as KClassValue }
+            ?.getArgumentType(module)
+            ?.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) }
+
+        val decorators = (descriptor
+            .getAnnotatedAnnotations(InjektFqNames.Decorator) + owner
+            .getAnnotatedAnnotations(InjektFqNames.Decorator))
+            .distinct()
+            .flatMap { decoratorCallablesForAnnotation(it, descriptor) }
+            .distinct()
+
+        val decoratorsByTargetComponent = decorators
+            .filter { it.targetComponent != null }
+            .map { it.targetComponent to it }
+            .groupBy { it.first }
+        if (decoratorsByTargetComponent.size > 1) {
+            error("Decorators target component mismatch. Decorators of '${descriptor.fqNameSafe}' have different target components\n" +
+                    decorators.joinToString("\n") { decorator ->
+                        "'${decorator.fqName}' = '${decorator.targetComponent?.render()}'"
+                    }
+            )
+        }
+        val decoratorTargetComponent = decorators
+            .mapNotNull { it.targetComponent }
+            .firstOrNull()
+
+        if (callableTargetComponent != null &&
+            decoratorTargetComponent != null &&
+            callableTargetComponent != decoratorTargetComponent) {
+            error("Target component mismatch. '${descriptor.fqNameSafe}' target component is '${callableTargetComponent.render()}' but " +
+                    "decorator target component is '${decoratorTargetComponent.render()}'.")
+        }
+
+        val targetComponent = callableTargetComponent ?: decoratorTargetComponent
+
         Callable(
             name = owner.name,
             packageFqName = descriptor.findPackage().fqName,
             fqName = owner.fqNameSafe,
             type = type,
-            targetComponent = (owner.annotations.findAnnotation(InjektFqNames.Binding) ?:
-            owner.annotations.findAnnotation(InjektFqNames.ImplBinding) ?:
-            owner.annotations.findAnnotation(InjektFqNames.FunBinding))
-                ?.allValueArguments
-                ?.let {
-                    it["scopeComponent".asNameId()]
-                        ?: it["targetComponent".asNameId()]
-                }
-                ?.let { it as KClassValue }
-                ?.getArgumentType(module)
-                ?.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
+            targetComponent = targetComponent,
             contributionKind = when {
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Decorator) -> Callable.ContributionKind.DECORATOR
@@ -663,12 +698,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     else -> Callable.CallableKind.DEFAULT
                 }
             } else Callable.CallableKind.DEFAULT,
-            decorators = (descriptor
-                .getAnnotatedAnnotations(InjektFqNames.Decorator) + owner
-                .getAnnotatedAnnotations(InjektFqNames.Decorator))
-                .distinct()
-                .flatMap { decoratorCallablesForAnnotation(it, descriptor) }
-                .distinct(),
+            decorators = decorators,
             effects = (descriptor
                 .getAnnotatedAnnotations(InjektFqNames.Effect) + owner
                 .getAnnotatedAnnotations(InjektFqNames.Effect))

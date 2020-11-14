@@ -490,7 +490,7 @@ class BindingGraph(
 
     private fun getExplicitParentBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
         this += parentModuleBindingCallables
-            .filter { it.callable.targetComponent.checkComponent(request) }
+            .filter { it.callable.targetComponent.checkComponent(request.type) }
             .filter { request.type.isAssignable(it.callable.type) }
             .map { (callable, receiver, bindingOwner) ->
                 val substitutionMap = getSubstitutionMap(listOf(request.type to callable.type))
@@ -509,7 +509,7 @@ class BindingGraph(
 
     private fun getImplicitUserBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
         this += declarationStore.bindingsForType(request.type)
-            .filter { it.targetComponent.checkComponent(request) }
+            .filter { it.targetComponent.checkComponent(request.type) }
             .map { callable ->
                 val substitutionMap = getSubstitutionMap(listOf(request.type to callable.type))
                 val finalCallable = callable.substitute(substitutionMap)
@@ -592,7 +592,7 @@ class BindingGraph(
         }
 
         this += declarationStore.funBindingsForType(request.type)
-            .filter { it.callable.targetComponent.checkComponent(request) }
+            .filter { it.callable.targetComponent.checkComponent(request.type) }
             .map { funBinding ->
                 val substitutionMap = getSubstitutionMap(listOf(request.type to funBinding.type))
                 val finalCallable = funBinding.callable.substitute(substitutionMap)
@@ -659,7 +659,7 @@ class BindingGraph(
 
     private fun getEffectBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
         this += declarationStore.effectBindingsFor(request.type)
-            .filter { it.targetComponent.checkComponent(request) }
+            .filter { it.targetComponent.checkComponent(request.type) }
             .map { callable ->
                 val substitutionMap = getSubstitutionMap(listOf(request.type to callable.type))
                 val finalCallable = callable.substitute(substitutionMap)
@@ -674,7 +674,7 @@ class BindingGraph(
                 )
             }
         this += declarationStore.effectFunBindingsFor(request.type)
-            .filter { it.callable.targetComponent.checkComponent(request) }
+            .filter { it.callable.targetComponent.checkComponent(request.type) }
             .map { funBinding ->
                 val substitutionMap = getSubstitutionMap(listOf(request.type to funBinding.type))
                 val finalCallable = funBinding.callable.substitute(substitutionMap)
@@ -688,9 +688,9 @@ class BindingGraph(
             }
     }
 
-    private fun TypeRef?.checkComponent(request: BindingRequest): Boolean {
+    private fun TypeRef?.checkComponent(type: TypeRef): Boolean {
         return this == null || this == owner.componentType ||
-                (owner.isAssisted && request.type == owner.assistedRequests.single().type)
+                (owner.isAssisted && type == owner.assistedRequests.single().type)
     }
 
     private fun Callable.getCallableDecorators(type: TypeRef): List<DecoratorNode> {
@@ -757,6 +757,7 @@ class BindingGraph(
         this += parentModuleDecorators
             .filter { providerType.isAssignable(it.callable.type) }
         this += declarationStore.decoratorsByType(providerType)
+            .filter { it.targetComponent.checkComponent(providerType.typeArguments.last()) }
             .map { decorator ->
                 DecoratorNode(
                     decorator,
