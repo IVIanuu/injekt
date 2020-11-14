@@ -258,12 +258,12 @@ class ComponentStatements(
                         if (valueParameter.isExtensionReceiver) emit("this")
                         else emit(valueParameter.name)
                     }
-                    valueParameter.name to (null to expression)
+                    valueParameter.name to (valueParameter.type to expression)
                 } else {
                     val request = valueParameter.toBindingRequest(binding.callable, emptyMap())
                     val dependencyBinding = owner.graph.getBinding(request)
                     if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                    valueParameter.name to (dependencyBinding to getBindingExpression(request))
+                    valueParameter.name to (dependencyBinding.type to getBindingExpression(request))
                 }
             }.toMap()
         )
@@ -289,13 +289,13 @@ class ComponentStatements(
                     callable.valueParameters
                         .mapNotNull { parameter ->
                             parameter.name to if (parameter.argName != null) {
-                                null to callable.valueArgs[parameter.argName]!!
+                                parameter.type to callable.valueArgs[parameter.argName]!!
                             } else {
                                 val requests = binding.dependenciesByEntry[callable]!!
                                 val request = requests.first { it.origin.shortName() == parameter.name }
                                 val dependencyBinding = owner.graph.getBinding(request)
                                 if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                                dependencyBinding to getBindingExpression(request)
+                                dependencyBinding.type to getBindingExpression(request)
                             }
                         }
                         .toMap()
@@ -318,13 +318,13 @@ class ComponentStatements(
                     callable.valueParameters
                         .mapNotNull { parameter ->
                             parameter.name to if (parameter.argName != null) {
-                                null to callable.valueArgs[parameter.argName]!!
+                                parameter.type to callable.valueArgs[parameter.argName]!!
                             } else {
                                 val requests = binding.dependenciesByElement[callable]!!
                                 val request = requests.first { it.origin.shortName() == parameter.name }
                                 val dependencyBinding = owner.graph.getBinding(request)
                                 if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                                dependencyBinding to getBindingExpression(request)
+                                dependencyBinding.type to getBindingExpression(request)
                             }
                         }
                         .toMap()
@@ -343,14 +343,14 @@ class ComponentStatements(
             binding.callable.valueParameters
                 .mapNotNull { parameter ->
                     parameter.name to if (parameter.argName != null) {
-                        null to binding.callable.valueArgs[parameter.argName]!!
+                        parameter.type to binding.callable.valueArgs[parameter.argName]!!
                     } else {
                         val request = binding.dependencies.single {
                             it.origin.shortName() == parameter.name
                         }
                         val dependencyBinding = owner.graph.getBinding(request)
                         if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                        dependencyBinding to getBindingExpression(request)
+                        dependencyBinding.type to getBindingExpression(request)
                     }
                 }
                 .toMap()
@@ -398,18 +398,18 @@ class ComponentStatements(
                     decorator.declaredInComponent,
                     decorator.callable.valueParameters
                         .mapNotNull { valueParameter ->
-                            val pair: Pair<Name, Pair<BindingNode?, ComponentExpression>> = valueParameter.name to (when {
+                            val pair: Pair<Name, Pair<TypeRef?, ComponentExpression>> = valueParameter.name to (when {
                                 valueParameter.name in decorator.callable.valueArgs -> {
-                                    (null to decorator.callable.valueArgs[valueParameter.name]!!)
+                                    (valueParameter.type to decorator.callable.valueArgs[valueParameter.name]!!)
                                 }
                                 valueParameter.type == decorator.callable.type -> {
-                                    (null to { emit("_prev") })
+                                    (valueParameter.type to { emit("_prev") })
                                 }
                                 else -> {
                                     val dependencyRequest = decorator.dependencies[dependencyIndex++]
                                     val dependencyBinding = owner.graph.getBinding(dependencyRequest)
                                     if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                                    (dependencyBinding to getBindingExpression(dependencyRequest))
+                                    (dependencyBinding.type to getBindingExpression(dependencyRequest))
                                 }
                             })
                             pair
@@ -570,7 +570,7 @@ class ComponentStatements(
         type: TypeRef,
         receiver: ComponentExpression?,
         owner: ComponentImpl?,
-        arguments: Map<Name, Pair<BindingNode?, ComponentExpression>?>
+        arguments: Map<Name, Pair<TypeRef?, ComponentExpression>?>
     ) {
         fun emitArguments() {
             if (callable.isCall) {
@@ -581,7 +581,7 @@ class ComponentStatements(
                                 listOf(type to callable.originalType) +
                                 callable.valueParameters
                                     .mapNotNull {
-                                        val argumentType = arguments[it.name]?.first?.type
+                                        val argumentType = arguments[it.name]?.first
                                         if (argumentType != null) {
                                             argumentType to it.originalType
                                         } else null
