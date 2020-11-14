@@ -188,23 +188,25 @@ class ComponentStatements(
                 if (index != binding.assistedTypes.lastIndex) emit(", ")
             }
         emitLine(" ->")
-        fun emitNewInstance() {
-            emit("${binding.childComponent.name}(this, ")
-            binding.assistedTypes.forEachIndexed { index, assistedType ->
-                emit("p$index")
-                if (index != binding.assistedTypes.lastIndex) emit(", ")
+        indented {
+            fun emitNewInstance() {
+                emit("${binding.childComponent.name}(this, ")
+                binding.assistedTypes.forEachIndexed { index, assistedType ->
+                    emit("p$index")
+                    if (index != binding.assistedTypes.lastIndex) emit(", ")
+                }
+                emit(")")
+                emitLine(".invoke()")
             }
-            emit(")")
-            emitLine(".invoke()")
-        }
-        if (binding.targetComponent != null) {
-            scoped(binding.type.typeArguments.last(), binding.callableKind, false, binding.targetComponent!!) {
+            if (binding.targetComponent != null) {
+                scoped(binding.type.typeArguments.last(), binding.callableKind, false, binding.targetComponent!!) {
+                    emitNewInstance()
+                }
+            } else {
                 emitNewInstance()
             }
-        } else {
-            emitNewInstance()
+            emitLine()
         }
-        emitLine()
         emitLine("}")
     }
 
@@ -214,19 +216,19 @@ class ComponentStatements(
         params.forEachIndexed { index, param ->
             emit("p$index: ${param.render(expanded = true)}")
             if (index != params.lastIndex) emit(", ")
-            else emitLine(" ->")
         }
-        emitLine()
-
-        emit("${binding.childComponent.name}(this")
-        if (params.isNotEmpty()) {
-            emit(", ")
-            params.indices.forEach { paramIndex ->
-                emit("p$paramIndex")
-                if (paramIndex != params.lastIndex) emit(", ")
+        emitLine(" ->")
+        indented {
+            emit("${binding.childComponent.name}(this")
+            if (params.isNotEmpty()) {
+                emit(", ")
+                params.indices.forEach { paramIndex ->
+                    emit("p$paramIndex")
+                    if (paramIndex != params.lastIndex) emit(", ")
+                }
             }
+            emitLine(")")
         }
-        emitLine(")")
 
         emit("}")
     }
@@ -242,31 +244,31 @@ class ComponentStatements(
             .forEachIndexed { index, param ->
                 emit("${param.name}: ${param.type.render(expanded = true)}")
                 if (index != funApiParameters.lastIndex) emit(", ")
-                else emitLine(" ->")
             }
+        emitLine(" ->")
 
-        emitLine()
-
-        emitCallableInvocation(
-            callable = binding.callable,
-            type = binding.type.fullyExpandedType.typeArguments.last(),
-            receiver = null,
-            owner = null,
-            arguments = binding.callable.valueParameters.mapNotNull { valueParameter ->
-                if (valueParameter in funApiParameters) {
-                    val expression: ComponentExpression = {
-                        if (valueParameter.isExtensionReceiver) emit("this")
-                        else emit(valueParameter.name)
+        indented {
+            emitCallableInvocation(
+                callable = binding.callable,
+                type = binding.type.fullyExpandedType.typeArguments.last(),
+                receiver = null,
+                owner = null,
+                arguments = binding.callable.valueParameters.mapNotNull { valueParameter ->
+                    if (valueParameter in funApiParameters) {
+                        val expression: ComponentExpression = {
+                            if (valueParameter.isExtensionReceiver) emit("this")
+                            else emit(valueParameter.name)
+                        }
+                        valueParameter.name to (valueParameter.type to expression)
+                    } else {
+                        val request = valueParameter.toBindingRequest(binding.callable, emptyMap())
+                        val dependencyBinding = owner.graph.getBinding(request)
+                        if (dependencyBinding is MissingBindingNode) return@mapNotNull null
+                        valueParameter.name to (dependencyBinding.type to getBindingExpression(request))
                     }
-                    valueParameter.name to (valueParameter.type to expression)
-                } else {
-                    val request = valueParameter.toBindingRequest(binding.callable, emptyMap())
-                    val dependencyBinding = owner.graph.getBinding(request)
-                    if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                    valueParameter.name to (dependencyBinding.type to getBindingExpression(request))
-                }
-            }.toMap()
-        )
+                }.toMap()
+            )
+        }
 
         emit("}")
     }
@@ -387,42 +389,49 @@ class ComponentStatements(
             val decoratorFactoryType = typeTranslator.toClassifierRef(
                 moduleDescriptor.builtIns.getFunction(1)
             ).defaultType.typeWith(listOf(providerType, providerType))
+            emitLine()
             emitLine("listOf<${decoratorFactoryType.render(expanded = true)}>(")
-            decorators.forEachIndexed { index, decorator ->
-                emit("{ _prev -> ")
-                var dependencyIndex = 0
-                emitCallableInvocation(
-                    decorator.callable,
-                    decorator.callable.type,
-                    decorator.receiver,
-                    decorator.declaredInComponent,
-                    decorator.callable.valueParameters
-                        .mapNotNull { valueParameter ->
-                            val pair: Pair<Name, Pair<TypeRef?, ComponentExpression>> = valueParameter.name to (when {
-                                valueParameter.name in decorator.callable.valueArgs -> {
-                                    (valueParameter.type to decorator.callable.valueArgs[valueParameter.name]!!)
+            indented {
+                decorators.forEachIndexed { index, decorator ->
+                    emitLine("{ _prev ->")
+                    indented {
+                        var dependencyIndex = 0
+                        emitCallableInvocation(
+                            decorator.callable,
+                            decorator.callable.type,
+                            decorator.receiver,
+                            decorator.declaredInComponent,
+                            decorator.callable.valueParameters
+                                .mapNotNull { valueParameter ->
+                                    val pair: Pair<Name, Pair<TypeRef?, ComponentExpression>> = valueParameter.name to (when {
+                                        valueParameter.name in decorator.callable.valueArgs -> {
+                                            (valueParameter.type to decorator.callable.valueArgs[valueParameter.name]!!)
+                                        }
+                                        valueParameter.type == decorator.callable.type -> {
+                                            (valueParameter.type to { emit("_prev") })
+                                        }
+                                        else -> {
+                                            val dependencyRequest = decorator.dependencies[dependencyIndex++]
+                                            val dependencyBinding = owner.graph.getBinding(dependencyRequest)
+                                            if (dependencyBinding is MissingBindingNode) return@mapNotNull null
+                                            (dependencyBinding.type to getBindingExpression(dependencyRequest))
+                                        }
+                                    })
+                                    pair
                                 }
-                                valueParameter.type == decorator.callable.type -> {
-                                    (valueParameter.type to { emit("_prev") })
-                                }
-                                else -> {
-                                    val dependencyRequest = decorator.dependencies[dependencyIndex++]
-                                    val dependencyBinding = owner.graph.getBinding(dependencyRequest)
-                                    if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                                    (dependencyBinding.type to getBindingExpression(dependencyRequest))
-                                }
-                            })
-                            pair
-                        }
-                        .toMap()
-                )
-                emit(" }")
-                if (index != decorators.lastIndex) emitLine(", ")
+                                .toMap()
+                        )
+                    }
+                    emit(" }")
+                    if (index != decorators.lastIndex) emitLine(", ")
+                }
             }
             emitLine(")")
-            emit(".fold({ ")
-            create()
-            emitLine(" }) { acc, next -> ")
+            emit(".fold(")
+            braced {
+                create()
+            }
+            emitLine(") { acc, next -> ")
             emitLine("next(acc)")
             emitLine("}")
         }
@@ -605,26 +614,28 @@ class ComponentStatements(
                     }
                     emit(">")
                 }
-                emit("(")
-                var argumentsIndex = 0
-                val nonNullArgumentsCount = callable.valueParameters
-                    .filterNot { it.isExtensionReceiver }
-                    .count { it.name in arguments }
-                callable.valueParameters
-                    .filterNot { it.isExtensionReceiver }
-                    .forEach { parameter ->
-                        val argument = arguments[parameter.name]
-                        if (argument != null) {
-                            emit("${parameter.name} = ")
-                            argument.second(this)
-                            if (argumentsIndex++ != nonNullArgumentsCount) emit(", ")
+                emitLine("(")
+                indented {
+                    var argumentsIndex = 0
+                    val nonNullArgumentsCount = callable.valueParameters
+                        .filterNot { it.isExtensionReceiver }
+                        .count { it.name in arguments }
+                    callable.valueParameters
+                        .filterNot { it.isExtensionReceiver }
+                        .forEach { parameter ->
+                            val argument = arguments[parameter.name]
+                            if (argument != null) {
+                                emit("${parameter.name} = ")
+                                argument.second(this)
+                                if (argumentsIndex++ != nonNullArgumentsCount) emitLine(",")
+                            }
+                            else if (!parameter.hasDefault) {
+                                emit("${parameter.name} = null")
+                                if (argumentsIndex++ != nonNullArgumentsCount) emitLine(",")
+                            }
                         }
-                        else if (!parameter.hasDefault) {
-                            emit("${parameter.name} = null")
-                            if (argumentsIndex++ != nonNullArgumentsCount) emit(", ")
-                        }
-                    }
-                emit(")")
+                }
+                emitLine(")")
             }
         }
         if (owner != null) {

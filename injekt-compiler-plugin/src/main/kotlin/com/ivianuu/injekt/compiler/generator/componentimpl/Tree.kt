@@ -92,11 +92,14 @@ class ComponentCallable(
         if (isProperty) {
             if (initializer != null) {
                 emit(" = ")
-                initializer!!()
+                emitLine()
+                indented { initializer!!() }
             } else {
                 emitLine()
-                emit("    get() = ")
-                body!!()
+                indented {
+                    emit("get() = ")
+                    body!!()
+                }
             }
         } else {
             emitSpace()
