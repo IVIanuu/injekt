@@ -428,6 +428,13 @@ class BindingGraph(
             return it
         }
 
+        val effectBindings = getEffectBindingsForType(request)
+        binding = effectBindings.mostSpecificOrFail("effect")
+        binding?.let {
+            resolvedBindings[request.type] = it
+            return it
+        }
+
         val implicitFrameworkBindings = getImplicitFrameworkBindingsForType(request)
         binding = implicitFrameworkBindings.mostSpecificOrFail("implicit framework")
         binding?.let {
@@ -480,6 +487,7 @@ class BindingGraph(
 
     private fun getExplicitParentBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
         this += parentModuleBindingCallables
+            .filter { it.callable.targetComponent.checkComponent(request) }
             .filter { request.type.isAssignable(it.callable.type) }
             .map { (callable, receiver, bindingOwner) ->
                 val substitutionMap = getSubstitutionMap(listOf(request.type to callable.type))
@@ -498,10 +506,7 @@ class BindingGraph(
 
     private fun getImplicitUserBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
         this += declarationStore.bindingsForType(request.type)
-            .filter {
-                it.targetComponent == null || it.targetComponent == owner.componentType ||
-                        (owner.isAssisted && request.type == owner.assistedRequests.single().type)
-            }
+            .filter { it.targetComponent.checkComponent(request) }
             .map { callable ->
                 val substitutionMap = getSubstitutionMap(listOf(request.type to callable.type))
                 val finalCallable = callable.substitute(substitutionMap)
@@ -584,10 +589,7 @@ class BindingGraph(
         }
 
         this += declarationStore.funBindingsForType(request.type)
-            .filter {
-                it.callable.targetComponent == null || it.callable.targetComponent == owner.componentType ||
-                        (owner.isAssisted && request.type == owner.assistedRequests.single().type)
-            }
+            .filter { it.callable.targetComponent.checkComponent(request) }
             .map { funBinding ->
                 val substitutionMap = getSubstitutionMap(listOf(request.type to funBinding.type))
                 val finalCallable = funBinding.callable.substitute(substitutionMap)
@@ -650,8 +652,11 @@ class BindingGraph(
         }
 
         this += collections.getNodes(request)
+    }
 
+    private fun getEffectBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
         this += declarationStore.effectBindingsFor(request.type)
+            .filter { it.targetComponent.checkComponent(request) }
             .map { callable ->
                 val substitutionMap = getSubstitutionMap(listOf(request.type to callable.type))
                 val finalCallable = callable.substitute(substitutionMap)
@@ -666,10 +671,7 @@ class BindingGraph(
                 )
             }
         this += declarationStore.effectFunBindingsFor(request.type)
-            .filter {
-                it.callable.targetComponent == null || it.callable.targetComponent == owner.componentType ||
-                        (owner.isAssisted && request.type == owner.assistedRequests.single().type)
-            }
+            .filter { it.callable.targetComponent.checkComponent(request) }
             .map { funBinding ->
                 val substitutionMap = getSubstitutionMap(listOf(request.type to funBinding.type))
                 val finalCallable = funBinding.callable.substitute(substitutionMap)
@@ -681,6 +683,11 @@ class BindingGraph(
                     callable = finalCallable
                 )
             }
+    }
+
+    private fun TypeRef?.checkComponent(request: BindingRequest): Boolean {
+        return this == null || this == owner.componentType ||
+                (owner.isAssisted && request.type == owner.assistedRequests.single().type)
     }
 
     private fun Callable.getCallableDecorators(type: TypeRef): List<DecoratorNode> {

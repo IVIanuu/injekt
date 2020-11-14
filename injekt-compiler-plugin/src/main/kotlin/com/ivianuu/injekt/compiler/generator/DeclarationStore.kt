@@ -577,7 +577,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     ClassId.topLevel(owner.fqNameSafe)
                 )!!
             )).defaultType
-        } else type)
+        } else type).copy(effect = effect++)
 
         Callable(
             name = owner.name,

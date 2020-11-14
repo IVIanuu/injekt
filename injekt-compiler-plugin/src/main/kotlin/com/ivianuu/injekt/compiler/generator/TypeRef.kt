@@ -70,6 +70,7 @@ sealed class TypeRef {
     abstract val expandedType: TypeRef?
     abstract val isStarProjection: Boolean
     abstract val qualifiers: List<QualifierDescriptor>
+    abstract val effect: Int
     private val typeName by unsafeLazy { uniqueTypeName(includeNullability = false) }
     override fun equals(other: Any?) = other is TypeRef && typeName == other.typeName
     override fun hashCode() = typeName.hashCode()
@@ -158,6 +159,8 @@ class KotlinTypeRef(
                 )
             }
     }
+    override val effect: Int
+        get() = 0
 }
 
 class SimpleTypeRef(
@@ -177,7 +180,8 @@ class SimpleTypeRef(
     override val superTypes: List<TypeRef> = emptyList(),
     override val expandedType: TypeRef? = null,
     override val isStarProjection: Boolean = false,
-    override val qualifiers: List<QualifierDescriptor> = emptyList()
+    override val qualifiers: List<QualifierDescriptor> = emptyList(),
+    override val effect: Int = 0
 ) : TypeRef() {
     init {
         check(typeArguments.size == classifier.typeParameters.size) {
@@ -207,7 +211,8 @@ fun TypeRef.copy(
     superTypes: List<TypeRef> = this.superTypes,
     expandedType: TypeRef? = this.expandedType,
     isStarProjection: Boolean = this.isStarProjection,
-    qualifiers: List<QualifierDescriptor> = this.qualifiers
+    qualifiers: List<QualifierDescriptor> = this.qualifiers,
+    effect: Int = this.effect
 ) = SimpleTypeRef(
     classifier,
     isMarkedNullable,
@@ -225,7 +230,8 @@ fun TypeRef.copy(
     superTypes,
     expandedType,
     isStarProjection,
-    qualifiers
+    qualifiers,
+    effect
 )
 
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
@@ -420,6 +426,7 @@ fun TypeRef.isAssignable(superType: TypeRef): Boolean {
 
     if (isStarProjection || superType.isStarProjection) return true
 
+    if (effect != superType.effect) return false
     if (!qualifiers.isAssignable(superType.qualifiers)) return false
     if (isComposableRecursive != superType.isComposableRecursive) return false
 
@@ -442,6 +449,7 @@ fun TypeRef.isSubTypeOf(superType: TypeRef): Boolean {
         superType.isMarkedNullable)
         return true
 
+    if (effect != superType.effect) return false
     if (!qualifiers.isAssignable(superType.qualifiers)) return false
     if (isComposableRecursive != superType.isComposableRecursive) return false
     if (classifier.fqName == superType.classifier.fqName) return true
