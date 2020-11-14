@@ -62,7 +62,7 @@ fun WithMainViewModel(
     viewModelFactory: () -> MainViewModel,
     @FunApi children: @Composable (MainViewModel) -> Unit,
 ) {
-    val viewModel = remember { viewModelFactory() }
+    val viewModel = remember(viewModelFactory)
     children(viewModel)
 }
 
