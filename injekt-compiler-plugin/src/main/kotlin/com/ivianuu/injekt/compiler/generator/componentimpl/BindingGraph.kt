@@ -63,6 +63,8 @@ class BindingGraph(
     private val parentModuleBindingCallables = owner.parent?.graph?.moduleBindingCallables
         ?: emptyList()
     private val moduleDecorators = mutableListOf<DecoratorNode>()
+    private val parentModuleDecorators = owner.parent?.graph?.moduleDecorators
+        ?: emptyList()
 
     private val collections: BindingCollections = collectionsFactory(owner, parent?.collections)
 
@@ -751,16 +753,17 @@ class BindingGraph(
     private fun getDecoratorsForType(providerType: TypeRef): List<DecoratorNode> = buildList<DecoratorNode> {
         this += moduleDecorators
             .filter { providerType.isAssignable(it.callable.type) }
-        this += parent?.getDecoratorsForType(providerType)
-            ?: declarationStore.decoratorsByType(providerType)
-                .map { decorator ->
-                    DecoratorNode(
-                        decorator,
-                        null,
-                        null,
-                        decorator.getDependencies(decorator.type, true)
-                    )
-                }
+        this += parentModuleDecorators
+            .filter { providerType.isAssignable(it.callable.type) }
+        this += declarationStore.decoratorsByType(providerType)
+            .map { decorator ->
+                DecoratorNode(
+                    decorator,
+                    null,
+                    null,
+                    decorator.getDependencies(decorator.type, true)
+                )
+            }
     }
 }
 
