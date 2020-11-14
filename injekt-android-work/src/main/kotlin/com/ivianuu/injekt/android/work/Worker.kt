@@ -37,8 +37,9 @@ annotation class WorkerBinding {
 
 typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
 
+@Suppress("NOTHING_TO_INLINE")
 @MapEntries
-fun defaultWorkers(): Workers = emptyMap()
+inline fun defaultWorkers(): Workers = emptyMap()
 
 @ImplBinding
 class InjektWorkerFactory(private val workers: Workers) : WorkerFactory() {
