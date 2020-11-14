@@ -278,60 +278,74 @@ class ComponentStatements(
     }
 
     private fun mapExpression(binding: MapBindingNode): ComponentExpression = {
-        emit("mutableMapOf<${binding.type.fullyExpandedType.typeArguments[0].render(expanded = true)}, " +
-                "${binding.type.fullyExpandedType.typeArguments[1].render(expanded = true)}>().also ")
-        braced {
-            binding.entries.forEach { (callable, receiver, entryOwner) ->
-                emit("it.putAll(")
-                emitCallableInvocation(
-                    callable,
-                    binding.type,
-                    receiver,
-                    entryOwner,
-                    callable.valueParameters
-                        .mapNotNull { parameter ->
-                            parameter.name to if (parameter.argName != null) {
-                                parameter.type to callable.valueArgs[parameter.argName]!!
-                            } else {
-                                val requests = binding.dependenciesByEntry[callable]!!
-                                val request = requests.first { it.origin.shortName() == parameter.name }
-                                val dependencyBinding = owner.graph.getBinding(request)
-                                if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                                dependencyBinding.type to getBindingExpression(request)
-                            }
+        fun CallableWithReceiver.emit() {
+            emitCallableInvocation(
+                callable,
+                binding.type,
+                receiver,
+                declaredInComponent,
+                callable.valueParameters
+                    .mapNotNull { parameter ->
+                        parameter.name to if (parameter.argName != null) {
+                            parameter.type to callable.valueArgs[parameter.argName]!!
+                        } else {
+                            val requests = binding.dependenciesByEntry[callable]!!
+                            val request = requests.first { it.origin.shortName() == parameter.name }
+                            val dependencyBinding = owner.graph.getBinding(request)
+                            if (dependencyBinding is MissingBindingNode) return@mapNotNull null
+                            dependencyBinding.type to getBindingExpression(request)
                         }
-                        .toMap()
-                )
-                emitLine(")")
+                    }
+                    .toMap()
+            )
+        }
+        if (binding.entries.size == 1) {
+            binding.entries.single().emit()
+        } else {
+            emit("mutableMapOf<${binding.type.fullyExpandedType.typeArguments[0].render(expanded = true)}, " +
+                    "${binding.type.fullyExpandedType.typeArguments[1].render(expanded = true)}>().also ")
+            braced {
+                binding.entries.forEach { entry ->
+                    emit("it.putAll(")
+                    entry.emit()
+                    emitLine(")")
+                }
             }
         }
     }
 
     private fun setExpression(binding: SetBindingNode): ComponentExpression = {
-        emit("mutableSetOf<${binding.type.fullyExpandedType.typeArguments[0].render(expanded = true)}>().also ")
-        braced {
-            binding.elements.forEach { (callable, receiver, elementOwner) ->
-                emit("it.addAll(")
-                emitCallableInvocation(
-                    callable,
-                    binding.type,
-                    receiver,
-                    elementOwner,
-                    callable.valueParameters
-                        .mapNotNull { parameter ->
-                            parameter.name to if (parameter.argName != null) {
-                                parameter.type to callable.valueArgs[parameter.argName]!!
-                            } else {
-                                val requests = binding.dependenciesByElement[callable]!!
-                                val request = requests.first { it.origin.shortName() == parameter.name }
-                                val dependencyBinding = owner.graph.getBinding(request)
-                                if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                                dependencyBinding.type to getBindingExpression(request)
-                            }
+        fun CallableWithReceiver.emit() {
+            emitCallableInvocation(
+                callable,
+                binding.type,
+                receiver,
+                declaredInComponent,
+                callable.valueParameters
+                    .mapNotNull { parameter ->
+                        parameter.name to if (parameter.argName != null) {
+                            parameter.type to callable.valueArgs[parameter.argName]!!
+                        } else {
+                            val requests = binding.dependenciesByElement[callable]!!
+                            val request = requests.first { it.origin.shortName() == parameter.name }
+                            val dependencyBinding = owner.graph.getBinding(request)
+                            if (dependencyBinding is MissingBindingNode) return@mapNotNull null
+                            dependencyBinding.type to getBindingExpression(request)
                         }
-                        .toMap()
-                )
-                emitLine(")")
+                    }
+                    .toMap()
+            )
+        }
+        if (binding.elements.size == 1) {
+            binding.elements.single().emit()
+        } else {
+            emit("mutableSetOf<${binding.type.fullyExpandedType.typeArguments[0].render(expanded = true)}>().also ")
+            braced {
+                binding.elements.forEach { element ->
+                    emit("it.addAll(")
+                    element.emit()
+                    emitLine(")")
+                }
             }
         }
     }
