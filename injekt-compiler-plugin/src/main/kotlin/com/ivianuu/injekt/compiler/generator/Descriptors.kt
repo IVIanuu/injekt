@@ -80,10 +80,6 @@ data class QualifierDescriptor(
     val args: Map<Name, String>
 )
 
-fun QualifierDescriptor.substitute(
-    map: Map<TypeRef, TypeRef>
-): QualifierDescriptor = copy(type = type.substitute(map))
-
 data class ImplBindingDescriptor(
     val callable: Callable,
     val implType: TypeRef,

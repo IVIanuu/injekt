@@ -144,3 +144,26 @@ fun Callable.substitute(map: Map<TypeRef, TypeRef>): Callable {
         typeArgs = typeArgs.mapValues { it.value.substitute(map) }
     )
 }
+
+fun Callable.substituteInputs(map: Map<TypeRef, TypeRef>): Callable {
+    return copy(
+        valueParameters = valueParameters.map {
+            it.copy(type = it.type.substitute(map))
+        }
+    )
+}
+
+fun Callable.newEffect(effect: Int): Callable {
+    val newType = type.copy(effect = effect)
+    val newEffectType = effectType.copy(effect = effect)
+    val map = mapOf(type to newType, effectType to newEffectType)
+    return copy(
+        type = type,
+        effectType = newEffectType,
+        effects = effects.map { it.substituteInputs(map) }
+    )
+}
+
+fun QualifierDescriptor.substitute(
+    map: Map<TypeRef, TypeRef>
+): QualifierDescriptor = copy(type = type.substitute(map))

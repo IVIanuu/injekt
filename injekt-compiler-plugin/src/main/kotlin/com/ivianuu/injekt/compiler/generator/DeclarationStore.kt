@@ -120,9 +120,9 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 functionIndices
                     .map { callableForDescriptor(it) } +
                 propertyIndices
-                    .map { callableForDescriptor(it.getter!!) } + implBindings.flatMap { implBinding ->
-            listOf(implBinding.callable, implBinding.callable.copy(type = implBinding.superType))
-        } + allFunBindings
+                    .map { callableForDescriptor(it.getter!!) } +
+                implBindings
+                    .map { it.callable } + allFunBindings
             .map { it.callable })
             .distinct()
             .filter { it.effects.isNotEmpty() }
@@ -130,14 +130,16 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         while (newBindings.isNotEmpty()) {
             val currentBindings = newBindings.toList()
             newBindings = currentBindings
-                .onEach { binding ->
-                    if (binding.isFunBinding) {
-                        effectFunBindings[binding.effectType] =
+                .map { binding ->
+                    val finalBinding = binding.newEffect(++effect)
+                    if (finalBinding.isFunBinding) {
+                        effectFunBindings[finalBinding.effectType] =
                             allFunBindings
                                 .single { it.callable == binding }
                     } else {
-                        effectBindings[binding.effectType] = binding
+                        effectBindings[finalBinding.effectType] = finalBinding
                     }
+                    finalBinding
                 }
                 .flatMap { it.effects }
             generatedBindings += newBindings
@@ -491,7 +493,11 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     }
                 )
             }
-            .filter { it.contributionKind != null || it.effects.isNotEmpty() }
+            .filter {
+                it.contributionKind != null ||
+                        it.effects.isNotEmpty() ||
+                        it.decorators.isNotEmpty()
+            }
             .map { effectCallable ->
                 val substitutionMap = effectCallable.typeParameters
                     .filter { it.argName != null }
@@ -551,7 +557,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         )
     }
 
-    private val callablesByDescriptor = mutableMapOf<CallableDescriptor, Callable>()
+    private val callablesByDescriptor = mutableMapOf<Any, Callable>()
     fun callableForDescriptor(descriptor: FunctionDescriptor): Callable = callablesByDescriptor.getOrPut(descriptor) {
         val owner = when (descriptor) {
             is ConstructorDescriptor -> descriptor.constructedClass
@@ -579,7 +585,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     ClassId.topLevel(owner.fqNameSafe)
                 )!!
             )).defaultType
-        } else type).copy(effect = effect++)
+        } else type)
 
         Callable(
             name = owner.name,

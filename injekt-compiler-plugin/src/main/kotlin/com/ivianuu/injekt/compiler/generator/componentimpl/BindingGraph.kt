@@ -354,7 +354,7 @@ class BindingGraph(
                 fun indent() {
                     indendation = "$indendation    "
                 }
-                appendLine("No binding found for '${request.type.render()}' in '${owner.nonAssistedComponent.componentType.render()}':")
+                appendLine("No binding found for '${request.type.render()}' ${request.type} in '${owner.nonAssistedComponent.componentType.render()}':")
                 appendLine("${request.origin.orUnknown()} requires '${request.type.render()}'")
                 chain.forEach {
                     appendLine("chain $it" + it.origin.orUnknown())
@@ -403,7 +403,7 @@ class BindingGraph(
 
             error(
                 "Multiple $bindingKind bindings found for '${request.type.render()}' required by ${request.origin} at:\n${
-                    joinToString("\n") { "    '${it.origin.orUnknown()}'" }
+                    joinToString("\n") { "    '${it.origin.orUnknown()}' $it" }
                 }"
             )
         }
@@ -431,7 +431,8 @@ class BindingGraph(
         }
 
         val effectBindings = getEffectBindingsForType(request)
-        binding = effectBindings.mostSpecificOrFail("effect")
+        // todo there should be only one valid effect binding
+        binding = effectBindings.firstOrNull()
         binding?.let {
             resolvedBindings[request.type] = it
             return it
