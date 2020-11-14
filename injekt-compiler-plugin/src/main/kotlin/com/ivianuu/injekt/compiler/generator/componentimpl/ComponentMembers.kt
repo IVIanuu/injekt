@@ -390,50 +390,61 @@ class ComponentStatements(
                 moduleDescriptor.builtIns.getFunction(1)
             ).defaultType.typeWith(listOf(providerType, providerType))
             emitLine()
-            emitLine("listOf<${decoratorFactoryType.render(expanded = true)}>(")
-            indented {
-                decorators.forEachIndexed { index, decorator ->
-                    emitLine("{ _prev ->")
-                    indented {
-                        var dependencyIndex = 0
-                        emitCallableInvocation(
-                            decorator.callable,
-                            decorator.callable.type,
-                            decorator.receiver,
-                            decorator.declaredInComponent,
-                            decorator.callable.valueParameters
-                                .mapNotNull { valueParameter ->
-                                    val pair: Pair<Name, Pair<TypeRef?, ComponentExpression>> = valueParameter.name to (when {
-                                        valueParameter.name in decorator.callable.valueArgs -> {
-                                            (valueParameter.type to decorator.callable.valueArgs[valueParameter.name]!!)
-                                        }
-                                        valueParameter.type == decorator.callable.type -> {
-                                            (valueParameter.type to { emit("_prev") })
-                                        }
-                                        else -> {
-                                            val dependencyRequest = decorator.dependencies[dependencyIndex++]
-                                            val dependencyBinding = owner.graph.getBinding(dependencyRequest)
-                                            if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                                            (dependencyBinding.type to getBindingExpression(dependencyRequest))
-                                        }
-                                    })
-                                    pair
+            fun DecoratorNode.emit(prevExpression: ComponentExpression) {
+                var dependencyIndex = 0
+                emitCallableInvocation(
+                    callable,
+                    callable.type,
+                    receiver,
+                    declaredInComponent,
+                    callable.valueParameters
+                        .mapNotNull { valueParameter ->
+                            val pair: Pair<Name, Pair<TypeRef?, ComponentExpression>> = valueParameter.name to (when {
+                                valueParameter.name in callable.valueArgs -> {
+                                    (valueParameter.type to callable.valueArgs[valueParameter.name]!!)
                                 }
-                                .toMap()
-                        )
+                                valueParameter.type == callable.type -> {
+                                    (valueParameter.type to prevExpression)
+                                }
+                                else -> {
+                                    val dependencyRequest = dependencies[dependencyIndex++]
+                                    val dependencyBinding = owner.graph.getBinding(dependencyRequest)
+                                    if (dependencyBinding is MissingBindingNode) return@mapNotNull null
+                                    (dependencyBinding.type to getBindingExpression(dependencyRequest))
+                                }
+                            })
+                            pair
+                        }
+                        .toMap()
+                )
+            }
+            if (decorators.size == 1) {
+                decorators.single().emit {
+                    braced {
+                        create()
                     }
-                    emit(" }")
-                    if (index != decorators.lastIndex) emitLine(", ")
                 }
+            } else {
+                emitLine("listOf<${decoratorFactoryType.render(expanded = true)}>(")
+                indented {
+                    decorators.forEachIndexed { index, decorator ->
+                        emitLine("{ _prev ->")
+                        indented {
+                            decorator.emit { emit("_prev") }
+                        }
+                        emit(" }")
+                        if (index != decorators.lastIndex) emitLine(", ")
+                    }
+                }
+                emitLine(")")
+                emit(".fold(")
+                braced {
+                    create()
+                }
+                emitLine(") { acc, next -> ")
+                emitLine("next(acc)")
+                emitLine("}")
             }
-            emitLine(")")
-            emit(".fold(")
-            braced {
-                create()
-            }
-            emitLine(") { acc, next -> ")
-            emitLine("next(acc)")
-            emitLine("}")
         }
         val name = "${type.uniqueTypeName()}_Provider".asNameId()
         val providerProperty = ComponentCallable(
