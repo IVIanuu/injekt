@@ -30,6 +30,7 @@ import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.copy
 import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.fullyExpandedType
+import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
@@ -248,6 +249,7 @@ class ComponentStatements(
 
         emitCallableInvocation(
             callable = binding.callable,
+            type = binding.type.fullyExpandedType.typeArguments.last(),
             receiver = null,
             owner = null,
             arguments = binding.callable.valueParameters.mapNotNull { valueParameter ->
@@ -256,12 +258,12 @@ class ComponentStatements(
                         if (valueParameter.isExtensionReceiver) emit("this")
                         else emit(valueParameter.name)
                     }
-                    valueParameter.name to expression
+                    valueParameter.name to (null to expression)
                 } else {
                     val request = valueParameter.toBindingRequest(binding.callable, emptyMap())
                     val dependencyBinding = owner.graph.getBinding(request)
                     if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                    valueParameter.name to getBindingExpression(request)
+                    valueParameter.name to (dependencyBinding to getBindingExpression(request))
                 }
             }.toMap()
         )
@@ -274,25 +276,26 @@ class ComponentStatements(
     }
 
     private fun mapExpression(binding: MapBindingNode): ComponentExpression = {
-        emit("mutableMapOf<${binding.type.fullyExpandedType.typeArguments[0]}, " +
-                "${binding.type.fullyExpandedType.typeArguments[1]}>().also ")
+        emit("mutableMapOf<${binding.type.fullyExpandedType.typeArguments[0].render(expanded = true)}, " +
+                "${binding.type.fullyExpandedType.typeArguments[1].render(expanded = true)}>().also ")
         braced {
             binding.entries.forEach { (callable, receiver, entryOwner) ->
                 emit("it.putAll(")
                 emitCallableInvocation(
                     callable,
+                    binding.type,
                     receiver,
                     entryOwner,
                     callable.valueParameters
                         .mapNotNull { parameter ->
                             parameter.name to if (parameter.argName != null) {
-                                callable.valueArgs[parameter.argName]
+                                null to callable.valueArgs[parameter.argName]!!
                             } else {
                                 val requests = binding.dependenciesByEntry[callable]!!
                                 val request = requests.first { it.origin.shortName() == parameter.name }
                                 val dependencyBinding = owner.graph.getBinding(request)
                                 if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                                getBindingExpression(request)
+                                dependencyBinding to getBindingExpression(request)
                             }
                         }
                         .toMap()
@@ -303,24 +306,25 @@ class ComponentStatements(
     }
 
     private fun setExpression(binding: SetBindingNode): ComponentExpression = {
-        emit("mutableSetOf<${binding.type.fullyExpandedType.typeArguments[0]}>().also ")
+        emit("mutableSetOf<${binding.type.fullyExpandedType.typeArguments[0].render(expanded = true)}>().also ")
         braced {
             binding.elements.forEach { (callable, receiver, elementOwner) ->
                 emit("it.addAll(")
                 emitCallableInvocation(
                     callable,
+                    binding.type,
                     receiver,
                     elementOwner,
                     callable.valueParameters
                         .mapNotNull { parameter ->
                             parameter.name to if (parameter.argName != null) {
-                                callable.valueArgs[parameter.argName]
+                                null to callable.valueArgs[parameter.argName]!!
                             } else {
                                 val requests = binding.dependenciesByElement[callable]!!
                                 val request = requests.first { it.origin.shortName() == parameter.name }
                                 val dependencyBinding = owner.graph.getBinding(request)
                                 if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                                getBindingExpression(request)
+                                dependencyBinding to getBindingExpression(request)
                             }
                         }
                         .toMap()
@@ -333,19 +337,20 @@ class ComponentStatements(
     private fun callableExpression(binding: CallableBindingNode): ComponentExpression = {
         emitCallableInvocation(
             binding.callable,
+            binding.type,
             binding.receiver,
             binding.declaredInComponent,
             binding.callable.valueParameters
                 .mapNotNull { parameter ->
                     parameter.name to if (parameter.argName != null) {
-                        binding.callable.valueArgs[parameter.argName]
+                        null to binding.callable.valueArgs[parameter.argName]!!
                     } else {
                         val request = binding.dependencies.single {
                             it.origin.shortName() == parameter.name
                         }
                         val dependencyBinding = owner.graph.getBinding(request)
                         if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                        getBindingExpression(request)
+                        dependencyBinding to getBindingExpression(request)
                     }
                 }
                 .toMap()
@@ -388,24 +393,26 @@ class ComponentStatements(
                 var dependencyIndex = 0
                 emitCallableInvocation(
                     decorator.callable,
+                    decorator.callable.type,
                     decorator.receiver,
-                    null,
+                    decorator.declaredInComponent,
                     decorator.callable.valueParameters
                         .mapNotNull { valueParameter ->
-                            valueParameter.name to (when {
+                            val pair: Pair<Name, Pair<BindingNode?, ComponentExpression>> = valueParameter.name to (when {
                                 valueParameter.name in decorator.callable.valueArgs -> {
-                                    decorator.callable.valueArgs[valueParameter.name]
+                                    (null to decorator.callable.valueArgs[valueParameter.name]!!)
                                 }
                                 valueParameter.type == decorator.callable.type -> {
-                                    { emit("_prev") }
+                                    (null to { emit("_prev") })
                                 }
                                 else -> {
                                     val dependencyRequest = decorator.dependencies[dependencyIndex++]
                                     val dependencyBinding = owner.graph.getBinding(dependencyRequest)
                                     if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                                    getBindingExpression(dependencyRequest)
+                                    (dependencyBinding to getBindingExpression(dependencyRequest))
                                 }
                             })
+                            pair
                         }
                         .toMap()
                 )
@@ -550,7 +557,7 @@ class ComponentStatements(
             } else {
                 var current = owner
                 while (current != component) {
-                    emit("parent")
+                    emit("_parent")
                     current = current.parent!!
                     if (current != component) emit(".")
                 }
@@ -560,17 +567,41 @@ class ComponentStatements(
 
     private fun CodeBuilder.emitCallableInvocation(
         callable: Callable,
+        type: TypeRef,
         receiver: ComponentExpression?,
         owner: ComponentImpl?,
-        arguments: Map<Name, ComponentExpression?>
+        arguments: Map<Name, Pair<BindingNode?, ComponentExpression>?>
     ) {
         fun emitArguments() {
             if (callable.isCall) {
-                if (callable.typeArgs.isNotEmpty()) {
+                if (callable.typeParameters.isNotEmpty()) {
+                    val substitutionMap = getSubstitutionMap(
+                        callable.typeParameters
+                            .mapNotNull { (callable.typeArgs[it] ?: return@mapNotNull null) to it.defaultType } +
+                                listOf(type to callable.originalType) +
+                                callable.valueParameters
+                                    .mapNotNull {
+                                        val argumentType = arguments[it.name]?.first?.type
+                                        if (argumentType != null) {
+                                            argumentType to it.originalType
+                                        } else null
+                                    },
+                        callable.typeParameters
+                    )
+
+                    check(callable.typeParameters.all { it in substitutionMap }) {
+                        "Couldn't resolve all type arguments ${substitutionMap.map {
+                            it.key.fqName to it.value
+                        }} missing ${callable.typeParameters.filter {
+                            it !in substitutionMap
+                        }.map { it.fqName }} in $callable"
+                    }
+
                     emit("<")
-                    callable.typeArgs.forEachIndexed { index, typeRef ->
-                        emit(typeRef.render())
-                        if (index != callable.typeArgs.lastIndex) emit(", ")
+                    callable.typeParameters.forEachIndexed { index, typeParameter ->
+                        val typeArgument = substitutionMap[typeParameter]!!
+                        emit(typeArgument.render(expanded = true))
+                        if (index != callable.typeParameters.lastIndex) emit(", ")
                     }
                     emit(">")
                 }
@@ -585,7 +616,7 @@ class ComponentStatements(
                         val argument = arguments[parameter.name]
                         if (argument != null) {
                             emit("${parameter.name} = ")
-                            argument()
+                            argument.second(this)
                             if (argumentsIndex++ != nonNullArgumentsCount) emit(", ")
                         }
                         else if (!parameter.hasDefault) {
@@ -608,7 +639,7 @@ class ComponentStatements(
             braced {
                 if (callable.valueParameters.any { it.isExtensionReceiver }) {
                     emit("with(")
-                    emitOrNull(arguments[callable.valueParameters.first().name])
+                    emitOrNull(arguments[callable.valueParameters.first().name]?.second)
                     emit(") ")
                     braced {
                         emit(callable.name)
@@ -622,7 +653,7 @@ class ComponentStatements(
         } else {
             if (callable.valueParameters.any { it.isExtensionReceiver }) {
                 emit("with(")
-                emitOrNull(arguments[callable.valueParameters.first().name])
+                emitOrNull(arguments[callable.valueParameters.first().name]?.second)
                 emit(") ")
                 braced {
                     emit(callable.name)

@@ -109,11 +109,14 @@ class TypeTranslator(
                     ?: file.packageFqName.child(simpleName)
                 val generatedClassifier = declarationStore.generatedClassifierFor(fqName)
                 if (generatedClassifier != null) {
-                    return type.copy(
+                    val base = type.copy(
                         classifier = generatedClassifier,
                         typeArguments = type.typeArguments.map { fixType(it, file) },
-                        expandedType = type.expandedType?.let { fixType(it, file) }
+                        expandedType = generatedClassifier.defaultType.expandedType
+
                     )
+                    val substitutionMap = getSubstitutionMap(listOf(base to generatedClassifier.defaultType))
+                    return base.substitute(substitutionMap)
                 } else {
                     errorCollector.add(
                         RuntimeException(

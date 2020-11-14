@@ -130,8 +130,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             val currentBindings = newBindings.toList()
             newBindings = currentBindings
                 .onEach { binding ->
-                    if ((binding.contributionKind == null && binding.effects.isNotEmpty()) ||
-                        binding.contributionKind == Callable.ContributionKind.BINDING) {
+                    if ((binding.contributionKind == null && binding.effects.isNotEmpty())) {
                         if (binding.isFunBinding) {
                             effectFunBindings[binding.effectType] =
                                 allFunBindings
@@ -199,19 +198,20 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .filter { it.hasAnnotation(InjektFqNames.FunBinding) }
             .map {
                 val callable = callableForDescriptor(it)
+                val type = (generatedClassifiers[callable.fqName] ?:typeTranslator.toClassifierRef(
+                    module.findClassifierAcrossModuleDependencies(
+                        ClassId.topLevel(callable.fqName)
+                    )!!
+                )).defaultType
                 FunBindingDescriptor(
                     callable,
-                    (generatedClassifiers[callable.fqName] ?:
-                    typeTranslator.toClassifierRef(
-                        module.findClassifierAcrossModuleDependencies(
-                            ClassId.topLevel(callable.fqName)
-                        )!!
-                    )).defaultType
+                    type,
+                    type
                 )
             }
     }
     private val funBindingsByType = mutableMapOf<TypeRef, List<FunBindingDescriptor>>()
-    fun funBindingsByType(type: TypeRef): List<FunBindingDescriptor> = funBindingsByType.getOrPut(type) {
+    fun funBindingsForType(type: TypeRef): List<FunBindingDescriptor> = funBindingsByType.getOrPut(type) {
         allFunBindings
             .filter { type.isAssignable(it.type) }
     }
@@ -226,18 +226,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .filter { it.contributionKind == Callable.ContributionKind.DECORATOR }
     }
     private val decoratorsForType = mutableMapOf<TypeRef, List<Callable>>()
-    fun decoratorsByType(type: TypeRef, callableKind: Callable.CallableKind): List<Callable> = decoratorsForType.getOrPut(type) {
-        val providerType = when (callableKind) {
-            Callable.CallableKind.DEFAULT -> typeTranslator.toClassifierRef(
-                module.builtIns.getFunction(0)
-            ).defaultType.typeWith(listOf(type))
-            Callable.CallableKind.SUSPEND -> typeTranslator.toClassifierRef(
-                module.builtIns.getSuspendFunction(0)
-            ).defaultType.typeWith(listOf(type))
-            Callable.CallableKind.COMPOSABLE -> typeTranslator.toClassifierRef(
-                module.builtIns.getFunction(0)
-            ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
-        }
+    fun decoratorsByType(providerType: TypeRef): List<Callable> = decoratorsForType.getOrPut(providerType) {
         allDecorators
             .filter { providerType.isAssignable(it.type) }
     }
@@ -455,11 +444,12 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         it to (typeArgs[it.argName]
                             ?: error("Couldn't get type argument for ${it.argName} in $annotation"))
                     }
-                    .toMap().toMutableMap()
-
-                substitutionMap.forEach { (typeParameter, typeArgument) ->
-                    substitutionMap += typeArgument.getSubstitutionMap(typeParameter.defaultType)
-                }
+                    .toMap(mutableMapOf())
+                substitutionMap += getSubstitutionMap(
+                    substitutionMap.map {
+                        it.value to it.key.defaultType
+                    }
+                )
 
                 val callableValueArgs = callable.valueParameters
                     .filter { it.argName != null }
@@ -473,10 +463,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     }
                     .toMap()
 
-                callable.substitute(substitutionMap)
-                    .copy(
-                        valueArgs = callableValueArgs
-                    )
+                callable.substitute(substitutionMap).copy(valueArgs = callableValueArgs)
             }
     }
 
@@ -506,23 +493,22 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             }
             .filter { it.contributionKind != null || it.effects.isNotEmpty() }
             .map { effectCallable ->
-                val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
-                substitutionMap += effectCallable.typeParameters
+                val substitutionMap = effectCallable.typeParameters
                     .filter { it.argName != null }
                     .map {
                         it to (typeArgs[it.argName]
                             ?: error("Couldn't get type argument for ${it.argName} in $origin"))
                     }
-                    .toMap()
+                    .toMap(mutableMapOf())
 
                 // todo there might be a better way to resolve everything
                 val subjectTypeParameter = effectCallable.typeParameters
                     .first { it.argName == null }
-
-                substitutionMap += bindingType.getSubstitutionMap(subjectTypeParameter.defaultType)
-                substitutionMap.toList().forEach { (typeParameter, typeArgument) ->
-                    substitutionMap += typeArgument.getSubstitutionMap(typeParameter.defaultType)
-                }
+                substitutionMap += getSubstitutionMap(
+                    listOf(bindingType to subjectTypeParameter.defaultType) +
+                            substitutionMap
+                                .map { it.value to it.key.defaultType }
+                )
 
                 check(effectCallable.typeParameters.all { it in substitutionMap }) {
                     "Couldn't resolve all type arguments ${substitutionMap.map {
@@ -531,7 +517,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         it !in substitutionMap
                     }.map { it.fqName }} in $origin"
                 }
-                substitutionMap[subjectTypeParameter] = bindingType
 
                 val callableValueArgs = effectCallable.valueParameters
                     .filter { it.argName != null }
@@ -548,8 +533,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 effectCallable.substitute(substitutionMap)
                     .copy(
                         valueArgs = callableValueArgs,
-                        typeArgs = effectCallable.typeParameters
-                            .map { substitutionMap[it]!! }
+                        typeArgs = substitutionMap
                     )
             }
     }
@@ -593,7 +577,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     ClassId.topLevel(owner.fqNameSafe)
                 )!!
             )).defaultType
-        } else type).copy(effect = effect++)
+        } else type)
 
         Callable(
             name = owner.name,
@@ -613,7 +597,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 ?.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
             contributionKind = when {
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
-                owner.hasAnnotation(InjektFqNames.Decorator) -> Callable.ContributionKind.DECORATOR
+                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Decorator) -> Callable.ContributionKind.DECORATOR
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.ContributionKind.MAP_ENTRIES
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) -> Callable.ContributionKind.SET_ELEMENTS
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) -> Callable.ContributionKind.MODULE
@@ -629,8 +613,10 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             },
             valueParameters = listOfNotNull(
                 descriptor.extensionReceiverParameter?.let {
+                    val parameterType = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) }
                     ValueParameterRef(
-                        type = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
+                        type = parameterType,
+                        originalType = parameterType,
                         isExtensionReceiver = true,
                         name = "_receiver".asNameId(),
                         inlineKind = ValueParameterRef.InlineKind.NONE,
@@ -641,8 +627,10 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     )
                 }
             ) + descriptor.valueParameters.map {
+                val parameterType = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) }
                 ValueParameterRef(
-                    type = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) },
+                    type = parameterType,
+                    originalType = parameterType,
                     isExtensionReceiver = false,
                     name = it.name,
                     inlineKind = when {
@@ -688,7 +676,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 ?.let { typeTranslator.toClassifierRef(it) },
             isFunBinding = descriptor.hasAnnotation(InjektFqNames.FunBinding),
             valueArgs = emptyMap(),
-            typeArgs = emptyList()
+            typeArgs = emptyMap()
         )
     }
 
@@ -703,10 +691,13 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 type = type,
                 callables = descriptor.unsubstitutedMemberScope.getContributedDescriptors().filter {
                     it.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
+                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.Decorator) ||
+                            it.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Decorator) ||
+                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.Effect) ||
+                            it.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
-                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) ||
-                            it.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect)
+                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.Module)
                 }
                     .mapNotNull {
                         when (it) {

@@ -196,14 +196,14 @@ class FunBindingGenerator(
                     emit("noinline ")
                 }
                 emit("${if (valueParameter == descriptor.extensionReceiverParameter) "_receiver"
-                else valueParameter.name.asString()}: ${typeTranslator.toTypeRef(valueParameter.type, descriptor)}")
+                else valueParameter.name.asString()}: ${typeTranslator.toTypeRef(valueParameter.type, descriptor).render()}")
                 if (valueParameter is ValueParameterDescriptor && valueParameter.declaresDefaultValue()) {
                     emit(" = ${(valueParameter.findPsi() as KtParameter).defaultValue!!.text}")
                 }
                 if (index != funApiValueParameters.lastIndex) emit(", ")
 
             }
-            emit("): ${expandedFunType.typeArguments.last()} ")
+            emit("): ${expandedFunType.typeArguments.last().render()} ")
             if (descriptor.typeParameters.isNotEmpty()) {
                 emit(" where ")
                 val typeParametersWithUpperBound = descriptor.typeParameters
@@ -217,7 +217,7 @@ class FunBindingGenerator(
                             }
                     }
                 typeParametersWithUpperBound.forEachIndexed { index, (typeParameter, upperBound) ->
-                    emit("${typeParameter.fqName.shortName()} : $upperBound")
+                    emit("${typeParameter.fqName.shortName()} : ${upperBound.render()}")
                     if (index != typeParametersWithUpperBound.lastIndex) emit(", ")
                 }
                 emitSpace()

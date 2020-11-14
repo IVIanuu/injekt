@@ -67,7 +67,9 @@ class ComponentImpl(
     private val superComponentConstructor = declarationStore.constructorForComponent(componentType)
 
     private val superConstructorParameters = if (superComponentConstructor != null) {
-        val substitutionMap = componentType.getSubstitutionMap(componentType.classifier.defaultType)
+        val substitutionMap = getSubstitutionMap(
+            listOf(componentType to componentType.classifier.defaultType)
+        )
         superComponentConstructor
             .valueParameters
             .map { it.copy(type = it.type.substitute(substitutionMap)) }
@@ -120,7 +122,7 @@ class ComponentImpl(
         if (parent != null || inputTypes.isNotEmpty()) {
             emit("(")
             if (parent != null) {
-                emit("internal val parent: ${parent.name}")
+                emit("internal val _parent: ${parent.name}")
                 if (inputTypes.isNotEmpty()) emit(", ")
             }
             inputTypes.forEachIndexed { index, input ->

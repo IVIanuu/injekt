@@ -44,7 +44,7 @@ data class Callable(
     val receiver: ClassifierRef?,
     val isFunBinding: Boolean,
     val valueArgs: Map<Name, ComponentExpression>,
-    val typeArgs: List<TypeRef>
+    val typeArgs: Map<ClassifierRef, TypeRef>
 ) {
     enum class ContributionKind {
         BINDING, DECORATOR, MAP_ENTRIES, SET_ELEMENTS, MODULE
@@ -56,6 +56,7 @@ data class Callable(
 
 data class ValueParameterRef(
     val type: TypeRef,
+    val originalType: TypeRef,
     val isExtensionReceiver: Boolean,
     val inlineKind: InlineKind,
     val name: Name,
@@ -79,6 +80,10 @@ data class QualifierDescriptor(
     val args: Map<Name, String>
 )
 
+fun QualifierDescriptor.substitute(
+    map: Map<ClassifierRef, TypeRef>
+): QualifierDescriptor = copy(type = type.substitute(map))
+
 data class ImplBindingDescriptor(
     val callable: Callable,
     val implType: TypeRef,
@@ -87,5 +92,6 @@ data class ImplBindingDescriptor(
 
 data class FunBindingDescriptor(
     val callable: Callable,
-    val type: TypeRef
+    val type: TypeRef,
+    val originalType: TypeRef
 )
