@@ -133,7 +133,7 @@ val TypeRef.callableKind: Callable.CallableKind get() = when {
     else -> Callable.CallableKind.DEFAULT
 }
 
-fun Callable.substitute(map: Map<ClassifierRef, TypeRef>): Callable {
+fun Callable.substitute(map: Map<TypeRef, TypeRef>): Callable {
     return copy(
         type = type.substitute(map),
         effectType = effectType.substitute(map),

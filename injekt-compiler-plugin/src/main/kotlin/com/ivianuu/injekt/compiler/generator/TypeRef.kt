@@ -234,27 +234,31 @@ fun TypeRef.copy(
     effect
 )
 
-fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
-    map[classifier]?.let {
-        // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
-        return it.copy(qualifiers = qualifiers)
-    }
-
-    val substituted = copy(
-        typeArguments = typeArguments.map { it.substitute(map) },
-        expandedType = expandedType?.substitute(map),
-        qualifiers = qualifiers.map { it.substitute(map) }
-    )
-
-    if (classifier.isTypeParameter && substituted == this) {
-        val superType = classifier.defaultType.superTypes.singleOrNull() // todo support multiple
-        if (superType != null) {
-            val substitutedSuperType = superType.substitute(map)
-            if (substitutedSuperType != superType) return substitutedSuperType
+fun TypeRef.substitute(map: Map<TypeRef, TypeRef>): TypeRef {
+    fun TypeRef.substituteInner(unqualifiedMap: Map<TypeRef, TypeRef>): TypeRef {
+        unqualifiedMap[this.copy(qualifiers = emptyList())]?.let {
+            // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
+            return it.copy(qualifiers = qualifiers)
         }
+
+        val substituted = copy(
+            typeArguments = typeArguments.map { it.substituteInner(unqualifiedMap) },
+            expandedType = expandedType?.substituteInner(unqualifiedMap),
+            qualifiers = qualifiers.map { it.substitute(unqualifiedMap) }
+        )
+
+        if (classifier.isTypeParameter && substituted == this) {
+            val superType = classifier.defaultType.superTypes.singleOrNull() // todo support multiple
+            if (superType != null) {
+                val substitutedSuperType = superType.substituteInner(unqualifiedMap)
+                if (substitutedSuperType != superType) return substitutedSuperType
+            }
+        }
+
+        return substituted
     }
 
-    return substituted
+    return substituteInner(map.mapKeys { it.key.copy(qualifiers = emptyList()) })
 }
 
 val STAR_PROJECTION_TYPE = SimpleTypeRef(
@@ -358,15 +362,15 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
 fun getSubstitutionMap(
     pairs: List<Pair<TypeRef, TypeRef>>,
     typeParameters: List<ClassifierRef> = emptyList()
-): Map<ClassifierRef, TypeRef> {
-    val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
+): Map<TypeRef, TypeRef> {
+    val substitutionMap = mutableMapOf<TypeRef, TypeRef>()
 
     fun visitType(
         thisType: TypeRef,
         baseType: TypeRef,
     ) {
         if (baseType.classifier.isTypeParameter) {
-            substitutionMap[baseType.classifier] = thisType
+            substitutionMap[baseType] = thisType
             baseType.superTypes
                 .map { thisType.expandTo(it.classifier) to it }
                 .forEach { (expandedThisType, baseSuperType) ->
@@ -381,32 +385,32 @@ fun getSubstitutionMap(
         }
     }
 
-    var lastSubstitutionMap: Map<ClassifierRef, TypeRef>? = null
+    var lastSubstitutionMap: Map<TypeRef, TypeRef>? = null
     while (lastSubstitutionMap != substitutionMap) {
         pairs.forEach { visitType(it.first, it.second) }
-        substitutionMap.forEach { visitType(it.value, it.key.defaultType) }
+        substitutionMap.forEach { visitType(it.value, it.key) }
         lastSubstitutionMap = substitutionMap.toMap()
     }
 
     typeParameters
-        .filter { it !in substitutionMap }
+        .filter { it.defaultType !in substitutionMap }
         .forEach { typeParameter ->
-            substitutionMap[typeParameter] =
+            substitutionMap[typeParameter.defaultType] =
                 typeParameter.defaultType.substitute(substitutionMap)
         }
 
     return substitutionMap
 }
 
-fun TypeRef.getStarSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRef> {
-    val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
+fun TypeRef.getStarSubstitutionMap(baseType: TypeRef): Map<TypeRef, TypeRef> {
+    val substitutionMap = mutableMapOf<TypeRef, TypeRef>()
 
     fun visitType(
         thisType: TypeRef,
         baseType: TypeRef,
     ) {
         if (baseType.isStarProjection && !thisType.isStarProjection && !thisType.classifier.isTypeParameter) {
-            substitutionMap[baseType.classifier] = thisType
+            substitutionMap[baseType] = thisType
         } else {
             thisType.typeArguments.zip(baseType.typeArguments).forEach {
                 visitType(it.first, it.second)

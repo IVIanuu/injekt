@@ -112,7 +112,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     }
 
     private val effectCallables: List<Callable> by unsafeLazy {
-        val generatedBindings = mutableSetOf<Callable>()
+        val generatedBindings = mutableListOf<Callable>()
 
         var newBindings = (classIndices
             .mapNotNull { it.getInjectConstructor() }
@@ -124,20 +124,19 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             listOf(implBinding.callable, implBinding.callable.copy(type = implBinding.superType))
         } + allFunBindings
             .map { it.callable })
+            .distinct()
             .filter { it.effects.isNotEmpty() }
 
         while (newBindings.isNotEmpty()) {
             val currentBindings = newBindings.toList()
             newBindings = currentBindings
                 .onEach { binding ->
-                    if ((binding.contributionKind == null && binding.effects.isNotEmpty())) {
-                        if (binding.isFunBinding) {
-                            effectFunBindings[binding.effectType] =
-                                allFunBindings
-                                    .single { it.callable == binding }
-                        } else {
-                            effectBindings[binding.effectType] = binding
-                        }
+                    if (binding.isFunBinding) {
+                        effectFunBindings[binding.effectType] =
+                            allFunBindings
+                                .single { it.callable == binding }
+                    } else {
+                        effectBindings[binding.effectType] = binding
                     }
                 }
                 .flatMap { it.effects }
@@ -300,6 +299,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
             fun TypeRef.collect(typeArguments: List<TypeRef>) {
                 val substitutionMap = classifier.typeParameters
+                    .map { it.defaultType }
                     .zip(typeArguments)
                     .toMap()
 
@@ -441,13 +441,13 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 val substitutionMap = callable.typeParameters
                     .filter { it.argName != null }
                     .map {
-                        it to (typeArgs[it.argName]
+                        it.defaultType to (typeArgs[it.argName]
                             ?: error("Couldn't get type argument for ${it.argName} in $annotation"))
                     }
                     .toMap(mutableMapOf())
                 substitutionMap += getSubstitutionMap(
                     substitutionMap.map {
-                        it.value to it.key.defaultType
+                        it.value to it.key
                     }
                 )
 
@@ -496,7 +496,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 val substitutionMap = effectCallable.typeParameters
                     .filter { it.argName != null }
                     .map {
-                        it to (typeArgs[it.argName]
+                        it.defaultType to (typeArgs[it.argName]
                             ?: error("Couldn't get type argument for ${it.argName} in $origin"))
                     }
                     .toMap(mutableMapOf())
@@ -504,17 +504,18 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 // todo there might be a better way to resolve everything
                 val subjectTypeParameter = effectCallable.typeParameters
                     .first { it.argName == null }
+                    .defaultType
                 substitutionMap += getSubstitutionMap(
-                    listOf(bindingType to subjectTypeParameter.defaultType) +
+                    listOf(bindingType to subjectTypeParameter) +
                             substitutionMap
-                                .map { it.value to it.key.defaultType }
+                                .map { it.value to it.key }
                 )
 
-                check(effectCallable.typeParameters.all { it in substitutionMap }) {
+                check(effectCallable.typeParameters.all { it.defaultType in substitutionMap }) {
                     "Couldn't resolve all type arguments ${substitutionMap.map {
-                        it.key.fqName to it.value
+                        it.key.classifier.fqName to it.value
                     }} missing ${effectCallable.typeParameters.filter {
-                        it !in substitutionMap
+                        it.defaultType !in substitutionMap
                     }.map { it.fqName }} in $origin"
                 }
 
@@ -534,6 +535,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     .copy(
                         valueArgs = callableValueArgs,
                         typeArgs = substitutionMap
+                            .mapKeys { it.key.classifier }
                     )
             }
     }
@@ -685,6 +687,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         return moduleByType.getOrPut(type) {
             val descriptor = classDescriptorForFqName(type.classifier.fqName)
             val moduleSubstitutionMap = type.classifier.typeParameters
+                .map { it.defaultType }
                 .zip(type.typeArguments)
                 .toMap()
             ModuleDescriptor(
@@ -714,6 +717,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         if ((descriptor.containingDeclaration as? ClassDescriptor)
                                 ?.hasAnnotation(InjektFqNames.Effect) == true) {
                             substitutionMap += callable.typeParameters
+                                .map { it.defaultType }
                                 .zip(moduleSubstitutionMap.values)
                         }
 

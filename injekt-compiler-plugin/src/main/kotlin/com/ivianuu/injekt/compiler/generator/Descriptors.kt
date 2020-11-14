@@ -81,7 +81,7 @@ data class QualifierDescriptor(
 )
 
 fun QualifierDescriptor.substitute(
-    map: Map<ClassifierRef, TypeRef>
+    map: Map<TypeRef, TypeRef>
 ): QualifierDescriptor = copy(type = type.substitute(map))
 
 data class ImplBindingDescriptor(

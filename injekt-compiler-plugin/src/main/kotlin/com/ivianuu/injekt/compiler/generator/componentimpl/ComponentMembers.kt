@@ -589,17 +589,17 @@ class ComponentStatements(
                         callable.typeParameters
                     )
 
-                    check(callable.typeParameters.all { it in substitutionMap }) {
+                    check(callable.typeParameters.all { it.defaultType in substitutionMap }) {
                         "Couldn't resolve all type arguments ${substitutionMap.map {
-                            it.key.fqName to it.value
+                            it.key.classifier.fqName to it.value
                         }} missing ${callable.typeParameters.filter {
-                            it !in substitutionMap
+                            it.defaultType !in substitutionMap
                         }.map { it.fqName }} in $callable"
                     }
 
                     emit("<")
                     callable.typeParameters.forEachIndexed { index, typeParameter ->
-                        val typeArgument = substitutionMap[typeParameter]!!
+                        val typeArgument = substitutionMap[typeParameter.defaultType]!!
                         emit(typeArgument.render(expanded = true))
                         if (index != callable.typeParameters.lastIndex) emit(", ")
                     }
