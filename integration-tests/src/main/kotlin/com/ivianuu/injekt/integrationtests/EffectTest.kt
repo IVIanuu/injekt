@@ -885,33 +885,56 @@ class EffectTest {
     @Test
     fun testEffectUsesAnotherEffect() = codegen(
         """
-            @Effect
-            annotation class A {
-                companion object {
-                    @Binding
-                    fun <T : CharSequence> asCharSequence(instance: T): CharSequence = instance
-                    @B
-                    fun <T : CharSequence> b(instance: T): CharSequence = instance
-                }
-            }
+            typealias UiDecorators = Set<UiDecorator>
+            data class UiDecorator(
+                val key: String,
+                val dependencies: Set<String>,
+                val dependents: Set<String>,
+                val content: @Composable (@Composable () -> Unit) -> Unit
+            )
             
             @Effect
-            annotation class B {
+            annotation class UiDecoratorBinding(
+                val key: String,
+                val dependencies: Array<String> = [],
+                val dependents: Array<String> = []
+            ) {
                 companion object {
-                    @Binding
-                    fun <T : Any> any(instance: T): Any = instance
+                    @SetElements
+                    fun <T : @Composable (@Composable () -> Unit) -> Unit> uiDecoratorIntoSet(
+                        @Arg("key") key: String,
+                        @Arg("dependencies") dependencies: Array<String>?,
+                        @Arg("dependents") dependents: Array<String>?,
+                        content: T
+                    ): UiDecorators = setOf(UiDecorator(
+                        key = key,
+                        dependencies = dependencies?.toSet() ?: emptySet(),
+                        dependents = dependents?.toSet() ?: emptySet(),
+                        content = content as @Composable (@Composable () -> Unit) -> Unit
+                    ))
+                }
+            }
+                        
+            @Effect
+            annotation class AppThemeBinding {
+                companion object {
+                    @UiDecoratorBinding("app_theme", dependencies = ["system_bars"])
+                    fun <T : @Composable (@Composable () -> Unit) -> Unit> uiDecorator(
+                        instance: T
+                    ) = instance
                 }
             }
 
-            @A
-            @Binding
-            fun string() = "hello"
+            @AppThemeBinding
+            @FunBinding
+            @Composable
+            fun SampleTheme(@FunApi children: @Composable () -> Unit) {
+                children()
+            }
 
             @Component
             abstract class MyComponent {
-                abstract val string: String
-                abstract val charSequence: CharSequence
-                abstract val any: Any
+                abstract val uiDecorators: UiDecorators
             }
         """
     )

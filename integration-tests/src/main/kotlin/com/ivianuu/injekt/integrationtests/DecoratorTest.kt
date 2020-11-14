@@ -7,7 +7,6 @@ import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertSame
-import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class DecoratorTest {
@@ -15,13 +14,13 @@ class DecoratorTest {
     @Test
     fun testExplicitDecorator() = codegen(
         """
-            var called = false
+            var callCount = 0
             @Decorator
             annotation class MyDecorator {
                 companion object {
                     fun <T> decorate(myComponent: MyComponent, factory: () -> T): () -> T {
                         return {
-                            called = true
+                            callCount++
                             factory()
                         }
                     }
@@ -37,13 +36,13 @@ class DecoratorTest {
                 abstract val foo: Foo
             }
             
-            fun invoke(): Boolean {
+            fun invoke(): Int {
                 component<MyComponent>().foo
-                return called
+                return callCount
             }
         """
     ) {
-        assertTrue(invokeSingleFile<Boolean>())
+        assertEquals(1, invokeSingleFile<Int>())
     }
 
     @Test
@@ -149,7 +148,7 @@ class DecoratorTest {
     }
 
     @Test
-    fun testImplicitDecorator() = codegen(
+    fun testGlobalImplicitDecorator() = codegen(
         """
             var callCount = 0
             @Decorator
@@ -181,6 +180,77 @@ class DecoratorTest {
         """
     ) {
         assertEquals(4, invokeSingleFile<Int>())
+    }
+
+    @Test
+    fun testLocalImplicitDecorator() = codegen(
+        """
+            var callCount = 0
+
+            @Binding
+            fun foo() = Foo()
+            
+            @Binding
+            fun bar(foo: Foo) = Bar(foo)
+            
+            @Binding
+            fun baz(foo: Foo, bar: Bar) = Baz(bar, foo)
+            
+            @Component
+            abstract class MyComponent {
+                abstract val baz: Baz
+                
+                @Decorator
+                fun <T> decorate(factory: () -> T): () -> T { 
+                    return {
+                        callCount++
+                        factory()
+                    }
+                }
+            }
+            
+            fun invoke(): Int {
+                component<MyComponent>().baz
+                return callCount
+            }
+        """
+    ) {
+        assertEquals(4, invokeSingleFile<Int>())
+    }
+
+    @Test
+    fun testImplicitDecoratorInParentDecoratesChild() = codegen(
+        """
+            var callCount = 0
+
+            @Binding
+            fun foo() = Foo()
+            
+            @Component
+            abstract class ParentComponent {
+                abstract val childComponent: () -> MyChildComponent
+            
+                @Decorator
+                fun <T : Foo> decorate(factory: () -> T): () -> T { 
+                    return {
+                        callCount++
+                        factory()
+                    }
+                }
+                
+                @ChildComponent
+                abstract class MyChildComponent {
+                    abstract val foo: Foo
+                }
+            }
+            
+            fun invoke(): Int {
+                component<ParentComponent>().childComponent().foo
+                return callCount
+            }
+        """
+    ) {
+        assertEquals(1, invokeSingleFile<Int>())
     }
 
     @Test
@@ -240,11 +310,11 @@ class DecoratorTest {
     @Test
     fun testDecoratorWithDifferentCallContextIsNotApplicable() = codegen(
         """
-            var called = false
+            var callCount = 0
             @Decorator
             fun <T> decorate(factory: suspend () -> T): suspend () -> T { 
                 return {
-                    called = true
+                    callCount++
                     factory()
                 }
             }
@@ -257,13 +327,13 @@ class DecoratorTest {
                 abstract val foo: Foo
             }
             
-            fun invoke(): Boolean {
+            fun invoke(): Int {
                 component<MyComponent>().foo
-                return called
+                return callCount
             }
         """
     ) {
-        assertFalse(invokeSingleFile<Boolean>())
+        assertEquals(0, invokeSingleFile<Int>())
     }
 
     @Test

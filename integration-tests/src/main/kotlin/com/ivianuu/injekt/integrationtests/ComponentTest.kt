@@ -1132,6 +1132,29 @@ class ComponentTest {
     }
 
     @Test
+    fun testInjectingParentComponent() = codegen(
+        """ 
+            @Component
+            abstract class ParentComponent {
+                abstract val childComponent: () -> MyChildComponent
+                @ChildComponent
+                abstract class MyChildComponent {
+                    abstract val parent: ParentComponent
+                }
+            }
+
+            fun invoke(): Pair<ParentComponent, ParentComponent> {
+                val parent = component<ParentComponent>()
+                val child = parent.childComponent()
+                return parent to child.parent
+            }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Any, Any>>()
+        assertSame(a, b)
+    }
+
+    @Test
     fun testPrefersResolvableBinding() = codegen(
         """
             val defaultFoo = Foo()
