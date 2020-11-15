@@ -439,25 +439,11 @@ class ComponentStatements(
                     }
                 }
             } else {
-                emitLine("listOf<${decoratorFactoryType.render(expanded = true)}>(")
-                indented {
-                    decorators.forEachIndexed { index, decorator ->
-                        emitLine("{ _prev ->")
-                        indented {
-                            decorator.emit { emit("_prev") }
-                        }
-                        emit(" }")
-                        if (index != decorators.lastIndex) emitLine(", ")
+                decorators.fold<DecoratorNode, ComponentExpression>({
+                    braced {
+                        create()
                     }
-                }
-                emitLine(")")
-                emit(".fold(")
-                braced {
-                    create()
-                }
-                emitLine(") { acc, next -> ")
-                emitLine("next(acc)")
-                emitLine("}")
+                }) { acc, next -> { next.emit(acc) } }()
             }
         }
         val name = "${type.uniqueTypeName()}_Provider".asNameId()
