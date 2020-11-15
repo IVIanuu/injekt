@@ -318,9 +318,7 @@ class FunBindingNode(
     override val cacheable: Boolean
         get() = true
     override val inline: Boolean
-        get() = callable.visibility != Visibilities.PROTECTED &&
-                (((!callable.isCall || callable.valueParameters.isEmpty()) ||
-                        callable.isInline) &&!cacheable && targetComponent == null)
+        get() = false
 
     override fun refineType(dependencyBindings: List<BindingNode>) {
         super.refineType(dependencyBindings)

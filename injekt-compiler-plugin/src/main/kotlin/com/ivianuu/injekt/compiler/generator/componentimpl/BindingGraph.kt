@@ -77,67 +77,22 @@ class BindingGraph(
         fun ModuleDescriptor.collectContributions(parentAccessExpression: ComponentExpression?) {
             for (callable in callables) {
                 if (callable.contributionKind == null) continue
-                val finalCallable = if (callable.visibility == Visibilities.PROTECTED) {
-                    val accessorName = "_${callable.name}".asNameId()
-                    owner.members += ComponentCallable(
-                        name = accessorName,
-                        type = callable.type,
-                        isProperty = !callable.isCall,
-                        callableKind = callable.callableKind,
-                        initializer = null,
-                        body = {
-                            emit("${callable.name}")
-                            if (callable.isCall) {
-                                emit("(")
-                                callable.valueParameters.forEachIndexed { index, parameter ->
-                                    emit(parameter.name)
-                                    if (index != callable.valueParameters.lastIndex) emit(", ")
-                                }
-                                emit(")")
-                            }
-                        },
-                        isMutable = false,
-                        isOverride = false,
-                        isInline = false,
-                        canBePrivate = true,
-                        valueParameters = callable.valueParameters
-                            .map {
-                                ComponentCallable.ValueParameter(
-                                    it.name,
-                                    it.type
-                                )
-                            },
-                        typeParameters = callable.typeParameters
-                            .map {
-                                ComponentCallable.TypeParameter(
-                                    it.fqName.shortName(),
-                                    it.superTypes
-                                )
-                            }
-                    )
-                    callable.copy(
-                        name = accessorName,
-                        visibility = Visibilities.INTERNAL
-                    )
-                } else {
-                    callable
-                }
-                when (finalCallable.contributionKind!!) {
+                when (callable.contributionKind) {
                     Callable.ContributionKind.BINDING -> moduleBindingCallables += CallableWithReceiver(
-                        finalCallable,
+                        callable,
                         parentAccessExpression,
                         owner
                     )
                     Callable.ContributionKind.DECORATOR -> moduleDecorators += DecoratorNode(
-                        finalCallable,
+                        callable,
                         parentAccessExpression,
                         owner,
-                        finalCallable.getDependencies(finalCallable.type, true)
+                        callable.getDependencies(callable.type, true)
                     )
                     Callable.ContributionKind.MAP_ENTRIES -> {
                         collections.addMapEntries(
                             CallableWithReceiver(
-                                finalCallable,
+                                callable,
                                 parentAccessExpression,
                                 owner
                             )
@@ -146,15 +101,15 @@ class BindingGraph(
                     Callable.ContributionKind.SET_ELEMENTS -> {
                         collections.addSetElements(
                             CallableWithReceiver(
-                                finalCallable,
+                                callable,
                                 parentAccessExpression,
                                 owner
                             )
                         )
                     }
                     Callable.ContributionKind.MODULE -> {
-                        declarationStore.moduleForType(finalCallable.type)
-                            .collectContributions(parentAccessExpression.child(finalCallable))
+                        declarationStore.moduleForType(callable.type)
+                            .collectContributions(parentAccessExpression.child(callable))
                     }
                 }.let {}
             }
