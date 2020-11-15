@@ -35,6 +35,7 @@ import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -592,46 +593,96 @@ class ComponentStatements(
         owner: ComponentImpl?,
         arguments: Map<Name, Pair<TypeRef?, ComponentExpression>?>
     ) {
+        val finalCallable = if (owner != null && owner != this@ComponentStatements.owner &&
+            callable.visibility == Visibilities.PROTECTED) {
+            val accessorName = "_${callable.name}".asNameId()
+            owner.members.firstOrNull {
+                it is ComponentCallable &&
+                        it.name == accessorName
+            } ?: ComponentCallable(
+                name = accessorName,
+                type = callable.type,
+                isProperty = !callable.isCall,
+                callableKind = callable.callableKind,
+                initializer = null,
+                body = {
+                    emit("${callable.name}")
+                    if (callable.isCall) {
+                        emit("(")
+                        callable.valueParameters.forEachIndexed { index, parameter ->
+                            emit(parameter.name)
+                            if (index != callable.valueParameters.lastIndex) emit(", ")
+                        }
+                        emit(")")
+                    }
+                },
+                isMutable = false,
+                isOverride = false,
+                isInline = false,
+                canBePrivate = true,
+                valueParameters = callable.valueParameters
+                    .map {
+                        ComponentCallable.ValueParameter(
+                            it.name,
+                            it.type
+                        )
+                    },
+                typeParameters = callable.typeParameters
+                    .map {
+                        ComponentCallable.TypeParameter(
+                            it.fqName.shortName(),
+                            it.superTypes
+                        )
+                    }
+            ).also { owner.members += it }
+            callable.copy(
+                name = accessorName,
+                visibility = Visibilities.INTERNAL
+            )
+        } else {
+            callable
+        }
+
         fun emitArguments() {
-            if (callable.isCall) {
-                if (callable.typeParameters.isNotEmpty()) {
+            if (finalCallable.isCall) {
+                if (finalCallable.typeParameters.isNotEmpty()) {
                     val substitutionMap = getSubstitutionMap(
-                        callable.typeParameters
-                            .mapNotNull { (callable.typeArgs[it] ?: return@mapNotNull null) to it.defaultType } +
-                                listOf(type to callable.originalType) +
-                                callable.valueParameters
+                        finalCallable.typeParameters
+                            .mapNotNull { (finalCallable.typeArgs[it] ?: return@mapNotNull null) to it.defaultType } +
+                                listOf(type to finalCallable.originalType) +
+                                finalCallable.valueParameters
                                     .mapNotNull {
                                         val argumentType = arguments[it.name]?.first
                                         if (argumentType != null) {
                                             argumentType to it.originalType
                                         } else null
                                     },
-                        callable.typeParameters
+                        finalCallable.typeParameters
                     )
 
-                    check(callable.typeParameters.all { it.defaultType in substitutionMap }) {
+                    check(finalCallable.typeParameters.all { it.defaultType in substitutionMap }) {
                         "Couldn't resolve all type arguments ${substitutionMap.map {
                             it.key.classifier.fqName to it.value
-                        }} missing ${callable.typeParameters.filter {
+                        }} missing ${finalCallable.typeParameters.filter {
                             it.defaultType !in substitutionMap
-                        }.map { it.fqName }} in $callable"
+                        }.map { it.fqName }} in $finalCallable"
                     }
 
                     emit("<")
-                    callable.typeParameters.forEachIndexed { index, typeParameter ->
+                    finalCallable.typeParameters.forEachIndexed { index, typeParameter ->
                         val typeArgument = substitutionMap[typeParameter.defaultType]!!
                         emit(typeArgument.render(expanded = true))
-                        if (index != callable.typeParameters.lastIndex) emit(", ")
+                        if (index != finalCallable.typeParameters.lastIndex) emit(", ")
                     }
                     emit(">")
                 }
                 emitLine("(")
                 indented {
                     var argumentsIndex = 0
-                    val nonNullArgumentsCount = callable.valueParameters
+                    val nonNullArgumentsCount = finalCallable.valueParameters
                         .filterNot { it.isExtensionReceiver }
                         .count { it.name in arguments }
-                    callable.valueParameters
+                    finalCallable.valueParameters
                         .filterNot { it.isExtensionReceiver }
                         .forEach { parameter ->
                             val argument = arguments[parameter.name]
@@ -651,7 +702,7 @@ class ComponentStatements(
         }
         if (owner != null) {
             emit("with(")
-            val isObjectCallable = callable.receiver?.isObject ?: false
+            val isObjectCallable = finalCallable.receiver?.isObject ?: false
             if (!isObjectCallable) componentExpression(owner)()
             if (receiver != null) {
                 if (!isObjectCallable) emit(".")
@@ -659,30 +710,30 @@ class ComponentStatements(
             }
             emit(") ")
             braced {
-                if (callable.valueParameters.any { it.isExtensionReceiver }) {
+                if (finalCallable.valueParameters.any { it.isExtensionReceiver }) {
                     emit("with(")
-                    emitOrNull(arguments[callable.valueParameters.first().name]?.second)
+                    emitOrNull(arguments[finalCallable.valueParameters.first().name]?.second)
                     emit(") ")
                     braced {
-                        emit(callable.name)
+                        emit(finalCallable.name)
                         emitArguments()
                     }
                 } else {
-                    emit(callable.name)
+                    emit(finalCallable.name)
                     emitArguments()
                 }
             }
         } else {
-            if (callable.valueParameters.any { it.isExtensionReceiver }) {
+            if (finalCallable.valueParameters.any { it.isExtensionReceiver }) {
                 emit("with(")
-                emitOrNull(arguments[callable.valueParameters.first().name]?.second)
+                emitOrNull(arguments[finalCallable.valueParameters.first().name]?.second)
                 emit(") ")
                 braced {
-                    emit(callable.name)
+                    emit(finalCallable.name)
                     emitArguments()
                 }
             } else {
-                emit(callable.fqName)
+                emit(finalCallable.fqName)
                 emitArguments()
             }
         }
