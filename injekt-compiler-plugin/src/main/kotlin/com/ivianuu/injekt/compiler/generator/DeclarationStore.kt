@@ -590,6 +590,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         val callableTargetComponent = (owner.annotations.findAnnotation(InjektFqNames.Binding) ?:
         owner.annotations.findAnnotation(InjektFqNames.ImplBinding) ?:
         owner.annotations.findAnnotation(InjektFqNames.FunBinding) ?:
+        owner.annotations.findAnnotation(InjektFqNames.MapEntries) ?:
+        owner.annotations.findAnnotation(InjektFqNames.SetElements) ?:
         descriptor.containingDeclaration.containingDeclaration?.annotations
             ?.findAnnotation(InjektFqNames.Decorator))
             ?.allValueArguments

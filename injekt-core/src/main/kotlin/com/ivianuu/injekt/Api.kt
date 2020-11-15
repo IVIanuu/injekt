@@ -50,10 +50,10 @@ annotation class FunApi
 annotation class ImplBinding(val scopeComponent: KClass<*> = Nothing::class)
 
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
-annotation class MapEntries
+annotation class MapEntries(val targetComponent: KClass<*> = Nothing::class)
 
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
-annotation class SetElements
+annotation class SetElements(val targetComponent: KClass<*> = Nothing::class)
 
 @Target(AnnotationTarget.ANNOTATION_CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class Decorator(val targetComponent: KClass<*> = Nothing::class)

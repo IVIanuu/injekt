@@ -689,7 +689,7 @@ class BindingGraph(
             }
     }
 
-    private fun TypeRef?.checkComponent(type: TypeRef): Boolean {
+    fun TypeRef?.checkComponent(type: TypeRef): Boolean {
         return this == null || this == owner.componentType ||
                 (owner.isAssisted && type == owner.assistedRequests.single().type)
     }
@@ -795,6 +795,11 @@ class BindingCollections(
         return mapEntriesByType.getOrPut(type) {
             ((parent?.getMapEntries(type) ?: emptyList()) +
                     (if (parent == null) declarationStore.mapEntriesByType(type)
+                        .filter {
+                            with(owner.graph) {
+                                it.targetComponent.checkComponent(type)
+                            }
+                        }
                         .map { CallableWithReceiver(it, null, null) }
                     else emptyList()) +
                     (thisMapEntries[type] ?: emptyList()))
@@ -813,6 +818,11 @@ class BindingCollections(
         return setElementsByType.getOrPut(type) {
             ((parent?.getSetElements(type) ?: emptyList()) +
                     (if (parent == null) declarationStore.setElementsByType(type)
+                        .filter {
+                            with(owner.graph) {
+                                it.targetComponent.checkComponent(type)
+                            }
+                        }
                         .map { CallableWithReceiver(it, null, null) }
                     else emptyList()) +
                     (thisSetElements[type] ?: emptyList()))
