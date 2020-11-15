@@ -130,6 +130,7 @@ sealed class BindingNode(
     abstract val owner: ComponentImpl
     abstract val origin: FqName?
     abstract val targetComponent: TypeRef?
+    abstract val scoped: Boolean
     abstract val declaredInComponent: ComponentImpl?
     abstract val receiver: ComponentExpression?
     abstract val isExternal: Boolean
@@ -162,6 +163,8 @@ class SelfBindingNode(
     override val owner: ComponentImpl get() = component
     override val origin: FqName? get() = null
     override val targetComponent: TypeRef? get() = null
+    override val scoped: Boolean
+        get() = false
     override val declaredInComponent: ComponentImpl?
         get() = null
     override val receiver: ComponentExpression? get() = null
@@ -195,6 +198,8 @@ class AssistedBindingNode(
         get() = null
     override val targetComponent: TypeRef?
         get() = null
+    override val scoped: Boolean
+        get() = false
     override val inline: Boolean
         get() = false
 
@@ -224,6 +229,8 @@ class ChildComponentBindingNode(
         get() = null
     override val targetComponent: TypeRef?
         get() = null
+    override val scoped: Boolean
+        get() = false
     override val isExternal: Boolean
         get() = false
     override val cacheable: Boolean
@@ -252,6 +259,8 @@ class InputBindingNode(
         get() = null
     override val targetComponent: TypeRef?
         get() = null
+    override val scoped: Boolean
+        get() = false
     override val inline: Boolean
         get() = true
 }
@@ -269,6 +278,8 @@ class CallableBindingNode(
         get() = callable.isExternal
     override val targetComponent: TypeRef?
         get() = callable.targetComponent
+    override val scoped: Boolean
+        get() = callable.scoped
     override val origin: FqName?
         get() = callable.fqName
     override val cacheable: Boolean
@@ -300,6 +311,8 @@ class FunBindingNode(
         get() = callable.isExternal
     override val targetComponent: TypeRef?
         get() = callable.targetComponent
+    override val scoped: Boolean
+        get() = false
     override val origin: FqName?
         get() = callable.fqName
     override val cacheable: Boolean
@@ -329,6 +342,8 @@ class MapBindingNode(
         get() = null
     override val targetComponent: TypeRef?
         get() = null
+    override val scoped: Boolean
+        get() = false
     override val declaredInComponent: ComponentImpl?
         get() = null
     override val receiver: ComponentExpression?
@@ -371,6 +386,8 @@ class MissingBindingNode(
         get() = null
     override val targetComponent: TypeRef?
         get() = null
+    override val scoped: Boolean
+        get() = false
 }
 
 class ProviderBindingNode(
@@ -392,6 +409,8 @@ class ProviderBindingNode(
     override val cacheable: Boolean
         get() = true
     override val inline: Boolean
+        get() = false
+    override val scoped: Boolean
         get() = false
 }
 
@@ -417,6 +436,8 @@ class SetBindingNode(
     override val cacheable: Boolean
         get() = false
     override val inline: Boolean
+        get() = false
+    override val scoped: Boolean
         get() = false
 
     override fun refineType(dependencyBindings: List<BindingNode>) {

@@ -198,7 +198,7 @@ class ComponentStatements(
                 emit(")")
                 emitLine(".invoke()")
             }
-            if (binding.targetComponent != null) {
+            if (binding.scoped) {
                 scoped(binding.type.typeArguments.last(), binding.callableKind, false, binding.targetComponent!!) {
                     emitNewInstance()
                 }

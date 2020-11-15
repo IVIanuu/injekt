@@ -31,6 +31,7 @@ data class Callable(
     val typeParameters: List<ClassifierRef>,
     val valueParameters: List<ValueParameterRef>,
     val targetComponent: TypeRef?,
+    val scoped: Boolean,
     val contributionKind: ContributionKind?,
     val isCall: Boolean,
     val callableKind: CallableKind,
