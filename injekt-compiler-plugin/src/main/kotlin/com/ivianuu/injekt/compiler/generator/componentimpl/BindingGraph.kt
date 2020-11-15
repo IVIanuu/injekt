@@ -755,8 +755,10 @@ class BindingGraph(
     private fun getDecoratorsForType(providerType: TypeRef): List<DecoratorNode> = buildList<DecoratorNode> {
         this += moduleDecorators
             .filter { providerType.isAssignable(it.callable.type) }
+            .filter { it.callable.targetComponent.checkComponent(providerType.typeArguments.last()) }
         this += parentModuleDecorators
             .filter { providerType.isAssignable(it.callable.type) }
+            .filter { it.callable.targetComponent.checkComponent(providerType.typeArguments.last()) }
         this += declarationStore.decoratorsByType(providerType)
             .filter { it.targetComponent.checkComponent(providerType.typeArguments.last()) }
             .map { decorator ->

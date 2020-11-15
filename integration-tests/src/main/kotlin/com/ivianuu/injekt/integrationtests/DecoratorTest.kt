@@ -408,6 +408,42 @@ class DecoratorTest {
     )
 
     @Test
+    fun testDecoratorWithTargetComponentOnlyDecoratesBindingsOfTheComponent() = codegen(
+        """
+            var callCount = 0
+            @Decorator(ParentComponent::class)
+            fun <T : Foo> decorate(factory: () -> T): () -> T {
+                return {
+                    callCount++
+                    factory()
+                }
+            }
+            
+            @Binding
+            fun foo() = Foo()
+            
+            @Component
+            abstract class ParentComponent {
+                abstract val foo: Foo
+                abstract val childFactory: () -> MyChildComponent
+                @ChildComponent
+                abstract class MyChildComponent {
+                    abstract val foo: Foo
+                }
+            }
+            
+            fun invoke(): Int {
+                val component = component<ParentComponent>()
+                component.foo
+                component.childFactory().foo
+                return callCount
+            }
+        """
+    ) {
+        assertEquals(1, invokeSingleFile<Int>())
+    }
+
+    @Test
     fun testDecoratorWithDifferentTargetComponentFails() = codegen(
         """
             @Decorator(Any::class)

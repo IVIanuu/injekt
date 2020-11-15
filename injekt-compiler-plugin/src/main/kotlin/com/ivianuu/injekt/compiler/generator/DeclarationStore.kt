@@ -592,6 +592,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         owner.annotations.findAnnotation(InjektFqNames.FunBinding) ?:
         owner.annotations.findAnnotation(InjektFqNames.MapEntries) ?:
         owner.annotations.findAnnotation(InjektFqNames.SetElements) ?:
+        owner.annotations.findAnnotation(InjektFqNames.Decorator) ?:
         descriptor.containingDeclaration.containingDeclaration?.annotations
             ?.findAnnotation(InjektFqNames.Decorator))
             ?.allValueArguments
