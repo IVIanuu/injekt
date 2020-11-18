@@ -438,7 +438,7 @@ fun TypeRef.isAssignable(superType: TypeRef): Boolean {
 
     if (superType.classifier.isTypeParameter) {
         return superType.classifier.superTypes.all { upperBound ->
-            isSubTypeOf(upperBound)
+            isAssignableToTypeTypeParameter(upperBound)
         }
     }
 
@@ -450,7 +450,7 @@ fun TypeRef.isAssignable(superType: TypeRef): Boolean {
     return true
 }
 
-fun TypeRef.isSubTypeOf(superType: TypeRef): Boolean {
+fun TypeRef.isAssignableToTypeTypeParameter(superType: TypeRef): Boolean {
     if (superType.classifier.fqName.asString() == KotlinBuiltIns.FQ_NAMES.any.asString() &&
         superType.isMarkedNullable)
         return true
@@ -458,9 +458,12 @@ fun TypeRef.isSubTypeOf(superType: TypeRef): Boolean {
     if (effect != superType.effect) return false
     if (!qualifiers.isAssignable(superType.qualifiers)) return false
     if (isComposableRecursive != superType.isComposableRecursive) return false
-    if (classifier.fqName == superType.classifier.fqName) return true
-
-    return subtypeView(superType.classifier) != null
+    val subTypeView = subtypeView(superType.classifier) ?: return false
+    return subTypeView.typeArguments.zip(superType.typeArguments).all { (subTypeArg, superTypeArg) ->
+        superTypeArg.superTypes.all {
+            subTypeArg.isAssignableToTypeTypeParameter(it)
+        }
+    }
 }
 
 fun List<QualifierDescriptor>.isAssignable(superQualifiers: List<QualifierDescriptor>): Boolean {
