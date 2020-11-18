@@ -500,4 +500,69 @@ class DecoratorTest {
         assertInternalError("Target component mismatch")
     }
 
+    @Test
+    fun testDecoratorWithUpperBoundsWithTypeAlias() = codegen(
+        """
+            interface Scope
+                   
+            interface Flow<T>
+            interface MutableFlow<T> : Flow<T>
+            
+            typealias EffectBlock<S> = suspend (S) -> Unit
+            
+            @Effect
+            annotation class StateEffect { 
+                companion object {
+                    @SetElements
+                    fun <T : suspend (S) -> Unit, S> bind(
+                        instance: T
+                    ): Set<EffectBlock<S>> = error("")
+                }
+            }
+            
+            @Decorator
+            fun <T : Flow<S>, S> decorate(
+                effects: Set<EffectBlock<S>>?,
+                factory: () -> T
+            ): () -> T = factory
+            
+            @Effect
+            annotation class UiStoreBinding {
+                companion object {
+                    @Binding
+                    inline fun <reified T : MutableFlow<S>, reified S> uiStore(
+                        noinline provider: (Scope) -> T
+                    ): MutableFlow<S> = error("")
+                }
+            }
+            
+            @Qualifier
+            @Target(AnnotationTarget.TYPE)
+            annotation class UiState
+            @Binding
+            fun <S> MutableFlow<S>.latest(): @UiState S = error("")
+            
+            interface AState
+    
+            @UiStoreBinding
+            fun Scope.AStore(): MutableFlow<AState> = error("")
+            
+            @StateEffect
+            @FunBinding
+            suspend fun AEffect(@FunApi state: AState) {
+            }
+            
+            interface BState
+    
+            @UiStoreBinding
+            fun Scope.BStore(): MutableFlow<BState> = error("") 
+            
+            @Component
+            abstract class MyComponent {
+                abstract val aState: @UiState AState
+                abstract val bState: @UiState BState
+            }  
+        """
+    )
+
 }
