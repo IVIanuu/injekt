@@ -973,6 +973,37 @@ class EffectTest {
     )
 
     @Test
+    fun testEffectWithSuperTypeTypeParameterInference() = codegen(
+        """ 
+            @MapBindings
+            @Binding
+            fun map(): MutableMap<String, Int> = error("")
+
+            @Effect
+            annotation class MapBindings {
+                companion object {
+                    @Binding
+                    val <T : Map<K, V>, K, V> T.map: Map<K, V> get() = this
+                
+                    @Binding
+                    val <T : Map<K, V>, K, V> T.firstKey: K get() = keys.first()
+                    
+                    @Binding
+                    val <T : Map<K, V>, K, V> T.firstValue: V get() = values.first()
+                }
+            }
+
+            @Component
+            abstract class MyComponent {
+                abstract val key: String
+                abstract val value: Int
+                abstract val map: Map<String, Int>
+                abstract val mutableMap: MutableMap<String, Int>
+            }
+        """
+    )
+
+    @Test
     fun testEffectWithTypeParameters() = codegen(
         """
             interface Store<S, A>

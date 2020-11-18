@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.types.getAbbreviation
+import org.jetbrains.kotlin.types.typeUtil.supertypes
 
 data class ClassifierRef(
     val fqName: FqName,
@@ -119,7 +120,7 @@ class KotlinTypeRef(
             kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
     }
     override val superTypes: List<TypeRef> by unsafeLazy {
-        kotlinType.constructor.supertypes.map {
+        kotlinType.supertypes().map {
             typeTranslator.toTypeRef(it,
                 finalType.constructor.declarationDescriptor,
                 fixType = false)
@@ -372,9 +373,9 @@ fun getSubstitutionMap(
         if (baseType.classifier.isTypeParameter) {
             substitutionMap[baseType] = thisType
             baseType.superTypes
-                .map { thisType.expandTo(it.classifier) to it }
-                .forEach { (expandedThisType, baseSuperType) ->
-                    expandedThisType?.typeArguments?.zip(baseSuperType.typeArguments)
+                .map { (thisType.expandedView(it.classifier) ?: thisType.subtypeView(it.classifier)) to it }
+                .forEach { (thisBaseTypeView, baseSuperType) ->
+                    thisBaseTypeView?.typeArguments?.zip(baseSuperType.typeArguments)
                         ?.forEach { visitType(it.first, it.second) }
                 }
         } else {
@@ -488,7 +489,15 @@ val TypeRef.fullyExpandedType: TypeRef
     get() = expandedType?.fullyExpandedType
         ?: classifier.takeIf { it.isTypeAlias }?.superTypes?.single()?.fullyExpandedType ?: this
 
-fun TypeRef.expandTo(classifier: ClassifierRef): TypeRef? {
+fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
     if (this.classifier == classifier) return this
-    return expandedType?.expandTo(classifier)
+    for (superType in superTypes) {
+        superType.subtypeView(classifier)?.let { return it }
+    }
+    return null
+}
+
+fun TypeRef.expandedView(classifier: ClassifierRef): TypeRef? {
+    if (this.classifier == classifier) return this
+    return expandedType?.expandedView(classifier)
 }
