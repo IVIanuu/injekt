@@ -373,7 +373,7 @@ fun getSubstitutionMap(
         if (baseType.classifier.isTypeParameter) {
             substitutionMap[baseType] = thisType
             baseType.superTypes
-                .map { (thisType.expandedView(it.classifier) ?: thisType.subtypeView(it.classifier)) to it }
+                .map { thisType.subtypeView(it.classifier) to it }
                 .forEach { (thisBaseTypeView, baseSuperType) ->
                     thisBaseTypeView?.typeArguments?.zip(baseSuperType.typeArguments)
                         ?.forEach { visitType(it.first, it.second) }
@@ -460,13 +460,7 @@ fun TypeRef.isSubTypeOf(superType: TypeRef): Boolean {
     if (isComposableRecursive != superType.isComposableRecursive) return false
     if (classifier.fqName == superType.classifier.fqName) return true
 
-    if (superType.classifier.isTypeParameter && superType.superTypes.all {
-            isSubTypeOf(it)
-        }
-    ) return true
-
-    return fullyExpandedType.superTypes.any { it.isSubTypeOf(superType) } ||
-            (fullyExpandedType != this && fullyExpandedType.isSubTypeOf(superType))
+    return subtypeView(superType.classifier) != null
 }
 
 fun List<QualifierDescriptor>.isAssignable(superQualifiers: List<QualifierDescriptor>): Boolean {
@@ -491,13 +485,9 @@ val TypeRef.fullyExpandedType: TypeRef
 
 fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
     if (this.classifier == classifier) return this
+    expandedType?.subtypeView(classifier)?.let { return it }
     for (superType in superTypes) {
         superType.subtypeView(classifier)?.let { return it }
     }
     return null
-}
-
-fun TypeRef.expandedView(classifier: ClassifierRef): TypeRef? {
-    if (this.classifier == classifier) return this
-    return expandedType?.expandedView(classifier)
 }
