@@ -21,20 +21,19 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.builtins.isSuspendFunctionType
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.types.getAbbreviation
-import org.jetbrains.kotlin.types.typeUtil.supertypes
 
 data class ClassifierRef(
     val fqName: FqName,
     val typeParameters: List<ClassifierRef> = emptyList(),
-    // todo make this immutable
-    var superTypes: List<TypeRef> = emptyList(),
+    val superTypes: List<TypeRef> = emptyList(),
+    // todo make read only
+    var expandedType: TypeRef? = null,
     val isTypeParameter: Boolean = false,
     val isObject: Boolean = false,
     val isTypeAlias: Boolean = false,
@@ -45,13 +44,32 @@ data class ClassifierRef(
     override fun hashCode(): Int = fqName.hashCode()
 }
 
+val TypeRef.expandedType: TypeRef? 
+    get() {
+        return classifier.expandedType?.let {
+            val substitutionMap = classifier.typeParameters
+                .map { it.defaultType }
+                .zip(typeArguments)
+                .toMap()
+            it.substitute(substitutionMap)
+                .copy(isMarkedNullable = isMarkedNullable)
+        }
+    }
+
 val ClassifierRef.defaultType: TypeRef
     get() = SimpleTypeRef(
         this,
-        typeArguments = typeParameters.map { it.defaultType },
-        superTypes = superTypes,
-        expandedType = if (isTypeAlias) superTypes.single() else null
+        typeArguments = typeParameters.map { it.defaultType }
     )
+
+fun TypeRef.superTypes(): List<TypeRef> {
+    val substitutionMap = classifier.typeParameters
+        .map { it.defaultType }
+        .zip(typeArguments)
+        .toMap()
+    return classifier.superTypes
+        .map { it.substitute(substitutionMap) }
+}
 
 sealed class TypeRef {
     abstract val classifier: ClassifierRef
@@ -67,8 +85,6 @@ sealed class TypeRef {
     abstract val isMergeChildComponent: Boolean
     abstract val isChildComponent: Boolean
     abstract val isComposable: Boolean
-    abstract val superTypes: List<TypeRef>
-    abstract val expandedType: TypeRef?
     abstract val isStarProjection: Boolean
     abstract val qualifiers: List<QualifierDescriptor>
     abstract val effect: Int
@@ -119,13 +135,6 @@ class KotlinTypeRef(
         kotlinType.hasAnnotation(InjektFqNames.Composable) &&
             kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
     }
-    override val superTypes: List<TypeRef> by unsafeLazy {
-        kotlinType.supertypes().map {
-            typeTranslator.toTypeRef(it,
-                finalType.constructor.declarationDescriptor,
-                fixType = false)
-        }
-    }
     override val isMarkedNullable: Boolean by unsafeLazy {
         kotlinType.isMarkedNullable
     }
@@ -137,19 +146,6 @@ class KotlinTypeRef(
                 it.isStarProjection,
                 false)
         }
-    }
-    override val expandedType: TypeRef? by unsafeLazy {
-        (kotlinType.constructor.declarationDescriptor as? TypeAliasDescriptor)
-            ?.expandedType?.let {
-                typeTranslator.toTypeRef(it,
-                    finalType.constructor.declarationDescriptor,
-                    fixType = false)
-            }
-            ?: kotlinType.getAbbreviatedType()?.expandedType?.let {
-                typeTranslator.toTypeRef(it,
-                    finalType.constructor.declarationDescriptor,
-                    fixType = false)
-            }
     }
     override val qualifiers: List<QualifierDescriptor> by unsafeLazy {
         kotlinType.getAnnotatedAnnotations(InjektFqNames.Qualifier)
@@ -178,8 +174,6 @@ class SimpleTypeRef(
     override val isMergeChildComponent: Boolean = false,
     override val isChildComponent: Boolean = false,
     override val isComposable: Boolean = false,
-    override val superTypes: List<TypeRef> = emptyList(),
-    override val expandedType: TypeRef? = null,
     override val isStarProjection: Boolean = false,
     override val qualifiers: List<QualifierDescriptor> = emptyList(),
     override val effect: Int = 0
@@ -209,8 +203,6 @@ fun TypeRef.copy(
     isMergeChildComponent: Boolean = this.isMergeChildComponent,
     isChildComponent: Boolean = this.isChildComponent,
     isComposable: Boolean = this.isComposable,
-    superTypes: List<TypeRef> = this.superTypes,
-    expandedType: TypeRef? = this.expandedType,
     isStarProjection: Boolean = this.isStarProjection,
     qualifiers: List<QualifierDescriptor> = this.qualifiers,
     effect: Int = this.effect
@@ -228,8 +220,6 @@ fun TypeRef.copy(
     isMergeChildComponent,
     isChildComponent,
     isComposable,
-    superTypes,
-    expandedType,
     isStarProjection,
     qualifiers,
     effect
@@ -244,12 +234,11 @@ fun TypeRef.substitute(map: Map<TypeRef, TypeRef>): TypeRef {
 
         val substituted = copy(
             typeArguments = typeArguments.map { it.substituteInner(unqualifiedMap) },
-            expandedType = expandedType?.substituteInner(unqualifiedMap),
             qualifiers = qualifiers.map { it.substitute(unqualifiedMap) }
         )
 
         if (classifier.isTypeParameter && substituted == this) {
-            val superType = classifier.defaultType.superTypes.singleOrNull() // todo support multiple
+            val superType = classifier.superTypes.singleOrNull() // todo support multiple
             if (superType != null) {
                 val substitutedSuperType = superType.substituteInner(unqualifiedMap)
                 if (substitutedSuperType != superType) return substitutedSuperType
@@ -270,10 +259,7 @@ val STAR_PROJECTION_TYPE = SimpleTypeRef(
 fun TypeRef.replaceTypeParametersWithStars(): TypeRef {
     if (classifier.isTypeParameter) return STAR_PROJECTION_TYPE
     if (typeArguments.isEmpty() && expandedType == null) return this
-    return copy(
-        typeArguments = typeArguments.map { it.replaceTypeParametersWithStars() },
-        expandedType = expandedType?.replaceTypeParametersWithStars()
-    )
+    return copy(typeArguments = typeArguments.map { it.replaceTypeParametersWithStars() })
 }
 
 fun TypeRef.substituteStars(baseType: TypeRef): TypeRef {
@@ -372,7 +358,7 @@ fun getSubstitutionMap(
     ) {
         if (baseType.classifier.isTypeParameter) {
             substitutionMap[baseType] = thisType
-            baseType.superTypes
+            baseType.superTypes()
                 .map { thisType.subtypeView(it.classifier) to it }
                 .forEach { (thisBaseTypeView, baseSuperType) ->
                     thisBaseTypeView?.typeArguments?.zip(baseSuperType.typeArguments)
@@ -460,7 +446,7 @@ fun TypeRef.isAssignableToTypeTypeParameter(superType: TypeRef): Boolean {
     if (isComposableRecursive != superType.isComposableRecursive) return false
     val subTypeView = subtypeView(superType.classifier) ?: return false
     return subTypeView.typeArguments.zip(superType.typeArguments).all { (subTypeArg, superTypeArg) ->
-        superTypeArg.superTypes.all {
+        superTypeArg.superTypes().all {
             subTypeArg.isAssignableToTypeTypeParameter(it)
         }
     }
@@ -480,16 +466,15 @@ fun QualifierDescriptor.isAssignable(superQualifier: QualifierDescriptor): Boole
 
 val TypeRef.isComposableRecursive: Boolean
     get() = isComposable || expandedType?.isComposableRecursive == true ||
-            superTypes.any { it.isComposableRecursive }
+            classifier.superTypes.any { it.isComposableRecursive }
 
 val TypeRef.fullyExpandedType: TypeRef
-    get() = expandedType?.fullyExpandedType
-        ?: classifier.takeIf { it.isTypeAlias }?.superTypes?.single()?.fullyExpandedType ?: this
+    get() = expandedType?.fullyExpandedType ?: this
 
 fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
     if (this.classifier == classifier) return this
     expandedType?.subtypeView(classifier)?.let { return it }
-    for (superType in superTypes) {
+    for (superType in superTypes()) {
         superType.subtypeView(classifier)?.let { return it }
     }
     return null

@@ -184,7 +184,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .filter { it.hasAnnotation(InjektFqNames.ImplBinding) }
             .map {
                 val callable = callableForDescriptor(it.getInjectConstructor()!!)
-                ImplBindingDescriptor(callable, callable.type, callable.type.superTypes.first())
+                ImplBindingDescriptor(callable, callable.type, callable.type.superTypes().first())
             }
     }
 
@@ -319,7 +319,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     }
                     .map { it.substitute(substitutionMap) }
 
-                superTypes
+                classifier.superTypes
                     .map { it.substitute(substitutionMap) }
                     .forEach { it.collect(it.typeArguments) }
             }

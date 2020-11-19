@@ -498,4 +498,31 @@ class FunBindingTest {
             }
         """
     )
+
+    @Test
+    fun testFunBindingWithFunBindingDependencyAndNullableParameter() = codegen(
+        """
+            typealias PrivacyPolicyUrl = String
+            
+            @FunBinding
+            @Composable
+            fun AboutPage(
+                privacyPolicyUrl: PrivacyPolicyUrl?,
+                aboutSection: AboutSection,
+            ) {
+            }
+            
+            @FunBinding
+            @Composable
+            fun AboutSection(
+                @FunApi privacyPolicyUrl: PrivacyPolicyUrl? = null
+            ) {
+            }
+            
+            @Component
+            abstract class MyComponent {
+                abstract val aboutPage: AboutPage
+            }
+        """
+    )
 }

@@ -105,7 +105,7 @@ class FunBindingGenerator(
             .copy(isExtensionFunction = funApiValueParameters.any {
                 it == descriptor.extensionReceiverParameter
             })
-        declarationStore.generatedClassifierFor(descriptor.fqNameSafe)!!.superTypes += expandedFunType
+        declarationStore.generatedClassifierFor(descriptor.fqNameSafe)!!.expandedType = expandedFunType
 
         val code = buildCodeString {
             emitLine("@file:Suppress(\"UNCHECKED_CAST\", \"NOTHING_TO_INLINE\")")

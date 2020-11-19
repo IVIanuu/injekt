@@ -51,10 +51,9 @@ class TypeTranslator(
             fqName = descriptor.original.fqNameSafe,
             typeParameters = (descriptor.original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
                 ?.map { toClassifierRef(it, fixType) } ?: emptyList(),
-            superTypes = ((descriptor.original as? TypeParameterDescriptor)?.upperBounds?.map {
-                toTypeRef(it, descriptor, Variance.INVARIANT)
-            }) ?: ((descriptor.original as? TypeAliasDescriptor)?.expandedType
-                ?.let { listOf(toTypeRef(it, descriptor).fullyExpandedType) }) ?: emptyList(),
+            superTypes = descriptor.typeConstructor.supertypes.map { KotlinTypeRef(it, this) },
+            expandedType = (descriptor.original as? TypeAliasDescriptor)?.expandedType
+                ?.let { toTypeRef(it, descriptor).fullyExpandedType },
             isTypeParameter = descriptor is TypeParameterDescriptor,
             isObject = descriptor is ClassDescriptor && descriptor.kind == ClassKind.OBJECT,
             isTypeAlias = descriptor is TypeAliasDescriptor,
@@ -111,9 +110,7 @@ class TypeTranslator(
                 if (generatedClassifier != null) {
                     val base = type.copy(
                         classifier = generatedClassifier,
-                        typeArguments = type.typeArguments.map { fixType(it, file) },
-                        expandedType = generatedClassifier.defaultType.expandedType
-
+                        typeArguments = type.typeArguments.map { fixType(it, file) }
                     )
                     val substitutionMap = getSubstitutionMap(listOf(base to generatedClassifier.defaultType))
                     return base.substitute(substitutionMap)
@@ -129,8 +126,7 @@ class TypeTranslator(
         }
         return type.copy(
             classifier = type.classifier,
-            typeArguments = type.typeArguments.map { fixType(it, file) },
-            expandedType = type.expandedType?.let { fixType(it, file) }
+            typeArguments = type.typeArguments.map { fixType(it, file) }
         )
     }
 
