@@ -158,7 +158,6 @@ fun Callable.newEffect(effect: Int): Callable {
     val newEffectType = effectType.copy(effect = effect)
     val map = mapOf(type to newType, effectType to newEffectType)
     return copy(
-        type = type,
         effectType = newEffectType,
         effects = effects.map { it.substituteInputs(map) }
     )
