@@ -49,6 +49,29 @@ class EffectTest {
     )
 
     @Test
+    fun testEffectWithTypealias() = codegen(
+        """
+            class Flow<T>
+            @Effect
+            @Target(AnnotationTarget.TYPEALIAS)
+            annotation class FlowBinding { 
+                companion object {
+                    @Binding
+                    fun <T> flow(): Flow<T> = Flow()
+                }
+            }
+            
+            @FlowBinding
+            typealias MyType = String
+
+            @Component
+            abstract class MyComponent {
+                abstract val flow: Flow<MyType>
+            }
+        """
+    )
+
+    @Test
     fun testEffectWithTopLevelFunction() = codegen(
         """
             @Effect

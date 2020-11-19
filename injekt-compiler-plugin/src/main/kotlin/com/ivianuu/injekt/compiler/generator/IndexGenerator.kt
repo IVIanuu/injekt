@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
@@ -88,6 +89,7 @@ class IndexGenerator(
                                     is ClassDescriptor -> "class"
                                     is FunctionDescriptor -> "function"
                                     is PropertyDescriptor -> "property"
+                                    is TypeAliasDescriptor -> "typealias"
                                     else -> error("Unexpected declaration ${declaration.text}")
                                 }
                             )

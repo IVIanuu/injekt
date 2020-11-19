@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.findClassifierAcrossModuleDependencies
@@ -111,6 +112,12 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .flatMap { propertyDescriptorsForFqName(it.fqName) }
     }
 
+    private val typeAliasIndices by unsafeLazy {
+        allIndices
+            .filter { it.type == "typealias" }
+            .map { typeAliasDescriptorForFqName(it.fqName) }
+    }
+
     private val effectCallables: List<Callable> by unsafeLazy {
         val generatedBindings = mutableListOf<Callable>()
 
@@ -125,10 +132,23 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     .map { it.callable } + allFunBindings
             .map { it.callable })
             .distinct()
-            .filter { it.effects.isNotEmpty() }
+            .filter { it.effects.isNotEmpty() } + typeAliasIndices
+            .filter { it.hasAnnotatedAnnotations(InjektFqNames.Effect) }
+            .flatMap { typeAlias ->
+                val type = typeTranslator.toClassifierRef(typeAlias)
+                typeAlias.getAnnotatedAnnotations(InjektFqNames.Effect)
+                    .flatMap {
+                        effectCallablesForAnnotation(
+                            it,
+                            typeAlias,
+                            type.defaultType
+                        )
+                    }
+            }
 
         while (newBindings.isNotEmpty()) {
             val currentBindings = newBindings.toList()
+            generatedBindings += currentBindings
             newBindings = currentBindings
                 .map { binding ->
                     val finalBinding = binding.newEffect(++effect)
@@ -142,7 +162,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     finalBinding
                 }
                 .flatMap { it.effects }
-            generatedBindings += newBindings
         }
 
         generatedBindings.toList()
@@ -354,6 +373,15 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             memberScopeForFqName(fqName.parent())!!.getContributedVariables(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
             ).toList()
+        }
+    }
+
+    private val typeAliasDescriptorByFqName = mutableMapOf<FqName, TypeAliasDescriptor>()
+    fun typeAliasDescriptorForFqName(fqName: FqName): TypeAliasDescriptor {
+        return typeAliasDescriptorByFqName.getOrPut(fqName) {
+            memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
+                fqName.shortName(), NoLookupLocation.FROM_BACKEND
+            ) as? TypeAliasDescriptor ?: error("Could not get for $fqName")
         }
     }
 
