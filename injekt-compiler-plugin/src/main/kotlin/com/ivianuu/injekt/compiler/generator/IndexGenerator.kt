@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.UniqueNameProvider
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -101,6 +102,7 @@ class IndexGenerator(
             )
 
             if (indices.isNotEmpty()) {
+                val nameProvider = UniqueNameProvider()
                 val fileName = file.packageFqName.pathSegments().joinToString("_") + "_${file.name}"
                 fileManager.generateFile(
                     packageFqName = InjektFqNames.IndexPackage,
@@ -112,7 +114,9 @@ class IndexGenerator(
                         indices
                             .distinct()
                             .forEach { index ->
-                                val indexName = index.fqName.pathSegments().joinToString("_")
+                                val indexName = nameProvider(
+                                    index.fqName.pathSegments().joinToString("_")
+                                )
                                 emitLine("@Index(fqName = \"${index.fqName}\", type = \"${index.type}\")")
                                 emitLine("internal val $indexName = Unit")
                         }
