@@ -148,7 +148,7 @@ fun Callable.substitute(map: Map<TypeRef, TypeRef>): Callable {
 fun Callable.substituteInputs(map: Map<TypeRef, TypeRef>): Callable {
     return copy(
         valueParameters = valueParameters.map {
-            it.copy(type = it.type.substitute(map))
+            it.copy(type = it.type.substitute(map, false))
         }
     )
 }

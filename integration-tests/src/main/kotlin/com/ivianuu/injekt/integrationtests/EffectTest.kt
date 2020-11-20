@@ -1112,4 +1112,35 @@ class EffectTest {
         """
     )
 
+    @Test
+    fun testEffectWhichDependsOnABindingOfItself() = codegen(
+        """
+            @Qualifier
+            @Target(AnnotationTarget.TYPE)
+            annotation class Default
+            
+            @Effect
+            annotation class ThisOrDefault { 
+                companion object {
+                    @Binding
+                    fun <T> thisOrDefault(
+                        binding: () -> T?,
+                        default: () -> @Default T
+                    ): T = binding?.invoke() ?: default()
+
+                    @Binding
+                    inline val <T> T.qualified: @Default T get() = this
+                }
+            }
+            
+            @ThisOrDefault
+            class AnnotatedBar
+            
+            @Component
+            abstract class MyComponent {
+                abstract val bar: AnnotatedBar
+            }
+        """
+    )
+
 }

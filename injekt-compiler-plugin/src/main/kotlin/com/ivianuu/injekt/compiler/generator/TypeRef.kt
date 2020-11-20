@@ -225,11 +225,18 @@ fun TypeRef.copy(
     effect
 )
 
-fun TypeRef.substitute(map: Map<TypeRef, TypeRef>): TypeRef {
+fun TypeRef.substitute(
+    map: Map<TypeRef, TypeRef>,
+    keepQualifiers: Boolean = true
+): TypeRef {
     fun TypeRef.substituteInner(unqualifiedMap: Map<TypeRef, TypeRef>): TypeRef {
-        unqualifiedMap[this.copy(qualifiers = emptyList())]?.let {
-            // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
-            return it.copy(qualifiers = qualifiers)
+        if (keepQualifiers) {
+            unqualifiedMap[this.copy(qualifiers = emptyList())]?.let {
+                // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
+                return it.copy(qualifiers = qualifiers)
+            }
+        } else {
+            unqualifiedMap[this]?.let { return it }
         }
 
         val substituted = copy(
