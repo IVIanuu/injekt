@@ -50,7 +50,7 @@ class EffectTest {
     )
 
     @Test
-    fun testEffectWithTypealias() = codegen(
+    fun testEffectWithTypeAlias() = codegen(
         """
             class Flow<T>
             @Effect
