@@ -20,6 +20,7 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
 
@@ -1142,5 +1143,92 @@ class EffectTest {
             }
         """
     )
+
+    @Test
+    fun testPrefersBindingOverEffectBinding() = codegen(
+        """
+            @Effect
+            annotation class AnyBinding { 
+                companion object {
+                    @Binding
+                    fun <T : Any> effect(): String = "effect"
+                }
+            }
+            
+            @AnyBinding
+            fun binding(): String  = "original"
+            
+            @Component
+            abstract class MyComponent {
+                abstract val string: String
+            }
+             
+            fun invoke() = component<MyComponent>().string
+        """
+    ) {
+        assertEquals("original", invokeSingleFile<Pair<Any, Any>>())
+    }
+
+    @Test
+    fun testEffectWithScopedBindingAnnotationOnSubject() = codegen(
+        """
+            @Effect
+            annotation class AnyBinding { 
+                companion object {
+                    @Binding
+                    val <T : Any> @ForEffect T.any: Any get() = this
+                }
+            }
+            
+            @AnyBinding
+            @Binding(MyComponent::class)
+            class AnnotatedBar(val foo: Foo)
+            
+            @Component
+            abstract class MyComponent {
+                abstract val bar: AnnotatedBar
+                abstract val any: Any
+                
+                @Binding protected fun foo() = Foo()
+            }
+            
+            val component = component<MyComponent>()
+            
+            fun invoke() = component.bar to component.any
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Any, Any>>()
+        assertSame(a, b)
+    }
+
+    @Test
+    fun testEffectWithScopedBindingAnnotationOnEffect() = codegen(
+        """
+            @Effect
+            annotation class AnyBinding { 
+                companion object {
+                    @Binding(MyComponent::class)
+                    val <T : Any> @ForEffect T.any: Any get() = this
+                }
+            }
+            
+            @AnyBinding
+            class AnnotatedBar(val foo: Foo)
+            
+            @Component
+            abstract class MyComponent {
+                abstract val any: Any
+                
+                @Binding protected fun foo() = Foo()
+            }
+            
+            val component = component<MyComponent>()
+            
+            fun invoke() = component.any to component.any
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Any, Any>>()
+        assertSame(a, b)
+    }
 
 }

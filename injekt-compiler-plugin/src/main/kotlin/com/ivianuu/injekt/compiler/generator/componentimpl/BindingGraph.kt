@@ -271,7 +271,7 @@ class BindingGraph(
         val bindingGroups = mutableListOf<MergeBindingGroup>()
         resolvedBindings.forEach { (key, binding) ->
             val bindingGroup = bindingGroups.singleOrNull {
-                it.type == binding.type
+                it.type.copy(effect = 0) == binding.type.copy(effect = 0)
             }
             if (bindingGroup != null) {
                 bindingGroup.keysToReplace += key
@@ -281,7 +281,7 @@ class BindingGraph(
                 if (binding is ChildComponentBindingNode)
                     owner.children -= binding.childComponent
             } else {
-                bindingGroups += MergeBindingGroup(key, binding)
+                bindingGroups += MergeBindingGroup(key.copy(effect = 0), binding)
                     .also { it.keysToReplace += binding.type }
             }
         }
