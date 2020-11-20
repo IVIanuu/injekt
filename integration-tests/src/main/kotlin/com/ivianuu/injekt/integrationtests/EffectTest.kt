@@ -32,7 +32,7 @@ class EffectTest {
             annotation class AnyBinding { 
                 companion object {
                     @Binding
-                    val <T : Any> T.any: Any get() = this
+                    val <T : Any> @ForEffect T.any: Any get() = this
                 }
             }
             
@@ -78,7 +78,7 @@ class EffectTest {
             annotation class AnyBinding {
                 companion object {
                     @Binding
-                    val <T : Any> T.any: Any get() = this
+                    val <T : Any> @ForEffect T.any: Any get() = this
                 }
             }
             
@@ -102,7 +102,7 @@ class EffectTest {
             annotation class AnyBinding {
                 companion object {
                     @Binding
-                    val <T : Any> T.any: Any get() = this
+                    val <T : Any> @ForEffect T.any: Any get() = this
                 }
             }
             
@@ -126,7 +126,7 @@ class EffectTest {
             annotation class AnyBinding {
                 companion object {
                     @Binding
-                    val <T : Any> T.any: Any get() = this
+                    val <T : Any> @ForEffect T.any: Any get() = this
                 }
             }
             
@@ -152,7 +152,7 @@ class EffectTest {
             annotation class AnyBinding {
                 companion object {
                     @Binding
-                    val <T : Any> T.any: Any get() = this
+                    val <T : Any> @ForEffect T.any: Any get() = this
                 }
             }
             
@@ -178,7 +178,7 @@ class EffectTest {
             annotation class AnyBinding {
                 companion object {
                     @Binding
-                    val <T : () -> Unit> T.any: Any get() = this
+                    val <T : () -> Unit> @ForEffect T.any: Any get() = this
                 }
             }
             
@@ -203,7 +203,7 @@ class EffectTest {
             annotation class AnyBinding {
                 companion object {
                     @Binding
-                    val <T : (Foo) -> Unit> T.any: Any get() = this
+                    val <T : (Foo) -> Unit> @ForEffect T.any: Any get() = this
                 }
             }
 
@@ -227,7 +227,7 @@ class EffectTest {
             annotation class SetEffect {
                 companion object {
                     @SetElements
-                    fun <T : MyInterface> intoSet(instance: T): Set<MyInterface> = setOf(instance)
+                    fun <T : MyInterface> intoSet(instance: @ForEffect T): Set<MyInterface> = setOf(instance)
                 }
             }
             
@@ -263,7 +263,7 @@ class EffectTest {
             annotation class SetEffect {
                 companion object {
                     @SetElements
-                    fun <T : () -> Unit> intoSet(instance: T): Set<() -> Unit> = setOf(instance)
+                    fun <T : () -> Unit> intoSet(instance: @ForEffect T): Set<() -> Unit> = setOf(instance)
                 }
             }
             
@@ -294,7 +294,7 @@ class EffectTest {
             annotation class UiComponentBinding {
                 companion object {
                     @SetElements
-                    fun <T : @Composable () -> Unit> intoSet(instance: T): Set<@Composable () -> Unit> = setOf(instance)
+                    fun <T : @Composable () -> Unit> intoSet(instance: @ForEffect T): Set<@Composable () -> Unit> = setOf(instance)
                 }
             }
             
@@ -326,7 +326,7 @@ class EffectTest {
                     annotation class UiComponentBinding {
                         companion object {
                             @SetElements
-                            fun <T : @Composable () -> Unit> intoSet(instance: T): Set<@Composable () -> Unit> = setOf(instance)
+                            fun <T : @Composable () -> Unit> intoSet(instance: @ForEffect T): Set<@Composable () -> Unit> = setOf(instance)
                         }
                     }
                     
@@ -364,7 +364,7 @@ class EffectTest {
             annotation class MyEffect {
                 companion object {
                     @Binding
-                    fun <T : () -> Unit> bind(instance: T): T = instance
+                    fun <T : () -> Unit> bind(instance: @ForEffect T): T = instance
                 }
             }
             
@@ -382,7 +382,7 @@ class EffectTest {
             annotation class AnyBinding {
                 companion object {
                     @Binding
-                    val <T : Any> T.any: Any get() = this
+                    val <T : Any> @ForEffect T.any: Any get() = this
                 }
             }
             
@@ -403,7 +403,7 @@ class EffectTest {
             annotation class AnyBinding {
                 companion object {
                     @Binding
-                    val <T : Any> T.any: Any get() = this
+                    val <T : Any> @ForEffect T.any: Any get() = this
                 }
             }
             
@@ -425,7 +425,7 @@ class EffectTest {
             annotation class AnyBinding {
                 companion object {
                     @Binding
-                    val <T : Any> T.any: Any get() = this
+                    val <T : Any> @ForEffect T.any: Any get() = this
                 }
             }
             
@@ -447,7 +447,7 @@ class EffectTest {
             annotation class AnyBinding {
                 companion object {
                     @Binding
-                    val <T : Any> T.any: Any get() = this
+                    val <T : Any> @ForEffect T.any: Any get() = this
                 }
             }
             
@@ -473,7 +473,7 @@ class EffectTest {
             annotation class AnyBinding { 
                 companion object {
                     @Binding(MyComponent::class)
-                    val <T : Any> T.any: Any get() = this
+                    val <T : Any> @ForEffect T.any: Any get() = this
                 }
             }
             
@@ -505,7 +505,7 @@ class EffectTest {
             annotation class AnyBinding { 
                 companion object {
                     @Binding
-                    suspend fun <T : Any> T.any(): Any = this
+                    suspend fun <T : Any> @ForEffect T.any(): Any = this
                 }
             }
             
@@ -529,7 +529,7 @@ class EffectTest {
                 companion object {
                     @Binding
                     @Composable
-                    val <T : Any> T.any: Any get() = this
+                    val <T : Any> @ForEffect T.any: Any get() = this
                 }
             }
             
@@ -553,7 +553,7 @@ class EffectTest {
             annotation class MyEffect(val arg: Array<String>) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@Arg("arg") arg: Array<String>, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: Array<String>, instance: @ForEffect T) = arg
                 }
             }
 
@@ -574,7 +574,7 @@ class EffectTest {
             annotation class MyEffect(val arg: Boolean) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@Arg("arg") arg: Boolean, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: Boolean, instance: @ForEffect T) = arg
                 }
             }
 
@@ -595,7 +595,7 @@ class EffectTest {
             annotation class MyEffect(val arg: Byte) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@Arg("arg") arg: Byte, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: Byte, instance: @ForEffect T) = arg
                 }
             }
 
@@ -616,7 +616,7 @@ class EffectTest {
             annotation class MyEffect(val arg: Char) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@Arg("arg") arg: Char, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: Char, instance: @ForEffect T) = arg
                 }
             }
 
@@ -637,7 +637,7 @@ class EffectTest {
             annotation class MyEffect(val arg: Double) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@Arg("arg") arg: Double, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: Double, instance: @ForEffect T) = arg
                 }
             }
 
@@ -660,7 +660,7 @@ class EffectTest {
             annotation class MyEffect(val arg: MyEnum) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@Arg("arg") arg: MyEnum, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: MyEnum, instance: @ForEffect T) = arg
                 }
             }
 
@@ -681,7 +681,7 @@ class EffectTest {
             annotation class MyEffect(val arg: Float) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@Arg("arg") arg: Float, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: Float, instance: @ForEffect T) = arg
                 }
             }
 
@@ -702,7 +702,7 @@ class EffectTest {
             annotation class MyEffect(val arg: Int) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@Arg("arg") arg: Int, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: Int, instance: @ForEffect T) = arg
                 }
             }
 
@@ -723,7 +723,7 @@ class EffectTest {
             annotation class MyEffect(val arg: KClass<*>) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@Arg("arg") arg: KClass<*>, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: KClass<*>, instance: @ForEffect T) = arg
                 }
             }
 
@@ -744,7 +744,7 @@ class EffectTest {
             annotation class MyEffect(val arg: Long) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@Arg("arg") arg: Long, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: Long, instance: @ForEffect T) = arg
                 }
             }
 
@@ -765,7 +765,7 @@ class EffectTest {
             annotation class MyEffect(val arg: Short) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@Arg("arg") arg: Short, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: Short, instance: @ForEffect T) = arg
                 }
             }
 
@@ -786,7 +786,7 @@ class EffectTest {
             annotation class MyEffect(val arg: String) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@Arg("arg") arg: String, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: String, instance: @ForEffect T) = arg
                 }
             }
 
@@ -807,7 +807,7 @@ class EffectTest {
             annotation class MyEffect(val arg: UByte) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@Arg("arg") arg: UByte, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: UByte, instance: @ForEffect T) = arg
                 }
             }
 
@@ -828,7 +828,7 @@ class EffectTest {
             annotation class MyEffect(val arg: UInt) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@Arg("arg") arg: UInt, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: UInt, instance: @ForEffect T) = arg
                 }
             }
 
@@ -849,7 +849,7 @@ class EffectTest {
             annotation class MyEffect(val arg: ULong) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@Arg("arg") arg: ULong, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: ULong, instance: @ForEffect T) = arg
                 }
             }
 
@@ -870,7 +870,7 @@ class EffectTest {
             annotation class MyEffect(val arg: UShort) {
                 companion object {
                     @Binding
-                    fun <T> bindArg(@Arg("arg") arg: UShort, instance: T) = arg
+                    fun <T> bindArg(@Arg("arg") arg: UShort, instance: @ForEffect T) = arg
                 }
             }
 
@@ -891,7 +891,7 @@ class EffectTest {
             annotation class Alias<T> {
                 companion object {
                     @Binding
-                    fun <@Arg("T") T, S : T> bindAlias(instance: S): T = instance
+                    fun <@Arg("T") T, S : T> bindAlias(instance: @ForEffect S): T = instance
                 }
             }
 
@@ -928,7 +928,7 @@ class EffectTest {
                         @Arg("key") key: String,
                         @Arg("dependencies") dependencies: Array<String>?,
                         @Arg("dependents") dependents: Array<String>?,
-                        content: T
+                        content: @ForEffect T
                     ): UiDecorators = setOf(UiDecorator(
                         key = key,
                         dependencies = dependencies?.toSet() ?: emptySet(),
@@ -943,8 +943,8 @@ class EffectTest {
                 companion object {
                     @UiDecoratorBinding("app_theme", dependencies = ["system_bars"])
                     fun <T : @Composable (@Composable () -> Unit) -> Unit> uiDecorator(
-                        instance: T
-                    ) = instance
+                        instance: @ForEffect T
+                    ): T = instance
                 }
             }
 
@@ -975,13 +975,13 @@ class EffectTest {
             annotation class MapBindings {
                 companion object {
                     @Binding
-                    val <T : Map<K, V>, K, V> T.map: Map<K, V> get() = this
+                    val <T : Map<K, V>, K, V> @ForEffect T.map: Map<K, V> get() = this
                 
                     @Binding
-                    val <T : Map<K, V>, K, V> T.firstKey: K get() = keys.first()
+                    val <T : Map<K, V>, K, V> @ForEffect T.firstKey: K get() = keys.first()
                     
                     @Binding
-                    val <T : Map<K, V>, K, V> T.firstValue: V get() = values.first()
+                    val <T : Map<K, V>, K, V> @ForEffect T.firstValue: V get() = values.first()
                 }
             }
 
@@ -1006,13 +1006,13 @@ class EffectTest {
             annotation class MapBindings {
                 companion object {
                     @Binding
-                    val <T : Map<K, V>, K, V> T.map: Map<K, V> get() = this
+                    val <T : Map<K, V>, K, V> @ForEffect T.map: Map<K, V> get() = this
                 
                     @Binding
-                    val <T : Map<K, V>, K, V> T.firstKey: K get() = keys.first()
+                    val <T : Map<K, V>, K, V> @ForEffect T.firstKey: K get() = keys.first()
                     
                     @Binding
-                    val <T : Map<K, V>, K, V> T.firstValue: V get() = values.first()
+                    val <T : Map<K, V>, K, V> @ForEffect T.firstValue: V get() = values.first()
                 }
             }
 
@@ -1035,7 +1035,7 @@ class EffectTest {
             annotation class StoreBinding {
                 companion object {
                     @Binding
-                    fun <T : Store<S, A>, S, A> state(instance: T): S = error("")
+                    fun <T : Store<S, A>, S, A> state(instance: @ForEffect T): S = error("")
                 }
             }
             
@@ -1098,7 +1098,7 @@ class EffectTest {
             annotation class AnyBinding { 
                 companion object {
                     @Binding
-                    val <T : Any> T.any: Any get() = this
+                    val <T : Any> @ForEffect T.any: Any get() = this
                 }
             }
             
@@ -1124,12 +1124,12 @@ class EffectTest {
                 companion object {
                     @Binding
                     fun <T> thisOrDefault(
-                        binding: () -> T?,
+                        binding: () -> @ForEffect T?,
                         default: () -> @Default T
                     ): T = binding?.invoke() ?: default()
 
                     @Binding
-                    inline val <T> T.qualified: @Default T get() = this
+                    inline val <T> @ForEffect T.qualified: @Default T get() = this
                 }
             }
             

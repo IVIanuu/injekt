@@ -515,7 +515,7 @@ class DecoratorTest {
                 companion object {
                     @SetElements
                     fun <T : suspend (S) -> Unit, S> bind(
-                        instance: T
+                        instance: @ForEffect T
                     ): Set<EffectBlock<S>> = error("")
                 }
             }
@@ -531,7 +531,7 @@ class DecoratorTest {
                 companion object {
                     @Binding
                     inline fun <reified T : MutableFlow<S>, reified S> uiStore(
-                        noinline provider: (Scope) -> T
+                        noinline provider: (Scope) -> @ForEffect T
                     ): MutableFlow<S> = error("")
                 }
             }

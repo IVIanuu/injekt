@@ -130,7 +130,7 @@ class EssentialsTest {
             annotation class StoreBinding {
                 companion object { 
                     @Binding(MyComponent::class)
-                    fun <T : Store<S, A>, S, A> storeFromProvider(provider: (Scope) -> T): BoundStore<S, A> =
+                    fun <T : Store<S, A>, S, A> storeFromProvider(provider: (Scope) -> @ForEffect T): BoundStore<S, A> =
                         provider(object : Scope {})
                 
                     @Binding
@@ -321,4 +321,52 @@ class EssentialsTest {
     ) {
     }
 
+    @Test
+    fun test() = codegen(
+        """
+            interface Flow<T>
+            
+            interface MutableFlow<T>
+            
+            interface Pref<T> {
+                val flow: Flow<T>
+            }
+            
+            @Qualifier
+            @Target(AnnotationTarget.TYPE)
+            annotation class UiState
+            
+            @Qualifier
+            @Target(AnnotationTarget.TYPE)
+            annotation class Initial
+
+            @Binding
+            fun <T> MutableFlow<T>.latest(): @UiState T = error("")
+            
+            @Binding
+            fun <T> Flow<T>.latest(initial: @Initial T): @UiState T = error("")
+            
+            @Binding
+            fun <T> Pref<T>.flow(): Flow<T> = error("")
+            
+            @Effect
+            annotation class PrefBinding {
+                companion object {
+                    @Binding
+                    fun <T> pref(initial: () -> @Initial T): Pref<T> = error("")
+                
+                    @Binding
+                    inline fun <reified T> initial(): @Initial T = T::class.java.newInstance()
+                }
+            }
+
+            @PrefBinding
+            class MyState
+
+            @Component
+            abstract class MyComponent {
+                abstract val state: @UiState MyState
+            }
+        """
+    )
 }

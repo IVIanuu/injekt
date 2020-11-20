@@ -227,16 +227,26 @@ fun TypeRef.copy(
 
 fun TypeRef.substitute(
     map: Map<TypeRef, TypeRef>,
-    keepQualifiers: Boolean = true
+    forEffect: Boolean = false
 ): TypeRef {
     fun TypeRef.substituteInner(unqualifiedMap: Map<TypeRef, TypeRef>): TypeRef {
-        if (keepQualifiers) {
+        if (forEffect) {
+            // special treatment for effect types
+            // @MyQualifier @ForEffect T -> @MyQualifier EffectType
+            unqualifiedMap[this.copy(
+                qualifiers = qualifiers.filter {
+                    it.type.classifier.fqName == InjektFqNames.ForEffect
+                }
+            )]?.let {
+                return it.copy(
+                    qualifiers = qualifiers.filterNot { it.type.classifier.fqName == InjektFqNames.ForEffect }
+                )
+            }
+        } else {
             unqualifiedMap[this.copy(qualifiers = emptyList())]?.let {
                 // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
                 return it.copy(qualifiers = qualifiers)
             }
-        } else {
-            unqualifiedMap[this]?.let { return it }
         }
 
         val substituted = copy(
@@ -255,7 +265,11 @@ fun TypeRef.substitute(
         return substituted
     }
 
-    return substituteInner(map.mapKeys { it.key.copy(qualifiers = emptyList()) })
+    return if (forEffect) {
+        substituteInner(map)
+    } else {
+        substituteInner(map.mapKeys { it.key.copy(qualifiers = emptyList()) })
+    }
 }
 
 val STAR_PROJECTION_TYPE = SimpleTypeRef(
@@ -346,7 +360,7 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
 
     // Conservatively shorten the name if the length exceeds 128
     return (
-        if (fullTypeName.length <= 128) fullTypeName
+        if (fullTypeName.length <= 100000) fullTypeName
         else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}")
         )
         .removeIllegalChars()

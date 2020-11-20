@@ -61,5 +61,9 @@ annotation class Decorator(val targetComponent: KClass<*> = Nothing::class)
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Effect
 
+@Qualifier
+@Target(AnnotationTarget.TYPE)
+annotation class ForEffect
+
 @Target(AnnotationTarget.TYPE_PARAMETER, AnnotationTarget.VALUE_PARAMETER)
 annotation class Arg(val name: String)

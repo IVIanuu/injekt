@@ -21,6 +21,7 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Effect
+import com.ivianuu.injekt.ForEffect
 import com.ivianuu.injekt.ImplBinding
 import com.ivianuu.injekt.MapEntries
 import kotlin.reflect.KClass
@@ -29,9 +30,9 @@ import kotlin.reflect.KClass
 annotation class WorkerBinding {
     companion object {
         @MapEntries
-        inline fun <reified T : ListenableWorker> workerIntoMap(noinline factory: (Context, WorkerParameters) -> T): Workers {
-            return mapOf(T::class to factory)
-        }
+        inline fun <reified T : ListenableWorker> workerIntoMap(
+            noinline factory: (Context, WorkerParameters) -> @ForEffect T
+        ): Workers = mapOf(T::class to factory)
     }
 }
 

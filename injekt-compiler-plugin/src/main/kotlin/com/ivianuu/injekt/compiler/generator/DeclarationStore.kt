@@ -150,8 +150,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             val currentBindings = newBindings.toList()
             generatedBindings += currentBindings
             newBindings = currentBindings
-                .map { binding ->
-                    val finalBinding = binding.newEffect(++effect)
+                .flatMap { binding ->
+                    val finalBinding = binding.newEffect(this, ++effect)
                     if (finalBinding.isFunBinding) {
                         effectFunBindings[finalBinding.effectType] =
                             allFunBindings
@@ -159,9 +159,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     } else {
                         effectBindings[finalBinding.effectType] = finalBinding
                     }
-                    finalBinding
+                    finalBinding.effects
                 }
-                .flatMap { it.effects }
         }
 
         generatedBindings.toList()
