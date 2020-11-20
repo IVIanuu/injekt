@@ -800,6 +800,7 @@ class BindingCollections(
                 ?.let { entries ->
                     val dependenciesByEntry = entries.map { (entry) ->
                         entry to entry.valueParameters
+                            .filter { it.argName == null }
                             .map {
                                 BindingRequest(
                                     it.type,
@@ -823,6 +824,7 @@ class BindingCollections(
                 ?.let { elements ->
                     val dependenciesByElement = elements.map { (element) ->
                         element to element.valueParameters
+                            .filter { it.argName == null }
                             .map {
                                 BindingRequest(
                                     it.type,
