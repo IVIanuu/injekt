@@ -360,7 +360,7 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
 
     // Conservatively shorten the name if the length exceeds 128
     return (
-        if (fullTypeName.length <= 100000) fullTypeName
+        if (fullTypeName.length <= 128) fullTypeName
         else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}")
         )
         .removeIllegalChars()
