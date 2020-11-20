@@ -134,7 +134,11 @@ class ComponentStatements(
             is FunBindingNode -> funBindingExpression(binding)
             is InputBindingNode -> inputExpression(binding)
             is MapBindingNode -> mapExpression(binding)
-            is MissingBindingNode -> error("Cannot create expression for a missing binding ${binding.type}")
+            is MissingBindingNode -> if (binding.type.isMarkedNullable) {
+                { emit("null") }
+            } else {
+                error("Cannot create expression for a non null missing binding ${binding.type}")
+            }
             is ProviderBindingNode -> providerExpression(binding)
             is SelfBindingNode -> selfExpression(binding)
             is SetBindingNode -> setExpression(binding)
@@ -264,7 +268,8 @@ class ComponentStatements(
                     } else {
                         val request = valueParameter.toBindingRequest(binding.callable, emptyMap())
                         val dependencyBinding = owner.graph.getBinding(request)
-                        if (dependencyBinding is MissingBindingNode) return@mapNotNull null
+                        if (!request.type.isMarkedNullable &&
+                            dependencyBinding is MissingBindingNode) return@mapNotNull null
                         valueParameter.name to (dependencyBinding.type to getBindingExpression(request))
                     }
                 }.toMap()
@@ -293,7 +298,8 @@ class ComponentStatements(
                             val requests = binding.dependenciesByEntry[callable]!!
                             val request = requests.first { it.origin.shortName() == parameter.name }
                             val dependencyBinding = owner.graph.getBinding(request)
-                            if (dependencyBinding is MissingBindingNode) return@mapNotNull null
+                            if (!request.type.isMarkedNullable &&
+                                dependencyBinding is MissingBindingNode) return@mapNotNull null
                             dependencyBinding.type to getBindingExpression(request)
                         }
                     }
@@ -330,7 +336,8 @@ class ComponentStatements(
                             val requests = binding.dependenciesByElement[callable]!!
                             val request = requests.first { it.origin.shortName() == parameter.name }
                             val dependencyBinding = owner.graph.getBinding(request)
-                            if (dependencyBinding is MissingBindingNode) return@mapNotNull null
+                            if (!request.type.isMarkedNullable &&
+                                dependencyBinding is MissingBindingNode) return@mapNotNull null
                             dependencyBinding.type to getBindingExpression(request)
                         }
                     }
@@ -366,7 +373,8 @@ class ComponentStatements(
                             it.origin.shortName() == parameter.name
                         }
                         val dependencyBinding = owner.graph.getBinding(request)
-                        if (dependencyBinding is MissingBindingNode) return@mapNotNull null
+                        if (!request.type.isMarkedNullable &&
+                            dependencyBinding is MissingBindingNode) return@mapNotNull null
                         dependencyBinding.type to getBindingExpression(request)
                     }
                 }
@@ -424,7 +432,8 @@ class ComponentStatements(
                                 else -> {
                                     val dependencyRequest = dependencies[dependencyIndex++]
                                     val dependencyBinding = owner.graph.getBinding(dependencyRequest)
-                                    if (dependencyBinding is MissingBindingNode) return@mapNotNull null
+                                    if (!dependencyRequest.type.isMarkedNullable &&
+                                        dependencyBinding is MissingBindingNode) return@mapNotNull null
                                     (dependencyBinding.type to getBindingExpression(dependencyRequest))
                                 }
                             })
@@ -689,10 +698,6 @@ class ComponentStatements(
                             if (argument != null) {
                                 emit("${parameter.name} = ")
                                 argument.second(this)
-                                if (argumentsIndex++ != nonNullArgumentsCount) emitLine(",")
-                            }
-                            else if (!parameter.hasDefault) {
-                                emit("${parameter.name} = null")
                                 if (argumentsIndex++ != nonNullArgumentsCount) emitLine(",")
                             }
                         }

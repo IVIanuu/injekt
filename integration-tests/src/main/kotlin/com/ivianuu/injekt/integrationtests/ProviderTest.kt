@@ -2,6 +2,7 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
+import junit.framework.Assert.assertNull
 import org.junit.Test
 
 class ProviderTest {
@@ -61,6 +62,20 @@ class ProviderTest {
         """
     ) {
         invokeSingleFile()
+    }
+
+    @Test
+    fun testNullableProviderMissingBinding() = codegen(
+        """
+            @Component
+            abstract class ProviderComponent {
+                abstract val fooFactory: () -> Foo?
+            }
+
+            fun invoke() = component<ProviderComponent>().fooFactory()
+        """
+    ) {
+        assertNull(invokeSingleFile())
     }
 
 }
