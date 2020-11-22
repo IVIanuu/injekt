@@ -322,50 +322,59 @@ class EssentialsTest {
     }
 
     @Test
-    fun test() = codegen(
+    fun testPref() = codegen(
         """
+            interface DataStore<T>
             interface Flow<T>
-            
-            interface MutableFlow<T>
-            
-            interface Pref<T> {
-                val flow: Flow<T>
-            }
-            
-            @Qualifier
-            @Target(AnnotationTarget.TYPE)
-            annotation class UiState
+            interface StateFlow<T> : Flow<T>
             
             @Qualifier
             @Target(AnnotationTarget.TYPE)
             annotation class Initial
-
-            @Binding
-            fun <T> MutableFlow<T>.latest(): @UiState T = error("")
-            
-            @Binding
-            fun <T> Flow<T>.latest(initial: @Initial T): @UiState T = error("")
-            
-            @Binding
-            fun <T> Pref<T>.flow(): Flow<T> = error("")
             
             @Effect
-            annotation class PrefBinding {
+            annotation class StateBinding {
                 companion object {
                     @Binding
-                    fun <T> pref(initial: () -> @Initial T): Pref<T> = error("")
-                
-                    @Binding
-                    inline fun <reified T> initial(): @Initial T = T::class.java.newInstance()
+                    inline val <T : StateFlow<S>, S> @ForEffect T.flow: Flow<S>
+                        get() = this
                 }
             }
+            
+            @Effect
+            @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.TYPEALIAS)
+            annotation class PrefBinding(val name: String) {
+                companion object {
+                    @Binding(MyComponent::class)
+                    inline fun <reified T : Any> pref(
+                        @Arg("name") name: String,
+                        crossinline initial: () -> @InitialOrFallback T
+                    ): DataStore<T> = error("")
+            
+                    @StateBinding
+                    @Binding(MyComponent::class)
+                    fun <T : Any> stateFlow(
+                        dataStore: DataStore<T>,
+                        initial: @InitialOrFallback T
+                    ): StateFlow<T> = error("")
+                }
+            }
+            
+            @Qualifier
+            @Target(AnnotationTarget.TYPE)
+            internal annotation class InitialOrFallback
+            @Binding
+            inline fun <reified T : Any> initialOrFallback(initial: @Initial T?): @InitialOrFallback T =
+                initial ?: T::class.java.newInstance()
 
-            @PrefBinding
-            class MyState
+            @PrefBinding("")
+            typealias MyType = String
+            @Binding
+            fun initialMyType(): @Initial MyType = "" 
 
             @Component
             abstract class MyComponent {
-                abstract val state: @UiState MyState
+                abstract val flow: Flow<MyType>
             }
         """
     )

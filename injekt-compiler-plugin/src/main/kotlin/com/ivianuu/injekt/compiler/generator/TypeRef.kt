@@ -436,13 +436,10 @@ fun TypeRef.getStarSubstitutionMap(baseType: TypeRef): Map<TypeRef, TypeRef> {
 }
 
 fun TypeRef.isAssignable(superType: TypeRef): Boolean {
-    if (!isMarkedNullable && superType.isMarkedNullable) return false
-    if (this == superType) return true
-
-    if ((isStarProjection && !superType.classifier.isTypeParameter) ||
-        (superType.isStarProjection && !classifier.isTypeParameter)) return true
-
     if (isStarProjection || superType.isStarProjection) return true
+
+    if (this == superType &&
+        !isMarkedNullable && superType.isMarkedNullable) return false
 
     if (effect != superType.effect) return false
     if (!qualifiers.isAssignable(superType.qualifiers)) return false
@@ -450,7 +447,7 @@ fun TypeRef.isAssignable(superType: TypeRef): Boolean {
 
     if (superType.classifier.isTypeParameter) {
         return superType.classifier.superTypes.all { upperBound ->
-            isAssignableToTypeTypeParameter(upperBound)
+            isSubTypeOf(upperBound)
         }
     }
 
@@ -462,10 +459,11 @@ fun TypeRef.isAssignable(superType: TypeRef): Boolean {
     return true
 }
 
-fun TypeRef.isAssignableToTypeTypeParameter(superType: TypeRef): Boolean {
+fun TypeRef.isSubTypeOf(superType: TypeRef): Boolean {
     if (isMarkedNullable && !superType.isMarkedNullable) return false
     if (superType.classifier.fqName.asString() == KotlinBuiltIns.FQ_NAMES.any.asString() &&
-        superType.isMarkedNullable)
+        (isMarkedNullable == superType.isMarkedNullable || superType.isMarkedNullable) &&
+        (superType.qualifiers.isEmpty() || qualifiers.isAssignable(superType.qualifiers)))
         return true
 
     if (effect != superType.effect) return false
@@ -474,7 +472,7 @@ fun TypeRef.isAssignableToTypeTypeParameter(superType: TypeRef): Boolean {
     val subTypeView = subtypeView(superType.classifier) ?: return false
     return subTypeView.typeArguments.zip(superType.typeArguments).all { (subTypeArg, superTypeArg) ->
         superTypeArg.superTypes().all {
-            subTypeArg.isAssignableToTypeTypeParameter(it)
+            subTypeArg.isSubTypeOf(it)
         }
     }
 }
