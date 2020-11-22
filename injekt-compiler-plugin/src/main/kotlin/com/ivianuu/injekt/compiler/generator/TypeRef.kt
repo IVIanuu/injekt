@@ -436,6 +436,7 @@ fun TypeRef.getStarSubstitutionMap(baseType: TypeRef): Map<TypeRef, TypeRef> {
 }
 
 fun TypeRef.isAssignable(superType: TypeRef): Boolean {
+    if (!isMarkedNullable && superType.isMarkedNullable) return false
     if (this == superType) return true
 
     if ((isStarProjection && !superType.classifier.isTypeParameter) ||
@@ -462,6 +463,7 @@ fun TypeRef.isAssignable(superType: TypeRef): Boolean {
 }
 
 fun TypeRef.isAssignableToTypeTypeParameter(superType: TypeRef): Boolean {
+    if (isMarkedNullable && !superType.isMarkedNullable) return false
     if (superType.classifier.fqName.asString() == KotlinBuiltIns.FQ_NAMES.any.asString() &&
         superType.isMarkedNullable)
         return true

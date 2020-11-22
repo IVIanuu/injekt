@@ -716,17 +716,27 @@ class ComponentTest {
     }
 
     @Test
-    fun testIgnoresNullability() = codegen(
+    fun testCanInjectNullableTypeForNonNullType() = codegen(
+        """
+            @Component
+            abstract class FooComponent { 
+                abstract val foo: Foo?
+                @Binding protected fun foo(): Foo = Foo()
+            }
+            """
+    )
+
+    @Test
+    fun testCannotInjectNonNullTypeForNullableBinding() = codegen(
         """
             @Component
             abstract class FooComponent { 
                 abstract val foo: Foo
-                @Binding protected fun foo(): Foo = Foo()
-                @Binding protected fun nullableFoo(): Foo? = null
+                @Binding protected fun foo(): Foo? = Foo()
             }
             """
     ) {
-        assertInternalError("multiple")
+        assertInternalError("No binding")
     }
 
     @Test
