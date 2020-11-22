@@ -11,6 +11,7 @@ import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.copy
 import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.isAssignable
+import com.ivianuu.injekt.compiler.generator.isSubTypeOf
 import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.test.codegen
 import org.jetbrains.kotlin.analyzer.AnalysisResult
@@ -117,6 +118,31 @@ class TypeRefTest {
     }
 
     @Test
+    fun testTypeAliasIsNotAssignableToExpandedType() = withAnalysisContext {
+        typeAlias(stringType) shouldNotBeAssignable stringType
+    }
+
+    @Test
+    fun testTypeAliasIsNotAssignableToOtherTypeAliasOfTheSameExpandedType() = withAnalysisContext {
+        typeAlias(stringType) shouldNotBeAssignable typeAlias(stringType)
+    }
+
+    @Test
+    fun testTypeAliasIsNotSubTypeOfToOtherTypeAliasOfTheSameExpandedType() = withAnalysisContext {
+        typeAlias(stringType) shouldNotBeSubTypeOf typeAlias(stringType)
+    }
+
+    @Test
+    fun testTypeAliasIsSubTypeOfExpandedType() = withAnalysisContext {
+        typeAlias(stringType) shouldBeSubTypeOf stringType
+    }
+
+    @Test
+    fun testNestedTypeAliasIsSubTypeOfExpandedType() = withAnalysisContext {
+        typeAlias(typeAlias(stringType)) shouldBeSubTypeOf stringType
+    }
+
+    @Test
     fun testSameComposabilityIsAssignable() = withAnalysisContext {
         composableFunction(0) shouldBeAssignable composableFunction(0)
     }
@@ -187,6 +213,18 @@ class TypeRefTest {
     private infix fun TypeRef.shouldNotBeAssignable(other: TypeRef) {
         if (isAssignable(other)) {
             throw AssertionError("'$this' is assignable '$other'")
+        }
+    }
+
+    private infix fun TypeRef.shouldBeSubTypeOf(other: TypeRef) {
+        if (!isSubTypeOf(other)) {
+            throw AssertionError("'$this' is not sub type of '$other'")
+        }
+    }
+
+    private infix fun TypeRef.shouldNotBeSubTypeOf(other: TypeRef) {
+        if (isSubTypeOf(other)) {
+            throw AssertionError("'$this' is sub type of '$other'")
         }
     }
 
