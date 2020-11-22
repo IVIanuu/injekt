@@ -430,7 +430,8 @@ class BindingGraph(
                 val substitutionMap = getSubstitutionMap(listOf(request.type to callable.type))
                 val finalCallable = callable.substitute(substitutionMap)
                 CallableBindingNode(
-                    type = request.type.substituteStars(finalCallable.type),
+                    type = request.type.substituteStars(finalCallable.type)
+                        .makeNonNullIfPossible(finalCallable),
                     rawType = finalCallable.originalType,
                     owner = owner,
                     declaredInComponent = bindingOwner,
@@ -449,7 +450,8 @@ class BindingGraph(
                 val substitutionMap = getSubstitutionMap(listOf(request.type to callable.type))
                 val finalCallable = callable.substitute(substitutionMap)
                 CallableBindingNode(
-                    type = request.type.substituteStars(finalCallable.type),
+                    type = request.type.substituteStars(finalCallable.type)
+                        .makeNonNullIfPossible(finalCallable),
                     rawType = finalCallable.originalType,
                     owner = owner,
                     declaredInComponent = bindingOwner,
@@ -467,7 +469,8 @@ class BindingGraph(
                 val substitutionMap = getSubstitutionMap(listOf(request.type to callable.type))
                 val finalCallable = callable.substitute(substitutionMap)
                 CallableBindingNode(
-                    type = request.type.substituteStars(finalCallable.type),
+                    type = request.type.substituteStars(finalCallable.type)
+                        .makeNonNullIfPossible(finalCallable),
                     rawType = finalCallable.originalType,
                     owner = owner,
                     declaredInComponent = null,
@@ -618,7 +621,8 @@ class BindingGraph(
                 val substitutionMap = getSubstitutionMap(listOf(request.type to callable.type))
                 val finalCallable = callable.substitute(substitutionMap)
                 CallableBindingNode(
-                    type = request.type.substituteStars(finalCallable.type),
+                    type = request.type.substituteStars(finalCallable.type)
+                        .makeNonNullIfPossible(finalCallable),
                     rawType = finalCallable.originalType,
                     owner = owner,
                     declaredInComponent = null,
@@ -633,7 +637,8 @@ class BindingGraph(
                 val substitutionMap = getSubstitutionMap(listOf(request.type to funBinding.type))
                 val finalCallable = funBinding.callable.substitute(substitutionMap)
                 FunBindingNode(
-                    type = request.type.substituteStars(funBinding.type),
+                    type = request.type.substituteStars(funBinding.type)
+                        .makeNonNullIfPossible(finalCallable),
                     rawType = funBinding.originalType,
                     owner = owner,
                     dependencies = finalCallable.getDependencies(request.type, false),

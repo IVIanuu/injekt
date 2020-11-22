@@ -730,6 +730,20 @@ class ComponentTest {
     }
 
     @Test
+    fun testBindingForNullableRequestCanGetUsedForNonNullRequest() = codegen(
+        """
+            @Component
+            abstract class MyComponent {
+                abstract val nullableFoo: Foo?
+                abstract val nonNullFoo: Foo
+                
+                @Binding
+                protected fun foo() = Foo()
+            }
+        """
+    )
+
+    @Test
     fun testReturnsInstanceForNullableBinding() = codegen(
         """
             @Component
@@ -808,6 +822,25 @@ class ComponentTest {
             
             fun invoke(): Foo? { 
                 return component<FooComponent>().dep.foo
+            }
+        """
+    ) {
+        assertNull(invokeSingleFile())
+    }
+
+    @Test
+    fun testUsesNullOnMissingGenericNullableDependency() = codegen(
+        """
+            @Binding
+            class Dep<T>(val value: T?)
+            
+            @Component
+            abstract class FooComponent {
+                abstract val dep: Dep<Foo>
+            }
+            
+            fun invoke(): Foo? { 
+                return component<FooComponent>().dep.value
             }
         """
     ) {

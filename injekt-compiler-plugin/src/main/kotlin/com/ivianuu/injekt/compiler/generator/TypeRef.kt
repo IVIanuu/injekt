@@ -239,13 +239,17 @@ fun TypeRef.substitute(
                 }
             )]?.let {
                 return it.copy(
+                    isMarkedNullable = if (!isStarProjection) isMarkedNullable else it.isMarkedNullable,
                     qualifiers = qualifiers.filterNot { it.type.classifier.fqName == InjektFqNames.ForEffect }
                 )
             }
         } else {
             unqualifiedMap[this.copy(qualifiers = emptyList())]?.let {
-                // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
-                return it.copy(qualifiers = qualifiers)
+                return it.copy(
+                    isMarkedNullable = if (!isStarProjection) isMarkedNullable else it.isMarkedNullable,
+                    // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
+                    qualifiers = qualifiers
+                )
             }
         }
 
