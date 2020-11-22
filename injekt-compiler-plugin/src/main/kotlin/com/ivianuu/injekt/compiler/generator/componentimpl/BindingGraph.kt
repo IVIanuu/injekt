@@ -803,7 +803,7 @@ class BindingCollections(
                                 BindingRequest(
                                     it.type,
                                     entry.fqName.child(it.name),
-                                    it.hasDefault,
+                                    !it.hasDefault,
                                     entry.callableKind,
                                     entry.isFunBinding
                                 )
@@ -827,7 +827,7 @@ class BindingCollections(
                                 BindingRequest(
                                     it.type,
                                     element.fqName.child(it.name),
-                                    it.hasDefault,
+                                    !it.hasDefault,
                                     element.callableKind,
                                     element.isFunBinding
                                 )
