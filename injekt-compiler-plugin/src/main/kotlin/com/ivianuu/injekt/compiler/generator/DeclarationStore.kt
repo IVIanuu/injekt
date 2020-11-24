@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.DeserializedDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -462,7 +463,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .getContributedDescriptors()
             .filterIsInstance<CallableDescriptor>()
             .filter {
-                it.visibility == Visibilities.PUBLIC &&
+                it.visibility == DescriptorVisibilities.PUBLIC &&
                         it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() != true
             }
             .map { callableForDescriptor(it as FunctionDescriptor) }

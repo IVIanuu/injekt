@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentExpression
+import org.jetbrains.kotlin.descriptors.DescriptorVisibility
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.name.FqName
@@ -40,7 +41,7 @@ data class Callable(
     val effects: List<Callable>,
     val isExternal: Boolean,
     val isInline: Boolean,
-    val visibility: Visibility,
+    val visibility: DescriptorVisibility,
     val modality: Modality,
     val receiver: ClassifierRef?,
     val isFunBinding: Boolean,

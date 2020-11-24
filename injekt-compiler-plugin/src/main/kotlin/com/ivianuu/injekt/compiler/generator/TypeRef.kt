@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
+import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.builtins.isSuspendFunctionType
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -113,7 +114,7 @@ class KotlinTypeRef(
         finalType.isSuspendFunctionType
     }
     override val isExtensionFunction: Boolean by unsafeLazy {
-        finalType.hasAnnotation(KotlinBuiltIns.FQ_NAMES.extensionFunctionType)
+        finalType.hasAnnotation(StandardNames.FqNames.extensionFunctionType)
     }
     override val isModule: Boolean by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.Module)
@@ -277,7 +278,7 @@ fun TypeRef.substitute(
 }
 
 val STAR_PROJECTION_TYPE = SimpleTypeRef(
-    classifier = ClassifierRef(KotlinBuiltIns.FQ_NAMES.any.toSafe()),
+    classifier = ClassifierRef(StandardNames.FqNames.any.toSafe()),
     isStarProjection = true
 )
 
@@ -461,7 +462,7 @@ fun TypeRef.isAssignable(superType: TypeRef): Boolean {
 
 fun TypeRef.isSubTypeOf(superType: TypeRef): Boolean {
     if (isMarkedNullable && !superType.isMarkedNullable) return false
-    if (superType.classifier.fqName.asString() == KotlinBuiltIns.FQ_NAMES.any.asString() &&
+    if (superType.classifier.fqName.asString() == StandardNames.FqNames.any.asString() &&
         (isMarkedNullable == superType.isMarkedNullable || superType.isMarkedNullable) &&
         (superType.qualifiers.isEmpty() || qualifiers.isAssignable(superType.qualifiers)))
         return true

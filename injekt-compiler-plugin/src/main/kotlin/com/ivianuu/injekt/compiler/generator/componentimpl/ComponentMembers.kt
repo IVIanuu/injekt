@@ -34,6 +34,7 @@ import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.name.FqName
@@ -598,7 +599,7 @@ class ComponentStatements(
         arguments: Map<Name, Pair<TypeRef?, ComponentExpression>?>
     ) {
         val finalCallable = if (owner != null && owner != this@ComponentStatements.owner &&
-            callable.visibility == Visibilities.PROTECTED) {
+            callable.visibility == DescriptorVisibilities.PROTECTED) {
             val accessorName = "_${callable.name}".asNameId()
             owner.members.firstOrNull {
                 it is ComponentCallable &&
@@ -641,7 +642,7 @@ class ComponentStatements(
             ).also { owner.members += it }
             callable.copy(
                 name = accessorName,
-                visibility = Visibilities.INTERNAL
+                visibility = DescriptorVisibilities.INTERNAL
             )
         } else {
             callable

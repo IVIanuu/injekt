@@ -24,7 +24,7 @@ import com.ivianuu.injekt.compiler.generator.callableKind
 import com.ivianuu.injekt.compiler.generator.getStarSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.substitute
-import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -285,7 +285,7 @@ class CallableBindingNode(
     override val cacheable: Boolean
         get() = false
     override val inline: Boolean
-        get() = callable.visibility != Visibilities.PROTECTED &&
+        get() = callable.visibility != DescriptorVisibilities.PROTECTED &&
                 (((!callable.isCall || callable.valueParameters.isEmpty()) ||
                         callable.isInline) &&!cacheable && targetComponent == null)
 

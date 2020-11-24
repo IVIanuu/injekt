@@ -16,6 +16,7 @@ import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.test.codegen
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
+import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
@@ -260,11 +261,11 @@ class TypeRefTest {
         private val declarationStore = DeclarationStore(module)
         private val typeTranslator = TypeTranslator(declarationStore, ErrorCollector())
 
-        val anyType = typeFor(KotlinBuiltIns.FQ_NAMES.any.toSafe())
+        val anyType = typeFor(StandardNames.FqNames.any.toSafe())
         val anyNType = anyType.copy(isMarkedNullable = true)
-        val intType = typeFor(KotlinBuiltIns.FQ_NAMES._int.toSafe())
-        val stringType = typeFor(KotlinBuiltIns.FQ_NAMES.string.toSafe())
-        val listType = typeFor(KotlinBuiltIns.FQ_NAMES.list)
+        val intType = typeFor(StandardNames.FqNames._int.toSafe())
+        val stringType = typeFor(StandardNames.FqNames.string.toSafe())
+        val listType = typeFor(StandardNames.FqNames.list)
         val starProjectedType = STAR_PROJECTION_TYPE
 
         fun composableFunction(parameterCount: Int) = typeFor(

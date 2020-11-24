@@ -20,9 +20,9 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
-import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtParameter
@@ -132,7 +132,7 @@ class FunBindingGenerator(
             }
             emitLine("])")
 
-            if (descriptor.visibility == Visibilities.INTERNAL) {
+            if (descriptor.visibility == DescriptorVisibilities.INTERNAL) {
                 emit("internal ")
             }
 
@@ -155,7 +155,7 @@ class FunBindingGenerator(
 
             if (isComposable) emitLine("@${InjektFqNames.Composable}")
 
-            if (descriptor.visibility == Visibilities.INTERNAL) {
+            if (descriptor.visibility == DescriptorVisibilities.INTERNAL) {
                 emit("internal ")
             }
 

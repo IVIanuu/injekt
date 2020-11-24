@@ -36,6 +36,7 @@ import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.name.FqName
@@ -588,7 +589,7 @@ class BindingGraph(
                     effects = emptyList(),
                     isExternal = false,
                     isInline = true,
-                    visibility = Visibilities.INTERNAL,
+                    visibility = DescriptorVisibilities.INTERNAL,
                     modality = Modality.FINAL,
                     receiver = null,
                     valueArgs = emptyMap(),

@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.impl.IrExternalPackageFragmentImpl
+import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
@@ -50,7 +51,7 @@ class InjektIrIntrinsicTransformer : IrGenerationExtension {
                     val componentClass = result.getTypeArgument(0)!!.classOrNull!!.owner
                     val componentImplFqName =
                         componentClass.descriptor.fqNameSafe.toComponentImplFqName()
-                    val componentImplClassStub = buildClass {
+                    val componentImplClassStub = IrFactoryImpl.buildClass {
                         this.name = componentImplFqName.shortName()
                         origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
                         kind = ClassKind.OBJECT
