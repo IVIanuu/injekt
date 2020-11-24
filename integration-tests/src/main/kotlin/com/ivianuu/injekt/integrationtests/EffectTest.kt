@@ -907,6 +907,36 @@ class EffectTest {
     )
 
     @Test
+    fun testEffectWithTypeParamMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Effect
+                    annotation class Alias<T> {
+                        companion object {
+                            @Binding
+                            fun <@Arg("T") T, S : T> bindAlias(instance: @ForEffect S): T = instance
+                        }
+                    }
+        
+                    @Alias<Int>
+                    class MyService
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Component
+                    abstract class MyComponent {
+                        abstract val arg: Any
+                    }
+                """
+            )
+        )
+    )
+
+    @Test
     fun testEffectUsesAnotherEffect() = codegen(
         """
             typealias UiDecorators = Set<UiDecorator>

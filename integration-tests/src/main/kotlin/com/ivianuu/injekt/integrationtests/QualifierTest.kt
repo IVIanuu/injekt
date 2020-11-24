@@ -171,4 +171,30 @@ class QualifierTest {
             """
     )
 
+    @Test
+    fun testQualifierWithFunctionTypeParameterMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Target(AnnotationTarget.TYPE)
+                    @Qualifier
+                    annotation class MyQualifier<T>
+                    
+                    @Binding
+                    fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Component
+                    abstract class FooComponent {
+                        abstract val foo: @MyQualifier<String> Foo
+                    }
+                """
+            )
+        )
+    )
+
 }
