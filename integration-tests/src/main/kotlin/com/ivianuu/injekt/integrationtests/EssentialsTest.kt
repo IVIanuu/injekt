@@ -378,4 +378,64 @@ class EssentialsTest {
             }
         """
     )
+
+    @Test
+    fun testUiStateBinding() = codegen(
+        """
+            interface StateFlow<S>
+
+            @Effect
+            annotation class UiStateBinding {
+                companion object {
+                    @Binding
+                    fun <T : StateFlow<S>, S> uiStateProducer(
+                    ): UiStateProducer<S> = error("") as UiStateProducer<S>
+
+                    @Binding
+                    fun <T : StateFlow<S>, S> uiStateProducer(
+                        producer: UiStateProducer<S>
+                    ): StateFlow<S> = error("") as StateFlow<S>
+                }
+            }
+            
+            typealias UiStateProducer<S> = @Composable () -> StateFlow<S>
+
+            @Qualifier
+            @Target(AnnotationTarget.TYPE)
+            annotation class MyQualifier
+
+            @UiStateBinding
+            fun fooState(): StateFlow<@MyQualifier Foo> = error("")
+        """
+    )
+
+    @Test
+    fun testWorkerBinding() = codegen(
+        """
+            interface WorkScope
+
+            interface Result
+
+            typealias Worker = suspend WorkScope.() -> Result
+
+            typealias Workers = Map<String, () -> Worker>
+
+            @Effect
+            annotation class WorkerBinding(val id: String) {
+                companion object {
+                    @MapEntries
+                    fun <T : Worker> intoWorkerMap(
+                        @Arg("id") id: String,
+                        workerProvider: () -> @ForEffect T
+                    ): Workers = mapOf(id to workerProvider)
+                }
+            }
+
+            @WorkerBinding("id")
+            @FunBinding
+            suspend fun @receiver:FunApi WorkScope.UserLibraryUpdateWorker(
+                foo: Foo
+            ): Result = error("")
+        """
+    )
 }

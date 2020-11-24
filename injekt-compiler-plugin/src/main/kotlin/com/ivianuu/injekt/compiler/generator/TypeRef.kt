@@ -468,27 +468,30 @@ fun TypeRef.isSubTypeOf(
     substitutionMap: Map<TypeRef, TypeRef> = emptyMap()
 ): Boolean {
     if (isMarkedNullable && !superType.isMarkedNullable) return false
-    if (isSameTypeWithNullability(superType)) return true
+    if (this == superType && (!isMarkedNullable || superType.isMarkedNullable) &&
+        (superType.qualifiers.isEmpty() || qualifiers.isAssignable(superType.qualifiers))
+    ) return true
     if (superType.classifier.fqName.asString() == StandardNames.FqNames.any.asString() &&
-        (isMarkedNullable == superType.isMarkedNullable || superType.isMarkedNullable) &&
+        (!isMarkedNullable || superType.isMarkedNullable) &&
         (superType.qualifiers.isEmpty() || qualifiers.isAssignable(superType.qualifiers)))
         return true
 
-    if (effect != superType.effect) return false
-    if (!qualifiers.isAssignable(superType.qualifiers)) return false
     if (isComposableRecursive != superType.isComposableRecursive) return false
-    val subTypeView = subtypeView(superType.classifier, substitutionMap) ?: return false
-    if (subTypeView == superType) return subTypeView.isSubTypeOf(superType)
-    return subTypeView.typeArguments.zip(superType.typeArguments).all { (subTypeArg, superTypeArg) ->
-        superTypeArg.superTypes(substitutionMap).all {
-            subTypeArg.isSubTypeOf(it, substitutionMap)
+    val subTypeView = subtypeView(superType.classifier, substitutionMap)
+    if (subTypeView != null) {
+        if (subTypeView == superType && (!subTypeView.isMarkedNullable || superType.isMarkedNullable) &&
+            (superType.qualifiers.isEmpty() || subTypeView.qualifiers.isAssignable(superType.qualifiers)))
+                return true
+        return subTypeView.typeArguments.zip(superType.typeArguments).all { (subTypeArg, superTypeArg) ->
+            superTypeArg.superTypes(substitutionMap).all {
+                subTypeArg.isSubTypeOf(it, substitutionMap)
+            }
+        }
+    } else {
+        return superType.superTypes(substitutionMap).all { upperBound ->
+            isSubTypeOf(upperBound, substitutionMap)
         }
     }
-}
-
-private fun TypeRef.isSameTypeWithNullability(superType: TypeRef): Boolean {
-    return this == superType && (!isMarkedNullable || superType.isMarkedNullable) &&
-            (superType.qualifiers.isEmpty() || qualifiers.isAssignable(superType.qualifiers))
 }
 
 fun List<QualifierDescriptor>.isAssignable(superQualifiers: List<QualifierDescriptor>): Boolean {

@@ -498,7 +498,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 }
 
                 substitutionMap.forEach { (typeParameter, typeArgument) ->
-                    if (!typeArgument.isAssignable(typeParameter, substitutionMap)) {
+                    if (!typeArgument.isSubTypeOf(typeParameter, substitutionMap)) {
                         error("'${typeArgument.render()}' is not a sub type of '${typeParameter.render()}' for effect\n" +
                                 "@${callable.fqName.parent().parent()} on\n" +
                                 "$source in\n" +
@@ -581,7 +581,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 }
 
                 substitutionMap.forEach { (typeParameter, typeArgument) ->
-                    if (!typeArgument.isAssignable(typeParameter, substitutionMap)) {
+                    if (!typeArgument.isSubTypeOf(typeParameter, substitutionMap)) {
                         error("'${typeArgument}' is not a sub type of '${typeParameter}' for effect\n" +
                                 "@${effectCallable.fqName.parent().parent()} on\n" +
                                 "$source in\n" +
