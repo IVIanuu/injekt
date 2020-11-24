@@ -81,13 +81,23 @@ class IndexGenerator(
                             descriptor.hasAnnotation(InjektFqNames.MergeComponent) ||
                             descriptor.hasAnnotation(InjektFqNames.MergeChildComponent) ||
                             descriptor.hasAnnotation(InjektFqNames.MergeInto)) {
-                            if (descriptor.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect)) {
-                                checkEffects(descriptor)
-                            }
                             val owner = when (descriptor) {
                                 is ConstructorDescriptor -> descriptor.constructedClass
                                 is PropertyAccessorDescriptor -> descriptor.correspondingProperty
                                 else -> descriptor
+                            }
+                            // we instantiate the callable for the descriptor
+                            // which then checks for correctness
+                            if (descriptor.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Decorator) ||
+                                    descriptor.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect)) {
+                                when (descriptor) {
+                                    is ClassDescriptor -> declarationStore.callableForDescriptor(descriptor.getInjectConstructor()!!)
+                                    is FunctionDescriptor -> declarationStore.callableForDescriptor(descriptor)
+                                    is PropertyDescriptor -> declarationStore.callableForDescriptor(descriptor.getter!!)
+                                    is TypeAliasDescriptor -> {
+                                    }
+                                    else -> error("$descriptor is not a valid effect target")
+                                }
                             }
                             val index = Index(
                                 owner.fqNameSafe,
@@ -131,44 +141,4 @@ class IndexGenerator(
         }
     }
 
-    private fun checkEffects(descriptor: DeclarationDescriptor) {
-        val effectCallables = when (descriptor) {
-            is ClassDescriptor -> declarationStore.callableForDescriptor(
-                descriptor.getInjectConstructor()!!
-            ).effects
-            is FunctionDescriptor -> declarationStore.callableForDescriptor(descriptor).effects
-            is PropertyDescriptor -> declarationStore.callableForDescriptor(descriptor.getter!!).effects
-            is TypeAliasDescriptor -> {
-                val type = declarationStore.typeTranslator.toClassifierRef(descriptor)
-                descriptor.getAnnotatedAnnotations(InjektFqNames.Effect)
-                    .flatMap {
-                        declarationStore.effectCallablesForAnnotation(
-                            it,
-                            descriptor,
-                            type.defaultType
-                        )
-                    }
-            }
-            else -> error("$descriptor is not a valid effect target")
-        }
-
-        val file = (descriptor.findPsi() as KtElement).containingKtFile
-
-        effectCallables.forEach { effectCallable ->
-            val substitutionMap = getSubstitutionMap(
-                effectCallable.typeParameters
-                    .mapNotNull { (effectCallable.typeArgs[it] ?: return@mapNotNull null) to it.defaultType } +
-                        listOf(effectCallable.type to effectCallable.originalType),
-                effectCallable.typeParameters
-            )
-            substitutionMap.forEach { (typeParameter, typeArgument) ->
-                if (!typeArgument.isAssignable(typeParameter)) {
-                    error("'${typeArgument.render()}' is not a sub type of '${typeParameter.render()}' for effect\n" +
-                            "@${effectCallable.fqName.parent().parent()} on\n" +
-                            "$descriptor\n" +
-                            " ${file.virtualFilePath}")
-                }
-            }
-        }
-    }
 }

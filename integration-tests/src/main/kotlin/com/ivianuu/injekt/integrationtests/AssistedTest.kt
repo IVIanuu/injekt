@@ -209,7 +209,7 @@ class AssistedTest {
         invokeSingleFile()
     }
 
-    @Test
+    // todo @Test
     fun testBindingRequestsAssistedFactoryOfItself() = codegen(
         """
             @Binding

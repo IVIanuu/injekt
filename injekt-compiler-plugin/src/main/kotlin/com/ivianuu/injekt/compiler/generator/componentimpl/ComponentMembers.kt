@@ -407,9 +407,6 @@ class ComponentStatements(
         }
 
         val initializer: CodeBuilder.() -> Unit = {
-            val decoratorFactoryType = typeTranslator.toClassifierRef(
-                moduleDescriptor.builtIns.getFunction(1)
-            ).defaultType.typeWith(listOf(providerType, providerType))
             emitLine()
             fun DecoratorNode.emit(prevExpression: ComponentExpression) {
                 var dependencyIndex = 0

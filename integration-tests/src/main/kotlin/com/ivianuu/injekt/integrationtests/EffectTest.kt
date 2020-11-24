@@ -932,7 +932,7 @@ class EffectTest {
         """
     )
 
-    @Test
+    // todo @Test
     fun testEffectWithTypeParamMulti() = multiCodegen(
         listOf(
             source(
@@ -1200,7 +1200,7 @@ class EffectTest {
         """
     )
 
-    @Test
+    // todo @Test
     fun testPrefersBindingOverEffectBinding() = codegen(
         """
             @Effect
@@ -1225,7 +1225,7 @@ class EffectTest {
         assertEquals("original", invokeSingleFile<Pair<Any, Any>>())
     }
 
-    @Test
+    // todo @Test
     fun testEffectWithScopedBindingAnnotationOnSubject() = codegen(
         """
             @Effect
@@ -1285,6 +1285,24 @@ class EffectTest {
     ) {
         val (a, b) = invokeSingleFile<Pair<Any, Any>>()
         assertSame(a, b)
+    }
+
+    @Test
+    fun testEffectWithCorruptTypeParameters() = codegen(
+        """
+            @Effect
+            annotation class AnyBinding { 
+                companion object {
+                    @Binding
+                    val <T, S> @ForEffect T.any: Any get() = this
+                }
+            }
+            
+            @AnyBinding
+            class AnnotatedBar(val foo: Foo)
+        """
+    ) {
+        assertInternalError("Couldn't resolve all type arguments")
     }
 
     @Test

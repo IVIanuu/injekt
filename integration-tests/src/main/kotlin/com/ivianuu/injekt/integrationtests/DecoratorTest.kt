@@ -565,4 +565,72 @@ class DecoratorTest {
         """
     )
 
+    @Test
+    fun testDecoratorWithoutFactoryAsLastParameter() = codegen(
+        """
+            @Decorator
+            annotation class MyDecorator { 
+                companion object {
+                    fun <T, S> decorate(): () -> T = factory
+                }
+            }
+            
+            @MyDecorator
+            class AnnotatedBar(val foo: Foo)
+        """
+    ) {
+        assertInternalError("Decorator")
+    }
+
+    @Test
+    fun testDecoratorWithWrongReturnType() = codegen(
+        """
+            @Decorator
+            annotation class MyDecorator { 
+                companion object {
+                    fun <T, S> decorate(factory: () -> T): () -> T = factory
+                }
+            }
+            
+            @MyDecorator
+            class AnnotatedBar(val foo: Foo)
+        """
+    ) {
+        assertInternalError("Couldn't resolve all type arguments")
+    }
+
+    @Test
+    fun testDecoratorWithCorruptTypeParameters() = codegen(
+        """
+            @Decorator
+            annotation class MyDecorator { 
+                companion object {
+                    fun <T, S> decorate(factory: () -> T): () -> T = factory
+                }
+            }
+            
+            @MyDecorator
+            class AnnotatedBar(val foo: Foo)
+        """
+    ) {
+        assertInternalError("Couldn't resolve all type arguments")
+    }
+
+    @Test
+    fun testDecoratorTargetNotInBoundsFails() = codegen(
+        """
+            @Decorator
+            annotation class MyDecorator { 
+                companion object {
+                    fun <T : String> decorate(factory: () -> T): () -> T = factory
+                }
+            }
+            
+            @MyDecorator
+            class AnnotatedBar(val foo: Foo)
+        """
+    ) {
+        assertInternalError("is not a sub type of")
+    }
+
 }

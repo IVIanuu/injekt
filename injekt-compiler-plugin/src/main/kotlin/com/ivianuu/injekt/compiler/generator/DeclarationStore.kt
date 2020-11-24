@@ -451,7 +451,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
     fun decoratorCallablesForAnnotation(
         annotation: AnnotationDescriptor,
-        source: DeclarationDescriptor
+        source: DeclarationDescriptor,
+        bindingType: TypeRef
     ): List<Callable> {
         val typeArgs = typeArgsForAnnotation(annotation, source)
         val valueArgs = valueArgsForAnnotation(annotation)
@@ -472,14 +473,38 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     .filter { it.argName != null }
                     .map {
                         it.defaultType to (typeArgs[it.argName]
-                            ?: error("Couldn't get type argument for ${it.argName} in $annotation"))
+                            ?: error("Couldn't get type argument for ${it.argName} in $origin"))
                     }
                     .toMap(mutableMapOf())
+
+                // todo there might be a better way to resolve everything
+                val subjectTypeParameter = callable.typeParameters
+                    .first { it.argName == null }
+                    .defaultType
                 substitutionMap += getSubstitutionMap(
-                    substitutionMap.map {
-                        it.value to it.key
-                    }
+                    listOf(bindingType to subjectTypeParameter) +
+                            substitutionMap
+                                .map { it.value to it.key }
                 )
+
+                check(callable.typeParameters.all { it.defaultType in substitutionMap }) {
+                    "Couldn't resolve all type arguments ${substitutionMap.map {
+                        it.key.classifier.fqName to it.value
+                    }} missing ${callable.typeParameters.filter {
+                        it.defaultType !in substitutionMap
+                    }.map { it.fqName }} on\n" +
+                            "$source in\n" +
+                            "$origin"
+                }
+
+                substitutionMap.forEach { (typeParameter, typeArgument) ->
+                    if (!typeArgument.isAssignable(typeParameter, substitutionMap)) {
+                        error("'${typeArgument.render()}' is not a sub type of '${typeParameter.render()}' for effect\n" +
+                                "@${callable.fqName.parent().parent()} on\n" +
+                                "$source in\n" +
+                                " $origin")
+                    }
+                }
 
                 val callableValueArgs = callable.valueParameters
                     .filter { it.argName != null }
@@ -550,7 +575,18 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         it.key.classifier.fqName to it.value
                     }} missing ${effectCallable.typeParameters.filter {
                         it.defaultType !in substitutionMap
-                    }.map { it.fqName }} in $origin"
+                    }.map { it.fqName }} on\n" +
+                            "$source in\n" +
+                            "$origin"
+                }
+
+                substitutionMap.forEach { (typeParameter, typeArgument) ->
+                    if (!typeArgument.isAssignable(typeParameter, substitutionMap)) {
+                        error("'${typeArgument}' is not a sub type of '${typeParameter}' for effect\n" +
+                                "@${effectCallable.fqName.parent().parent()} on\n" +
+                                "$source in\n" +
+                                " $origin")
+                    }
                 }
 
                 val callableValueArgs = effectCallable.valueParameters
@@ -636,7 +672,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .getAnnotatedAnnotations(InjektFqNames.Decorator) + owner
             .getAnnotatedAnnotations(InjektFqNames.Decorator))
             .distinct()
-            .flatMap { decoratorCallablesForAnnotation(it, descriptor) }
+            .flatMap { decoratorCallablesForAnnotation(it, descriptor, type) }
             .distinct()
 
         val decoratorsByTargetComponent = decorators
