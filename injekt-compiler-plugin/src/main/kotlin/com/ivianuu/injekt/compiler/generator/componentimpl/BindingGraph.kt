@@ -49,6 +49,7 @@ class BindingGraph(
     private val declarationStore: DeclarationStore,
     private val componentImplFactory: (
         TypeRef,
+        TypeRef,
         Name,
         List<TypeRef>,
         List<Callable>,
@@ -512,6 +513,7 @@ class BindingGraph(
             if (childComponentType !in existingComponents) {
                 val componentImpl = componentImplFactory(
                     childComponentType,
+                    request.type,
                     owner.contextTreeNameProvider(
                         "${owner.rootComponent.name}_${childComponentType.classifier.fqName.shortName().asString()}Impl"
                     ).asNameId(),
@@ -562,7 +564,8 @@ class BindingGraph(
                 )
             }
 
-        if ((request.type.isFunction || request.type.isSuspendFunction) &&
+        if (owner.componentFactoryType != request.type &&
+            (request.type.isFunction || request.type.isSuspendFunction) &&
             request.type.typeArguments.last().let {
                 !it.isChildComponent && !it.isMergeChildComponent
             }) {
@@ -598,6 +601,7 @@ class BindingGraph(
                 )
                 val childComponent = componentImplFactory(
                     childComponentType,
+                    request.type,
                     owner.contextTreeNameProvider("${owner.rootComponent.name}_AC").asNameId(),
                     assistedTypes,
                     listOf(bindingCallable),

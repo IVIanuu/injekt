@@ -1,4 +1,7 @@
 package com.ivianuu.injekt.compiler
+
+import com.ivianuu.injekt.compiler.generator.TypeRef
+
 class ApplicationComponentImpl(project: org.jetbrains.kotlin.com.intellij.openapi.project.Project, configuration: org.jetbrains.kotlin.config.CompilerConfiguration) : com.ivianuu.injekt.compiler.ApplicationComponent(project, configuration) {
     private inner class C(moduleDescriptor: org.jetbrains.kotlin.descriptors.ModuleDescriptor, bindingContext: org.jetbrains.kotlin.resolve.BindingContext) : com.ivianuu.injekt.compiler.generator.GenerationComponent(moduleDescriptor, bindingContext) {
         override val errorCollector: com.ivianuu.injekt.compiler.generator.ErrorCollector
@@ -79,8 +82,8 @@ class ApplicationComponentImpl(project: org.jetbrains.kotlin.com.intellij.openap
         val com_ivianuu_injekt_compiler_log: com.ivianuu.injekt.compiler.log = { p0: kotlin.Function0<kotlin.String> ->
         com.ivianuu.injekt.compiler.log(this@C.com_ivianuu_injekt_compiler_Logger, p0)
         }
-        val kotlin_Function5_1483289230: kotlin.Function5<com.ivianuu.injekt.compiler.generator.TypeRef, org.jetbrains.kotlin.name.Name, kotlin.collections.List<com.ivianuu.injekt.compiler.generator.TypeRef>, kotlin.collections.List<com.ivianuu.injekt.compiler.generator.Callable>, com.ivianuu.injekt.compiler.generator.componentimpl.ComponentImpl?, com.ivianuu.injekt.compiler.generator.componentimpl.ComponentImpl> = { p0: com.ivianuu.injekt.compiler.generator.TypeRef, p1: org.jetbrains.kotlin.name.Name, p2: kotlin.collections.List<com.ivianuu.injekt.compiler.generator.TypeRef>, p3: kotlin.collections.List<com.ivianuu.injekt.compiler.generator.Callable>, p4: com.ivianuu.injekt.compiler.generator.componentimpl.ComponentImpl?,  ->
-        com.ivianuu.injekt.compiler.generator.componentimpl.ComponentImpl(this@C.com_ivianuu_injekt_compiler_generator_DeclarationStore, this@C.kotlin_Function1_448534877, this@C.kotlin_Function1_1573881639, p0, p1, p2, p3, p4)
+        val kotlin_Function5_1483289230: kotlin.Function6<com.ivianuu.injekt.compiler.generator.TypeRef, TypeRef, org.jetbrains.kotlin.name.Name, kotlin.collections.List<com.ivianuu.injekt.compiler.generator.TypeRef>, kotlin.collections.List<com.ivianuu.injekt.compiler.generator.Callable>, com.ivianuu.injekt.compiler.generator.componentimpl.ComponentImpl?, com.ivianuu.injekt.compiler.generator.componentimpl.ComponentImpl> = { p0: com.ivianuu.injekt.compiler.generator.TypeRef, p11: TypeRef, p1: org.jetbrains.kotlin.name.Name, p2: kotlin.collections.List<com.ivianuu.injekt.compiler.generator.TypeRef>, p3: kotlin.collections.List<com.ivianuu.injekt.compiler.generator.Callable>, p4: com.ivianuu.injekt.compiler.generator.componentimpl.ComponentImpl?,  ->
+        com.ivianuu.injekt.compiler.generator.componentimpl.ComponentImpl(this@C.com_ivianuu_injekt_compiler_generator_DeclarationStore, this@C.kotlin_Function1_448534877, this@C.kotlin_Function1_1573881639, p0, p11, p1, p2, p3, p4)
         }
         var _com_ivianuu_injekt_compiler_generator_IndexGenerator: kotlin.Any? = this
         var _com_ivianuu_injekt_compiler_generator_DeclarationStore: kotlin.Any? = this

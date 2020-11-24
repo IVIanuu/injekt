@@ -36,6 +36,7 @@ class ComponentGenerator(
     private val fileManager: FileManager,
     private val componentImplFactory: (
         TypeRef,
+        TypeRef,
         Name,
         List<TypeRef>,
         List<Callable>,
@@ -76,6 +77,7 @@ class ComponentGenerator(
     private fun generateComponent(componentType: TypeRef) {
         val componentImplFqName = componentType.classifier.fqName.toComponentImplFqName()
         val componentImpl = componentImplFactory(
+            componentType,
             componentType,
             componentImplFqName.shortName(),
             emptyList(),

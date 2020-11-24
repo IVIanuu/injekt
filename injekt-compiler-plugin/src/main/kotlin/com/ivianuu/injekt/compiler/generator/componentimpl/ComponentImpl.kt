@@ -37,6 +37,7 @@ class ComponentImpl(
     statementsFactory: (ComponentImpl) -> ComponentStatements,
     graphFactory: (ComponentImpl) -> BindingGraph,
     val componentType: @Assisted TypeRef,
+    val componentFactoryType: @Assisted TypeRef,
     val name: @Assisted Name,
     val additionalInputTypes: @Assisted List<TypeRef>,
     val assistedRequests: @Assisted List<Callable>,

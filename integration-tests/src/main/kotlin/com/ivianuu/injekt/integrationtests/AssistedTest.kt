@@ -154,4 +154,20 @@ class AssistedTest {
         invokeSingleFile(Foo())
     }
 
+    @Test
+    fun testRecursiveAssistedRequest() = codegen(
+        """
+            @Binding
+            class MyBinding(
+                val id: String,
+                val myBindingFactory: (String) -> MyBinding
+            )
+            
+            @Component
+            abstract class MyComponent {
+                abstract val myBindingFactory: (String) -> MyBinding
+            }
+    """
+    )
+
 }
