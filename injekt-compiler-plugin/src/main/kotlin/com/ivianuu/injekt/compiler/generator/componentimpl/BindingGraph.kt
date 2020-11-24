@@ -564,13 +564,15 @@ class BindingGraph(
                 )
             }
 
-        if (owner.componentFactoryType != request.type &&
-            (request.type.isFunction || request.type.isSuspendFunction) &&
+        if ((request.type.isFunction || request.type.isSuspendFunction) &&
             request.type.typeArguments.last().let {
                 !it.isChildComponent && !it.isMergeChildComponent
             }) {
+            val factoryExists = generateSequence(owner) { it.parent }
+                .filter { it.componentFactoryType == request.type }
+                .any()
             val assistedTypes = request.type.typeArguments.dropLast(1).distinct()
-            if (assistedTypes.isNotEmpty()) {
+            if (!factoryExists && assistedTypes.isNotEmpty()) {
                 val returnType = request.type.typeArguments.last()
                 val childComponentType = typeTranslator.toClassifierRef(
                     moduleDescriptor.builtIns.any

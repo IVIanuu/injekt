@@ -170,4 +170,26 @@ class AssistedTest {
     """
     )
 
+    @Test
+    fun testNestedRecursiveAssistedRequest() = codegen(
+        """
+            @Binding
+            class MyBindingA(
+                val id: String,
+                val myBindingFactoryB: (String) -> MyBindingB
+            )
+
+            @Binding
+            class MyBindingB(
+                val id: String,
+                val myBindingFactoryA: (String) -> MyBindingA
+            )
+            
+            @Component
+            abstract class MyComponent {
+                abstract val myBindingAFactory: (String) -> MyBindingA
+            }
+    """
+    )
+
 }
