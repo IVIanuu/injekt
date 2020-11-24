@@ -19,8 +19,10 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.componentimpl.CallableBindingNode
+import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentFactoryType
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentImpl
 import com.ivianuu.injekt.compiler.generator.componentimpl.FunBindingNode
+import com.ivianuu.injekt.compiler.generator.componentimpl.Parent
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.name.FqName
@@ -36,11 +38,11 @@ class ComponentGenerator(
     private val fileManager: FileManager,
     private val componentImplFactory: (
         TypeRef,
-        TypeRef,
+        ComponentFactoryType,
         Name,
         List<TypeRef>,
         List<Callable>,
-        ComponentImpl?,
+        @Parent ComponentImpl?,
     ) -> ComponentImpl,
     private val typeTranslator: TypeTranslator
 ) : Generator {

@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.generator.componentimpl
 
-import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
@@ -44,16 +43,16 @@ import org.jetbrains.kotlin.name.Name
 
 @Binding
 class BindingGraph(
-    private val owner: @Assisted ComponentImpl,
-    collectionsFactory: (ComponentImpl, BindingCollections?) -> BindingCollections,
+    private val owner: ComponentImpl,
+    collectionsFactory: (ComponentImpl, @Parent BindingCollections?) -> BindingCollections,
     private val declarationStore: DeclarationStore,
     private val componentImplFactory: (
         TypeRef,
-        TypeRef,
+        ComponentFactoryType,
         Name,
         List<TypeRef>,
         List<Callable>,
-        ComponentImpl?,
+        @Parent ComponentImpl?,
     ) -> ComponentImpl,
     private val moduleDescriptor: org.jetbrains.kotlin.descriptors.ModuleDescriptor,
     private val typeTranslator: TypeTranslator
@@ -743,8 +742,8 @@ private fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"
 @Binding
 class BindingCollections(
     private val declarationStore: DeclarationStore,
-    private val owner: @Assisted ComponentImpl,
-    private val parent: @Assisted BindingCollections?,
+    private val owner: ComponentImpl,
+    private val parent: @Parent BindingCollections?,
 ) {
 
     private val thisMapEntries = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
