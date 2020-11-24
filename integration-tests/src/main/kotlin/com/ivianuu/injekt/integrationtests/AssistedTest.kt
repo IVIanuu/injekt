@@ -167,8 +167,16 @@ class AssistedTest {
             abstract class MyComponent {
                 abstract val myBindingFactory: (String) -> MyBinding
             }
+
+            fun invoke() {
+                val component = component<MyComponent>()
+                val myBindingA = component.myBindingFactory("a")
+                val myBindingB = myBindingA.myBindingFactory("b")
+            }
     """
-    )
+    ) {
+        invokeSingleFile()
+    }
 
     @Test
     fun testNestedRecursiveAssistedRequest() = codegen(
@@ -189,8 +197,17 @@ class AssistedTest {
             abstract class MyComponent {
                 abstract val myBindingAFactory: (String) -> MyBindingA
             }
+
+            fun invoke() {
+                val component = component<MyComponent>()
+                val myBindingA = component.myBindingAFactory("a")
+                val myBindingB = myBindingA.myBindingFactoryB("b")
+                val myBindingA2 = myBindingB.myBindingFactoryA("a2")
+            }
     """
-    )
+    ) {
+        invokeSingleFile()
+    }
 
     @Test
     fun testBindingRequestsAssistedFactoryOfItself() = codegen(
@@ -205,7 +222,15 @@ class AssistedTest {
             abstract class MyComponent {
                 abstract val myBindingFactory: (MyBinding?) -> MyBinding
             }
+
+            fun invoke() {
+                val component = component<MyComponent>()
+                val myBindingA = component.myBindingFactory(null)
+                val myBindingB = myBindingA.myBindingFactory(myBindingA)
+            }
     """
-    )
+    ) {
+        invokeSingleFile()
+    }
 
 }
