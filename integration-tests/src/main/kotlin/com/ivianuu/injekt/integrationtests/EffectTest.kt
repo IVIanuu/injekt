@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
@@ -39,6 +40,31 @@ class EffectTest {
             
             @AnyBinding
             class AnnotatedBar(val foo: Foo)
+            
+            @Component
+            abstract class MyComponent {
+                abstract val any: Any
+                
+                @Binding protected fun foo() = Foo()
+            }
+        """
+    )
+
+    @Test
+    fun testEffectWithClassConstructor() = codegen(
+        """
+            @Effect
+            annotation class AnyBinding { 
+                companion object {
+                    @Binding
+                    val <T : Any> @ForEffect T.any: Any get() = this
+                }
+            }
+
+            class AnnotatedBar {
+                @AnyBinding 
+                constructor(foo: Foo)
+            }
             
             @Component
             abstract class MyComponent {
@@ -1259,6 +1285,24 @@ class EffectTest {
     ) {
         val (a, b) = invokeSingleFile<Pair<Any, Any>>()
         assertSame(a, b)
+    }
+
+    @Test
+    fun testEffectTargetNotInBoundsFails() = codegen(
+        """
+            @Effect
+            annotation class AnyBinding { 
+                companion object {
+                    @Binding
+                    val <T : String> @ForEffect T.any: Any get() = this
+                }
+            }
+            
+            @AnyBinding
+            class AnnotatedBar(val foo: Foo)
+        """
+    ) {
+        assertInternalError("is not a sub type of")
     }
 
 }

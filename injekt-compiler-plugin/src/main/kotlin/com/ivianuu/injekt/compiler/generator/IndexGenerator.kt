@@ -26,8 +26,10 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.resolve.BindingContext
@@ -79,6 +81,9 @@ class IndexGenerator(
                             descriptor.hasAnnotation(InjektFqNames.MergeComponent) ||
                             descriptor.hasAnnotation(InjektFqNames.MergeChildComponent) ||
                             descriptor.hasAnnotation(InjektFqNames.MergeInto)) {
+                            if (descriptor.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect)) {
+                                checkEffects(descriptor)
+                            }
                             val owner = when (descriptor) {
                                 is ConstructorDescriptor -> descriptor.constructedClass
                                 is PropertyAccessorDescriptor -> descriptor.correspondingProperty
@@ -124,6 +129,46 @@ class IndexGenerator(
                 )
             }
         }
+    }
 
+    private fun checkEffects(descriptor: DeclarationDescriptor) {
+        val effectCallables = when (descriptor) {
+            is ClassDescriptor -> declarationStore.callableForDescriptor(
+                descriptor.getInjectConstructor()!!
+            ).effects
+            is FunctionDescriptor -> declarationStore.callableForDescriptor(descriptor).effects
+            is PropertyDescriptor -> declarationStore.callableForDescriptor(descriptor.getter!!).effects
+            is TypeAliasDescriptor -> {
+                val type = declarationStore.typeTranslator.toClassifierRef(descriptor)
+                descriptor.getAnnotatedAnnotations(InjektFqNames.Effect)
+                    .flatMap {
+                        declarationStore.effectCallablesForAnnotation(
+                            it,
+                            descriptor,
+                            type.defaultType
+                        )
+                    }
+            }
+            else -> error("$descriptor is not a valid effect target")
+        }
+
+        val file = (descriptor.findPsi() as KtElement).containingKtFile
+
+        effectCallables.forEach { effectCallable ->
+            val substitutionMap = getSubstitutionMap(
+                effectCallable.typeParameters
+                    .mapNotNull { (effectCallable.typeArgs[it] ?: return@mapNotNull null) to it.defaultType } +
+                        listOf(effectCallable.type to effectCallable.originalType),
+                effectCallable.typeParameters
+            )
+            substitutionMap.forEach { (typeParameter, typeArgument) ->
+                if (!typeArgument.isAssignable(typeParameter)) {
+                    error("'${typeArgument.render()}' is not a sub type of '${typeParameter.render()}' for effect\n" +
+                            "@${effectCallable.fqName.parent().parent()} on\n" +
+                            "$descriptor\n" +
+                            " ${file.virtualFilePath}")
+                }
+            }
+        }
     }
 }
