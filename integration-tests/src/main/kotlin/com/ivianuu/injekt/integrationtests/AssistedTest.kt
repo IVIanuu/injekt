@@ -192,4 +192,20 @@ class AssistedTest {
     """
     )
 
+    @Test
+    fun testBindingRequestsAssistedFactoryOfItself() = codegen(
+        """
+            @Binding
+            class MyBinding(
+                val myBindingFactory: (MyBinding?) -> MyBinding,
+                val parent: MyBinding?
+            )
+            
+            @Component
+            abstract class MyComponent {
+                abstract val myBindingFactory: (MyBinding?) -> MyBinding
+            }
+    """
+    )
+
 }

@@ -124,7 +124,7 @@ class ComponentStatements(
             .forEach { getBindingExpression(it) }
         binding
             .dependencies
-            .filterNot { it.lazy }
+            .filterNot { it.lazy || it.type == binding.type }
             .filter { owner.graph.getBinding(it) !is MissingBindingNode }
             .forEach { getBindingExpression(it) }
 
@@ -153,6 +153,7 @@ class ComponentStatements(
         else decorated(binding.type, binding.callableKind, binding.decorators, maybeScopedExpression)
 
         val requestForType = owner.requests
+            .filterNot { it in owner.assistedRequests }
             .firstOrNull { it.type == binding.type }
 
         val callableName = requestForType

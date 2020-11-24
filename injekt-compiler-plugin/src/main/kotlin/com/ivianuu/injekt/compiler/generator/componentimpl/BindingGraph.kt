@@ -247,7 +247,8 @@ class BindingGraph(
             val relevantSubchain = chain.subList(
                 chain.indexOf(request), chain.size
             )
-            if (request.lazy || relevantSubchain.any { it.lazy }) return
+            if (request.lazy || !request.required || request.type.isMarkedNullable ||
+                relevantSubchain.any { it.lazy || !request.required || request.type.isMarkedNullable }) return
             error(
                 "Circular dependency\n${relevantSubchain.joinToString("\n")} " +
                         "already contains\n$request\n\nDebug:\n${chain.joinToString("\n")}"
