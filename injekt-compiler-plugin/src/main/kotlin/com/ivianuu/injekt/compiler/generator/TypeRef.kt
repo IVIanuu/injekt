@@ -45,7 +45,7 @@ data class ClassifierRef(
     override fun hashCode(): Int = fqName.hashCode()
 }
 
-val TypeRef.expandedType: TypeRef? 
+val TypeRef.expandedType: TypeRef?
     get() {
         return classifier.expandedType?.let {
             val substitutionMap = classifier.typeParameters
@@ -89,10 +89,35 @@ sealed class TypeRef {
     abstract val isStarProjection: Boolean
     abstract val qualifiers: List<QualifierDescriptor>
     abstract val effect: Int
+
     private val typeName by unsafeLazy { uniqueTypeName(includeNullability = false) }
-    override fun equals(other: Any?) = other is TypeRef && typeName == other.typeName
-    override fun hashCode() = typeName.hashCode()
+
     override fun toString(): String = typeName.asString()
+
+    override fun equals(other: Any?) =
+        other is TypeRef && other._hashCode == _hashCode
+
+    private val _hashCode by unsafeLazy {
+        var result = classifier.hashCode()
+        // todo result = 31 * result + isMarkedNullable.hashCode()
+        result = 31 * result + typeArguments.hashCode()
+        result = 31 * result + variance.hashCode()
+        result = 31 * result + isFunction.hashCode()
+        result = 31 * result + isSuspendFunction.hashCode()
+        result = 31 * result + isExtensionFunction.hashCode()
+        result = 31 * result + isModule.hashCode()
+        result = 31 * result + isBinding.hashCode()
+        result = 31 * result + isMergeComponent.hashCode()
+        result = 31 * result + isMergeChildComponent.hashCode()
+        result = 31 * result + isChildComponent.hashCode()
+        result = 31 * result + isComposable.hashCode()
+        result = 31 * result + isStarProjection.hashCode()
+        result = 31 * result + qualifiers.hashCode()
+        result = 31 * result + effect
+        result
+    }
+
+    override fun hashCode(): Int =_hashCode
 }
 
 class KotlinTypeRef(
@@ -134,7 +159,7 @@ class KotlinTypeRef(
     }
     override val isComposable: Boolean by unsafeLazy {
         kotlinType.hasAnnotation(InjektFqNames.Composable) &&
-            kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
+                kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
     }
     override val isMarkedNullable: Boolean by unsafeLazy {
         kotlinType.isMarkedNullable
@@ -182,8 +207,8 @@ class SimpleTypeRef(
     init {
         check(typeArguments.size == classifier.typeParameters.size) {
             "Argument size mismatch ${classifier.fqName} " +
-                "params: ${classifier.typeParameters.map { it.fqName }} " +
-                "args: ${typeArguments.map { it.render() }}"
+                    "params: ${classifier.typeParameters.map { it.fqName }} " +
+                    "args: ${typeArguments.map { it.render() }}"
         }
     }
 }
@@ -365,9 +390,9 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
 
     // Conservatively shorten the name if the length exceeds 128
     return (
-        if (fullTypeName.length <= 128) fullTypeName
-        else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}")
-        )
+            if (fullTypeName.length <= 128) fullTypeName
+            else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}")
+            )
         .removeIllegalChars()
         .asNameId()
 }
@@ -481,14 +506,14 @@ fun TypeRef.isSubTypeOf(
     if (subTypeView != null) {
         if (subTypeView == superType && (!subTypeView.isMarkedNullable || superType.isMarkedNullable) &&
             (superType.qualifiers.isEmpty() || subTypeView.qualifiers.isAssignable(superType.qualifiers)))
-                return true
+            return true
         return subTypeView.typeArguments.zip(superType.typeArguments).all { (subTypeArg, superTypeArg) ->
             superTypeArg.superTypes(substitutionMap).all {
                 subTypeArg.isSubTypeOf(it, substitutionMap)
             }
         }
     } else if (superType.classifier.isTypeParameter ||
-            superType.classifier.isTypeAlias) {
+        superType.classifier.isTypeAlias) {
         return superType.superTypes(substitutionMap).all { upperBound ->
             isSubTypeOf(upperBound, substitutionMap)
         }
