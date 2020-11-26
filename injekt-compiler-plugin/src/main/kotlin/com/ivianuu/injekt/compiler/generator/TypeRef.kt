@@ -118,6 +118,21 @@ sealed class TypeRef {
     }
 
     override fun hashCode(): Int =_hashCode
+
+    val withForEffectQualifierOnly by unsafeLazy {
+        if (qualifiers.isNotEmpty()) copy(qualifiers = qualifiers.filter {
+            it.type.classifier.fqName == InjektFqNames.ForEffect
+        }) else this
+    }
+
+    val unqualified by unsafeLazy {
+        if (qualifiers.isNotEmpty()) copy(qualifiers = emptyList()) else this
+    }
+
+    val isComposableRecursive: Boolean by unsafeLazy {
+        isComposable || expandedType?.isComposableRecursive == true ||
+                superTypes().any { it.isComposableRecursive }
+    }
 }
 
 class KotlinTypeRef(
@@ -259,18 +274,14 @@ fun TypeRef.substitute(
         if (forEffect) {
             // special treatment for effect types
             // @MyQualifier @ForEffect T -> @MyQualifier EffectType
-            unqualifiedMap[this.copy(
-                qualifiers = qualifiers.filter {
-                    it.type.classifier.fqName == InjektFqNames.ForEffect
-                }
-            )]?.let {
+            unqualifiedMap[withForEffectQualifierOnly]?.let {
                 return it.copy(
                     isMarkedNullable = if (!isStarProjection) isMarkedNullable else it.isMarkedNullable,
                     qualifiers = qualifiers.filterNot { it.type.classifier.fqName == InjektFqNames.ForEffect }
                 )
             }
         } else {
-            unqualifiedMap[this.copy(qualifiers = emptyList())]?.let {
+            unqualifiedMap[unqualified]?.let {
                 return it.copy(
                     isMarkedNullable = if (!isStarProjection) isMarkedNullable else it.isMarkedNullable,
                     // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
@@ -278,6 +289,9 @@ fun TypeRef.substitute(
                 )
             }
         }
+
+        if (typeArguments.isEmpty() && qualifiers.isEmpty() &&
+                !classifier.isTypeParameter) return this
 
         val substituted = copy(
             typeArguments = typeArguments.map { it.substituteInner(unqualifiedMap) },
@@ -298,7 +312,7 @@ fun TypeRef.substitute(
     return if (forEffect) {
         substituteInner(map)
     } else {
-        substituteInner(map.mapKeys { it.key.copy(qualifiers = emptyList()) })
+        substituteInner(map.mapKeys { it.key.unqualified })
     }
 }
 
@@ -317,6 +331,7 @@ fun TypeRef.substituteStars(baseType: TypeRef): TypeRef {
     if (this == baseType) return this
     if (isStarProjection && !baseType.classifier.isTypeParameter) return baseType
     if (classifier != baseType.classifier) return this
+    if (typeArguments.isEmpty()) return this
     return copy(
         typeArguments = typeArguments
             .zip(baseType.typeArguments)
@@ -532,10 +547,6 @@ fun QualifierDescriptor.isAssignable(superQualifier: QualifierDescriptor): Boole
     if (!type.isAssignable(superQualifier.type)) return false
     return args == superQualifier.args
 }
-
-val TypeRef.isComposableRecursive: Boolean
-    get() = isComposable || expandedType?.isComposableRecursive == true ||
-            superTypes().any { it.isComposableRecursive }
 
 val TypeRef.fullyExpandedType: TypeRef
     get() = expandedType?.fullyExpandedType ?: this
