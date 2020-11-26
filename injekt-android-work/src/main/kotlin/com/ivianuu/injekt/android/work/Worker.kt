@@ -43,7 +43,8 @@ typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters
 inline fun defaultWorkers(): Workers = emptyMap()
 
 @ImplBinding
-class InjektWorkerFactory(private val workers: Workers) : WorkerFactory() {
+class InjektWorkerFactory(workersFactory: () -> Workers) : WorkerFactory() {
+    private val workers by lazy(workersFactory)
     override fun createWorker(
         appContext: Context,
         workerClassName: String,
