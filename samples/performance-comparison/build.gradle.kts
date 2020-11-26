@@ -65,4 +65,6 @@ dependencies {
 
     implementation(Deps.Toothpick.toothpick)
     kapt(Deps.Toothpick.compiler)
+
+    testImplementation(Deps.junit)
 }

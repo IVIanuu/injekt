@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.generator.componentimpl
 
-import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.generator.Callable
@@ -31,17 +30,19 @@ import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.name.Name
 
+typealias ComponentFactoryType = TypeRef
+
 @Binding
 class ComponentImpl(
     private val declarationStore: DeclarationStore,
     statementsFactory: (ComponentImpl) -> ComponentStatements,
     graphFactory: (ComponentImpl) -> BindingGraph,
-    val componentType: @Assisted TypeRef,
-    val componentFactoryType: @Assisted TypeRef,
-    val name: @Assisted Name,
-    val additionalInputTypes: @Assisted List<TypeRef>,
-    val assistedRequests: @Assisted List<Callable>,
-    val parent: @Assisted ComponentImpl?,
+    val componentType: TypeRef,
+    val componentFactoryType: ComponentFactoryType,
+    val name: Name,
+    val additionalInputTypes: List<TypeRef>,
+    val assistedRequests: List<Callable>,
+    val parent: @Parent ComponentImpl?,
 ) {
 
     val isAssisted: Boolean

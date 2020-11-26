@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.generator.componentimpl
 
-import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.Callable
@@ -44,7 +43,7 @@ import org.jetbrains.kotlin.name.Name
 class ComponentStatements(
     private val declarationStore: DeclarationStore,
     private val moduleDescriptor: ModuleDescriptor,
-    private val owner: @Assisted ComponentImpl,
+    private val owner: ComponentImpl,
     private val typeTranslator: TypeTranslator
 ) {
 
