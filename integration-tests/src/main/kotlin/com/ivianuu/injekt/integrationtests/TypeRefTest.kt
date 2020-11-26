@@ -129,8 +129,8 @@ class TypeRefTest {
     }
 
     @Test
-    fun testTypeAliasIsNotSubTypeOfToOtherTypeAliasOfTheSameExpandedType() = withAnalysisContext {
-        typeAlias(stringType) shouldNotBeSubTypeOf typeAlias(stringType)
+    fun testTypeAliasIsAssignableToOtherTypeAliasOfTheSameExpandedType() = withAnalysisContext {
+        typeAlias(stringType) shouldNotBeAssignable typeAlias(stringType)
     }
 
     @Test
@@ -176,18 +176,38 @@ class TypeRefTest {
     }
 
     @Test
-    fun testValidSubTypeOfTypeParameterWithNullableAnyUpperBound() = withAnalysisContext {
+    fun testSubTypeOfTypeParameterWithNullableAnyUpperBound() = withAnalysisContext {
         stringType shouldBeAssignable typeParameter()
     }
 
     @Test
-    fun testSubTypeOfTypeParameterWithNonNullUpperBound() = withAnalysisContext {
+    fun testSubTypeOfTypeParameterWithNonNullAnyUpperBound() = withAnalysisContext {
         stringType shouldBeAssignable typeParameter(nullable = false)
     }
 
     @Test
-    fun testNullableSubTypeOfTypeParameterWithNonNullUpperBound() = withAnalysisContext {
+    fun testNullableSubTypeOfTypeParameterWithNonNullAnyUpperBound() = withAnalysisContext {
         stringType.nullable() shouldNotBeAssignable typeParameter(nullable = false)
+    }
+
+    @Test
+    fun testSubTypeOfTypeParameterWithUpperBound() = withAnalysisContext {
+        subType(stringType) shouldBeSubTypeOf typeParameter(stringType)
+    }
+
+    @Test
+    fun testSubTypeOfTypeAliasWithNonNullExpandedType() = withAnalysisContext {
+        subType(stringType) shouldBeSubTypeOf typeAlias(stringType)
+    }
+
+    @Test
+    fun testSubTypeOfTypeAliasWithNullableExpandedType() = withAnalysisContext {
+        subType(stringType) shouldBeSubTypeOf typeAlias(stringType.nullable())
+    }
+
+    @Test
+    fun testSubTypeOfTypeParameterWithNullableUpperBound() = withAnalysisContext {
+        subType(stringType) shouldBeSubTypeOf typeParameter(stringType.nullable())
     }
 
     @Test
@@ -287,6 +307,14 @@ class TypeRefTest {
 
         private var id = 0
 
+        fun subType(
+            vararg superTypes: TypeRef,
+            fqName: FqName = FqName("SubType${id}")
+        ) = ClassifierRef(
+            fqName = fqName,
+            superTypes = superTypes.toList()
+        ).defaultType
+
         fun typeAlias(
             expandedType: TypeRef,
             fqName: FqName = FqName("Alias${id++}")
@@ -299,16 +327,10 @@ class TypeRefTest {
         fun typeParameter(
             fqName: FqName = FqName("TypeParameter${id++}"),
             nullable: Boolean = true
-        ) = typeParameter(emptyList(), nullable, fqName)
+        ): TypeRef = typeParameter(upperBounds = *emptyArray(), nullable = nullable, fqName = fqName)
 
         fun typeParameter(
-            upperBound: TypeRef,
-            nullable: Boolean = true,
-            fqName: FqName = FqName("TypeParameter${id++}")
-        ) = typeParameter(listOf(upperBound), nullable, fqName)
-
-        fun typeParameter(
-            upperBounds: List<TypeRef>,
+            vararg upperBounds: TypeRef,
             nullable: Boolean = true,
             fqName: FqName = FqName("TypeParameter${id++}")
         ) = ClassifierRef(

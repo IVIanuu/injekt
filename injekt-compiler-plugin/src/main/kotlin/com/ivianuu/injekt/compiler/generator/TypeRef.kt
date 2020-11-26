@@ -487,11 +487,13 @@ fun TypeRef.isSubTypeOf(
                 subTypeArg.isSubTypeOf(it, substitutionMap)
             }
         }
-    } else {
+    } else if (superType.classifier.isTypeParameter ||
+            superType.classifier.isTypeAlias) {
         return superType.superTypes(substitutionMap).all { upperBound ->
             isSubTypeOf(upperBound, substitutionMap)
         }
     }
+    return false
 }
 
 fun List<QualifierDescriptor>.isAssignable(superQualifiers: List<QualifierDescriptor>): Boolean {
