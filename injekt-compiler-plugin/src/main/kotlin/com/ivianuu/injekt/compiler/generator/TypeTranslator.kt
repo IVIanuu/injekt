@@ -43,11 +43,12 @@ class TypeTranslator(
         declarationStore.typeTranslator = this
     }
 
+    private val classifiers = mutableMapOf<ClassifierDescriptor, ClassifierRef>()
     fun toClassifierRef(
         descriptor: ClassifierDescriptor,
         fixType: Boolean = true
-    ): ClassifierRef {
-        return ClassifierRef(
+    ): ClassifierRef = classifiers.getOrPut(descriptor) {
+        ClassifierRef(
             fqName = descriptor.original.fqNameSafe,
             typeParameters = (descriptor.original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
                 ?.map { toClassifierRef(it, fixType) } ?: emptyList(),
