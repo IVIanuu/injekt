@@ -707,6 +707,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             targetComponent = targetComponent,
             scoped = callableTargetComponent != null,
             eager = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Eager),
+            default = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Default),
             contributionKind = when {
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Decorator) -> Callable.ContributionKind.DECORATOR

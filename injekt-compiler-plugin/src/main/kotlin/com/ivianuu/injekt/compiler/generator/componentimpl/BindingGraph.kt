@@ -381,14 +381,14 @@ class BindingGraph(
             )
         }
 
-        val explicitBindings = getExplicitBindingsForType(request)
+        val explicitBindings = getExplicitBindingsForType(request, false)
         binding = explicitBindings.mostSpecificOrFail("explicit")
         binding?.let {
             resolvedBindings[request.type] = it
             return it
         }
 
-        val (implicitInternalUserBindings, externalImplicitUserBindings) = getImplicitUserBindingsForType(request)
+        val (implicitInternalUserBindings, externalImplicitUserBindings) = getImplicitUserBindingsForType(request, false)
             .partition { !it.isExternal }
 
         binding = implicitInternalUserBindings.mostSpecificOrFail("internal implicit")
@@ -406,6 +406,29 @@ class BindingGraph(
         val effectBindings = getEffectBindingsForType(request)
         // todo there should be only one valid effect binding
         binding = effectBindings.firstOrNull()
+        binding?.let {
+            resolvedBindings[request.type] = it
+            return it
+        }
+
+        val explicitDefaultBindings = getExplicitBindingsForType(request, true)
+        binding = explicitDefaultBindings.mostSpecificOrFail("explicit default")
+        binding?.let {
+            resolvedBindings[request.type] = it
+            return it
+        }
+
+        val (implicitDefaultInternalUserBindings, externalDefaultImplicitUserBindings) =
+            getImplicitUserBindingsForType(request, true)
+                .partition { !it.isExternal }
+
+        binding = implicitDefaultInternalUserBindings.mostSpecificOrFail("internal implicit default")
+        binding?.let {
+            resolvedBindings[request.type] = it
+            return it
+        }
+
+        binding = externalDefaultImplicitUserBindings.mostSpecificOrFail("external implicit default")
         binding?.let {
             resolvedBindings[request.type] = it
             return it
@@ -434,7 +457,10 @@ class BindingGraph(
         return null
     }
 
-    private fun getExplicitBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
+    private fun getExplicitBindingsForType(
+        request: BindingRequest,
+        default: Boolean
+    ): List<BindingNode> = buildList<BindingNode> {
         this += owner.additionalInputTypes
             .filter { request.type.isAssignable(it) }
             .map {
@@ -445,6 +471,7 @@ class BindingGraph(
             }
 
         this += moduleBindingCallables
+            .filter { it.callable.default == default }
             .filter { request.type.isAssignable(it.callable.type) }
             .map { (callable, receiver, bindingOwner) ->
                 val substitutionMap = getSubstitutionMap(listOf(request.type to callable.type))
@@ -482,8 +509,9 @@ class BindingGraph(
             }
     }
 
-    private fun getImplicitUserBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
+    private fun getImplicitUserBindingsForType(request: BindingRequest, default: Boolean): List<BindingNode> = buildList<BindingNode> {
         this += declarationStore.bindingsForType(request.type)
+            .filter { it.default == default }
             .filter { it.targetComponent.checkComponent(request.type) }
             .map { callable ->
                 val substitutionMap = getSubstitutionMap(listOf(request.type to callable.type))
@@ -606,6 +634,7 @@ class BindingGraph(
                     targetComponent = null,
                     scoped = false,
                     eager = false,
+                    default = false,
                     contributionKind = null,
                     isCall = true,
                     callableKind = request.type.callableKind,

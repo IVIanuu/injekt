@@ -34,6 +34,7 @@ data class Callable(
     val targetComponent: TypeRef?,
     val scoped: Boolean,
     val eager: Boolean,
+    val default: Boolean,
     val contributionKind: ContributionKind?,
     val isCall: Boolean,
     val callableKind: CallableKind,
