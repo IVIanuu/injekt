@@ -35,28 +35,46 @@ annotation class Module
     AnnotationTarget.CONSTRUCTOR,
     AnnotationTarget.PROPERTY
 )
-annotation class Binding(val scopeComponent: KClass<*> = Nothing::class)
+annotation class Binding
+
+@Target(
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.CLASS,
+    AnnotationTarget.CONSTRUCTOR,
+    AnnotationTarget.PROPERTY
+)
+annotation class Bound(
+    val component: KClass<*> = Nothing::class
+)
+
+@Target(
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.CLASS,
+    AnnotationTarget.CONSTRUCTOR,
+    AnnotationTarget.PROPERTY
+)
+annotation class Scoped(val component: KClass<*> = Nothing::class)
 
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Qualifier
 
 @Target(AnnotationTarget.FUNCTION)
-annotation class FunBinding(val targetComponent: KClass<*> = Nothing::class)
+annotation class FunBinding
 
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class FunApi
 
 @Target(AnnotationTarget.CLASS)
-annotation class ImplBinding(val scopeComponent: KClass<*> = Nothing::class)
+annotation class ImplBinding
 
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
-annotation class MapEntries(val targetComponent: KClass<*> = Nothing::class)
+annotation class MapEntries
 
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
-annotation class SetElements(val targetComponent: KClass<*> = Nothing::class)
+annotation class SetElements
 
 @Target(AnnotationTarget.ANNOTATION_CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
-annotation class Decorator(val targetComponent: KClass<*> = Nothing::class)
+annotation class Decorator
 
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Effect

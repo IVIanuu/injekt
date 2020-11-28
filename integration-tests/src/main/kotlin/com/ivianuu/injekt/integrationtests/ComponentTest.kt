@@ -23,6 +23,7 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
+import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertNull
@@ -78,10 +79,14 @@ class ComponentTest {
             class Context
             
             val parentContext = Context()
-            @Binding(ParentComponent::class) fun parentContext() = parentContext
+            @Scoped(ParentComponent::class)
+            @Binding
+            fun parentContext() = parentContext
             
             val childContext = Context()
-            @Binding(MyChildComponent::class) fun childContext() = childContext
+            @Scoped(MyChildComponent::class)
+            @Binding
+            fun childContext() = childContext
             
             @Component
             abstract class ParentComponent {
@@ -159,7 +164,8 @@ class ComponentTest {
             @Component
             abstract class MyComponent { 
                 abstract val foo: Foo
-                @Binding(MyComponent::class) 
+                @Scoped(MyComponent::class)
+                @Binding
                 protected fun foo() = Foo()
             }
         
@@ -172,9 +178,38 @@ class ComponentTest {
     }
 
     @Test
+    fun testBoundCreatesInstancesInTarget() = codegen(
+        """
+            @Bound(ParentComponent::class)
+            @Binding
+            class Dep(val value: String)
+
+            @Component
+            abstract class ParentComponent(@Binding protected val string: String) {
+                abstract val dep: Dep
+                abstract val childFactory: (String) -> MyChildComponent
+            }
+
+            @ChildComponent
+            abstract class MyChildComponent(@Binding protected val string: String) {
+                abstract val dep: Dep
+            }
+
+            fun invoke(): String {
+                val parentComponent = component<ParentComponent>("parent")
+                val childComponent = parentComponent.childFactory("child")
+                return childComponent.dep.value
+            }
+        """
+    ) {
+        assertEquals("parent", invokeSingleFile<String>())
+    }
+
+    @Test
     fun testGenericBindingsWithDifferentArgumentsHasDifferentIdentity() = codegen(
         """
-            @Binding(MyComponent::class)
+            @Scoped(MyComponent::class)
+            @Binding
             class Option<T>(val value: T)
             
             @Component
@@ -210,7 +245,8 @@ class ComponentTest {
         """
             class Option<T>(val value: T)
             
-            @Binding(MyComponent::class)
+            @Scoped(MyComponent::class)
+            @Binding
             fun stringOption(value: String) = Option(value)
             
             @Component
@@ -241,7 +277,8 @@ class ComponentTest {
                 @Binding
                 protected fun foo() = Foo()
                 
-                @Binding(MyParentComponent::class)
+                @Scoped(MyParentComponent::class)
+                @Binding
                 protected fun bar(foo: Foo) = Bar(foo)
             }
             
@@ -468,7 +505,8 @@ class ComponentTest {
             @Component
             abstract class SuspendFunctionComponent {
                 abstract suspend fun foo(): Foo
-                @Binding(SuspendFunctionComponent::class)
+                @Scoped(SuspendFunctionComponent::class) 
+                @Binding
                 protected suspend fun _suspendFoo() = Foo()
             }
             

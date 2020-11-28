@@ -27,7 +27,8 @@ class EssentialsTest {
             @Binding
             val <A : StoreAction> Store<*, A>.storeDispatch: A get() = dispatch
             
-            @Binding(MyComponent::class)
+            @Scoped(MyComponent::class)
+            @Binding
             fun <S, A> storeFromProvider(provider: (Scope) -> Store<S, A>): Store<S, A> = provider(object : Scope {})
             
             class MyState(val store: Store<MyState, MyAction>) : StoreState
@@ -80,7 +81,8 @@ class EssentialsTest {
             
             typealias ComposableStore<S, A> = Store<S, A>
             
-            @Binding(MyComponent::class)
+            @Scoped(MyComponent::class)
+            @Binding
             fun <S, A> storeFromProvider(provider: (Scope) -> Store<S, A>): ComposableStore<S, A> =
                 provider(object : Scope {})
             
@@ -128,8 +130,9 @@ class EssentialsTest {
             
             @Effect
             annotation class StoreBinding {
-                companion object { 
-                    @Binding(MyComponent::class)
+                companion object {
+                    @Scoped(MyComponent::class)
+                    @Binding
                     fun <T : Store<S, A>, S, A> storeFromProvider(provider: (Scope) -> @ForEffect T): BoundStore<S, A> =
                         provider(object : Scope {})
                 

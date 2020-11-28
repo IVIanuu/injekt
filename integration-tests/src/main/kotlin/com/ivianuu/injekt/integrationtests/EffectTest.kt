@@ -499,7 +499,8 @@ class EffectTest {
             @Effect
             annotation class AnyBinding { 
                 companion object {
-                    @Binding(MyComponent::class)
+                    @Scoped(MyComponent::class)
+                    @Binding
                     val <T : Any> @ForEffect T.any: Any get() = this
                 }
             }
@@ -1263,7 +1264,8 @@ class EffectTest {
             @Effect
             annotation class AnyBinding { 
                 companion object {
-                    @Binding(MyComponent::class)
+                    @Scoped(MyComponent::class)
+                    @Binding
                     val <T : Any> @ForEffect T.any: Any get() = this
                 }
             }

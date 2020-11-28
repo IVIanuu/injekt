@@ -411,7 +411,8 @@ class DecoratorTest {
     fun testDecoratorWithTargetComponentOnlyDecoratesBindingsOfTheComponent() = codegen(
         """
             var callCount = 0
-            @Decorator(ParentComponent::class)
+            @Bound(ParentComponent::class)
+            @Decorator
             fun <T : Foo> decorate(factory: () -> T): () -> T {
                 return {
                     callCount++
@@ -446,7 +447,8 @@ class DecoratorTest {
     @Test
     fun testDecoratorWithDifferentTargetComponentFails() = codegen(
         """
-            @Decorator(Any::class)
+            @Bound(Any::class)
+            @Decorator
             annotation class MyDecorator {
                 companion object {
                     fun <T> decorate(factory: @Composable () -> T): @Composable () -> T = factory
@@ -454,7 +456,8 @@ class DecoratorTest {
             }
             
             @MyDecorator
-            @Binding(MyComponent::class)
+            @Scoped(MyComponent::class)
+            @Binding
             @Composable
             fun foo() = Foo()
             
@@ -471,14 +474,16 @@ class DecoratorTest {
     @Test
     fun testDecoratorsWithDifferentTargetComponentFails() = codegen(
         """
-            @Decorator(Any::class)
+            @Bound(Any::class)
+            @Decorator
             annotation class MyDecorator1 {
                 companion object {
                     fun <T> decorate(factory: @Composable () -> T): @Composable () -> T = factory
                 }
             }
             
-            @Decorator(String::class)
+            @Bound(String::class)
+            @Decorator
             annotation class MyDecorator2 {
                 companion object {
                     fun <T> decorate(factory: @Composable () -> T): @Composable () -> T = factory

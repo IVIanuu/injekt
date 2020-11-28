@@ -24,6 +24,7 @@ object InjektFqNames {
 
     val Arg = InjektPackage.child("Arg".asNameId())
     val Binding = InjektPackage.child("Binding".asNameId())
+    val Bound = InjektPackage.child("Bound".asNameId())
     val Component = InjektPackage.child("Component".asNameId())
     val ChildComponent = InjektPackage.child("ChildComponent".asNameId())
     val Decorator = InjektPackage.child("Decorator".asNameId())
@@ -31,15 +32,14 @@ object InjektFqNames {
     val Eager = InjektPackage.child("Eager".asNameId())
     val Effect = InjektPackage.child("Effect".asNameId())
     val ForEffect = InjektPackage.child("ForEffect".asNameId())
+    val FunApi = InjektPackage.child("FunApi".asNameId())
+    val FunBinding = InjektPackage.child("FunBinding".asNameId())
+    val ImplBinding = InjektPackage.child("ImplBinding".asNameId())
     val MapEntries = InjektPackage.child("MapEntries".asNameId())
     val Module = InjektPackage.child("Module".asNameId())
     val Qualifier = InjektPackage.child("Qualifier".asNameId())
+    val Scoped = InjektPackage.child("Scoped".asNameId())
     val SetElements = InjektPackage.child("SetElements".asNameId())
-
-    val CommonPackage = InjektPackage//.child("common".asNameId())
-    val FunApi = CommonPackage.child("FunApi".asNameId())
-    val FunBinding = CommonPackage.child("FunBinding".asNameId())
-    val ImplBinding = CommonPackage.child("ImplBinding".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
     val Index = InternalPackage.child("Index".asNameId())

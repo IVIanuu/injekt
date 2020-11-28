@@ -95,7 +95,8 @@ class AssistedTest {
             abstract class BarComponent {
                 abstract val barFactory: (Foo) -> Bar
                 
-                @Binding(BarComponent::class)
+                @Scoped(BarComponent::class)
+                @Binding
                 protected fun bar(foo: Foo) = Bar(foo)
             }
             

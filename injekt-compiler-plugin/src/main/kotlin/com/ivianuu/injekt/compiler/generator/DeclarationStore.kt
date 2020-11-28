@@ -651,19 +651,18 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             )).defaultType
         } else type)
 
-        val callableTargetComponent = (owner.annotations.findAnnotation(InjektFqNames.Binding) ?:
-        owner.annotations.findAnnotation(InjektFqNames.ImplBinding) ?:
-        owner.annotations.findAnnotation(InjektFqNames.FunBinding) ?:
-        owner.annotations.findAnnotation(InjektFqNames.MapEntries) ?:
-        owner.annotations.findAnnotation(InjektFqNames.SetElements) ?:
-        owner.annotations.findAnnotation(InjektFqNames.Decorator) ?:
+        val callableTargetComponent = ((owner.annotations
+            .findAnnotation(InjektFqNames.Scoped) ?:
+            descriptor.annotations
+                .findAnnotation(InjektFqNames.Scoped))
+            ?: (owner.annotations
+                .findAnnotation(InjektFqNames.Bound) ?:
+            descriptor.annotations
+                .findAnnotation(InjektFqNames.Bound)) ?:
         descriptor.containingDeclaration.containingDeclaration?.annotations
-            ?.findAnnotation(InjektFqNames.Decorator))
+            ?.findAnnotation(InjektFqNames.Bound))
             ?.allValueArguments
-            ?.let {
-                it["scopeComponent".asNameId()]
-                    ?: it["targetComponent".asNameId()]
-            }
+            ?.let { it["component".asNameId()] }
             ?.let { it as KClassValue }
             ?.getArgumentType(module)
             ?.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) }
@@ -705,7 +704,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             fqName = owner.fqNameSafe,
             type = type,
             targetComponent = targetComponent,
-            scoped = callableTargetComponent != null,
+            scoped = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Scoped),
             eager = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Eager),
             default = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Default),
             contributionKind = when {
