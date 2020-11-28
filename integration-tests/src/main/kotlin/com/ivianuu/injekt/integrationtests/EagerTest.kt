@@ -67,4 +67,30 @@ class EagerTest {
         assertTrue(invokeSingleFile<Boolean>())
     }
 
+    @Test
+    fun testEagerScopedBinding() = codegen(
+        """
+            var called = false
+
+            @Eager
+            @Binding(MyComponent::class)
+            fun foo(): Foo {
+                called = true
+                return Foo()
+            }
+
+            @Component
+            abstract class MyComponent {
+                abstract val foo: Foo
+            }
+
+            fun invoke(): Boolean {
+                val component = component<MyComponent>()
+                return called
+            }
+        """
+    ) {
+        assertTrue(invokeSingleFile<Boolean>())
+    }
+
 }

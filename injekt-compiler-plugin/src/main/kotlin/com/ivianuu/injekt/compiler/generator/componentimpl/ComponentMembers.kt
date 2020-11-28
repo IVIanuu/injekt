@@ -144,10 +144,12 @@ class ComponentStatements(
 
         val maybeScopedExpression = if (binding.targetComponent == null || binding.eager)
             rawExpression else
-            scoped(binding.type, binding.callableKind, false, binding.targetComponent!!, rawExpression)
+            scoped(binding.type, binding.callableKind, false,
+                binding.targetComponent!!, binding.decorators.isNotEmpty(), rawExpression)
 
         val maybeDecoratedExpression = if (binding.decorators.isEmpty()) maybeScopedExpression
-        else decorated(binding.type, binding.callableKind, binding.decorators, !binding.eager, maybeScopedExpression)
+        else decorated(binding.type, binding.callableKind, binding.decorators, !binding.eager,
+            binding.decorators.isNotEmpty(), maybeScopedExpression)
 
         val requestForType = owner.requests
             .filterNot { it in owner.assistedRequests }
@@ -203,7 +205,8 @@ class ComponentStatements(
                 emitLine(".invoke()")
             }
             if (binding.scoped) {
-                scoped(binding.type.typeArguments.last(), binding.callableKind, false, binding.targetComponent!!) {
+                scoped(binding.type.typeArguments.last(), binding.callableKind, false,
+                    binding.targetComponent!!, false) {
                     emitNewInstance()
                 }
             } else {
@@ -390,20 +393,9 @@ class ComponentStatements(
         callableKind: Callable.CallableKind,
         decorators: List<DecoratorNode>,
         cacheProvider: Boolean,
+        clearableProvider: Boolean,
         create: ComponentExpression
     ): ComponentExpression {
-        val providerType = when (callableKind) {
-            Callable.CallableKind.DEFAULT -> typeTranslator.toClassifierRef(
-                moduleDescriptor.builtIns.getFunction(0)
-            ).defaultType.typeWith(listOf(type))
-            Callable.CallableKind.SUSPEND -> typeTranslator.toClassifierRef(
-                moduleDescriptor.builtIns.getSuspendFunction(0)
-            ).defaultType.typeWith(listOf(type))
-            Callable.CallableKind.COMPOSABLE -> typeTranslator.toClassifierRef(
-                moduleDescriptor.builtIns.getFunction(0)
-            ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
-        }
-
         val initializer: CodeBuilder.() -> Unit = {
             emitLine()
             fun DecoratorNode.emit(prevExpression: ComponentExpression) {
@@ -449,11 +441,24 @@ class ComponentStatements(
             }
         }
         return if (cacheProvider) {
+            val providerType = when (callableKind) {
+                Callable.CallableKind.DEFAULT -> typeTranslator.toClassifierRef(
+                    moduleDescriptor.builtIns.getFunction(0)
+                ).defaultType.typeWith(listOf(type))
+                Callable.CallableKind.SUSPEND -> typeTranslator.toClassifierRef(
+                    moduleDescriptor.builtIns.getSuspendFunction(0)
+                ).defaultType.typeWith(listOf(type))
+                Callable.CallableKind.COMPOSABLE -> typeTranslator.toClassifierRef(
+                    moduleDescriptor.builtIns.getFunction(0)
+                ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
+            }.let {
+                if (clearableProvider) it.copy(isMarkedNullable = true) else it
+            }
             val providerProperty = ComponentCallable(
                 name = "${type.uniqueTypeName()}_Provider".asNameId(),
                 type = providerType,
                 initializer = initializer,
-                isMutable = false,
+                isMutable = clearableProvider,
                 body = null,
                 isOverride = false,
                 isProperty = true,
@@ -465,7 +470,9 @@ class ComponentStatements(
             ).also { owner.members += it }
 
             val expression: ComponentExpression = {
-                emit("${providerProperty.name}()")
+                emit("${providerProperty.name}")
+                if (clearableProvider) emit("!!")
+                emit("()")
             }
             expression
         } else {
@@ -482,6 +489,7 @@ class ComponentStatements(
         callableKind: Callable.CallableKind,
         frameworkType: Boolean,
         scopeComponentType: TypeRef,
+        clearProvider: Boolean,
         create: ComponentExpression
     ): ComponentExpression {
         var scopeComponent = owner
@@ -525,7 +533,8 @@ class ComponentStatements(
                     mutexType,
                     Callable.CallableKind.DEFAULT,
                     true,
-                    scopeComponentType
+                    scopeComponentType,
+                    false
                 ) {
                     emit("${InjektFqNames.Mutex}()")
                 },
@@ -558,6 +567,10 @@ class ComponentStatements(
                     emit("value = ")
                     create()
                     emitLine()
+                    if (clearProvider) {
+                        emit("${type.uniqueTypeName()}_Provider".asNameId())
+                        emitLine(" = null")
+                    }
                     scopeComponentExpression()
                     emitLine(".${cacheProperty.name} = value")
                     emitLine("return@scope value as ${type.render(expanded = true)}")

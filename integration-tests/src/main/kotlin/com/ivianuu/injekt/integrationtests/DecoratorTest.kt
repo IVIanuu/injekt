@@ -633,4 +633,25 @@ class DecoratorTest {
         assertInternalError("is not a sub type of")
     }
 
+    @Test
+    fun testScopedBindingWithDecorator() = codegen(
+        """
+            @Decorator
+            annotation class MyDecorator {
+                companion object {
+                    fun <T> decorate(factory: () -> T): () -> T = factory
+                }
+            }
+            
+            @MyDecorator
+            @Binding(MyComponent::class)
+            fun foo() = Foo()
+            
+            @Component
+            abstract class MyComponent {
+                abstract val foo: Foo
+            }
+        """
+    )
+
 }
