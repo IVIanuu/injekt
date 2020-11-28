@@ -19,6 +19,7 @@ package com.ivianuu.injekt.samples.coffeemaker
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.ImplBinding
+import com.ivianuu.injekt.Scoped
 import com.ivianuu.injekt.component
 
 fun main() {
@@ -45,7 +46,8 @@ interface Heater {
     val isHot: Boolean
 }
 
-@ImplBinding(CoffeeComponent::class)
+@Scoped(CoffeeComponent::class)
+@ImplBinding
 class ElectricHeater : Heater {
     private var heating: Boolean = false
 
