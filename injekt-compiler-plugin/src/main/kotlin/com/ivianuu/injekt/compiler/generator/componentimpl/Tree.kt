@@ -123,7 +123,8 @@ class ComponentCallable(
 
 sealed class BindingNode(
     type: TypeRef,
-    var callableKind: Callable.CallableKind
+    var callableKind: Callable.CallableKind,
+    var eager: Boolean
 ) {
     abstract val dependencies: List<BindingRequest>
     abstract val rawType: TypeRef
@@ -134,7 +135,6 @@ sealed class BindingNode(
     abstract val declaredInComponent: ComponentImpl?
     abstract val receiver: ComponentExpression?
     abstract val isExternal: Boolean
-    abstract val eager: Boolean
     abstract val inline: Boolean
 
     lateinit var decorators: List<DecoratorNode>
@@ -155,7 +155,7 @@ sealed class BindingNode(
 class SelfBindingNode(
     type: TypeRef,
     val component: ComponentImpl
-) : BindingNode(type, Callable.CallableKind.DEFAULT) {
+) : BindingNode(type, Callable.CallableKind.DEFAULT, false) {
     override val dependencies: List<BindingRequest>
         get() = emptyList()
     override val rawType: TypeRef
@@ -170,8 +170,6 @@ class SelfBindingNode(
     override val receiver: ComponentExpression? get() = null
     override val isExternal: Boolean
         get() = false
-    override val eager: Boolean
-        get() = false
     override val inline: Boolean
         get() = true
 }
@@ -181,9 +179,7 @@ class AssistedBindingNode(
     override val owner: ComponentImpl,
     val childComponent: ComponentImpl,
     val assistedTypes: List<TypeRef>
-) : BindingNode(type, Callable.CallableKind.DEFAULT) {
-    override val eager: Boolean
-        get() = true
+) : BindingNode(type, Callable.CallableKind.DEFAULT, true) {
     override val dependencies: List<BindingRequest>
         get() = emptyList()
     override val isExternal: Boolean
@@ -218,7 +214,7 @@ class ChildComponentBindingNode(
     override val owner: ComponentImpl,
     override val origin: FqName?,
     val childComponent: ComponentImpl,
-) : BindingNode(type, Callable.CallableKind.DEFAULT) {
+) : BindingNode(type, Callable.CallableKind.DEFAULT, true) {
     override val dependencies: List<BindingRequest>
         get() = emptyList()
     override val rawType: TypeRef
@@ -233,8 +229,6 @@ class ChildComponentBindingNode(
         get() = false
     override val isExternal: Boolean
         get() = false
-    override val eager: Boolean
-        get() = true
     override val inline: Boolean
         get() = false
 }
@@ -242,11 +236,9 @@ class ChildComponentBindingNode(
 class InputBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl
-) : BindingNode(type, Callable.CallableKind.DEFAULT) {
+) : BindingNode(type, Callable.CallableKind.DEFAULT, false) {
     override val declaredInComponent: ComponentImpl
         get() = owner
-    override val eager: Boolean
-        get() = false
     override val dependencies: List<BindingRequest>
         get() = emptyList()
     override val isExternal: Boolean
@@ -273,15 +265,13 @@ class CallableBindingNode(
     override val dependencies: List<BindingRequest>,
     override val receiver: ComponentExpression?,
     val callable: Callable
-) : BindingNode(type, callable.callableKind) {
+) : BindingNode(type, callable.callableKind, callable.eager) {
     override val isExternal: Boolean
         get() = callable.isExternal
     override val targetComponent: TypeRef?
         get() = callable.targetComponent
     override val scoped: Boolean
         get() = callable.scoped
-    override val eager: Boolean
-        get() = callable.eager
     override val origin: FqName
         get() = callable.fqName
     override val inline: Boolean
@@ -302,7 +292,7 @@ class FunBindingNode(
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
     val callable: Callable
-) : BindingNode(type, Callable.CallableKind.DEFAULT) {
+) : BindingNode(type, Callable.CallableKind.DEFAULT, true) {
     override val declaredInComponent: ComponentImpl?
         get() = null
     override val receiver: ComponentExpression?
@@ -315,8 +305,6 @@ class FunBindingNode(
         get() = false
     override val origin: FqName
         get() = callable.fqName
-    override val eager: Boolean
-        get() = true
     override val inline: Boolean
         get() = false
 
@@ -333,7 +321,7 @@ class MapBindingNode(
     override val dependencies: List<BindingRequest>,
     val entries: List<CallableWithReceiver>,
     val dependenciesByEntry: Map<Callable, List<BindingRequest>>
-) : BindingNode(type, Callable.CallableKind.DEFAULT) {
+) : BindingNode(type, Callable.CallableKind.DEFAULT, entries.any { it.callable.eager }) {
     override val rawType: TypeRef
         get() = type
     override val origin: FqName?
@@ -348,8 +336,6 @@ class MapBindingNode(
         get() = null
     override val isExternal: Boolean
         get() = false
-    override val eager: Boolean
-        get() = entries.any { it.callable.eager }
     override val inline: Boolean
         get() = false
 
@@ -365,9 +351,7 @@ class MapBindingNode(
 class MissingBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl
-) : BindingNode(type, Callable.CallableKind.DEFAULT) {
-    override val eager: Boolean
-        get() = false
+) : BindingNode(type, Callable.CallableKind.DEFAULT, false) {
     override val declaredInComponent: ComponentImpl?
         get() = null
     override val dependencies: List<BindingRequest>
@@ -393,7 +377,7 @@ class ProviderBindingNode(
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
     override val origin: FqName?,
-) : BindingNode(type, Callable.CallableKind.DEFAULT) {
+) : BindingNode(type, Callable.CallableKind.DEFAULT, true) {
     override val declaredInComponent: ComponentImpl?
         get() = null
     override val receiver: ComponentExpression?
@@ -404,8 +388,6 @@ class ProviderBindingNode(
         get() = null
     override val isExternal: Boolean
         get() = false
-    override val eager: Boolean
-        get() = true
     override val inline: Boolean
         get() = false
     override val scoped: Boolean
@@ -418,7 +400,7 @@ class SetBindingNode(
     override val dependencies: List<BindingRequest>,
     val elements: List<CallableWithReceiver>,
     val dependenciesByElement: Map<Callable, List<BindingRequest>>
-) : BindingNode(type, Callable.CallableKind.DEFAULT) {
+) : BindingNode(type, Callable.CallableKind.DEFAULT, elements.any { it.callable.eager }) {
     override val rawType: TypeRef
         get() = type
     override val origin: FqName?
@@ -431,8 +413,6 @@ class SetBindingNode(
         get() = null
     override val isExternal: Boolean
         get() = false
-    override val eager: Boolean
-        get() = elements.any { it.callable.eager }
     override val inline: Boolean
         get() = false
     override val scoped: Boolean

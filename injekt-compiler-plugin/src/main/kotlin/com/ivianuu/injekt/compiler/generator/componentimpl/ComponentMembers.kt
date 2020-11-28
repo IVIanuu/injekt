@@ -147,7 +147,7 @@ class ComponentStatements(
             scoped(binding.type, binding.callableKind, false, binding.targetComponent!!, rawExpression)
 
         val maybeDecoratedExpression = if (binding.decorators.isEmpty()) maybeScopedExpression
-        else decorated(binding.type, binding.callableKind, binding.decorators, maybeScopedExpression)
+        else decorated(binding.type, binding.callableKind, binding.decorators, !binding.eager, maybeScopedExpression)
 
         val requestForType = owner.requests
             .filterNot { it in owner.assistedRequests }
@@ -389,6 +389,7 @@ class ComponentStatements(
         type: TypeRef,
         callableKind: Callable.CallableKind,
         decorators: List<DecoratorNode>,
+        cacheProvider: Boolean,
         create: ComponentExpression
     ): ComponentExpression {
         val providerType = when (callableKind) {
@@ -447,24 +448,32 @@ class ComponentStatements(
                 }) { acc, next -> { next.emit(acc) } }()
             }
         }
-        val name = "${type.uniqueTypeName()}_Provider".asNameId()
-        val providerProperty = ComponentCallable(
-            name = name,
-            type = providerType,
-            initializer = initializer,
-            isMutable = false,
-            body = null,
-            isOverride = false,
-            isProperty = true,
-            callableKind = Callable.CallableKind.DEFAULT,
-            isInline = false,
-            canBePrivate = true,
-            valueParameters = emptyList(),
-            typeParameters = emptyList()
-        ).also { owner.members += it }
+        return if (cacheProvider) {
+            val providerProperty = ComponentCallable(
+                name = "${type.uniqueTypeName()}_Provider".asNameId(),
+                type = providerType,
+                initializer = initializer,
+                isMutable = false,
+                body = null,
+                isOverride = false,
+                isProperty = true,
+                callableKind = Callable.CallableKind.DEFAULT,
+                isInline = false,
+                canBePrivate = true,
+                valueParameters = emptyList(),
+                typeParameters = emptyList()
+            ).also { owner.members += it }
 
-        return {
-            emit("${providerProperty.name}()")
+            val expression: ComponentExpression = {
+                emit("${providerProperty.name}()")
+            }
+            expression
+        } else {
+            val expression: ComponentExpression = {
+                initializer()
+                emit(".invoke()")
+            }
+            expression
         }
     }
 
