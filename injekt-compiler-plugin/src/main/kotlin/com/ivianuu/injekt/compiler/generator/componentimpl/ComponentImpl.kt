@@ -143,6 +143,8 @@ class ComponentImpl(
                 if (index != superConstructorParameters.lastIndex) emit(", ")
             }
             emit(") ")
+        } else {
+            emitSpace()
         }
 
         val mergeSuperTypes = mergeDeclarations
