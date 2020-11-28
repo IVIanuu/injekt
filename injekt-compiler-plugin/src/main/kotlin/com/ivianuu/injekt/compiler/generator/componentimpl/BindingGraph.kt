@@ -250,6 +250,7 @@ class BindingGraph(
     private fun makeAllScopedDependenciesEager(binding: BindingNode) {
         binding
             .dependencies
+            .filterNot { it.lazy }
             .map { getBinding(it) }
             .filter { it.scoped && !it.eager && it.owner == owner }
             .forEach {
