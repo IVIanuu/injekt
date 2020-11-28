@@ -35,7 +35,6 @@ import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -57,7 +56,7 @@ class ComponentStatements(
         body: ComponentExpression,
         isProperty: Boolean,
         callableKind: Callable.CallableKind,
-        cacheable: Boolean,
+        eager: Boolean,
         isInline: Boolean,
         canBePrivate: Boolean
     ): ComponentCallable {
@@ -68,15 +67,14 @@ class ComponentStatements(
             if (isOverride) it.isOverride = true
             return it
         }
-        val cache = cacheable && isProperty && callableKind == Callable.CallableKind.DEFAULT
         val callable = ComponentCallable(
             name = name,
             isOverride = isOverride,
             type = type,
-            body = if (!cache) body else null,
+            body = if (!eager) body else null,
             isProperty = isProperty,
             callableKind = callableKind,
-            initializer = if (cache) body else null,
+            initializer = if (eager) body else null,
             isMutable = false,
             isInline = isInline,
             canBePrivate = canBePrivate,
@@ -99,7 +97,7 @@ class ComponentStatements(
                 body = it,
                 callableKind = callableKind,
                 isProperty = callableKind != Callable.CallableKind.SUSPEND,
-                cacheable = binding.cacheable,
+                eager = binding.eager,
                 isInline = false,
                 canBePrivate = false
             )
@@ -144,7 +142,7 @@ class ComponentStatements(
             is SetBindingNode -> setExpression(binding)
         }
 
-        val maybeScopedExpression = if (binding.targetComponent == null || binding.cacheable)
+        val maybeScopedExpression = if (binding.targetComponent == null || binding.eager)
             rawExpression else
             scoped(binding.type, binding.callableKind, false, binding.targetComponent!!, rawExpression)
 
@@ -171,7 +169,7 @@ class ComponentStatements(
             body = maybeDecoratedExpression,
             isProperty = isProperty,
             callableKind = requestForType?.callableKind ?: callableKind,
-            cacheable = binding.cacheable,
+            eager = binding.eager,
             isInline = requestForType in owner.assistedRequests || (!isOverride && binding.inline),
             canBePrivate = requestForType in owner.assistedRequests || !isOverride
         )

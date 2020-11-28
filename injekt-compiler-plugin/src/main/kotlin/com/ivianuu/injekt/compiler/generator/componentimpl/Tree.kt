@@ -134,7 +134,7 @@ sealed class BindingNode(
     abstract val declaredInComponent: ComponentImpl?
     abstract val receiver: ComponentExpression?
     abstract val isExternal: Boolean
-    abstract val cacheable: Boolean
+    abstract val eager: Boolean
     abstract val inline: Boolean
 
     lateinit var decorators: List<DecoratorNode>
@@ -170,7 +170,7 @@ class SelfBindingNode(
     override val receiver: ComponentExpression? get() = null
     override val isExternal: Boolean
         get() = false
-    override val cacheable: Boolean
+    override val eager: Boolean
         get() = false
     override val inline: Boolean
         get() = true
@@ -182,7 +182,7 @@ class AssistedBindingNode(
     val childComponent: ComponentImpl,
     val assistedTypes: List<TypeRef>
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
-    override val cacheable: Boolean
+    override val eager: Boolean
         get() = true
     override val dependencies: List<BindingRequest>
         get() = emptyList()
@@ -233,7 +233,7 @@ class ChildComponentBindingNode(
         get() = false
     override val isExternal: Boolean
         get() = false
-    override val cacheable: Boolean
+    override val eager: Boolean
         get() = true
     override val inline: Boolean
         get() = false
@@ -245,7 +245,7 @@ class InputBindingNode(
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
     override val declaredInComponent: ComponentImpl
         get() = owner
-    override val cacheable: Boolean
+    override val eager: Boolean
         get() = false
     override val dependencies: List<BindingRequest>
         get() = emptyList()
@@ -280,14 +280,14 @@ class CallableBindingNode(
         get() = callable.targetComponent
     override val scoped: Boolean
         get() = callable.scoped
-    override val origin: FqName?
+    override val eager: Boolean
+        get() = callable.eager
+    override val origin: FqName
         get() = callable.fqName
-    override val cacheable: Boolean
-        get() = false
     override val inline: Boolean
         get() = callable.visibility != DescriptorVisibilities.PROTECTED &&
                 (((!callable.isCall || callable.valueParameters.isEmpty()) ||
-                        callable.isInline) &&!cacheable && targetComponent == null)
+                        callable.isInline) &&!eager && targetComponent == null)
 
     override fun refineType(dependencyBindings: List<BindingNode>) {
         super.refineType(dependencyBindings)
@@ -313,9 +313,9 @@ class FunBindingNode(
         get() = callable.targetComponent
     override val scoped: Boolean
         get() = false
-    override val origin: FqName?
+    override val origin: FqName
         get() = callable.fqName
-    override val cacheable: Boolean
+    override val eager: Boolean
         get() = true
     override val inline: Boolean
         get() = false
@@ -348,8 +348,8 @@ class MapBindingNode(
         get() = null
     override val isExternal: Boolean
         get() = false
-    override val cacheable: Boolean
-        get() = false
+    override val eager: Boolean
+        get() = entries.any { it.callable.eager }
     override val inline: Boolean
         get() = false
 
@@ -366,7 +366,7 @@ class MissingBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl
 ) : BindingNode(type, Callable.CallableKind.DEFAULT) {
-    override val cacheable: Boolean
+    override val eager: Boolean
         get() = false
     override val declaredInComponent: ComponentImpl?
         get() = null
@@ -404,7 +404,7 @@ class ProviderBindingNode(
         get() = null
     override val isExternal: Boolean
         get() = false
-    override val cacheable: Boolean
+    override val eager: Boolean
         get() = true
     override val inline: Boolean
         get() = false
@@ -431,8 +431,8 @@ class SetBindingNode(
         get() = null
     override val isExternal: Boolean
         get() = false
-    override val cacheable: Boolean
-        get() = false
+    override val eager: Boolean
+        get() = elements.any { it.callable.eager }
     override val inline: Boolean
         get() = false
     override val scoped: Boolean

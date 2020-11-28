@@ -67,3 +67,12 @@ annotation class ForEffect
 
 @Target(AnnotationTarget.TYPE_PARAMETER, AnnotationTarget.VALUE_PARAMETER)
 annotation class Arg(val name: String)
+
+
+@Target(
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.CLASS,
+    AnnotationTarget.CONSTRUCTOR,
+    AnnotationTarget.PROPERTY
+)
+annotation class Eager

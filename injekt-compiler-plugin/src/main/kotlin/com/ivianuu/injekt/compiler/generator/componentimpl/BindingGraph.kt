@@ -588,6 +588,7 @@ class BindingGraph(
                     valueParameters = emptyList(),
                     targetComponent = null,
                     scoped = false,
+                    eager = false,
                     contributionKind = null,
                     isCall = true,
                     callableKind = request.type.callableKind,

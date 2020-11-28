@@ -107,7 +107,7 @@ class ComponentImpl(
                 body = body,
                 isProperty = !requestCallable.isCall,
                 callableKind = requestCallable.callableKind,
-                cacheable = binding.cacheable,
+                eager = binding.eager,
                 isInline = requestCallable in assistedRequests,
                 canBePrivate = requestCallable in assistedRequests
             )
