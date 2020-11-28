@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertTrue
@@ -127,5 +128,21 @@ class EagerTest {
             }
         """
     )
+
+    @Test
+    fun testEagerAssistedBindingFails() = codegen(
+        """
+            @Eager
+            @Binding
+            fun bar(foo: Foo) = Bar(foo)
+
+            @Component
+            abstract class MyComponent {
+                abstract val barFactory: (Foo) -> Bar
+            }
+        """
+    ) {
+        assertInternalError("Cannot perform assisted injection on a eager binding")
+    }
 
 }

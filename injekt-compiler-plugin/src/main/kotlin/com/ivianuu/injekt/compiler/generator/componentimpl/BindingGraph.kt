@@ -39,6 +39,7 @@ import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.ir.interpreter.builtins.unaryFunctions
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -273,6 +274,11 @@ class BindingGraph(
         }
         chain.push(request)
         val binding = getBinding(request)
+        if (request.type == owner.assistedRequests.singleOrNull()?.type &&
+                binding is CallableBindingNode &&
+                binding.eager) {
+            error("Cannot perform assisted injection on a eager binding $request ${binding.callable.fqName}")
+        }
         binding.owner.graph.check(binding)
         chain.pop()
     }

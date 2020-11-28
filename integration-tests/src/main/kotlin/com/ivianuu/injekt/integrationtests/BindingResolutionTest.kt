@@ -144,11 +144,14 @@ class BindingResolutionTest {
     }
 
     @Test
-    fun testPrefersDefaultOverFrameworkBinding() = codegen(
+    fun testPrefersUserOverDefaultBinding() = codegen(
         """
-            @Binding
             class Dep
-            
+
+            @Default
+            @Binding
+            fun dep() = Dep()
+
             @Component
             abstract class MyComponent(@Binding protected val _dep: Dep) { 
                 abstract val dep: Dep
@@ -181,7 +184,7 @@ class BindingResolutionTest {
             }
         """
     ) {
-        assertInternalError("multiple default bindings")
+        assertInternalError("Multiple internal implicit default bindings")
     }
 
     @Test

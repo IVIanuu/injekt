@@ -115,7 +115,7 @@ class ComponentTest {
 
     @Test
     fun testChildWithAdditionalArguments() = codegen(
-        """Assert.
+        """
             @Component
             abstract class ParentComponent {
                 abstract val childComponentFactory: (Foo) -> MyChildComponent

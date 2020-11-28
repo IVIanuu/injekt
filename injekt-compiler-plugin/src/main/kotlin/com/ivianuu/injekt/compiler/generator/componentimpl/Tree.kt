@@ -105,7 +105,7 @@ class ComponentCallable(
             emitSpace()
             braced {
                 emit("return ")
-                body!!()
+                body?.invoke(this) ?: initializer?.invoke(this)
             }
         }
     }
