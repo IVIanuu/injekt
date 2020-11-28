@@ -93,4 +93,39 @@ class EagerTest {
         assertTrue(invokeSingleFile<Boolean>())
     }
 
+    @Test
+    fun testEagerScopedBindingWithScopedDependencies() = codegen(
+        """
+            @Binding(MyComponent::class)
+            fun foo() = Foo()
+
+            @Eager
+            @Binding(MyComponent::class)
+            fun bar(foo: Foo) = Bar(foo)
+
+            @Component
+            abstract class MyComponent {
+                abstract val bar: Bar
+            }
+        """
+    )
+
+    @Test
+    fun testEagerScopedCircularDependency() = codegen(
+        """
+            @Eager
+            @Binding(MyComponent::class)
+            fun foo(bar: () -> Bar) = Foo()
+
+            @Eager
+            @Binding(MyComponent::class)
+            fun bar(foo: () -> Foo) = Bar(Foo())
+
+            @Component
+            abstract class MyComponent {
+                abstract val bar: Bar
+            }
+        """
+    )
+
 }

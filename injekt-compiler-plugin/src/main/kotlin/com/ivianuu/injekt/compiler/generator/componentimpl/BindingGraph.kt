@@ -240,6 +240,22 @@ class BindingGraph(
                 }
                 chain.pop()
             }
+
+        // we mark all scoped dependencies of the binding as eager
+        // to avoid to create additional properties for their instances
+        if (binding.scoped && binding.eager && binding.owner == owner)
+            makeAllScopedDependenciesEager(binding)
+    }
+
+    private fun makeAllScopedDependenciesEager(binding: BindingNode) {
+        binding
+            .dependencies
+            .map { getBinding(it) }
+            .filter { it.scoped && !it.eager && it.owner == owner }
+            .forEach {
+                it.eager = true
+                makeAllScopedDependenciesEager(it)
+            }
     }
 
     private fun check(request: BindingRequest) {
