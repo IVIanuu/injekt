@@ -923,17 +923,19 @@ class EffectTest {
                 }
             }
 
-            @Alias<Any>
-            class MyService
+            interface Service
+
+            @Alias<Service>
+            class MyService : Service
 
             @Component
             abstract class MyComponent {
-                abstract val arg: Any
+                abstract val service: Service
             }
         """
     )
 
-    // todo @Test
+    @Test
     fun testEffectWithTypeParamMulti() = multiCodegen(
         listOf(
             source(
@@ -945,9 +947,11 @@ class EffectTest {
                             fun <@Arg("T") T, S : T> bindAlias(instance: @ForEffect S): T = instance
                         }
                     }
+
+                    interface Service
         
-                    @Alias<Int>
-                    class MyService
+                    @Alias<Service>
+                    class MyService : Service
                 """
             )
         ),
@@ -956,7 +960,7 @@ class EffectTest {
                 """
                     @Component
                     abstract class MyComponent {
-                        abstract val arg: Any
+                        abstract val service: Service
                     }
                 """
             )
