@@ -441,4 +441,62 @@ class EssentialsTest {
             ): Result = error("")
         """
     )
+
+    @Test
+    fun testRouteResultBinding() = codegen(
+        """
+            typealias produceResult<P1, O> = suspend (P1) -> O?
+            
+            typealias DispatchResult<O> = (O) -> Unit
+
+            @Effect
+            annotation class RouteResultProducerBinding1<P1, O> {
+                companion object {
+                    @Binding
+                    fun <@Arg("P1") P1, @Arg("O") O, T> produceResult(
+                        @FunApi routeContentFactory: (P1, DispatchResult<O>) -> @ForEffect T
+                    ): produceResult<P1, O> = error("")
+                }
+            }
+
+            class Params
+            class Result
+
+            @RouteResultProducerBinding1<Params, Result>
+            fun myResultProducer() {
+                
+            }
+
+            @Component
+            abstract class MyComponent {
+                abstract val produceResult: produceResult<Params, Result>
+            }
+        """
+    )
+
+    @Test
+    fun testKeyFactory() = codegen(
+        """
+            typealias Key = Any
+
+            typealias KeyFactory<K> = (K) -> Key
+
+            @Effect
+            annotation class KeyFactoryBinding {
+                companion object {
+                    @Binding
+                    fun <T : KeyFactory<K>, K> bind(): KeyFactory<K> = error("")
+                }
+            }
+
+            @KeyFactoryBinding
+            @FunBinding
+            fun myKeyFactory(@FunApi string: String): Key = error("")
+
+            @Component
+            abstract class MyComponent {
+                abstract val stringKeyFactory: KeyFactory<String>
+            }
+        """
+    )
 }

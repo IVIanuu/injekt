@@ -575,7 +575,9 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         it.key.classifier.fqName to it.value
                     }} missing ${effectCallable.typeParameters.filter {
                         it.defaultType !in substitutionMap
-                    }.map { it.fqName }} on\n" +
+                    }.map { it.fqName }} " +
+                            "with effect type $bindingType\n" +
+                            "on\n" +
                             "$source in\n" +
                             "$origin"
                 }

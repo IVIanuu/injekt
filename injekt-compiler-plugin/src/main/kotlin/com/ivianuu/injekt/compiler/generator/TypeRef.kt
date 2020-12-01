@@ -425,6 +425,7 @@ fun getSubstitutionMap(
         if (baseType.classifier.isTypeParameter) {
             substitutionMap[baseType] = thisType
             baseType.superTypes()
+                .map { it.fullyExpandedType }
                 .map { thisType.subtypeView(it.classifier, substitutionMap) to it }
                 .forEach { (thisBaseTypeView, baseSuperType) ->
                     thisBaseTypeView?.typeArguments?.zip(baseSuperType.typeArguments)
