@@ -186,6 +186,11 @@ class TypeRefTest {
     }
 
     @Test
+    fun testComposableIsNotSubTypeOfNonComposable() = withAnalysisContext {
+        composableFunction(0) shouldNotBeAssignable typeParameter(function(0))
+    }
+
+    @Test
     fun testSubTypeOfTypeParameterWithNonNullAnyUpperBound() = withAnalysisContext {
         stringType shouldBeAssignable typeParameter(nullable = false)
     }
@@ -296,6 +301,10 @@ class TypeRefTest {
         fun composableFunction(parameterCount: Int) = typeFor(
             FqName("kotlin.Function$parameterCount")
         ).copy(isComposable = true)
+
+        fun function(parameterCount: Int) = typeFor(
+            FqName("kotlin.Function$parameterCount")
+        )
 
         fun qualifier1(args: Map<Name, String> = emptyMap()) =
             qualifier(FqName("Qualifier1"), args)
