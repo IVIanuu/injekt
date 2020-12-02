@@ -488,7 +488,8 @@ fun TypeRef.isAssignable(
 
     if (effect != superType.effect) return false
     if (!qualifiers.isAssignable(superType.qualifiers)) return false
-    if (isComposableRecursive != superType.isComposableRecursive) return false
+    if (classifier.fqName == superType.classifier.fqName &&
+        isComposableRecursive != superType.isComposableRecursive) return false
 
     if (superType.classifier.isTypeParameter) {
         return superType.superTypes(substitutionMap).all { upperBound ->
@@ -517,7 +518,8 @@ fun TypeRef.isSubTypeOf(
         (superType.qualifiers.isEmpty() || qualifiers.isAssignable(superType.qualifiers)))
         return true
 
-    if (isComposableRecursive != superType.isComposableRecursive) return false
+    if (classifier == superType.classifier && (!isMarkedNullable || superType.isMarkedNullable) &&
+        isComposableRecursive != superType.isComposableRecursive) return false
     val subTypeView = subtypeView(superType.classifier, substitutionMap)
     if (subTypeView != null) {
         if (subTypeView == superType && (!subTypeView.isMarkedNullable || superType.isMarkedNullable) &&

@@ -181,6 +181,11 @@ class TypeRefTest {
     }
 
     @Test
+    fun testComposableSubTypeOfTypeParameterWithNullableAnyUpperBound() = withAnalysisContext {
+        composableFunction(0) shouldBeAssignable typeParameter()
+    }
+
+    @Test
     fun testSubTypeOfTypeParameterWithNonNullAnyUpperBound() = withAnalysisContext {
         stringType shouldBeAssignable typeParameter(nullable = false)
     }
