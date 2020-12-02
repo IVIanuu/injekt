@@ -42,6 +42,7 @@ object InjektFqNames {
     val SetElements = InjektPackage.child("SetElements".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
+    val AnnotationTypesName = InternalPackage.child("AnnotationTypesName".asNameId())
     val Index = InternalPackage.child("Index".asNameId())
 
     val IndexPackage = InternalPackage.child("index".asNameId())

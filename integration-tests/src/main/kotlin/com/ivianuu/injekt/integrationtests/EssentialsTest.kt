@@ -499,4 +499,33 @@ class EssentialsTest {
             }
         """
     )
+
+    @Test
+    fun testKeyUiBinding() = codegen(
+        """
+            typealias Key = Any
+
+            typealias Factory<K, T> = (K) -> T
+
+            @Effect
+            annotation class KeyUiBinding<K> {
+                companion object {
+                    @MapEntries
+                    fun <@Arg("K") K, T : Factory<K, S>, S> bind(factory: (K) -> @ForEffect T): Map<Unit, Factory<Any, Any>> = mapOf(
+                        Unit to factory as Factory<Any, Any>
+                    )
+                }
+            }
+
+            @KeyUiBinding<String>
+            @FunBinding
+            fun foo(@FunApi string: String) = Foo()
+
+            @Component
+            abstract class MyComponent {
+                abstract val stringFooFactory: Map<Unit, Factory<Any, Any>>
+
+            }
+        """
+    )
 }

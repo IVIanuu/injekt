@@ -33,7 +33,6 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
-import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.findClassifierAcrossModuleDependencies
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
@@ -84,15 +83,37 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     }
 
     private val allIndices by unsafeLazy {
-        internalIndices + (memberScopeForFqName(InjektFqNames.IndexPackage)
+        internalIndices + externalIndices
+    }
+
+    private val externalIndices by unsafeLazy {
+        memberScopeForFqName(InjektFqNames.IndexPackage)
             ?.getContributedDescriptors(DescriptorKindFilter.VALUES)
             ?.filterIsInstance<PropertyDescriptor>()
-            ?.map {
-                val annotation = it.annotations.findAnnotation(InjektFqNames.Index)!!
+            ?.map { indexProperty ->
+                val annotation = indexProperty.annotations.findAnnotation(InjektFqNames.Index)!!
+
                 val fqName = annotation.allValueArguments["fqName".asNameId()]!!.value as String
                 val type = annotation.allValueArguments["type".asNameId()]!!.value as String
-                Index(FqName(fqName), type)
-            } ?: emptyList())
+
+                val annotationTypes = indexProperty
+                    .annotations
+                    .findAnnotation(InjektFqNames.AnnotationTypesName)
+                    ?.allValueArguments
+                    ?.get("value".asNameId())
+                    ?.value
+                    ?.let { it as String }
+                    ?.let { classDescriptorForFqName(FqName(it)) }
+                    ?.unsubstitutedPrimaryConstructor
+                    ?.valueParameters
+                    ?.map { it.type }
+                    ?.map { typeTranslator.toTypeRef(it, indexProperty) }
+                    ?.map { it.classifier.fqName to it }
+                    ?.toMap()
+                    ?: emptyMap()
+
+                Index(FqName(fqName), type, annotationTypes)
+            } ?: emptyList()
     }
 
     private val classIndices by unsafeLazy {
@@ -126,8 +147,16 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .mapNotNull { it.getInjectConstructor() }
             .map { callableForDescriptor(it) } +
                 functionIndices
+                    .filter {
+                        it.containingDeclaration.containingDeclaration
+                            ?.hasAnnotation(InjektFqNames.Effect) != true
+                    }
                     .map { callableForDescriptor(it) } +
                 propertyIndices
+                    .filter {
+                        it.containingDeclaration.containingDeclaration
+                            ?.hasAnnotation(InjektFqNames.Effect) != true
+                    }
                     .map { callableForDescriptor(it.getter!!) } +
                 implBindings
                     .map { it.callable } + allFunBindings
@@ -137,12 +166,17 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .filter { it.hasAnnotatedAnnotations(InjektFqNames.Effect) }
             .flatMap { typeAlias ->
                 val type = typeTranslator.toClassifierRef(typeAlias)
+                val index = internalIndices
+                    .firstOrNull { it.fqName == typeAlias.fqNameSafe }
+                    ?: externalIndices
+                        .first { it.fqName == typeAlias.fqNameSafe }
                 typeAlias.getAnnotatedAnnotations(InjektFqNames.Effect)
                     .flatMap {
                         effectCallablesForAnnotation(
                             it,
                             typeAlias,
-                            type.defaultType
+                            type.defaultType,
+                            index.annotationTypes
                         )
                     }
             }
@@ -178,8 +212,16 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .mapNotNull { it.getInjectConstructor() }
             .map { callableForDescriptor(it) } +
                 functionIndices
+                    .filter {
+                         it.containingDeclaration.containingDeclaration
+                            ?.hasAnnotation(InjektFqNames.Effect) != true
+                    }
                     .map { callableForDescriptor(it) } +
                 propertyIndices
+                    .filter {
+                        it.containingDeclaration.containingDeclaration
+                            ?.hasAnnotation(InjektFqNames.Effect) != true
+                    }
                     .map { callableForDescriptor(it.getter!!) })
             .filter {
                 it.contributionKind == Callable.ContributionKind.BINDING ||
@@ -253,10 +295,18 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
     private val allMapEntries by unsafeLazy {
         functionIndices
+            .filter {
+                it.containingDeclaration.containingDeclaration
+                    ?.hasAnnotation(InjektFqNames.Effect) != true
+            }
             .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
             .map { callableForDescriptor(it) } +
                 propertyIndices
                     .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
+                    .filter {
+                        it.containingDeclaration.containingDeclaration
+                            ?.hasAnnotation(InjektFqNames.Effect) != true
+                    }
                     .map { callableForDescriptor(it.getter!!) } + effectCallables
             .filter { it.contributionKind == Callable.ContributionKind.MAP_ENTRIES }
     }
@@ -268,12 +318,23 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
     private val allSetElements by unsafeLazy {
         functionIndices
+            .filter {
+                it.containingDeclaration.containingDeclaration
+                    ?.hasAnnotation(InjektFqNames.Effect) != true
+            }
             .filter { it.hasAnnotation(InjektFqNames.SetElements) }
             .map { callableForDescriptor(it) } +
                 propertyIndices
+                    .filter {
+                        it.containingDeclaration.containingDeclaration
+                            ?.hasAnnotation(InjektFqNames.Effect) != true
+                    }
                     .filter { it.hasAnnotation(InjektFqNames.SetElements) }
                     .map { callableForDescriptor(it.getter!!) } + effectCallables
             .filter { it.contributionKind == Callable.ContributionKind.SET_ELEMENTS }
+            .onEach {
+                it
+            }
     }
     private val setElementsForType = mutableMapOf<TypeRef, List<Callable>>()
     fun setElementsByType(type: TypeRef): List<Callable> = setElementsForType.getOrPut(type) {
@@ -404,11 +465,15 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         }
     }
 
-    fun typeArgsForAnnotation(annotation: AnnotationDescriptor, source: DeclarationDescriptor?): Map<Name, TypeRef> {
+    fun typeArgsForAnnotation(
+        annotation: AnnotationDescriptor,
+        annotationTypes: Map<FqName, TypeRef>
+    ): Map<Name, TypeRef> {
+        val annotationType = annotationTypes[annotation.type.constructor.declarationDescriptor!!.fqNameSafe]!!
         return ((annotation.type.constructor.declarationDescriptor as ClassDescriptor).declaredTypeParameters)
-            .zip(annotation.type.arguments).map { (param, arg) ->
-                param.name to typeTranslator.toTypeRef(arg.type, source)
-            }.toMap()
+            .map { it.name }
+            .zip(annotationType.typeArguments)
+            .toMap()
     }
 
     fun valueArgsForAnnotation(annotation: AnnotationDescriptor): Map<Name, ComponentExpression> {
@@ -452,9 +517,10 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     fun decoratorCallablesForAnnotation(
         annotation: AnnotationDescriptor,
         source: DeclarationDescriptor,
-        bindingType: TypeRef
+        bindingType: TypeRef,
+        annotationTypes: Map<FqName, TypeRef>
     ): List<Callable> {
-        val typeArgs = typeArgsForAnnotation(annotation, source)
+        val typeArgs = typeArgsForAnnotation(annotation, annotationTypes)
         val valueArgs = valueArgsForAnnotation(annotation)
         val origin = (source.findPsi()?.containingFile as? KtFile)?.virtualFilePath
             ?: source.fqNameSafe
@@ -526,11 +592,12 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     fun effectCallablesForAnnotation(
         annotation: AnnotationDescriptor,
         source: DeclarationDescriptor,
-        bindingType: TypeRef
+        bindingType: TypeRef,
+        annotationTypes: Map<FqName, TypeRef>
     ): List<Callable> {
         val origin = (source.findPsi()?.containingFile as? KtFile)?.virtualFilePath
             ?: source.fqNameSafe
-        val typeArgs = typeArgsForAnnotation(annotation, source)
+        val typeArgs = typeArgsForAnnotation(annotation, annotationTypes)
         val valueArgs = valueArgsForAnnotation(annotation)
         return classDescriptorForFqName(annotation.fqName!!)
             .companionObjectDescriptor!!
@@ -669,11 +736,23 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             ?.getArgumentType(module)
             ?.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) }
 
+        val index = internalIndices
+            .firstOrNull { it.fqName == owner.fqNameSafe }
+            ?: externalIndices
+                .firstOrNull { it.fqName == owner.fqNameSafe }
+
         val decorators = (descriptor
             .getAnnotatedAnnotations(InjektFqNames.Decorator) + owner
             .getAnnotatedAnnotations(InjektFqNames.Decorator))
             .distinct()
-            .flatMap { decoratorCallablesForAnnotation(it, descriptor, type) }
+            .flatMap {
+                decoratorCallablesForAnnotation(
+                    it,
+                    descriptor,
+                    type,
+                    index?.annotationTypes ?: emptyMap()
+                )
+            }
             .distinct()
 
         val decoratorsByTargetComponent = decorators
@@ -774,7 +853,14 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 .getAnnotatedAnnotations(InjektFqNames.Effect) + owner
                 .getAnnotatedAnnotations(InjektFqNames.Effect))
                 .distinct()
-                .flatMap { effectCallablesForAnnotation(it, descriptor, effectType) }
+                .flatMap {
+                    effectCallablesForAnnotation(
+                        it,
+                        descriptor,
+                        effectType,
+                        index?.annotationTypes ?: emptyMap()
+                    )
+                }
                 .distinct(),
             effectType = effectType,
             isExternal = owner is DeserializedDescriptor,

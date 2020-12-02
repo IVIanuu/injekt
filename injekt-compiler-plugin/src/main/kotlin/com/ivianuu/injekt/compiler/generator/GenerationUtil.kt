@@ -58,6 +58,12 @@ fun DeclarationDescriptor.hasAnnotatedAnnotationsWithPropertyAndClass(
         (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotatedAnnotations(fqName)) ||
         (this is ConstructorDescriptor && constructedClass.hasAnnotatedAnnotations(fqName))
 
+fun DeclarationDescriptor.getAnnotatedAnnotationsWithPropertyAndClass(
+    fqName: FqName
+): List<AnnotationDescriptor> = getAnnotatedAnnotations(fqName) +
+        (if (this is PropertyAccessorDescriptor) correspondingProperty.getAnnotatedAnnotations(fqName) else emptyList()) +
+        (if (this is ConstructorDescriptor) constructedClass.getAnnotatedAnnotations(fqName) else emptyList())
+
 fun ClassDescriptor.getInjectConstructor(): ConstructorDescriptor? {
     if (hasAnnotation(InjektFqNames.Binding) ||
         hasAnnotation(InjektFqNames.ImplBinding) ||

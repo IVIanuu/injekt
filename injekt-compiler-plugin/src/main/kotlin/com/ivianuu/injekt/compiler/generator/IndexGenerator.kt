@@ -47,6 +47,7 @@ class IndexGenerator(
     override fun generate(files: List<KtFile>) {
         files.forEach { file ->
             val indices = mutableListOf<Index>()
+            val effectOrDecoratorDescriptors = mutableListOf<DeclarationDescriptor>()
             file.accept(
                 object : KtTreeVisitorVoid() {
                     var moduleLikeScope: KtClassOrObject? = null
@@ -59,9 +60,7 @@ class IndexGenerator(
                                 descriptor.hasAnnotation(InjektFqNames.Component) ||
                                 descriptor.hasAnnotation(InjektFqNames.ChildComponent) ||
                                 descriptor.hasAnnotation(InjektFqNames.MergeComponent) ||
-                                descriptor.hasAnnotation(InjektFqNames.MergeChildComponent) ||
-                                descriptor.containingDeclaration?.hasAnnotation(InjektFqNames.Decorator) == true ||
-                                descriptor.containingDeclaration?.hasAnnotation(InjektFqNames.Effect) == true
+                                descriptor.hasAnnotation(InjektFqNames.MergeChildComponent)
                         moduleLikeScope = if (isModuleLikeScope) classOrObject else null
                         super.visitClassOrObject(classOrObject)
                         moduleLikeScope = prevModuleLikeScope
@@ -81,9 +80,9 @@ class IndexGenerator(
                         val descriptor = declaration.descriptor<DeclarationDescriptor>(bindingContext)
                             ?: return
 
-                        val hasEffects = descriptor.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect)
-                        val hasDecorators = descriptor.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Decorator)
-                        val needsIndexing = hasEffects || hasDecorators ||
+                        val effects = descriptor.getAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect)
+                        val decorators = descriptor.getAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Decorator)
+                        val needsIndexing = effects.isNotEmpty() || decorators.isNotEmpty() ||
                                 descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
                                 descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Decorator) ||
                                 descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.FunBinding) ||
@@ -101,18 +100,12 @@ class IndexGenerator(
                             is PropertyAccessorDescriptor -> descriptor.correspondingProperty
                             else -> descriptor
                         }
-                        // we instantiate the callable for the descriptor
-                        // which then checks for correctness
-                        if (hasEffects || hasDecorators) {
-                            when (descriptor) {
-                                is ClassDescriptor -> declarationStore.callableForDescriptor(descriptor.getInjectConstructor()!!)
-                                is FunctionDescriptor -> declarationStore.callableForDescriptor(descriptor)
-                                is PropertyDescriptor -> declarationStore.callableForDescriptor(descriptor.getter!!)
-                                is TypeAliasDescriptor -> {
-                                }
-                                else -> error("$descriptor is not a valid effect target")
-                            }
-                        }
+
+                        val annotationTypes = (effects + decorators).map {
+                            val annotationType = declarationStore.typeTranslator.toTypeRef(it.type, file)
+                            annotationType.classifier.fqName to annotationType
+                        }.toMap()
+
                         val index = Index(
                             owner.fqNameSafe,
                             when (owner) {
@@ -121,13 +114,29 @@ class IndexGenerator(
                                 is PropertyDescriptor -> "property"
                                 is TypeAliasDescriptor -> "typealias"
                                 else -> error("Unexpected declaration ${declaration.text}")
-                            }
+                            },
+                            annotationTypes
                         )
                         indices += index
                         declarationStore.addInternalIndex(index)
+                        if (effects.isNotEmpty() || decorators.isNotEmpty())
+                            effectOrDecoratorDescriptors += descriptor
                     }
                 }
             )
+
+            effectOrDecoratorDescriptors.forEach { descriptor ->
+                // we instantiate the callable for the descriptor
+                // which then checks for correctness
+                when (descriptor) {
+                    is ClassDescriptor -> declarationStore.callableForDescriptor(descriptor.getInjectConstructor()!!)
+                    is FunctionDescriptor -> declarationStore.callableForDescriptor(descriptor)
+                    is PropertyDescriptor -> declarationStore.callableForDescriptor(descriptor.getter!!)
+                    is TypeAliasDescriptor -> {
+                    }
+                    else -> error("$descriptor is not a valid effect target")
+                }
+            }
 
             if (indices.isNotEmpty()) {
                 val nameProvider = UniqueNameProvider()
@@ -142,6 +151,27 @@ class IndexGenerator(
                         indices
                             .distinct()
                             .forEach { index ->
+                                if (index.annotationTypes.isNotEmpty()) {
+                                    val annotationTypesName = nameProvider(
+                                        index.fqName.pathSegments().joinToString("_") +
+                                                "_AnnotationTypes"
+                                    )
+
+                                    emitLine("annotation class $annotationTypesName(")
+                                    indented {
+                                        index.annotationTypes.toList()
+                                            .forEachIndexed { i, (fqName, type) ->
+                                                emit("val ${
+                                                    fqName.pathSegments().joinToString("_")
+                                                }: ${type.render()}")
+                                                if (i != index.annotationTypes.size - 1) emitLine(",")
+                                            }
+                                        emitLine()
+                                    }
+                                    emitLine(")")
+                                    emitLine()
+                                    emitLine("@${InjektFqNames.AnnotationTypesName}(\"${InjektFqNames.IndexPackage}.$annotationTypesName\")")
+                                }
                                 val indexName = nameProvider(
                                     index.fqName.pathSegments().joinToString("_")
                                 )
