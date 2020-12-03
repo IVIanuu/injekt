@@ -13,7 +13,6 @@ class InternalBindingTest {
                 """
                     internal typealias InternalFoo = Foo
 
-                    @Module
                     object FooBarModule {
                         @Binding
                         fun foo(): InternalFoo = Foo()
@@ -48,7 +47,6 @@ class InternalBindingTest {
                     @Target(AnnotationTarget.TYPE)
                     internal annotation class Internal
 
-                    @Module
                     object FooBarModule {
                         @Binding
                         fun foo(): @Internal Foo = Foo()

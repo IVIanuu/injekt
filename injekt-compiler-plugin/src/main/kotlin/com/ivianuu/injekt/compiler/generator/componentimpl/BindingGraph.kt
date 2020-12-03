@@ -29,24 +29,23 @@ import com.ivianuu.injekt.compiler.generator.copy
 import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.isAssignable
+import com.ivianuu.injekt.compiler.generator.isSubTypeOf
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.substitute
 import com.ivianuu.injekt.compiler.generator.substituteStars
 import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
+import com.ivianuu.injekt.compiler.generator.unsafeLazy
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.ir.interpreter.builtins.unaryFunctions
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 @Binding
 class BindingGraph(
     private val owner: ComponentImpl,
-    collectionsFactory: (ComponentImpl, @Parent BindingCollections?) -> BindingCollections,
     private val declarationStore: DeclarationStore,
     private val componentImplFactory: (
         TypeRef,
@@ -62,83 +61,84 @@ class BindingGraph(
 
     private val parent = owner.parent?.graph
 
-    private val moduleBindingCallables = mutableListOf<CallableWithReceiver>()
-    private val parentModuleBindingCallables = owner.parent?.graph?.moduleBindingCallables
-        ?: emptyList()
-    private val moduleInterceptors = mutableListOf<InterceptorNode>()
-    private val parentModuleInterceptors = owner.parent?.graph?.moduleInterceptors
-        ?: emptyList()
+    private val parentsTopDown: List<BindingGraph> by unsafeLazy {
+        parentsBottomUp.reversed()
+    }
 
-    private val collections: BindingCollections = collectionsFactory(owner, parent?.collections)
+    private val parentsBottomUp: List<BindingGraph> by unsafeLazy {
+        buildList<BindingGraph> {
+            var current = parent
+            while (current != null) {
+                this += current
+                current = current.parent
+            }
+        }
+    }
+
+    private val explicitBindings = mutableListOf<CallableWithReceiver>()
+    private val implicitBindings = mutableListOf<CallableWithReceiver>()
+    private val explicitInterceptors = mutableListOf<InterceptorNode>()
+    private val implicitInterceptors = mutableListOf<InterceptorNode>()
+    private val explicitMapEntries = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
+    private val implicitMapEntries = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
+    private val explicitSetElements = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
+    private val implicitSetElements = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
 
     val resolvedBindings = mutableMapOf<TypeRef, BindingNode>()
 
     private val chain = mutableListOf<BindingRequest>()
     private var locked = false
 
-    init {
-        fun ModuleDescriptor.collectContributions(parentAccessExpression: ComponentExpression?) {
-            for (callable in callables) {
-                if (callable.contributionKind == null) continue
-                when (callable.contributionKind) {
-                    Callable.ContributionKind.BINDING -> moduleBindingCallables += CallableWithReceiver(
-                        callable,
-                        parentAccessExpression,
-                        owner
-                    )
-                    Callable.ContributionKind.INTERCEPTOR -> moduleInterceptors += InterceptorNode(
-                        callable,
-                        parentAccessExpression,
-                        owner,
-                        callable.getDependencies(callable.type, true)
-                    )
-                    Callable.ContributionKind.MAP_ENTRIES -> {
-                        collections.addMapEntries(
-                            CallableWithReceiver(
-                                callable,
-                                parentAccessExpression,
-                                owner
-                            )
-                        )
-                    }
-                    Callable.ContributionKind.SET_ELEMENTS -> {
-                        collections.addSetElements(
-                            CallableWithReceiver(
-                                callable,
-                                parentAccessExpression,
-                                owner
-                            )
-                        )
-                    }
-                    Callable.ContributionKind.MODULE -> {
-                        declarationStore.moduleForType(callable.type)
-                            .collectContributions(parentAccessExpression.child(callable))
-                    }
-                }.let {}
-            }
-        }
+    private val mapType = declarationStore.typeTranslator.toClassifierRef(
+        moduleDescriptor.builtIns.map
+    ).defaultType
+    private val setType = declarationStore.typeTranslator.toClassifierRef(
+        moduleDescriptor.builtIns.set
+    ).defaultType
 
+    init {
         declarationStore.moduleForType(owner.componentType)
-            .collectContributions(null)
-        owner.mergeDeclarations
-            .filter { it.isModule }
-            .map { declarationStore.moduleForType(it) }
-            .onEach { includedModule ->
-                if (includedModule.type.classifier.isObject) {
-                    includedModule.collectContributions {
-                        emit("${includedModule.type.classifier.fqName}")
-                    }
+            .collectContributions(
+                parentAccessExpression = null,
+                addBinding = { explicitBindings += it },
+                addInterceptor = { explicitInterceptors += it },
+                addMapEntries = {
+                    explicitMapEntries.getOrPut(it.callable.type) { mutableListOf() } += it
+                },
+                addSetElements = {
+                    explicitSetElements.getOrPut(it.callable.type) { mutableListOf() } += it
+                }
+            )
+
+        declarationStore.allModules
+            .filter { it.targetComponent.checkComponent(null) }
+            .map { declarationStore.moduleForType(it.type) }
+            .forEach { implicitModule ->
+                if (implicitModule.type.classifier.isObject) {
+                    implicitModule.collectContributions(
+                        parentAccessExpression = {
+                            emit("${implicitModule.type.classifier.fqName}")
+                        },
+                        addBinding = { implicitBindings += it },
+                        addInterceptor = { implicitInterceptors += it },
+                        addMapEntries = {
+                            implicitMapEntries.getOrPut(it.callable.type) { mutableListOf() } += it
+                        },
+                        addSetElements = {
+                            implicitSetElements.getOrPut(it.callable.type) { mutableListOf() } += it
+                        }
+                    )
                 } else {
                     val callable = ComponentCallable(
-                        name = includedModule.type.uniqueTypeName(),
+                        name = implicitModule.type.uniqueTypeName(),
                         isOverride = false,
-                        type = includedModule.type,
+                        type = implicitModule.type,
                         body = null,
                         isProperty = true,
                         callableKind = Callable.CallableKind.DEFAULT,
                         initializer = {
-                            emit("${includedModule.type.classifier.fqName}")
-                            if (!includedModule.type.classifier.isObject)
+                            emit("${implicitModule.type.classifier.fqName}")
+                            if (!implicitModule.type.classifier.isObject)
                                 emit("()")
                         },
                         isMutable = false,
@@ -148,11 +148,67 @@ class BindingGraph(
                         typeParameters = emptyList()
                     ).also { owner.members += it }
 
-                    includedModule.collectContributions {
-                        emit("${callable.name}")
-                    }
+                    implicitModule.collectContributions(
+                        parentAccessExpression = { emit("${callable.name}") },
+                        addBinding = { implicitBindings += it },
+                        addInterceptor = { implicitInterceptors += it },
+                        addMapEntries = {
+                            implicitMapEntries.getOrPut(it.callable.type) { mutableListOf() } += it
+                        },
+                        addSetElements = {
+                            implicitSetElements.getOrPut(it.callable.type) { mutableListOf() } += it
+                        }
+                    )
                 }
             }
+    }
+
+    private fun ModuleDescriptor.collectContributions(
+        parentAccessExpression: ComponentExpression?,
+        addBinding: (CallableWithReceiver) -> Unit,
+        addInterceptor: (InterceptorNode) -> Unit,
+        addMapEntries: (CallableWithReceiver) -> Unit,
+        addSetElements: (CallableWithReceiver) -> Unit
+    ) {
+        for (callable in callables) {
+            if (callable.contributionKind == null) continue
+            when (callable.contributionKind) {
+                Callable.ContributionKind.BINDING -> addBinding(
+                    CallableWithReceiver(
+                        callable,
+                        parentAccessExpression,
+                        owner
+                    )
+                )
+                Callable.ContributionKind.INTERCEPTOR -> addInterceptor(
+                    InterceptorNode(
+                        callable,
+                        parentAccessExpression,
+                        owner,
+                        callable.getDependencies(callable.type, true)
+                    )
+                )
+                Callable.ContributionKind.MAP_ENTRIES -> addMapEntries(
+                    CallableWithReceiver(
+                        callable,
+                        parentAccessExpression,
+                        owner
+                    )
+                )
+                Callable.ContributionKind.SET_ELEMENTS -> addSetElements(
+                    CallableWithReceiver(
+                        callable,
+                        parentAccessExpression,
+                        owner
+                    )
+                )
+                Callable.ContributionKind.MODULE -> declarationStore.moduleForType(callable.type)
+                    .collectContributions(
+                        parentAccessExpression.child(callable),
+                        addBinding, addInterceptor, addMapEntries, addSetElements
+                    )
+            }.let {}
+        }
     }
 
     private fun ComponentExpression?.child(callable: Callable): ComponentExpression = {
@@ -394,10 +450,12 @@ class BindingGraph(
             return it
         }
 
-        val explicitParentBindings = getExplicitParentBindingsForType(request)
-        explicitParentBindings.singleOrNull()?.let {
-            resolvedBindings[request.type] = it
-            return it
+        parentsBottomUp.forEach { parent ->
+            val explicitParentBindings = getExplicitParentBindingsForType(parent, request)
+            explicitParentBindings.singleOrNull()?.let {
+                resolvedBindings[request.type] = it
+                return it
+            }
         }
 
         val (implicitInternalUserBindings, externalImplicitUserBindings) = getImplicitUserBindingsForType(request, false)
@@ -474,7 +532,7 @@ class BindingGraph(
                 )
             }
 
-        this += moduleBindingCallables
+        this += explicitBindings
             .filter { it.callable.default == default }
             .filter { request.type.isAssignable(it.callable.type) }
             .map { (callable, receiver, bindingOwner) ->
@@ -493,8 +551,8 @@ class BindingGraph(
             }
     }
 
-    private fun getExplicitParentBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
-        this += parentModuleBindingCallables
+    private fun getExplicitParentBindingsForType(parent: BindingGraph, request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
+        this += parent.explicitBindings
             .filter { it.callable.targetComponent.checkComponent(request.type) }
             .filter { request.type.isAssignable(it.callable.type) }
             .map { (callable, receiver, bindingOwner) ->
@@ -528,6 +586,23 @@ class BindingGraph(
                     declaredInComponent = null,
                     dependencies = finalCallable.getDependencies(request.type, false),
                     receiver = null,
+                    callable = finalCallable
+                )
+            }
+        this += implicitBindings
+            .filter { it.callable.default == default }
+            .filter { request.type.isAssignable(it.callable.type) }
+            .map { (callable, receiver, bindingOwner) ->
+                val substitutionMap = getSubstitutionMap(listOf(request.type to callable.type))
+                val finalCallable = callable.substitute(substitutionMap)
+                CallableBindingNode(
+                    type = request.type.substituteStars(finalCallable.type)
+                        .makeNonNullIfPossible(finalCallable),
+                    rawType = finalCallable.originalType,
+                    owner = owner,
+                    declaredInComponent = bindingOwner,
+                    dependencies = finalCallable.getDependencies(request.type, false),
+                    receiver = receiver,
                     callable = finalCallable
                 )
             }
@@ -670,7 +745,101 @@ class BindingGraph(
             }
         }
 
-        this += collections.getNodes(request)
+        if (request.type.isSubTypeOf(mapType)) {
+            val mapEntries = buildList<CallableWithReceiver> {
+                this += declarationStore.mapEntriesByType(request.type)
+                    .filter {
+                        with(owner.graph) {
+                            it.targetComponent.checkComponent(request.type)
+                        }
+                    }
+                    .map { CallableWithReceiver(it, null, null) }
+                implicitMapEntries[request.type]
+                    ?.filter { it.callable.targetComponent.checkComponent(request.type) }
+                    ?.let { this += it }
+                parentsTopDown.forEach { parent ->
+                    parent.explicitMapEntries[request.type]?.let { this += it }
+                }
+                explicitMapEntries[request.type]?.let { this += it }
+            }
+                .map { entry ->
+                    entry.copy(
+                        callable = entry.callable.substitute(
+                            getSubstitutionMap(listOf(request.type to entry.callable.type))
+                        )
+                    )
+                }
+            if (mapEntries.isNotEmpty()) {
+                val dependenciesByEntry = mapEntries.map { (entry) ->
+                    entry to entry.valueParameters
+                        .filter { it.argName == null }
+                        .map {
+                            BindingRequest(
+                                it.type,
+                                entry.fqName.child(it.name),
+                                !it.hasDefault,
+                                entry.callableKind,
+                                entry.isFunBinding
+                            )
+                        }
+                }.toMap()
+                this += MapBindingNode(
+                    type = request.type,
+                    owner = owner,
+                    dependencies = dependenciesByEntry.flatMap { it.value },
+                    entries = mapEntries,
+                    dependenciesByEntry = dependenciesByEntry
+                )
+            }
+        }
+
+        if (request.type.isSubTypeOf(setType)) {
+            val setElements = buildList<CallableWithReceiver> {
+                this += declarationStore.setElementsByType(request.type)
+                    .filter {
+                        with(owner.graph) {
+                            it.targetComponent.checkComponent(request.type)
+                        }
+                    }
+                    .map { CallableWithReceiver(it, null, null) }
+                implicitSetElements[request.type]
+                    ?.filter { it.callable.targetComponent.checkComponent(request.type) }
+                    ?.let { this += it }
+                parentsTopDown.forEach { parent ->
+                    parent.explicitSetElements[request.type]?.let { this += it }
+                }
+                explicitSetElements[request.type]?.let { this += it }
+            }
+                .map { element ->
+                    element.copy(
+                        callable = element.callable.substitute(
+                            getSubstitutionMap(listOf(request.type to element.callable.type))
+                        )
+                    )
+                }
+            if (setElements.isNotEmpty()) {
+                val dependenciesByElement = setElements.map { (element) ->
+                    element to element.valueParameters
+                        .filter { it.argName == null }
+                        .map {
+                            BindingRequest(
+                                it.type,
+                                element.fqName.child(it.name),
+                                !it.hasDefault,
+                                element.callableKind,
+                                element.isFunBinding
+                            )
+                        }
+                }.toMap()
+                this += SetBindingNode(
+                    type = request.type,
+                    owner = owner,
+                    dependencies = dependenciesByElement.flatMap { it.value },
+                    elements = setElements,
+                    dependenciesByElement = dependenciesByElement
+                )
+            }
+        }
     }
 
     private fun getEffectBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
@@ -706,7 +875,7 @@ class BindingGraph(
             }
     }
 
-    fun TypeRef?.checkComponent(type: TypeRef): Boolean {
+    fun TypeRef?.checkComponent(type: TypeRef?): Boolean {
         return this == null || this == owner.componentType ||
                 (owner.isAssisted && type == owner.assistedRequests.single().type)
     }
@@ -770,12 +939,14 @@ class BindingGraph(
     }
 
     private fun getInterceptorsForType(providerType: TypeRef): List<InterceptorNode> = buildList<InterceptorNode> {
-        this += moduleInterceptors
+        this += explicitInterceptors
             .filter { providerType.isAssignable(it.callable.type) }
             .filter { it.callable.targetComponent.checkComponent(providerType.typeArguments.last()) }
-        this += parentModuleInterceptors
-            .filter { providerType.isAssignable(it.callable.type) }
-            .filter { it.callable.targetComponent.checkComponent(providerType.typeArguments.last()) }
+        this += parentsBottomUp.flatMap { parent ->
+            parent.explicitInterceptors
+                .filter { providerType.isAssignable(it.callable.type) }
+                .filter { it.callable.targetComponent.checkComponent(providerType.typeArguments.last()) }
+        }
         this += declarationStore.interceptorsByType(providerType)
             .filter { it.targetComponent.checkComponent(providerType.typeArguments.last()) }
             .map { interceptor ->
@@ -786,7 +957,11 @@ class BindingGraph(
                     interceptor.getDependencies(interceptor.type, true)
                 )
             }
+        this += implicitInterceptors
+            .filter { providerType.isAssignable(it.callable.type) }
+            .filter { it.callable.targetComponent.checkComponent(providerType.typeArguments.last()) }
     }
+
 }
 
 private fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"
@@ -794,121 +969,3 @@ private fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"
 @Qualifier
 @Target(AnnotationTarget.TYPE)
 annotation class Parent
-
-@Binding
-class BindingCollections(
-    private val declarationStore: DeclarationStore,
-    private val owner: ComponentImpl,
-    private val parent: @Parent BindingCollections?,
-) {
-
-    private val thisMapEntries = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
-    private val thisSetElements = mutableMapOf<TypeRef, MutableList<CallableWithReceiver>>()
-
-    fun addMapEntries(entries: CallableWithReceiver) {
-        thisMapEntries.getOrPut(entries.callable.type) { mutableListOf() } += entries
-    }
-
-    fun addSetElements(elements: CallableWithReceiver) {
-        thisSetElements.getOrPut(elements.callable.type) { mutableListOf() } += elements
-    }
-
-    private val mapEntriesByType = mutableMapOf<TypeRef, List<CallableWithReceiver>>()
-    private fun getMapEntries(type: TypeRef): List<CallableWithReceiver> {
-        return mapEntriesByType.getOrPut(type) {
-            ((parent?.getMapEntries(type) ?: emptyList()) +
-                    (if (parent == null) declarationStore.mapEntriesByType(type)
-                        .filter {
-                            with(owner.graph) {
-                                it.targetComponent.checkComponent(type)
-                            }
-                        }
-                        .map { CallableWithReceiver(it, null, null) }
-                    else emptyList()) +
-                    (thisMapEntries[type] ?: emptyList()))
-                .map { entry ->
-                    entry.copy(
-                        callable = entry.callable.substitute(
-                            getSubstitutionMap(listOf(type to entry.callable.type))
-                        )
-                    )
-                }
-        }
-    }
-
-    private val setElementsByType = mutableMapOf<TypeRef, List<CallableWithReceiver>>()
-    private fun getSetElements(type: TypeRef): List<CallableWithReceiver> {
-        return setElementsByType.getOrPut(type) {
-            ((parent?.getSetElements(type) ?: emptyList()) +
-                    (if (parent == null) declarationStore.setElementsByType(type)
-                        .filter {
-                            with(owner.graph) {
-                                it.targetComponent.checkComponent(type)
-                            }
-                        }
-                        .map { CallableWithReceiver(it, null, null) }
-                    else emptyList()) +
-                    (thisSetElements[type] ?: emptyList()))
-                .map { element ->
-                    element.copy(
-                        callable = element.callable.substitute(
-                            getSubstitutionMap(listOf(type to element.callable.type))
-                        )
-                    )
-                }
-        }
-    }
-
-    fun getNodes(request: BindingRequest): List<BindingNode> {
-        return listOfNotNull(
-            getMapEntries(request.type)
-                .takeIf { it.isNotEmpty() }
-                ?.let { entries ->
-                    val dependenciesByEntry = entries.map { (entry) ->
-                        entry to entry.valueParameters
-                            .filter { it.argName == null }
-                            .map {
-                                BindingRequest(
-                                    it.type,
-                                    entry.fqName.child(it.name),
-                                    !it.hasDefault,
-                                    entry.callableKind,
-                                    entry.isFunBinding
-                                )
-                            }
-                    }.toMap()
-                    MapBindingNode(
-                        type = request.type,
-                        owner = owner,
-                        dependencies = dependenciesByEntry.flatMap { it.value },
-                        entries = entries,
-                        dependenciesByEntry = dependenciesByEntry
-                    )
-                },
-            getSetElements(request.type)
-                .takeIf { it.isNotEmpty() }
-                ?.let { elements ->
-                    val dependenciesByElement = elements.map { (element) ->
-                        element to element.valueParameters
-                            .filter { it.argName == null }
-                            .map {
-                                BindingRequest(
-                                    it.type,
-                                    element.fqName.child(it.name),
-                                    !it.hasDefault,
-                                    element.callableKind,
-                                    element.isFunBinding
-                                )
-                            }
-                    }.toMap()
-                    SetBindingNode(
-                        type = request.type,
-                        owner = owner,
-                        dependencies = dependenciesByElement.flatMap { it.value },
-                        elements = elements,
-                        dependenciesByElement = dependenciesByElement
-                    )
-                }
-        )
-    }
-}

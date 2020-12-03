@@ -27,12 +27,8 @@ class MergeTest {
             @MergeComponent
             abstract class MyComponent
             
-            @MergeInto(MyComponent::class)
-            @Module
-            class ProvideFooModule {
-                @Binding
-                fun foo() = Foo()
-            }
+            @Binding
+            fun foo() = Foo()
             
             @MergeInto(MyComponent::class)
             interface FooComponent {
@@ -59,12 +55,8 @@ class MergeTest {
             @MergeChildComponent
             abstract class MyChildComponent
             
-            @MergeInto(MyChildComponent::class)
-            @Module
-            class ProvideFooModule {
-                @Binding
-                fun foo() = Foo()
-            }
+            @Binding
+            fun foo() = Foo()
             
             @MergeInto(MyChildComponent::class)
             interface FooComponent {
@@ -87,12 +79,8 @@ class MergeTest {
             @MergeComponent
             abstract class MyComponent
             
-            @MergeInto(MyComponent::class)
-            @Module
-            object ProvideFooModule {
-                @Binding
-                fun foo() = Foo()
-            }
+            @Binding
+            fun foo() = Foo()
             
             @MergeInto(MyComponent::class)
             interface FooComponent {

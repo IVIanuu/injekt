@@ -255,6 +255,20 @@ class DeclarationStore(private val module: ModuleDescriptor) {
     }
     fun generatedClassifierFor(fqName: FqName): ClassifierRef? = generatedClassifiers[fqName]
 
+    val allModules: List<Callable> by unsafeLazy {
+        classIndices
+            .filter { it.hasAnnotation(InjektFqNames.Module) }
+            .map { it.getInjectConstructor()!! }
+            .map { callableForDescriptor(it) } +
+                functionIndices
+                    .filter { it.hasAnnotation(InjektFqNames.Module) }
+                    .map { callableForDescriptor(it) } +
+                propertyIndices
+                    .filter { it.hasAnnotation(InjektFqNames.Module) }
+                    .map { callableForDescriptor(it.getter!!) } + effectCallables
+            .filter { it.contributionKind == Callable.ContributionKind.MODULE }
+    }
+
     private val allFunBindings by unsafeLazy {
         functionIndices
             .filter { it.hasAnnotation(InjektFqNames.FunBinding) }
@@ -332,9 +346,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     .filter { it.hasAnnotation(InjektFqNames.SetElements) }
                     .map { callableForDescriptor(it.getter!!) } + effectCallables
             .filter { it.contributionKind == Callable.ContributionKind.SET_ELEMENTS }
-            .onEach {
-                it
-            }
     }
     private val setElementsForType = mutableMapOf<TypeRef, List<Callable>>()
     fun setElementsByType(type: TypeRef): List<Callable> = setElementsForType.getOrPut(type) {

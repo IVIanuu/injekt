@@ -51,7 +51,7 @@ data class Callable(
     val typeArgs: Map<ClassifierRef, TypeRef>
 ) {
     enum class ContributionKind {
-        BINDING, INTERCEPTOR, MAP_ENTRIES, SET_ELEMENTS, MODULE
+        BINDING, INTERCEPTOR, MAP_ENTRIES, MODULE, SET_ELEMENTS
     }
     enum class CallableKind {
         DEFAULT, SUSPEND, COMPOSABLE

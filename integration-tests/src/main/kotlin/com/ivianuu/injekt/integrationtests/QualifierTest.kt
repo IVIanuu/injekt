@@ -43,7 +43,6 @@ class QualifierTest {
                     @Target(AnnotationTarget.TYPE)
                     @Qualifier
                     annotation class MyQualifier
-                    @Module
                     object Foo1Module {
                         @Binding fun foo1(): @MyQualifier Foo = Foo()
                     }
@@ -53,7 +52,6 @@ class QualifierTest {
         listOf(
             source(
                 """
-                    @Module
                     object Foo2Module {
                         @Binding fun foo2(): Foo = Foo()
                     }

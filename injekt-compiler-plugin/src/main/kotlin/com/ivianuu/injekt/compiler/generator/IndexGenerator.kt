@@ -91,7 +91,8 @@ class IndexGenerator(
                                 descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
                                 descriptor.hasAnnotation(InjektFqNames.MergeComponent) ||
                                 descriptor.hasAnnotation(InjektFqNames.MergeChildComponent) ||
-                                descriptor.hasAnnotation(InjektFqNames.MergeInto)
+                                descriptor.hasAnnotation(InjektFqNames.MergeInto) ||
+                                descriptor.hasAnnotation(InjektFqNames.Module)
 
                         if (!needsIndexing) return
 

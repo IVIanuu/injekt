@@ -589,8 +589,7 @@ class ComponentTest {
                 
                 @Module
                 protected val nested = NestedModule()
-                
-                @Module
+
                 class NestedModule {
                     @Binding
                     fun bar(foo: Foo) = Bar(foo)
@@ -614,8 +613,7 @@ class ComponentTest {
             
                 @Module
                 protected val fooModule = InstanceModule<Foo>(Foo())
-                
-                @Module
+
                 class InstanceModule<T>(@Binding val instance: T)
             }
 
