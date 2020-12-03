@@ -103,8 +103,11 @@ class ComponentGenerator(
                     } ?: return@mapNotNull null)
                 }
                 .filter {
-                    (it.second.valueParameters.firstOrNull()
-                        ?.isExtensionReceiver == true) && it.first.receiver == null
+                    it.second.valueParameters.none {
+                        it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER
+                    } && it.second.valueParameters.any {
+                        it.parameterKind == ValueParameterRef.ParameterKind.EXTENSION_RECEIVER
+                    }
                 }
                 .map { it.second.fqName }
             if (graph.resolvedBindings.values

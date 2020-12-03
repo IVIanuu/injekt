@@ -37,4 +37,21 @@ class ModuleTest {
         """
     )
 
+    @Test
+    fun testCanDeclareExplicitModuleMultipleTimes() = codegen(
+        """
+            class MyModule {
+                @Binding
+                val foo: Foo get() = Foo()
+            }
+
+            @Component
+            abstract class MyComponent {
+                @Module protected val myModule = MyModule()
+                @Module protected val myModule1 = MyModule()
+                abstract val foo: Foo
+            }
+        """
+    )
+
 }
