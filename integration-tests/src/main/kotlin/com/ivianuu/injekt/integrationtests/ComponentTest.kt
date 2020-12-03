@@ -325,6 +325,27 @@ class ComponentTest {
     }
 
     @Test
+    fun testConstructorBinding() = codegen(
+        """
+            class AnnotatedBar @Binding constructor(foo: Foo)
+            
+            @Component
+            abstract class FooComponent {
+                abstract val annotatedBar: AnnotatedBar
+                
+                @Binding
+                protected fun foo() = Foo()
+            }
+
+            fun invoke() {
+                component<FooComponent>().annotatedBar
+            }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
     fun testObjectBinding() = codegen(
         """
             @Binding
