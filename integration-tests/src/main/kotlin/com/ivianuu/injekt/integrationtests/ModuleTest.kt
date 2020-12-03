@@ -54,4 +54,23 @@ class ModuleTest {
         """
     )
 
+    @Test
+    fun testImplicitModuleCanRequestDependencies() = codegen(
+        """
+            @Module
+            class MyModule(private val foo: Foo) {
+                @Binding
+                val bar: Bar get() = Bar(foo)
+            }
+
+            @Binding
+            fun foo() = Foo()
+
+            @Component
+            abstract class MyComponent {
+                abstract val bar: Bar
+            }
+        """
+    )
+
 }
