@@ -77,6 +77,15 @@ class BindingGraph(
     private var locked = false
 
     init {
+        fun Callable.collectDependencyCallables(parentAccessExpression: ComponentExpression?) {
+            declarationStore.allCallablesForType(type)
+                .filter {
+                    it.visibility == DescriptorVisibilities.PUBLIC ||
+                            (it.visibility == DescriptorVisibilities.INTERNAL &&
+                                    !it.isExternal)
+                }
+        }
+
         fun ModuleDescriptor.collectContributions(parentAccessExpression: ComponentExpression?) {
             for (callable in callables) {
                 if (callable.contributionKind == null) continue
@@ -86,6 +95,7 @@ class BindingGraph(
                         parentAccessExpression,
                         owner
                     )
+                    Callable.ContributionKind.DEPENDENCY -> callable.collectDependencyCallables(parentAccessExpression)
                     Callable.ContributionKind.INTERCEPTOR -> moduleInterceptors += InterceptorNode(
                         callable,
                         parentAccessExpression,

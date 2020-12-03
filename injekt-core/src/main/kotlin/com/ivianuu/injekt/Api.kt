@@ -37,6 +37,9 @@ annotation class Module
 )
 annotation class Binding
 
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+annotation class Dependency
+
 @Target(
     AnnotationTarget.FUNCTION,
     AnnotationTarget.CLASS,

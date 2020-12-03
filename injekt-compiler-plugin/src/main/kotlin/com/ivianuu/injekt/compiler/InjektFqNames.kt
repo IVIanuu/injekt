@@ -29,6 +29,7 @@ object InjektFqNames {
     val ChildComponent = InjektPackage.child("ChildComponent".asNameId())
     val Interceptor = InjektPackage.child("Interceptor".asNameId())
     val Default = InjektPackage.child("Default".asNameId())
+    val Dependency = InjektPackage.child("Dependency".asNameId())
     val Eager = InjektPackage.child("Eager".asNameId())
     val Effect = InjektPackage.child("Effect".asNameId())
     val ForEffect = InjektPackage.child("ForEffect".asNameId())
