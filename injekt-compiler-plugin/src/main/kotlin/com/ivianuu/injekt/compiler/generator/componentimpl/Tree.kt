@@ -246,7 +246,8 @@ class CallableBindingNode(
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
     val callable: Callable
-) : BindingNode(type, callable.callableKind, callable.eager) {
+) : BindingNode(type, callable.callableKind, callable.eager ||
+        callable.contributionKind == Callable.ContributionKind.MODULE) {
     override val isExternal: Boolean
         get() = callable.isExternal
     override val targetComponent: TypeRef?
