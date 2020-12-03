@@ -801,16 +801,14 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             type = type,
             targetComponent = targetComponent,
             scoped = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Scoped),
-            eager = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Eager) ||
-                    (owner is ClassDescriptor &&
-                            owner.hasAnnotation(InjektFqNames.Module)),
+            eager = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Eager),
             default = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Default),
             contributionKind = when {
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) -> Callable.ContributionKind.INTERCEPTOR
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.ContributionKind.MAP_ENTRIES
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) -> Callable.ContributionKind.SET_ELEMENTS
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) -> Callable.ContributionKind.MODULE
+                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
+                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) -> Callable.ContributionKind.INTERCEPTOR
+                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.ContributionKind.MAP_ENTRIES
+                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) -> Callable.ContributionKind.SET_ELEMENTS
+                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) -> Callable.ContributionKind.MODULE
                 else -> null
             },
             typeParameters = (when (owner) {

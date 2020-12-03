@@ -72,7 +72,9 @@ class IndexGenerator(
                     override fun visitDeclaration(declaration: KtDeclaration) {
                         super.visitDeclaration(declaration)
                         if (moduleLikeScope != null &&
-                                declaration != moduleLikeScope) return
+                            declaration != moduleLikeScope &&
+                            declaration !is KtConstructor<*> &&
+                            declaration !is KtClassOrObject) return
 
                         if (declaration !is KtClassOrObject &&
                             declaration !is KtNamedFunction &&
