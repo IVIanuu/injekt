@@ -19,6 +19,7 @@ package com.ivianuu.injekt.android
 import android.content.Context
 import android.content.res.Resources
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedDispatcherOwner
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
@@ -50,6 +51,11 @@ inline val ComponentActivity.activityResources: ActivityResources
 typealias ActivityLifecycleOwner = LifecycleOwner
 @Binding
 inline val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
+    get() = this
+
+typealias ActivityOnBackPressedDispatcherOwner = OnBackPressedDispatcherOwner
+@Binding
+inline val ComponentActivity.activityOnBackPressedDispatcherOwner: ActivityOnBackPressedDispatcherOwner
     get() = this
 
 typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
