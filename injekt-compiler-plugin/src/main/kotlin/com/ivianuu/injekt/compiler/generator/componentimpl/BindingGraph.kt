@@ -651,6 +651,15 @@ class BindingGraph(
             val mapEntries = buildList<Callable> {
                 this += declarationStore.mapEntriesByType(request.type)
                     .filter { it.targetComponent.checkComponent(request.type) }
+                parentsTopDown.forEach { parent ->
+                    parent.implicitMapEntries[request.type]
+                        ?.filter {
+                            with(parent) {
+                                it.targetComponent.checkComponent(request.type)
+                            }
+                        }
+                        ?.let { this += it }
+                }
                 implicitMapEntries[request.type]
                     ?.filter { it.targetComponent.checkComponent(request.type) }
                     ?.let { this += it }
@@ -684,6 +693,15 @@ class BindingGraph(
             val setElements = buildList<Callable> {
                 this += declarationStore.setElementsByType(request.type)
                     .filter { it.targetComponent.checkComponent(request.type) }
+                parentsTopDown.forEach { parent ->
+                    parent.implicitSetElements[request.type]
+                        ?.filter {
+                            with(parent) {
+                                it.targetComponent.checkComponent(request.type)
+                            }
+                        }
+                        ?.let { this += it }
+                }
                 implicitSetElements[request.type]
                     ?.filter { it.targetComponent.checkComponent(request.type) }
                     ?.let { this += it }
