@@ -801,10 +801,12 @@ class BindingGraph(
                     interceptor.getDependencies(interceptor.type, true)
                 )
             }
-        this += implicitInterceptors
-            .filter { providerType.isAssignable(it.callable.type) }
-            .filter { it.callable.targetComponent.checkComponent(providerType.typeArguments.last()) }
-    }
+        this += parentsBottomUp.flatMap { parent ->
+            parent.implicitInterceptors
+                .filter { providerType.isAssignable(it.callable.type) }
+                .filter { it.callable.targetComponent.checkComponent(providerType.typeArguments.last()) }
+        }
+    }.distinct()
 
     private fun Callable.toCallableBindingNode(request: BindingRequest): CallableBindingNode {
         val substitutionMap = getSubstitutionMap(listOf(request.type to type))
