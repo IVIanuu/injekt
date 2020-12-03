@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("UNCHECKED_CAST")
+
 package com.ivianuu.injekt.android
 
 import androidx.lifecycle.Lifecycle
@@ -30,7 +32,9 @@ import kotlinx.coroutines.launch
 private val lifecycleSingletons = mutableMapOf<Lifecycle, Any>()
 
 internal fun <T : Any> Lifecycle.singleton(init: () -> T): T {
-    lifecycleSingletons[this]?.let { return it as T }
+    lifecycleSingletons[this]?.let {
+        return it as T
+    }
     return synchronized(lifecycleSingletons) {
         lifecycleSingletons[this]?.let { return it as T }
         val value = init()
@@ -42,7 +46,7 @@ internal fun <T : Any> Lifecycle.singleton(init: () -> T): T {
                 if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
                     // schedule clean up to the next frame
                     // to allow users to access bindings in their onDestroy()
-                    source.lifecycleScope.launch(Dispatchers.Main + NonCancellable) {
+                    source.lifecycleScope.launch(NonCancellable) {
                         synchronized(lifecycleSingletons) {
                             lifecycleSingletons -= this@singleton
                         }

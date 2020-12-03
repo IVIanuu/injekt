@@ -78,7 +78,7 @@ import android.view.textservice.TextServicesManager
 import androidx.core.content.ContextCompat
 import com.ivianuu.injekt.Binding
 
-object SystemServiceDeps {
+object SystemServiceBindings {
     @Binding
     inline val ApplicationContext.accessibilityManager
         get() = systemService<AccessibilityManager>()
