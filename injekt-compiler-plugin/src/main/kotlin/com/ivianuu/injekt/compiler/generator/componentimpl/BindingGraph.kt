@@ -394,6 +394,12 @@ class BindingGraph(
             return it
         }
 
+        val explicitParentBindings = getExplicitParentBindingsForType(request)
+        explicitParentBindings.singleOrNull()?.let {
+            resolvedBindings[request.type] = it
+            return it
+        }
+
         val (implicitInternalUserBindings, externalImplicitUserBindings) = getImplicitUserBindingsForType(request, false)
             .partition { !it.isExternal }
 
@@ -445,14 +451,6 @@ class BindingGraph(
         binding?.let {
             resolvedBindings[request.type] = it
             return it
-        }
-
-        if (owner.isAssisted) {
-            val explicitParentBindings = getExplicitParentBindingsForType(request)
-            explicitParentBindings.singleOrNull()?.let {
-                resolvedBindings[request.type] = it
-                return it
-            }
         }
 
         parent?.getBindingOrNull(request)?.let {

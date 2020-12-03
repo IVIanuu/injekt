@@ -6,6 +6,7 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
+import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertNull
@@ -566,6 +567,56 @@ class BindingResolutionTest {
     ) {
         val (a, b) = invokeSingleFile<Pair<Foo, Foo>>()
         assertSame(a, b)
+    }
+
+    @Test
+    fun testPrefersExplicitOverExplicitParentBinding() = codegen(
+        """
+            @Component
+            abstract class MyComponent(@Binding protected val stringBinding: String) {
+                abstract val string: String
+                abstract val childFactory: (String) -> MyChildComponent
+            }
+
+            @ChildComponent
+            abstract class MyChildComponent(@Binding protected val stringBinding: String) {
+                abstract val string: String
+            }
+
+            fun invoke(): Pair<String, String> {
+                val parent = component<MyComponent>("parent")
+                return parent.string to parent.childFactory("child").string
+            }
+        """
+    ) {
+        val (parent, child) = invokeSingleFile<Pair<String, String>>()
+        assertEquals("parent", parent)
+        assertEquals("child", child)
+    }
+
+    @Test
+    fun testPrefersExplicitParentBindingOverImplicitBinding() = codegen(
+        """
+            @Component
+            abstract class MyComponent(@Binding protected val stringBinding: String) {
+                abstract val childFactory: () -> MyChildComponent
+            }
+
+            @ChildComponent
+            abstract class MyChildComponent {
+                abstract val string: String
+            }
+
+            @Binding
+            fun implicit() = "implicit"
+
+            fun invoke(): String {
+                return component<MyComponent>("parent").childFactory().string
+            }
+        """
+    ) {
+        val value = invokeSingleFile<String>()
+        assertEquals("parent", value)
     }
 
 }
