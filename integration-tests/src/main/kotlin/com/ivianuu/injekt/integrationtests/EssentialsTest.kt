@@ -255,8 +255,8 @@ class EssentialsTest {
                         }
                     }
  
-                    @Decorator
-                    fun <T : Store<S, A>, S, A> stateEffectStoreDecorator(
+                    @Interceptor
+                    fun <T : Store<S, A>, S, A> stateEffectStoreInterceptor(
                         stateEffects: Set<(S) -> Unit>?,
                         factory: suspend () -> T
                     ): suspend () -> T = factory

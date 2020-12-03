@@ -124,10 +124,10 @@ class CircularDependencyTest {
     )
 
     @Test
-    fun testLazyRequestInDecoratorBreaksCircularDependency() = codegen(
+    fun testLazyRequestInInterceptorBreaksCircularDependency() = codegen(
         """
-            @Decorator
-            fun decorator(a: A, factory: () -> B): () -> B {
+            @Interceptor
+            fun interceptor(a: A, factory: () -> B): () -> B {
                 return factory
             }
             

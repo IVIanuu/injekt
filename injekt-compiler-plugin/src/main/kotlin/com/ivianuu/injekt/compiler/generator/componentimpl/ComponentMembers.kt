@@ -115,7 +115,7 @@ class ComponentStatements(
 
         // ensure all dependencies will get initialized before us
         binding
-            .decorators
+            .interceptors
             .flatMap { it.dependencies }
             .filter { owner.graph.getBinding(it) !is MissingBindingNode }
             .forEach { getBindingExpression(it) }
@@ -145,11 +145,11 @@ class ComponentStatements(
         val maybeScopedExpression = if (binding.targetComponent == null || binding.eager)
             rawExpression else
             scoped(binding.type, binding.callableKind, false,
-                binding.targetComponent!!, binding.decorators.isNotEmpty(), rawExpression)
+                binding.targetComponent!!, binding.interceptors.isNotEmpty(), rawExpression)
 
-        val maybeDecoratedExpression = if (binding.decorators.isEmpty()) maybeScopedExpression
-        else decorated(binding.type, binding.callableKind, binding.decorators, !binding.eager,
-            binding.decorators.isNotEmpty(), maybeScopedExpression)
+        val maybeInterceptdExpression = if (binding.interceptors.isEmpty()) maybeScopedExpression
+        else interceptd(binding.type, binding.callableKind, binding.interceptors, !binding.eager,
+            binding.interceptors.isNotEmpty(), maybeScopedExpression)
 
         val requestForType = owner.requests
             .filterNot { it in owner.assistedRequests }
@@ -168,7 +168,7 @@ class ComponentStatements(
             type = binding.type,
             name = callableName,
             isOverride = isOverride,
-            body = maybeDecoratedExpression,
+            body = maybeInterceptdExpression,
             isProperty = isProperty,
             callableKind = requestForType?.callableKind ?: callableKind,
             eager = binding.eager,
@@ -388,17 +388,17 @@ class ComponentStatements(
         emit("this")
     }
 
-    private fun decorated(
+    private fun interceptd(
         type: TypeRef,
         callableKind: Callable.CallableKind,
-        decorators: List<DecoratorNode>,
+        interceptors: List<InterceptorNode>,
         cacheProvider: Boolean,
         clearableProvider: Boolean,
         create: ComponentExpression
     ): ComponentExpression {
         val initializer: CodeBuilder.() -> Unit = {
             emitLine()
-            fun DecoratorNode.emit(prevExpression: ComponentExpression) {
+            fun InterceptorNode.emit(prevExpression: ComponentExpression) {
                 var dependencyIndex = 0
                 emitCallableInvocation(
                     callable,
@@ -426,14 +426,14 @@ class ComponentStatements(
                         .toMap()
                 )
             }
-            if (decorators.size == 1) {
-                decorators.single().emit {
+            if (interceptors.size == 1) {
+                interceptors.single().emit {
                     braced {
                         create()
                     }
                 }
             } else {
-                decorators.fold<DecoratorNode, ComponentExpression>({
+                interceptors.fold<InterceptorNode, ComponentExpression>({
                     braced {
                         create()
                     }

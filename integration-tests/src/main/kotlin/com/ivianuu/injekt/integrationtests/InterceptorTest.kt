@@ -9,16 +9,16 @@ import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertSame
 import org.junit.Test
 
-class DecoratorTest {
+class InterceptorTest {
 
     @Test
-    fun testExplicitDecorator() = codegen(
+    fun testExplicitInterceptor() = codegen(
         """
             var callCount = 0
-            @Decorator
-            annotation class MyDecorator {
+            @Interceptor
+            annotation class MyInterceptor {
                 companion object {
-                    fun <T> decorate(myComponent: MyComponent, factory: () -> T): () -> T {
+                    fun <T> intercept(myComponent: MyComponent, factory: () -> T): () -> T {
                         return {
                             callCount++
                             factory()
@@ -27,7 +27,7 @@ class DecoratorTest {
                 }
             }
             
-            @MyDecorator
+            @MyInterceptor
             @Binding
             fun foo() = Foo()
             
@@ -46,11 +46,11 @@ class DecoratorTest {
     }
 
     @Test
-    fun testExplicitDecoratorWithMultipleCallables() = codegen(
+    fun testExplicitInterceptorWithMultipleCallables() = codegen(
         """
             val calls = mutableListOf<String>()
-            @Decorator
-            annotation class MyDecorator {
+            @Interceptor
+            annotation class MyInterceptor {
                 companion object {
                     fun <T> a(myComponent: MyComponent, factory: () -> T): () -> T {
                         return {
@@ -67,7 +67,7 @@ class DecoratorTest {
                 }
             }
             
-            @MyDecorator
+            @MyInterceptor
             @Binding
             fun foo() = Foo()
             
@@ -87,11 +87,11 @@ class DecoratorTest {
     }
 
     @Test
-    fun testExplicitDecoratorWithAnnotationValueParam() = codegen(
+    fun testExplicitInterceptorWithAnnotationValueParam() = codegen(
         """
             var arg = "off"
-            @Decorator
-            annotation class MyDecorator(val value: String) {
+            @Interceptor
+            annotation class MyInterceptor(val value: String) {
                 companion object {
                     fun <T> a(@Arg("value") _arg: String, factory: () -> T): () -> T {
                         return {
@@ -102,7 +102,7 @@ class DecoratorTest {
                 }
             }
             
-            @MyDecorator("on")
+            @MyInterceptor("on")
             @Binding
             fun foo() = Foo()
             
@@ -121,10 +121,10 @@ class DecoratorTest {
     }
 
     @Test
-    fun testExplicitDecoratorWithAnnotationTypeParam() = codegen(
+    fun testExplicitInterceptorWithAnnotationTypeParam() = codegen(
         """
-            @Decorator
-            annotation class MyDecorator<T> {
+            @Interceptor
+            annotation class MyInterceptor<T> {
                 companion object {
                     fun <@Arg("T") T, S> a(arg: T, factory: () -> S): () -> S {
                         return {
@@ -134,7 +134,7 @@ class DecoratorTest {
                 }
             }
             
-            @MyDecorator<String>
+            @MyInterceptor<String>
             @Binding
             fun foo() = Foo()
             
@@ -148,11 +148,11 @@ class DecoratorTest {
     }
 
     @Test
-    fun testGlobalImplicitDecorator() = codegen(
+    fun testGlobalImplicitInterceptor() = codegen(
         """
             var callCount = 0
-            @Decorator
-            fun <T> decorate(factory: () -> T): () -> T { 
+            @Interceptor
+            fun <T> intercept(factory: () -> T): () -> T { 
                 return {
                     callCount++
                     factory()
@@ -183,7 +183,7 @@ class DecoratorTest {
     }
 
     @Test
-    fun testLocalImplicitDecorator() = codegen(
+    fun testLocalImplicitInterceptor() = codegen(
         """
             var callCount = 0
 
@@ -200,8 +200,8 @@ class DecoratorTest {
             abstract class MyComponent {
                 abstract val baz: Baz
                 
-                @Decorator
-                fun <T> decorate(factory: () -> T): () -> T { 
+                @Interceptor
+                fun <T> intercept(factory: () -> T): () -> T { 
                     return {
                         callCount++
                         factory()
@@ -219,7 +219,7 @@ class DecoratorTest {
     }
 
     @Test
-    fun testImplicitDecoratorInParentDecoratesChild() = codegen(
+    fun testImplicitInterceptorInParentInterceptsChild() = codegen(
         """
             var callCount = 0
 
@@ -230,8 +230,8 @@ class DecoratorTest {
             abstract class ParentComponent {
                 abstract val childComponent: () -> MyChildComponent
             
-                @Decorator
-                fun <T : Foo> decorate(factory: () -> T): () -> T { 
+                @Interceptor
+                fun <T : Foo> intercept(factory: () -> T): () -> T { 
                     return {
                         callCount++
                         factory()
@@ -254,12 +254,12 @@ class DecoratorTest {
     }
 
     @Test
-    fun testDecoratorHasState() = codegen(
+    fun testInterceptorHasState() = codegen(
         """
-            @Decorator
+            @Interceptor
             annotation class Scoped {
                 companion object {
-                    fun <T> decorate(factory: () -> T): () -> T { 
+                    fun <T> intercept(factory: () -> T): () -> T { 
                         var instance: T? = null
                         return {
                             if (instance == null) instance = factory()
@@ -288,16 +288,16 @@ class DecoratorTest {
     }
 
     @Test
-    fun testDecoratorWithGenericReturnType() = codegen(
+    fun testInterceptorWithGenericReturnType() = codegen(
         """
-            @Decorator
-            annotation class MyDecorator {
+            @Interceptor
+            annotation class MyInterceptor {
                 companion object {
-                    fun <S> decorate(factory: S): S = factory
+                    fun <S> intercept(factory: S): S = factory
                 }
             }
 
-            @MyDecorator
+            @MyInterceptor
             fun foo() = Foo()
             
             @Component
@@ -308,11 +308,11 @@ class DecoratorTest {
     )
 
     @Test
-    fun testDecoratorWithDifferentCallContextIsNotApplicable() = codegen(
+    fun testInterceptorWithDifferentCallContextIsNotApplicable() = codegen(
         """
             var callCount = 0
-            @Decorator
-            fun <T> decorate(factory: suspend () -> T): suspend () -> T { 
+            @Interceptor
+            fun <T> intercept(factory: suspend () -> T): suspend () -> T { 
                 return {
                     callCount++
                     factory()
@@ -337,11 +337,11 @@ class DecoratorTest {
     }
 
     @Test
-    fun testDecoratorWithDifferentCallContextIsNotApplicable2() = codegen(
+    fun testInterceptorWithDifferentCallContextIsNotApplicable2() = codegen(
         """
             var called = false
-            @Decorator
-            fun <T> decorate(factory: () -> T): () -> T { 
+            @Interceptor
+            fun <T> intercept(factory: () -> T): () -> T { 
                 return {
                     called = true
                     factory()
@@ -366,16 +366,16 @@ class DecoratorTest {
     }
 
     @Test
-    fun testSuspendDecorator() = codegen(
+    fun testSuspendInterceptor() = codegen(
         """
-            @Decorator
-            annotation class MyDecorator {
+            @Interceptor
+            annotation class MyInterceptor {
                 companion object {
-                    fun <T> decorate(factory: suspend () -> T): suspend () -> T = factory
+                    fun <T> intercept(factory: suspend () -> T): suspend () -> T = factory
                 }
             }
             
-            @MyDecorator
+            @MyInterceptor
             suspend fun foo() = Foo()
             
             @Component
@@ -386,16 +386,16 @@ class DecoratorTest {
     )
 
     @Test
-    fun testComposableDecorator() = codegen(
+    fun testComposableInterceptor() = codegen(
         """
-            @Decorator
-            annotation class MyDecorator {
+            @Interceptor
+            annotation class MyInterceptor {
                 companion object {
-                    fun <T> decorate(factory: @Composable () -> T): @Composable () -> T = factory
+                    fun <T> intercept(factory: @Composable () -> T): @Composable () -> T = factory
                 }
             }
             
-            @MyDecorator
+            @MyInterceptor
             @Composable
             fun foo() = Foo()
             
@@ -408,12 +408,12 @@ class DecoratorTest {
     )
 
     @Test
-    fun testDecoratorWithTargetComponentOnlyDecoratesBindingsOfTheComponent() = codegen(
+    fun testInterceptorWithTargetComponentOnlyInterceptsBindingsOfTheComponent() = codegen(
         """
             var callCount = 0
             @Bound(ParentComponent::class)
-            @Decorator
-            fun <T : Foo> decorate(factory: () -> T): () -> T {
+            @Interceptor
+            fun <T : Foo> intercept(factory: () -> T): () -> T {
                 return {
                     callCount++
                     factory()
@@ -445,17 +445,17 @@ class DecoratorTest {
     }
 
     @Test
-    fun testDecoratorWithDifferentTargetComponentFails() = codegen(
+    fun testInterceptorWithDifferentTargetComponentFails() = codegen(
         """
             @Bound(Any::class)
-            @Decorator
-            annotation class MyDecorator {
+            @Interceptor
+            annotation class MyInterceptor {
                 companion object {
-                    fun <T> decorate(factory: @Composable () -> T): @Composable () -> T = factory
+                    fun <T> intercept(factory: @Composable () -> T): @Composable () -> T = factory
                 }
             }
             
-            @MyDecorator
+            @MyInterceptor
             @Scoped(MyComponent::class)
             @Binding
             @Composable
@@ -472,26 +472,26 @@ class DecoratorTest {
     }
 
     @Test
-    fun testDecoratorsWithDifferentTargetComponentFails() = codegen(
+    fun testInterceptorsWithDifferentTargetComponentFails() = codegen(
         """
             @Bound(Any::class)
-            @Decorator
-            annotation class MyDecorator1 {
+            @Interceptor
+            annotation class MyInterceptor1 {
                 companion object {
-                    fun <T> decorate(factory: @Composable () -> T): @Composable () -> T = factory
+                    fun <T> intercept(factory: @Composable () -> T): @Composable () -> T = factory
                 }
             }
             
             @Bound(String::class)
-            @Decorator
-            annotation class MyDecorator2 {
+            @Interceptor
+            annotation class MyInterceptor2 {
                 companion object {
-                    fun <T> decorate(factory: @Composable () -> T): @Composable () -> T = factory
+                    fun <T> intercept(factory: @Composable () -> T): @Composable () -> T = factory
                 }
             }
             
-            @MyDecorator1
-            @MyDecorator2
+            @MyInterceptor1
+            @MyInterceptor2
             @Composable
             fun foo() = Foo()
             
@@ -506,7 +506,7 @@ class DecoratorTest {
     }
 
     @Test
-    fun testDecoratorWithUpperBoundsWithTypeAlias() = codegen(
+    fun testInterceptorWithUpperBoundsWithTypeAlias() = codegen(
         """
             interface Scope
                    
@@ -525,8 +525,8 @@ class DecoratorTest {
                 }
             }
             
-            @Decorator
-            fun <T : Flow<S>, S> decorate(
+            @Interceptor
+            fun <T : Flow<S>, S> intercept(
                 effects: Set<EffectBlock<S>>?,
                 factory: () -> T
             ): () -> T = factory
@@ -571,50 +571,33 @@ class DecoratorTest {
     )
 
     @Test
-    fun testDecoratorWithoutFactoryAsLastParameter() = codegen(
+    fun testInterceptorWithoutFactoryAsLastParameter() = codegen(
         """
-            @Decorator
-            annotation class MyDecorator { 
+            @Interceptor
+            annotation class MyInterceptor { 
                 companion object {
-                    fun <T, S> decorate(): () -> T = factory
+                    fun <T, S> intercept(): () -> T = factory
                 }
             }
             
-            @MyDecorator
+            @MyInterceptor
             class AnnotatedBar(val foo: Foo)
         """
     ) {
-        assertInternalError("Decorator")
+        assertInternalError("Interceptor")
     }
 
     @Test
-    fun testDecoratorWithWrongReturnType() = codegen(
+    fun testInterceptorWithWrongReturnType() = codegen(
         """
-            @Decorator
-            annotation class MyDecorator { 
+            @Interceptor
+            annotation class MyInterceptor { 
                 companion object {
-                    fun <T, S> decorate(factory: () -> T): () -> T = factory
+                    fun <T, S> intercept(factory: () -> T): () -> T = factory
                 }
             }
             
-            @MyDecorator
-            class AnnotatedBar(val foo: Foo)
-        """
-    ) {
-        assertInternalError("Couldn't resolve all type arguments")
-    }
-
-    @Test
-    fun testDecoratorWithCorruptTypeParameters() = codegen(
-        """
-            @Decorator
-            annotation class MyDecorator { 
-                companion object {
-                    fun <T, S> decorate(factory: () -> T): () -> T = factory
-                }
-            }
-            
-            @MyDecorator
+            @MyInterceptor
             class AnnotatedBar(val foo: Foo)
         """
     ) {
@@ -622,16 +605,33 @@ class DecoratorTest {
     }
 
     @Test
-    fun testDecoratorTargetNotInBoundsFails() = codegen(
+    fun testInterceptorWithCorruptTypeParameters() = codegen(
         """
-            @Decorator
-            annotation class MyDecorator { 
+            @Interceptor
+            annotation class MyInterceptor { 
                 companion object {
-                    fun <T : String> decorate(factory: () -> T): () -> T = factory
+                    fun <T, S> intercept(factory: () -> T): () -> T = factory
                 }
             }
             
-            @MyDecorator
+            @MyInterceptor
+            class AnnotatedBar(val foo: Foo)
+        """
+    ) {
+        assertInternalError("Couldn't resolve all type arguments")
+    }
+
+    @Test
+    fun testInterceptorTargetNotInBoundsFails() = codegen(
+        """
+            @Interceptor
+            annotation class MyInterceptor { 
+                companion object {
+                    fun <T : String> intercept(factory: () -> T): () -> T = factory
+                }
+            }
+            
+            @MyInterceptor
             class AnnotatedBar(val foo: Foo)
         """
     ) {
@@ -639,16 +639,16 @@ class DecoratorTest {
     }
 
     @Test
-    fun testScopedBindingWithDecorator() = codegen(
+    fun testScopedBindingWithInterceptor() = codegen(
         """
-            @Decorator
-            annotation class MyDecorator {
+            @Interceptor
+            annotation class MyInterceptor {
                 companion object {
-                    fun <T> decorate(factory: () -> T): () -> T = factory
+                    fun <T> intercept(factory: () -> T): () -> T = factory
                 }
             }
             
-            @MyDecorator
+            @MyInterceptor
             @Binding(MyComponent::class)
             fun foo() = Foo()
             

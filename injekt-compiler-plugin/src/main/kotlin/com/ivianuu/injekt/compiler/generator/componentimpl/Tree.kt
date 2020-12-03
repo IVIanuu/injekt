@@ -137,7 +137,7 @@ sealed class BindingNode(
     abstract val isExternal: Boolean
     abstract val inline: Boolean
 
-    lateinit var decorators: List<DecoratorNode>
+    lateinit var interceptors: List<InterceptorNode>
 
     protected var _type = type
     val type: TypeRef by this::_type
@@ -433,7 +433,7 @@ data class CallableWithReceiver(
     val declaredInComponent: ComponentImpl?
 )
 
-data class DecoratorNode(
+data class InterceptorNode(
     val callable: Callable,
     val receiver: ComponentExpression?,
     val declaredInComponent: ComponentImpl?,

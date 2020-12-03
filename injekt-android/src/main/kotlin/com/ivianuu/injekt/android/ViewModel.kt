@@ -19,22 +19,22 @@ package com.ivianuu.injekt.android
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
-import com.ivianuu.injekt.Decorator
+import com.ivianuu.injekt.Interceptor
 
-@Decorator
+@Interceptor
 annotation class ActivityViewModel {
     companion object {
-        inline fun <reified VM : ViewModel> decorate(
+        inline fun <reified VM : ViewModel> intercept(
             storeOwner: ActivityViewModelStoreOwner,
             crossinline factory: () -> VM
         ): () -> VM = { storeOwner.get(factory) }
     }
 }
 
-@Decorator
+@Interceptor
 annotation class FragmentViewModel {
     companion object {
-        inline fun <reified VM : ViewModel> decorate(
+        inline fun <reified VM : ViewModel> intercept(
             storeOwner: FragmentViewModelStoreOwner,
             crossinline factory: () -> VM
         ): () -> VM = { storeOwner.get(factory) }

@@ -65,8 +65,8 @@ class BindingGraph(
     private val moduleBindingCallables = mutableListOf<CallableWithReceiver>()
     private val parentModuleBindingCallables = owner.parent?.graph?.moduleBindingCallables
         ?: emptyList()
-    private val moduleDecorators = mutableListOf<DecoratorNode>()
-    private val parentModuleDecorators = owner.parent?.graph?.moduleDecorators
+    private val moduleInterceptors = mutableListOf<InterceptorNode>()
+    private val parentModuleInterceptors = owner.parent?.graph?.moduleInterceptors
         ?: emptyList()
 
     private val collections: BindingCollections = collectionsFactory(owner, parent?.collections)
@@ -86,7 +86,7 @@ class BindingGraph(
                         parentAccessExpression,
                         owner
                     )
-                    Callable.ContributionKind.DECORATOR -> moduleDecorators += DecoratorNode(
+                    Callable.ContributionKind.INTERCEPTOR -> moduleInterceptors += InterceptorNode(
                         callable,
                         parentAccessExpression,
                         owner,
@@ -220,23 +220,23 @@ class BindingGraph(
 
         binding.refineType(binding.dependencies.map { getBinding(it) })
 
-        // todo callable decorators
-        binding.decorators = (if (binding is CallableBindingNode)
-            binding.callable.getCallableDecorators(binding.type) else emptyList()) +
-                getDecoratorsForType(binding.type, binding.callableKind)
+        // todo callable interceptors
+        binding.interceptors = (if (binding is CallableBindingNode)
+            binding.callable.getCallableInterceptors(binding.type) else emptyList()) +
+                getInterceptorsForType(binding.type, binding.callableKind)
 
-        binding.decorators
-            .forEach { decorator ->
+        binding.interceptors
+            .forEach { interceptor ->
                 chain.push(
                     BindingRequest(
-                        decorator.callable.type,
-                        decorator.callable.fqName,
+                        interceptor.callable.type,
+                        interceptor.callable.fqName,
                         true,
-                        decorator.callable.callableKind,
+                        interceptor.callable.callableKind,
                         false
                     )
                 )
-                decorator.dependencies.forEach { dependency ->
+                interceptor.dependencies.forEach { dependency ->
                     check(dependency)
                 }
                 chain.pop()
@@ -644,7 +644,7 @@ class BindingGraph(
                     contributionKind = null,
                     isCall = true,
                     callableKind = request.type.callableKind,
-                    decorators = emptyList(),
+                    interceptors = emptyList(),
                     effects = emptyList(),
                     isExternal = false,
                     isInline = true,
@@ -713,7 +713,7 @@ class BindingGraph(
                 (owner.isAssisted && type == owner.assistedRequests.single().type)
     }
 
-    private fun Callable.getCallableDecorators(type: TypeRef): List<DecoratorNode> {
+    private fun Callable.getCallableInterceptors(type: TypeRef): List<InterceptorNode> {
         val providerType = when (callableKind) {
             Callable.CallableKind.DEFAULT -> typeTranslator.toClassifierRef(
                 moduleDescriptor.builtIns.getFunction(0)
@@ -725,30 +725,30 @@ class BindingGraph(
                 moduleDescriptor.builtIns.getFunction(0)
             ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
         }
-        return decorators.map { decorator ->
-            val substitutionMap = getSubstitutionMap(listOf(providerType to decorator.type))
-            val finalDecorator = decorator.substitute(substitutionMap)
-            DecoratorNode(
-                finalDecorator,
+        return interceptors.map { interceptor ->
+            val substitutionMap = getSubstitutionMap(listOf(providerType to interceptor.type))
+            val finalInterceptor = interceptor.substitute(substitutionMap)
+            InterceptorNode(
+                finalInterceptor,
                 null,
                 null,
-                finalDecorator.getDependencies(type, true)
+                finalInterceptor.getDependencies(type, true)
             )
         }.filter { providerType.isAssignable(it.callable.type) }
     }
 
-    private fun Callable.getDependencies(type: TypeRef, isDecorator: Boolean): List<BindingRequest> {
+    private fun Callable.getDependencies(type: TypeRef, isInterceptor: Boolean): List<BindingRequest> {
         val substitutionMap = getSubstitutionMap(listOf(type to this.type))
         return valueParameters
             .filter { it.argName == null && !it.isFunApi }
             .map { it.toBindingRequest(this, substitutionMap) }
-            .filter { !isDecorator || it.type != this.type.substitute(substitutionMap) }
+            .filter { !isInterceptor || it.type != this.type.substitute(substitutionMap) }
     }
 
-    private fun getDecoratorsForType(
+    private fun getInterceptorsForType(
         type: TypeRef,
         callableKind: Callable.CallableKind
-    ): List<DecoratorNode> {
+    ): List<InterceptorNode> {
         val providerType = when (callableKind) {
             Callable.CallableKind.DEFAULT -> typeTranslator.toClassifierRef(
                 moduleDescriptor.builtIns.getFunction(0)
@@ -760,32 +760,32 @@ class BindingGraph(
                 moduleDescriptor.builtIns.getFunction(0)
             ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
         }
-        return getDecoratorsForType(providerType)
-            .map { decorator ->
-                val substitutionMap = getSubstitutionMap(listOf(providerType to decorator.callable.type))
-                val finalCallable = decorator.callable.substitute(substitutionMap)
-                decorator.copy(
+        return getInterceptorsForType(providerType)
+            .map { interceptor ->
+                val substitutionMap = getSubstitutionMap(listOf(providerType to interceptor.callable.type))
+                val finalCallable = interceptor.callable.substitute(substitutionMap)
+                interceptor.copy(
                     callable = finalCallable,
                     dependencies = finalCallable.getDependencies(type, true)
                 )
             }
     }
 
-    private fun getDecoratorsForType(providerType: TypeRef): List<DecoratorNode> = buildList<DecoratorNode> {
-        this += moduleDecorators
+    private fun getInterceptorsForType(providerType: TypeRef): List<InterceptorNode> = buildList<InterceptorNode> {
+        this += moduleInterceptors
             .filter { providerType.isAssignable(it.callable.type) }
             .filter { it.callable.targetComponent.checkComponent(providerType.typeArguments.last()) }
-        this += parentModuleDecorators
+        this += parentModuleInterceptors
             .filter { providerType.isAssignable(it.callable.type) }
             .filter { it.callable.targetComponent.checkComponent(providerType.typeArguments.last()) }
-        this += declarationStore.decoratorsByType(providerType)
+        this += declarationStore.interceptorsByType(providerType)
             .filter { it.targetComponent.checkComponent(providerType.typeArguments.last()) }
-            .map { decorator ->
-                DecoratorNode(
-                    decorator,
+            .map { interceptor ->
+                InterceptorNode(
+                    interceptor,
                     null,
                     null,
-                    decorator.getDependencies(decorator.type, true)
+                    interceptor.getDependencies(interceptor.type, true)
                 )
             }
     }

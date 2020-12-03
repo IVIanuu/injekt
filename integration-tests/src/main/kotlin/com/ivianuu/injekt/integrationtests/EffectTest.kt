@@ -970,8 +970,8 @@ class EffectTest {
     @Test
     fun testEffectUsesAnotherEffect() = codegen(
         """
-            typealias UiDecorators = Set<UiDecorator>
-            data class UiDecorator(
+            typealias UiInterceptors = Set<UiInterceptor>
+            data class UiInterceptor(
                 val key: String,
                 val dependencies: Set<String>,
                 val dependents: Set<String>,
@@ -979,19 +979,19 @@ class EffectTest {
             )
             
             @Effect
-            annotation class UiDecoratorBinding(
+            annotation class UiInterceptorBinding(
                 val key: String,
                 val dependencies: Array<String> = [],
                 val dependents: Array<String> = []
             ) {
                 companion object {
                     @SetElements
-                    fun <T : @Composable (@Composable () -> Unit) -> Unit> uiDecoratorIntoSet(
+                    fun <T : @Composable (@Composable () -> Unit) -> Unit> uiInterceptorIntoSet(
                         @Arg("key") key: String,
                         @Arg("dependencies") dependencies: Array<String>?,
                         @Arg("dependents") dependents: Array<String>?,
                         content: @ForEffect T
-                    ): UiDecorators = setOf(UiDecorator(
+                    ): UiInterceptors = setOf(UiInterceptor(
                         key = key,
                         dependencies = dependencies?.toSet() ?: emptySet(),
                         dependents = dependents?.toSet() ?: emptySet(),
@@ -1003,8 +1003,8 @@ class EffectTest {
             @Effect
             annotation class AppThemeBinding {
                 companion object {
-                    @UiDecoratorBinding("app_theme", dependencies = ["system_bars"])
-                    fun <T : @Composable (@Composable () -> Unit) -> Unit> uiDecorator(
+                    @UiInterceptorBinding("app_theme", dependencies = ["system_bars"])
+                    fun <T : @Composable (@Composable () -> Unit) -> Unit> uiInterceptor(
                         instance: @ForEffect T
                     ): T = instance
                 }
@@ -1019,7 +1019,7 @@ class EffectTest {
 
             @Component
             abstract class MyComponent {
-                abstract val uiDecorators: UiDecorators
+                abstract val uiInterceptors: UiInterceptors
             }
         """
     )

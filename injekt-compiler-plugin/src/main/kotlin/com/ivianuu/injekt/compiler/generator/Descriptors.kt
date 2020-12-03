@@ -38,7 +38,7 @@ data class Callable(
     val contributionKind: ContributionKind?,
     val isCall: Boolean,
     val callableKind: CallableKind,
-    val decorators: List<Callable>,
+    val interceptors: List<Callable>,
     val effectType: TypeRef,
     val effects: List<Callable>,
     val isExternal: Boolean,
@@ -51,7 +51,7 @@ data class Callable(
     val typeArgs: Map<ClassifierRef, TypeRef>
 ) {
     enum class ContributionKind {
-        BINDING, DECORATOR, MAP_ENTRIES, SET_ELEMENTS, MODULE
+        BINDING, INTERCEPTOR, MAP_ENTRIES, SET_ELEMENTS, MODULE
     }
     enum class CallableKind {
         DEFAULT, SUSPEND, COMPOSABLE

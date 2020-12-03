@@ -225,8 +225,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     .map { callableForDescriptor(it.getter!!) })
             .filter {
                 it.contributionKind == Callable.ContributionKind.BINDING ||
-                        (it.contributionKind != Callable.ContributionKind.DECORATOR &&
-                                it.decorators.isNotEmpty())
+                        (it.contributionKind != Callable.ContributionKind.INTERCEPTOR &&
+                                it.interceptors.isNotEmpty())
             } + implBindings.flatMap { implBinding ->
             listOf(implBinding.callable, implBinding.callable.copy(type = implBinding.superType))
         } + effectCallables
@@ -278,18 +278,18 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .filter { type.isAssignable(it.type) }
     }
 
-    private val allDecorators by unsafeLazy {
+    private val allInterceptors by unsafeLazy {
         functionIndices
-            .filter { it.hasAnnotation(InjektFqNames.Decorator) }
+            .filter { it.hasAnnotation(InjektFqNames.Interceptor) }
             .map { callableForDescriptor(it) } +
                 propertyIndices
-                    .filter { it.hasAnnotation(InjektFqNames.Decorator) }
+                    .filter { it.hasAnnotation(InjektFqNames.Interceptor) }
                     .map { callableForDescriptor(it.getter!!) } + effectCallables
-            .filter { it.contributionKind == Callable.ContributionKind.DECORATOR }
+            .filter { it.contributionKind == Callable.ContributionKind.INTERCEPTOR }
     }
-    private val decoratorsForType = mutableMapOf<TypeRef, List<Callable>>()
-    fun decoratorsByType(providerType: TypeRef): List<Callable> = decoratorsForType.getOrPut(providerType) {
-        allDecorators
+    private val interceptorsForType = mutableMapOf<TypeRef, List<Callable>>()
+    fun interceptorsByType(providerType: TypeRef): List<Callable> = interceptorsForType.getOrPut(providerType) {
+        allInterceptors
             .filter { providerType.isAssignable(it.type) }
     }
 
@@ -514,7 +514,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         }
     }
 
-    fun decoratorCallablesForAnnotation(
+    fun interceptorCallablesForAnnotation(
         annotation: AnnotationDescriptor,
         source: DeclarationDescriptor,
         bindingType: TypeRef,
@@ -616,7 +616,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .filter {
                 it.contributionKind != null ||
                         it.effects.isNotEmpty() ||
-                        it.decorators.isNotEmpty()
+                        it.interceptors.isNotEmpty()
             }
             .map { effectCallable ->
                 val substitutionMap = effectCallable.typeParameters
@@ -741,12 +741,12 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             ?: externalIndices
                 .firstOrNull { it.fqName == owner.fqNameSafe }
 
-        val decorators = (descriptor
-            .getAnnotatedAnnotations(InjektFqNames.Decorator) + owner
-            .getAnnotatedAnnotations(InjektFqNames.Decorator))
+        val interceptors = (descriptor
+            .getAnnotatedAnnotations(InjektFqNames.Interceptor) + owner
+            .getAnnotatedAnnotations(InjektFqNames.Interceptor))
             .distinct()
             .flatMap {
-                decoratorCallablesForAnnotation(
+                interceptorCallablesForAnnotation(
                     it,
                     descriptor,
                     type,
@@ -755,29 +755,29 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             }
             .distinct()
 
-        val decoratorsByTargetComponent = decorators
+        val interceptorsByTargetComponent = interceptors
             .filter { it.targetComponent != null }
             .map { it.targetComponent to it }
             .groupBy { it.first }
-        if (decoratorsByTargetComponent.size > 1) {
-            error("Decorators target component mismatch. Decorators of '${descriptor.fqNameSafe}' have different target components\n" +
-                    decorators.joinToString("\n") { decorator ->
-                        "'${decorator.fqName}' = '${decorator.targetComponent?.render()}'"
+        if (interceptorsByTargetComponent.size > 1) {
+            error("Interceptors target component mismatch. Interceptors of '${descriptor.fqNameSafe}' have different target components\n" +
+                    interceptors.joinToString("\n") { interceptor ->
+                        "'${interceptor.fqName}' = '${interceptor.targetComponent?.render()}'"
                     }
             )
         }
-        val decoratorTargetComponent = decorators
+        val interceptorTargetComponent = interceptors
             .mapNotNull { it.targetComponent }
             .firstOrNull()
 
         if (callableTargetComponent != null &&
-            decoratorTargetComponent != null &&
-            callableTargetComponent != decoratorTargetComponent) {
+            interceptorTargetComponent != null &&
+            callableTargetComponent != interceptorTargetComponent) {
             error("Target component mismatch. '${descriptor.fqNameSafe}' target component is '${callableTargetComponent.render()}' but " +
-                    "decorator target component is '${decoratorTargetComponent.render()}'.")
+                    "interceptor target component is '${interceptorTargetComponent.render()}'.")
         }
 
-        val targetComponent = callableTargetComponent ?: decoratorTargetComponent
+        val targetComponent = callableTargetComponent ?: interceptorTargetComponent
 
         Callable(
             name = owner.name,
@@ -790,7 +790,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             default = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Default),
             contributionKind = when {
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Decorator) -> Callable.ContributionKind.DECORATOR
+                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) -> Callable.ContributionKind.INTERCEPTOR
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.ContributionKind.MAP_ENTRIES
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) -> Callable.ContributionKind.SET_ELEMENTS
                 owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) -> Callable.ContributionKind.MODULE
@@ -848,7 +848,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     else -> Callable.CallableKind.DEFAULT
                 }
             } else Callable.CallableKind.DEFAULT,
-            decorators = decorators,
+            interceptors = interceptors,
             effects = (descriptor
                 .getAnnotatedAnnotations(InjektFqNames.Effect) + owner
                 .getAnnotatedAnnotations(InjektFqNames.Effect))
@@ -887,8 +887,8 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 type = type,
                 callables = descriptor.unsubstitutedMemberScope.getContributedDescriptors().filter {
                     it.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
-                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.Decorator) ||
-                            it.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Decorator) ||
+                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) ||
+                            it.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Interceptor) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.Effect) ||
                             it.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||

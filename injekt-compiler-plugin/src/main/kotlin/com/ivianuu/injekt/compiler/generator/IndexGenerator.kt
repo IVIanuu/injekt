@@ -47,7 +47,7 @@ class IndexGenerator(
     override fun generate(files: List<KtFile>) {
         files.forEach { file ->
             val indices = mutableListOf<Index>()
-            val effectOrDecoratorDescriptors = mutableListOf<DeclarationDescriptor>()
+            val effectOrInterceptorDescriptors = mutableListOf<DeclarationDescriptor>()
             file.accept(
                 object : KtTreeVisitorVoid() {
                     var moduleLikeScope: KtClassOrObject? = null
@@ -81,10 +81,10 @@ class IndexGenerator(
                             ?: return
 
                         val effects = descriptor.getAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect)
-                        val decorators = descriptor.getAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Decorator)
-                        val needsIndexing = effects.isNotEmpty() || decorators.isNotEmpty() ||
+                        val interceptors = descriptor.getAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Interceptor)
+                        val needsIndexing = effects.isNotEmpty() || interceptors.isNotEmpty() ||
                                 descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
-                                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Decorator) ||
+                                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) ||
                                 descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.FunBinding) ||
                                 descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.ImplBinding) ||
                                 descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
@@ -101,7 +101,7 @@ class IndexGenerator(
                             else -> descriptor
                         }
 
-                        val annotationTypes = (effects + decorators).map {
+                        val annotationTypes = (effects + interceptors).map {
                             val annotationType = declarationStore.typeTranslator.toTypeRef(it.type, file)
                             annotationType.classifier.fqName to annotationType
                         }.toMap()
@@ -119,13 +119,13 @@ class IndexGenerator(
                         )
                         indices += index
                         declarationStore.addInternalIndex(index)
-                        if (effects.isNotEmpty() || decorators.isNotEmpty())
-                            effectOrDecoratorDescriptors += descriptor
+                        if (effects.isNotEmpty() || interceptors.isNotEmpty())
+                            effectOrInterceptorDescriptors += descriptor
                     }
                 }
             )
 
-            effectOrDecoratorDescriptors.forEach { descriptor ->
+            effectOrInterceptorDescriptors.forEach { descriptor ->
                 // we instantiate the callable for the descriptor
                 // which then checks for correctness
                 when (descriptor) {
