@@ -51,7 +51,7 @@ data class Callable(
     val typeArgs: Map<ClassifierRef, TypeRef>
 ) {
     enum class ContributionKind {
-        BINDING, INTERCEPTOR, MAP_ENTRIES, SET_ELEMENTS, MODULE
+        BINDING, INTERCEPTOR, MAP_ENTRIES, MODULE, SET_ELEMENTS
     }
     enum class CallableKind {
         DEFAULT, SUSPEND, COMPOSABLE
@@ -61,7 +61,7 @@ data class Callable(
 data class ValueParameterRef(
     val type: TypeRef,
     val originalType: TypeRef,
-    val isExtensionReceiver: Boolean,
+    val parameterKind: ParameterKind,
     val inlineKind: InlineKind,
     val name: Name,
     val argName: Name?,
@@ -69,6 +69,9 @@ data class ValueParameterRef(
     val hasDefault: Boolean,
     val defaultExpression: ComponentExpression?
 ) {
+    enum class ParameterKind {
+        VALUE_PARAMETER, DISPATCH_RECEIVER, EXTENSION_RECEIVER
+    }
     enum class InlineKind {
         NONE, NOINLINE, CROSSINLINE
     }

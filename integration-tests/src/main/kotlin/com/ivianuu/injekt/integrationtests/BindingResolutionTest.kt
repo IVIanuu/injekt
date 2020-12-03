@@ -344,7 +344,6 @@ class BindingResolutionTest {
             source(
                 """
                     typealias Foo1 = Foo
-                    @Module
                     object Foo1Module {
                         @Binding fun foo1(): Foo1 = Foo()
                     }
@@ -355,7 +354,6 @@ class BindingResolutionTest {
             source(
                 """
                     typealias Foo2 = Foo
-                    @Module
                     object Foo2Module {
                         @Binding fun foo2(): Foo2 = Foo()
                     }

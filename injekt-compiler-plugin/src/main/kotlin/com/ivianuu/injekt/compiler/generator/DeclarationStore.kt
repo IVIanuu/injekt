@@ -225,12 +225,16 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     .map { callableForDescriptor(it.getter!!) })
             .filter {
                 it.contributionKind == Callable.ContributionKind.BINDING ||
+                        it.contributionKind == Callable.ContributionKind.MODULE ||
                         (it.contributionKind != Callable.ContributionKind.INTERCEPTOR &&
                                 it.interceptors.isNotEmpty())
             } + implBindings.flatMap { implBinding ->
             listOf(implBinding.callable, implBinding.callable.copy(type = implBinding.superType))
         } + effectCallables
-            .filter { it.contributionKind == Callable.ContributionKind.BINDING }
+            .filter {
+                it.contributionKind == Callable.ContributionKind.BINDING ||
+                        it.contributionKind == Callable.ContributionKind.MODULE
+            }
     }
 
     private val bindingsByType = mutableMapOf<TypeRef, List<Callable>>()
@@ -254,6 +258,20 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         generatedClassifiers[classifier.fqName] = classifier
     }
     fun generatedClassifierFor(fqName: FqName): ClassifierRef? = generatedClassifiers[fqName]
+
+    val allModules: List<Callable> by unsafeLazy {
+        classIndices
+            .filter { it.hasAnnotation(InjektFqNames.Module) }
+            .map { it.getInjectConstructor()!! }
+            .map { callableForDescriptor(it) } +
+                functionIndices
+                    .filter { it.hasAnnotation(InjektFqNames.Module) }
+                    .map { callableForDescriptor(it) } +
+                propertyIndices
+                    .filter { it.hasAnnotation(InjektFqNames.Module) }
+                    .map { callableForDescriptor(it.getter!!) } + effectCallables
+            .filter { it.contributionKind == Callable.ContributionKind.MODULE }
+    }
 
     private val allFunBindings by unsafeLazy {
         functionIndices
@@ -332,9 +350,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     .filter { it.hasAnnotation(InjektFqNames.SetElements) }
                     .map { callableForDescriptor(it.getter!!) } + effectCallables
             .filter { it.contributionKind == Callable.ContributionKind.SET_ELEMENTS }
-            .onEach {
-                it
-            }
     }
     private val setElementsForType = mutableMapOf<TypeRef, List<Callable>>()
     fun setElementsByType(type: TypeRef): List<Callable> = setElementsForType.getOrPut(type) {
@@ -789,11 +804,11 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             eager = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Eager),
             default = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Default),
             contributionKind = when {
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) -> Callable.ContributionKind.INTERCEPTOR
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.ContributionKind.MAP_ENTRIES
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) -> Callable.ContributionKind.SET_ELEMENTS
-                owner.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) -> Callable.ContributionKind.MODULE
+                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
+                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) -> Callable.ContributionKind.INTERCEPTOR
+                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.ContributionKind.MAP_ENTRIES
+                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) -> Callable.ContributionKind.SET_ELEMENTS
+                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) -> Callable.ContributionKind.MODULE
                 else -> null
             },
             typeParameters = (when (owner) {
@@ -805,13 +820,27 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 typeTranslator.toClassifierRef(it)
             },
             valueParameters = listOfNotNull(
+                descriptor.dispatchReceiverParameter?.let {
+                    val parameterType = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) }
+                    ValueParameterRef(
+                        type = parameterType,
+                        originalType = parameterType,
+                        parameterKind = ValueParameterRef.ParameterKind.DISPATCH_RECEIVER,
+                        name = "_dispatchReceiver".asNameId(),
+                        inlineKind = ValueParameterRef.InlineKind.NONE,
+                        argName = it.getArgName(),
+                        isFunApi = false,
+                        hasDefault = false,
+                        defaultExpression = null
+                    )
+                },
                 descriptor.extensionReceiverParameter?.let {
                     val parameterType = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) }
                     ValueParameterRef(
                         type = parameterType,
                         originalType = parameterType,
-                        isExtensionReceiver = true,
-                        name = "_receiver".asNameId(),
+                        parameterKind = ValueParameterRef.ParameterKind.EXTENSION_RECEIVER,
+                        name = "_extensionReceiver".asNameId(),
                         inlineKind = ValueParameterRef.InlineKind.NONE,
                         argName = it.getArgName(),
                         isFunApi = "<this>" in funApiParams.map { it.asString() },
@@ -824,7 +853,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 ValueParameterRef(
                     type = parameterType,
                     originalType = parameterType,
-                    isExtensionReceiver = false,
+                    parameterKind = ValueParameterRef.ParameterKind.VALUE_PARAMETER,
                     name = it.name,
                     inlineKind = when {
                         it.isNoinline -> ValueParameterRef.InlineKind.NOINLINE
@@ -917,8 +946,12 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         callable.copy(
                             type = callable.type.substitute(substitutionMap),
                             valueParameters = callable.valueParameters.map {
+                                val parameterType = if (it.parameterKind ==
+                                    ValueParameterRef.ParameterKind.DISPATCH_RECEIVER) {
+                                    type
+                                } else it.type
                                 it.copy(
-                                    type = it.type.substitute(substitutionMap)
+                                    type = parameterType.substitute(substitutionMap)
                                 )
                             }
                         )

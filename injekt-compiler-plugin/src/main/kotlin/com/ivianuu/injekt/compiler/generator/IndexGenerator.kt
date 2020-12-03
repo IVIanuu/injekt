@@ -20,6 +20,7 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.UniqueNameProvider
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -60,7 +61,9 @@ class IndexGenerator(
                                 descriptor.hasAnnotation(InjektFqNames.Component) ||
                                 descriptor.hasAnnotation(InjektFqNames.ChildComponent) ||
                                 descriptor.hasAnnotation(InjektFqNames.MergeComponent) ||
-                                descriptor.hasAnnotation(InjektFqNames.MergeChildComponent)
+                                descriptor.hasAnnotation(InjektFqNames.MergeChildComponent) ||
+                                (descriptor is ClassDescriptor &&
+                                        (descriptor.kind != ClassKind.OBJECT))
                         moduleLikeScope = if (isModuleLikeScope) classOrObject else null
                         super.visitClassOrObject(classOrObject)
                         moduleLikeScope = prevModuleLikeScope
@@ -69,7 +72,9 @@ class IndexGenerator(
                     override fun visitDeclaration(declaration: KtDeclaration) {
                         super.visitDeclaration(declaration)
                         if (moduleLikeScope != null &&
-                                declaration != moduleLikeScope) return
+                            declaration != moduleLikeScope &&
+                            declaration !is KtConstructor<*> &&
+                            declaration !is KtClassOrObject) return
 
                         if (declaration !is KtClassOrObject &&
                             declaration !is KtNamedFunction &&
@@ -91,7 +96,8 @@ class IndexGenerator(
                                 descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
                                 descriptor.hasAnnotation(InjektFqNames.MergeComponent) ||
                                 descriptor.hasAnnotation(InjektFqNames.MergeChildComponent) ||
-                                descriptor.hasAnnotation(InjektFqNames.MergeInto)
+                                descriptor.hasAnnotation(InjektFqNames.MergeInto) ||
+                                descriptor.hasAnnotation(InjektFqNames.Module)
 
                         if (!needsIndexing) return
 

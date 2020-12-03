@@ -325,6 +325,50 @@ class ComponentTest {
     }
 
     @Test
+    fun testNestedClassBinding() = codegen(
+        """
+            class Outer {
+                @Binding
+                class AnnotatedBar(foo: Foo)
+            }
+            @Component
+            abstract class FooComponent {
+                abstract val annotatedBar: Outer.AnnotatedBar
+                
+                @Binding
+                protected fun foo() = Foo()
+            }
+
+            fun invoke() {
+                component<FooComponent>().annotatedBar
+            }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testConstructorBinding() = codegen(
+        """
+            class AnnotatedBar @Binding constructor(foo: Foo)
+            
+            @Component
+            abstract class FooComponent {
+                abstract val annotatedBar: AnnotatedBar
+                
+                @Binding
+                protected fun foo() = Foo()
+            }
+
+            fun invoke() {
+                component<FooComponent>().annotatedBar
+            }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
     fun testObjectBinding() = codegen(
         """
             @Binding
@@ -589,8 +633,7 @@ class ComponentTest {
                 
                 @Module
                 protected val nested = NestedModule()
-                
-                @Module
+
                 class NestedModule {
                     @Binding
                     fun bar(foo: Foo) = Bar(foo)
@@ -614,8 +657,7 @@ class ComponentTest {
             
                 @Module
                 protected val fooModule = InstanceModule<Foo>(Foo())
-                
-                @Module
+
                 class InstanceModule<T>(@Binding val instance: T)
             }
 

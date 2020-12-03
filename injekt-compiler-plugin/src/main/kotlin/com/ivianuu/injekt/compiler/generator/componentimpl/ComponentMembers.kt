@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.TypeTranslator
+import com.ivianuu.injekt.compiler.generator.ValueParameterRef
 import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.copy
 import com.ivianuu.injekt.compiler.generator.defaultType
@@ -117,11 +118,17 @@ class ComponentStatements(
         binding
             .interceptors
             .flatMap { it.dependencies }
+            .filterNot {
+                it.lazy || it.type == binding.type || it.type == owner.componentType
+            }
             .filter { owner.graph.getBinding(it) !is MissingBindingNode }
             .forEach { getBindingExpression(it) }
         binding
             .dependencies
-            .filterNot { it.lazy || it.type == binding.type }
+            .filterNot {
+                it.lazy || it.type == binding.type ||
+                        it.type == owner.componentType
+            }
             .filter { owner.graph.getBinding(it) !is MissingBindingNode }
             .forEach { getBindingExpression(it) }
 
@@ -147,8 +154,8 @@ class ComponentStatements(
             scoped(binding.type, binding.callableKind, false,
                 binding.targetComponent!!, binding.interceptors.isNotEmpty(), rawExpression)
 
-        val maybeInterceptdExpression = if (binding.interceptors.isEmpty()) maybeScopedExpression
-        else interceptd(binding.type, binding.callableKind, binding.interceptors, !binding.eager,
+        val maybeInterceptedExpression = if (binding.interceptors.isEmpty()) maybeScopedExpression
+        else intercepted(binding.type, binding.callableKind, binding.interceptors, !binding.eager,
             binding.interceptors.isNotEmpty(), maybeScopedExpression)
 
         val requestForType = owner.requests
@@ -168,7 +175,7 @@ class ComponentStatements(
             type = binding.type,
             name = callableName,
             isOverride = isOverride,
-            body = maybeInterceptdExpression,
+            body = maybeInterceptedExpression,
             isProperty = isProperty,
             callableKind = requestForType?.callableKind ?: callableKind,
             eager = binding.eager,
@@ -247,7 +254,7 @@ class ComponentStatements(
             .filter { it.isFunApi }
 
         funApiParameters
-            .filterNot { it.isExtensionReceiver }
+            .filterNot { it.parameterKind == ValueParameterRef.ParameterKind.EXTENSION_RECEIVER }
             .forEachIndexed { index, param ->
                 emit("${param.name}: ${param.type.render(expanded = true)}")
                 if (index != funApiParameters.lastIndex) emit(", ")
@@ -258,17 +265,17 @@ class ComponentStatements(
             emitCallableInvocation(
                 callable = binding.callable,
                 type = binding.type.fullyExpandedType.typeArguments.last(),
-                receiver = null,
-                owner = null,
                 arguments = binding.callable.valueParameters.mapNotNull { valueParameter ->
                     if (valueParameter in funApiParameters) {
                         val expression: ComponentExpression = {
-                            if (valueParameter.isExtensionReceiver) emit("this")
+                            if (valueParameter.parameterKind == ValueParameterRef.ParameterKind.EXTENSION_RECEIVER) emit("this")
                             else emit(valueParameter.name)
                         }
                         valueParameter.name to (valueParameter.type to expression)
                     } else {
-                        val request = valueParameter.toBindingRequest(binding.callable, emptyMap())
+                        val request = with(owner.graph) {
+                            valueParameter.toBindingRequest(binding.callable, emptyMap())
+                        }
                         val dependencyBinding = owner.graph.getBinding(request)
                         if (dependencyBinding is MissingBindingNode) return@mapNotNull null
                         valueParameter.name to (dependencyBinding.type to getBindingExpression(request))
@@ -285,18 +292,16 @@ class ComponentStatements(
     }
 
     private fun mapExpression(binding: MapBindingNode): ComponentExpression = {
-        fun CallableWithReceiver.emit() {
+        fun Callable.emit() {
             emitCallableInvocation(
-                callable,
+                this,
                 binding.type,
-                receiver,
-                declaredInComponent,
-                callable.valueParameters
+                valueParameters
                     .mapNotNull { parameter ->
                         parameter.name to if (parameter.argName != null) {
-                            parameter.type to callable.valueArgs[parameter.argName]!!
+                            parameter.type to valueArgs[parameter.argName]!!
                         } else {
-                            val requests = binding.dependenciesByEntry[callable]!!
+                            val requests = binding.dependenciesByEntry[this]!!
                             val request = requests.first { it.origin.shortName() == parameter.name }
                             val dependencyBinding = owner.graph.getBinding(request)
                             if (dependencyBinding is MissingBindingNode) return@mapNotNull null
@@ -322,18 +327,16 @@ class ComponentStatements(
     }
 
     private fun setExpression(binding: SetBindingNode): ComponentExpression = {
-        fun CallableWithReceiver.emit() {
+        fun Callable.emit() {
             emitCallableInvocation(
-                callable,
+                this,
                 binding.type,
-                receiver,
-                declaredInComponent,
-                callable.valueParameters
+                valueParameters
                     .mapNotNull { parameter ->
                         parameter.name to if (parameter.argName != null) {
-                            parameter.type to callable.valueArgs[parameter.argName]!!
+                            parameter.type to valueArgs[parameter.argName]!!
                         } else {
-                            val requests = binding.dependenciesByElement[callable]!!
+                            val requests = binding.dependenciesByElement[this]!!
                             val request = requests.first { it.origin.shortName() == parameter.name }
                             val dependencyBinding = owner.graph.getBinding(request)
                             if (dependencyBinding is MissingBindingNode) return@mapNotNull null
@@ -361,8 +364,6 @@ class ComponentStatements(
         emitCallableInvocation(
             binding.callable,
             binding.type,
-            binding.receiver,
-            binding.declaredInComponent,
             binding.callable.valueParameters
                 .mapNotNull { parameter ->
                     parameter.name to if (parameter.argName != null) {
@@ -388,7 +389,7 @@ class ComponentStatements(
         emit("this")
     }
 
-    private fun interceptd(
+    private fun intercepted(
         type: TypeRef,
         callableKind: Callable.CallableKind,
         interceptors: List<InterceptorNode>,
@@ -403,8 +404,6 @@ class ComponentStatements(
                 emitCallableInvocation(
                     callable,
                     callable.type,
-                    receiver,
-                    declaredInComponent,
                     callable.valueParameters
                         .mapNotNull { valueParameter ->
                             val pair: Pair<Name, Pair<TypeRef?, ComponentExpression>> = valueParameter.name to (when {
@@ -611,14 +610,24 @@ class ComponentStatements(
     private fun CodeBuilder.emitCallableInvocation(
         callable: Callable,
         type: TypeRef,
-        receiver: ComponentExpression?,
-        owner: ComponentImpl?,
         arguments: Map<Name, Pair<TypeRef?, ComponentExpression>?>
     ) {
-        val finalCallable = if (owner != null && owner != this@ComponentStatements.owner &&
-            callable.visibility == DescriptorVisibilities.PROTECTED) {
+        val finalCallable = if (callable.visibility == DescriptorVisibilities.PROTECTED &&
+            callable.valueParameters.any {
+                it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER
+                        && it.type != owner.componentType
+            }
+        ) {
+            val ownerType = callable.valueParameters.first {
+                it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER
+            }.type
+            var current: ComponentImpl? = owner
+            while (current != null) {
+                if (current.componentType == ownerType) break
+                current = current.parent
+            }
             val accessorName = "_${callable.name}".asNameId()
-            owner.members.firstOrNull {
+            current!!.members.firstOrNull {
                 it is ComponentCallable &&
                         it.name == accessorName
             } ?: ComponentCallable(
@@ -631,10 +640,12 @@ class ComponentStatements(
                     emit("${callable.name}")
                     if (callable.isCall) {
                         emit("(")
-                        callable.valueParameters.forEachIndexed { index, parameter ->
-                            emit(parameter.name)
-                            if (index != callable.valueParameters.lastIndex) emit(", ")
-                        }
+                        callable.valueParameters
+                            .filterNot { it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER }
+                            .forEachIndexed { index, parameter ->
+                                emit(parameter.name)
+                                if (index != callable.valueParameters.lastIndex) emit(", ")
+                            }
                         emit(")")
                     }
                 },
@@ -643,6 +654,7 @@ class ComponentStatements(
                 isInline = false,
                 canBePrivate = true,
                 valueParameters = callable.valueParameters
+                    .filterNot { it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER }
                     .map {
                         ComponentCallable.ValueParameter(
                             it.name,
@@ -656,7 +668,7 @@ class ComponentStatements(
                             it.superTypes
                         )
                     }
-            ).also { owner.members += it }
+            ).also { current.members += it }
             callable.copy(
                 name = accessorName,
                 visibility = DescriptorVisibilities.INTERNAL
@@ -664,7 +676,6 @@ class ComponentStatements(
         } else {
             callable
         }
-
         fun emitArguments() {
             if (finalCallable.isCall) {
                 if (finalCallable.typeParameters.isNotEmpty()) {
@@ -702,10 +713,10 @@ class ComponentStatements(
                 indented {
                     var argumentsIndex = 0
                     val nonNullArgumentsCount = finalCallable.valueParameters
-                        .filterNot { it.isExtensionReceiver }
+                        .filter { it.parameterKind == ValueParameterRef.ParameterKind.VALUE_PARAMETER }
                         .count { it.name in arguments }
                     finalCallable.valueParameters
-                        .filterNot { it.isExtensionReceiver }
+                        .filter { it.parameterKind == ValueParameterRef.ParameterKind.VALUE_PARAMETER }
                         .forEach { parameter ->
                             val argument = arguments[parameter.name]
                             if (argument != null) {
@@ -722,19 +733,20 @@ class ComponentStatements(
                 emitLine(")")
             }
         }
-        if (owner != null) {
+        val dispatchReceiverParameter = finalCallable.valueParameters.firstOrNull {
+            it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER
+        }
+        val extensionReceiverParameter = finalCallable.valueParameters.firstOrNull {
+            it.parameterKind == ValueParameterRef.ParameterKind.EXTENSION_RECEIVER
+        }
+        if (dispatchReceiverParameter != null) {
             emit("with(")
-            val isObjectCallable = finalCallable.receiver?.isObject ?: false
-            if (!isObjectCallable) componentExpression(owner)()
-            if (receiver != null) {
-                if (!isObjectCallable) emit(".")
-                receiver()
-            }
+            emitOrNull(arguments[dispatchReceiverParameter!!.name]?.second)
             emit(") ")
             braced {
-                if (finalCallable.valueParameters.any { it.isExtensionReceiver }) {
+                if (extensionReceiverParameter != null) {
                     emit("with(")
-                    emitOrNull(arguments[finalCallable.valueParameters.first().name]?.second)
+                    emitOrNull(arguments[extensionReceiverParameter!!.name]?.second)
                     emit(") ")
                     braced {
                         emit(finalCallable.name)
@@ -746,9 +758,9 @@ class ComponentStatements(
                 }
             }
         } else {
-            if (finalCallable.valueParameters.any { it.isExtensionReceiver }) {
+            if (extensionReceiverParameter != null) {
                 emit("with(")
-                emitOrNull(arguments[finalCallable.valueParameters.first().name]?.second)
+                emitOrNull(arguments[extensionReceiverParameter!!.name]?.second)
                 emit(") ")
                 braced {
                     emit(finalCallable.name)

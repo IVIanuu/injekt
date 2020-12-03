@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.TypeRef
+import com.ivianuu.injekt.compiler.generator.ValueParameterRef
 import com.ivianuu.injekt.compiler.generator.callableKind
 import com.ivianuu.injekt.compiler.generator.getStarSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.render
@@ -132,8 +133,6 @@ sealed class BindingNode(
     abstract val origin: FqName?
     abstract val targetComponent: TypeRef?
     abstract val scoped: Boolean
-    abstract val declaredInComponent: ComponentImpl?
-    abstract val receiver: ComponentExpression?
     abstract val isExternal: Boolean
     abstract val inline: Boolean
 
@@ -165,9 +164,6 @@ class SelfBindingNode(
     override val targetComponent: TypeRef? get() = null
     override val scoped: Boolean
         get() = false
-    override val declaredInComponent: ComponentImpl?
-        get() = null
-    override val receiver: ComponentExpression? get() = null
     override val isExternal: Boolean
         get() = false
     override val inline: Boolean
@@ -188,10 +184,6 @@ class AssistedBindingNode(
         get() = null
     override val rawType: TypeRef
         get() = type
-    override val declaredInComponent: ComponentImpl?
-        get() = null
-    override val receiver: ComponentExpression?
-        get() = null
     override val targetComponent: TypeRef?
         get() = null
     override val scoped: Boolean
@@ -203,7 +195,7 @@ class AssistedBindingNode(
         super.refineType(dependencyBindings)
         val returnType = type.typeArguments.last()
         val substitutionMap = childComponent.graph.getBinding(
-            BindingRequest(returnType, FqName.ROOT, true, type.callableKind, false))
+            BindingRequest(returnType, FqName.ROOT, true, type.callableKind, false, false))
             .type.getStarSubstitutionMap(returnType)
         _type = _type.substitute(substitutionMap)
     }
@@ -219,10 +211,6 @@ class ChildComponentBindingNode(
         get() = emptyList()
     override val rawType: TypeRef
         get() = type
-    override val receiver: ComponentExpression?
-        get() = null
-    override val declaredInComponent: ComponentImpl?
-        get() = null
     override val targetComponent: TypeRef?
         get() = null
     override val scoped: Boolean
@@ -237,8 +225,6 @@ class InputBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl
 ) : BindingNode(type, Callable.CallableKind.DEFAULT, false) {
-    override val declaredInComponent: ComponentImpl
-        get() = owner
     override val dependencies: List<BindingRequest>
         get() = emptyList()
     override val isExternal: Boolean
@@ -247,8 +233,6 @@ class InputBindingNode(
         get() = null
     override val rawType: TypeRef
         get() = type
-    override val receiver: ComponentExpression?
-        get() = null
     override val targetComponent: TypeRef?
         get() = null
     override val scoped: Boolean
@@ -261,11 +245,13 @@ class CallableBindingNode(
     type: TypeRef,
     override val rawType: TypeRef,
     override val owner: ComponentImpl,
-    override val declaredInComponent: ComponentImpl?,
     override val dependencies: List<BindingRequest>,
-    override val receiver: ComponentExpression?,
     val callable: Callable
-) : BindingNode(type, callable.callableKind, callable.eager) {
+) : BindingNode(type, callable.callableKind, callable.eager ||
+        (callable.contributionKind == Callable.ContributionKind.MODULE &&
+                callable.valueParameters.none {
+                    it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER
+                })) {
     override val isExternal: Boolean
         get() = callable.isExternal
     override val targetComponent: TypeRef?
@@ -293,10 +279,6 @@ class FunBindingNode(
     override val dependencies: List<BindingRequest>,
     val callable: Callable
 ) : BindingNode(type, Callable.CallableKind.DEFAULT, true) {
-    override val declaredInComponent: ComponentImpl?
-        get() = null
-    override val receiver: ComponentExpression?
-        get() = null
     override val isExternal: Boolean
         get() = callable.isExternal
     override val targetComponent: TypeRef?
@@ -319,9 +301,9 @@ class MapBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
-    val entries: List<CallableWithReceiver>,
+    val entries: List<Callable>,
     val dependenciesByEntry: Map<Callable, List<BindingRequest>>
-) : BindingNode(type, Callable.CallableKind.DEFAULT, entries.any { it.callable.eager }) {
+) : BindingNode(type, Callable.CallableKind.DEFAULT, entries.any { it.eager }) {
     override val rawType: TypeRef
         get() = type
     override val origin: FqName?
@@ -330,10 +312,6 @@ class MapBindingNode(
         get() = null
     override val scoped: Boolean
         get() = false
-    override val declaredInComponent: ComponentImpl?
-        get() = null
-    override val receiver: ComponentExpression?
-        get() = null
     override val isExternal: Boolean
         get() = false
     override val inline: Boolean
@@ -342,7 +320,7 @@ class MapBindingNode(
     override fun refineType(dependencyBindings: List<BindingNode>) {
         super.refineType(dependencyBindings)
         entries.forEach { entry ->
-            val substitutionMap = entry.callable.type.getStarSubstitutionMap(type)
+            val substitutionMap = entry.type.getStarSubstitutionMap(type)
             _type = _type.substitute(substitutionMap)
         }
     }
@@ -352,8 +330,6 @@ class MissingBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl
 ) : BindingNode(type, Callable.CallableKind.DEFAULT, false) {
-    override val declaredInComponent: ComponentImpl?
-        get() = null
     override val dependencies: List<BindingRequest>
         get() = emptyList()
     override val inline: Boolean
@@ -364,8 +340,6 @@ class MissingBindingNode(
         get() = null
     override val rawType: TypeRef
         get() = type
-    override val receiver: ComponentExpression?
-        get() = null
     override val targetComponent: TypeRef?
         get() = null
     override val scoped: Boolean
@@ -378,10 +352,6 @@ class ProviderBindingNode(
     override val dependencies: List<BindingRequest>,
     override val origin: FqName?,
 ) : BindingNode(type, Callable.CallableKind.DEFAULT, true) {
-    override val declaredInComponent: ComponentImpl?
-        get() = null
-    override val receiver: ComponentExpression?
-        get() = null
     override val rawType: TypeRef
         get() = type
     override val targetComponent: TypeRef?
@@ -398,18 +368,14 @@ class SetBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
-    val elements: List<CallableWithReceiver>,
+    val elements: List<Callable>,
     val dependenciesByElement: Map<Callable, List<BindingRequest>>
-) : BindingNode(type, Callable.CallableKind.DEFAULT, elements.any { it.callable.eager }) {
+) : BindingNode(type, Callable.CallableKind.DEFAULT, elements.any { it.eager }) {
     override val rawType: TypeRef
         get() = type
     override val origin: FqName?
         get() = null
     override val targetComponent: TypeRef?
-        get() = null
-    override val declaredInComponent: ComponentImpl?
-        get() = null
-    override val receiver: ComponentExpression?
         get() = null
     override val isExternal: Boolean
         get() = false
@@ -421,22 +387,14 @@ class SetBindingNode(
     override fun refineType(dependencyBindings: List<BindingNode>) {
         super.refineType(dependencyBindings)
         elements.forEach { element ->
-            val substitutionMap = element.callable.type.getStarSubstitutionMap(type)
+            val substitutionMap = element.type.getStarSubstitutionMap(type)
             _type = _type.substitute(substitutionMap)
         }
     }
 }
 
-data class CallableWithReceiver(
-    val callable: Callable,
-    val receiver: ComponentExpression?,
-    val declaredInComponent: ComponentImpl?
-)
-
 data class InterceptorNode(
     val callable: Callable,
-    val receiver: ComponentExpression?,
-    val declaredInComponent: ComponentImpl?,
     val dependencies: List<BindingRequest>
 )
 
@@ -445,5 +403,6 @@ data class BindingRequest(
     val origin: FqName,
     val required: Boolean,
     val callableKind: Callable.CallableKind,
-    val lazy: Boolean
+    val lazy: Boolean,
+    val forObjectCall: Boolean
 )
