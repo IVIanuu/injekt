@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.TypeRef
+import com.ivianuu.injekt.compiler.generator.ValueParameterRef
 import com.ivianuu.injekt.compiler.generator.callableKind
 import com.ivianuu.injekt.compiler.generator.getStarSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.render
@@ -247,7 +248,10 @@ class CallableBindingNode(
     override val dependencies: List<BindingRequest>,
     val callable: Callable
 ) : BindingNode(type, callable.callableKind, callable.eager ||
-        callable.contributionKind == Callable.ContributionKind.MODULE) {
+        (callable.contributionKind == Callable.ContributionKind.MODULE &&
+                callable.valueParameters.none {
+                    it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER
+                })) {
     override val isExternal: Boolean
         get() = callable.isExternal
     override val targetComponent: TypeRef?
