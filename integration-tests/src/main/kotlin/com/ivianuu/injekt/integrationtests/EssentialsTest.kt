@@ -528,4 +528,36 @@ class EssentialsTest {
             }
         """
     )
+
+    @Test
+    fun testWorker() = codegen(
+        """
+            interface Worker
+            interface Context
+            interface WorkerParameters
+
+            typealias Workers = Map<KClass<out Worker>, (Context, WorkerParameters) -> Worker>
+
+            class WorkerModule<T : Worker>(private val workerClass: KClass<T>) {
+                @MapEntries
+                fun worker(factory: (Context, WorkerParameters) -> T): Workers =
+                    mapOf(workerClass to factory)
+                companion object {
+                    inline operator fun <reified T : Worker> invoke() = WorkerModule(T::class)
+                }
+            }
+
+            @Module
+            val MyWorkerModule = WorkerModule<MyWorker>()
+
+            @Binding
+            class MyWorker : Worker
+
+            @Component
+            abstract class MyComponent {
+                abstract val workers: Workers
+            }
+        """
+    )
+
 }

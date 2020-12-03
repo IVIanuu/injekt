@@ -325,6 +325,29 @@ class ComponentTest {
     }
 
     @Test
+    fun testNestedClassBinding() = codegen(
+        """
+            class Outer {
+                @Binding
+                class AnnotatedBar(foo: Foo)
+            }
+            @Component
+            abstract class FooComponent {
+                abstract val annotatedBar: Outer.AnnotatedBar
+                
+                @Binding
+                protected fun foo() = Foo()
+            }
+
+            fun invoke() {
+                component<FooComponent>().annotatedBar
+            }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
     fun testConstructorBinding() = codegen(
         """
             class AnnotatedBar @Binding constructor(foo: Foo)
