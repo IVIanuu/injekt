@@ -428,7 +428,6 @@ class DeclarationStore(val module: ModuleDescriptor) {
                         originalType = parameterType,
                         parameterKind = ValueParameterRef.ParameterKind.DISPATCH_RECEIVER,
                         name = "_dispatchReceiver".asNameId(),
-                        inlineKind = ValueParameterRef.InlineKind.NONE,
                         isFunApi = false,
                         hasDefault = false,
                         defaultExpression = null
@@ -441,7 +440,6 @@ class DeclarationStore(val module: ModuleDescriptor) {
                         originalType = parameterType,
                         parameterKind = ValueParameterRef.ParameterKind.EXTENSION_RECEIVER,
                         name = "_extensionReceiver".asNameId(),
-                        inlineKind = ValueParameterRef.InlineKind.NONE,
                         isFunApi = "<this>" in funApiParams.map { it.asString() },
                         hasDefault = false,
                         defaultExpression = null
@@ -454,11 +452,6 @@ class DeclarationStore(val module: ModuleDescriptor) {
                     originalType = parameterType,
                     parameterKind = ValueParameterRef.ParameterKind.VALUE_PARAMETER,
                     name = it.name,
-                    inlineKind = when {
-                        it.isNoinline -> ValueParameterRef.InlineKind.NOINLINE
-                        it.isCrossinline -> ValueParameterRef.InlineKind.CROSSINLINE
-                        else -> ValueParameterRef.InlineKind.NONE
-                    },
                     isFunApi = it.name in funApiParams,
                     hasDefault = it.declaresDefaultValue(),
                     defaultExpression = if (!it.declaresDefaultValue()) null else ({

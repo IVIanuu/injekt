@@ -55,7 +55,6 @@ data class ValueParameterRef(
     val type: TypeRef,
     val originalType: TypeRef,
     val parameterKind: ParameterKind,
-    val inlineKind: InlineKind,
     val name: Name,
     val isFunApi: Boolean,
     val hasDefault: Boolean,
@@ -63,9 +62,6 @@ data class ValueParameterRef(
 ) {
     enum class ParameterKind {
         VALUE_PARAMETER, DISPATCH_RECEIVER, EXTENSION_RECEIVER
-    }
-    enum class InlineKind {
-        NONE, NOINLINE, CROSSINLINE
     }
 }
 
