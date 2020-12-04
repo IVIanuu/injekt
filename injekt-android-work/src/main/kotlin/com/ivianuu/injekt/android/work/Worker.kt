@@ -41,7 +41,7 @@ typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters
 @MapEntries
 inline fun defaultWorkers(): Workers = emptyMap()
 
-@Module val InjektWorkerFactoryImpl = alias<InjektWorkerFactory, WorkerFactory>()
+@Module val injektWorkerFactoryModule = alias<InjektWorkerFactory, WorkerFactory>()
 @Binding
 class InjektWorkerFactory(workersFactory: () -> Workers) : WorkerFactory() {
     private val workers by lazy(workersFactory)

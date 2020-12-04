@@ -48,7 +48,7 @@ interface Heater {
     val isHot: Boolean
 }
 
-@Module val ElectricHeaterModule = alias<ElectricHeater, Heater>()
+@Module val electricHeaterModule = alias<ElectricHeater, Heater>()
 @Scoped(CoffeeComponent::class)
 @Binding
 class ElectricHeater : Heater {
@@ -71,7 +71,7 @@ interface Pump {
     fun pump()
 }
 
-@Module val ThermosiphonModule = alias<Thermosiphon, Pump>()
+@Module val thermosiphonModule = alias<Thermosiphon, Pump>()
 @Binding
 class Thermosiphon(private val heater: Heater) : Pump {
     override fun pump() {
