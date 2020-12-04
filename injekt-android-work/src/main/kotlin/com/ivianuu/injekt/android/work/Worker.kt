@@ -24,12 +24,12 @@ import com.ivianuu.injekt.ImplBinding
 import com.ivianuu.injekt.MapEntries
 import kotlin.reflect.KClass
 
-class WorkerModule<T : ListenableWorker>(private val workerClass: KClass<T>) {
+class worker<T : ListenableWorker>(private val workerClass: KClass<T>) {
     @MapEntries
     fun worker(factory: (Context, WorkerParameters) -> T): Workers =
         mapOf(workerClass to factory)
     companion object {
-        inline operator fun <reified T : ListenableWorker> invoke() = WorkerModule(T::class)
+        inline operator fun <reified T : ListenableWorker> invoke() = worker(T::class)
     }
 }
 

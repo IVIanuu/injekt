@@ -30,7 +30,7 @@ import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityContext
-import com.ivianuu.injekt.android.ActivityViewModelModule
+import com.ivianuu.injekt.android.activityViewModel
 import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.merge.MergeInto
 import com.ivianuu.injekt.merge.mergeComponent
@@ -77,8 +77,7 @@ fun enqueueWork(context: ActivityContext) {
         )
 }
 
-
-@Module val MainViewModelModule = ActivityViewModelModule<MainViewModel>()
+@Module val mainViewModelModule = activityViewModel<MainViewModel>()
 @Binding
 class MainViewModel : ViewModel() {
     init {

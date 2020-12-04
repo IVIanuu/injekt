@@ -24,8 +24,12 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.FunBinding
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.android.ApplicationContext
+import com.ivianuu.injekt.android.work.worker
 
+@Module
+val testWorkerModule = worker<TestWorker>()
 @Binding
 class TestWorker(
     context: Context,

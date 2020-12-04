@@ -22,16 +22,17 @@ import androidx.lifecycle.ViewModelStoreOwner
 import com.ivianuu.injekt.Interceptor
 import kotlin.reflect.KClass
 
-inline fun <reified VM : ViewModel> ActivityViewModelModule() =
-    ViewModelModule<ActivityViewModelStoreOwner, VM>(VM::class)
+inline fun <reified VM : ViewModel> activityViewModel() =
+    viewModelBinding<ActivityViewModelStoreOwner, VM>(VM::class)
 
-inline fun <reified VM : ViewModel> FragmentViewModelModule() =
-    ViewModelModule<FragmentViewModelStoreOwner, VM>(VM::class)
+inline fun <reified VM : ViewModel> fragmentViewModel() =
+    viewModelBinding<FragmentViewModelStoreOwner, VM>(VM::class)
 
-class ViewModelModule<O : ViewModelStoreOwner, VM : ViewModel>(
+class viewModelBinding<O : ViewModelStoreOwner, VM : ViewModel>(
     @PublishedApi
     internal val vmClass: KClass<VM>
 ) {
+    @Suppress("UNCHECKED_CAST")
     @Interceptor
     inline fun intercept(storeOwner: O, crossinline factory: () -> VM): () -> VM = {
         ViewModelProvider(
