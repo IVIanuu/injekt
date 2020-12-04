@@ -19,26 +19,20 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.UniqueNameProvider
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.psi.psiUtil.containingClass
 
 @Binding(GenerationComponent::class)
 class IndexGenerator(
-    private val bindingContext: BindingContext,
     private val declarationStore: DeclarationStore,
     private val fileManager: FileManager
 ) : Generator {
@@ -51,16 +45,13 @@ class IndexGenerator(
                     var moduleLikeScope: KtClassOrObject? = null
 
                     override fun visitClassOrObject(classOrObject: KtClassOrObject) {
-                        val descriptor = classOrObject.descriptor<DeclarationDescriptor>(bindingContext)
-                            ?: return
                         val prevModuleLikeScope = moduleLikeScope
-                        val isModuleLikeScope = descriptor.hasAnnotation(InjektFqNames.Module) ||
-                                descriptor.hasAnnotation(InjektFqNames.Component) ||
-                                descriptor.hasAnnotation(InjektFqNames.ChildComponent) ||
-                                descriptor.hasAnnotation(InjektFqNames.MergeComponent) ||
-                                descriptor.hasAnnotation(InjektFqNames.MergeChildComponent) ||
-                                (descriptor is ClassDescriptor &&
-                                        (descriptor.kind != ClassKind.OBJECT))
+                        val isModuleLikeScope = classOrObject.hasAnnotation(InjektFqNames.Module) ||
+                                classOrObject.hasAnnotation(InjektFqNames.Component) ||
+                                classOrObject.hasAnnotation(InjektFqNames.ChildComponent) ||
+                                classOrObject.hasAnnotation(InjektFqNames.MergeComponent) ||
+                                classOrObject.hasAnnotation(InjektFqNames.MergeChildComponent) ||
+                                classOrObject !is KtObjectDeclaration
                         moduleLikeScope = if (isModuleLikeScope) classOrObject else null
                         super.visitClassOrObject(classOrObject)
                         moduleLikeScope = prevModuleLikeScope
@@ -78,34 +69,31 @@ class IndexGenerator(
                             declaration !is KtConstructor<*> &&
                             declaration !is KtProperty) return
 
-                        val descriptor = declaration.descriptor<DeclarationDescriptor>(bindingContext)
-                            ?: return
-
-                        val needsIndexing = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
-                                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) ||
-                                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.FunBinding) ||
-                                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.ImplBinding) ||
-                                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
-                                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
-                                descriptor.hasAnnotation(InjektFqNames.MergeComponent) ||
-                                descriptor.hasAnnotation(InjektFqNames.MergeChildComponent) ||
-                                descriptor.hasAnnotation(InjektFqNames.MergeInto) ||
-                                descriptor.hasAnnotation(InjektFqNames.Module)
+                        val needsIndexing = declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
+                                declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) ||
+                                declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.FunBinding) ||
+                                declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.ImplBinding) ||
+                                declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
+                                declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
+                                declaration.hasAnnotation(InjektFqNames.MergeComponent) ||
+                                declaration.hasAnnotation(InjektFqNames.MergeChildComponent) ||
+                                declaration.hasAnnotation(InjektFqNames.MergeInto) ||
+                                declaration.hasAnnotation(InjektFqNames.Module)
 
                         if (!needsIndexing) return
 
-                        val owner = when (descriptor) {
-                            is ConstructorDescriptor -> descriptor.constructedClass
-                            is PropertyAccessorDescriptor -> descriptor.correspondingProperty
-                            else -> descriptor
+                        val owner = when (declaration) {
+                            is KtConstructor<*> -> declaration.containingClass()!!
+                            is KtPropertyAccessor -> declaration.property
+                            else -> declaration as KtNamedDeclaration
                         }
 
                         val index = Index(
-                            owner.fqNameSafe,
+                            owner.fqName!!,
                             when (owner) {
-                                is ClassDescriptor -> "class"
-                                is FunctionDescriptor -> "function"
-                                is PropertyDescriptor -> "property"
+                                is KtClassOrObject -> "class"
+                                is KtNamedFunction -> "function"
+                                is KtProperty -> "property"
                                 else -> error("Unexpected declaration ${declaration.text}")
                             }
                         )

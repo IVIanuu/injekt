@@ -26,12 +26,61 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.js.translate.utils.refineType
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi.KtAnnotated
+import org.jetbrains.kotlin.psi.KtAnnotationEntry
+import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtPropertyAccessor
+import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.upperIfFlexible
+
+internal fun KtAnnotated.hasAnnotation(fqName: FqName): Boolean {
+    return findAnnotation(fqName) != null
+}
+
+fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
+    val annotationEntries = annotationEntries
+    if (annotationEntries.isEmpty()) return null
+
+    // Check if the fully qualified name is used, e.g. `@dagger.Module`.
+    val annotationEntry = annotationEntries.firstOrNull {
+        it.text.startsWith("@${fqName.asString()}")
+    }
+    if (annotationEntry != null) return annotationEntry
+
+    // Check if the simple name is used, e.g. `@Module`.
+    val annotationEntryShort = annotationEntries
+        .firstOrNull {
+            it.shortName == fqName.shortName()
+        }
+        ?: return null
+
+    val importPaths = containingKtFile.importDirectives.mapNotNull { it.importPath }
+
+    // If the simple name is used, check that the annotation is imported.
+    val hasImport = importPaths.any { it.fqName == fqName }
+    if (hasImport) return annotationEntryShort
+
+    // Look for star imports and make a guess.
+    val hasStarImport = importPaths
+        .filter { it.isAllUnder }
+        .any {
+            fqName.asString().startsWith(it.fqName.asString())
+        }
+    if (hasStarImport) return annotationEntryShort
+
+    return null
+}
+
+fun KtAnnotated.hasAnnotationWithPropertyAndClass(
+    fqName: FqName
+): Boolean = hasAnnotation(fqName) ||
+        (this is KtPropertyAccessor && property.hasAnnotation(fqName)) ||
+        (this is KtConstructor<*> && containingClassOrObject!!.hasAnnotation(fqName))
 
 fun <D : DeclarationDescriptor> KtDeclaration.descriptor(
     bindingContext: BindingContext,

@@ -51,14 +51,12 @@ class ComponentGenerator(
         files.forEach { file ->
             file.accept(
                 namedDeclarationRecursiveVisitor { declaration ->
-                    val descriptor = declaration.descriptor<DeclarationDescriptor>(bindingContext)
-                        ?: return@namedDeclarationRecursiveVisitor
-                    generateMergeComponents = (generateMergeComponents ||
-                            descriptor.hasAnnotation(InjektFqNames.GenerateMergeComponents))
-                    if (descriptor is ClassDescriptor &&
-                        descriptor.hasAnnotation(InjektFqNames.Component)
-                    ) {
+                    generateMergeComponents = generateMergeComponents ||
+                            declaration.hasAnnotation(InjektFqNames.GenerateMergeComponents)
+                    if (declaration.hasAnnotation(InjektFqNames.Component)) {
                         runExitCatching {
+                            val descriptor = declaration.descriptor<ClassDescriptor>(bindingContext)
+                                ?: return@namedDeclarationRecursiveVisitor
                             generateComponent(descriptor.defaultType
                                 .let { typeTranslator.toTypeRef(it, descriptor) })
                         }
