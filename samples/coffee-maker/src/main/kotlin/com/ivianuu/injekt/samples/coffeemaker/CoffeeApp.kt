@@ -16,10 +16,12 @@
 
 package com.ivianuu.injekt.samples.coffeemaker
 
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.FunBinding
-import com.ivianuu.injekt.ImplBinding
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Scoped
+import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.component
 
 fun main() {
@@ -46,8 +48,9 @@ interface Heater {
     val isHot: Boolean
 }
 
+@Module val ElectricHeaterModule = alias<ElectricHeater, Heater>()
 @Scoped(CoffeeComponent::class)
-@ImplBinding
+@Binding
 class ElectricHeater : Heater {
     private var heating: Boolean = false
 
@@ -68,7 +71,8 @@ interface Pump {
     fun pump()
 }
 
-@ImplBinding
+@Module val ThermosiphonModule = alias<Thermosiphon, Pump>()
+@Binding
 class Thermosiphon(private val heater: Heater) : Pump {
     override fun pump() {
         if (heater.isHot) {

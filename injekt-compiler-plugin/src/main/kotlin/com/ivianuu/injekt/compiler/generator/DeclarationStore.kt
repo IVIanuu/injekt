@@ -124,9 +124,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .filter {
                 it.contributionKind == Callable.ContributionKind.BINDING ||
                         it.contributionKind == Callable.ContributionKind.MODULE
-            } + implBindings.flatMap { implBinding ->
-            listOf(implBinding.callable, implBinding.callable.copy(type = implBinding.superType))
-        }
+            }
     }
 
     private val bindingsByType = mutableMapOf<TypeRef, List<Callable>>()
@@ -134,15 +132,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         allBindings
             .filter { type.isAssignable(it.type) }
             .distinct()
-    }
-
-    private val implBindings by unsafeLazy {
-        classIndices
-            .filter { it.hasAnnotation(InjektFqNames.ImplBinding) }
-            .map {
-                val callable = callableForDescriptor(it.getInjectConstructor()!!)
-                ImplBindingDescriptor(callable, callable.type, callable.type.superTypes().first())
-            }
     }
 
     private val generatedClassifiers = mutableMapOf<FqName, ClassifierRef>()

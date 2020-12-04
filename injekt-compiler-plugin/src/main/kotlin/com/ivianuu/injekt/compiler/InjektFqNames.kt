@@ -30,7 +30,6 @@ object InjektFqNames {
     val Eager = InjektPackage.child("Eager".asNameId())
     val FunApi = InjektPackage.child("FunApi".asNameId())
     val FunBinding = InjektPackage.child("FunBinding".asNameId())
-    val ImplBinding = InjektPackage.child("ImplBinding".asNameId())
     val Interceptor = InjektPackage.child("Interceptor".asNameId())
     val MapEntries = InjektPackage.child("MapEntries".asNameId())
     val Module = InjektPackage.child("Module".asNameId())

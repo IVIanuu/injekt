@@ -72,7 +72,6 @@ class IndexGenerator(
                         val needsIndexing = declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
                                 declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) ||
                                 declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.FunBinding) ||
-                                declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.ImplBinding) ||
                                 declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
                                 declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
                                 declaration.hasAnnotation(InjektFqNames.MergeComponent) ||

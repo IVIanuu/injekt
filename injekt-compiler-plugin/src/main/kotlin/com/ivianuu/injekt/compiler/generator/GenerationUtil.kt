@@ -103,12 +103,10 @@ fun DeclarationDescriptor.hasAnnotationWithPropertyAndClass(
 
 fun ClassDescriptor.getInjectConstructor(): ConstructorDescriptor? {
     if (hasAnnotation(InjektFqNames.Binding) ||
-        hasAnnotation(InjektFqNames.ImplBinding) ||
         hasAnnotation(InjektFqNames.Module)) return unsubstitutedPrimaryConstructor
     constructors
         .firstOrNull {
             it.hasAnnotation(InjektFqNames.Binding) ||
-                    it.hasAnnotation(InjektFqNames.ImplBinding) ||
                     it.hasAnnotation(InjektFqNames.Module)
         }?.let { return it }
     return null
