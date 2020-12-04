@@ -20,36 +20,26 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
 import com.ivianuu.injekt.Interceptor
+import kotlin.reflect.KClass
 
-@Interceptor
-annotation class ActivityViewModel {
-    companion object {
-        inline fun <reified VM : ViewModel> intercept(
-            storeOwner: ActivityViewModelStoreOwner,
-            crossinline factory: () -> VM
-        ): () -> VM = { storeOwner.get(factory) }
+inline fun <reified VM : ViewModel> ActivityViewModelModule() =
+    ViewModelModule<ActivityViewModelStoreOwner, VM>(VM::class)
+
+inline fun <reified VM : ViewModel> FragmentViewModelModule() =
+    ViewModelModule<FragmentViewModelStoreOwner, VM>(VM::class)
+
+class ViewModelModule<O : ViewModelStoreOwner, VM : ViewModel>(
+    @PublishedApi
+    internal val vmClass: KClass<VM>
+) {
+    @Interceptor
+    inline fun intercept(storeOwner: O, crossinline factory: () -> VM): () -> VM = {
+        ViewModelProvider(
+            storeOwner,
+            object : ViewModelProvider.Factory {
+                override fun <T : ViewModel?> create(modelClass: Class<T>): T =
+                    factory() as T
+            }
+        )[vmClass.java]
     }
-}
-
-@Interceptor
-annotation class FragmentViewModel {
-    companion object {
-        inline fun <reified VM : ViewModel> intercept(
-            storeOwner: FragmentViewModelStoreOwner,
-            crossinline factory: () -> VM
-        ): () -> VM = { storeOwner.get(factory) }
-    }
-}
-
-@PublishedApi
-internal inline fun <reified VM : ViewModel> ViewModelStoreOwner.get(
-    crossinline viewModelFactory: () -> VM
-): VM {
-    return ViewModelProvider(
-        this,
-        object : ViewModelProvider.Factory {
-            override fun <T : ViewModel?> create(modelClass: Class<T>): T =
-                viewModelFactory() as T
-        }
-    )[VM::class.java]
 }

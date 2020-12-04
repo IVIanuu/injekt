@@ -35,19 +35,14 @@ class EagerTest {
     }
 
     @Test
-    fun testEagerInterceptdBinding() = codegen(
+    fun testEagerInterceptedBinding() = codegen(
         """
             var called = false
 
             @Interceptor
-            annotation class MyInterceptor {
-                companion object {
-                    fun <T : Foo> intercept(factory: () -> T) = factory
-                }
-            }
+            fun interceptFoo(factory: () -> Foo) = factory
 
             @Eager
-            @MyInterceptor
             @Binding
             fun foo(): Foo {
                 called = true

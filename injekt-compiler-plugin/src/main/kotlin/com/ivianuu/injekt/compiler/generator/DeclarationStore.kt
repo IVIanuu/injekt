@@ -26,13 +26,11 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.DeserializedDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.findClassifierAcrossModuleDependencies
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
@@ -40,7 +38,6 @@ import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
@@ -92,27 +89,9 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             ?.filterIsInstance<PropertyDescriptor>()
             ?.map { indexProperty ->
                 val annotation = indexProperty.annotations.findAnnotation(InjektFqNames.Index)!!
-
                 val fqName = annotation.allValueArguments["fqName".asNameId()]!!.value as String
                 val type = annotation.allValueArguments["type".asNameId()]!!.value as String
-
-                val annotationTypes = indexProperty
-                    .annotations
-                    .findAnnotation(InjektFqNames.AnnotationTypesName)
-                    ?.allValueArguments
-                    ?.get("value".asNameId())
-                    ?.value
-                    ?.let { it as String }
-                    ?.let { classDescriptorForFqName(FqName(it)) }
-                    ?.unsubstitutedPrimaryConstructor
-                    ?.valueParameters
-                    ?.map { it.type }
-                    ?.map { typeTranslator.toTypeRef(it, indexProperty) }
-                    ?.map { it.classifier.fqName to it }
-                    ?.toMap()
-                    ?: emptyMap()
-
-                Index(FqName(fqName), type, annotationTypes)
+                Index(FqName(fqName), type)
             } ?: emptyList()
     }
 
@@ -134,107 +113,20 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .flatMap { propertyDescriptorsForFqName(it.fqName) }
     }
 
-    private val typeAliasIndices by unsafeLazy {
-        allIndices
-            .filter { it.type == "typealias" }
-            .map { typeAliasDescriptorForFqName(it.fqName) }
-    }
-
-    private val effectCallables: List<Callable> by unsafeLazy {
-        val generatedBindings = mutableListOf<Callable>()
-
-        var newBindings = (classIndices
-            .mapNotNull { it.getInjectConstructor() }
-            .map { callableForDescriptor(it) } +
-                functionIndices
-                    .filter {
-                        it.containingDeclaration.containingDeclaration
-                            ?.hasAnnotation(InjektFqNames.Effect) != true
-                    }
-                    .map { callableForDescriptor(it) } +
-                propertyIndices
-                    .filter {
-                        it.containingDeclaration.containingDeclaration
-                            ?.hasAnnotation(InjektFqNames.Effect) != true
-                    }
-                    .map { callableForDescriptor(it.getter!!) } +
-                implBindings
-                    .map { it.callable } + allFunBindings
-            .map { it.callable })
-            .distinct()
-            .filter { it.effects.isNotEmpty() } + typeAliasIndices
-            .filter { it.hasAnnotatedAnnotations(InjektFqNames.Effect) }
-            .flatMap { typeAlias ->
-                val type = typeTranslator.toClassifierRef(typeAlias)
-                val index = internalIndices
-                    .firstOrNull { it.fqName == typeAlias.fqNameSafe }
-                    ?: externalIndices
-                        .first { it.fqName == typeAlias.fqNameSafe }
-                typeAlias.getAnnotatedAnnotations(InjektFqNames.Effect)
-                    .flatMap {
-                        effectCallablesForAnnotation(
-                            it,
-                            typeAlias,
-                            type.defaultType,
-                            index.annotationTypes
-                        )
-                    }
-            }
-
-        while (newBindings.isNotEmpty()) {
-            val currentBindings = newBindings.toList()
-            generatedBindings += currentBindings
-            newBindings = currentBindings
-                .flatMap { binding ->
-                    val finalBinding = binding.newEffect(this, ++effect)
-                    if (finalBinding.isFunBinding) {
-                        effectFunBindings[finalBinding.effectType] =
-                            allFunBindings
-                                .single { it.callable == binding }
-                    } else {
-                        effectBindings[finalBinding.effectType] = finalBinding
-                    }
-                    finalBinding.effects
-                }
-        }
-
-        generatedBindings.toList()
-    }
-
-    private val effectBindings = mutableMapOf<TypeRef, Callable>()
-    fun effectBindingsFor(type: TypeRef) = listOfNotNull(effectBindings[type])
-
-    private val effectFunBindings = mutableMapOf<TypeRef, FunBindingDescriptor>()
-    fun effectFunBindingsFor(type: TypeRef) = listOfNotNull(effectFunBindings[type])
-
     private val allBindings by unsafeLazy {
         (classIndices
             .mapNotNull { it.getInjectConstructor() }
             .map { callableForDescriptor(it) } +
                 functionIndices
-                    .filter {
-                         it.containingDeclaration.containingDeclaration
-                            ?.hasAnnotation(InjektFqNames.Effect) != true
-                    }
                     .map { callableForDescriptor(it) } +
                 propertyIndices
-                    .filter {
-                        it.containingDeclaration.containingDeclaration
-                            ?.hasAnnotation(InjektFqNames.Effect) != true
-                    }
                     .map { callableForDescriptor(it.getter!!) })
             .filter {
                 it.contributionKind == Callable.ContributionKind.BINDING ||
-                        it.contributionKind == Callable.ContributionKind.MODULE ||
-                        (it.contributionKind != Callable.ContributionKind.INTERCEPTOR &&
-                                it.interceptors.isNotEmpty())
+                        it.contributionKind == Callable.ContributionKind.MODULE
             } + implBindings.flatMap { implBinding ->
             listOf(implBinding.callable, implBinding.callable.copy(type = implBinding.superType))
-        } + effectCallables
-            .filter {
-                it.contributionKind == Callable.ContributionKind.BINDING ||
-                        it.contributionKind == Callable.ContributionKind.MODULE
-            }
+        }
     }
 
     private val bindingsByType = mutableMapOf<TypeRef, List<Callable>>()
@@ -269,8 +161,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     .map { callableForDescriptor(it) } +
                 propertyIndices
                     .filter { it.hasAnnotation(InjektFqNames.Module) }
-                    .map { callableForDescriptor(it.getter!!) } + effectCallables
-            .filter { it.contributionKind == Callable.ContributionKind.MODULE }
+                    .map { callableForDescriptor(it.getter!!) }
     }
 
     private val allFunBindings by unsafeLazy {
@@ -302,8 +193,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             .map { callableForDescriptor(it) } +
                 propertyIndices
                     .filter { it.hasAnnotation(InjektFqNames.Interceptor) }
-                    .map { callableForDescriptor(it.getter!!) } + effectCallables
-            .filter { it.contributionKind == Callable.ContributionKind.INTERCEPTOR }
+                    .map { callableForDescriptor(it.getter!!) }
     }
     private val interceptorsForType = mutableMapOf<TypeRef, List<Callable>>()
     fun interceptorsByType(providerType: TypeRef): List<Callable> = interceptorsForType.getOrPut(providerType) {
@@ -313,20 +203,11 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
     private val allMapEntries by unsafeLazy {
         functionIndices
-            .filter {
-                it.containingDeclaration.containingDeclaration
-                    ?.hasAnnotation(InjektFqNames.Effect) != true
-            }
             .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
             .map { callableForDescriptor(it) } +
                 propertyIndices
                     .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
-                    .filter {
-                        it.containingDeclaration.containingDeclaration
-                            ?.hasAnnotation(InjektFqNames.Effect) != true
-                    }
-                    .map { callableForDescriptor(it.getter!!) } + effectCallables
-            .filter { it.contributionKind == Callable.ContributionKind.MAP_ENTRIES }
+                    .map { callableForDescriptor(it.getter!!) }
     }
     private val mapEntriesForType = mutableMapOf<TypeRef, List<Callable>>()
     fun mapEntriesByType(type: TypeRef): List<Callable> = mapEntriesForType.getOrPut(type) {
@@ -336,20 +217,11 @@ class DeclarationStore(private val module: ModuleDescriptor) {
 
     private val allSetElements by unsafeLazy {
         functionIndices
-            .filter {
-                it.containingDeclaration.containingDeclaration
-                    ?.hasAnnotation(InjektFqNames.Effect) != true
-            }
             .filter { it.hasAnnotation(InjektFqNames.SetElements) }
             .map { callableForDescriptor(it) } +
                 propertyIndices
-                    .filter {
-                        it.containingDeclaration.containingDeclaration
-                            ?.hasAnnotation(InjektFqNames.Effect) != true
-                    }
                     .filter { it.hasAnnotation(InjektFqNames.SetElements) }
-                    .map { callableForDescriptor(it.getter!!) } + effectCallables
-            .filter { it.contributionKind == Callable.ContributionKind.SET_ELEMENTS }
+                    .map { callableForDescriptor(it.getter!!) }
     }
     private val setElementsForType = mutableMapOf<TypeRef, List<Callable>>()
     fun setElementsByType(type: TypeRef): List<Callable> = setElementsForType.getOrPut(type) {
@@ -452,15 +324,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         }
     }
 
-    private val typeAliasDescriptorByFqName = mutableMapOf<FqName, TypeAliasDescriptor>()
-    fun typeAliasDescriptorForFqName(fqName: FqName): TypeAliasDescriptor {
-        return typeAliasDescriptorByFqName.getOrPut(fqName) {
-            memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
-                fqName.shortName(), NoLookupLocation.FROM_BACKEND
-            ) as? TypeAliasDescriptor ?: error("Could not get for $fqName")
-        }
-    }
-
     private val memberScopeByFqName = mutableMapOf<FqName, MemberScope?>()
     fun memberScopeForFqName(fqName: FqName): MemberScope? {
         return memberScopeByFqName.getOrPut(fqName) {
@@ -480,18 +343,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         }
     }
 
-    fun typeArgsForAnnotation(
-        annotation: AnnotationDescriptor,
-        annotationTypes: Map<FqName, TypeRef>
-    ): Map<Name, TypeRef> {
-        val annotationType = annotationTypes[annotation.type.constructor.declarationDescriptor!!.fqNameSafe]!!
-        return ((annotation.type.constructor.declarationDescriptor as ClassDescriptor).declaredTypeParameters)
-            .map { it.name }
-            .zip(annotationType.typeArguments)
-            .toMap()
-    }
-
-    fun valueArgsForAnnotation(annotation: AnnotationDescriptor): Map<Name, ComponentExpression> {
+    private fun valueArgsForAnnotation(annotation: AnnotationDescriptor): Map<Name, ComponentExpression> {
         return annotation.allValueArguments.mapValues { (_, arg) ->
             {
                 fun ConstantValue<*>.emit() {
@@ -529,171 +381,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
         }
     }
 
-    fun interceptorCallablesForAnnotation(
-        annotation: AnnotationDescriptor,
-        source: DeclarationDescriptor,
-        bindingType: TypeRef,
-        annotationTypes: Map<FqName, TypeRef>
-    ): List<Callable> {
-        val typeArgs = typeArgsForAnnotation(annotation, annotationTypes)
-        val valueArgs = valueArgsForAnnotation(annotation)
-        val origin = (source.findPsi()?.containingFile as? KtFile)?.virtualFilePath
-            ?: source.fqNameSafe
-        return classDescriptorForFqName(annotation.fqName!!)
-            .companionObjectDescriptor!!
-            .unsubstitutedMemberScope
-            .getContributedDescriptors()
-            .filterIsInstance<CallableDescriptor>()
-            .filter {
-                it.visibility == DescriptorVisibilities.PUBLIC &&
-                        it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() != true
-            }
-            .map { callableForDescriptor(it as FunctionDescriptor) }
-            .map { callable ->
-                val substitutionMap = callable.typeParameters
-                    .filter { it.argName != null }
-                    .map {
-                        it.defaultType to (typeArgs[it.argName]
-                            ?: error("Couldn't get type argument for ${it.argName} in $origin"))
-                    }
-                    .toMap(mutableMapOf())
-
-                // todo there might be a better way to resolve everything
-                val subjectTypeParameter = callable.typeParameters
-                    .first { it.argName == null }
-                    .defaultType
-                substitutionMap += getSubstitutionMap(
-                    listOf(bindingType to subjectTypeParameter) +
-                            substitutionMap
-                                .map { it.value to it.key }
-                )
-
-                check(callable.typeParameters.all { it.defaultType in substitutionMap }) {
-                    "Couldn't resolve all type arguments ${substitutionMap.map {
-                        it.key.classifier.fqName to it.value
-                    }} missing ${callable.typeParameters.filter {
-                        it.defaultType !in substitutionMap
-                    }.map { it.fqName }} on\n" +
-                            "$source in\n" +
-                            "$origin"
-                }
-
-                substitutionMap.forEach { (typeParameter, typeArgument) ->
-                    if (!typeArgument.isSubTypeOf(typeParameter, substitutionMap)) {
-                        error("'${typeArgument.render()}' is not a sub type of '${typeParameter.render()}' for effect\n" +
-                                "@${callable.fqName.parent().parent()} on\n" +
-                                "$source in\n" +
-                                " $origin")
-                    }
-                }
-
-                val callableValueArgs = callable.valueParameters
-                    .filter { it.argName != null }
-                    .map { parameter ->
-                        val arg = valueArgs[parameter.argName]
-                        parameter.name to when {
-                            arg != null -> arg
-                            parameter.type.isMarkedNullable -> { { emit("null") } }
-                            else -> error("No argument provided for non null binding arg ${parameter.name} in $origin")
-                        }
-                    }
-                    .toMap()
-
-                callable.substitute(substitutionMap).copy(valueArgs = callableValueArgs)
-            }
-    }
-
-    private var effect = 0
-    fun effectCallablesForAnnotation(
-        annotation: AnnotationDescriptor,
-        source: DeclarationDescriptor,
-        bindingType: TypeRef,
-        annotationTypes: Map<FqName, TypeRef>
-    ): List<Callable> {
-        val origin = (source.findPsi()?.containingFile as? KtFile)?.virtualFilePath
-            ?: source.fqNameSafe
-        val typeArgs = typeArgsForAnnotation(annotation, annotationTypes)
-        val valueArgs = valueArgsForAnnotation(annotation)
-        return classDescriptorForFqName(annotation.fqName!!)
-            .companionObjectDescriptor!!
-            .unsubstitutedMemberScope
-            .getContributedDescriptors()
-            .filterIsInstance<CallableDescriptor>()
-            .map {
-                callableForDescriptor(
-                    when (it) {
-                        is ClassDescriptor -> it.getInjectConstructor()!!
-                        is PropertyDescriptor -> it.getter!!
-                        else -> it as FunctionDescriptor
-                    }
-                )
-            }
-            .filter {
-                it.contributionKind != null ||
-                        it.effects.isNotEmpty() ||
-                        it.interceptors.isNotEmpty()
-            }
-            .map { effectCallable ->
-                val substitutionMap = effectCallable.typeParameters
-                    .filter { it.argName != null }
-                    .map {
-                        it.defaultType to (typeArgs[it.argName]
-                            ?: error("Couldn't get type argument for ${it.argName} in $origin"))
-                    }
-                    .toMap(mutableMapOf())
-
-                // todo there might be a better way to resolve everything
-                val subjectTypeParameter = effectCallable.typeParameters
-                    .first { it.argName == null }
-                    .defaultType
-                substitutionMap += getSubstitutionMap(
-                    listOf(bindingType to subjectTypeParameter) +
-                            substitutionMap
-                                .map { it.value to it.key }
-                )
-
-                check(effectCallable.typeParameters.all { it.defaultType in substitutionMap }) {
-                    "Couldn't resolve all type arguments ${substitutionMap.map {
-                        it.key.classifier.fqName to it.value
-                    }} missing ${effectCallable.typeParameters.filter {
-                        it.defaultType !in substitutionMap
-                    }.map { it.fqName }} " +
-                            "with effect type $bindingType\n" +
-                            "on\n" +
-                            "$source in\n" +
-                            "$origin"
-                }
-
-                substitutionMap.forEach { (typeParameter, typeArgument) ->
-                    if (!typeArgument.isSubTypeOf(typeParameter, substitutionMap)) {
-                        error("'${typeArgument}' is not a sub type of '${typeParameter}' for effect\n" +
-                                "@${effectCallable.fqName.parent().parent()} on\n" +
-                                "$source in\n" +
-                                " $origin")
-                    }
-                }
-
-                val callableValueArgs = effectCallable.valueParameters
-                    .filter { it.argName != null }
-                    .map { parameter ->
-                        val arg = valueArgs[parameter.argName]
-                        parameter.name to when {
-                            arg != null -> arg
-                            parameter.type.isMarkedNullable -> { { emit("null") } }
-                            else -> error("No argument provided for non null binding arg ${parameter.name} in $origin")
-                        }
-                    }
-                    .toMap()
-
-                effectCallable.substitute(substitutionMap)
-                    .copy(
-                        valueArgs = callableValueArgs,
-                        typeArgs = substitutionMap
-                            .mapKeys { it.key.classifier }
-                    )
-            }
-    }
-
     fun qualifierDescriptorForAnnotation(
         annotation: AnnotationDescriptor,
         source: DeclarationDescriptor?
@@ -725,17 +412,7 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             classifier.funApiParams
         } else emptyList()
 
-        // use the fun binding type if possible
-        val effectType = (if (descriptor.hasAnnotation(InjektFqNames.FunBinding)) {
-            (generatedClassifiers[owner.fqNameSafe] ?:
-            typeTranslator.toClassifierRef(
-                module.findClassifierAcrossModuleDependencies(
-                    ClassId.topLevel(owner.fqNameSafe)
-                )!!
-            )).defaultType
-        } else type)
-
-        val callableTargetComponent = ((owner.annotations
+        val targetComponent = ((owner.annotations
             .findAnnotation(InjektFqNames.Scoped) ?:
             descriptor.annotations
                 .findAnnotation(InjektFqNames.Scoped))
@@ -750,49 +427,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             ?.let { it as KClassValue }
             ?.getArgumentType(module)
             ?.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) }
-
-        val index = internalIndices
-            .firstOrNull { it.fqName == owner.fqNameSafe }
-            ?: externalIndices
-                .firstOrNull { it.fqName == owner.fqNameSafe }
-
-        val interceptors = (descriptor
-            .getAnnotatedAnnotations(InjektFqNames.Interceptor) + owner
-            .getAnnotatedAnnotations(InjektFqNames.Interceptor))
-            .distinct()
-            .flatMap {
-                interceptorCallablesForAnnotation(
-                    it,
-                    descriptor,
-                    type,
-                    index?.annotationTypes ?: emptyMap()
-                )
-            }
-            .distinct()
-
-        val interceptorsByTargetComponent = interceptors
-            .filter { it.targetComponent != null }
-            .map { it.targetComponent to it }
-            .groupBy { it.first }
-        if (interceptorsByTargetComponent.size > 1) {
-            error("Interceptors target component mismatch. Interceptors of '${descriptor.fqNameSafe}' have different target components\n" +
-                    interceptors.joinToString("\n") { interceptor ->
-                        "'${interceptor.fqName}' = '${interceptor.targetComponent?.render()}'"
-                    }
-            )
-        }
-        val interceptorTargetComponent = interceptors
-            .mapNotNull { it.targetComponent }
-            .firstOrNull()
-
-        if (callableTargetComponent != null &&
-            interceptorTargetComponent != null &&
-            callableTargetComponent != interceptorTargetComponent) {
-            error("Target component mismatch. '${descriptor.fqNameSafe}' target component is '${callableTargetComponent.render()}' but " +
-                    "interceptor target component is '${interceptorTargetComponent.render()}'.")
-        }
-
-        val targetComponent = callableTargetComponent ?: interceptorTargetComponent
 
         Callable(
             name = owner.name,
@@ -828,7 +462,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         parameterKind = ValueParameterRef.ParameterKind.DISPATCH_RECEIVER,
                         name = "_dispatchReceiver".asNameId(),
                         inlineKind = ValueParameterRef.InlineKind.NONE,
-                        argName = it.getArgName(),
                         isFunApi = false,
                         hasDefault = false,
                         defaultExpression = null
@@ -842,7 +475,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         parameterKind = ValueParameterRef.ParameterKind.EXTENSION_RECEIVER,
                         name = "_extensionReceiver".asNameId(),
                         inlineKind = ValueParameterRef.InlineKind.NONE,
-                        argName = it.getArgName(),
                         isFunApi = "<this>" in funApiParams.map { it.asString() },
                         hasDefault = false,
                         defaultExpression = null
@@ -860,7 +492,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                         it.isCrossinline -> ValueParameterRef.InlineKind.CROSSINLINE
                         else -> ValueParameterRef.InlineKind.NONE
                     },
-                    argName = it.getArgName(),
                     isFunApi = it.name in funApiParams,
                     hasDefault = it.declaresDefaultValue(),
                     defaultExpression = if (!it.declaresDefaultValue()) null else ({
@@ -877,30 +508,11 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     else -> Callable.CallableKind.DEFAULT
                 }
             } else Callable.CallableKind.DEFAULT,
-            interceptors = interceptors,
-            effects = (descriptor
-                .getAnnotatedAnnotations(InjektFqNames.Effect) + owner
-                .getAnnotatedAnnotations(InjektFqNames.Effect))
-                .distinct()
-                .flatMap {
-                    effectCallablesForAnnotation(
-                        it,
-                        descriptor,
-                        effectType,
-                        index?.annotationTypes ?: emptyMap()
-                    )
-                }
-                .distinct(),
-            effectType = effectType,
             isExternal = owner is DeserializedDescriptor,
             isInline = descriptor.isInline,
             visibility = descriptor.visibility,
             modality = descriptor.modality,
-            receiver = descriptor.dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
-                ?.let { typeTranslator.toClassifierRef(it) },
-            isFunBinding = descriptor.hasAnnotation(InjektFqNames.FunBinding),
-            valueArgs = emptyMap(),
-            typeArgs = emptyMap()
+            isFunBinding = descriptor.hasAnnotation(InjektFqNames.FunBinding)
         )
     }
 
@@ -917,9 +529,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 callables = descriptor.unsubstitutedMemberScope.getContributedDescriptors().filter {
                     it.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) ||
-                            it.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Interceptor) ||
-                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.Effect) ||
-                            it.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.Module)
@@ -934,15 +543,6 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                     .map { callableDescriptor ->
                         val callable = callableForDescriptor(callableDescriptor)
                         val substitutionMap = moduleSubstitutionMap.toMutableMap()
-
-                        // todo tmp workaround for composables
-                        if ((descriptor.containingDeclaration as? ClassDescriptor)
-                                ?.hasAnnotation(InjektFqNames.Effect) == true) {
-                            substitutionMap += callable.typeParameters
-                                .map { it.defaultType }
-                                .zip(moduleSubstitutionMap.values)
-                        }
-
                         callable.copy(
                             type = callable.type.substitute(substitutionMap),
                             valueParameters = callable.valueParameters.map {

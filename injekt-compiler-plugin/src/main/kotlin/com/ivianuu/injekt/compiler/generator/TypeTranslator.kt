@@ -58,7 +58,6 @@ class TypeTranslator(
             isTypeParameter = descriptor is TypeParameterDescriptor,
             isObject = descriptor is ClassDescriptor && descriptor.kind == ClassKind.OBJECT,
             isTypeAlias = descriptor is TypeAliasDescriptor,
-            argName = descriptor.getArgName(),
             funApiParams = descriptor.annotations.findAnnotation(InjektFqNames.FunApiParams)
                 ?.allValueArguments
                 ?.values

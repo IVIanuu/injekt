@@ -24,11 +24,13 @@ import androidx.compose.ui.platform.setContent
 import androidx.lifecycle.ViewModel
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.FunApi
 import com.ivianuu.injekt.FunBinding
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityContext
-import com.ivianuu.injekt.android.ActivityViewModel
+import com.ivianuu.injekt.android.ActivityViewModelModule
 import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.merge.MergeInto
 import com.ivianuu.injekt.merge.mergeComponent
@@ -75,7 +77,9 @@ fun enqueueWork(context: ActivityContext) {
         )
 }
 
-@ActivityViewModel
+
+@Module val MainViewModelModule = ActivityViewModelModule<MainViewModel>()
+@Binding
 class MainViewModel : ViewModel() {
     init {
         println("init")

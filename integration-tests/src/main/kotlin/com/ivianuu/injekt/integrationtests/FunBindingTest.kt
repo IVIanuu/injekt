@@ -328,44 +328,6 @@ class FunBindingTest {
     }
 
     @Test
-    fun testFunBindingWithEffectDependencyGetsCreatedOnInvocation() = codegen(
-        """
-            @Effect
-            annotation class MyEffect {
-                companion object {
-                    @Binding
-                    fun <T : () -> Unit> asFunc(value: T): () -> Unit = value
-                }
-            }
-            
-            @MyEffect
-            @FunBinding
-            fun function(foo: Foo) {
-            }
-
-            var fooCalled = false
-            @Binding
-            fun foo() = Foo().also { fooCalled = true }
-            
-            @Component
-            abstract class TestComponent {
-                abstract val function: () -> Unit
-            }
-            
-            fun invoke() {
-                val component = component<TestComponent>()
-                junit.framework.Assert.assertFalse(fooCalled)
-                val function = component.function
-                junit.framework.Assert.assertFalse(fooCalled)
-                function()
-                junit.framework.Assert.assertTrue(fooCalled)
-            }
-        """
-    ) {
-        invokeSingleFile()
-    }
-
-    @Test
     fun testFunBindingWithNonExplicitAssistedParameters() = codegen(
         """
             @FunBinding

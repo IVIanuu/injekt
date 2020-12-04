@@ -52,38 +52,18 @@ fun DeclarationDescriptor.hasAnnotationWithPropertyAndClass(
     (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotation(fqName)) ||
     (this is ConstructorDescriptor && constructedClass.hasAnnotation(fqName))
 
-fun DeclarationDescriptor.hasAnnotatedAnnotationsWithPropertyAndClass(
-    fqName: FqName
-): Boolean = hasAnnotatedAnnotations(fqName) ||
-        (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotatedAnnotations(fqName)) ||
-        (this is ConstructorDescriptor && constructedClass.hasAnnotatedAnnotations(fqName))
-
-fun DeclarationDescriptor.getAnnotatedAnnotationsWithPropertyAndClass(
-    fqName: FqName
-): List<AnnotationDescriptor> = getAnnotatedAnnotations(fqName) +
-        (if (this is PropertyAccessorDescriptor) correspondingProperty.getAnnotatedAnnotations(fqName) else emptyList()) +
-        (if (this is ConstructorDescriptor) constructedClass.getAnnotatedAnnotations(fqName) else emptyList())
-
 fun ClassDescriptor.getInjectConstructor(): ConstructorDescriptor? {
     if (hasAnnotation(InjektFqNames.Binding) ||
         hasAnnotation(InjektFqNames.ImplBinding) ||
-        hasAnnotation(InjektFqNames.Module) ||
-        hasAnnotatedAnnotations(InjektFqNames.Interceptor) ||
-        hasAnnotatedAnnotations(InjektFqNames.Effect)) return unsubstitutedPrimaryConstructor
+        hasAnnotation(InjektFqNames.Module)) return unsubstitutedPrimaryConstructor
     constructors
         .firstOrNull {
             it.hasAnnotation(InjektFqNames.Binding) ||
                     it.hasAnnotation(InjektFqNames.ImplBinding) ||
-                    it.hasAnnotation(InjektFqNames.Module) ||
-                    it.hasAnnotatedAnnotations(InjektFqNames.Interceptor) ||
-                    it.hasAnnotatedAnnotations(InjektFqNames.Effect)
+                    it.hasAnnotation(InjektFqNames.Module)
         }?.let { return it }
     return null
 }
-
-fun DeclarationDescriptor.getArgName(): Name? =
-    (annotations.findAnnotation(InjektFqNames.Arg)
-        ?.allValueArguments?.values?.single()?.value as? String)?.asNameId()
 
 fun String.asNameId() = Name.identifier(this)
 
@@ -106,18 +86,6 @@ fun String.removeIllegalChars() =
 
 fun Annotated.hasAnnotation(fqName: FqName): Boolean =
     annotations.hasAnnotation(fqName)
-
-fun AnnotationDescriptor.hasAnnotation(annotation: FqName): Boolean =
-    type.constructor.declarationDescriptor!!.hasAnnotation(annotation)
-
-fun Annotated.hasAnnotatedAnnotations(
-    annotation: FqName
-): Boolean {
-    return annotations.any {
-        val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
-        inner.hasAnnotation(annotation)
-    }
-}
 
 fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescriptor> =
     annotations.filter {
@@ -144,45 +112,9 @@ val TypeRef.callableKind: Callable.CallableKind get() = when {
 fun Callable.substitute(map: Map<TypeRef, TypeRef>): Callable {
     return copy(
         type = type.substitute(map),
-        effectType = effectType.substitute(map),
         valueParameters = valueParameters.map {
             it.copy(type = it.type.substitute(map))
-        },
-        effects = effects.map { it.substitute(map) },
-        typeArgs = typeArgs.mapValues { it.value.substitute(map) }
-    )
-}
-
-fun Callable.substituteEffect(map: Map<TypeRef, TypeRef>): Callable {
-    return copy(
-        valueParameters = valueParameters.map {
-            it.copy(type = it.type.substitute(map, true))
         }
-    )
-}
-
-fun Callable.newEffect(
-    declarationStore: DeclarationStore,
-    effect: Int
-): Callable {
-    val newType = type.copy(effect = effect)
-    val newEffectType = effectType.copy(effect = effect)
-    val forEffectType = effectType.copy(
-        qualifiers = listOf(
-            QualifierDescriptor(
-                declarationStore.typeTranslator.toClassifierRef(
-                    declarationStore.classDescriptorForFqName(InjektFqNames.ForEffect)
-                ).defaultType,
-                emptyMap()
-            )
-        ) + effectType.qualifiers
-    )
-    val map = mapOf<TypeRef, TypeRef>(forEffectType to newEffectType)
-
-    return copy(
-        type = newType,
-        effectType = newEffectType,
-        effects = effects.map { it.substituteEffect(map) }
     )
 }
 

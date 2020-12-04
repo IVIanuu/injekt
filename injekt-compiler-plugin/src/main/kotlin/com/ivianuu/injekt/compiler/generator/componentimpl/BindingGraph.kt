@@ -221,9 +221,7 @@ class BindingGraph(
 
         // todo callable interceptors
         binding.interceptors = if (binding !is SelfBindingNode)
-            (if (binding is CallableBindingNode)
-                binding.callable.getCallableInterceptors(binding.type) else emptyList()) +
-                    getInterceptorsForType(binding.type, binding.callableKind)
+            getInterceptorsForType(binding.type, binding.callableKind)
         else emptyList()
 
         binding.interceptors
@@ -432,14 +430,6 @@ class BindingGraph(
             return it
         }
 
-        val effectBindings = getEffectBindingsForType(request)
-        // todo there should be only one valid effect binding
-        binding = effectBindings.firstOrNull()
-        binding?.let {
-            resolvedBindings[request.type] = it
-            return it
-        }
-
         val explicitDefaultBindings = getExplicitBindingsForType(request, true)
         binding = explicitDefaultBindings.mostSpecificOrFail("explicit default")
         binding?.let {
@@ -609,7 +599,6 @@ class BindingGraph(
                     fqName = request.origin,
                     name = "invoke".asNameId(),
                     type = returnType,
-                    effectType = returnType,
                     typeParameters = emptyList(),
                     valueParameters = emptyList(),
                     targetComponent = null,
@@ -619,15 +608,10 @@ class BindingGraph(
                     contributionKind = null,
                     isCall = true,
                     callableKind = request.type.callableKind,
-                    interceptors = emptyList(),
-                    effects = emptyList(),
                     isExternal = false,
                     isInline = true,
                     visibility = DescriptorVisibilities.INTERNAL,
                     modality = Modality.FINAL,
-                    receiver = null,
-                    valueArgs = emptyMap(),
-                    typeArgs = emptyMap(),
                     isFunBinding = false
                 )
                 val childComponent = componentImplFactory(
@@ -675,9 +659,7 @@ class BindingGraph(
                 }
             if (mapEntries.isNotEmpty()) {
                 val dependenciesByEntry = mapEntries.map { entry ->
-                    entry to entry.valueParameters
-                        .filter { it.argName == null }
-                        .map { it.toBindingRequest(entry, emptyMap()) }
+                    entry to entry.getDependencies(entry.type, false)
                 }.toMap()
                 this += MapBindingNode(
                     type = request.type,
@@ -717,9 +699,7 @@ class BindingGraph(
                 }
             if (setElements.isNotEmpty()) {
                 val dependenciesByElement = setElements.map { element ->
-                    element to element.valueParameters
-                        .filter { it.argName == null }
-                        .map { it.toBindingRequest(element, emptyMap()) }
+                    element to element.getDependencies(element.type, false)
                 }.toMap()
                 this += SetBindingNode(
                     type = request.type,
@@ -732,46 +712,15 @@ class BindingGraph(
         }
     }
 
-    private fun getEffectBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
-        this += declarationStore.effectBindingsFor(request.type)
-            .filter { it.targetComponent.checkComponent(request.type) }
-            .map { it.toCallableBindingNode(request) }
-        this += declarationStore.effectFunBindingsFor(request.type)
-            .filter { it.callable.targetComponent.checkComponent(request.type) }
-            .map { it.toFunBindingNode(request) }
-    }
-
     private fun TypeRef?.checkComponent(type: TypeRef?): Boolean {
         return this == null || this == owner.componentType ||
                 (owner.isAssisted && type == owner.assistedRequests.single().type)
     }
 
-    private fun Callable.getCallableInterceptors(type: TypeRef): List<InterceptorNode> {
-        val providerType = when (callableKind) {
-            Callable.CallableKind.DEFAULT -> typeTranslator.toClassifierRef(
-                moduleDescriptor.builtIns.getFunction(0)
-            ).defaultType.typeWith(listOf(type))
-            Callable.CallableKind.SUSPEND -> typeTranslator.toClassifierRef(
-                moduleDescriptor.builtIns.getSuspendFunction(0)
-            ).defaultType.typeWith(listOf(type))
-            Callable.CallableKind.COMPOSABLE -> typeTranslator.toClassifierRef(
-                moduleDescriptor.builtIns.getFunction(0)
-            ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
-        }
-        return interceptors.map { interceptor ->
-            val substitutionMap = getSubstitutionMap(listOf(providerType to interceptor.type))
-            val finalInterceptor = interceptor.substitute(substitutionMap)
-            InterceptorNode(
-                finalInterceptor,
-                finalInterceptor.getDependencies(type, true)
-            )
-        }.filter { providerType.isAssignable(it.callable.type) }
-    }
-
     private fun Callable.getDependencies(type: TypeRef, isInterceptor: Boolean): List<BindingRequest> {
         val substitutionMap = getSubstitutionMap(listOf(type to this.type))
         return valueParameters
-            .filter { it.argName == null && !it.isFunApi }
+            .filter { !it.isFunApi }
             .map { it.toBindingRequest(this, substitutionMap) }
             .filter { !isInterceptor || it.type != this.type.substitute(substitutionMap) }
     }
@@ -809,7 +758,23 @@ class BindingGraph(
         this += parentsBottomUp.flatMap { parent ->
             parent.explicitInterceptors
                 .filter { providerType.isAssignable(it.callable.type) }
-                .filter { it.callable.targetComponent.checkComponent(providerType.typeArguments.last()) }
+                .filter {
+                    with(parent) {
+                        it.callable.targetComponent.checkComponent(providerType.typeArguments.last())
+                    }
+                }
+        }
+        this += implicitInterceptors
+            .filter { providerType.isAssignable(it.callable.type) }
+            .filter { it.callable.targetComponent.checkComponent(providerType.typeArguments.last()) }
+        this += parentsBottomUp.flatMap { parent ->
+            parent.implicitInterceptors
+                .filter { providerType.isAssignable(it.callable.type) }
+                .filter {
+                    with(parent) {
+                        it.callable.targetComponent.checkComponent(providerType.typeArguments.last())
+                    }
+                }
         }
         this += declarationStore.interceptorsByType(providerType)
             .filter { it.targetComponent.checkComponent(providerType.typeArguments.last()) }
@@ -819,11 +784,6 @@ class BindingGraph(
                     interceptor.getDependencies(interceptor.type, true)
                 )
             }
-        this += parentsBottomUp.flatMap { parent ->
-            parent.implicitInterceptors
-                .filter { providerType.isAssignable(it.callable.type) }
-                .filter { it.callable.targetComponent.checkComponent(providerType.typeArguments.last()) }
-        }
     }.distinct()
 
     private fun Callable.toCallableBindingNode(request: BindingRequest): CallableBindingNode {
