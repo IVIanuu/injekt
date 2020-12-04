@@ -69,7 +69,8 @@ class EagerTest {
             var called = false
 
             @Eager
-            @Binding(MyComponent::class)
+            @Scoped(MyComponent::class)
+            @Binding
             fun foo(): Foo {
                 called = true
                 return Foo()
@@ -92,11 +93,13 @@ class EagerTest {
     @Test
     fun testEagerScopedBindingWithScopedDependencies() = codegen(
         """
-            @Binding(MyComponent::class)
+            @Scoped(MyComponent::class)
+            @Binding
             fun foo() = Foo()
 
             @Eager
-            @Binding(MyComponent::class)
+            @Scoped(MyComponent::class)
+            @Binding
             fun bar(foo: Foo) = Bar(foo)
 
             @Component
@@ -110,11 +113,13 @@ class EagerTest {
     fun testEagerScopedCircularDependency() = codegen(
         """
             @Eager
-            @Binding(MyComponent::class)
+            @Scoped(MyComponent::class)
+            @Binding
             fun foo(bar: () -> Bar) = Foo()
 
             @Eager
-            @Binding(MyComponent::class)
+            @Scoped(MyComponent::class)
+            @Binding
             fun bar(foo: () -> Foo) = Bar(Foo())
 
             @Component

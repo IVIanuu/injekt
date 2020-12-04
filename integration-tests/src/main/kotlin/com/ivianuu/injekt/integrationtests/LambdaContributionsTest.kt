@@ -42,7 +42,7 @@ class LambdaContributionsTest {
     @Test
     fun testSetElementsLambda() = codegen(
         """
-            fun <T> setProviderFactory(): @SetElements (T) -> Set<Any> = { 
+            fun <T : Any> setProviderFactory(): @SetElements (T) -> Set<Any> = { 
                 setOf(it)
             }
             @Module val fooSetModule = setProviderFactory<Foo>()

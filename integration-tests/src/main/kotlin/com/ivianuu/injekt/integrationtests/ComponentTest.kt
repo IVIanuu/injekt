@@ -758,13 +758,13 @@ class ComponentTest {
             abstract class MyParentComponent {
                 abstract val childFactory: () -> MyChildComponent
                 abstract val foo: Foo
-                @Binding(MyParentComponent::class) protected fun parentFoo() = Foo()
+                @Scoped(MyParentComponent::class) @Binding protected fun parentFoo() = Foo()
             }
 
             @ChildComponent
             abstract class MyChildComponent {
                 abstract val foo: Foo
-                @Binding(MyChildComponent::class) protected fun childFoo() = Foo()
+                @Scoped(MyChildComponent::class) @Binding protected fun childFoo() = Foo()
             }
 
             fun invoke(): Pair<Foo, Foo> {

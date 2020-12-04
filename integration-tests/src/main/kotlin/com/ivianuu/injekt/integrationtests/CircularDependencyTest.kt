@@ -25,7 +25,7 @@ class CircularDependencyTest {
     fun testProviderBreaksCircularDependency() = codegen(
         """
             @Binding class A(b: B)
-            @Binding(MyComponent::class) class B(a: () -> A)
+            @Scoped(MyComponent::class) @Binding class B(a: () -> A)
             
             @Component
             abstract class MyComponent {
@@ -54,7 +54,7 @@ class CircularDependencyTest {
     fun testAssistedBreaksCircularDependency() = codegen(
         """
             @Binding class A(b: B)
-            @Binding(MyComponent::class) class B(a: (B) -> A)
+            @Scoped(MyComponent::class) @Binding class B(a: (B) -> A)
             
             @Component
             abstract class MyComponent {
