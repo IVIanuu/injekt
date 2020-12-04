@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
@@ -30,12 +31,15 @@ import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.upperIfFlexible
 
 internal fun KtAnnotated.hasAnnotation(fqName: FqName): Boolean = findAnnotation(fqName) != null
@@ -96,7 +100,7 @@ fun KotlinType.prepare(): KotlinType {
     return tmp
 }
 
-fun DeclarationDescriptor.hasAnnotationWithPropertyAndClass(
+fun Annotated.hasAnnotationWithPropertyAndClass(
     fqName: FqName
 ): Boolean = hasAnnotation(fqName) ||
     (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotation(fqName)) ||
@@ -169,3 +173,24 @@ fun Callable.substitute(map: Map<TypeRef, TypeRef>): Callable {
 fun QualifierDescriptor.substitute(
     map: Map<TypeRef, TypeRef>
 ): QualifierDescriptor = copy(type = type.substitute(map))
+
+fun Annotated.contributionKind() = when {
+    hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
+    hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) -> Callable.ContributionKind.INTERCEPTOR
+    hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.ContributionKind.MAP_ENTRIES
+    hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) -> Callable.ContributionKind.SET_ELEMENTS
+    hasAnnotationWithPropertyAndClass(InjektFqNames.Module) -> Callable.ContributionKind.MODULE
+    else -> null
+}
+
+fun Annotated.targetComponent(
+    module: ModuleDescriptor,
+    typeTranslator: TypeTranslator
+) = (annotations
+    .findAnnotation(InjektFqNames.Scoped)
+    ?: annotations.findAnnotation(InjektFqNames.Bound))
+    ?.allValueArguments
+    ?.let { it["component".asNameId()] }
+    ?.let { it as KClassValue }
+    ?.getArgumentType(module)
+    ?.let { typeTranslator.toTypeRef(it, null as KtFile?, Variance.INVARIANT) }

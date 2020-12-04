@@ -2,24 +2,13 @@
 
 package com.ivianuu.injekt
 
-inline class alias<A : B, B>(private val unused: Any = Unit) {
-    @Binding
-    inline val A.bind: B get() = this
-}
+fun <A : B, B> alias(): @Binding (A) -> B = { it }
 
-inline class setElements<S : Set<*>, T>(private val unused: Any = Unit) {
-    @Suppress("UNCHECKED_CAST")
-    @SetElements
-    inline val T.intoSet: S
-        get() = setOf(this) as S
-}
+@Suppress("UNCHECKED_CAST")
+fun <M : Map<*, *>, K, T> mapEntries(key: () -> K): @MapEntries (T) -> M = { mapOf(key to it) as M }
 
-inline class mapEntries<M : Map<*, *>, K, T>(val key: () -> K) {
-    @Suppress("UNCHECKED_CAST")
-    @MapEntries
-    inline val T.intoMap: M
-        get() = mapOf(key to this) as M
-}
+@Suppress("UNCHECKED_CAST")
+fun <S : Set<*>, T> setElements(): @MapEntries (T) -> S = { setOf(it) as S }
 
 data class Module1<out A>(@Module val a: A)
 

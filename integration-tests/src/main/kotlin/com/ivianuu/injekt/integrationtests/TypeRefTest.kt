@@ -109,11 +109,6 @@ class TypeRefTest {
     }
 
     @Test
-    fun testStarProjectedTypeMatchesEffectType() = withAnalysisContext {
-        starProjectedType shouldBeAssignable stringType.copy(effect = 1)
-    }
-
-    @Test
     fun testStarProjectedTypeMatchesQualifiedType() = withAnalysisContext {
         starProjectedType shouldBeAssignable stringType.qualified(qualifier1())
     }

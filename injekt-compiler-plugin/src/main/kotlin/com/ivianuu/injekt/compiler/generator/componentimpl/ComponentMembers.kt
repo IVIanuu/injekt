@@ -698,17 +698,21 @@ class ComponentStatements(
                     val nonNullArgumentsCount = finalCallable.valueParameters
                         .filter { it.parameterKind == ValueParameterRef.ParameterKind.VALUE_PARAMETER }
                         .count { it in arguments }
+                    val isFunctionInvoke = callable.valueParameters
+                        .firstOrNull { it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER }
+                        ?.type
+                        ?.let { it.isFunction || it.isSuspendFunction } ?: false
                     finalCallable.valueParameters
                         .filter { it.parameterKind == ValueParameterRef.ParameterKind.VALUE_PARAMETER }
                         .forEach { parameter ->
                             val argument = arguments[parameter]
                             if (argument != null) {
-                                emit("${parameter.name} = ")
+                                if (!isFunctionInvoke) emit("${parameter.name} = ")
                                 argument.second!!(this)
                                 if (argumentsIndex++ != nonNullArgumentsCount) emitLine(",")
                             }
                             else if (!parameter.hasDefault) {
-                                emit("${parameter.name} = null")
+                                if (!isFunctionInvoke) emit("${parameter.name} = null")
                                 if (argumentsIndex++ != nonNullArgumentsCount) emitLine(",")
                             }
                         }

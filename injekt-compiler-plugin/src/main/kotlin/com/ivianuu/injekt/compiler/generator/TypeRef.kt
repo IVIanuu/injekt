@@ -86,7 +86,11 @@ sealed class TypeRef {
     abstract val isComposable: Boolean
     abstract val isStarProjection: Boolean
     abstract val qualifiers: List<QualifierDescriptor>
-    abstract val effect: Int
+    abstract val contributionKind: Callable.ContributionKind?
+    abstract val targetComponent: TypeRef?
+    abstract val scoped: Boolean
+    abstract val eager: Boolean
+    abstract val default: Boolean
 
     private val typeName by unsafeLazy { uniqueTypeName(includeNullability = false) }
 
@@ -111,7 +115,6 @@ sealed class TypeRef {
         result = 31 * result + isComposable.hashCode()
         result = 31 * result + isStarProjection.hashCode()
         result = 31 * result + qualifiers.hashCode()
-        result = 31 * result + effect
         result
     }
 
@@ -189,8 +192,21 @@ class KotlinTypeRef(
                 )
             }
     }
-    override val effect: Int
-        get() = 0
+    override val contributionKind: Callable.ContributionKind? by unsafeLazy {
+        kotlinType.contributionKind()
+    }
+    override val targetComponent: TypeRef? by unsafeLazy {
+        kotlinType.targetComponent(typeTranslator.declarationStore.module, typeTranslator)
+    }
+    override val scoped: Boolean by unsafeLazy {
+        kotlinType.hasAnnotation(InjektFqNames.Scoped)
+    }
+    override val eager: Boolean by unsafeLazy {
+        kotlinType.hasAnnotation(InjektFqNames.Eager)
+    }
+    override val default: Boolean by unsafeLazy {
+        kotlinType.hasAnnotation(InjektFqNames.Default)
+    }
 }
 
 class SimpleTypeRef(
@@ -209,7 +225,11 @@ class SimpleTypeRef(
     override val isComposable: Boolean = false,
     override val isStarProjection: Boolean = false,
     override val qualifiers: List<QualifierDescriptor> = emptyList(),
-    override val effect: Int = 0
+    override val contributionKind: Callable.ContributionKind? = null,
+    override val targetComponent: TypeRef? = null,
+    override val scoped: Boolean = false,
+    override val eager: Boolean = false,
+    override val default: Boolean = false
 ) : TypeRef() {
     init {
         check(typeArguments.size == classifier.typeParameters.size) {
@@ -238,7 +258,11 @@ fun TypeRef.copy(
     isComposable: Boolean = this.isComposable,
     isStarProjection: Boolean = this.isStarProjection,
     qualifiers: List<QualifierDescriptor> = this.qualifiers,
-    effect: Int = this.effect
+    contributionKind: Callable.ContributionKind? = this.contributionKind,
+    targetComponent: TypeRef? = this.targetComponent,
+    scoped: Boolean = this.scoped,
+    eager: Boolean = this.eager,
+    default: Boolean = this.default
 ) = SimpleTypeRef(
     classifier,
     isMarkedNullable,
@@ -255,7 +279,11 @@ fun TypeRef.copy(
     isComposable,
     isStarProjection,
     qualifiers,
-    effect
+    contributionKind,
+    targetComponent,
+    scoped,
+    eager,
+    default
 )
 
 fun TypeRef.substitute(map: Map<TypeRef, TypeRef>): TypeRef {
@@ -360,7 +388,6 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
                 append(it.args.hashCode())
                 append("_")
             }
-            if (effect != 0) append("_${effect}_")
             if (isComposable) append("composable_")
             // if (includeNullability && isMarkedNullable) append("nullable_")
             if (isStarProjection) append("star")
@@ -460,7 +487,6 @@ fun TypeRef.isAssignable(
     if (this == superType &&
         !isMarkedNullable && superType.isMarkedNullable) return false
 
-    if (effect != superType.effect) return false
     if (!qualifiers.isAssignable(superType.qualifiers)) return false
     if (classifier.fqName == superType.classifier.fqName &&
         isComposableRecursive != superType.isComposableRecursive) return false

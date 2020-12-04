@@ -26,14 +26,8 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.alias
 import kotlin.reflect.KClass
 
-class worker<T : ListenableWorker>(private val workerClass: KClass<T>) {
-    @MapEntries
-    fun worker(factory: (Context, WorkerParameters) -> T): Workers =
-        mapOf(workerClass to factory)
-    companion object {
-        inline operator fun <reified T : ListenableWorker> invoke() = worker(T::class)
-    }
-}
+inline fun <reified T : ListenableWorker> worker(): @MapEntries ((Context, WorkerParameters) -> T) -> Workers =
+    { factory -> mapOf(T::class to factory) }
 
 typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
 

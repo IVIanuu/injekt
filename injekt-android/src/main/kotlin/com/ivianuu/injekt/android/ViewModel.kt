@@ -23,24 +23,19 @@ import com.ivianuu.injekt.Interceptor
 import kotlin.reflect.KClass
 
 inline fun <reified VM : ViewModel> activityViewModel() =
-    viewModelBinding<ActivityViewModelStoreOwner, VM>(VM::class)
+    viewModel<ActivityViewModelStoreOwner, VM>()
 
 inline fun <reified VM : ViewModel> fragmentViewModel() =
-    viewModelBinding<FragmentViewModelStoreOwner, VM>(VM::class)
+    viewModel<FragmentViewModelStoreOwner, VM>()
 
-class viewModelBinding<O : ViewModelStoreOwner, VM : ViewModel>(
-    @PublishedApi
-    internal val vmClass: KClass<VM>
-) {
-    @Suppress("UNCHECKED_CAST")
-    @Interceptor
-    inline fun intercept(storeOwner: O, crossinline factory: () -> VM): () -> VM = {
-        ViewModelProvider(
-            storeOwner,
-            object : ViewModelProvider.Factory {
-                override fun <T : ViewModel?> create(modelClass: Class<T>): T =
-                    factory() as T
-            }
-        )[vmClass.java]
-    }
+inline fun <O : ViewModelStoreOwner, reified VM : ViewModel> viewModel():
+        @Interceptor (O, () -> VM) -> () -> VM = { storeOwner, factory -> {
+    ViewModelProvider(
+        storeOwner,
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel?> create(modelClass: Class<T>): T =
+                factory() as T
+        }
+    )[VM::class.java]
+        }
 }

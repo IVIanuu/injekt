@@ -975,4 +975,7 @@ fun getHostClasspaths(): List<File> {
     val modules = classGraph.modules.mapNotNull { it.locationFile }
 
     return (classpaths + modules).distinctBy(File::getAbsolutePath)
+        .filterNot {
+            it.absolutePath.startsWith("/home/ivianuu/.m2/repository/com/ivianuu/injekt/")
+        }
 }

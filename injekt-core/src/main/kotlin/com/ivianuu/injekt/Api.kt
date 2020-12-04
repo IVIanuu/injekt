@@ -26,24 +26,25 @@ annotation class ChildComponent
 
 fun <T> component(vararg inputs: Any?): T = error("Intrinsic")
 
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.TYPE)
 annotation class Module
 
 @Target(
     AnnotationTarget.FUNCTION,
     AnnotationTarget.CLASS,
     AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.PROPERTY
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.TYPE
 )
 annotation class Binding
 
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.TYPE)
 annotation class MapEntries
 
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.TYPE)
 annotation class SetElements
 
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.TYPE)
 annotation class Interceptor
 
 @Target(AnnotationTarget.ANNOTATION_CLASS)
@@ -53,7 +54,8 @@ annotation class Qualifier
     AnnotationTarget.FUNCTION,
     AnnotationTarget.CLASS,
     AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.PROPERTY
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.TYPE
 )
 annotation class Scoped(val component: KClass<*> = Nothing::class)
 
@@ -61,7 +63,8 @@ annotation class Scoped(val component: KClass<*> = Nothing::class)
     AnnotationTarget.FUNCTION,
     AnnotationTarget.CLASS,
     AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.PROPERTY
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.TYPE
 )
 annotation class Bound(val component: KClass<*> = Nothing::class)
 
@@ -69,7 +72,8 @@ annotation class Bound(val component: KClass<*> = Nothing::class)
     AnnotationTarget.FUNCTION,
     AnnotationTarget.CLASS,
     AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.PROPERTY
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.TYPE
 )
 annotation class Eager
 
@@ -77,7 +81,8 @@ annotation class Eager
     AnnotationTarget.FUNCTION,
     AnnotationTarget.CLASS,
     AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.PROPERTY
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.TYPE
 )
 annotation class Default
 

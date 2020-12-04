@@ -63,7 +63,7 @@ import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 
 @Binding(GenerationComponent::class)
-class DeclarationStore(private val module: ModuleDescriptor) {
+class DeclarationStore(val module: ModuleDescriptor) {
 
     lateinit var typeTranslator: TypeTranslator
 
@@ -401,39 +401,17 @@ class DeclarationStore(private val module: ModuleDescriptor) {
             classifier.funApiParams
         } else emptyList()
 
-        val targetComponent = ((owner.annotations
-            .findAnnotation(InjektFqNames.Scoped) ?:
-            descriptor.annotations
-                .findAnnotation(InjektFqNames.Scoped))
-            ?: (owner.annotations
-                .findAnnotation(InjektFqNames.Bound) ?:
-            descriptor.annotations
-                .findAnnotation(InjektFqNames.Bound)) ?:
-        descriptor.containingDeclaration.containingDeclaration?.annotations
-            ?.findAnnotation(InjektFqNames.Bound))
-            ?.allValueArguments
-            ?.let { it["component".asNameId()] }
-            ?.let { it as KClassValue }
-            ?.getArgumentType(module)
-            ?.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) }
-
         Callable(
             name = owner.name,
             packageFqName = descriptor.findPackage().fqName,
             fqName = owner.fqNameSafe,
             type = type,
-            targetComponent = targetComponent,
+            targetComponent = descriptor.targetComponent(module, typeTranslator)
+                ?: owner.targetComponent(module, typeTranslator),
             scoped = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Scoped),
             eager = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Eager),
             default = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Default),
-            contributionKind = when {
-                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
-                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) -> Callable.ContributionKind.INTERCEPTOR
-                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.ContributionKind.MAP_ENTRIES
-                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) -> Callable.ContributionKind.SET_ELEMENTS
-                descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Module) -> Callable.ContributionKind.MODULE
-                else -> null
-            },
+            contributionKind = descriptor.contributionKind(),
             typeParameters = (when (owner) {
                 is FunctionDescriptor -> owner.typeParameters
                 is ClassDescriptor -> owner.declaredTypeParameters
@@ -513,9 +491,32 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                 .map { it.defaultType }
                 .zip(type.typeArguments)
                 .toMap()
-            ModuleDescriptor(
-                type = type,
-                callables = descriptor.unsubstitutedMemberScope.getContributedDescriptors().filter {
+
+            val callables = if (type.contributionKind != null && (type.isFunction || type.isSuspendFunction)) {
+                val invokeDescriptor = descriptor.unsubstitutedMemberScope.getContributedDescriptors()
+                    .first { it.name.asString() == "invoke" } as FunctionDescriptor
+                val callable = callableForDescriptor(invokeDescriptor)
+                val substitutionMap = moduleSubstitutionMap.toMutableMap()
+                val finalCallable = callable.copy(
+                    type = callable.type.substitute(substitutionMap),
+                    valueParameters = callable.valueParameters.map {
+                        val parameterType = if (it.parameterKind ==
+                            ValueParameterRef.ParameterKind.DISPATCH_RECEIVER) {
+                            type
+                        } else it.type
+                        it.copy(
+                            type = parameterType.substitute(substitutionMap)
+                        )
+                    },
+                    targetComponent = type.targetComponent,
+                    scoped = type.scoped,
+                    eager = type.eager,
+                    default = type.default,
+                    contributionKind = type.contributionKind
+                )
+                listOf(finalCallable)
+            } else {
+                descriptor.unsubstitutedMemberScope.getContributedDescriptors().filter {
                     it.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) ||
                             it.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
@@ -545,7 +546,9 @@ class DeclarationStore(private val module: ModuleDescriptor) {
                             }
                         )
                     }
-            )
+            }
+
+            ModuleDescriptor(type = type, callables = callables)
         }
     }
 
