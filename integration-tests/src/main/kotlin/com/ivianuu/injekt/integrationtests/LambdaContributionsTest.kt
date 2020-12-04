@@ -1,6 +1,8 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import org.junit.Test
 
 class LambdaContributionsTest {
@@ -19,6 +21,45 @@ class LambdaContributionsTest {
                 abstract val bar: Bar
             }
         """
+    )
+
+    @Test
+    fun testBindingLambdaExpression() = codegen(
+        """
+            @Module val barModule = @Binding { foo: Foo -> Bar(foo) }
+
+            @Binding
+            fun foo() = Foo()
+
+            @Component
+            abstract class MyComponent {
+                abstract val bar: Bar
+            }
+        """
+    )
+
+    @Test
+    fun testBindingLambdaExpressionMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                        @Module val barModule = @Binding { foo: Foo -> Bar(foo) }
+        """
+            )
+        ),
+        listOf(
+            source(
+                """
+                        @Binding
+                        fun foo() = Foo()
+            
+                        @Component
+                        abstract class MyComponent {
+                            abstract val bar: Bar
+                        }
+                """
+            )
+        )
     )
 
     @Test

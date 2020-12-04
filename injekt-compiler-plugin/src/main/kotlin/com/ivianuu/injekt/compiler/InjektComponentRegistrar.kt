@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.JVMConfigurationKeys
+import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.io.File
 
@@ -51,6 +52,10 @@ class InjektComponentRegistrar : ComponentRegistrar {
         IrGenerationExtension.registerExtension(
             project,
             InjektIrIntrinsicTransformer()
+        )
+        TypeResolutionInterceptor.registerExtension(
+            project,
+            InjektTypeResolutionInterceptor()
         )
     }
 }
