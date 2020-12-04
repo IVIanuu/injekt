@@ -26,7 +26,7 @@ class LambdaContributionsTest {
     @Test
     fun testBindingLambdaExpression() = codegen(
         """
-            @Module val barModule = @Binding { foo: Foo -> Bar(foo) }
+            @Module val barModule = @Scoped(MyComponent::class) @Binding { foo: Foo -> Bar(foo) }
 
             @Binding
             fun foo() = Foo()
@@ -43,20 +43,21 @@ class LambdaContributionsTest {
         listOf(
             source(
                 """
-                        @Module val barModule = @Binding { foo: Foo -> Bar(foo) }
+                        @MergeComponent
+                        abstract class MyComponent {
+                            abstract val bar: Bar
+                        }
+
+                        @Module val barModule = @Scoped(MyComponent::class) @Binding { foo: Foo -> Bar(foo) }
         """
             )
         ),
         listOf(
             source(
                 """
+                        @GenerateMergeComponents
                         @Binding
                         fun foo() = Foo()
-            
-                        @Component
-                        abstract class MyComponent {
-                            abstract val bar: Bar
-                        }
                 """
             )
         )
