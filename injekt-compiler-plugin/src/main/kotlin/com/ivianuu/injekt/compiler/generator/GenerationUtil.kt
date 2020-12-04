@@ -161,7 +161,7 @@ val TypeRef.callableKind: Callable.CallableKind get() = when {
     else -> Callable.CallableKind.DEFAULT
 }
 
-fun Callable.substitute(map: Map<TypeRef, TypeRef>): Callable {
+fun Callable.substitute(map: Map<ClassifierRef, TypeRef>): Callable {
     return copy(
         type = type.substitute(map),
         valueParameters = valueParameters.map {
@@ -171,7 +171,7 @@ fun Callable.substitute(map: Map<TypeRef, TypeRef>): Callable {
 }
 
 fun QualifierDescriptor.substitute(
-    map: Map<TypeRef, TypeRef>
+    map: Map<ClassifierRef, TypeRef>
 ): QualifierDescriptor = copy(type = type.substitute(map))
 
 fun Annotated.contributionKind() = when {

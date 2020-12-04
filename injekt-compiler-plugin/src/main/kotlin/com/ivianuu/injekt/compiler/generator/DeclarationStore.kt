@@ -257,7 +257,6 @@ class DeclarationStore(val module: ModuleDescriptor) {
 
             fun TypeRef.collect(typeArguments: List<TypeRef>) {
                 val substitutionMap = classifier.typeParameters
-                    .map { it.defaultType }
                     .zip(typeArguments)
                     .toMap()
 
@@ -482,7 +481,6 @@ class DeclarationStore(val module: ModuleDescriptor) {
         return moduleByType.getOrPut(finalType) {
             val descriptor = classDescriptorForFqName(finalType.classifier.fqName)
             val moduleSubstitutionMap = finalType.classifier.typeParameters
-                .map { it.defaultType }
                 .zip(finalType.typeArguments)
                 .toMap()
 

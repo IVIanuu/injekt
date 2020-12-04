@@ -47,7 +47,6 @@ val TypeRef.expandedType: TypeRef?
     get() {
         return classifier.expandedType?.let {
             val substitutionMap = classifier.typeParameters
-                .map { it.defaultType }
                 .zip(typeArguments)
                 .toMap()
             it.substitute(substitutionMap)
@@ -61,9 +60,8 @@ val ClassifierRef.defaultType: TypeRef
         typeArguments = typeParameters.map { it.defaultType }
     )
 
-fun TypeRef.superTypes(substitutionMap: Map<TypeRef, TypeRef> = emptyMap()): List<TypeRef> {
+fun TypeRef.superTypes(substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()): List<TypeRef> {
     val merged = classifier.typeParameters
-        .map { it.defaultType }
         .zip(typeArguments)
         .toMap() + substitutionMap
     return classifier.superTypes
@@ -119,10 +117,6 @@ sealed class TypeRef {
     }
 
     override fun hashCode(): Int =_hashCode
-
-    val unqualified by unsafeLazy {
-        if (qualifiers.isNotEmpty()) copy(qualifiers = emptyList()) else this
-    }
 
     val isComposableRecursive: Boolean by unsafeLazy {
         isComposable || expandedType?.isComposableRecursive == true ||
@@ -286,36 +280,33 @@ fun TypeRef.copy(
     default
 )
 
-fun TypeRef.substitute(map: Map<TypeRef, TypeRef>): TypeRef {
-    fun TypeRef.substituteInner(unqualifiedMap: Map<TypeRef, TypeRef>): TypeRef {
-        unqualifiedMap[unqualified]?.let {
-            return it.copy(
-                isMarkedNullable = if (!isStarProjection) isMarkedNullable else it.isMarkedNullable,
-                // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
-                qualifiers = qualifiers
-            )
-        }
-
-        if (typeArguments.isEmpty() && qualifiers.isEmpty() &&
-                !classifier.isTypeParameter) return this
-
-        val substituted = copy(
-            typeArguments = typeArguments.map { it.substituteInner(unqualifiedMap) },
-            qualifiers = qualifiers.map { it.substitute(unqualifiedMap) }
+fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
+    map[classifier]?.let {
+        return it.copy(
+            // we copy nullability to support T : Any? -> String
+            isMarkedNullable = if (!isStarProjection) isMarkedNullable else it.isMarkedNullable,
+            // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
+            qualifiers = qualifiers + it.qualifiers
         )
-
-        if (classifier.isTypeParameter && substituted == this) {
-            val superType = classifier.superTypes.singleOrNull() // todo support multiple
-            if (superType != null) {
-                val substitutedSuperType = superType.substituteInner(unqualifiedMap)
-                if (substitutedSuperType != superType) return substitutedSuperType
-            }
-        }
-
-        return substituted
     }
 
-    return substituteInner(map.mapKeys { it.key.unqualified })
+    if (typeArguments.isEmpty() && qualifiers.isEmpty() &&
+        !classifier.isTypeParameter) return this
+
+    val substituted = copy(
+        typeArguments = typeArguments.map { it.substitute(map) },
+        qualifiers = qualifiers.map { it.substitute(map) }
+    )
+
+    if (classifier.isTypeParameter && substituted == this) {
+        val superType = classifier.superTypes.singleOrNull() // todo support multiple
+        if (superType != null) {
+            val substitutedSuperType = superType.substitute(map)
+            if (substitutedSuperType != superType) return substitutedSuperType
+        }
+    }
+
+    return substituted
 }
 
 val STAR_PROJECTION_TYPE = SimpleTypeRef(
@@ -416,15 +407,15 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
 fun getSubstitutionMap(
     pairs: List<Pair<TypeRef, TypeRef>>,
     typeParameters: List<ClassifierRef> = emptyList()
-): Map<TypeRef, TypeRef> {
-    val substitutionMap = mutableMapOf<TypeRef, TypeRef>()
+): Map<ClassifierRef, TypeRef> {
+    val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
 
     fun visitType(
         thisType: TypeRef,
         baseType: TypeRef,
     ) {
         if (baseType.classifier.isTypeParameter) {
-            substitutionMap[baseType] = thisType
+            substitutionMap[baseType.classifier] = thisType
             baseType.superTypes()
                 .map { it.fullyExpandedType }
                 .map { thisType.subtypeView(it.classifier, substitutionMap) to it }
@@ -440,32 +431,31 @@ fun getSubstitutionMap(
         }
     }
 
-    var lastSubstitutionMap: Map<TypeRef, TypeRef>? = null
+    var lastSubstitutionMap: Map<ClassifierRef, TypeRef>? = null
     while (lastSubstitutionMap != substitutionMap) {
         pairs.forEach { visitType(it.first, it.second) }
-        substitutionMap.forEach { visitType(it.value, it.key) }
+        substitutionMap.forEach { visitType(it.value, it.key.defaultType) }
         lastSubstitutionMap = substitutionMap.toMap()
     }
 
     typeParameters
-        .filter { it.defaultType !in substitutionMap }
+        .filter { it !in substitutionMap }
         .forEach { typeParameter ->
-            substitutionMap[typeParameter.defaultType] =
-                typeParameter.defaultType.substitute(substitutionMap)
+            substitutionMap[typeParameter] = typeParameter.defaultType.substitute(substitutionMap)
         }
 
     return substitutionMap
 }
 
-fun TypeRef.getStarSubstitutionMap(baseType: TypeRef): Map<TypeRef, TypeRef> {
-    val substitutionMap = mutableMapOf<TypeRef, TypeRef>()
+fun TypeRef.getStarSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRef> {
+    val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
 
     fun visitType(
         thisType: TypeRef,
         baseType: TypeRef,
     ) {
         if (baseType.isStarProjection && !thisType.isStarProjection && !thisType.classifier.isTypeParameter) {
-            substitutionMap[baseType] = thisType
+            substitutionMap[baseType.classifier] = thisType
         } else {
             thisType.typeArguments.zip(baseType.typeArguments).forEach {
                 visitType(it.first, it.second)
@@ -480,7 +470,7 @@ fun TypeRef.getStarSubstitutionMap(baseType: TypeRef): Map<TypeRef, TypeRef> {
 
 fun TypeRef.isAssignable(
     superType: TypeRef,
-    substitutionMap: Map<TypeRef, TypeRef> = emptyMap()
+    substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
 ): Boolean {
     if (isStarProjection || superType.isStarProjection) return true
 
@@ -507,7 +497,7 @@ fun TypeRef.isAssignable(
 
 fun TypeRef.isSubTypeOf(
     superType: TypeRef,
-    substitutionMap: Map<TypeRef, TypeRef> = emptyMap()
+    substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
 ): Boolean {
     if (isMarkedNullable && !superType.isMarkedNullable) return false
     if (this == superType && (!isMarkedNullable || superType.isMarkedNullable) &&
@@ -556,7 +546,7 @@ val TypeRef.fullyExpandedType: TypeRef
 
 fun TypeRef.subtypeView(
     classifier: ClassifierRef,
-    substitutionMap: Map<TypeRef, TypeRef> = emptyMap(),
+    substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap(),
 ): TypeRef? {
     if (this.classifier == classifier) return this
     expandedType?.subtypeView(classifier, substitutionMap)?.let { return it }

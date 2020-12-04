@@ -813,7 +813,7 @@ class BindingGraph(
 
     fun ValueParameterRef.toBindingRequest(
         callable: Callable,
-        substitutionMap: Map<TypeRef, TypeRef>
+        substitutionMap: Map<ClassifierRef, TypeRef>
     ): BindingRequest = BindingRequest(
         type = type.substitute(substitutionMap)
             .replaceTypeParametersWithStars(),
