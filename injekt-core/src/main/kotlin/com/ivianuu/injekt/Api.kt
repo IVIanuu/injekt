@@ -73,18 +73,8 @@ annotation class MapEntries
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class SetElements
 
-@Target(AnnotationTarget.ANNOTATION_CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class Interceptor
-
-@Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class Effect
-
-@Qualifier
-@Target(AnnotationTarget.TYPE)
-annotation class ForEffect
-
-@Target(AnnotationTarget.TYPE_PARAMETER, AnnotationTarget.VALUE_PARAMETER)
-annotation class Arg(val name: String)
 
 @Target(
     AnnotationTarget.FUNCTION,

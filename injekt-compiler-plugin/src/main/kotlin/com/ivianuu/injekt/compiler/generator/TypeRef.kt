@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.builtins.isSuspendFunctionType
@@ -38,7 +37,6 @@ data class ClassifierRef(
     val isTypeParameter: Boolean = false,
     val isObject: Boolean = false,
     val isTypeAlias: Boolean = false,
-    val argName: Name? = null,
     var funApiParams: List<Name> = emptyList()
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
@@ -118,12 +116,6 @@ sealed class TypeRef {
     }
 
     override fun hashCode(): Int =_hashCode
-
-    val withForEffectQualifierOnly by unsafeLazy {
-        if (qualifiers.isNotEmpty()) copy(qualifiers = qualifiers.filter {
-            it.type.classifier.fqName == InjektFqNames.ForEffect
-        }) else this
-    }
 
     val unqualified by unsafeLazy {
         if (qualifiers.isNotEmpty()) copy(qualifiers = emptyList()) else this
@@ -266,28 +258,14 @@ fun TypeRef.copy(
     effect
 )
 
-fun TypeRef.substitute(
-    map: Map<TypeRef, TypeRef>,
-    forEffect: Boolean = false
-): TypeRef {
+fun TypeRef.substitute(map: Map<TypeRef, TypeRef>): TypeRef {
     fun TypeRef.substituteInner(unqualifiedMap: Map<TypeRef, TypeRef>): TypeRef {
-        if (forEffect) {
-            // special treatment for effect types
-            // @MyQualifier @ForEffect T -> @MyQualifier EffectType
-            unqualifiedMap[withForEffectQualifierOnly]?.let {
-                return it.copy(
-                    isMarkedNullable = if (!isStarProjection) isMarkedNullable else it.isMarkedNullable,
-                    qualifiers = qualifiers.filterNot { it.type.classifier.fqName == InjektFqNames.ForEffect }
-                )
-            }
-        } else {
-            unqualifiedMap[unqualified]?.let {
-                return it.copy(
-                    isMarkedNullable = if (!isStarProjection) isMarkedNullable else it.isMarkedNullable,
-                    // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
-                    qualifiers = qualifiers
-                )
-            }
+        unqualifiedMap[unqualified]?.let {
+            return it.copy(
+                isMarkedNullable = if (!isStarProjection) isMarkedNullable else it.isMarkedNullable,
+                // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
+                qualifiers = qualifiers
+            )
         }
 
         if (typeArguments.isEmpty() && qualifiers.isEmpty() &&
@@ -309,11 +287,7 @@ fun TypeRef.substitute(
         return substituted
     }
 
-    return if (forEffect) {
-        substituteInner(map)
-    } else {
-        substituteInner(map.mapKeys { it.key.unqualified })
-    }
+    return substituteInner(map.mapKeys { it.key.unqualified })
 }
 
 val STAR_PROJECTION_TYPE = SimpleTypeRef(

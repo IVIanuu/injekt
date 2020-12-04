@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentExpression
 import org.jetbrains.kotlin.descriptors.DescriptorVisibility
 import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -38,17 +37,11 @@ data class Callable(
     val contributionKind: ContributionKind?,
     val isCall: Boolean,
     val callableKind: CallableKind,
-    val interceptors: List<Callable>,
-    val effectType: TypeRef,
-    val effects: List<Callable>,
     val isExternal: Boolean,
     val isInline: Boolean,
     val visibility: DescriptorVisibility,
     val modality: Modality,
-    val receiver: ClassifierRef?,
-    val isFunBinding: Boolean,
-    val valueArgs: Map<Name, ComponentExpression>,
-    val typeArgs: Map<ClassifierRef, TypeRef>
+    val isFunBinding: Boolean
 ) {
     enum class ContributionKind {
         BINDING, INTERCEPTOR, MAP_ENTRIES, MODULE, SET_ELEMENTS
@@ -64,7 +57,6 @@ data class ValueParameterRef(
     val parameterKind: ParameterKind,
     val inlineKind: InlineKind,
     val name: Name,
-    val argName: Name?,
     val isFunApi: Boolean,
     val hasDefault: Boolean,
     val defaultExpression: ComponentExpression?

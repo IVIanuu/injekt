@@ -22,19 +22,16 @@ import org.jetbrains.kotlin.name.FqName
 object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
 
-    val Arg = InjektPackage.child("Arg".asNameId())
     val Binding = InjektPackage.child("Binding".asNameId())
     val Bound = InjektPackage.child("Bound".asNameId())
     val Component = InjektPackage.child("Component".asNameId())
     val ChildComponent = InjektPackage.child("ChildComponent".asNameId())
-    val Interceptor = InjektPackage.child("Interceptor".asNameId())
     val Default = InjektPackage.child("Default".asNameId())
     val Eager = InjektPackage.child("Eager".asNameId())
-    val Effect = InjektPackage.child("Effect".asNameId())
-    val ForEffect = InjektPackage.child("ForEffect".asNameId())
     val FunApi = InjektPackage.child("FunApi".asNameId())
     val FunBinding = InjektPackage.child("FunBinding".asNameId())
     val ImplBinding = InjektPackage.child("ImplBinding".asNameId())
+    val Interceptor = InjektPackage.child("Interceptor".asNameId())
     val MapEntries = InjektPackage.child("MapEntries".asNameId())
     val Module = InjektPackage.child("Module".asNameId())
     val Qualifier = InjektPackage.child("Qualifier".asNameId())
@@ -42,7 +39,6 @@ object InjektFqNames {
     val SetElements = InjektPackage.child("SetElements".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
-    val AnnotationTypesName = InternalPackage.child("AnnotationTypesName".asNameId())
     val Index = InternalPackage.child("Index".asNameId())
 
     val IndexPackage = InternalPackage.child("index".asNameId())
