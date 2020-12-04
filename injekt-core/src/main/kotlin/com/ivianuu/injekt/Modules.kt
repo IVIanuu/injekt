@@ -8,7 +8,7 @@ fun <A : B, B> alias(): @Binding (A) -> B = { it }
 fun <M : Map<*, *>, K, T> mapEntries(key: () -> K): @MapEntries (T) -> M = { mapOf(key to it) as M }
 
 @Suppress("UNCHECKED_CAST")
-fun <S : Set<*>, T> setElements(): @MapEntries (T) -> S = { setOf(it) as S }
+fun <S : Set<*>, T> setElements(): @SetElements (T) -> S = { setOf(it) as S }
 
 data class Module1<out A>(@Module val a: A)
 

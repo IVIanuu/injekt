@@ -485,14 +485,15 @@ class DeclarationStore(val module: ModuleDescriptor) {
 
     private val moduleByType = mutableMapOf<TypeRef, com.ivianuu.injekt.compiler.generator.ModuleDescriptor>()
     fun moduleForType(type: TypeRef): com.ivianuu.injekt.compiler.generator.ModuleDescriptor {
-        return moduleByType.getOrPut(type) {
-            val descriptor = classDescriptorForFqName(type.classifier.fqName)
-            val moduleSubstitutionMap = type.classifier.typeParameters
+        val finalType = type.fullyExpandedType
+        return moduleByType.getOrPut(finalType) {
+            val descriptor = classDescriptorForFqName(finalType.classifier.fqName)
+            val moduleSubstitutionMap = finalType.classifier.typeParameters
                 .map { it.defaultType }
-                .zip(type.typeArguments)
+                .zip(finalType.typeArguments)
                 .toMap()
 
-            val callables = if (type.contributionKind != null && (type.isFunction || type.isSuspendFunction)) {
+            val callables = if (finalType.contributionKind != null && (finalType.isFunction || finalType.isSuspendFunction)) {
                 val invokeDescriptor = descriptor.unsubstitutedMemberScope.getContributedDescriptors()
                     .first { it.name.asString() == "invoke" } as FunctionDescriptor
                 val callable = callableForDescriptor(invokeDescriptor)
@@ -502,17 +503,17 @@ class DeclarationStore(val module: ModuleDescriptor) {
                     valueParameters = callable.valueParameters.map {
                         val parameterType = if (it.parameterKind ==
                             ValueParameterRef.ParameterKind.DISPATCH_RECEIVER) {
-                            type
+                            finalType
                         } else it.type
                         it.copy(
                             type = parameterType.substitute(substitutionMap)
                         )
                     },
-                    targetComponent = type.targetComponent,
-                    scoped = type.scoped,
-                    eager = type.eager,
-                    default = type.default,
-                    contributionKind = type.contributionKind
+                    targetComponent = finalType.targetComponent,
+                    scoped = finalType.scoped,
+                    eager = finalType.eager,
+                    default = finalType.default,
+                    contributionKind = finalType.contributionKind
                 )
                 listOf(finalCallable)
             } else {
@@ -538,7 +539,7 @@ class DeclarationStore(val module: ModuleDescriptor) {
                             valueParameters = callable.valueParameters.map {
                                 val parameterType = if (it.parameterKind ==
                                     ValueParameterRef.ParameterKind.DISPATCH_RECEIVER) {
-                                    type
+                                    finalType
                                 } else it.type
                                 it.copy(
                                     type = parameterType.substitute(substitutionMap)
@@ -548,7 +549,7 @@ class DeclarationStore(val module: ModuleDescriptor) {
                     }
             }
 
-            ModuleDescriptor(type = type, callables = callables)
+            ModuleDescriptor(type = finalType, callables = callables)
         }
     }
 

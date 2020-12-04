@@ -22,6 +22,23 @@ class LambdaContributionsTest {
     )
 
     @Test
+    fun testTypeAliasBindingLambda() = codegen(
+        """
+            typealias BarFactory = @Binding (Foo) -> Bar
+            val barProvider: BarFactory = { Bar(it) }
+            @Module val barModule = moduleOf(barProvider)
+
+            @Binding
+            fun foo() = Foo()
+
+            @Component
+            abstract class MyComponent {
+                abstract val bar: Bar
+            }
+        """
+    )
+
+    @Test
     fun testMapEntriesLambda() = codegen(
         """
             inline fun <reified T : Any> classMapProviderFactory(): @MapEntries (T) -> Map<KClass<*>, Any> = { 
