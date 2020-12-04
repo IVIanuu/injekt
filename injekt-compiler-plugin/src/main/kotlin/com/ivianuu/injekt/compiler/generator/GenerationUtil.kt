@@ -38,9 +38,7 @@ import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.upperIfFlexible
 
-internal fun KtAnnotated.hasAnnotation(fqName: FqName): Boolean {
-    return findAnnotation(fqName) != null
-}
+internal fun KtAnnotated.hasAnnotation(fqName: FqName): Boolean = findAnnotation(fqName) != null
 
 fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
     val annotationEntries = annotationEntries
@@ -72,6 +70,9 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
             fqName.asString().startsWith(it.fqName.asString())
         }
     if (hasStarImport) return annotationEntryShort
+
+    val isSamePackage = fqName.parent() == annotationEntryShort.containingKtFile.packageFqName
+    if (isSamePackage) return annotationEntryShort
 
     return null
 }
