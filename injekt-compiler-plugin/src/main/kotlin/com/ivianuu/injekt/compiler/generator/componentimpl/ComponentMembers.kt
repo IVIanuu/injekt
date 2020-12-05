@@ -30,6 +30,7 @@ import com.ivianuu.injekt.compiler.generator.copy
 import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.fullyExpandedType
 import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
+import com.ivianuu.injekt.compiler.generator.isAssignable
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.toClassifierRef
 import com.ivianuu.injekt.compiler.generator.typeWith
@@ -474,7 +475,7 @@ class ComponentStatements(
         create: ComponentExpression
     ): ComponentExpression {
         var scopeComponent = owner
-        while(scopeComponent.componentType != scopeComponentType) {
+        while(!scopeComponent.componentType.isAssignable(scopeComponentType)) {
             scopeComponent = scopeComponent.parent!!
         }
         val scopeComponentExpression = componentExpression(scopeComponent)

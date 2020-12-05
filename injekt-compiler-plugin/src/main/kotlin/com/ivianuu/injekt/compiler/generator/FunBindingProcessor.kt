@@ -133,7 +133,7 @@ class FunBindingProcessor(private val fileManager: FileManager) : ElementProcess
 
             if (isSuspend) emit("suspend ")
 
-            emit("inline fun ")
+            emit("fun ")
             declaration.typeParameterList?.text?.let {
                 emit(it)
                 emitSpace()
@@ -189,6 +189,6 @@ class FunBindingProcessor(private val fileManager: FileManager) : ElementProcess
             fileName = fileName,
             code = code,
             forAdditionalSource = true
-        )
+        )!!
     }
 }

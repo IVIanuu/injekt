@@ -56,15 +56,17 @@ allprojects {
         extensions.add<InjektExtension>("injekt", InjektExtension())
     }
 
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions {
-            useIR = true
-            if (project.name != "injekt-compiler-plugin") {
-                val options = setupForInjekt()
-                options.forEach {
-                    freeCompilerArgs += listOf(
-                        "-P", "plugin:com.ivianuu.injekt:${it.key}=${it.value}"
-                    )
+    afterEvaluate {
+        tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+            kotlinOptions {
+                useIR = true
+                if (project.name != "injekt-compiler-plugin") {
+                    val options = setupForInjekt()
+                    options.forEach {
+                        freeCompilerArgs += listOf(
+                            "-P", "plugin:com.ivianuu.injekt:${it.key}=${it.value}"
+                        )
+                    }
                 }
             }
         }

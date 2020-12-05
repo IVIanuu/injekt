@@ -86,8 +86,7 @@ fun ClassifierDescriptor.toClassifierRef(): ClassifierRef = ClassifierRef(
     typeParameters = (original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
         ?.map { it.toClassifierRef() } ?: emptyList(),
     superTypes = typeConstructor.supertypes.map { it.toTypeRef() },
-    expandedType = (original as? TypeAliasDescriptor)?.expandedType
-        ?.let { it.toTypeRef().fullyExpandedType },
+    expandedType = (original as? TypeAliasDescriptor)?.expandedType?.toTypeRef()?.fullyExpandedType,
     isTypeParameter = this is TypeParameterDescriptor,
     isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
     isTypeAlias = this is TypeAliasDescriptor,
@@ -135,7 +134,7 @@ sealed class TypeRef {
         var result = classifier.hashCode()
         // todo result = 31 * result + isMarkedNullable.hashCode()
         result = 31 * result + typeArguments.hashCode()
-        result = 31 * result + variance.hashCode()
+        // todo result result = 31 * result + variance.hashCode()
         result = 31 * result + isFunction.hashCode()
         result = 31 * result + isSuspendFunction.hashCode()
         result = 31 * result + isExtensionFunction.hashCode()

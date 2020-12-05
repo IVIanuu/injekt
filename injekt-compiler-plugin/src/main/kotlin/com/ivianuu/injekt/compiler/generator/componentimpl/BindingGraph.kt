@@ -111,7 +111,7 @@ class BindingGraph(
             )
 
         declarationStore.allModules
-            .filter { it.targetComponent.checkComponent(null) }
+            .filter { it.targetComponent.checkComponent() }
             .map { declarationStore.moduleForType(it.type) }
             .forEach { implicitModule ->
                 implicitModule.collectContributions(
@@ -484,7 +484,7 @@ class BindingGraph(
 
     private fun getExplicitParentBindingsForType(parent: BindingGraph, request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
         this += parent.explicitBindings
-            .filter { it.targetComponent.checkComponent(request.type) }
+            .filter { it.targetComponent.checkComponent() }
             .filter { request.type.isAssignable(it.type) }
             .map { it.toCallableBindingNode(request) }
     }
@@ -492,7 +492,7 @@ class BindingGraph(
     private fun getImplicitUserBindingsForType(request: BindingRequest, default: Boolean): List<BindingNode> = buildList<BindingNode> {
         this += declarationStore.bindingsForType(request.type)
             .filter { it.default == default }
-            .filter { it.targetComponent.checkComponent(request.type) }
+            .filter { it.targetComponent.checkComponent() }
             .map { it.toCallableBindingNode(request) }
         this += implicitBindings
             .filter { it.default == default }
@@ -573,7 +573,7 @@ class BindingGraph(
         }
 
         this += declarationStore.funBindingsForType(request.type)
-            .filter { it.callable.targetComponent.checkComponent(request.type) }
+            .filter { it.callable.targetComponent.checkComponent() }
             .map { it.toFunBindingNode(request) }
 
         if ((request.type.isFunction || request.type.isSuspendFunction) &&
@@ -627,18 +627,18 @@ class BindingGraph(
         if (request.type.isSubTypeOf(mapType)) {
             val mapEntries = buildList<Callable> {
                 this += declarationStore.mapEntriesByType(request.type)
-                    .filter { it.targetComponent.checkComponent(request.type) }
+                    .filter { it.targetComponent.checkComponent() }
                 parentsTopDown.forEach { parent ->
                     parent.implicitMapEntries[request.type]
                         ?.filter {
                             with(parent) {
-                                it.targetComponent.checkComponent(request.type)
+                                it.targetComponent.checkComponent()
                             }
                         }
                         ?.let { this += it }
                 }
                 implicitMapEntries[request.type]
-                    ?.filter { it.targetComponent.checkComponent(request.type) }
+                    ?.filter { it.targetComponent.checkComponent() }
                     ?.let { this += it }
                 parentsTopDown.forEach { parent ->
                     parent.explicitMapEntries[request.type]?.let { this += it }
@@ -667,18 +667,18 @@ class BindingGraph(
         if (request.type.isSubTypeOf(setType)) {
             val setElements = buildList<Callable> {
                 this += declarationStore.setElementsByType(request.type)
-                    .filter { it.targetComponent.checkComponent(request.type) }
+                    .filter { it.targetComponent.checkComponent() }
                 parentsTopDown.forEach { parent ->
                     parent.implicitSetElements[request.type]
                         ?.filter {
                             with(parent) {
-                                it.targetComponent.checkComponent(request.type)
+                                it.targetComponent.checkComponent()
                             }
                         }
                         ?.let { this += it }
                 }
                 implicitSetElements[request.type]
-                    ?.filter { it.targetComponent.checkComponent(request.type) }
+                    ?.filter { it.targetComponent.checkComponent() }
                     ?.let { this += it }
                 parentsTopDown.forEach { parent ->
                     parent.explicitSetElements[request.type]?.let { this += it }
@@ -705,10 +705,8 @@ class BindingGraph(
         }
     }
 
-    private fun TypeRef?.checkComponent(type: TypeRef?): Boolean {
-        return this == null || this == owner.componentType ||
-                (owner.isAssisted && type == owner.assistedRequests.single().type)
-    }
+    private fun TypeRef?.checkComponent(): Boolean =
+        this == null || owner.nonAssistedComponent.componentType.isAssignable(this)
 
     private fun Callable.getDependencies(type: TypeRef, isInterceptor: Boolean): List<BindingRequest> {
         val substitutionMap = getSubstitutionMap(listOf(type to this.type))
@@ -745,30 +743,30 @@ class BindingGraph(
     private fun getInterceptorsForType(providerType: TypeRef): List<InterceptorNode> = buildList<InterceptorNode> {
         this += explicitInterceptors
             .filter { providerType.isAssignable(it.callable.type) }
-            .filter { it.callable.targetComponent.checkComponent(providerType.typeArguments.last()) }
+            .filter { it.callable.targetComponent.checkComponent() }
         this += parentsBottomUp.flatMap { parent ->
             parent.explicitInterceptors
                 .filter { providerType.isAssignable(it.callable.type) }
                 .filter {
                     with(parent) {
-                        it.callable.targetComponent.checkComponent(providerType.typeArguments.last())
+                        it.callable.targetComponent.checkComponent()
                     }
                 }
         }
         this += implicitInterceptors
             .filter { providerType.isAssignable(it.callable.type) }
-            .filter { it.callable.targetComponent.checkComponent(providerType.typeArguments.last()) }
+            .filter { it.callable.targetComponent.checkComponent() }
         this += parentsBottomUp.flatMap { parent ->
             parent.implicitInterceptors
                 .filter { providerType.isAssignable(it.callable.type) }
                 .filter {
                     with(parent) {
-                        it.callable.targetComponent.checkComponent(providerType.typeArguments.last())
+                        it.callable.targetComponent.checkComponent()
                     }
                 }
         }
         this += declarationStore.interceptorsByType(providerType)
-            .filter { it.targetComponent.checkComponent(providerType.typeArguments.last()) }
+            .filter { it.targetComponent.checkComponent() }
             .map { interceptor ->
                 InterceptorNode(
                     interceptor,

@@ -42,6 +42,8 @@ class FileManager(
 
     val newFiles = mutableListOf<File>()
 
+    private val additionalFiles = mutableListOf<File>()
+
     private var compilingFiles = emptyList<KtFile>()
 
     private val cacheEntries = if (!cacheFile.exists()) mutableSetOf()
@@ -58,6 +60,11 @@ class FileManager(
         val finalFiles = mutableListOf<KtFile>()
 
         files.forEach { file ->
+            if (additionalFiles.any { it.absolutePath == file.virtualFilePath }) {
+                finalFiles += file
+                return@forEach
+            }
+
             val originatingFilePath = cacheEntries
                 .singleOrNull { it.second == file.virtualFilePath }
                 ?.first
@@ -99,13 +106,14 @@ class FileManager(
         originatingFile: KtFile?,
         code: String,
         forAdditionalSource: Boolean
-    ): KtFile {
+    ): KtFile? {
         val newFile = srcDir
             .resolve(packageFqName.asString().replace(".", "/"))
             .also { it.mkdirs() }
             .resolve(fileName)
             .also {
-                if (!forAdditionalSource) newFiles += it
+                if (forAdditionalSource) additionalFiles += it
+                else newFiles += it
             }
         if (originatingFile != null) {
             originatingFilePaths[newFile] = originatingFile.virtualFilePath
@@ -116,16 +124,17 @@ class FileManager(
         newFile.createNewFile()
         newFile.writeText(code)
 
-        val virtualFile = CoreLocalVirtualFile(CoreLocalFileSystem(), newFile)
-
-        return KtFile(
-            object : SingleRootFileViewProvider(
-                psiManager,
-                virtualFile
-            ) {
-            },
-            false
-        )
+        return if (forAdditionalSource) {
+            val virtualFile = CoreLocalVirtualFile(CoreLocalFileSystem(), newFile)
+            KtFile(
+                object : SingleRootFileViewProvider(
+                    psiManager,
+                    virtualFile
+                ) {
+                },
+                false
+            )
+        } else null
     }
 
     fun postGenerate() {
