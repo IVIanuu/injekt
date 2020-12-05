@@ -20,6 +20,7 @@ import com.google.auto.service.AutoService
 import com.ivianuu.injekt.FunApi
 import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.compiler.generator.InjektKtGenerationExtension
+import com.ivianuu.injekt.compiler.generator.InjektPackageFragmentProviderExtension
 import com.ivianuu.injekt.component
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -29,6 +30,7 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.JVMConfigurationKeys
 import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
+import org.jetbrains.kotlin.resolve.jvm.extensions.PackageFragmentProviderExtension
 import java.io.File
 
 @AutoService(ComponentRegistrar::class)
@@ -38,17 +40,8 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project: MockProject,
         configuration: CompilerConfiguration,
     ) {
-        // Don't bother with KAPT tasks.
-        // There is no way to pass KSP options to compileKotlin only. Have to workaround here.
-        val outputDir = configuration[JVMConfigurationKeys.OUTPUT_DIRECTORY]
-        val kaptOutputDirs = listOf(
-            listOf("tmp", "kapt3", "stubs"),
-            listOf("tmp", "kapt3", "incrementalData"),
-            listOf("tmp", "kapt3", "incApCache")
-        ).map { File(it.joinToString(File.separator)) }
-        val isGenerateKaptStubs = kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
         component<ApplicationComponent>(project, configuration)
-            .registerExtensions(isGenerateKaptStubs)
+            .registerExtensions()
         IrGenerationExtension.registerExtension(
             project,
             InjektIrIntrinsicTransformer()
@@ -63,13 +56,15 @@ class InjektComponentRegistrar : ComponentRegistrar {
 @FunBinding
 fun registerExtensions(
     project: Project,
-    injektKtGenerationExtension: InjektKtGenerationExtension,
-    @FunApi isGenerateKaptStubs: Boolean
+    generationExtension: InjektKtGenerationExtension,
+    packageFragmentProviderExtension: InjektPackageFragmentProviderExtension
 ) {
-    if (!isGenerateKaptStubs) {
-        AnalysisHandlerExtension.registerExtension(
-            project,
-            injektKtGenerationExtension
-        )
-    }
+    PackageFragmentProviderExtension.registerExtension(
+        project,
+        packageFragmentProviderExtension
+    )
+    AnalysisHandlerExtension.registerExtension(
+        project,
+        generationExtension
+    )
 }

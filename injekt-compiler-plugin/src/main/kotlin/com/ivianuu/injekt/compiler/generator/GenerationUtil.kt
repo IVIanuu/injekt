@@ -183,14 +183,11 @@ fun Annotated.contributionKind() = when {
     else -> null
 }
 
-fun Annotated.targetComponent(
-    module: ModuleDescriptor,
-    typeTranslator: TypeTranslator
-) = (annotations
+fun Annotated.targetComponent(module: ModuleDescriptor) = (annotations
     .findAnnotation(InjektFqNames.Scoped)
     ?: annotations.findAnnotation(InjektFqNames.Bound))
     ?.allValueArguments
     ?.let { it["component".asNameId()] }
     ?.let { it as KClassValue }
     ?.getArgumentType(module)
-    ?.let { typeTranslator.toTypeRef(it, null as KtFile?, Variance.INVARIANT) }
+    ?.let { it.toTypeRef() }

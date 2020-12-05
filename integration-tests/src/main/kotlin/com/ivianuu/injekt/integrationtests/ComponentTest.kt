@@ -36,11 +36,12 @@ class ComponentTest {
     @Test
     fun testSimple() = codegen(
         """
+            @Binding fun foo() = Foo()
+            @Binding fun bar(foo: Foo) = Bar(foo)
+
             @Component
             abstract class TestComponent { 
                 abstract val bar: Bar
-                @Binding protected fun foo() = Foo()
-                @Binding protected fun bar(foo: Foo) = Bar(foo)
             }
             
             fun invoke(): Bar {

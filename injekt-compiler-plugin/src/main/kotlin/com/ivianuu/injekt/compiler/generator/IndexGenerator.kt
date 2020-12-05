@@ -19,6 +19,19 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.UniqueNameProvider
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.SourceElement
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
+import org.jetbrains.kotlin.descriptors.annotations.Annotations
+import org.jetbrains.kotlin.descriptors.findClassifierAcrossModuleDependencies
+import org.jetbrains.kotlin.descriptors.impl.PropertyDescriptorImpl
+import org.jetbrains.kotlin.descriptors.impl.PropertyGetterDescriptorImpl
+import org.jetbrains.kotlin.descriptors.impl.PropertySetterDescriptorImpl
+import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -30,16 +43,24 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.psiUtil.containingClass
+import org.jetbrains.kotlin.resolve.constants.StringValue
 
 @Binding(GenerationComponent::class)
 class IndexGenerator(
-    private val declarationStore: DeclarationStore,
-    private val fileManager: FileManager
+    private val fileManager: FileManager,
+    private val module: ModuleDescriptor,
+    private val packageFragmentProvider: InjektPackageFragmentProviderExtension
 ) : Generator {
+
+    private val indexType = module.findClassifierAcrossModuleDependencies(
+        ClassId.topLevel(InjektFqNames.Index)
+    )!!
 
     override fun generate(files: List<KtFile>) {
         files.forEach { file ->
-            val indices = mutableListOf<Index>()
+            val indices = mutableListOf<Pair<Index, Name>>()
+            val nameProvider = UniqueNameProvider()
+
             file.accept(
                 object : KtTreeVisitorVoid() {
                     var moduleLikeScope: KtClassOrObject? = null
@@ -96,14 +117,68 @@ class IndexGenerator(
                                 else -> error("Unexpected declaration ${declaration.text}")
                             }
                         )
-                        indices += index
-                        declarationStore.addInternalIndex(index)
+                        val indexName = nameProvider(
+                            index.fqName.pathSegments().joinToString("_")
+                        ).asNameId()
+                        indices += index to indexName
+                        //declarationStore.addInternalIndex(index)
+                        packageFragmentProvider.addGeneratedProperty(InjektFqNames.IndexPackage) {
+                            object : PropertyDescriptorImpl(
+                                it,
+                                null,
+                                Annotations.create(
+                                    listOf(
+                                        AnnotationDescriptorImpl(
+                                            indexType.defaultType,
+                                            mapOf(
+                                                "fqName".asNameId() to StringValue(index.fqName.asString()),
+                                                "type".asNameId() to StringValue(index.type)
+                                            ),
+                                            SourceElement.NO_SOURCE
+                                        )
+                                    )
+                                ),
+                                Modality.FINAL,
+                                DescriptorVisibilities.INTERNAL,
+                                false,
+                                indexName,
+                                CallableMemberDescriptor.Kind.DECLARATION,
+                                SourceElement.NO_SOURCE,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false
+                            ) {
+                                init {
+                                    initialize(
+                                        object : PropertyGetterDescriptorImpl(
+                                            this,
+                                            Annotations.EMPTY,TODO("Not yet implemented")
+                                            Modality.FINAL,
+                                            DescriptorVisibilities.INTERNAL,
+                                            false,
+                                            false,
+                                            false,
+                                            CallableMemberDescriptor.Kind.DECLARATION,
+                                            null,
+                                            SourceElement.NO_SOURCE
+                                        ) {
+                                            init {
+                                                initialize(module.builtIns.unitType)
+                                            }
+                                          },
+                                        null as PropertySetterDescriptorImpl?
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             )
 
             if (indices.isNotEmpty()) {
-                val nameProvider = UniqueNameProvider()
                 val fileName = file.packageFqName.pathSegments().joinToString("_") + "_${file.name}"
                 fileManager.generateFile(
                     originatingFile = file,
@@ -115,10 +190,7 @@ class IndexGenerator(
                         emitLine("import ${InjektFqNames.Index}")
                         indices
                             .distinct()
-                            .forEach { index ->
-                                val indexName = nameProvider(
-                                    index.fqName.pathSegments().joinToString("_")
-                                )
+                            .forEach { (index, indexName) ->
                                 emitLine("@Index(fqName = \"${index.fqName}\", type = \"${index.type}\")")
                                 emitLine("internal val $indexName = Unit")
                         }

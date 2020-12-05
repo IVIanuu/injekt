@@ -22,12 +22,16 @@ import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
+import org.jetbrains.kotlin.psi.psiUtil.visibilityModifier
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
@@ -35,78 +39,52 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 @Binding(GenerationComponent::class)
 class FunBindingGenerator(
-    private val bindingContext: BindingContext,
-    private val declarationStore: DeclarationStore,
     private val fileManager: FileManager,
-    private val typeTranslator: TypeTranslator
+    private val module: ModuleDescriptor,
+    private val packageFragmentProvider: InjektPackageFragmentProviderExtension
 ) : Generator {
 
-    private val funBindings = mutableListOf<FunctionDescriptor>()
-
-    override fun preProcess(files: List<KtFile>) {
+    override fun generate(files: List<KtFile>) {
         files.forEach { file ->
             file.accept(
                 namedFunctionRecursiveVisitor { declaration ->
                     if (declaration.hasAnnotation(InjektFqNames.FunBinding)) {
-                        funBindings.add(declaration.descriptor(bindingContext)!!)
+                        generateFunBinding(declaration)
                     }
                 }
             )
-            funBindings.forEach { descriptor ->
-                runExitCatching {
-                    declarationStore.addGeneratedClassifier(
-                        ClassifierRef(
-                            fqName = descriptor.fqNameSafe,
-                            typeParameters = descriptor.typeParameters.map {
-                                typeTranslator.toClassifierRef(it)
-                                    .copy(superTypes = emptyList())
-                            },
-                            isTypeAlias = true
-                        )
-                    )
-                }
-            }
         }
     }
 
-    override fun generate(files: List<KtFile>) {
-        funBindings.forEach { descriptor ->
-            runExitCatching {
-                generateFunBinding(descriptor)
-            }
-        }
-    }
-
-    private fun generateFunBinding(descriptor: FunctionDescriptor) {
-        val packageFqName = descriptor.findPackage().fqName
+    private fun generateFunBinding(declaration: KtNamedFunction) {
+        val file = declaration.containingKtFile
+        val packageFqName = file.packageFqName
         val fileName = joinedNameOf(
             packageFqName,
-            descriptor.fqNameSafe
+            declaration.fqName!!
         ).asString() + "FunBinding.kt"
 
-        val isSuspend = descriptor.isSuspend
-        val isComposable = descriptor.hasAnnotation(InjektFqNames.Composable)
+        val isSuspend = declaration.hasModifier(KtTokens.SUSPEND_KEYWORD)
+        val isComposable = declaration.hasAnnotation(InjektFqNames.Composable)
 
-        val funApiValueParameters = descriptor.allParameters
+        val funApiValueParameters = declaration.valueParameters
             .filter { it.hasAnnotation(InjektFqNames.FunApi) }
-        declarationStore.generatedClassifierFor(descriptor.fqNameSafe)!!.funApiParams += funApiValueParameters
-            .map { it.name }
 
-        val expandedFunType = (if (isSuspend) {
-            descriptor.module.builtIns.getSuspendFunction(funApiValueParameters.size)
+        /*val expandedFunType = (if (isSuspend) {
+            module.builtIns.getSuspendFunction(funApiValueParameters.size)
                 .defaultType
         } else {
-            descriptor.module.builtIns.getFunction(funApiValueParameters.size)
+            module.builtIns.getFunction(funApiValueParameters.size)
                 .defaultType
-        }).let { typeTranslator.toTypeRef(it, descriptor) }
+        }).toTypeRef()
             .typeWith(funApiValueParameters.map {
-                typeTranslator.toTypeRef(it.type, descriptor)
-            } + typeTranslator.toTypeRef(descriptor.returnType!!, descriptor))
+                typeTranslator.toTypeRef(it.type, declaration)
+            } + typeTranslator.toTypeRef(declaration.returnType!!, declaration))
             .copy(isComposable = isComposable)
             .copy(isExtensionFunction = funApiValueParameters.any {
-                it == descriptor.extensionReceiverParameter
+                it == declaration.extensionReceiverParameter
             })
-        declarationStore.generatedClassifierFor(descriptor.fqNameSafe)!!.expandedType = expandedFunType
+        declarationStore.generatedClassifierFor(declaration.fqNameSafe)!!.expandedType = expandedFunType*/
 
         val code = buildCodeString {
             emitLine("@file:Suppress(\"UNCHECKED_CAST\", \"NOTHING_TO_INLINE\")")
@@ -116,7 +94,7 @@ class FunBindingGenerator(
                 "import ${InjektFqNames.Binding.asString()}",
                 "import ${InjektFqNames.FunBinding.asString()}"
             )
-            imports += (descriptor.findPsi()!!.containingFile as KtFile)
+            imports += file
                 .importDirectives
                 .map { it.text }
 
@@ -133,62 +111,62 @@ class FunBindingGenerator(
             }
             emitLine("])")
 
-            if (descriptor.visibility == DescriptorVisibilities.INTERNAL) {
+            if (declaration.visibilityModifier()?.text == "internal") {
                 emit("internal ")
             }
 
-            emit("typealias ${descriptor.name}")
+            emit("typealias ${declaration.name}")
 
-            if (descriptor.typeParameters.isNotEmpty()) {
+            if (declaration.typeParameters.isNotEmpty()) {
                 emit("<")
-                descriptor.typeParameters
+                declaration.typeParameters
                     .forEachIndexed { index, typeParameter ->
                         emit(typeParameter.name)
-                        if (index != descriptor.typeParameters.lastIndex) emit(", ")
+                        if (index != declaration.typeParameters.lastIndex) emit(", ")
                     }
                 emit(">")
             }
             emit(" = ")
 
-            emitLine(expandedFunType.render())
+           // emitLine(expandedFunType.render())
 
-            emitLine()
+            /*emitLine()
 
             if (isComposable) emitLine("@${InjektFqNames.Composable}")
 
-            if (descriptor.visibility == DescriptorVisibilities.INTERNAL) {
+            if (declaration.visibilityModifier()?.text == "internal") {
                 emit("internal ")
             }
 
             if (isSuspend) emit("suspend ")
 
             emit("inline fun ")
-            if (descriptor.typeParameters.isNotEmpty()) {
+            if (declaration.typeParameters.isNotEmpty()) {
                 emit("<")
-                descriptor.typeParameters
+                declaration.typeParameters
                     .forEachIndexed { index, typeParameter ->
                         emit("reified ${typeParameter.name}")
-                        if (index != descriptor.typeParameters.lastIndex) emit(", ")
+                        if (index != declaration.typeParameters.lastIndex) emit(", ")
                     }
                 emit("> ")
             }
 
-            emit(descriptor.name)
-            if (descriptor.typeParameters.isNotEmpty()) {
+            emit(declaration.name)
+            if (declaration.typeParameters.isNotEmpty()) {
                 emit("<")
-                descriptor.typeParameters
+                declaration.typeParameters
                     .forEachIndexed { index, typeParameter ->
                         emit(typeParameter.name)
-                        if (index != descriptor.typeParameters.lastIndex) emit(", ")
+                        if (index != declaration.typeParameters.lastIndex) emit(", ")
                     }
                 emit(">")
             }
 
-            val invokeFunctionName = "invoke${descriptor.name.asString().capitalize()}".asNameId()
+            val invokeFunctionName = "invoke${declaration.name!!.capitalize()}".asNameId()
 
             emit(".$invokeFunctionName(")
             funApiValueParameters.forEachIndexed { index, valueParameter ->
-                val typeRef = typeTranslator.toTypeRef(valueParameter.type, descriptor)
+                val typeRef = valueParameter.type.toTypeRef()
                 if (valueParameter is ValueParameterDescriptor && valueParameter.isCrossinline) {
                     emit("crossinline ")
                 }  else if (typeRef.fullyExpandedType.isFunction || typeRef.fullyExpandedType.isSuspendFunction ||
@@ -205,16 +183,16 @@ class FunBindingGenerator(
 
             }
             emit("): ${expandedFunType.typeArguments.last().render()} ")
-            if (descriptor.typeParameters.isNotEmpty()) {
+            if (declaration.typeParameters.isNotEmpty()) {
                 emit(" where ")
-                val typeParametersWithUpperBound = descriptor.typeParameters
+                val typeParametersWithUpperBound = declaration.typeParameters
                     .flatMap { typeParameter ->
                         typeParameter.upperBounds
                             .map {
                                 typeTranslator.toClassifierRef(
                                     typeParameter
                                 ).copy(fqName = packageFqName.child(invokeFunctionName).child(typeParameter.name)) to
-                                        typeTranslator.toTypeRef(it, descriptor)
+                                        typeTranslator.toTypeRef(it, declaration)
                             }
                     }
                 typeParametersWithUpperBound.forEachIndexed { index, (typeParameter, upperBound) ->
@@ -227,18 +205,18 @@ class FunBindingGenerator(
                 emit("return invoke(")
                 funApiValueParameters.forEachIndexed { index, valueParameter ->
                     emit(
-                        if (valueParameter == descriptor.extensionReceiverParameter) "_receiver"
+                        if (valueParameter == declaration.extensionReceiverParameter) "_receiver"
                         else valueParameter.name.asString()
                     )
                     if (index != funApiValueParameters.lastIndex) emit(", ")
 
                 }
                 emitLine(")")
-            }
+            }*/
         }
 
         fileManager.generateFile(
-            originatingFile = descriptor.findPsi().cast<KtElement>().containingKtFile,
+            originatingFile = file,
             packageFqName = packageFqName,
             fileName = fileName,
             code = code
