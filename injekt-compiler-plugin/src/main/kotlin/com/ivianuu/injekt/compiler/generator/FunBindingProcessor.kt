@@ -32,7 +32,9 @@ class FunBindingProcessor(private val fileManager: FileManager) : ElementProcess
             file.accept(
                 namedFunctionRecursiveVisitor { declaration ->
                     if (declaration.hasAnnotation(InjektFqNames.FunBinding)) {
-                        files += generateFunBinding(declaration)
+                        runExitCatching {
+                            files += generateFunBinding(declaration)
+                        }
                     }
                 }
             )

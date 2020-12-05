@@ -86,8 +86,13 @@ class InjektKtGenerationExtension(
             if (generateComponents || generateMergeComponents)
                 generationComponent.componentGenerator else null
         )
-        generators.forEach { it.generate(files) }
+        generators.forEach {
+            runExitCatching {
+                it.generate(files)
+            }
+        }
         generationComponent.fileManager.postGenerate()
+        generationComponent.errorCollector.report()
         val newFiles = generationComponent.fileManager.newFiles
 
         this.generationComponent = null

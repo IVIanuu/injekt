@@ -19,7 +19,12 @@ class InjektCollectAdditionalSourcesExtension(
         knownSources: Collection<KtFile>,
         configuration: CompilerConfiguration,
         project: Project
-    ): Collection<KtFile> = processors.flatMap { it.process(knownSources.toList()) }
-        .also { configuration.addKotlinSourceRoots(it.map { it.virtualFilePath }) }
+    ): Collection<KtFile> = processors.flatMap {
+        try {
+            it.process(knownSources.toList())
+        } catch (e: ExitGenerationException) {
+            emptyList()
+        }
+    }.also { configuration.addKotlinSourceRoots(it.map { it.virtualFilePath }) }
 
 }
