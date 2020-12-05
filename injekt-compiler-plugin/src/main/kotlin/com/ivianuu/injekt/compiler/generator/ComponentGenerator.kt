@@ -148,7 +148,8 @@ class ComponentGenerator(
             originatingFile = null,
             packageFqName = componentType.classifier.fqName.parent(),
             fileName = "${componentImplFqName.shortName()}.kt",
-            code = code
+            code = code,
+            forAdditionalSource = false
         )
     }
 }

@@ -17,19 +17,24 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.compiler.ApplicationComponent
 import com.ivianuu.injekt.compiler.CacheDir
 import com.ivianuu.injekt.compiler.SrcDir
 import com.ivianuu.injekt.compiler.log
-import com.ivianuu.injekt.component
+import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalFileSystem
+import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalVirtualFile
+import org.jetbrains.kotlin.com.intellij.psi.PsiManager
+import org.jetbrains.kotlin.com.intellij.psi.SingleRootFileViewProvider
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
-@Binding(GenerationComponent::class)
+@Binding(ApplicationComponent::class)
 class FileManager(
     private val srcDir: SrcDir,
     private val cacheDir: CacheDir,
     private val log: log,
+    private val psiManager: PsiManager
 ) {
     private val originatingFilePaths = mutableMapOf<File, String>()
 
@@ -93,21 +98,34 @@ class FileManager(
         fileName: String,
         originatingFile: KtFile?,
         code: String,
-    ): File {
+        forAdditionalSource: Boolean
+    ): KtFile {
         val newFile = srcDir
             .resolve(packageFqName.asString().replace(".", "/"))
             .also { it.mkdirs() }
             .resolve(fileName)
-            .also { newFiles += it }
+            .also {
+                if (!forAdditionalSource) newFiles += it
+            }
         if (originatingFile != null) {
             originatingFilePaths[newFile] = originatingFile.virtualFilePath
         }
 
         log { "generated file $packageFqName.$fileName $code" }
 
-        return newFile
-            .also { it.createNewFile() }
-            .also { it.writeText(code) }
+        newFile.createNewFile()
+        newFile.writeText(code)
+
+        val virtualFile = CoreLocalVirtualFile(CoreLocalFileSystem(), newFile)
+
+        return KtFile(
+            object : SingleRootFileViewProvider(
+                psiManager,
+                virtualFile
+            ) {
+            },
+            false
+        )
     }
 
     fun postGenerate() {

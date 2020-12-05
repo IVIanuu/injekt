@@ -24,7 +24,6 @@ import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
 import com.ivianuu.injekt.compiler.generator.TypeRef
-import com.ivianuu.injekt.compiler.generator.TypeTranslator
 import com.ivianuu.injekt.compiler.generator.ValueParameterRef
 import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.copy
@@ -32,6 +31,7 @@ import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.fullyExpandedType
 import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.render
+import com.ivianuu.injekt.compiler.generator.toClassifierRef
 import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
@@ -43,8 +43,7 @@ import org.jetbrains.kotlin.name.Name
 class ComponentStatements(
     private val declarationStore: DeclarationStore,
     private val moduleDescriptor: ModuleDescriptor,
-    private val owner: ComponentImpl,
-    private val typeTranslator: TypeTranslator
+    private val owner: ComponentImpl
 ) {
 
     private val parent = owner.parent?.statements
@@ -426,15 +425,13 @@ class ComponentStatements(
         }
         return if (cacheProvider) {
             val providerType = when (callableKind) {
-                Callable.CallableKind.DEFAULT -> typeTranslator.toClassifierRef(
-                    moduleDescriptor.builtIns.getFunction(0)
-                ).defaultType.typeWith(listOf(type))
-                Callable.CallableKind.SUSPEND -> typeTranslator.toClassifierRef(
-                    moduleDescriptor.builtIns.getSuspendFunction(0)
-                ).defaultType.typeWith(listOf(type))
-                Callable.CallableKind.COMPOSABLE -> typeTranslator.toClassifierRef(
-                    moduleDescriptor.builtIns.getFunction(0)
-                ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
+                Callable.CallableKind.DEFAULT -> moduleDescriptor.builtIns.getFunction(0)
+                    .toClassifierRef().defaultType.typeWith(listOf(type))
+                Callable.CallableKind.SUSPEND -> moduleDescriptor.builtIns.getSuspendFunction(0)
+                    .toClassifierRef().defaultType.typeWith(listOf(type))
+                Callable.CallableKind.COMPOSABLE -> moduleDescriptor.builtIns.getFunction(0)
+                    .toClassifierRef().defaultType.typeWith(listOf(type))
+                    .copy(isComposable = true)
             }.let {
                 if (clearableProvider) it.copy(isMarkedNullable = true) else it
             }
@@ -501,9 +498,8 @@ class ComponentStatements(
         ).also { scopeComponent.members += it }
 
         if (callableKind == Callable.CallableKind.SUSPEND) {
-            val mutexType = typeTranslator.toClassifierRef(
-                declarationStore.classDescriptorForFqName(InjektFqNames.Mutex)
-            ).defaultType
+            val mutexType = declarationStore.classDescriptorForFqName(InjektFqNames.Mutex)
+                .toClassifierRef().defaultType
             scopeComponent.members.firstOrNull {
                 it is ComponentCallable &&
                         !it.isProperty &&

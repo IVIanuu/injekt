@@ -2,16 +2,15 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.generator.ClassifierRef
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
-import com.ivianuu.injekt.compiler.generator.ErrorCollector
 import com.ivianuu.injekt.compiler.generator.QualifierDescriptor
 import com.ivianuu.injekt.compiler.generator.STAR_PROJECTION_TYPE
 import com.ivianuu.injekt.compiler.generator.TypeRef
-import com.ivianuu.injekt.compiler.generator.TypeTranslator
 import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.copy
 import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.isAssignable
 import com.ivianuu.injekt.compiler.generator.isSubTypeOf
+import com.ivianuu.injekt.compiler.generator.toTypeRef
 import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.test.codegen
 import org.jetbrains.kotlin.analyzer.AnalysisResult
@@ -33,40 +32,6 @@ import org.junit.Before
 import org.junit.Test
 
 class TypeRefTest {
-
-    private lateinit var analysisContext: AnalysisContext
-
-    @Before
-    fun setup() {
-        codegen(
-            """
-            
-        """,
-            config = {
-                compilerPlugins += object : ComponentRegistrar {
-                    override fun registerProjectComponents(
-                        project: MockProject,
-                        configuration: CompilerConfiguration
-                    ) {
-                        AnalysisHandlerExtension.registerExtension(
-                            project,
-                            object : AnalysisHandlerExtension {
-                                override fun analysisCompleted(
-                                    project: Project,
-                                    module: ModuleDescriptor,
-                                    bindingTrace: BindingTrace,
-                                    files: Collection<KtFile>
-                                ): AnalysisResult? {
-                                    this@TypeRefTest.analysisContext = AnalysisContext(module)
-                                    return null
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-        )
-    }
 
     @Test
     fun testSimpleTypeWithSameClassifierIsAssignable() = withAnalysisContext {
@@ -280,11 +245,38 @@ class TypeRefTest {
 
     private fun withAnalysisContext(
         block: AnalysisContext.() -> Unit
-    ) = block(analysisContext)
+    ) {
+        codegen(
+            """
+            
+        """,
+            config = {
+                compilerPlugins += object : ComponentRegistrar {
+                    override fun registerProjectComponents(
+                        project: MockProject,
+                        configuration: CompilerConfiguration
+                    ) {
+                        AnalysisHandlerExtension.registerExtension(
+                            project,
+                            object : AnalysisHandlerExtension {
+                                override fun analysisCompleted(
+                                    project: Project,
+                                    module: ModuleDescriptor,
+                                    bindingTrace: BindingTrace,
+                                    files: Collection<KtFile>
+                                ): AnalysisResult? {
+                                    block(AnalysisContext(module))
+                                    return null
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        )
+    }
 
     class AnalysisContext(val module: ModuleDescriptor) {
-        private val declarationStore = DeclarationStore(module)
-        private val typeTranslator = TypeTranslator(declarationStore, ErrorCollector())
 
         val anyType = typeFor(StandardNames.FqNames.any.toSafe())
         val anyNType = anyType.copy(isMarkedNullable = true)
@@ -348,12 +340,9 @@ class TypeRefTest {
             isTypeParameter = true
         ).defaultType
 
-        fun typeFor(fqName: FqName) = typeTranslator.toTypeRef(
-            module.findClassifierAcrossModuleDependencies(
-                ClassId.topLevel(fqName)
-            )!!.defaultType,
-            null as KtFile?
-        )
+        fun typeFor(fqName: FqName) = module.findClassifierAcrossModuleDependencies(
+            ClassId.topLevel(fqName)
+        )!!.defaultType.toTypeRef()
 
     }
 

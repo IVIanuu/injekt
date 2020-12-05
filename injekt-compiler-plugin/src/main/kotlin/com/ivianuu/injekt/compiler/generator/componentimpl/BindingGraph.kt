@@ -25,7 +25,6 @@ import com.ivianuu.injekt.compiler.generator.FunBindingDescriptor
 import com.ivianuu.injekt.compiler.generator.ModuleDescriptor
 import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
 import com.ivianuu.injekt.compiler.generator.TypeRef
-import com.ivianuu.injekt.compiler.generator.TypeTranslator
 import com.ivianuu.injekt.compiler.generator.ValueParameterRef
 import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.callableKind
@@ -38,6 +37,7 @@ import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.replaceTypeParametersWithStars
 import com.ivianuu.injekt.compiler.generator.substitute
 import com.ivianuu.injekt.compiler.generator.substituteStars
+import com.ivianuu.injekt.compiler.generator.toClassifierRef
 import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.compiler.generator.unsafeLazy
 import org.jetbrains.kotlin.backend.common.pop
@@ -59,8 +59,7 @@ class BindingGraph(
         List<Callable>,
         @Parent ComponentImpl?,
     ) -> ComponentImpl,
-    private val moduleDescriptor: org.jetbrains.kotlin.descriptors.ModuleDescriptor,
-    private val typeTranslator: TypeTranslator
+    private val moduleDescriptor: org.jetbrains.kotlin.descriptors.ModuleDescriptor
 ) {
 
     private val parent = owner.parent?.graph
@@ -93,12 +92,8 @@ class BindingGraph(
     private val chain = mutableListOf<BindingRequest>()
     private var locked = false
 
-    private val mapType = declarationStore.typeTranslator.toClassifierRef(
-        moduleDescriptor.builtIns.map
-    ).defaultType
-    private val setType = declarationStore.typeTranslator.toClassifierRef(
-        moduleDescriptor.builtIns.set
-    ).defaultType
+    private val mapType = moduleDescriptor.builtIns.map.toClassifierRef().defaultType
+    private val setType = moduleDescriptor.builtIns.set.toClassifierRef().defaultType
 
     private val collectedModules = mutableSetOf<TypeRef>()
 
@@ -591,9 +586,7 @@ class BindingGraph(
             val assistedTypes = request.type.typeArguments.dropLast(1).distinct()
             if (!factoryExists && assistedTypes.isNotEmpty()) {
                 val returnType = request.type.typeArguments.last()
-                val childComponentType = typeTranslator.toClassifierRef(
-                    moduleDescriptor.builtIns.any
-                ).defaultType
+                val childComponentType = moduleDescriptor.builtIns.any.toClassifierRef().defaultType
                 val bindingCallable = Callable(
                     packageFqName = FqName.ROOT,
                     fqName = request.origin,
@@ -730,15 +723,13 @@ class BindingGraph(
         callableKind: Callable.CallableKind
     ): List<InterceptorNode> {
         val providerType = when (callableKind) {
-            Callable.CallableKind.DEFAULT -> typeTranslator.toClassifierRef(
-                moduleDescriptor.builtIns.getFunction(0)
-            ).defaultType.typeWith(listOf(type))
-            Callable.CallableKind.SUSPEND -> typeTranslator.toClassifierRef(
-                moduleDescriptor.builtIns.getSuspendFunction(0)
-            ).defaultType.typeWith(listOf(type))
-            Callable.CallableKind.COMPOSABLE -> typeTranslator.toClassifierRef(
-                moduleDescriptor.builtIns.getFunction(0)
-            ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
+            Callable.CallableKind.DEFAULT -> moduleDescriptor.builtIns.getFunction(0)
+                .toClassifierRef().defaultType.typeWith(listOf(type))
+            Callable.CallableKind.SUSPEND -> moduleDescriptor.builtIns.getSuspendFunction(0)
+                .toClassifierRef().defaultType.typeWith(listOf(type))
+            Callable.CallableKind.COMPOSABLE -> moduleDescriptor.builtIns.getFunction(0)
+                .toClassifierRef().defaultType.typeWith(listOf(type))
+                .copy(isComposable = true)
         }
         return getInterceptorsForType(providerType)
             .map { interceptor ->

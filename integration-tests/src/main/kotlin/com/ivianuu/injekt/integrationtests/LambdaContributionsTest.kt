@@ -26,7 +26,7 @@ class LambdaContributionsTest {
     @Test
     fun testBindingLambdaExpression() = codegen(
         """
-            @Module val barModule = @Scoped(MyComponent::class) @Binding { foo: Foo -> Bar(foo) }
+            @Module val barModule = @Scoped @Binding { foo: Foo -> Bar(foo) }
 
             @Binding
             fun foo() = Foo()
