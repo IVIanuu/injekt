@@ -22,16 +22,21 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.jetbrains.kotlin.gradle.dsl.KotlinCommonOptions
+import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinGradleSubplugin
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.utils.`is`
 
 @AutoService(KotlinGradleSubplugin::class)
 open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
 
     override fun isApplicable(project: Project, task: AbstractCompile) =
-        project.plugins.hasPlugin(InjektGradlePlugin::class.java)
+        project.plugins.hasPlugin(InjektGradlePlugin::class.java) &&
+                task !is KaptGenerateStubsTask
 
     override fun apply(
         project: Project,
@@ -40,42 +45,8 @@ open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
         variantData: Any?,
         androidProjectHandler: Any?,
         kotlinCompilation: KotlinCompilation<KotlinCommonOptions>?
-    ): List<SubpluginOption> {
-        val sourceSetName = if (variantData != null) {
-            // Lol
-            variantData.javaClass.getMethod("getName").run {
-                isAccessible = true
-                invoke(variantData) as String
-            }
-        } else {
-            if (kotlinCompilation == null) error("In non-Android projects, Kotlin compilation should not be null")
-            kotlinCompilation.compilationName
-        }
-
-        val srcDir = project.buildDir.resolve("generated/source/injekt/$sourceSetName")
-            .also { it.mkdirs() }
-            .absolutePath
-
-        if (androidProjectHandler != null) {
-            project.extensions.findByType(BaseExtension::class.java)
-                ?.sourceSets
-                ?.findByName(sourceSetName)
-                ?.java
-                ?.srcDir(srcDir)
-        } else {
-            project.extensions.findByType(SourceSetContainer::class.java)
-                ?.findByName(sourceSetName)
-                ?.java
-                ?.srcDir(srcDir)
-        }
-
-        return listOf(
-            SubpluginOption(
-                key = "srcDir",
-                value = srcDir
-            )
-        )
-    }
+    ): List<SubpluginOption> = (kotlinCompile as AbstractKotlinCompile<*>)
+        .setupForInjekt()
 
     override fun getCompilerPluginId(): String = "com.ivianuu.injekt"
 

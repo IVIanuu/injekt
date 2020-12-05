@@ -30,9 +30,24 @@ class InjektCommandLineProcessor : CommandLineProcessor {
     override val pluginId = "com.ivianuu.injekt"
     override val pluginOptions = listOf(
         CliOption(
+            optionName = "generateComponents",
+            valueDescription = "generateComponents",
+            description = "generateComponents"
+        ),
+        CliOption(
+            optionName = "generateMergeComponents",
+            valueDescription = "generateMergeComponents",
+            description = "generateMergeComponents"
+        ),
+        CliOption(
             optionName = "srcDir",
             valueDescription = "srcDir",
             description = "srcDir"
+        ),
+        CliOption(
+            optionName = "cacheDir",
+            valueDescription = "cacheDir",
+            description = "cacheDir"
         )
     )
 
@@ -42,15 +57,36 @@ class InjektCommandLineProcessor : CommandLineProcessor {
         configuration: CompilerConfiguration
     ) {
         when (option.optionName) {
+            "generateComponents" -> configuration.put(GenerateComponentsKey, value.toBoolean())
+            "generateMergeComponents" -> configuration.put(GenerateMergeComponentsKey, value.toBoolean())
             "srcDir" -> configuration.put(SrcDirKey, value)
+            "cacheDir" -> configuration.put(CacheDirKey, value)
         }
     }
 }
 
-val SrcDirKey = CompilerConfigurationKey<String>("srcDir")
+val GenerateComponentsKey = CompilerConfigurationKey<Boolean>("generateComponents")
+typealias GenerateComponents = Boolean
+@Binding(ApplicationComponent::class)
+fun generateComponents(configuration: CompilerConfiguration): GenerateComponents =
+    configuration.getNotNull(GenerateComponentsKey)
 
+val GenerateMergeComponentsKey = CompilerConfigurationKey<Boolean>("generateMergeComponents")
+typealias GenerateMergeComponents = Boolean
+@Binding(ApplicationComponent::class)
+fun generateMergeComponents(configuration: CompilerConfiguration): GenerateMergeComponents =
+    configuration.getNotNull(GenerateMergeComponentsKey)
+
+val SrcDirKey = CompilerConfigurationKey<String>("srcDir")
 typealias SrcDir = File
 @Binding(ApplicationComponent::class)
 fun srcDir(configuration: CompilerConfiguration): SrcDir =
     File(configuration.getNotNull(SrcDirKey))
+        .also { it.mkdirs() }
+
+val CacheDirKey = CompilerConfigurationKey<String>("cacheDir")
+typealias CacheDir = File
+@Binding(ApplicationComponent::class)
+fun cacheDir(configuration: CompilerConfiguration): CacheDir =
+    File(configuration.getNotNull(CacheDirKey))
         .also { it.mkdirs() }

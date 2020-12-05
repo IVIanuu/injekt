@@ -106,6 +106,7 @@ class IndexGenerator(
                 val nameProvider = UniqueNameProvider()
                 val fileName = file.packageFqName.pathSegments().joinToString("_") + "_${file.name}"
                 fileManager.generateFile(
+                    originatingFile = file,
                     packageFqName = InjektFqNames.IndexPackage,
                     fileName = fileName,
                     code = buildCodeString {

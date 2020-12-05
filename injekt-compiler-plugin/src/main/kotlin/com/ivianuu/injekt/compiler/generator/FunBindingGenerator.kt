@@ -24,12 +24,14 @@ import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 @Binding(GenerationComponent::class)
 class FunBindingGenerator(
@@ -235,6 +237,11 @@ class FunBindingGenerator(
             }
         }
 
-        fileManager.generateFile(packageFqName, fileName, code)
+        fileManager.generateFile(
+            originatingFile = descriptor.findPsi().cast<KtElement>().containingKtFile,
+            packageFqName = packageFqName,
+            fileName = fileName,
+            code = code
+        )
     }
 }

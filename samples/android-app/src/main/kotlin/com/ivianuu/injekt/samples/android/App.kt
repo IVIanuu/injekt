@@ -19,11 +19,9 @@ package com.ivianuu.injekt.samples.android
 import android.app.Application
 import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.merge.ApplicationComponent
-import com.ivianuu.injekt.merge.GenerateMergeComponents
 import com.ivianuu.injekt.merge.MergeInto
 import com.ivianuu.injekt.merge.mergeComponent
 
-@GenerateMergeComponents
 class App : Application() {
     override fun onCreate() {
         super.onCreate()

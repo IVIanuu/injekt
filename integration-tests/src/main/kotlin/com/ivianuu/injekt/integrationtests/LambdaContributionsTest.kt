@@ -55,7 +55,6 @@ class LambdaContributionsTest {
         listOf(
             source(
                 """
-                        @GenerateMergeComponents
                         @Binding
                         fun foo() = Foo()
                 """

@@ -17,13 +17,14 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.compiler.GenerateComponents
+import com.ivianuu.injekt.compiler.GenerateMergeComponents
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.componentimpl.CallableBindingNode
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentFactoryType
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentImpl
 import com.ivianuu.injekt.compiler.generator.componentimpl.FunBindingNode
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
@@ -44,25 +45,28 @@ class ComponentGenerator(
         List<Callable>,
         @Parent ComponentImpl?,
     ) -> ComponentImpl,
+    private val generateComponents: GenerateComponents,
+    private val generateMergeComponents: GenerateMergeComponents,
     private val typeTranslator: TypeTranslator
 ) : Generator {
     override fun generate(files: List<KtFile>) {
-        var generateMergeComponents = false
-        files.forEach { file ->
-            file.accept(
-                namedDeclarationRecursiveVisitor { declaration ->
-                    generateMergeComponents = generateMergeComponents ||
-                            declaration.hasAnnotation(InjektFqNames.GenerateMergeComponents)
-                    if (declaration.hasAnnotation(InjektFqNames.Component)) {
-                        runExitCatching {
-                            val descriptor = declaration.descriptor<ClassDescriptor>(bindingContext)
-                                ?: return@namedDeclarationRecursiveVisitor
-                            generateComponent(descriptor.defaultType
-                                .let { typeTranslator.toTypeRef(it, descriptor) })
+        if (generateComponents) {
+            files.forEach { file ->
+                file.accept(
+                    namedDeclarationRecursiveVisitor { declaration ->
+                        if (declaration.hasAnnotation(InjektFqNames.Component)) {
+                            runExitCatching {
+                                val descriptor = declaration.descriptor<ClassDescriptor>(bindingContext)
+                                    ?: return@namedDeclarationRecursiveVisitor
+                                generateComponent(
+                                    descriptor.defaultType
+                                        .let { typeTranslator.toTypeRef(it, descriptor) }
+                                )
+                            }
                         }
                     }
-                }
-            )
+                )
+            }
         }
         if (generateMergeComponents) {
             declarationStore.mergeComponents
@@ -151,6 +155,7 @@ class ComponentGenerator(
         }
 
         fileManager.generateFile(
+            originatingFile = null,
             packageFqName = componentType.classifier.fqName.parent(),
             fileName = "${componentImplFqName.shortName()}.kt",
             code = code
