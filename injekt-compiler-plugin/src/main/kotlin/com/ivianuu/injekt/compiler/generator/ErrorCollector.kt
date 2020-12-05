@@ -1,8 +1,9 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.compiler.ApplicationComponent
 
-@Binding(GenerationComponent::class)
+@Binding(ApplicationComponent::class)
 class ErrorCollector {
 
     private val errors = mutableListOf<Throwable>()
