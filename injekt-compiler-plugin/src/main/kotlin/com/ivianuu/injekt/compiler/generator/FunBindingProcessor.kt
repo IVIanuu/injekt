@@ -160,6 +160,9 @@ class FunBindingProcessor(private val fileManager: FileManager) : ElementProcess
             }
             funApiValueParameters.forEachIndexed { index, valueParameter ->
                 emit("${valueParameter.name}: ${valueParameter.typeReference!!.text}")
+                if (valueParameter.defaultValue != null) {
+                    emit(" = ${valueParameter.defaultValue!!.text}")
+                }
                 if (index != funApiValueParametersTypes.lastIndex) emit(", ")
             }
             emit("): $returnType ")

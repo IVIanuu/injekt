@@ -462,6 +462,23 @@ class FunBindingTest {
     )
 
     @Test
+    fun testFunBindingExtensionWithDefaultParameter() = codegen(
+        """
+            @FunBinding
+            fun function(string: String, @FunApi param: Int = 0) {
+            }
+            
+            @Component
+            abstract class TestComponent(@Binding val string: String) {
+                abstract val function: function
+                fun invoke() {
+                    function.invokeFunction()
+                }
+            }
+        """
+    )
+
+    @Test
     fun testFunBindingWithFunBindingDependencyAndNullableParameter() = codegen(
         """
             typealias PrivacyPolicyUrl = String

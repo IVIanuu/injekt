@@ -26,11 +26,13 @@ import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.JVMConfigurationKeys
 import org.jetbrains.kotlin.extensions.CollectAdditionalSourcesExtension
 import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.resolve.jvm.extensions.PackageFragmentProviderExtension
+import java.io.File
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
@@ -39,16 +41,27 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project: MockProject,
         configuration: CompilerConfiguration,
     ) {
-        component<ApplicationComponent>(project, configuration)
-            .registerExtensions()
-        IrGenerationExtension.registerExtension(
-            project,
-            InjektIrIntrinsicTransformer()
-        )
-        TypeResolutionInterceptor.registerExtension(
-            project,
-            InjektTypeResolutionInterceptor()
-        )
+        // Don't bother with KAPT tasks.
+        // There is no way to pass KSP options to compileKotlin only. Have to workaround here.
+        val outputDir = configuration[JVMConfigurationKeys.OUTPUT_DIRECTORY]
+        val kaptOutputDirs = listOf(
+            listOf("tmp", "kapt3", "stubs"),
+            listOf("tmp", "kapt3", "incrementalData"),
+            listOf("tmp", "kapt3", "incApCache")
+        ).map { File(it.joinToString(File.separator)) }
+        val isGenerateKaptStubs = kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
+        if (!isGenerateKaptStubs) {
+            component<ApplicationComponent>(project, configuration)
+                .registerExtensions()
+            IrGenerationExtension.registerExtension(
+                project,
+                InjektIrIntrinsicTransformer()
+            )
+            TypeResolutionInterceptor.registerExtension(
+                project,
+                InjektTypeResolutionInterceptor()
+            )
+        }
     }
 }
 
