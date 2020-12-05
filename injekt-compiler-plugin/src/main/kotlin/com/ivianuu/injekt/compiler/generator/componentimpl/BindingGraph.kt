@@ -21,6 +21,7 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.ClassifierRef
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
+import com.ivianuu.injekt.compiler.generator.ErrorCollector
 import com.ivianuu.injekt.compiler.generator.FunBindingDescriptor
 import com.ivianuu.injekt.compiler.generator.ModuleDescriptor
 import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
@@ -59,6 +60,7 @@ class BindingGraph(
         List<Callable>,
         @Parent ComponentImpl?,
     ) -> ComponentImpl,
+    private val errorCollector: ErrorCollector,
     private val moduleDescriptor: org.jetbrains.kotlin.descriptors.ModuleDescriptor
 ) {
 
@@ -164,7 +166,7 @@ class BindingGraph(
             val binding = getBinding(request)
             if (binding.callableKind != Callable.CallableKind.DEFAULT &&
                 binding.callableKind != request.callableKind) {
-                error("Call context mismatch. '${request.origin.orUnknown()}' is a ${request.callableKind.name} callable but " +
+                errorCollector.add("Call context mismatch. '${request.origin.orUnknown()}' is a ${request.callableKind.name} callable but " +
                         "dependency '${binding.origin.orUnknown()}' is a ${binding.callableKind.name} callable.")
             }
         }
@@ -188,7 +190,7 @@ class BindingGraph(
                 .filter { it.second.callableKind != Callable.CallableKind.DEFAULT }
                 .groupBy { it.second.callableKind }
             if (dependenciesByCallableKind.size > 1) {
-                error("Dependencies call context mismatch. Dependencies of '${binding.origin.orUnknown()}' have different call contexts\n" +
+                errorCollector.add("Dependencies call context mismatch. Dependencies of '${binding.origin.orUnknown()}' have different call contexts\n" +
                         binding.dependencies.joinToString("\n") { dependency ->
                             val dependencyBinding = getBinding(dependency)
                             "${dependency.origin} -> '${dependencyBinding.origin.orUnknown()}' = ${dependencyBinding.callableKind.name}"
@@ -205,7 +207,7 @@ class BindingGraph(
             .forEach { (request, dependency) ->
                 if (request.callableKind != Callable.CallableKind.DEFAULT &&
                     request.callableKind != dependency.callableKind) {
-                    error("Call context mismatch. '${request.origin.orUnknown()}' is a ${request.callableKind.name} callable but " +
+                    errorCollector.add("Call context mismatch. '${request.origin.orUnknown()}' is a ${request.callableKind.name} callable but " +
                             "dependency '${dependency.origin.orUnknown()}' is a ${dependency.callableKind.name} callable.")
                 } else {
                     binding.callableKind = dependency.callableKind
@@ -266,7 +268,7 @@ class BindingGraph(
                     it.lazy || !request.required || request.type.isMarkedNullable ||
                             request.type == owner.componentType
                 }) return
-            error(
+            errorCollector.add(
                 "Circular dependency\n${relevantSubchain.joinToString("\n")} " +
                         "already contains\n$request\n\nDebug:\n${chain.joinToString("\n")}"
             )
@@ -276,7 +278,7 @@ class BindingGraph(
         if (request.type == owner.assistedRequests.singleOrNull()?.type &&
                 binding is CallableBindingNode &&
                 binding.eager) {
-            error("Cannot perform assisted injection on a eager binding $request ${binding.callable.fqName}")
+            errorCollector.add("Cannot perform assisted injection on a eager binding $request ${binding.callable.fqName}")
         }
         binding.owner.graph.check(binding)
         chain.pop()
@@ -326,7 +328,7 @@ class BindingGraph(
             return binding
         }
 
-        error(
+        errorCollector.add(
             buildString {
                 var indendation = ""
                 fun indent() {
@@ -388,7 +390,7 @@ class BindingGraph(
                 }
             }?.let { return it }
 
-            error(
+            errorCollector.add(
                 "Multiple $bindingKind bindings found for '${request.type.render()}' required by ${request.origin} at:\n${
                     joinToString("\n") { "    '${it.origin.orUnknown()}' $it" }
                 }"

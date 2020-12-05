@@ -25,7 +25,10 @@ import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifier
 
 @Binding
-class FunBindingProcessor(private val fileManager: FileManager) : ElementProcessor {
+class FunBindingProcessor(
+    private val errorCollector: ErrorCollector,
+    private val fileManager: FileManager
+) : ElementProcessor {
     override fun process(files: List<KtFile>): List<KtFile> {
         return files.flatMap { file ->
             val files = mutableListOf<KtFile>()
@@ -61,7 +64,7 @@ class FunBindingProcessor(private val fileManager: FileManager) : ElementProcess
             .filter { it.hasAnnotation(InjektFqNames.FunApi) }
             .map { it.typeReference!!.text }
         val returnType = declaration.typeReference?.text
-            ?: if (declaration.hasBlockBody()) "Unit" else error(
+            ?: if (declaration.hasBlockBody()) "Unit" else errorCollector.add(
                 "@FunBinding function must have explicit return type ${declaration.text} ${file.virtualFilePath}"
             )
 

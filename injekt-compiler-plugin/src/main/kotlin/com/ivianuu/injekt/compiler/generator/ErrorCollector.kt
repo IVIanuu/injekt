@@ -7,6 +7,10 @@ class ErrorCollector {
 
     private val errors = mutableListOf<Throwable>()
 
+    fun add(message: String): Nothing {
+        add(RuntimeException(message))
+    }
+
     fun add(throwable: Throwable): Nothing {
         errors += throwable
         throw ExitGenerationException()
