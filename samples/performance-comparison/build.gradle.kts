@@ -37,6 +37,10 @@ android {
     }
 }
 
+injekt {
+    generateComponents = true
+}
+
 dependencies {
     implementation(Deps.AndroidX.appCompat)
 

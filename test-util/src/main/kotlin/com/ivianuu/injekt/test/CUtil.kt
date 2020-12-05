@@ -115,8 +115,23 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
     block()
     pluginOptions += PluginOption(
         "com.ivianuu.injekt",
+        "generateComponents",
+        "true"
+    )
+    pluginOptions += PluginOption(
+        "com.ivianuu.injekt",
+        "generateMergeComponents",
+        "true"
+    )
+    pluginOptions += PluginOption(
+        "com.ivianuu.injekt",
         "srcDir",
         workingDir.resolve("injekt/generated/src").absolutePath
+    )
+    pluginOptions += PluginOption(
+        "com.ivianuu.injekt",
+        "cacheDir",
+        workingDir.resolve("injekt/cache").absolutePath
     )
 }
 

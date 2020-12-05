@@ -17,22 +17,81 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.compiler.CacheDir
 import com.ivianuu.injekt.compiler.SrcDir
 import com.ivianuu.injekt.compiler.log
+import com.ivianuu.injekt.component
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
 @Binding(GenerationComponent::class)
 class FileManager(
     private val srcDir: SrcDir,
+    private val cacheDir: CacheDir,
     private val log: log,
 ) {
+    private val originatingFilePaths = mutableMapOf<File, String>()
+
+    private val cacheFile = cacheDir.resolve("file_pairs")
 
     val newFiles = mutableListOf<File>()
+
+    private var compilingFiles = emptyList<KtFile>()
+
+    private val cacheEntries = if (!cacheFile.exists()) mutableSetOf()
+    else cacheFile.readText()
+        .split("\n")
+        .filter { it.isNotEmpty() }
+        .map {
+            val tmp = it.split("=:=")
+            tmp[0] to tmp[1]
+        }
+        .toMutableSet()
+
+    fun preGenerate(files: List<KtFile>): List<KtFile> {
+        val finalFiles = mutableListOf<KtFile>()
+
+        files.forEach { file ->
+            val originatingFilePath = cacheEntries
+                .singleOrNull { it.second == file.virtualFilePath }
+                ?.first
+            if (originatingFilePath == null) {
+                finalFiles += file
+                return@forEach
+            }
+
+            val compilingOriginatingFile = files.singleOrNull {
+                it.virtualFilePath == originatingFilePath
+            }
+
+            if (compilingOriginatingFile != null) {
+                File(file.virtualFilePath).delete()
+                cacheEntries.removeAll {
+                    it.second == file.virtualFilePath
+                }
+                return@forEach
+            }
+
+            if (!File(originatingFilePath).exists()) {
+                File(file.virtualFilePath).delete()
+                cacheEntries.removeAll {
+                    it.second == file.virtualFilePath
+                }
+                return@forEach
+            }
+
+            finalFiles += file
+        }
+
+        compilingFiles = finalFiles
+        return finalFiles
+    }
 
     fun generateFile(
         packageFqName: FqName,
         fileName: String,
+        originatingFile: KtFile?,
         code: String,
     ): File {
         val newFile = srcDir
@@ -40,6 +99,9 @@ class FileManager(
             .also { it.mkdirs() }
             .resolve(fileName)
             .also { newFiles += it }
+        if (originatingFile != null) {
+            originatingFilePaths[newFile] = originatingFile.virtualFilePath
+        }
 
         log { "generated file $packageFqName.$fileName $code" }
 
@@ -47,4 +109,40 @@ class FileManager(
             .also { it.createNewFile() }
             .also { it.writeText(code) }
     }
+
+    fun postGenerate() {
+        originatingFilePaths.forEach { (newFile, originatingFilePath) ->
+            cacheEntries += originatingFilePath to newFile.absolutePath
+        }
+
+        cacheDir.resolve("generated_files")
+            .also {
+                if (!it.exists()) {
+                    it.parentFile.mkdirs()
+                    it.createNewFile()
+                }
+            }
+            .writeText(originatingFilePaths.keys.joinToString("\n"))
+
+        cacheDir.resolve("compiling_files")
+            .also {
+                if (!it.exists()) {
+                    it.parentFile.mkdirs()
+                    it.createNewFile()
+                }
+            }
+            .writeText(compilingFiles.map { it.virtualFilePath }.joinToString("\n"))
+
+        cacheEntries
+            .joinToString("\n") { "${it.first}=:=${it.second}" }
+            .let {
+                if (!cacheFile.exists()) {
+                    cacheFile.parentFile.mkdirs()
+                    cacheFile.createNewFile()
+                }
+                cacheFile.writeText(it)
+                log { "Updated cache:\n $it" }
+            }
+    }
+
 }

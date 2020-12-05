@@ -27,8 +27,5 @@ annotation class MergeChildComponent
 @Target(AnnotationTarget.CLASS)
 annotation class MergeInto(val component: KClass<*>)
 
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
-annotation class GenerateMergeComponents
-
 @Suppress("UNCHECKED_CAST")
 fun <T> Any.mergeComponent(): T = this as T

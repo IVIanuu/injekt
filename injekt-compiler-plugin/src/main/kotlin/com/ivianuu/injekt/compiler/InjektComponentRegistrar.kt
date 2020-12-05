@@ -19,8 +19,8 @@ package com.ivianuu.injekt.compiler
 import com.google.auto.service.AutoService
 import com.ivianuu.injekt.FunApi
 import com.ivianuu.injekt.FunBinding
-import com.ivianuu.injekt.compiler.generator.DeleteOldFilesExtension
 import com.ivianuu.injekt.compiler.generator.InjektKtGenerationExtension
+import com.ivianuu.injekt.component
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -47,7 +47,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
             listOf("tmp", "kapt3", "incApCache")
         ).map { File(it.joinToString(File.separator)) }
         val isGenerateKaptStubs = kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
-        ApplicationComponentImpl(project, configuration)
+        component<ApplicationComponent>(project, configuration)
             .registerExtensions(isGenerateKaptStubs)
         IrGenerationExtension.registerExtension(
             project,
@@ -63,15 +63,9 @@ class InjektComponentRegistrar : ComponentRegistrar {
 @FunBinding
 fun registerExtensions(
     project: Project,
-    deleteOldFilesExtension: DeleteOldFilesExtension,
     injektKtGenerationExtension: InjektKtGenerationExtension,
     @FunApi isGenerateKaptStubs: Boolean
 ) {
-    AnalysisHandlerExtension.registerExtension(
-        project,
-        deleteOldFilesExtension
-    )
-
     if (!isGenerateKaptStubs) {
         AnalysisHandlerExtension.registerExtension(
             project,

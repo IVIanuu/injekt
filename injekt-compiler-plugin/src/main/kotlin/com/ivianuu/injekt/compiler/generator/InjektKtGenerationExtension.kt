@@ -17,8 +17,12 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.compiler.GenerateComponents
+import com.ivianuu.injekt.compiler.GenerateMergeComponents
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
+import org.jetbrains.kotlin.container.ComponentProvider
+import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingContext
@@ -27,13 +31,43 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtensi
 
 @Binding
 class InjektKtGenerationExtension(
-    private val generationComponentFactory: (ModuleDescriptor, BindingContext) -> GenerationComponent
+    private val generationComponentFactory: (
+        ModuleDescriptor,
+        BindingContext
+    ) -> GenerationComponent,
+    private val generateComponents: GenerateComponents,
+    private val generateMergeComponents: GenerateMergeComponents
 ) : PartialAnalysisHandlerExtension() {
 
     override val analyzePartially: Boolean
         get() = !generatedCode
 
     private var generatedCode = false
+
+    private var generationComponent: GenerationComponent? = null
+
+    override fun doAnalysis(
+        project: Project,
+        module: ModuleDescriptor,
+        projectContext: ProjectContext,
+        files: Collection<KtFile>,
+        bindingTrace: BindingTrace,
+        componentProvider: ComponentProvider
+    ): AnalysisResult? {
+        files as ArrayList<KtFile>
+        if (!generatedCode) {
+            generationComponent = generationComponentFactory(module, bindingTrace.bindingContext)
+            val tmpFiles = files.toList()
+            files.clear()
+            files += generationComponent!!.fileManager.preGenerate(tmpFiles)
+        }
+        return super.doAnalysis(project,
+            module,
+            projectContext,
+            files,
+            bindingTrace,
+            componentProvider)
+    }
 
     override fun analysisCompleted(
         project: Project,
@@ -46,13 +80,12 @@ class InjektKtGenerationExtension(
 
         files as List<KtFile>
 
-        val generationComponent = generationComponentFactory(
-            module, bindingTrace.bindingContext
-        )
-        val generators = listOf(
+        val generationComponent = generationComponent!!
+
+        val generators = listOfNotNull(
             generationComponent.funBindingGenerator,
             generationComponent.indexGenerator,
-            generationComponent.componentGenerator
+            if (generateComponents || generateMergeComponents) generationComponent.componentGenerator else null
         )
         generators.forEach {
             runExitCatching {
@@ -64,8 +97,11 @@ class InjektKtGenerationExtension(
                 it.generate(files)
             }
         }
+        generationComponent.fileManager.postGenerate()
         generationComponent.errorCollector.report()
         val newFiles = generationComponent.fileManager.newFiles
+
+        this.generationComponent = null
 
         return AnalysisResult.RetryWithAdditionalRoots(
             bindingTrace.bindingContext, module, emptyList(), newFiles, true
