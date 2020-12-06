@@ -37,6 +37,7 @@ object InjektFqNames {
     val Qualifier = InjektPackage.child("Qualifier".asNameId())
     val Scoped = InjektPackage.child("Scoped".asNameId())
     val SetElements = InjektPackage.child("SetElements".asNameId())
+    val TypeBinding = InjektPackage.child("TypeBinding".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
     val Index = InternalPackage.child("Index".asNameId())

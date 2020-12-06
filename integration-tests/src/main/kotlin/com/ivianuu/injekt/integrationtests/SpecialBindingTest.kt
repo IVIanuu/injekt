@@ -25,7 +25,7 @@ import com.ivianuu.injekt.test.source
 import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
-class FunBindingTest {
+class SpecialBindingTest {
 
     @Test
     fun testSimpleFunBinding() = codegen(
@@ -35,6 +35,19 @@ class FunBindingTest {
             
             @Component abstract class TestComponent(@Binding val string: String) {
                 abstract val function: function
+            }
+        """
+    )
+
+    @Test
+    fun testSimpleTypeBinding() = codegen(
+        """
+            @TypeBinding
+            fun isLoggedIn(string: String): Boolean = true
+            
+            @Component
+            abstract class TestComponent(@Binding val string: String) {
+                abstract val isLoggedIn: isLoggedIn
             }
         """
     )

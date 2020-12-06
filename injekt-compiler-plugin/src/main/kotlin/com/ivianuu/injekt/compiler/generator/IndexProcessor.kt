@@ -81,15 +81,15 @@ import org.jetbrains.kotlin.resolve.constants.StringValue
 
                     val needsIndexing = declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
                             declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) ||
-                            declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.FunBinding) ||
+                            declaration.hasAnnotation(InjektFqNames.FunBinding) ||
                             declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
                             declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
                             declaration.hasAnnotation(InjektFqNames.MergeComponent) ||
                             declaration.hasAnnotation(InjektFqNames.MergeChildComponent) ||
                             declaration.hasAnnotation(InjektFqNames.MergeInto) ||
-                            declaration.hasAnnotation(InjektFqNames.Module)
-
-                    if (!needsIndexing) return
+                            declaration.hasAnnotation(InjektFqNames.Module) ||
+                            declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.TypeBinding)
+                     if (!needsIndexing) return
 
                     val owner = when (declaration) {
                         is KtConstructor<*> -> declaration.containingClass()!!

@@ -175,7 +175,8 @@ fun QualifierDescriptor.substitute(
 ): QualifierDescriptor = copy(type = type.substitute(map))
 
 fun Annotated.contributionKind() = when {
-    hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) -> Callable.ContributionKind.BINDING
+    hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
+            hasAnnotationWithPropertyAndClass(InjektFqNames.TypeBinding)-> Callable.ContributionKind.BINDING
     hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) -> Callable.ContributionKind.INTERCEPTOR
     hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) -> Callable.ContributionKind.MAP_ENTRIES
     hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) -> Callable.ContributionKind.SET_ELEMENTS

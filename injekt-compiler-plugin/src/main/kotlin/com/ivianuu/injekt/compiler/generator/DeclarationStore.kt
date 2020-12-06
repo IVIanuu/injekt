@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -238,14 +239,16 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
         }
     }
 
-    private val classDescriptorByFqName = mutableMapOf<FqName, ClassDescriptor>()
-    fun classDescriptorForFqName(fqName: FqName): ClassDescriptor {
-        return classDescriptorByFqName.getOrPut(fqName) {
+    private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor>()
+    fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor {
+        return classifierDescriptorByFqName.getOrPut(fqName) {
             memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
-            ) as? ClassDescriptor ?: error("Could not get for $fqName")
+            ) ?: error("Could not get for $fqName")
         }
     }
+    fun classDescriptorForFqName(fqName: FqName): ClassDescriptor =
+        classifierDescriptorForFqName(fqName) as ClassDescriptor
 
     private val functionDescriptorsByFqName = mutableMapOf<FqName, List<FunctionDescriptor>>()
     fun functionDescriptorForFqName(fqName: FqName): List<FunctionDescriptor> {
@@ -292,7 +295,10 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
             else -> descriptor
         }
 
-        val type = descriptor.returnType!!.toTypeRef()
+        val type = (if (owner.hasAnnotation(InjektFqNames.TypeBinding)) {
+            classifierDescriptorForFqName(owner.fqNameSafe)
+                .defaultType
+        } else descriptor.returnType!!).toTypeRef()
 
         val funApiParams = if (descriptor.hasAnnotation(InjektFqNames.FunBinding)) {
             module.findClassifierAcrossModuleDependencies(

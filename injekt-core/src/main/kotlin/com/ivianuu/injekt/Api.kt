@@ -89,5 +89,12 @@ annotation class Default
 @Target(AnnotationTarget.FUNCTION)
 annotation class FunBinding
 
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+annotation class TypeBinding
+
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class FunApi
+
+@Qualifier
+@Target(AnnotationTarget.TYPE)
+annotation class TargetType
