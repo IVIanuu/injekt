@@ -29,13 +29,15 @@ inline fun <reified VM : ViewModel> fragmentViewModel() =
     viewModel<FragmentViewModelStoreOwner, VM>()
 
 inline fun <O : ViewModelStoreOwner, reified VM : ViewModel> viewModel():
-        @Interceptor (O, () -> VM) -> () -> VM = { storeOwner, factory -> {
-    ViewModelProvider(
-        storeOwner,
-        object : ViewModelProvider.Factory {
-            override fun <T : ViewModel?> create(modelClass: Class<T>): T =
-                factory() as T
-        }
-    )[VM::class.java]
-        }
+        @Interceptor (O, () -> VM) -> () -> VM = { storeOwner, factory ->
+    {
+        ViewModelProvider(
+            storeOwner,
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel?> create(modelClass: Class<T>): T =
+                    factory() as T
+            }
+        )[VM::class.java]
+    }
 }
