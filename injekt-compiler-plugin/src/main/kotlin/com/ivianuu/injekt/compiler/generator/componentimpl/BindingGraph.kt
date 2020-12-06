@@ -21,11 +21,11 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.ClassifierRef
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
+import com.ivianuu.injekt.compiler.generator.ErrorCollector
 import com.ivianuu.injekt.compiler.generator.FunBindingDescriptor
 import com.ivianuu.injekt.compiler.generator.ModuleDescriptor
 import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
 import com.ivianuu.injekt.compiler.generator.TypeRef
-import com.ivianuu.injekt.compiler.generator.TypeTranslator
 import com.ivianuu.injekt.compiler.generator.ValueParameterRef
 import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.callableKind
@@ -38,6 +38,7 @@ import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.replaceTypeParametersWithStars
 import com.ivianuu.injekt.compiler.generator.substitute
 import com.ivianuu.injekt.compiler.generator.substituteStars
+import com.ivianuu.injekt.compiler.generator.toClassifierRef
 import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.compiler.generator.unsafeLazy
 import org.jetbrains.kotlin.backend.common.pop
@@ -59,8 +60,8 @@ class BindingGraph(
         List<Callable>,
         @Parent ComponentImpl?,
     ) -> ComponentImpl,
-    private val moduleDescriptor: org.jetbrains.kotlin.descriptors.ModuleDescriptor,
-    private val typeTranslator: TypeTranslator
+    private val errorCollector: ErrorCollector,
+    private val moduleDescriptor: org.jetbrains.kotlin.descriptors.ModuleDescriptor
 ) {
 
     private val parent = owner.parent?.graph
@@ -93,12 +94,8 @@ class BindingGraph(
     private val chain = mutableListOf<BindingRequest>()
     private var locked = false
 
-    private val mapType = declarationStore.typeTranslator.toClassifierRef(
-        moduleDescriptor.builtIns.map
-    ).defaultType
-    private val setType = declarationStore.typeTranslator.toClassifierRef(
-        moduleDescriptor.builtIns.set
-    ).defaultType
+    private val mapType = moduleDescriptor.builtIns.map.toClassifierRef().defaultType
+    private val setType = moduleDescriptor.builtIns.set.toClassifierRef().defaultType
 
     private val collectedModules = mutableSetOf<TypeRef>()
 
@@ -116,7 +113,7 @@ class BindingGraph(
             )
 
         declarationStore.allModules
-            .filter { it.targetComponent.checkComponent(null) }
+            .filter { it.targetComponent.checkComponent() }
             .map { declarationStore.moduleForType(it.type) }
             .forEach { implicitModule ->
                 implicitModule.collectContributions(
@@ -169,7 +166,7 @@ class BindingGraph(
             val binding = getBinding(request)
             if (binding.callableKind != Callable.CallableKind.DEFAULT &&
                 binding.callableKind != request.callableKind) {
-                error("Call context mismatch. '${request.origin.orUnknown()}' is a ${request.callableKind.name} callable but " +
+                errorCollector.add("Call context mismatch. '${request.origin.orUnknown()}' is a ${request.callableKind.name} callable but " +
                         "dependency '${binding.origin.orUnknown()}' is a ${binding.callableKind.name} callable.")
             }
         }
@@ -193,7 +190,7 @@ class BindingGraph(
                 .filter { it.second.callableKind != Callable.CallableKind.DEFAULT }
                 .groupBy { it.second.callableKind }
             if (dependenciesByCallableKind.size > 1) {
-                error("Dependencies call context mismatch. Dependencies of '${binding.origin.orUnknown()}' have different call contexts\n" +
+                errorCollector.add("Dependencies call context mismatch. Dependencies of '${binding.origin.orUnknown()}' have different call contexts\n" +
                         binding.dependencies.joinToString("\n") { dependency ->
                             val dependencyBinding = getBinding(dependency)
                             "${dependency.origin} -> '${dependencyBinding.origin.orUnknown()}' = ${dependencyBinding.callableKind.name}"
@@ -210,7 +207,7 @@ class BindingGraph(
             .forEach { (request, dependency) ->
                 if (request.callableKind != Callable.CallableKind.DEFAULT &&
                     request.callableKind != dependency.callableKind) {
-                    error("Call context mismatch. '${request.origin.orUnknown()}' is a ${request.callableKind.name} callable but " +
+                    errorCollector.add("Call context mismatch. '${request.origin.orUnknown()}' is a ${request.callableKind.name} callable but " +
                             "dependency '${dependency.origin.orUnknown()}' is a ${dependency.callableKind.name} callable.")
                 } else {
                     binding.callableKind = dependency.callableKind
@@ -271,7 +268,7 @@ class BindingGraph(
                     it.lazy || !request.required || request.type.isMarkedNullable ||
                             request.type == owner.componentType
                 }) return
-            error(
+            errorCollector.add(
                 "Circular dependency\n${relevantSubchain.joinToString("\n")} " +
                         "already contains\n$request\n\nDebug:\n${chain.joinToString("\n")}"
             )
@@ -281,7 +278,7 @@ class BindingGraph(
         if (request.type == owner.assistedRequests.singleOrNull()?.type &&
                 binding is CallableBindingNode &&
                 binding.eager) {
-            error("Cannot perform assisted injection on a eager binding $request ${binding.callable.fqName}")
+            errorCollector.add("Cannot perform assisted injection on a eager binding $request ${binding.callable.fqName}")
         }
         binding.owner.graph.check(binding)
         chain.pop()
@@ -331,7 +328,7 @@ class BindingGraph(
             return binding
         }
 
-        error(
+        errorCollector.add(
             buildString {
                 var indendation = ""
                 fun indent() {
@@ -393,7 +390,7 @@ class BindingGraph(
                 }
             }?.let { return it }
 
-            error(
+            errorCollector.add(
                 "Multiple $bindingKind bindings found for '${request.type.render()}' required by ${request.origin} at:\n${
                     joinToString("\n") { "    '${it.origin.orUnknown()}' $it" }
                 }"
@@ -489,7 +486,7 @@ class BindingGraph(
 
     private fun getExplicitParentBindingsForType(parent: BindingGraph, request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
         this += parent.explicitBindings
-            .filter { it.targetComponent.checkComponent(request.type) }
+            .filter { it.targetComponent.checkComponent() }
             .filter { request.type.isAssignable(it.type) }
             .map { it.toCallableBindingNode(request) }
     }
@@ -497,7 +494,7 @@ class BindingGraph(
     private fun getImplicitUserBindingsForType(request: BindingRequest, default: Boolean): List<BindingNode> = buildList<BindingNode> {
         this += declarationStore.bindingsForType(request.type)
             .filter { it.default == default }
-            .filter { it.targetComponent.checkComponent(request.type) }
+            .filter { it.targetComponent.checkComponent() }
             .map { it.toCallableBindingNode(request) }
         this += implicitBindings
             .filter { it.default == default }
@@ -578,7 +575,7 @@ class BindingGraph(
         }
 
         this += declarationStore.funBindingsForType(request.type)
-            .filter { it.callable.targetComponent.checkComponent(request.type) }
+            .filter { it.callable.targetComponent.checkComponent() }
             .map { it.toFunBindingNode(request) }
 
         if ((request.type.isFunction || request.type.isSuspendFunction) &&
@@ -591,9 +588,7 @@ class BindingGraph(
             val assistedTypes = request.type.typeArguments.dropLast(1).distinct()
             if (!factoryExists && assistedTypes.isNotEmpty()) {
                 val returnType = request.type.typeArguments.last()
-                val childComponentType = typeTranslator.toClassifierRef(
-                    moduleDescriptor.builtIns.any
-                ).defaultType
+                val childComponentType = moduleDescriptor.builtIns.any.toClassifierRef().defaultType
                 val bindingCallable = Callable(
                     packageFqName = FqName.ROOT,
                     fqName = request.origin,
@@ -634,18 +629,18 @@ class BindingGraph(
         if (request.type.isSubTypeOf(mapType)) {
             val mapEntries = buildList<Callable> {
                 this += declarationStore.mapEntriesByType(request.type)
-                    .filter { it.targetComponent.checkComponent(request.type) }
+                    .filter { it.targetComponent.checkComponent() }
                 parentsTopDown.forEach { parent ->
                     parent.implicitMapEntries[request.type]
                         ?.filter {
                             with(parent) {
-                                it.targetComponent.checkComponent(request.type)
+                                it.targetComponent.checkComponent()
                             }
                         }
                         ?.let { this += it }
                 }
                 implicitMapEntries[request.type]
-                    ?.filter { it.targetComponent.checkComponent(request.type) }
+                    ?.filter { it.targetComponent.checkComponent() }
                     ?.let { this += it }
                 parentsTopDown.forEach { parent ->
                     parent.explicitMapEntries[request.type]?.let { this += it }
@@ -674,18 +669,18 @@ class BindingGraph(
         if (request.type.isSubTypeOf(setType)) {
             val setElements = buildList<Callable> {
                 this += declarationStore.setElementsByType(request.type)
-                    .filter { it.targetComponent.checkComponent(request.type) }
+                    .filter { it.targetComponent.checkComponent() }
                 parentsTopDown.forEach { parent ->
                     parent.implicitSetElements[request.type]
                         ?.filter {
                             with(parent) {
-                                it.targetComponent.checkComponent(request.type)
+                                it.targetComponent.checkComponent()
                             }
                         }
                         ?.let { this += it }
                 }
                 implicitSetElements[request.type]
-                    ?.filter { it.targetComponent.checkComponent(request.type) }
+                    ?.filter { it.targetComponent.checkComponent() }
                     ?.let { this += it }
                 parentsTopDown.forEach { parent ->
                     parent.explicitSetElements[request.type]?.let { this += it }
@@ -712,10 +707,8 @@ class BindingGraph(
         }
     }
 
-    private fun TypeRef?.checkComponent(type: TypeRef?): Boolean {
-        return this == null || this == owner.componentType ||
-                (owner.isAssisted && type == owner.assistedRequests.single().type)
-    }
+    private fun TypeRef?.checkComponent(): Boolean =
+        this == null || owner.nonAssistedComponent.componentType.isAssignable(this)
 
     private fun Callable.getDependencies(type: TypeRef, isInterceptor: Boolean): List<BindingRequest> {
         val substitutionMap = getSubstitutionMap(listOf(type to this.type))
@@ -730,15 +723,13 @@ class BindingGraph(
         callableKind: Callable.CallableKind
     ): List<InterceptorNode> {
         val providerType = when (callableKind) {
-            Callable.CallableKind.DEFAULT -> typeTranslator.toClassifierRef(
-                moduleDescriptor.builtIns.getFunction(0)
-            ).defaultType.typeWith(listOf(type))
-            Callable.CallableKind.SUSPEND -> typeTranslator.toClassifierRef(
-                moduleDescriptor.builtIns.getSuspendFunction(0)
-            ).defaultType.typeWith(listOf(type))
-            Callable.CallableKind.COMPOSABLE -> typeTranslator.toClassifierRef(
-                moduleDescriptor.builtIns.getFunction(0)
-            ).defaultType.typeWith(listOf(type)).copy(isComposable = true)
+            Callable.CallableKind.DEFAULT -> moduleDescriptor.builtIns.getFunction(0)
+                .toClassifierRef().defaultType.typeWith(listOf(type))
+            Callable.CallableKind.SUSPEND -> moduleDescriptor.builtIns.getSuspendFunction(0)
+                .toClassifierRef().defaultType.typeWith(listOf(type))
+            Callable.CallableKind.COMPOSABLE -> moduleDescriptor.builtIns.getFunction(0)
+                .toClassifierRef().defaultType.typeWith(listOf(type))
+                .copy(isComposable = true)
         }
         return getInterceptorsForType(providerType)
             .map { interceptor ->
@@ -754,30 +745,30 @@ class BindingGraph(
     private fun getInterceptorsForType(providerType: TypeRef): List<InterceptorNode> = buildList<InterceptorNode> {
         this += explicitInterceptors
             .filter { providerType.isAssignable(it.callable.type) }
-            .filter { it.callable.targetComponent.checkComponent(providerType.typeArguments.last()) }
+            .filter { it.callable.targetComponent.checkComponent() }
         this += parentsBottomUp.flatMap { parent ->
             parent.explicitInterceptors
                 .filter { providerType.isAssignable(it.callable.type) }
                 .filter {
                     with(parent) {
-                        it.callable.targetComponent.checkComponent(providerType.typeArguments.last())
+                        it.callable.targetComponent.checkComponent()
                     }
                 }
         }
         this += implicitInterceptors
             .filter { providerType.isAssignable(it.callable.type) }
-            .filter { it.callable.targetComponent.checkComponent(providerType.typeArguments.last()) }
+            .filter { it.callable.targetComponent.checkComponent() }
         this += parentsBottomUp.flatMap { parent ->
             parent.implicitInterceptors
                 .filter { providerType.isAssignable(it.callable.type) }
                 .filter {
                     with(parent) {
-                        it.callable.targetComponent.checkComponent(providerType.typeArguments.last())
+                        it.callable.targetComponent.checkComponent()
                     }
                 }
         }
         this += declarationStore.interceptorsByType(providerType)
-            .filter { it.targetComponent.checkComponent(providerType.typeArguments.last()) }
+            .filter { it.targetComponent.checkComponent() }
             .map { interceptor ->
                 InterceptorNode(
                     interceptor,

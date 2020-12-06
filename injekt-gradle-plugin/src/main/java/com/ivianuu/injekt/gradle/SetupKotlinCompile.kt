@@ -10,8 +10,6 @@ import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
-    if (this is KaptGenerateStubsTask) return emptyList()
-
     val compilation = AbstractKotlinCompile::class.java
         .getDeclaredMethod("getTaskData\$kotlin_gradle_plugin")
         .invoke(this)

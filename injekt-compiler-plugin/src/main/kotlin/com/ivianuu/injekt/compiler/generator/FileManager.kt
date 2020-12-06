@@ -17,25 +17,32 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.compiler.ApplicationComponent
 import com.ivianuu.injekt.compiler.CacheDir
 import com.ivianuu.injekt.compiler.SrcDir
 import com.ivianuu.injekt.compiler.log
-import com.ivianuu.injekt.component
+import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalFileSystem
+import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalVirtualFile
+import org.jetbrains.kotlin.com.intellij.psi.PsiManager
+import org.jetbrains.kotlin.com.intellij.psi.SingleRootFileViewProvider
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
-@Binding(GenerationComponent::class)
+@Binding(ApplicationComponent::class)
 class FileManager(
     private val srcDir: SrcDir,
     private val cacheDir: CacheDir,
     private val log: log,
+    private val psiManager: PsiManager
 ) {
     private val originatingFilePaths = mutableMapOf<File, String>()
 
     private val cacheFile = cacheDir.resolve("file_pairs")
 
     val newFiles = mutableListOf<File>()
+
+    private val additionalFiles = mutableListOf<File>()
 
     private var compilingFiles = emptyList<KtFile>()
 
@@ -53,6 +60,11 @@ class FileManager(
         val finalFiles = mutableListOf<KtFile>()
 
         files.forEach { file ->
+            if (additionalFiles.any { it.absolutePath == file.virtualFilePath }) {
+                finalFiles += file
+                return@forEach
+            }
+
             val originatingFilePath = cacheEntries
                 .singleOrNull { it.second == file.virtualFilePath }
                 ?.first
@@ -85,7 +97,7 @@ class FileManager(
         }
 
         compilingFiles = finalFiles
-        return finalFiles
+        return finalFiles.distinctBy { it.virtualFilePath }
     }
 
     fun generateFile(
@@ -93,21 +105,36 @@ class FileManager(
         fileName: String,
         originatingFile: KtFile?,
         code: String,
-    ): File {
+        forAdditionalSource: Boolean
+    ): KtFile? {
         val newFile = srcDir
             .resolve(packageFqName.asString().replace(".", "/"))
             .also { it.mkdirs() }
             .resolve(fileName)
-            .also { newFiles += it }
+            .also {
+                if (forAdditionalSource) additionalFiles += it
+                else newFiles += it
+            }
         if (originatingFile != null) {
             originatingFilePaths[newFile] = originatingFile.virtualFilePath
         }
 
         log { "generated file $packageFqName.$fileName $code" }
 
-        return newFile
-            .also { it.createNewFile() }
-            .also { it.writeText(code) }
+        newFile.createNewFile()
+        newFile.writeText(code)
+
+        return if (forAdditionalSource) {
+            val virtualFile = CoreLocalVirtualFile(CoreLocalFileSystem(), newFile)
+            KtFile(
+                object : SingleRootFileViewProvider(
+                    psiManager,
+                    virtualFile
+                ) {
+                },
+                false
+            )
+        } else null
     }
 
     fun postGenerate() {

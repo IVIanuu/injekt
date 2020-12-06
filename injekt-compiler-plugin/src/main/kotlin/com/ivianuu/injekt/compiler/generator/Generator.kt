@@ -23,9 +23,11 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingContext
 
 interface Generator {
-    fun preProcess(files: List<KtFile>) {
-    }
     fun generate(files: List<KtFile>)
+}
+
+interface ElementProcessor {
+    fun process(files: List<KtFile>): List<KtFile>
 }
 
 @ChildComponent
@@ -33,9 +35,7 @@ abstract class GenerationComponent(
     @Binding protected val moduleDescriptor: ModuleDescriptor,
     @Binding protected val bindingContext: BindingContext
 ) {
-    abstract val errorCollector: ErrorCollector
-    abstract val funBindingGenerator: FunBindingGenerator
     abstract val fileManager: FileManager
     abstract val componentGenerator: ComponentGenerator
-    abstract val indexGenerator: IndexGenerator
+    abstract val errorCollector: ErrorCollector
 }

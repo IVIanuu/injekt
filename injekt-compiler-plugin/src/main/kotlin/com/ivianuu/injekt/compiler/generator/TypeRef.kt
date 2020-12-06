@@ -21,12 +21,21 @@ import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.builtins.isSuspendFunctionType
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
+import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.constants.ArrayValue
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.types.getAbbreviation
+import org.jetbrains.kotlin.types.isError
 
 data class ClassifierRef(
     val fqName: FqName,
@@ -68,6 +77,31 @@ fun TypeRef.superTypes(substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
         .map { it.substitute(merged) }
 }
 
+fun KotlinType.toTypeRef(
+    variance: Variance = Variance.INVARIANT,
+    isStarProjection: Boolean = false
+) = KotlinTypeRef(this, variance, isStarProjection)
+
+fun ClassifierDescriptor.toClassifierRef(): ClassifierRef = ClassifierRef(
+    fqName = original.fqNameSafe,
+    typeParameters = (original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
+        ?.map { it.toClassifierRef() } ?: emptyList(),
+    superTypes = typeConstructor.supertypes.map { it.toTypeRef() },
+    expandedType = (original as? TypeAliasDescriptor)?.expandedType?.toTypeRef()?.fullyExpandedType,
+    isTypeParameter = this is TypeParameterDescriptor,
+    isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
+    isTypeAlias = this is TypeAliasDescriptor,
+    funApiParams = annotations.findAnnotation(InjektFqNames.FunApiParams)
+        ?.allValueArguments
+        ?.values
+        ?.single()
+        ?.let { it as ArrayValue }
+        ?.value
+        ?.map { it.value as String }
+        ?.map { it.asNameId() }
+        ?: emptyList()
+)
+
 sealed class TypeRef {
     abstract val classifier: ClassifierRef
     abstract val isMarkedNullable: Boolean
@@ -101,7 +135,7 @@ sealed class TypeRef {
         var result = classifier.hashCode()
         // todo result = 31 * result + isMarkedNullable.hashCode()
         result = 31 * result + typeArguments.hashCode()
-        result = 31 * result + variance.hashCode()
+        // todo result result = 31 * result + variance.hashCode()
         result = 31 * result + isFunction.hashCode()
         result = 31 * result + isSuspendFunction.hashCode()
         result = 31 * result + isExtensionFunction.hashCode()
@@ -126,15 +160,17 @@ sealed class TypeRef {
 
 class KotlinTypeRef(
     val kotlinType: KotlinType,
-    val typeTranslator: TypeTranslator,
     override val variance: Variance = Variance.INVARIANT,
     override val isStarProjection: Boolean = false,
 ) : TypeRef() {
+    init {
+        check(!kotlinType.isError) {
+            "Error type $kotlinType"
+        }
+    }
     private val finalType by unsafeLazy { kotlinType.getAbbreviation() ?: kotlinType.prepare() }
     override val classifier: ClassifierRef by unsafeLazy {
-        finalType.constructor.declarationDescriptor!!.let {
-            typeTranslator.toClassifierRef(it, fixType = false)
-        }
+        finalType.constructor.declarationDescriptor!!.let { it.toClassifierRef() }
     }
     override val isFunction: Boolean by unsafeLazy {
         finalType.isFunctionType
@@ -170,27 +206,20 @@ class KotlinTypeRef(
     }
     override val typeArguments: List<TypeRef> by unsafeLazy {
         finalType.arguments.map {
-            typeTranslator.toTypeRef(it.type,
-                finalType.constructor.declarationDescriptor,
-                it.projectionKind,
-                it.isStarProjection,
-                false)
+            it.type.toTypeRef(it.projectionKind, it.isStarProjection)
         }
     }
     override val qualifiers: List<QualifierDescriptor> by unsafeLazy {
         kotlinType.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-            .map {
-                typeTranslator.declarationStore.qualifierDescriptorForAnnotation(
-                    it,
-                    kotlinType.constructor.declarationDescriptor
-                )
-            }
+            .map { it.toQualifierDescriptor() }
     }
     override val contributionKind: Callable.ContributionKind? by unsafeLazy {
         kotlinType.contributionKind()
     }
     override val targetComponent: TypeRef? by unsafeLazy {
-        kotlinType.targetComponent(typeTranslator.declarationStore.module, typeTranslator)
+        kotlinType.targetComponent(
+            kotlinType.constructor.declarationDescriptor!!.module
+        )
     }
     override val scoped: Boolean by unsafeLazy {
         kotlinType.hasAnnotation(InjektFqNames.Scoped)

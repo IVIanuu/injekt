@@ -46,8 +46,7 @@ class ComponentGenerator(
         @Parent ComponentImpl?,
     ) -> ComponentImpl,
     private val generateComponents: GenerateComponents,
-    private val generateMergeComponents: GenerateMergeComponents,
-    private val typeTranslator: TypeTranslator
+    private val generateMergeComponents: GenerateMergeComponents
 ) : Generator {
     override fun generate(files: List<KtFile>) {
         if (generateComponents) {
@@ -55,14 +54,9 @@ class ComponentGenerator(
                 file.accept(
                     namedDeclarationRecursiveVisitor { declaration ->
                         if (declaration.hasAnnotation(InjektFqNames.Component)) {
-                            runExitCatching {
-                                val descriptor = declaration.descriptor<ClassDescriptor>(bindingContext)
-                                    ?: return@namedDeclarationRecursiveVisitor
-                                generateComponent(
-                                    descriptor.defaultType
-                                        .let { typeTranslator.toTypeRef(it, descriptor) }
-                                )
-                            }
+                            val descriptor = declaration.descriptor<ClassDescriptor>(bindingContext)
+                                ?: return@namedDeclarationRecursiveVisitor
+                            generateComponent(descriptor.defaultType.toTypeRef())
                         }
                     }
                 )
@@ -70,11 +64,7 @@ class ComponentGenerator(
         }
         if (generateMergeComponents) {
             declarationStore.mergeComponents
-                .forEach {
-                    runExitCatching {
-                        generateComponent(it)
-                    }
-                }
+                .forEach { generateComponent(it) }
         }
     }
 
@@ -158,7 +148,8 @@ class ComponentGenerator(
             originatingFile = null,
             packageFqName = componentType.classifier.fqName.parent(),
             fileName = "${componentImplFqName.shortName()}.kt",
-            code = code
+            code = code,
+            forAdditionalSource = false
         )
     }
 }

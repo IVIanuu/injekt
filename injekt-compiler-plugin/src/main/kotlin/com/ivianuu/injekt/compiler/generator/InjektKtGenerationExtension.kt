@@ -82,16 +82,13 @@ class InjektKtGenerationExtension(
 
         val generationComponent = generationComponent!!
 
+        // report all errors occurred in collect additional sources
+        generationComponent.errorCollector.report()
+
         val generators = listOfNotNull(
-            generationComponent.funBindingGenerator,
-            generationComponent.indexGenerator,
-            if (generateComponents || generateMergeComponents) generationComponent.componentGenerator else null
+            if (generateComponents || generateMergeComponents)
+                generationComponent.componentGenerator else null
         )
-        generators.forEach {
-            runExitCatching {
-                it.preProcess(files)
-            }
-        }
         generators.forEach {
             runExitCatching {
                 it.generate(files)

@@ -65,14 +65,6 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 @Binding(GenerationComponent::class)
 class DeclarationStore(val module: ModuleDescriptor) {
 
-    lateinit var typeTranslator: TypeTranslator
-
-    private val internalIndices = mutableListOf<Index>()
-
-    fun addInternalIndex(index: Index) {
-        internalIndices += index
-    }
-
     fun constructorForComponent(type: TypeRef): Callable? {
         return classDescriptorForFqName(type.classifier.fqName)
             .unsubstitutedPrimaryConstructor
@@ -80,10 +72,6 @@ class DeclarationStore(val module: ModuleDescriptor) {
     }
 
     private val allIndices by unsafeLazy {
-        internalIndices + externalIndices
-    }
-
-    private val externalIndices by unsafeLazy {
         memberScopeForFqName(InjektFqNames.IndexPackage)
             ?.getContributedDescriptors(DescriptorKindFilter.VALUES)
             ?.filterIsInstance<PropertyDescriptor>()
@@ -134,12 +122,6 @@ class DeclarationStore(val module: ModuleDescriptor) {
             .distinct()
     }
 
-    private val generatedClassifiers = mutableMapOf<FqName, ClassifierRef>()
-    fun addGeneratedClassifier(classifier: ClassifierRef) {
-        generatedClassifiers[classifier.fqName] = classifier
-    }
-    fun generatedClassifierFor(fqName: FqName): ClassifierRef? = generatedClassifiers[fqName]
-
     val allModules: List<Callable> by unsafeLazy {
         classIndices
             .filter { it.hasAnnotation(InjektFqNames.Module) }
@@ -158,16 +140,10 @@ class DeclarationStore(val module: ModuleDescriptor) {
             .filter { it.hasAnnotation(InjektFqNames.FunBinding) }
             .map {
                 val callable = callableForDescriptor(it)
-                val type = (generatedClassifiers[callable.fqName] ?:typeTranslator.toClassifierRef(
-                    module.findClassifierAcrossModuleDependencies(
-                        ClassId.topLevel(callable.fqName)
-                    )!!
-                )).defaultType
-                FunBindingDescriptor(
-                    callable,
-                    type,
-                    type
-                )
+                val type = module.findClassifierAcrossModuleDependencies(
+                    ClassId.topLevel(callable.fqName)
+                )!!.toClassifierRef().defaultType
+                FunBindingDescriptor(callable, type, type)
             }
     }
     private val funBindingsByType = mutableMapOf<TypeRef, List<FunBindingDescriptor>>()
@@ -221,7 +197,7 @@ class DeclarationStore(val module: ModuleDescriptor) {
     val mergeComponents: List<TypeRef> by unsafeLazy {
         classIndices
             .filter { it.hasAnnotation(InjektFqNames.MergeComponent) }
-            .map { it.defaultType.let { typeTranslator.toTypeRef2(it) } }
+            .map { it.toClassifierRef().defaultType }
     }
 
     private val allMergeDeclarationsByFqName by unsafeLazy {
@@ -239,9 +215,7 @@ class DeclarationStore(val module: ModuleDescriptor) {
                 }
                 .forEach { (mergeComponent, declarations) ->
                     getOrPut(mergeComponent) { mutableListOf() } += declarations.map {
-                        it.defaultType.let {
-                            typeTranslator.toTypeRef2(it)
-                        }
+                        it.toClassifierRef().defaultType
                     }
                 }
         }
@@ -331,55 +305,6 @@ class DeclarationStore(val module: ModuleDescriptor) {
         }
     }
 
-    private fun valueArgsForAnnotation(annotation: AnnotationDescriptor): Map<Name, ComponentExpression> {
-        return annotation.allValueArguments.mapValues { (_, arg) ->
-            {
-                fun ConstantValue<*>.emit() {
-                    when (this) {
-                        is ArrayValue -> {
-                            // todo avoid boxing
-                            emit("arrayOf(")
-                            value.forEachIndexed { index, itemValue ->
-                                itemValue.emit()
-                                if (index != value.lastIndex) emit(", ")
-                            }
-                            emit(")")
-                        }
-                        is BooleanValue -> emit(value)
-                        is ByteValue -> emit("$value")
-                        is CharValue -> emit("'${value}'")
-                        is DoubleValue -> emit("$value")
-                        is EnumValue -> emit("${enumClassId.asSingleFqName()}.${enumEntryName}")
-                        is FloatValue -> emit("${value}f")
-                        is IntValue -> emit("$value")
-                        is KClassValue -> emit("${(value as KClassValue.Value.NormalClass).classId.asSingleFqName()}::class")
-                        is LongValue -> emit("${value}L")
-                        is ShortValue -> emit("$value")
-                        is StringValue -> emit("\"${value}\"")
-                        is UByteValue -> emit("${value}u")
-                        is UIntValue -> emit("${value}u")
-                        is ULongValue -> emit("(${value}UL)")
-                        is UShortValue -> emit("${value}u")
-                        else -> error("Unsupported bindingArg type $value")
-                    }.let {}
-                }
-
-                arg.emit()
-            }
-        }
-    }
-
-    fun qualifierDescriptorForAnnotation(
-        annotation: AnnotationDescriptor,
-        source: DeclarationDescriptor?
-    ): QualifierDescriptor {
-        return QualifierDescriptor(
-            type = typeTranslator.toTypeRef(annotation.type, source),
-            args = valueArgsForAnnotation(annotation)
-                .mapValues { buildCodeString { it.value(this) } }
-        )
-    }
-
     private val callablesByDescriptor = mutableMapOf<Any, Callable>()
     fun callableForDescriptor(descriptor: FunctionDescriptor): Callable = callablesByDescriptor.getOrPut(descriptor) {
         val owner = when (descriptor) {
@@ -388,16 +313,12 @@ class DeclarationStore(val module: ModuleDescriptor) {
             else -> descriptor
         }
 
-        val type = descriptor.returnType!!.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) }
+        val type = descriptor.returnType!!.toTypeRef()
 
         val funApiParams = if (descriptor.hasAnnotation(InjektFqNames.FunBinding)) {
-            val classifier = (generatedClassifiers[owner.fqNameSafe] ?:
-            typeTranslator.toClassifierRef(
-                module.findClassifierAcrossModuleDependencies(
-                    ClassId.topLevel(owner.fqNameSafe)
-                )!!
-            ))
-            classifier.funApiParams
+            module.findClassifierAcrossModuleDependencies(
+                ClassId.topLevel(owner.fqNameSafe)
+            )?.toClassifierRef()?.funApiParams ?: error("Wtf $descriptor")
         } else emptyList()
 
         Callable(
@@ -405,8 +326,8 @@ class DeclarationStore(val module: ModuleDescriptor) {
             packageFqName = descriptor.findPackage().fqName,
             fqName = owner.fqNameSafe,
             type = type,
-            targetComponent = descriptor.targetComponent(module, typeTranslator)
-                ?: owner.targetComponent(module, typeTranslator),
+            targetComponent = descriptor.targetComponent(module)
+                ?: owner.targetComponent(module),
             scoped = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Scoped),
             eager = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Eager),
             default = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Default),
@@ -416,12 +337,10 @@ class DeclarationStore(val module: ModuleDescriptor) {
                 is ClassDescriptor -> owner.declaredTypeParameters
                 is PropertyDescriptor -> owner.typeParameters
                 else -> error("Unexpected owner $owner")
-            }).map {
-                typeTranslator.toClassifierRef(it)
-            },
+            }).map { it.toClassifierRef() },
             valueParameters = listOfNotNull(
                 descriptor.dispatchReceiverParameter?.let {
-                    val parameterType = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) }
+                    val parameterType = it.type.toTypeRef()
                     ValueParameterRef(
                         type = parameterType,
                         originalType = parameterType,
@@ -433,19 +352,19 @@ class DeclarationStore(val module: ModuleDescriptor) {
                     )
                 },
                 descriptor.extensionReceiverParameter?.let {
-                    val parameterType = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) }
+                    val parameterType = it.type.toTypeRef()
                     ValueParameterRef(
                         type = parameterType,
                         originalType = parameterType,
                         parameterKind = ValueParameterRef.ParameterKind.EXTENSION_RECEIVER,
                         name = "_extensionReceiver".asNameId(),
-                        isFunApi = "<this>" in funApiParams.map { it.asString() },
+                        isFunApi = "_extensionReceiver" in funApiParams.map { it.asString() },
                         hasDefault = false,
                         defaultExpression = null
                     )
                 }
             ) + descriptor.valueParameters.map {
-                val parameterType = it.type.let { typeTranslator.toTypeRef(it, descriptor, Variance.INVARIANT) }
+                val parameterType = it.type.toTypeRef()
                 ValueParameterRef(
                     type = parameterType,
                     originalType = parameterType,
@@ -504,7 +423,8 @@ class DeclarationStore(val module: ModuleDescriptor) {
                     scoped = finalType.scoped,
                     eager = finalType.eager,
                     default = finalType.default,
-                    contributionKind = finalType.contributionKind
+                    contributionKind = finalType.contributionKind,
+                    callableKind = finalType.callableKind
                 )
                 listOf(finalCallable)
             } else {
