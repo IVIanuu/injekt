@@ -74,7 +74,7 @@ interface MainActivityComponent {
         )
 }
 
-@Module val _MainViewModel = activityViewModel<MainViewModel>()
+@Module val MainViewModelModule = activityViewModel<MainViewModel>()
 @Binding class MainViewModel : ViewModel() {
     init {
         println("init")

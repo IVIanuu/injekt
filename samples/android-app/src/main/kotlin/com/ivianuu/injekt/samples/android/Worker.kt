@@ -28,7 +28,7 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.android.work.worker
 
-@Module val _TestWorker = worker<TestWorker>()
+@Module val TestWorkerModule = worker<TestWorker>()
 @Binding class TestWorker(
     context: Context,
     workerParams: WorkerParameters,
