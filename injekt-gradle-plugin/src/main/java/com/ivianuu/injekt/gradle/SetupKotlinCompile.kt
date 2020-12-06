@@ -52,11 +52,14 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
 
     val extension = project.extensions.getByType(InjektExtension::class.java)
 
-    val isIncremental = !extension.generateComponents && !extension.generateMergeComponents
-
-    incremental = isIncremental
-
     project.afterEvaluate {
+        val isIncremental = !extension.generateComponents && !extension.generateMergeComponents
+
+        incremental = isIncremental
+        if (!isIncremental) {
+            outputs.cacheIf { false }
+        }
+
         val cleanGeneratedFiles = project.tasks.create(
             "${name}InjektCleanGeneratedFiles", CleanGeneratedFiles::class.java)
         cleanGeneratedFiles.isIncremental = isIncremental
