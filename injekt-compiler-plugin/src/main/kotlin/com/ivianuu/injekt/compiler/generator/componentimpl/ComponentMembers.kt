@@ -499,7 +499,7 @@ class ComponentStatements(
         ).also { scopeComponent.members += it }
 
         if (callableKind == Callable.CallableKind.SUSPEND) {
-            val mutexType = declarationStore.classDescriptorForFqName(InjektFqNames.Mutex)
+            val mutexType = declarationStore.classifierDescriptorForFqName(InjektFqNames.Mutex)
                 .toClassifierRef().defaultType
             scopeComponent.members.firstOrNull {
                 it is ComponentCallable &&

@@ -9,11 +9,11 @@ import org.jetbrains.kotlin.psi.KtFile
 
 @Binding
 class InjektCollectAdditionalSourcesExtension(
-    funBindingProcessor: FunBindingProcessor,
+    specialBindingProcessor: SpecialBindingProcessor,
     indexProcessor: IndexProcessor
 ) : CollectAdditionalSourcesExtension {
 
-    private val processors = listOf(funBindingProcessor, indexProcessor)
+    private val processors = listOf(specialBindingProcessor, indexProcessor)
 
     override fun collectAdditionalSourcesAndUpdateConfiguration(
         knownSources: Collection<KtFile>,
