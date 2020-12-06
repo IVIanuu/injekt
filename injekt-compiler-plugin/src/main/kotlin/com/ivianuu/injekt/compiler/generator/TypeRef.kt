@@ -315,7 +315,7 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
             // we copy nullability to support T : Any? -> String
             isMarkedNullable = if (!isStarProjection) isMarkedNullable else it.isMarkedNullable,
             // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
-            qualifiers = qualifiers + it.qualifiers
+            qualifiers = qualifiers
         )
     }
 
