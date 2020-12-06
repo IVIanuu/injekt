@@ -139,10 +139,12 @@ class FunBindingProcessor(
             if (isSuspend) emit("suspend ")
 
             emit("fun ")
-            declaration.typeParameterList?.text?.let {
-                emit(it)
-                emitSpace()
-            }
+            declaration.typeParameterList?.text
+                ?.replace("reified ", "")
+                ?.let {
+                    emit(it)
+                    emitSpace()
+                }
 
             emit(declaration.name)
             if (declaration.typeParameters.isNotEmpty()) {
