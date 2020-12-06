@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.types.getAbbreviation
+import org.jetbrains.kotlin.types.isError
 
 data class ClassifierRef(
     val fqName: FqName,
@@ -162,6 +163,11 @@ class KotlinTypeRef(
     override val variance: Variance = Variance.INVARIANT,
     override val isStarProjection: Boolean = false,
 ) : TypeRef() {
+    init {
+        check(!kotlinType.isError) {
+            "Error type $kotlinType"
+        }
+    }
     private val finalType by unsafeLazy { kotlinType.getAbbreviation() ?: kotlinType.prepare() }
     override val classifier: ClassifierRef by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.let { it.toClassifierRef() }

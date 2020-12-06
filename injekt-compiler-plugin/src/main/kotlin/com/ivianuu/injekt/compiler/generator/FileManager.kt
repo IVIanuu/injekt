@@ -97,7 +97,7 @@ class FileManager(
         }
 
         compilingFiles = finalFiles
-        return finalFiles
+        return finalFiles.distinctBy { it.virtualFilePath }
     }
 
     fun generateFile(

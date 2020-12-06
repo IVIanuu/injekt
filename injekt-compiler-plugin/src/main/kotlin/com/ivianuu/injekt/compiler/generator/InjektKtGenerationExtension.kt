@@ -82,6 +82,9 @@ class InjektKtGenerationExtension(
 
         val generationComponent = generationComponent!!
 
+        // report all errors occurred in collect additional sources
+        generationComponent.errorCollector.report()
+
         val generators = listOfNotNull(
             if (generateComponents || generateMergeComponents)
                 generationComponent.componentGenerator else null

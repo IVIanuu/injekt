@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
@@ -148,5 +149,41 @@ class LambdaContributionsTest {
             }
         """
     )
+
+    @Test
+    fun testComposableBindingLambda() = codegen(
+        """
+            val barProvider: @Binding @Composable (Foo) -> Bar = { Bar(it) }
+            @Module val barModule = moduleOf(barProvider)
+
+            @Binding
+            fun foo() = Foo()
+
+            @Component
+            abstract class MyComponent {
+                abstract val bar: Bar
+            }
+        """
+    ) {
+        assertInternalError("Call context mismatch")
+    }
+
+    @Test
+    fun testSuspendBindingLambda() = codegen(
+        """
+            val barProvider: @Binding suspend (Foo) -> Bar = { Bar(it) }
+            @Module val barModule = moduleOf(barProvider)
+
+            @Binding
+            fun foo() = Foo()
+
+            @Component
+            abstract class MyComponent {
+                abstract val bar: Bar
+            }
+        """
+    ) {
+        assertInternalError("Call context mismatch")
+    }
 
 }

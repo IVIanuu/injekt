@@ -318,7 +318,7 @@ class DeclarationStore(val module: ModuleDescriptor) {
         val funApiParams = if (descriptor.hasAnnotation(InjektFqNames.FunBinding)) {
             module.findClassifierAcrossModuleDependencies(
                 ClassId.topLevel(owner.fqNameSafe)
-            )!!.toClassifierRef().funApiParams
+            )?.toClassifierRef()?.funApiParams ?: error("Wtf $descriptor")
         } else emptyList()
 
         Callable(
@@ -358,7 +358,7 @@ class DeclarationStore(val module: ModuleDescriptor) {
                         originalType = parameterType,
                         parameterKind = ValueParameterRef.ParameterKind.EXTENSION_RECEIVER,
                         name = "_extensionReceiver".asNameId(),
-                        isFunApi = "<this>" in funApiParams.map { it.asString() },
+                        isFunApi = "_extensionReceiver" in funApiParams.map { it.asString() },
                         hasDefault = false,
                         defaultExpression = null
                     )
@@ -423,7 +423,8 @@ class DeclarationStore(val module: ModuleDescriptor) {
                     scoped = finalType.scoped,
                     eager = finalType.eager,
                     default = finalType.default,
-                    contributionKind = finalType.contributionKind
+                    contributionKind = finalType.contributionKind,
+                    callableKind = finalType.callableKind
                 )
                 listOf(finalCallable)
             } else {
