@@ -309,13 +309,16 @@ fun TypeRef.copy(
     default
 )
 
-fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
+fun TypeRef.substitute(
+    map: Map<ClassifierRef, TypeRef>,
+    keepQualifiers: Boolean = true
+): TypeRef {
     map[classifier]?.let {
         return it.copy(
             // we copy nullability to support T : Any? -> String
             isMarkedNullable = if (!isStarProjection) isMarkedNullable else it.isMarkedNullable,
             // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
-            qualifiers = qualifiers
+            qualifiers = if (keepQualifiers) qualifiers else qualifiers + it.qualifiers
         )
     }
 
