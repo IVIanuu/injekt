@@ -17,8 +17,7 @@ class QualifierTest {
             @Qualifier
             annotation class MyQualifier
             
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val foo1: Foo
                 abstract val foo2: @MyQualifier Foo
                 @Binding protected fun _foo1(): Foo = Foo()
@@ -61,8 +60,7 @@ class QualifierTest {
         listOf(
             source(
                 """
-                    @Component
-                    abstract class MyComponent {
+                    @Component abstract class MyComponent {
                         abstract val foo1: @MyQualifier Foo
                         abstract val foo2: Foo
                         
@@ -89,8 +87,7 @@ class QualifierTest {
             @Qualifier
             annotation class MyQualifier(val value: String)
             
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val foo1: @MyQualifier("1") Foo
                 abstract val foo2: @MyQualifier("2") Foo
                 @Binding protected fun _foo1(): @MyQualifier("1") Foo = Foo()
@@ -114,8 +111,7 @@ class QualifierTest {
             @Qualifier
             annotation class MyQualifier<T>
             
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val foo1: @MyQualifier<String> Foo
                 abstract val foo2: @MyQualifier<Int> Foo
                 @Binding protected fun _foo1(): @MyQualifier<String> Foo = Foo()
@@ -139,14 +135,11 @@ class QualifierTest {
             @Qualifier
             annotation class MyQualifier
             
-            @Binding
-            class Dep<T>(val value: @MyQualifier T)
+            @Binding class Dep<T>(val value: @MyQualifier T)
             
-            @Binding
-            fun qualified(): @MyQualifier String = ""
+            @Binding fun qualified(): @MyQualifier String = ""
             
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val dep: Dep<String>
             }
             """
@@ -159,11 +152,9 @@ class QualifierTest {
             @Qualifier
             annotation class MyQualifier<T>
             
-            @Binding
-            fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
+            @Binding fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
              
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val foo: @MyQualifier<String> Foo
             }
             """
@@ -178,16 +169,14 @@ class QualifierTest {
                     @Qualifier
                     annotation class MyQualifier<T>
                     
-                    @Binding
-                    fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
+                    @Binding fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
                 """
             )
         ),
         listOf(
             source(
                 """
-                    @Component
-                    abstract class FooComponent {
+                    @Component abstract class FooComponent {
                         abstract val foo: @MyQualifier<String> Foo
                     }
                 """

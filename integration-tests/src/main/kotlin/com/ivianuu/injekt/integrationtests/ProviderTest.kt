@@ -10,11 +10,9 @@ class ProviderTest {
     @Test
     fun testProvider() = codegen(
         """
-            @Component
-            abstract class ProviderComponent {
+            @Component abstract class ProviderComponent {
                 abstract val fooFactory: () -> Foo
-                @Binding
-                protected fun foo() = Foo()
+                @Binding protected fun foo() = Foo()
             }
 
             fun invoke() {
@@ -28,11 +26,9 @@ class ProviderTest {
     @Test
     fun testSuspendProvider() = codegen(
         """
-            @Component
-            abstract class ProviderComponent {
+            @Component abstract class ProviderComponent {
                 abstract val fooFactory: suspend () -> Foo
-                @Binding
-                protected suspend fun foo() = Foo()
+                @Binding protected suspend fun foo() = Foo()
             }
 
             fun invoke() {
@@ -48,12 +44,10 @@ class ProviderTest {
     @Test
     fun testComposableProvider() = codegen(
         """
-            @Component
-            abstract class ProviderComponent {
+            @Component abstract class ProviderComponent {
                 abstract val fooFactory: @Composable () -> Foo
                 @Composable
-                @Binding
-                protected fun foo() = Foo()
+                @Binding protected fun foo() = Foo()
             }
 
             fun invoke() {
@@ -67,8 +61,7 @@ class ProviderTest {
     @Test
     fun testNullableProviderMissingBinding() = codegen(
         """
-            @Component
-            abstract class ProviderComponent {
+            @Component abstract class ProviderComponent {
                 abstract val fooFactory: () -> Foo?
             }
 

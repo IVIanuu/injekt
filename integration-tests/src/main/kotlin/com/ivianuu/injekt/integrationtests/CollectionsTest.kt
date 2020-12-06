@@ -35,13 +35,11 @@ class CollectionsTest {
             @Binding 
             fun commandA() = CommandA()
             
-            @MapEntries
-            fun commandAIntoMap(
+            @MapEntries fun commandAIntoMap(
                 commandA: CommandA
             ): Map<KClass<out Command>, Command> = mapOf(CommandA::class to commandA)
             
-            @Component
-            abstract class MapComponent {
+            @Component abstract class MapComponent {
                 abstract val map: Map<KClass<out Command>, Command>
                 
                 @Binding 
@@ -67,14 +65,12 @@ class CollectionsTest {
     @Test
     fun testNestedMap() = codegen(
         """
-            @Component
-            abstract class ParentMapComponent {
+            @Component abstract class ParentMapComponent {
                 abstract val map: Map<KClass<out Command>, Command>
 
                 abstract val childMapComponentFactory: () -> ChildMapComponent
             
-                @Binding
-                protected fun commandA() = CommandA()
+                @Binding protected fun commandA() = CommandA()
                 
                 @MapEntries
                 protected fun commandAIntoMap(commandA: CommandA): Map<KClass<out Command>, Command> = 
@@ -85,8 +81,7 @@ class CollectionsTest {
             abstract class ChildMapComponent {
                 abstract val map: Map<KClass<out Command>, Command>
             
-                @Binding
-                protected fun commandB() = CommandB()
+                @Binding protected fun commandB() = CommandB()
                 
                 @MapEntries
                 protected fun commandBIntoMap(commandB: CommandB): Map<KClass<out Command>, Command> = 
@@ -111,14 +106,12 @@ class CollectionsTest {
     @Test
     fun testChildMapOverridesParent() = codegen(
         """
-            @Component
-            abstract class ParentMapComponent {
+            @Component abstract class ParentMapComponent {
                 abstract val map: Map<String, String>
 
                 abstract val childMapComponentFactory: () -> ChildMapComponent
             
-                @Binding
-                protected fun value() = "parent"
+                @Binding protected fun value() = "parent"
                 
                 @MapEntries
                 protected fun valueIntoMap(value: String): Map<String, String> = 
@@ -129,8 +122,7 @@ class CollectionsTest {
             abstract class ChildMapComponent {
                 abstract val map: Map<String, String>
 
-                @Binding
-                protected fun value() = "child"
+                @Binding protected fun value() = "child"
                 
                 @MapEntries
                 protected fun valueIntoMap(value: String): Map<String, String> = 
@@ -150,8 +142,7 @@ class CollectionsTest {
     @Test
     fun testAssistedMap() = codegen(
         """
-            @Component
-            abstract class MapComponent {
+            @Component abstract class MapComponent {
                 abstract val map: Map<KClass<out Command>, (String) -> Command>
             
                 @Binding 
@@ -186,8 +177,7 @@ class CollectionsTest {
     @Test
     fun testUndeclaredMap() = codegen(
         """
-            @Component
-            abstract class TestComponent {
+            @Component abstract class TestComponent {
                 abstract val map: Map<KClass<out Command>, Command>
             }
         """
@@ -198,17 +188,13 @@ class CollectionsTest {
     @Test
     fun testGenericMap() = codegen(
         """ 
-            @Binding
-            fun string() = ""
+            @Binding fun string() = ""
             
-            @Binding
-            fun int() = 0
+            @Binding fun int() = 0
             
-            @MapEntries
-            fun <V> genericMap(instance: V): Map<Int, V> = mapOf(instance.hashCode() to instance)
+            @MapEntries fun <V> genericMap(instance: V): Map<Int, V> = mapOf(instance.hashCode() to instance)
             
-            @Component
-            abstract class MapComponent {
+            @Component abstract class MapComponent {
                 abstract val stringMap: Map<Int, String>
                 abstract val intMap: Map<Int, Int>
             }
@@ -221,11 +207,9 @@ class CollectionsTest {
             @Binding 
             fun commandA() = CommandA()
             
-            @SetElements
-            fun commandAIntoSet(commandA: CommandA): Set<Command> = setOf(commandA)
+            @SetElements fun commandAIntoSet(commandA: CommandA): Set<Command> = setOf(commandA)
             
-            @Component
-            abstract class SetComponent {
+            @Component abstract class SetComponent {
                 abstract val set: Set<Command>
                 
                 @Binding 
@@ -249,14 +233,12 @@ class CollectionsTest {
     @Test
     fun testNestedSet() = codegen(
         """
-            @Component
-            abstract class ParentSetComponent {
+            @Component abstract class ParentSetComponent {
                 abstract val set: Set<Command>
 
                 abstract val childSetComponentFactory: () -> ChildSetComponent
             
-                @Binding
-                protected fun commandA() = CommandA()
+                @Binding protected fun commandA() = CommandA()
                 
                 @SetElements
                 protected fun commandAIntoSet(commandA: CommandA): Set<Command> = 
@@ -267,8 +249,7 @@ class CollectionsTest {
             abstract class ChildSetComponent {
                 abstract val set: Set<Command>
             
-                @Binding
-                protected fun commandB() = CommandB()
+                @Binding protected fun commandB() = CommandB()
                 
                 @SetElements
                 protected fun commandBIntoSet(commandB: CommandB): Set<Command> = 
@@ -292,23 +273,20 @@ class CollectionsTest {
     @Test
     fun testAssistedSet() = codegen(
         """
-            @Component
-            abstract class SetComponent {
+            @Component abstract class SetComponent {
                 abstract val set: Set<(String) -> Command>
                 
                 @Binding 
                 fun commandA(arg: String) = CommandA()
                 
-                @SetElements
-                fun commandAIntoSet(
+                @SetElements fun commandAIntoSet(
                     commandAFactory: (String) -> CommandA
                 ): Set<(String) -> Command> = setOf(commandAFactory)
                 
                 @Binding 
                 fun commandB(arg: String) = CommandB()
         
-                @SetElements
-                fun commandBIntoSet(
+                @SetElements fun commandBIntoSet(
                     commandBFactory: (String) -> CommandB
                 ): Set<(String) -> Command> = setOf(commandBFactory)
             }
@@ -327,8 +305,7 @@ class CollectionsTest {
     @Test
     fun testUndeclaredSet() = codegen(
         """
-            @Component
-            abstract class SetComponent {
+            @Component abstract class SetComponent {
                 abstract val set: Set<Command>
             }
         """
@@ -339,17 +316,13 @@ class CollectionsTest {
     @Test
     fun testGenericSet() = codegen(
         """ 
-            @Binding
-            fun string() = ""
+            @Binding fun string() = ""
             
-            @Binding
-            fun int() = 0
+            @Binding fun int() = 0
             
-            @SetElements
-            fun <T> genericSet(instance: T) = setOf(instance)
+            @SetElements fun <T> genericSet(instance: T) = setOf(instance)
             
-            @Component
-            abstract class SetComponent {
+            @Component abstract class SetComponent {
                 abstract val stringSet: Set<String>
                 abstract val intSet: Set<Int>
             }

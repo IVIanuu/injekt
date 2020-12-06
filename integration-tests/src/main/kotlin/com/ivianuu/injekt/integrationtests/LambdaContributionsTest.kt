@@ -14,11 +14,9 @@ class LambdaContributionsTest {
             val barProvider: @Binding (Foo) -> Bar = { Bar(it) }
             @Module val barModule = moduleOf(barProvider)
 
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val bar: Bar
             }
         """
@@ -29,11 +27,9 @@ class LambdaContributionsTest {
         """
             @Module val barModule = @Scoped @Binding { foo: Foo -> Bar(foo) }
 
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val bar: Bar
             }
         """
@@ -56,8 +52,7 @@ class LambdaContributionsTest {
         listOf(
             source(
                 """
-                        @Binding
-                        fun foo() = Foo()
+                        @Binding fun foo() = Foo()
                 """
             )
         )
@@ -70,11 +65,9 @@ class LambdaContributionsTest {
             val barProvider: BarFactory = { Bar(it) }
             @Module val barModule = moduleOf(barProvider)
 
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val bar: Bar
             }
         """
@@ -88,11 +81,9 @@ class LambdaContributionsTest {
             }
             @Module val fooMapModule = classMapProviderFactory<Foo>()
 
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val classMap: Map<KClass<*>, Any>
             }
         """
@@ -106,11 +97,9 @@ class LambdaContributionsTest {
             }
             @Module val fooSetModule = setProviderFactory<Foo>()
 
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val set: Set<Any>
             }
         """
@@ -123,11 +112,9 @@ class LambdaContributionsTest {
            
             @Module val fooInterceptorModule = interceptorFactory<Foo>()
 
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val foo: Foo
             }
         """
@@ -140,11 +127,9 @@ class LambdaContributionsTest {
             fun <T> depModuleFactory(): @Module () -> @Binding (T) -> Dep<T> = { { Dep(it) } }
             @Module val fooSetModule: @Module () -> @Module () -> @Binding (Foo) -> Dep<Foo> = { depModuleFactory<Foo>() }
 
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val dep: Dep<Foo>
             }
         """
@@ -156,11 +141,9 @@ class LambdaContributionsTest {
             val barProvider: @Binding @Composable (Foo) -> Bar = { Bar(it) }
             @Module val barModule = moduleOf(barProvider)
 
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val bar: Bar
             }
         """
@@ -174,11 +157,9 @@ class LambdaContributionsTest {
             val barProvider: @Binding suspend (Foo) -> Bar = { Bar(it) }
             @Module val barModule = moduleOf(barProvider)
 
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val bar: Bar
             }
         """

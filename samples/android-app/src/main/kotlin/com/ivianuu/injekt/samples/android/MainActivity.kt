@@ -58,9 +58,7 @@ interface MainActivityComponent {
     val enqueueWork: enqueueWork
 }
 
-@Composable
-@FunBinding
-fun WithMainViewModel(
+@FunBinding @Composable fun WithMainViewModel(
     viewModelFactory: () -> MainViewModel,
     @FunApi children: @Composable (MainViewModel) -> Unit,
 ) {
@@ -68,8 +66,7 @@ fun WithMainViewModel(
     children(viewModel)
 }
 
-@FunBinding
-fun enqueueWork(context: ActivityContext) {
+@FunBinding fun enqueueWork(context: ActivityContext) {
     WorkManager.getInstance(context)
         .enqueue(
             OneTimeWorkRequestBuilder<TestWorker>()
@@ -78,8 +75,7 @@ fun enqueueWork(context: ActivityContext) {
 }
 
 @Module val _MainViewModel = activityViewModel<MainViewModel>()
-@Binding
-class MainViewModel : ViewModel() {
+@Binding class MainViewModel : ViewModel() {
     init {
         println("init")
     }

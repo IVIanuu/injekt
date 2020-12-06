@@ -30,28 +30,23 @@ import com.ivianuu.injekt.merge.MergeInto
 abstract class FragmentComponent(@Binding protected val fragment: Fragment)
 
 typealias FragmentContext = Context
-@Binding
-inline val Fragment.fragmentContext: FragmentContext
+@Binding inline val Fragment.fragmentContext: FragmentContext
     get() = requireContext()
 
 typealias FragmentResources = Resources
-@Binding
-inline val FragmentContext.fragmentResources: FragmentResources
+@Binding inline val FragmentContext.fragmentResources: FragmentResources
     get() = resources
 
 typealias FragmentLifecycleOwner = LifecycleOwner
-@Binding
-inline val Fragment.fragmentLifecycleOwner: FragmentLifecycleOwner
+@Binding inline val Fragment.fragmentLifecycleOwner: FragmentLifecycleOwner
     get() = this
 
 typealias FragmentSavedStateRegistryOwner = SavedStateRegistryOwner
-@Binding
-inline val Fragment.fragmentSavedStateRegistryOwner: FragmentSavedStateRegistryOwner
+@Binding inline val Fragment.fragmentSavedStateRegistryOwner: FragmentSavedStateRegistryOwner
     get() = this
 
 typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
-@Binding
-inline val Fragment.fragmentViewModelStoreOwner: FragmentViewModelStoreOwner
+@Binding inline val Fragment.fragmentViewModelStoreOwner: FragmentViewModelStoreOwner
     get() = this
 
 @MergeInto(ActivityComponent::class)

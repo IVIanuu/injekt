@@ -14,11 +14,9 @@ class InternalBindingTest {
                     internal typealias InternalFoo = Foo
 
                     object FooBarModule {
-                        @Binding
-                        fun foo(): InternalFoo = Foo()
+                        @Binding fun foo(): InternalFoo = Foo()
                         
-                        @Binding
-                        fun bar(foo: () -> InternalFoo) = Bar(foo())
+                        @Binding fun bar(foo: () -> InternalFoo) = Bar(foo())
                     }
                 """
             )
@@ -48,11 +46,9 @@ class InternalBindingTest {
                     internal annotation class Internal
 
                     object FooBarModule {
-                        @Binding
-                        fun foo(): @Internal Foo = Foo()
+                        @Binding fun foo(): @Internal Foo = Foo()
                         
-                        @Binding
-                        fun bar(foo: () -> @Internal Foo) = Bar(foo())
+                        @Binding fun bar(foo: () -> @Internal Foo) = Bar(foo())
                     }
                 """
             )

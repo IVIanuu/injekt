@@ -27,8 +27,7 @@ class MergeTest {
             @MergeComponent
             abstract class MyComponent
             
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
             
             @MergeInto(MyComponent::class)
             interface FooComponent {
@@ -47,16 +46,14 @@ class MergeTest {
     @Test
     fun testMergeChildComponent() = codegen(
         """
-            @Component
-            abstract class MyParentComponent {
+            @Component abstract class MyParentComponent {
                 abstract val myChildComponentFactory: () -> MyChildComponent
             }
             
             @MergeChildComponent
             abstract class MyChildComponent
             
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
             
             @MergeInto(MyChildComponent::class)
             interface FooComponent {
@@ -79,8 +76,7 @@ class MergeTest {
             @MergeComponent
             abstract class MyComponent
             
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
             
             @MergeInto(MyComponent::class)
             interface FooComponent {

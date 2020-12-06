@@ -24,8 +24,7 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifier
 
-@Binding
-class FunBindingProcessor(
+@Binding class FunBindingProcessor(
     private val errorCollector: ErrorCollector,
     private val fileManager: FileManager
 ) : ElementProcessor {

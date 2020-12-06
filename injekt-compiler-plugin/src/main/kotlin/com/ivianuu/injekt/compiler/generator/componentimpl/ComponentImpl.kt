@@ -32,8 +32,7 @@ import org.jetbrains.kotlin.name.Name
 
 typealias ComponentFactoryType = TypeRef
 
-@Binding
-class ComponentImpl(
+@Binding class ComponentImpl(
     private val declarationStore: DeclarationStore,
     statementsFactory: (ComponentImpl) -> ComponentStatements,
     graphFactory: (ComponentImpl) -> BindingGraph,

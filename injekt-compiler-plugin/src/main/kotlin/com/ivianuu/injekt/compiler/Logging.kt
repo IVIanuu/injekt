@@ -32,11 +32,9 @@ object LoggerImpl : Logger {
     }
 }
 
-@Binding
-fun logger(): Logger? = if (loggingEnabled) LoggerImpl else null
+@Binding fun logger(): Logger? = if (loggingEnabled) LoggerImpl else null
 
-@FunBinding
-fun log(
+@FunBinding fun log(
     logger: Logger?,
     @FunApi msg: () -> String,
 ) {

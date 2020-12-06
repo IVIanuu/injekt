@@ -7,8 +7,7 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.extensions.CollectAdditionalSourcesExtension
 import org.jetbrains.kotlin.psi.KtFile
 
-@Binding
-class InjektCollectAdditionalSourcesExtension(
+@Binding class InjektCollectAdditionalSourcesExtension(
     funBindingProcessor: FunBindingProcessor,
     indexProcessor: IndexProcessor
 ) : CollectAdditionalSourcesExtension {

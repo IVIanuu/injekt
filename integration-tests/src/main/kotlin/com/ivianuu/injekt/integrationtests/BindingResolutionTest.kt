@@ -18,11 +18,9 @@ class BindingResolutionTest {
     @Test
     fun testPrefersExplicitOverImplicitBinding() = codegen(
         """
-            @Binding
-            class Dep
+            @Binding class Dep
             
-            @Component
-            abstract class MyComponent(@Binding protected val _dep: Dep) { 
+            @Component abstract class MyComponent(@Binding protected val _dep: Dep) { 
                 abstract val dep: Dep
             }
             
@@ -39,8 +37,7 @@ class BindingResolutionTest {
     @Test
     fun testMultipleResolvableExplicitBindingFails() = codegen(
         """
-            @Component
-            abstract class MyComponent(
+            @Component abstract class MyComponent(
                 @Binding protected val foo1: Foo,
                 @Binding protected val foo2: Foo
             ) {
@@ -57,8 +54,7 @@ class BindingResolutionTest {
             source(
                 """
                     var externalFooField: Foo? = null
-                    @Binding
-                    val externalFoo: Foo get() = externalFooField!!
+                    @Binding val externalFoo: Foo get() = externalFooField!!
                 """
             )
         ),
@@ -66,11 +62,9 @@ class BindingResolutionTest {
             source(
                 """
                     var internalFooField: Foo? = null
-                    @Binding
-                    val internalFoo: Foo get() = internalFooField!!
+                    @Binding val internalFoo: Foo get() = internalFooField!!
 
-                    @Component
-                    abstract class MyComponent {
+                    @Component abstract class MyComponent {
                         abstract val foo: Foo
                     }
                     
@@ -98,8 +92,7 @@ class BindingResolutionTest {
         @Binding fun foo1() = Foo()
         @Binding fun foo2() = Foo()
         
-        @Component
-        abstract class MyComponent {
+        @Component abstract class MyComponent {
             abstract val foo: Foo
         }
         
@@ -130,8 +123,7 @@ class BindingResolutionTest {
         listOf(
             source(
                 """
-                    @Component
-                    abstract class MyComponent {
+                    @Component abstract class MyComponent {
                         abstract val foo: Foo
                     }
                     fun invoke(): Foo { 
@@ -150,11 +142,9 @@ class BindingResolutionTest {
             class Dep
 
             @Default
-            @Binding
-            fun dep() = Dep()
+            @Binding fun dep() = Dep()
 
-            @Component
-            abstract class MyComponent(@Binding protected val _dep: Dep) { 
+            @Component abstract class MyComponent(@Binding protected val _dep: Dep) { 
                 abstract val dep: Dep
             }
             
@@ -172,15 +162,12 @@ class BindingResolutionTest {
     fun testMultipleDefaultBindingsFails() = codegen(
         """
             @Default
-            @Binding
-            fun foo1() = Foo()
+            @Binding fun foo1() = Foo()
 
             @Default
-            @Binding
-            fun foo2() = Foo()
+            @Binding fun foo2() = Foo()
             
-            @Component
-            abstract class MyComponent { 
+            @Component abstract class MyComponent { 
                 abstract val foo: Foo
             }
         """
@@ -191,8 +178,7 @@ class BindingResolutionTest {
     @Test
     fun testPrefsUserBindingOverFrameworkBinding() = codegen(
         """
-            @Component
-            abstract class MyComponent(
+            @Component abstract class MyComponent(
                 @Binding protected val _lazyFoo: () -> Foo
             ) {
                 abstract val lazyFoo: () -> Foo
@@ -213,14 +199,11 @@ class BindingResolutionTest {
         """
             val defaultFoo = Foo()
             
-            @Binding
-            fun bar() = Bar(defaultFoo)
+            @Binding fun bar() = Bar(defaultFoo)
             
-            @Binding
-            fun bar(foo: Foo) = Bar(foo)
+            @Binding fun bar(foo: Foo) = Bar(foo)
             
-            @Component
-            abstract class MyComponent { 
+            @Component abstract class MyComponent { 
                 abstract val bar: Bar
             }
             
@@ -238,18 +221,14 @@ class BindingResolutionTest {
         """
             class Dep<T>(val value: T)
             
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val fooDep: Dep<Foo>
                 
-                @Binding
-                protected fun <T> genericDep(t: T): Dep<T> = error("")
+                @Binding protected fun <T> genericDep(t: T): Dep<T> = error("")
                 
-                @Binding
-                protected fun fooDep(foo: Foo): Dep<Foo> = Dep(foo)
+                @Binding protected fun fooDep(foo: Foo): Dep<Foo> = Dep(foo)
                 
-                @Binding
-                protected fun foo() = Foo()
+                @Binding protected fun foo() = Foo()
             }
             
             fun invoke() {
@@ -265,8 +244,7 @@ class BindingResolutionTest {
         """
             class Dep
             
-            @Component
-            abstract class DepComponent {
+            @Component abstract class DepComponent {
                 abstract val dep: Dep
             }
         """
@@ -277,15 +255,12 @@ class BindingResolutionTest {
     @Test
     fun testDeeplyMissingBindingFails() = codegen(
         """
-            @Component
-            abstract class BazComponent {
+            @Component abstract class BazComponent {
                 abstract val baz: Baz
             
-                @Binding
-                protected fun bar(foo: Foo) = Bar(foo)
+                @Binding protected fun bar(foo: Foo) = Bar(foo)
         
-                @Binding
-                protected fun baz(bar: Bar, foo: Foo) = Baz(bar, foo)
+                @Binding protected fun baz(bar: Bar, foo: Foo) = Baz(bar, foo)
             }
         """
     ) {
@@ -295,8 +270,7 @@ class BindingResolutionTest {
     @Test
     fun testDistinctTypeParameter() = codegen(
         """
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val setOfStrings: Set<String>
                 abstract val setOfInts: Set<Int>
             
@@ -320,8 +294,7 @@ class BindingResolutionTest {
             typealias Foo1 = Foo
             typealias Foo2 = Foo
             
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val foo1: Foo1
                 abstract val foo2: Foo2
                 @Binding protected fun _foo1(): Foo1 = Foo()
@@ -363,8 +336,7 @@ class BindingResolutionTest {
         listOf(
             source(
                 """
-                    @Component
-                    abstract class MyComponent {
+                    @Component abstract class MyComponent {
                         abstract val foo1: Foo1
                         abstract val foo2: Foo2
                         
@@ -387,8 +359,7 @@ class BindingResolutionTest {
     @Test
     fun testCanInjectNullableTypeForNonNullType() = codegen(
         """
-            @Component
-            abstract class FooComponent { 
+            @Component abstract class FooComponent { 
                 abstract val foo: Foo?
                 @Binding protected fun foo(): Foo = Foo()
             }
@@ -398,8 +369,7 @@ class BindingResolutionTest {
     @Test
     fun testCannotInjectNonNullTypeForNullableBinding() = codegen(
         """
-            @Component
-            abstract class FooComponent { 
+            @Component abstract class FooComponent { 
                 abstract val foo: Foo
                 @Binding protected fun foo(): Foo? = Foo()
             }
@@ -411,13 +381,11 @@ class BindingResolutionTest {
     @Test
     fun testBindingForNullableRequestCanGetUsedForNonNullRequest() = codegen(
         """
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val nullableFoo: Foo?
                 abstract val nonNullFoo: Foo
                 
-                @Binding
-                protected fun foo() = Foo()
+                @Binding protected fun foo() = Foo()
             }
         """
     )
@@ -425,8 +393,7 @@ class BindingResolutionTest {
     @Test
     fun testReturnsInstanceForNullableBinding() = codegen(
         """
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val foo: Foo?
                 @Binding protected fun foo(): Foo = Foo()
             }
@@ -442,8 +409,7 @@ class BindingResolutionTest {
     @Test
     fun testReturnsNullOnMissingNullableRequest() = codegen(
         """
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val foo: Foo?
             }
             fun invoke(): Foo? { 
@@ -458,8 +424,7 @@ class BindingResolutionTest {
     fun testReturnsDefaultOnMissingOpenRequest() = codegen(
         """
             val DEFAULT_FOO = Foo()
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 open val foo: Foo = DEFAULT_FOO
             }
             fun invoke(): Pair<Foo, Foo> { 
@@ -475,8 +440,7 @@ class BindingResolutionTest {
     fun testReturnsDefaultOnMissingOpenNullableRequest() = codegen(
         """
             val DEFAULT_FOO = Foo()
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 open val foo: Foo? = DEFAULT_FOO
             }
             fun invoke(): Pair<Foo?, Foo?> { 
@@ -491,11 +455,9 @@ class BindingResolutionTest {
     @Test
     fun testUsesNullOnMissingNullableDependency() = codegen(
         """
-            @Binding
-            class Dep(val foo: Foo?)
+            @Binding class Dep(val foo: Foo?)
             
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val dep: Dep
             }
             
@@ -510,11 +472,9 @@ class BindingResolutionTest {
     @Test
     fun testUsesNullOnMissingGenericNullableDependency() = codegen(
         """
-            @Binding
-            class Dep<T>(val value: T?)
+            @Binding class Dep<T>(val value: T?)
             
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val dep: Dep<Foo>
             }
             
@@ -529,12 +489,10 @@ class BindingResolutionTest {
     @Test
     fun testUsesDefaultOnMissingNullableDependency() = codegen(
         """
-            @Binding
-            class Dep(val foo: Foo? = DEFAULT_FOO)
+            @Binding class Dep(val foo: Foo? = DEFAULT_FOO)
             val DEFAULT_FOO = Foo()
             
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val dep: Dep
             }
             
@@ -554,8 +512,7 @@ class BindingResolutionTest {
             class Dep(val foo: Foo = DEFAULT_FOO)
             val DEFAULT_FOO = Foo()
             
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val dep: Dep
             }
             fun invoke(): Pair<Foo, Foo> { 
@@ -570,8 +527,7 @@ class BindingResolutionTest {
     @Test
     fun testPrefersExplicitOverExplicitParentBinding() = codegen(
         """
-            @Component
-            abstract class MyComponent(@Binding protected val stringBinding: String) {
+            @Component abstract class MyComponent(@Binding protected val stringBinding: String) {
                 abstract val string: String
                 abstract val childFactory: (String) -> MyChildComponent
             }
@@ -595,8 +551,7 @@ class BindingResolutionTest {
     @Test
     fun testPrefersExplicitParentBindingOverImplicitBinding() = codegen(
         """
-            @Component
-            abstract class MyComponent(@Binding protected val stringBinding: String) {
+            @Component abstract class MyComponent(@Binding protected val stringBinding: String) {
                 abstract val childFactory: () -> MyChildComponent
             }
 
@@ -605,8 +560,7 @@ class BindingResolutionTest {
                 abstract val string: String
             }
 
-            @Binding
-            fun implicit() = "implicit"
+            @Binding fun implicit() = "implicit"
 
             fun invoke(): String {
                 return component<MyComponent>("parent").childFactory().string

@@ -9,12 +9,10 @@ class ModuleTest {
     fun testExplicitModule() = codegen(
         """
             class MyModule {
-                @Binding
-                val foo: Foo get() = Foo()
+                @Binding val foo: Foo get() = Foo()
             }
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 @Module protected val myModule = MyModule()
                 abstract val foo: Foo
             }
@@ -26,12 +24,10 @@ class ModuleTest {
         """
             @Module
             class MyModule {
-                @Binding
-                val foo: Foo get() = Foo()
+                @Binding val foo: Foo get() = Foo()
             }
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val foo: Foo
             }
         """
@@ -41,12 +37,10 @@ class ModuleTest {
     fun testCanDeclareExplicitModuleMultipleTimes() = codegen(
         """
             class MyModule {
-                @Binding
-                val foo: Foo get() = Foo()
+                @Binding val foo: Foo get() = Foo()
             }
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 @Module protected val myModule = MyModule()
                 @Module protected val myModule1 = MyModule()
                 abstract val foo: Foo
@@ -59,15 +53,12 @@ class ModuleTest {
         """
             @Module
             class MyModule(private val foo: Foo) {
-                @Binding
-                val bar: Bar get() = Bar(foo)
+                @Binding val bar: Bar get() = Bar(foo)
             }
 
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val bar: Bar
             }
         """

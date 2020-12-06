@@ -31,21 +31,17 @@ val Application.applicationComponent: ApplicationComponent
         component(this)
     }
 
-@Binding
-inline val App.application: Application
+@Binding inline val App.application: Application
     get() = this as Application
 
 typealias ApplicationContext = Context
-@Binding
-inline val Application.appContext: ApplicationContext
+@Binding inline val Application.appContext: ApplicationContext
     get() = this
 
 typealias ApplicationResources = Resources
-@Binding
-inline val Application.applicationResources: ApplicationResources
+@Binding inline val Application.applicationResources: ApplicationResources
     get() = resources
 
 typealias ApplicationLifecycleOwner = LifecycleOwner
-@Binding
-inline val Application.applicationLifecycleOwner: ApplicationLifecycleOwner
+@Binding inline val Application.applicationLifecycleOwner: ApplicationLifecycleOwner
     get() = ProcessLifecycleOwner.get()

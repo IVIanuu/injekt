@@ -45,8 +45,7 @@ import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.resolve.constants.StringValue
 
-@Binding
-class IndexProcessor(private val fileManager: FileManager) : ElementProcessor {
+@Binding class IndexProcessor(private val fileManager: FileManager) : ElementProcessor {
 
     override fun process(files: List<KtFile>): List<KtFile> = files.mapNotNull { file ->
         val indices = mutableListOf<Index>()

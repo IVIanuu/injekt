@@ -25,15 +25,13 @@ fun main() {
                 if (index == 1 || index == 2) {
                     appendLine(
                         """
-                        @Binding
-                        class Fib$index @Inject constructor()
+                        @Binding class Fib$index @Inject constructor()
                         """
                     )
                 } else {
                     appendLine(
                         """
-                        @Binding
-                        class Fib$index @Inject constructor(
+                        @Binding class Fib$index @Inject constructor(
                             val fibM1: Fib${index - 1},
                             val fibM2: Fib${index - 2}
                         )

@@ -16,8 +16,7 @@ class CallContextTest {
             @Binding
             suspend fun bar(foo: Foo) = Bar(foo)
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val bar: Bar
             }
         """
@@ -35,8 +34,7 @@ class CallContextTest {
             @Composable
             fun bar(foo: Foo) = Bar(foo)
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val bar: Bar
             }
         """
@@ -54,11 +52,9 @@ class CallContextTest {
             @Composable
             fun bar() = Bar(Foo())
             
-            @Binding
-            fun baz(bar: Bar, foo: Foo) = Baz(bar, foo)
+            @Binding fun baz(bar: Bar, foo: Foo) = Baz(bar, foo)
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val baz: Baz
             }
         """
@@ -73,11 +69,9 @@ class CallContextTest {
             @Composable
             fun foo() = Foo()
 
-            @Binding
-            fun bar(foo: Foo) = Bar(foo)
+            @Binding fun bar(foo: Foo) = Bar(foo)
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 @Composable
                 abstract val bar: Bar
             }
@@ -91,8 +85,7 @@ class CallContextTest {
             @Composable
             fun foo() = Foo()
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val foo: Foo
             }
         """

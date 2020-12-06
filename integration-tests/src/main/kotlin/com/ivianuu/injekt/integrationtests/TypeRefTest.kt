@@ -226,18 +226,15 @@ class TypeRefTest {
     // todo @Test
     fun testGeneric() = codegen(
         """
-            @Binding
-            class Dep<T : Any>(val value: T)
+            @Binding class Dep<T : Any>(val value: T)
             
-            @Binding
-            fun <T> any(): @MyQualifier T = error("")
+            @Binding fun <T> any(): @MyQualifier T = error("")
  
             @Qualifier
             @Target(AnnotationTarget.TYPE)
             annotation class MyQualifier
  
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val foo: Dep<@MyQualifier Foo>
             }
         """

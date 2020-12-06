@@ -12,12 +12,10 @@ class AssistedTest {
     @Test
     fun testAssistedSuspendBindingFunction() = codegen(
         """
-            @Component
-            abstract class BarComponent {
+            @Component abstract class BarComponent {
                 abstract val barFactory: suspend (Foo) -> Bar
                 
-                @Binding
-                protected suspend fun bar(foo: Foo) = Bar(foo)
+                @Binding protected suspend fun bar(foo: Foo) = Bar(foo)
             }
 
             fun invoke(foo: Foo): Bar { 
@@ -31,8 +29,7 @@ class AssistedTest {
     @Test
     fun testAssistedComposableBindingFunction() = codegen(
         """
-            @Component
-            abstract class BarComponent {
+            @Component abstract class BarComponent {
                 abstract val barFactory: @Composable (Foo) -> Bar
                 
                 @Binding
@@ -51,12 +48,10 @@ class AssistedTest {
     @Test
     fun testAssistedBindingFunction() = codegen(
         """
-            @Component
-            abstract class BarComponent {
+            @Component abstract class BarComponent {
                 abstract val barFactory: (Foo) -> Bar
                 
-                @Binding
-                protected fun bar(foo: Foo) = Bar(foo)
+                @Binding protected fun bar(foo: Foo) = Bar(foo)
             }
 
             fun invoke(foo: Foo): Bar { 
@@ -70,15 +65,12 @@ class AssistedTest {
     @Test
     fun testComplexAssistedBindingFunction() = codegen(
         """
-            @Component
-            abstract class BarComponent {
+            @Component abstract class BarComponent {
                 abstract val barFactory: (Foo, Int) -> Bar
                 
-                @Binding
-                protected fun bar(foo: Foo, string: String, int: Int) = Bar(foo)
+                @Binding protected fun bar(foo: Foo, string: String, int: Int) = Bar(foo)
                 
-                @Binding
-                protected val string = ""
+                @Binding protected val string = ""
             }
             fun invoke(foo: Foo): Bar { 
                 return component<BarComponent>().barFactory(foo, 0)
@@ -91,13 +83,11 @@ class AssistedTest {
     @Test
     fun testScopedAssistedBinding() = codegen(
         """
-            @Component
-            abstract class BarComponent {
+            @Component abstract class BarComponent {
                 abstract val barFactory: (Foo) -> Bar
                 
                 @Scoped(BarComponent::class)
-                @Binding
-                protected fun bar(foo: Foo) = Bar(foo)
+                @Binding protected fun bar(foo: Foo) = Bar(foo)
             }
             
             private val component = component<BarComponent>()
@@ -114,8 +104,7 @@ class AssistedTest {
     // todo @Test
     fun testScopedAssistedBindingInChild() = codegen(
         """
-            @Component
-            abstract class ParentComponent {
+            @Component abstract class ParentComponent {
                 abstract val childFactory: () -> MyChildComponent
                 @Binding(BarComponent::class)
                 protected fun bar(foo: Foo) = Bar(foo)
@@ -141,11 +130,9 @@ class AssistedTest {
     @Test
     fun testAssistedBindingClass() = codegen(
         """
-            @Binding
-            class AnnotatedBar(foo: Foo)
+            @Binding class AnnotatedBar(foo: Foo)
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val annotatedBar: (Foo) -> AnnotatedBar
             }
 
@@ -158,14 +145,12 @@ class AssistedTest {
     @Test
     fun testRecursiveAssistedRequest() = codegen(
         """
-            @Binding
-            class MyBinding(
+            @Binding class MyBinding(
                 val id: String,
                 val myBindingFactory: (String) -> MyBinding
             )
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val myBindingFactory: (String) -> MyBinding
             }
 
@@ -182,20 +167,17 @@ class AssistedTest {
     @Test
     fun testNestedRecursiveAssistedRequest() = codegen(
         """
-            @Binding
-            class MyBindingA(
+            @Binding class MyBindingA(
                 val id: String,
                 val myBindingFactoryB: (String) -> MyBindingB
             )
 
-            @Binding
-            class MyBindingB(
+            @Binding class MyBindingB(
                 val id: String,
                 val myBindingFactoryA: (String) -> MyBindingA
             )
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val myBindingAFactory: (String) -> MyBindingA
             }
 
@@ -213,14 +195,12 @@ class AssistedTest {
     // todo @Test
     fun testBindingRequestsAssistedFactoryOfItself() = codegen(
         """
-            @Binding
-            class MyBinding(
+            @Binding class MyBinding(
                 val myBindingFactory: (MyBinding?) -> MyBinding,
                 val parent: MyBinding?
             )
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val myBindingFactory: (MyBinding?) -> MyBinding
             }
 

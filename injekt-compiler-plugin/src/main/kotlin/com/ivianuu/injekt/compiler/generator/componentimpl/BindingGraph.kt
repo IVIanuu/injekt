@@ -48,8 +48,7 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
-@Binding
-class BindingGraph(
+@Binding class BindingGraph(
     private val owner: ComponentImpl,
     private val declarationStore: DeclarationStore,
     private val componentImplFactory: (

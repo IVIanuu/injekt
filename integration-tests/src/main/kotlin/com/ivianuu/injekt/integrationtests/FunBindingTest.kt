@@ -30,12 +30,10 @@ class FunBindingTest {
     @Test
     fun testSimpleFunBinding() = codegen(
         """
-            @FunBinding
-            fun function(string: String) {
+            @FunBinding fun function(string: String) {
             }
             
-            @Component
-            abstract class TestComponent(@Binding val string: String) {
+            @Component abstract class TestComponent(@Binding val string: String) {
                 abstract val function: function
             }
         """
@@ -44,12 +42,10 @@ class FunBindingTest {
     @Test
     fun testFunBindingWithExtension() = codegen(
         """
-            @FunBinding
-            fun String.function() {
+            @FunBinding fun String.function() {
             }
             
-            @Component
-            abstract class TestComponent(@Binding val string: String) {
+            @Component abstract class TestComponent(@Binding val string: String) {
                 abstract val function: function
             }
         """
@@ -59,8 +55,7 @@ class FunBindingTest {
     fun testSimpleFunBindingInDifferentPackage() = codegen(
         source(
             """
-                @FunBinding
-                fun function(string: String) {
+                @FunBinding fun function(string: String) {
                 }
             """
         ),
@@ -68,8 +63,7 @@ class FunBindingTest {
             """
                 import com.ivianuu.injekt.integrationtests.function
                 
-                @Component
-                abstract class TestComponent(@Binding val string: String) {
+                @Component abstract class TestComponent(@Binding val string: String) {
                     abstract val function: function
                 }
             """,
@@ -81,16 +75,14 @@ class FunBindingTest {
     fun testSimpleFunBindingInDifferentPackageComplex() = codegen(
         source(
             """
-                @FunBinding
-                fun function(string: String) {
+                @FunBinding fun function(string: String) {
                 }
             """
         ),
         source(
             """
                 import com.ivianuu.injekt.integrationtests.function
-                @FunBinding
-                fun function2(function: function, string: String) {
+                @FunBinding fun function2(function: function, string: String) {
                 }
             """,
             packageFqName = FqName("com.ivianuu.injekt2")
@@ -100,8 +92,7 @@ class FunBindingTest {
                 import com.ivianuu.injekt.integrationtests.function 
                 import com.ivianuu.injekt2.function2
 
-                @Component
-                abstract class TestComponent(@Binding val string: String) {
+                @Component abstract class TestComponent(@Binding val string: String) {
                     abstract val function: function
                     abstract val function2: function2
                 }
@@ -113,12 +104,10 @@ class FunBindingTest {
     @Test
     fun testAssistedFunBinding() = codegen(
         """
-            @FunBinding
-            fun function(string: String, @FunApi assisted: Int) {
+            @FunBinding fun function(string: String, @FunApi assisted: Int) {
             }
             
-            @Component
-            abstract class TestComponent(@Binding val string: String) {
+            @Component abstract class TestComponent(@Binding val string: String) {
                 abstract val function: function
             }
         """
@@ -129,8 +118,7 @@ class FunBindingTest {
         listOf(
             source(
                 """
-                    @FunBinding
-                    fun function(string: String, @FunApi assisted: Int) {
+                    @FunBinding fun function(string: String, @FunApi assisted: Int) {
                     }
                 """
             )
@@ -138,8 +126,7 @@ class FunBindingTest {
         listOf(
             source(
                 """
-                    @Component
-                    abstract class TestComponent(@Binding val string: String) {
+                    @Component abstract class TestComponent(@Binding val string: String) {
                         abstract val function: function
                     }
                 """
@@ -150,12 +137,10 @@ class FunBindingTest {
     @Test
     fun testAssistedExtensionFunBinding() = codegen(
         """
-            @FunBinding
-            fun @receiver:FunApi String.function(string: String) {
+            @FunBinding fun @receiver:FunApi String.function(string: String) {
             }
             
-            @Component
-            abstract class TestComponent(@Binding val string: String) {
+            @Component abstract class TestComponent(@Binding val string: String) {
                 abstract val function: function
             }
         """
@@ -168,8 +153,7 @@ class FunBindingTest {
             suspend fun @receiver:FunApi String.function(string: String) {
             }
             
-            @Component
-            abstract class TestComponent(@Binding val string: String) {
+            @Component abstract class TestComponent(@Binding val string: String) {
                 abstract val function: function
             }
         """
@@ -182,8 +166,7 @@ class FunBindingTest {
             suspend fun function(string: String, @FunApi assistedString: String) {
             }
             
-            @Component
-            abstract class TestComponent(@Binding val string: String) {
+            @Component abstract class TestComponent(@Binding val string: String) {
                 abstract val function: function
             }
         """
@@ -193,12 +176,10 @@ class FunBindingTest {
     fun testComposableFunBinding() = codegen(
         """
             @Composable
-            @FunBinding
-            fun function(string: String, @FunApi assistedString: String) {
+            @FunBinding fun function(string: String, @FunApi assistedString: String) {
             }
             
-            @Component
-            abstract class TestComponent(@Binding val string: String) {
+            @Component abstract class TestComponent(@Binding val string: String) {
                 abstract val function: function
             }
         """
@@ -213,8 +194,7 @@ class FunBindingTest {
                     suspend fun function(string: String, @FunApi assistedString: String) {
                     }
                     
-                    @FunBinding
-                    fun usage(function: function) {
+                    @FunBinding fun usage(function: function) {
                     }
                 """
             )
@@ -222,8 +202,7 @@ class FunBindingTest {
         listOf(
             source(
                 """
-                    @Component
-                    abstract class TestComponent(@Binding val string: String) {
+                    @Component abstract class TestComponent(@Binding val string: String) {
                         abstract val function: function
                         abstract val usage: usage
                     }
@@ -235,13 +214,11 @@ class FunBindingTest {
     @Test
     fun testFunBindingWithTypeParameters() = codegen(
         """
-            @FunBinding
-            inline fun <reified T : S, S> function(t: T): S {
+            @FunBinding inline fun <reified T : S, S> function(t: T): S {
                 return error("")
             }
             
-            @Component
-            abstract class TestComponent(@Binding val string: String) {
+            @Component abstract class TestComponent(@Binding val string: String) {
                 abstract val function: function<String, String>
             }
         """
@@ -250,13 +227,11 @@ class FunBindingTest {
     @Test
     fun testFunBindingWithTypeParametersWithMultipleUpperBounds() = codegen(
         """
-            @FunBinding
-            inline fun <reified T, S> function(t: T): S where T : CharSequence, T : String {
+            @FunBinding inline fun <reified T, S> function(t: T): S where T : CharSequence, T : String {
                 return error("")
             }
             
-            @Component
-            abstract class TestComponent(@Binding val string: String) {
+            @Component abstract class TestComponent(@Binding val string: String) {
                 abstract val function: function<String, String>
             }
         """
@@ -274,8 +249,7 @@ class FunBindingTest {
             @Composable
             fun foo() = Foo()
             
-            @Component
-            abstract class TestComponent {
+            @Component abstract class TestComponent {
                 abstract val function: function
             }
         """
@@ -291,8 +265,7 @@ class FunBindingTest {
             @Binding
             suspend fun foo() = Foo()
             
-            @Component
-            abstract class TestComponent {
+            @Component abstract class TestComponent {
                 abstract val function: function
             }
         """
@@ -301,16 +274,13 @@ class FunBindingTest {
     @Test
     fun testFunBindingDependencyGetsCreatedOnInvocation() = codegen(
         """
-            @FunBinding
-            fun function(foo: Foo) {
+            @FunBinding fun function(foo: Foo) {
             }
 
             var fooCalled = false
-            @Binding
-            fun foo() = Foo().also { fooCalled = true }
+            @Binding fun foo() = Foo().also { fooCalled = true }
             
-            @Component
-            abstract class TestComponent {
+            @Component abstract class TestComponent {
                 abstract val function: function
             }
             
@@ -330,12 +300,10 @@ class FunBindingTest {
     @Test
     fun testFunBindingWithNonExplicitAssistedParameters() = codegen(
         """
-            @FunBinding
-            fun function(foo: Foo) {
+            @FunBinding fun function(foo: Foo) {
             }
             
-            @Component
-            abstract class TestComponent {
+            @Component abstract class TestComponent {
                 abstract val function: (Foo) -> function
             }
         """
@@ -369,12 +337,10 @@ class FunBindingTest {
     @Test
     fun testFunBindingWithFunApiDefaultValue() = codegen(
         """
-            @FunBinding
-            fun function(string: String, @FunApi assisted: String = "") {
+            @FunBinding fun function(string: String, @FunApi assisted: String = "") {
             }
             
-            @Component
-            abstract class TestComponent(@Binding val string: String) {
+            @Component abstract class TestComponent(@Binding val string: String) {
                 abstract val function: function
             }
         """
@@ -383,12 +349,10 @@ class FunBindingTest {
     @Test
     fun testFunBindingWithDependencyDefaultValue() = codegen(
         """
-            @FunBinding
-            fun function(string: String = "", @FunApi assisted: String) {
+            @FunBinding fun function(string: String = "", @FunApi assisted: String) {
             }
             
-            @Component
-            abstract class TestComponent {
+            @Component abstract class TestComponent {
                 abstract val function: function
             }
         """
@@ -397,12 +361,10 @@ class FunBindingTest {
     @Test
     fun testFunBindingWithNullableDependencyDefaultValue() = codegen(
         """
-            @FunBinding
-            fun function(string: String?, @FunApi assisted: String) {
+            @FunBinding fun function(string: String?, @FunApi assisted: String) {
             }
             
-            @Component
-            abstract class TestComponent {
+            @Component abstract class TestComponent {
                 abstract val function: function
             }
         """
@@ -418,8 +380,7 @@ class FunBindingTest {
             suspend fun function(foo: Foo) {
             }
             
-            @Component
-            abstract class TestComponent {
+            @Component abstract class TestComponent {
                 abstract val function: function
             }
         """
@@ -437,8 +398,7 @@ class FunBindingTest {
             fun function(foo: Foo) {
             }
             
-            @Component
-            abstract class TestComponent {
+            @Component abstract class TestComponent {
                 abstract val function: function
             }
         """
@@ -447,12 +407,10 @@ class FunBindingTest {
     @Test
     fun testFunBindingExtension() = codegen(
         """
-            @FunBinding
-            fun function(string: String) {
+            @FunBinding fun function(string: String) {
             }
             
-            @Component
-            abstract class TestComponent(@Binding val string: String) {
+            @Component abstract class TestComponent(@Binding val string: String) {
                 abstract val function: function
                 fun invoke() {
                     function.invokeFunction()
@@ -464,12 +422,10 @@ class FunBindingTest {
     @Test
     fun testFunBindingExtensionWithDefaultParameter() = codegen(
         """
-            @FunBinding
-            fun function(string: String, @FunApi param: Int = 0) {
+            @FunBinding fun function(string: String, @FunApi param: Int = 0) {
             }
             
-            @Component
-            abstract class TestComponent(@Binding val string: String) {
+            @Component abstract class TestComponent(@Binding val string: String) {
                 abstract val function: function
                 fun invoke() {
                     function.invokeFunction()
@@ -498,8 +454,7 @@ class FunBindingTest {
             ) {
             }
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val aboutPage: AboutPage
             }
         """

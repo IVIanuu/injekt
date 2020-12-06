@@ -40,7 +40,6 @@ object InjektTest : InjectionTest {
     }
 }
 
-@Component
-interface InjektComponent {
+@Component interface InjektComponent {
     val fib8: Fib8
 }

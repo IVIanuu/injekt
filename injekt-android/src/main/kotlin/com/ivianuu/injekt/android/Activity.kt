@@ -39,33 +39,27 @@ val ComponentActivity.activityComponent: ActivityComponent
 abstract class ActivityComponent(@Binding protected val activity: ComponentActivity)
 
 typealias ActivityContext = Context
-@Binding
-inline val ComponentActivity.activityContext: ActivityContext
+@Binding inline val ComponentActivity.activityContext: ActivityContext
     get() = this
 
 typealias ActivityResources = Resources
-@Binding
-inline val ComponentActivity.activityResources: ActivityResources
+@Binding inline val ComponentActivity.activityResources: ActivityResources
     get() = resources
 
 typealias ActivityLifecycleOwner = LifecycleOwner
-@Binding
-inline val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
+@Binding inline val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
     get() = this
 
 typealias ActivityOnBackPressedDispatcherOwner = OnBackPressedDispatcherOwner
-@Binding
-inline val ComponentActivity.activityOnBackPressedDispatcherOwner: ActivityOnBackPressedDispatcherOwner
+@Binding inline val ComponentActivity.activityOnBackPressedDispatcherOwner: ActivityOnBackPressedDispatcherOwner
     get() = this
 
 typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
-@Binding
-inline val ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
+@Binding inline val ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
     get() = this
 
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
-@Binding
-inline val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
+@Binding inline val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
     get() = this
 
 @MergeInto(RetainedActivityComponent::class)

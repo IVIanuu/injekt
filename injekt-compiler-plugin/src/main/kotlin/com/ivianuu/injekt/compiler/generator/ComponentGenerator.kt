@@ -32,8 +32,7 @@ import org.jetbrains.kotlin.psi.namedDeclarationRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import com.ivianuu.injekt.compiler.generator.componentimpl.Parent
 
-@Binding
-class ComponentGenerator(
+@Binding class ComponentGenerator(
     private val bindingContext: BindingContext,
     private val declarationStore: DeclarationStore,
     private val fileManager: FileManager,

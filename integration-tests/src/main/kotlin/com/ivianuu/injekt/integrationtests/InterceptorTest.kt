@@ -15,25 +15,20 @@ class InterceptorTest {
     fun testImplicitInterceptor() = codegen(
         """
             var callCount = 0
-            @Interceptor
-            fun <T> intercept(factory: () -> T): () -> T { 
+            @Interceptor fun <T> intercept(factory: () -> T): () -> T { 
                 return {
                     callCount++
                     factory()
                 }
             }
             
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
             
-            @Binding
-            fun bar(foo: Foo) = Bar(foo)
+            @Binding fun bar(foo: Foo) = Bar(foo)
             
-            @Binding
-            fun baz(foo: Foo, bar: Bar) = Baz(bar, foo)
+            @Binding fun baz(foo: Foo, bar: Bar) = Baz(bar, foo)
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val baz: Baz
             }
             
@@ -51,21 +46,16 @@ class InterceptorTest {
         """
             var callCount = 0
 
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
             
-            @Binding
-            fun bar(foo: Foo) = Bar(foo)
+            @Binding fun bar(foo: Foo) = Bar(foo)
             
-            @Binding
-            fun baz(foo: Foo, bar: Bar) = Baz(bar, foo)
+            @Binding fun baz(foo: Foo, bar: Bar) = Baz(bar, foo)
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val baz: Baz
                 
-                @Interceptor
-                fun <T> intercept(factory: () -> T): () -> T { 
+                @Interceptor fun <T> intercept(factory: () -> T): () -> T { 
                     return {
                         callCount++
                         factory()
@@ -87,15 +77,12 @@ class InterceptorTest {
         """
             var callCount = 0
 
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
             
-            @Component
-            abstract class ParentComponent {
+            @Component abstract class ParentComponent {
                 abstract val childComponent: () -> MyChildComponent
             
-                @Interceptor
-                fun <T : Foo> intercept(factory: () -> T): () -> T { 
+                @Interceptor fun <T : Foo> intercept(factory: () -> T): () -> T { 
                     return {
                         callCount++
                         factory()
@@ -120,8 +107,7 @@ class InterceptorTest {
     @Test
     fun testInterceptorHasState() = codegen(
         """
-            @Interceptor
-            fun intercept(factory: () -> Foo): () -> Foo { 
+            @Interceptor fun intercept(factory: () -> Foo): () -> Foo { 
                 var instance: Foo? = null
                 return {
                     if (instance == null) instance = factory()
@@ -129,11 +115,9 @@ class InterceptorTest {
                 }
             }
             
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val foo: Foo
             }
             
@@ -150,14 +134,11 @@ class InterceptorTest {
     @Test
     fun testInterceptorWithGenericReturnType() = codegen(
         """
-            @Interceptor
-            fun <S> intercept(factory: S): S = factory
+            @Interceptor fun <S> intercept(factory: S): S = factory
 
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val foo: Foo
             }
         """
@@ -167,19 +148,16 @@ class InterceptorTest {
     fun testInterceptorWithDifferentCallContextIsNotApplicable() = codegen(
         """
             var callCount = 0
-            @Interceptor
-            fun <T> intercept(factory: suspend () -> T): suspend () -> T { 
+            @Interceptor fun <T> intercept(factory: suspend () -> T): suspend () -> T { 
                 return {
                     callCount++
                     factory()
                 }
             }
             
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val foo: Foo
             }
             
@@ -196,8 +174,7 @@ class InterceptorTest {
     fun testInterceptorWithDifferentCallContextIsNotApplicable2() = codegen(
         """
             var called = false
-            @Interceptor
-            fun <T> intercept(factory: () -> T): () -> T { 
+            @Interceptor fun <T> intercept(factory: () -> T): () -> T { 
                 return {
                     called = true
                     factory()
@@ -207,8 +184,7 @@ class InterceptorTest {
             @Binding
             suspend fun foo() = Foo()
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract suspend fun foo(): Foo
             }
             
@@ -224,14 +200,12 @@ class InterceptorTest {
     @Test
     fun testSuspendInterceptor() = codegen(
         """
-            @Interceptor
-            fun intercept(factory: suspend () -> Foo): suspend () -> Foo = factory
+            @Interceptor fun intercept(factory: suspend () -> Foo): suspend () -> Foo = factory
             
             @Binding
             suspend fun foo() = Foo()
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract suspend fun foo(): Foo
             }
         """
@@ -240,15 +214,13 @@ class InterceptorTest {
     @Test
     fun testComposableInterceptor() = codegen(
         """
-            @Interceptor
-            fun intercept(factory: @Composable () -> Foo): @Composable () -> Foo = factory
+            @Interceptor fun intercept(factory: @Composable () -> Foo): @Composable () -> Foo = factory
             
             @Binding
             @Composable
             fun foo() = Foo()
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 @Composable
                 abstract val foo: Foo
             }
@@ -260,19 +232,16 @@ class InterceptorTest {
         """
             var callCount = 0
             @Bound(ParentComponent::class)
-            @Interceptor
-            fun <T : Foo> intercept(factory: () -> T): () -> T {
+            @Interceptor fun <T : Foo> intercept(factory: () -> T): () -> T {
                 return {
                     callCount++
                     factory()
                 }
             }
             
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
             
-            @Component
-            abstract class ParentComponent {
+            @Component abstract class ParentComponent {
                 abstract val foo: Foo
                 abstract val childFactory: () -> MyChildComponent
                 @ChildComponent
@@ -295,15 +264,12 @@ class InterceptorTest {
     @Test
     fun testScopedBindingWithInterceptor() = codegen(
         """
-            @Interceptor
-            fun intercept(factory: () -> Foo): () -> Foo = factory
+            @Interceptor fun intercept(factory: () -> Foo): () -> Foo = factory
             
             @Scoped(MyComponent::class)
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val foo: Foo
             }
         """

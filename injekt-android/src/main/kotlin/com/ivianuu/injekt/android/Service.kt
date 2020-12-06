@@ -34,13 +34,11 @@ fun Service.createServiceComponent(): ServiceComponent =
 abstract class ServiceComponent(@Binding protected val service: Service)
 
 typealias ServiceContext = Context
-@Binding
-inline val Service.serviceContext: ServiceContext
+@Binding inline val Service.serviceContext: ServiceContext
     get() = this
 
 typealias ServiceResources = Resources
-@Binding
-inline val Service.serviceResources: ServiceResources
+@Binding inline val Service.serviceResources: ServiceResources
     get() = resources
 
 @MergeInto(ApplicationComponent::class)

@@ -65,8 +65,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
     }
 }
 
-@FunBinding
-fun registerExtensions(
+@FunBinding fun registerExtensions(
     project: Project,
     additionalSourcesExtension: InjektCollectAdditionalSourcesExtension,
     generationExtension: InjektKtGenerationExtension

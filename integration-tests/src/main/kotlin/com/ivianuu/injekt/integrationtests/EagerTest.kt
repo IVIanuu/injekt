@@ -14,14 +14,12 @@ class EagerTest {
             var called = false
 
             @Eager
-            @Binding
-            fun foo(): Foo {
+            @Binding fun foo(): Foo {
                 called = true
                 return Foo()
             }
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val foo: Foo
             }
 
@@ -39,18 +37,15 @@ class EagerTest {
         """
             var called = false
 
-            @Interceptor
-            fun interceptFoo(factory: () -> Foo) = factory
+            @Interceptor fun interceptFoo(factory: () -> Foo) = factory
 
             @Eager
-            @Binding
-            fun foo(): Foo {
+            @Binding fun foo(): Foo {
                 called = true
                 return Foo()
             }
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val foo: Foo
             }
 
@@ -70,14 +65,12 @@ class EagerTest {
 
             @Eager
             @Scoped(MyComponent::class)
-            @Binding
-            fun foo(): Foo {
+            @Binding fun foo(): Foo {
                 called = true
                 return Foo()
             }
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val foo: Foo
             }
 
@@ -94,16 +87,13 @@ class EagerTest {
     fun testEagerScopedBindingWithScopedDependencies() = codegen(
         """
             @Scoped(MyComponent::class)
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
 
             @Eager
             @Scoped(MyComponent::class)
-            @Binding
-            fun bar(foo: Foo) = Bar(foo)
+            @Binding fun bar(foo: Foo) = Bar(foo)
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val bar: Bar
             }
         """
@@ -114,16 +104,13 @@ class EagerTest {
         """
             @Eager
             @Scoped(MyComponent::class)
-            @Binding
-            fun foo(bar: () -> Bar) = Foo()
+            @Binding fun foo(bar: () -> Bar) = Foo()
 
             @Eager
             @Scoped(MyComponent::class)
-            @Binding
-            fun bar(foo: () -> Foo) = Bar(Foo())
+            @Binding fun bar(foo: () -> Foo) = Bar(Foo())
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val bar: Bar
             }
         """
@@ -133,11 +120,9 @@ class EagerTest {
     fun testEagerAssistedBindingFails() = codegen(
         """
             @Eager
-            @Binding
-            fun bar(foo: Foo) = Bar(foo)
+            @Binding fun bar(foo: Foo) = Bar(foo)
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val barFactory: (Foo) -> Bar
             }
         """

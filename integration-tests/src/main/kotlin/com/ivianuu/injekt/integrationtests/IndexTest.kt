@@ -8,11 +8,9 @@ class IndexTest {
     @Test
     fun testCanIndexDeclarationsWithTheSameName() = codegen(
         """
-            @Binding
-            val foo get() = Foo()
+            @Binding val foo get() = Foo()
             
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
         """
     )
 

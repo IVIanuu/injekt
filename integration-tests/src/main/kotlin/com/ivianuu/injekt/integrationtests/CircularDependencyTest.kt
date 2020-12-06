@@ -12,8 +12,7 @@ class CircularDependencyTest {
             @Binding class A(b: B)
             @Binding class B(a: A)
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val b: B
             }
         """
@@ -27,8 +26,7 @@ class CircularDependencyTest {
             @Binding class A(b: B)
             @Scoped(MyComponent::class) @Binding class B(a: () -> A)
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val b: B
             }
         """
@@ -41,8 +39,7 @@ class CircularDependencyTest {
             @Binding class B(b: C)
             @Binding class C(b: B)
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val c: C
             }
         """
@@ -56,8 +53,7 @@ class CircularDependencyTest {
             @Binding class A(b: B)
             @Scoped(MyComponent::class) @Binding class B(a: (B) -> A)
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val b: B
             }
         """
@@ -66,16 +62,13 @@ class CircularDependencyTest {
     @Test
     fun testFunBindingBreaksCircularDependency() = codegen(
         """
-            @FunBinding
-            fun A(b: B) {
+            @FunBinding fun A(b: B) {
             }
             
-            @FunBinding
-            fun B(a: A) {
+            @FunBinding fun B(a: A) {
             }
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val b: B
             }
         """
@@ -84,19 +77,15 @@ class CircularDependencyTest {
     @Test
     fun testLazyRequestInSetBreaksCircularDependency() = codegen(
         """
-            @FunBinding
-            fun A(b: B) {
+            @FunBinding fun A(b: B) {
             }
             
-            @FunBinding
-            fun B(a: A) {
+            @FunBinding fun B(a: A) {
             }
             
-            @SetElements
-            fun set(a: A, b: B): Set<Any> = setOf(a, b)
+            @SetElements fun set(a: A, b: B): Set<Any> = setOf(a, b)
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val set: Set<Any>
             }
         """
@@ -105,19 +94,15 @@ class CircularDependencyTest {
     @Test
     fun testLazyRequestInMapBreaksCircularDependency() = codegen(
         """
-            @FunBinding
-            fun A(b: B) {
+            @FunBinding fun A(b: B) {
             }
             
-            @FunBinding
-            fun B(a: A) {
+            @FunBinding fun B(a: A) {
             }
             
-            @MapEntries
-            fun map(a: A, b: B): Map<String, Any> = mapOf("a" to a, "b" to b)
+            @MapEntries fun map(a: A, b: B): Map<String, Any> = mapOf("a" to a, "b" to b)
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val map: Map<String, Any>
             }
         """
@@ -126,24 +111,19 @@ class CircularDependencyTest {
     @Test
     fun testLazyRequestInInterceptorBreaksCircularDependency() = codegen(
         """
-            @Interceptor
-            fun interceptor(a: A, factory: () -> B): () -> B {
+            @Interceptor fun interceptor(a: A, factory: () -> B): () -> B {
                 return factory
             }
             
-            @FunBinding
-            fun A(b: B) {
+            @FunBinding fun A(b: B) {
             }
             
-            @FunBinding
-            fun B(a: A) {
+            @FunBinding fun B(a: A) {
             }
             
-            @MapEntries
-            fun map(a: A, b: B): Map<String, Any> = mapOf("a" to a, "b" to b)
+            @MapEntries fun map(a: A, b: B): Map<String, Any> = mapOf("a" to a, "b" to b)
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val map: Map<String, Any>
             }
         """

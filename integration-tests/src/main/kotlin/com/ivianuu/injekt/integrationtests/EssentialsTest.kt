@@ -22,33 +22,27 @@ class EssentialsTest {
             interface StoreState
             interface StoreAction
             
-            @Binding
-            val <S : StoreState> Store<S, *>.storeState: S get() = state
-            @Binding
-            val <A : StoreAction> Store<*, A>.storeDispatch: A get() = dispatch
+            @Binding val <S : StoreState> Store<S, *>.storeState: S get() = state
+            @Binding val <A : StoreAction> Store<*, A>.storeDispatch: A get() = dispatch
             
             @Scoped(MyComponent::class)
-            @Binding
-            fun <S, A> storeFromProvider(provider: (Scope) -> Store<S, A>): Store<S, A> = provider(object : Scope {})
+            @Binding fun <S, A> storeFromProvider(provider: (Scope) -> Store<S, A>): Store<S, A> = provider(object : Scope {})
             
             class MyState(val store: Store<MyState, MyAction>) : StoreState
             class MyAction(val store: Store<MyState, MyAction>) : StoreAction
             
-            @Binding
-            fun myStore(): (Scope) -> Store<MyState, MyAction> = {
+            @Binding fun myStore(): (Scope) -> Store<MyState, MyAction> = {
                 object : Store<MyState, MyAction> {
                     override val state: MyState = MyState(this)
                     override val dispatch: MyAction = MyAction(this)
                 }
             }
             
-            @FunBinding
-            fun MyPage(state: MyState, dispatch: MyAction): Pair<Any, Any> {
+            @FunBinding fun MyPage(state: MyState, dispatch: MyAction): Pair<Any, Any> {
                 return state.store to dispatch.store
             }
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val myPage: MyPage
             }
             
@@ -74,36 +68,30 @@ class EssentialsTest {
             interface StoreState
             interface StoreAction
             
-            @Binding
-            val <S : StoreState> ComposableStore<S, *>.storeState: S get() = state
-            @Binding
-            val <A : StoreAction> ComposableStore<*, A>.storeDispatch: A get() = dispatch
+            @Binding val <S : StoreState> ComposableStore<S, *>.storeState: S get() = state
+            @Binding val <A : StoreAction> ComposableStore<*, A>.storeDispatch: A get() = dispatch
             
             typealias ComposableStore<S, A> = Store<S, A>
             
             @Scoped(MyComponent::class)
-            @Binding
-            fun <S, A> storeFromProvider(provider: (Scope) -> Store<S, A>): ComposableStore<S, A> =
+            @Binding fun <S, A> storeFromProvider(provider: (Scope) -> Store<S, A>): ComposableStore<S, A> =
                 provider(object : Scope {})
             
             class MyState(val store: Store<MyState, MyAction>) : StoreState
             class MyAction(val store: Store<MyState, MyAction>) : StoreAction
             
-            @Binding
-            fun Scope.myStore(): Store<MyState, MyAction> {
+            @Binding fun Scope.myStore(): Store<MyState, MyAction> {
                 return object : Store<MyState, MyAction> {
                     override val state: MyState = MyState(this)
                     override val dispatch: MyAction = MyAction(this)
                 }
             }
             
-            @FunBinding
-            fun MyPage(state: MyState, dispatch: MyAction): Pair<Any, Any> {
+            @FunBinding fun MyPage(state: MyState, dispatch: MyAction): Pair<Any, Any> {
                 return state.store to dispatch.store
             }
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val myPage: MyPage
             }
             
@@ -132,15 +120,12 @@ class EssentialsTest {
             annotation class StoreBinding {
                 companion object {
                     @Scoped(MyComponent::class)
-                    @Binding
-                    fun <T : Store<S, A>, S, A> storeFromProvider(provider: (Scope) -> @ForEffect T): BoundStore<S, A> =
+                    @Binding fun <T : Store<S, A>, S, A> storeFromProvider(provider: (Scope) -> @ForEffect T): BoundStore<S, A> =
                         provider(object : Scope {})
                 
-                    @Binding
-                    fun <T : Store<S, A>, S, A> storeState(instance: BoundStore<S, A>): S = instance.state
+                    @Binding fun <T : Store<S, A>, S, A> storeState(instance: BoundStore<S, A>): S = instance.state
                     
-                    @Binding
-                    fun <T : Store<S, A>, S, A> storeDispatch(instance: BoundStore<S, A>): A = instance.dispatch
+                    @Binding fun <T : Store<S, A>, S, A> storeDispatch(instance: BoundStore<S, A>): A = instance.dispatch
                 }
             }
             
@@ -155,13 +140,11 @@ class EssentialsTest {
                 }
             }
             
-            @FunBinding
-            fun MyPage(state: MyState, dispatch: MyAction): Pair<Any, Any> {
+            @FunBinding fun MyPage(state: MyState, dispatch: MyAction): Pair<Any, Any> {
                 return state.store to dispatch.store
             }
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val myPage: MyPage
             }
             
@@ -209,13 +192,11 @@ class EssentialsTest {
                 }
             }
             
-            @FunBinding
-            fun MyPage(state: @State MyState): Pair<Any, Any> {
+            @FunBinding fun MyPage(state: @State MyState): Pair<Any, Any> {
                 return state.store to state.store
             }
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val myPage: MyPage
             }
             
@@ -250,13 +231,11 @@ class EssentialsTest {
                     @Effect
                     annotation class StateEffect {
                         companion object {
-                            @SetElements
-                            fun <T : suspend (S) -> Unit, S> intoSet(block: T) = setOf<suspend (S) -> Unit>(block)
+                            @SetElements fun <T : suspend (S) -> Unit, S> intoSet(block: T) = setOf<suspend (S) -> Unit>(block)
                         }
                     }
  
-                    @Interceptor
-                    fun <T : Store<S, A>, S, A> stateEffectStoreInterceptor(
+                    @Interceptor fun <T : Store<S, A>, S, A> stateEffectStoreInterceptor(
                         stateEffects: Set<(S) -> Unit>?,
                         factory: suspend () -> T
                     ): suspend () -> T = factory
@@ -269,16 +248,14 @@ class EssentialsTest {
                     class MyState(val store: Store<MyState, MyAction>)
                     class MyAction(val store: Store<MyState, MyAction>)
                     
-                    @Binding
-                    fun myStore(): Store<MyState, MyAction> {
+                    @Binding fun myStore(): Store<MyState, MyAction> {
                         return object : Store<MyState, MyAction> {
                             override val state: MyState = MyState(this)
                             override val dispatch: MyAction = MyAction(this)
                         }
                     }
                     
-                    @FunBinding
-                    fun MyPage(state: @State MyState): Pair<Any, Any> {
+                    @FunBinding fun MyPage(state: @State MyState): Pair<Any, Any> {
                         return state.store to state.store
                     }
                     
@@ -309,8 +286,7 @@ class EssentialsTest {
         listOf(
             source(
                 """
-                    @Component
-                    abstract class MyComponent {
+                    @Component abstract class MyComponent {
                         abstract val myPage: MyPage
                         abstract val myPage2: MyPage2
                     }
@@ -338,8 +314,7 @@ class EssentialsTest {
             @Effect
             annotation class StateBinding {
                 companion object {
-                    @Binding
-                    inline val <T : StateFlow<S>, S> @ForEffect T.flow: Flow<S>
+                    @Binding inline val <T : StateFlow<S>, S> @ForEffect T.flow: Flow<S>
                         get() = this
                 }
             }
@@ -372,11 +347,9 @@ class EssentialsTest {
 
             @PrefBinding("")
             typealias MyType = String
-            @Binding
-            fun initialMyType(): @Initial MyType = "" 
+            @Binding fun initialMyType(): @Initial MyType = "" 
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val flow: Flow<MyType>
             }
         """
@@ -390,12 +363,10 @@ class EssentialsTest {
             @Effect
             annotation class UiStateBinding {
                 companion object {
-                    @Binding
-                    fun <T : StateFlow<S>, S> uiStateProducer(
+                    @Binding fun <T : StateFlow<S>, S> uiStateProducer(
                     ): UiStateProducer<S> = error("") as UiStateProducer<S>
 
-                    @Binding
-                    fun <T : StateFlow<S>, S> uiStateProducer(
+                    @Binding fun <T : StateFlow<S>, S> uiStateProducer(
                         producer: UiStateProducer<S>
                     ): StateFlow<S> = error("") as StateFlow<S>
                 }
@@ -426,8 +397,7 @@ class EssentialsTest {
             @Effect
             annotation class WorkerBinding(val id: String) {
                 companion object {
-                    @MapEntries
-                    fun <T : Worker> intoWorkerMap(
+                    @MapEntries fun <T : Worker> intoWorkerMap(
                         @Arg("id") id: String,
                         workerProvider: () -> @ForEffect T
                     ): Workers = mapOf(id to workerProvider)
@@ -452,8 +422,7 @@ class EssentialsTest {
             @Effect
             annotation class RouteResultProducerBinding1<P1, O> {
                 companion object {
-                    @Binding
-                    fun <@Arg("P1") P1, @Arg("O") O, T> produceResult(
+                    @Binding fun <@Arg("P1") P1, @Arg("O") O, T> produceResult(
                         @FunApi routeContentFactory: (P1, DispatchResult<O>) -> @ForEffect T
                     ): produceResult<P1, O> = error("")
                 }
@@ -467,8 +436,7 @@ class EssentialsTest {
                 
             }
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val produceResult: produceResult<Params, Result>
             }
         """
@@ -484,17 +452,14 @@ class EssentialsTest {
             @Effect
             annotation class KeyFactoryBinding {
                 companion object {
-                    @Binding
-                    fun <T : KeyFactory<K>, K> bind(): KeyFactory<K> = error("")
+                    @Binding fun <T : KeyFactory<K>, K> bind(): KeyFactory<K> = error("")
                 }
             }
 
             @KeyFactoryBinding
-            @FunBinding
-            fun myKeyFactory(@FunApi string: String): Key = error("")
+            @FunBinding fun myKeyFactory(@FunApi string: String): Key = error("")
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val stringKeyFactory: KeyFactory<String>
             }
         """
@@ -510,19 +475,16 @@ class EssentialsTest {
             @Effect
             annotation class KeyUiBinding<K> {
                 companion object {
-                    @MapEntries
-                    fun <@Arg("K") K, T : Factory<K, S>, S> bind(factory: (K) -> @ForEffect T): Map<Unit, Factory<Any, Any>> = mapOf(
+                    @MapEntries fun <@Arg("K") K, T : Factory<K, S>, S> bind(factory: (K) -> @ForEffect T): Map<Unit, Factory<Any, Any>> = mapOf(
                         Unit to factory as Factory<Any, Any>
                     )
                 }
             }
 
             @KeyUiBinding<String>
-            @FunBinding
-            fun foo(@FunApi string: String) = Foo()
+            @FunBinding fun foo(@FunApi string: String) = Foo()
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val stringFooFactory: Map<Unit, Factory<Any, Any>>
 
             }
@@ -539,8 +501,7 @@ class EssentialsTest {
             typealias Workers = Map<KClass<out Worker>, (Context, WorkerParameters) -> Worker>
 
             class WorkerModule<T : Worker>(private val workerClass: KClass<T>) {
-                @MapEntries
-                fun worker(factory: (Context, WorkerParameters) -> T): Workers =
+                @MapEntries fun worker(factory: (Context, WorkerParameters) -> T): Workers =
                     mapOf(workerClass to factory)
                 companion object {
                     inline operator fun <reified T : Worker> invoke() = WorkerModule(T::class)
@@ -550,11 +511,9 @@ class EssentialsTest {
             @Module
             val MyWorkerModule = WorkerModule<MyWorker>()
 
-            @Binding
-            class MyWorker : Worker
+            @Binding class MyWorker : Worker
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val workers: Workers
             }
         """

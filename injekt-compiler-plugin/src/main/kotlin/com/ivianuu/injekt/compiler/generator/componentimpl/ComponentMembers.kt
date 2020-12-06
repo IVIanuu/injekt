@@ -40,8 +40,7 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
-@Binding
-class ComponentStatements(
+@Binding class ComponentStatements(
     private val declarationStore: DeclarationStore,
     private val moduleDescriptor: ModuleDescriptor,
     private val owner: ComponentImpl

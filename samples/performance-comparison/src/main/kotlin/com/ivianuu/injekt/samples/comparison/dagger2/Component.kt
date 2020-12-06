@@ -19,8 +19,7 @@ package com.ivianuu.injekt.samples.comparison.dagger2
 import com.ivianuu.injekt.samples.comparison.fibonacci.Fib8
 import dagger.Component
 
-@Component
-interface Dagger2Component {
+@Component interface Dagger2Component {
     val fib8: Fib8
 
     @Component.Factory

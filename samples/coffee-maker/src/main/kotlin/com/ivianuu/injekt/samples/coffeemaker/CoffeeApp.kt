@@ -29,16 +29,14 @@ fun main() {
     component.brewCoffee()
 }
 
-@FunBinding
-fun brewCoffee(heater: Heater, pump: Pump) {
+@FunBinding fun brewCoffee(heater: Heater, pump: Pump) {
     heater.on()
     pump.pump()
     println(" [_]P coffee! [_]P ")
     heater.off()
 }
 
-@Component
-abstract class CoffeeComponent {
+@Component abstract class CoffeeComponent {
     abstract val brewCoffee: brewCoffee
 }
 
@@ -50,8 +48,7 @@ interface Heater {
 
 @Module val _ElectricHeater = alias<ElectricHeater, Heater>()
 @Scoped(CoffeeComponent::class)
-@Binding
-class ElectricHeater : Heater {
+@Binding class ElectricHeater : Heater {
     private var heating: Boolean = false
 
     override fun on() {
@@ -72,8 +69,7 @@ interface Pump {
 }
 
 @Module val _Thermosiphon = alias<Thermosiphon, Pump>()
-@Binding
-class Thermosiphon(private val heater: Heater) : Pump {
+@Binding class Thermosiphon(private val heater: Heater) : Pump {
     override fun pump() {
         if (heater.isHot) {
             println("=> => pumping => =>")

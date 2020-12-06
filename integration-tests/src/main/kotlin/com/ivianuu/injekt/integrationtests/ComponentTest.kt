@@ -39,8 +39,7 @@ class ComponentTest {
             @Binding fun foo() = Foo()
             @Binding fun bar(foo: Foo) = Bar(foo)
 
-            @Component
-            abstract class TestComponent { 
+            @Component abstract class TestComponent { 
                 abstract val bar: Bar
             }
             
@@ -55,8 +54,7 @@ class ComponentTest {
     @Test
     fun testChild() = codegen(
         """
-            @Component
-            abstract class ParentComponent {
+            @Component abstract class ParentComponent {
                 abstract val childComponentFactory: (Foo) -> MyChildComponent
             }
             
@@ -81,16 +79,13 @@ class ComponentTest {
             
             val parentContext = Context()
             @Scoped(ParentComponent::class)
-            @Binding
-            fun parentContext() = parentContext
+            @Binding fun parentContext() = parentContext
             
             val childContext = Context()
             @Scoped(MyChildComponent::class)
-            @Binding
-            fun childContext() = childContext
+            @Binding fun childContext() = childContext
             
-            @Component
-            abstract class ParentComponent {
+            @Component abstract class ParentComponent {
                 abstract val childComponentFactory: () -> MyChildComponent
                 abstract val context: Context
             }
@@ -122,8 +117,7 @@ class ComponentTest {
     @Test
     fun testChildWithAdditionalArguments() = codegen(
         """
-            @Component
-            abstract class ParentComponent {
+            @Component abstract class ParentComponent {
                 abstract val childComponentFactory: (Foo) -> MyChildComponent
             }
             
@@ -144,8 +138,7 @@ class ComponentTest {
     @Test
     fun testUnscopedBindingReturnsDifferentInstance() = codegen(
         """
-            @Component
-            abstract class MyComponent { 
+            @Component abstract class MyComponent { 
                 abstract val foo: Foo
                 @Binding 
                 protected fun foo() = Foo()
@@ -162,12 +155,10 @@ class ComponentTest {
     @Test
     fun testScopedBindingReturnsSameInstance() = codegen(
         """
-            @Component
-            abstract class MyComponent { 
+            @Component abstract class MyComponent { 
                 abstract val foo: Foo
                 @Scoped(MyComponent::class)
-                @Binding
-                protected fun foo() = Foo()
+                @Binding protected fun foo() = Foo()
             }
         
             val component: MyComponent = component<MyComponent>()
@@ -182,11 +173,9 @@ class ComponentTest {
     fun testBoundCreatesInstancesInTarget() = codegen(
         """
             @Bound(ParentComponent::class)
-            @Binding
-            class Dep(val value: String)
+            @Binding class Dep(val value: String)
 
-            @Component
-            abstract class ParentComponent(@Binding protected val string: String) {
+            @Component abstract class ParentComponent(@Binding protected val string: String) {
                 abstract val dep: Dep
                 abstract val childFactory: (String) -> MyChildComponent
             }
@@ -210,11 +199,9 @@ class ComponentTest {
     fun testGenericBindingsWithDifferentArgumentsHasDifferentIdentity() = codegen(
         """
             @Scoped(MyComponent::class)
-            @Binding
-            class Option<T>(val value: T)
+            @Binding class Option<T>(val value: T)
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val stringOption: Option<String>
                 abstract val intOption: Option<Int>
                 
@@ -247,11 +234,9 @@ class ComponentTest {
             class Option<T>(val value: T)
             
             @Scoped(MyComponent::class)
-            @Binding
-            fun stringOption(value: String) = Option(value)
+            @Binding fun stringOption(value: String) = Option(value)
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val stringOption: Option<String> 
                 abstract val starOption: Option<*>
                 @Binding protected fun string() = ""
@@ -271,16 +256,13 @@ class ComponentTest {
     @Test
     fun testParentScopedBinding() = codegen(
         """
-            @Component
-            abstract class MyParentComponent {
+            @Component abstract class MyParentComponent {
                 abstract val childFactory: () -> MyChildComponent
             
-                @Binding
-                protected fun foo() = Foo()
+                @Binding protected fun foo() = Foo()
                 
                 @Scoped(MyParentComponent::class)
-                @Binding
-                protected fun bar(foo: Foo) = Bar(foo)
+                @Binding protected fun bar(foo: Foo) = Bar(foo)
             }
             
             val parentComponent: MyParentComponent = component<MyParentComponent>()
@@ -306,15 +288,12 @@ class ComponentTest {
     @Test
     fun testClassBinding() = codegen(
         """
-            @Binding
-            class AnnotatedBar(foo: Foo)
+            @Binding class AnnotatedBar(foo: Foo)
             
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val annotatedBar: AnnotatedBar
                 
-                @Binding
-                protected fun foo() = Foo()
+                @Binding protected fun foo() = Foo()
             }
 
             fun invoke() {
@@ -329,15 +308,12 @@ class ComponentTest {
     fun testNestedClassBinding() = codegen(
         """
             class Outer {
-                @Binding
-                class AnnotatedBar(foo: Foo)
+                @Binding class AnnotatedBar(foo: Foo)
             }
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val annotatedBar: Outer.AnnotatedBar
                 
-                @Binding
-                protected fun foo() = Foo()
+                @Binding protected fun foo() = Foo()
             }
 
             fun invoke() {
@@ -353,12 +329,10 @@ class ComponentTest {
         """
             class AnnotatedBar @Binding constructor(foo: Foo)
             
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val annotatedBar: AnnotatedBar
                 
-                @Binding
-                protected fun foo() = Foo()
+                @Binding protected fun foo() = Foo()
             }
 
             fun invoke() {
@@ -375,8 +349,7 @@ class ComponentTest {
             @Binding
             object AnnotatedBar
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val annotationBar: AnnotatedBar
             }
             
@@ -391,8 +364,7 @@ class ComponentTest {
     @Test
     fun testPropertyBinding() = codegen(
         """
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val foo: Foo
                 @Binding protected val _foo = Foo()
             }
@@ -408,11 +380,9 @@ class ComponentTest {
     @Test
     fun testTopLevelFunctionBinding() = codegen(
         """
-            @Binding
-            fun foo() = Foo()
+            @Binding fun foo() = Foo()
             
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val foo: Foo
             }
 
@@ -428,15 +398,12 @@ class ComponentTest {
     fun testFunctionBindingInObject() = codegen(
         """
             object BarDeps {
-                @Binding
-                fun Foo.bar() = Bar(this)
+                @Binding fun Foo.bar() = Bar(this)
                 
-                @Binding
-                fun foo() = Foo()
+                @Binding fun foo() = Foo()
             }
             
-            @Component
-            abstract class BarComponent {
+            @Component abstract class BarComponent {
                 abstract val bar: Bar
             }
 
@@ -451,11 +418,9 @@ class ComponentTest {
     @Test
     fun testTopLevelPropertyBinding() = codegen(
         """
-            @Binding
-            val foo get() = Foo()
+            @Binding val foo get() = Foo()
             
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val foo: Foo
             }
 
@@ -472,11 +437,9 @@ class ComponentTest {
         """
             @Binding class Dep<T>(val value: T)
             
-            @Component
-            abstract class FooComponent {
+            @Component abstract class FooComponent {
                 abstract val fooDep: Dep<Foo>
-                @Binding
-                protected fun foo() = Foo()
+                @Binding protected fun foo() = Foo()
             }
             
             fun invoke() {
@@ -490,8 +453,7 @@ class ComponentTest {
         """    
             class Dep<T>(val value: T)
             
-            @Component
-            abstract class MyComponent { 
+            @Component abstract class MyComponent { 
                 abstract val fooDep: Dep<Foo>
                 @Binding protected fun <T> dep(value: T) = Dep(value)
                 @Binding protected fun foo() = Foo() 
@@ -508,8 +470,7 @@ class ComponentTest {
         """    
             class Dep<A, B, C>(val value: A)
             
-            @Component
-            abstract class MyComponent { 
+            @Component abstract class MyComponent { 
                 abstract val dep: Dep<Foo, Foo, Foo>
                 @Binding protected fun <A, B : A, C : B> dep(a: A) = Dep<A, A, A>(a)
                 @Binding protected fun foo() = Foo()
@@ -520,12 +481,10 @@ class ComponentTest {
     @Test
     fun testComponentFunction() = codegen(
         """
-            @Component
-            abstract class FunctionComponent {
+            @Component abstract class FunctionComponent {
                 abstract fun foo(): Foo
                 
-                @Binding
-                protected fun _foo() = Foo()
+                @Binding protected fun _foo() = Foo()
             }
         """
     )
@@ -533,13 +492,10 @@ class ComponentTest {
     @Test
     fun testComponentSuspendFunction() = codegen(
         """
-            @Component
-            abstract class SuspendFunctionComponent {
+            @Component abstract class SuspendFunctionComponent {
                 abstract suspend fun bar(): Bar
-                @Binding
-                protected suspend fun _suspendFoo() = Foo()
-                @Binding
-                protected suspend fun _suspendBar(foo: Foo) = Bar(foo)
+                @Binding protected suspend fun _suspendFoo() = Foo()
+                @Binding protected suspend fun _suspendBar(foo: Foo) = Bar(foo)
             }
         """
     )
@@ -547,12 +503,10 @@ class ComponentTest {
     @Test
     fun testScopedSuspendFunction() = codegen(
         """
-            @Component
-            abstract class SuspendFunctionComponent {
+            @Component abstract class SuspendFunctionComponent {
                 abstract suspend fun foo(): Foo
                 @Scoped(SuspendFunctionComponent::class) 
-                @Binding
-                protected suspend fun _suspendFoo() = Foo()
+                @Binding protected suspend fun _suspendFoo() = Foo()
             }
             
             private val component = component<SuspendFunctionComponent>()
@@ -568,16 +522,13 @@ class ComponentTest {
     @Test
     fun testComponentComposableFunction() = codegen(
         """
-            @Component
-            abstract class SuspendFunctionComponent {
+            @Component abstract class SuspendFunctionComponent {
                 @Composable
                 abstract fun bar(): Bar
                 @Composable
-                @Binding
-                protected fun _composableFoo() = Foo()
+                @Binding protected fun _composableFoo() = Foo()
                 @Composable
-                @Binding
-                protected fun _composableBar(foo: Foo) = Bar(foo)
+                @Binding protected fun _composableBar(foo: Foo) = Bar(foo)
             }
         """
     )
@@ -586,8 +537,7 @@ class ComponentTest {
     // todo find a way to invoke composables
     fun testScopedComposableFunction() = codegen(
         """
-            @Component
-            abstract class ComposableFunctionComponent {
+            @Component abstract class ComposableFunctionComponent {
                 @Composable
                 abstract fun foo(): Foo
                 @Binding(ComposableFunctionComponent::class)
@@ -608,8 +558,7 @@ class ComponentTest {
     @Test
     fun testComponentWithConstructorParameters() = codegen(
         """
-            @Component
-            abstract class MyComponent(@Binding protected val _foo: Foo) {
+            @Component abstract class MyComponent(@Binding protected val _foo: Foo) {
                 abstract val foo: Foo
             }
             fun invoke(): Pair<Foo, Foo> {
@@ -625,19 +574,16 @@ class ComponentTest {
     @Test
     fun testNestedComponent() = codegen(
         """
-            @Component
-            abstract class BarComponent {
+            @Component abstract class BarComponent {
                 abstract val bar: Bar
             
-                @Binding
-                protected fun foo() = Foo()
+                @Binding protected fun foo() = Foo()
                 
                 @Module
                 protected val nested = NestedModule()
 
                 class NestedModule {
-                    @Binding
-                    fun bar(foo: Foo) = Bar(foo)
+                    @Binding fun bar(foo: Foo) = Bar(foo)
                 }
             }
             
@@ -652,8 +598,7 @@ class ComponentTest {
     @Test
     fun testGenericNestedComponent() = codegen(
         """
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val foo: Foo
             
                 @Module
@@ -673,8 +618,7 @@ class ComponentTest {
     @Test
     fun testTypeWithStarProjectedArg() = codegen(
         """ 
-            @Component
-            abstract class MyComponent(@Binding protected val _list: List<*>) {
+            @Component abstract class MyComponent(@Binding protected val _list: List<*>) {
                 abstract val list: List<*>
             }
         """
@@ -685,11 +629,9 @@ class ComponentTest {
         """ 
             class Store<S, A>
             
-            @Binding
-            fun stringStore() = Store<String, String>()
+            @Binding fun stringStore() = Store<String, String>()
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val storeS: Store<String, *>
                 abstract val storeA: Store<*, String>
             }
@@ -701,14 +643,11 @@ class ComponentTest {
         """ 
             class Store<S, A>
             
-            @Binding
-            fun stringStringStore() = Store<String, String>()
+            @Binding fun stringStringStore() = Store<String, String>()
             
-            @Binding
-            fun stringIntStore() = Store<String, Int>()
+            @Binding fun stringIntStore() = Store<String, Int>()
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val store: Store<String, *>
             }
         """
@@ -721,14 +660,11 @@ class ComponentTest {
         """
             class Store<S, A>
             
-            @Binding
-            fun store() = Store<String, Int>()
+            @Binding fun store() = Store<String, Int>()
             
-            @Binding
-            fun <S> Store<S, *>.storeState(): S = error("")
+            @Binding fun <S> Store<S, *>.storeState(): S = error("")
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val state: String
             }
         """
@@ -739,14 +675,11 @@ class ComponentTest {
         """
             class Store<S, A>
             
-            @Binding
-            fun store() = Store<String, Int>()
+            @Binding fun store() = Store<String, Int>()
             
-            @Binding
-            fun <S, A> Store<S, A>.storeState(): S = error("")
+            @Binding fun <S, A> Store<S, A>.storeState(): S = error("")
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val state: String
             }
         """
@@ -755,8 +688,7 @@ class ComponentTest {
     @Test
     fun testBindingPerComponent() = codegen(
         """
-            @Component
-            abstract class MyParentComponent {
+            @Component abstract class MyParentComponent {
                 abstract val childFactory: () -> MyChildComponent
                 abstract val foo: Foo
                 @Scoped(MyParentComponent::class) @Binding protected fun parentFoo() = Foo()
@@ -782,8 +714,7 @@ class ComponentTest {
     @Test
     fun testInjectingComponent() = codegen(
         """ 
-            @Component
-            abstract class SelfComponent {
+            @Component abstract class SelfComponent {
                 abstract val self: SelfComponent
             }
 
@@ -800,8 +731,7 @@ class ComponentTest {
     @Test
     fun testInjectingParentComponent() = codegen(
         """ 
-            @Component
-            abstract class ParentComponent {
+            @Component abstract class ParentComponent {
                 abstract val childComponent: () -> MyChildComponent
                 @ChildComponent
                 abstract class MyChildComponent {
@@ -828,15 +758,12 @@ class ComponentTest {
             }
             typealias AliasComparator<T> = Comparator<T>
             
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val compareInt: compare<Int>
-                @Binding
-                protected fun intComparator(): AliasComparator<Int> = error("")
+                @Binding protected fun intComparator(): AliasComparator<Int> = error("")
             }
 
-            @FunBinding
-            fun <T> compare(@FunApi a: T, @FunApi b: T, comparator: AliasComparator<T>): Int = comparator
+            @FunBinding fun <T> compare(@FunApi a: T, @FunApi b: T, comparator: AliasComparator<T>): Int = comparator
                 .compare(a, b)
         """
     )
@@ -844,14 +771,11 @@ class ComponentTest {
     @Test
     fun testBindingTypeParameterInference() = codegen(
         """
-            @Binding
-            fun map() = mapOf("a" to 0)
+            @Binding fun map() = mapOf("a" to 0)
             
-            @Binding
-            fun <M : Map<K, V>, K : CharSequence, V> firstKey(map: M): K = map.keys.first()
+            @Binding fun <M : Map<K, V>, K : CharSequence, V> firstKey(map: M): K = map.keys.first()
 
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 abstract val key: String
             }
         """
@@ -860,8 +784,7 @@ class ComponentTest {
     @Test
     fun testComponentDoesNotImplementFinalFunction() = codegen(
         """
-            @Component
-            abstract class MyComponent {
+            @Component abstract class MyComponent {
                 fun string() = ""
             }
         """

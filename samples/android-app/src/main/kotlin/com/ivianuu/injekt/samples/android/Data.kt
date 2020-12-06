@@ -25,17 +25,14 @@ import java.io.File
 
 typealias DatabaseFile = File
 @Scoped(ApplicationComponent::class)
-@Binding
-fun databaseFile(applicationContext: ApplicationContext): DatabaseFile =
+@Binding fun databaseFile(applicationContext: ApplicationContext): DatabaseFile =
     applicationContext.cacheDir
 
 @Scoped(ApplicationComponent::class)
-@Binding
-class Database(private val file: DatabaseFile)
+@Binding class Database(private val file: DatabaseFile)
 
 @Scoped(ApplicationComponent::class)
-@Binding
-class Repo(
+@Binding class Repo(
     private val database: Database,
     private val api: Api
 ) {
@@ -43,11 +40,9 @@ class Repo(
     }
 }
 
-@FunBinding
-fun refreshRepo(repo: Repo) {
+@FunBinding fun refreshRepo(repo: Repo) {
     repo.refresh()
 }
 
 @Scoped(ApplicationComponent::class)
-@Binding
-class Api
+@Binding class Api

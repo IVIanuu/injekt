@@ -29,8 +29,7 @@ import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtension
 
-@Binding
-class InjektKtGenerationExtension(
+@Binding class InjektKtGenerationExtension(
     private val generationComponentFactory: (
         ModuleDescriptor,
         BindingContext
