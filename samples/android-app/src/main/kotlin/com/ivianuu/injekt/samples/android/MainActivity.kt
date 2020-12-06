@@ -77,7 +77,7 @@ fun enqueueWork(context: ActivityContext) {
         )
 }
 
-@Module val mainViewModelModule = activityViewModel<MainViewModel>()
+@Module val _MainViewModel = activityViewModel<MainViewModel>()
 @Binding
 class MainViewModel : ViewModel() {
     init {
