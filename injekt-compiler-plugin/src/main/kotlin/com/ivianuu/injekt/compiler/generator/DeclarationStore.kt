@@ -409,14 +409,14 @@ class DeclarationStore(val module: ModuleDescriptor) {
                 val callable = callableForDescriptor(invokeDescriptor)
                 val substitutionMap = moduleSubstitutionMap.toMutableMap()
                 val finalCallable = callable.copy(
-                    type = callable.type.substitute(substitutionMap, false),
+                    type = callable.type.substitute(substitutionMap),
                     valueParameters = callable.valueParameters.map {
                         val parameterType = if (it.parameterKind ==
                             ValueParameterRef.ParameterKind.DISPATCH_RECEIVER) {
                             finalType
                         } else it.type
                         it.copy(
-                            type = parameterType.substitute(substitutionMap, false)
+                            type = parameterType.substitute(substitutionMap)
                         )
                     },
                     targetComponent = finalType.targetComponent,
