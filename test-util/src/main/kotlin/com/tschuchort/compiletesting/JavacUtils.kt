@@ -35,7 +35,7 @@ import javax.tools.SimpleJavaFileObject
  */
 internal class FileJavaFileObject(
     val sourceFile: File,
-    val charset: Charset = Charset.defaultCharset()
+    val charset: Charset = Charset.defaultCharset(),
 ) : SimpleJavaFileObject(
     sourceFile.toURI(),
     deduceKind(sourceFile.toURI())
@@ -105,7 +105,7 @@ internal fun getJavacVersionString(javacCommand: String): String {
     return Regex("javac (.*)?[\\s\\S]*").matchEntire(output)?.destructured?.component1()
         ?: throw IllegalStateException(
             "Command '$javacCommand -version' did not print expected output. " +
-                "Output was: '$output'"
+                    "Output was: '$output'"
         )
 }
 
@@ -121,7 +121,7 @@ internal fun isJavac9OrLater(javacVersionString: String): Boolean {
             check(minorv.isNotBlank()) { "Minor version can not be blank if major version is 1" }
 
         return (majorv.toInt() == 1 && minorv.toInt() >= 9) || // old versioning scheme: 1.8.x
-            (majorv.toInt() >= 9) // new versioning scheme: 10.x.x
+                (majorv.toInt() >= 9) // new versioning scheme: 10.x.x
     } catch (t: Throwable) {
         throw IllegalArgumentException(
             "Could not parse javac version string: '$javacVersionString'",

@@ -46,7 +46,7 @@ class ComponentCallable(
     val isInline: Boolean,
     val canBePrivate: Boolean,
     val valueParameters: List<ValueParameter>,
-    val typeParameters: List<TypeParameter>
+    val typeParameters: List<TypeParameter>,
 ) : ComponentMember {
     override fun CodeBuilder.emit() {
         if (callableKind == Callable.CallableKind.COMPOSABLE) emitLine("@${InjektFqNames.Composable}")
@@ -112,19 +112,19 @@ class ComponentCallable(
 
     data class ValueParameter(
         val name: Name,
-        val type: TypeRef
+        val type: TypeRef,
     )
 
     data class TypeParameter(
         val name: Name,
-        val upperBounds: List<TypeRef>
+        val upperBounds: List<TypeRef>,
     )
 }
 
 sealed class BindingNode(
     type: TypeRef,
     var callableKind: Callable.CallableKind,
-    var eager: Boolean
+    var eager: Boolean,
 ) {
     abstract val dependencies: List<BindingRequest>
     abstract val rawType: TypeRef
@@ -138,9 +138,9 @@ sealed class BindingNode(
 
     protected var _type = type
     val type: TypeRef by this::_type
-    
+
     open fun refineType(
-        dependencyBindings: List<BindingNode>
+        dependencyBindings: List<BindingNode>,
     ) {
         dependencies.zip(dependencyBindings).forEach { (request, binding) ->
             val substitutionMap = binding.type.getStarSubstitutionMap(request.type)
@@ -151,7 +151,7 @@ sealed class BindingNode(
 
 class SelfBindingNode(
     type: TypeRef,
-    val component: ComponentImpl
+    val component: ComponentImpl,
 ) : BindingNode(type, Callable.CallableKind.DEFAULT, false) {
     override val dependencies: List<BindingRequest>
         get() = emptyList()
@@ -170,7 +170,7 @@ class AssistedBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl,
     val childComponent: ComponentImpl,
-    val assistedTypes: List<TypeRef>
+    val assistedTypes: List<TypeRef>,
 ) : BindingNode(type, Callable.CallableKind.DEFAULT, true) {
     override val dependencies: List<BindingRequest>
         get() = emptyList()
@@ -215,7 +215,7 @@ class ChildComponentBindingNode(
 
 class InputBindingNode(
     type: TypeRef,
-    override val owner: ComponentImpl
+    override val owner: ComponentImpl,
 ) : BindingNode(type, Callable.CallableKind.DEFAULT, false) {
     override val dependencies: List<BindingRequest>
         get() = emptyList()
@@ -236,7 +236,7 @@ class CallableBindingNode(
     override val rawType: TypeRef,
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
-    val callable: Callable
+    val callable: Callable,
 ) : BindingNode(type, callable.callableKind, callable.eager) {
     override val targetComponent: TypeRef?
         get() = callable.targetComponent
@@ -247,30 +247,7 @@ class CallableBindingNode(
     override val inline: Boolean
         get() = callable.visibility != DescriptorVisibilities.PROTECTED &&
                 (((!callable.isCall || callable.valueParameters.isEmpty()) ||
-                        callable.isInline) &&!eager && targetComponent == null)
-
-    override fun refineType(dependencyBindings: List<BindingNode>) {
-        super.refineType(dependencyBindings)
-        val substitutionMap = callable.type.getStarSubstitutionMap(type)
-        _type = _type.substitute(substitutionMap)
-    }
-}
-
-class FunBindingNode(
-    type: TypeRef,
-    override val rawType: TypeRef,
-    override val owner: ComponentImpl,
-    override val dependencies: List<BindingRequest>,
-    val callable: Callable
-) : BindingNode(type, Callable.CallableKind.DEFAULT, true) {
-    override val targetComponent: TypeRef?
-        get() = callable.targetComponent
-    override val scoped: Boolean
-        get() = false
-    override val origin: FqName
-        get() = callable.fqName
-    override val inline: Boolean
-        get() = false
+                        callable.isInline) && !eager && targetComponent == null)
 
     override fun refineType(dependencyBindings: List<BindingNode>) {
         super.refineType(dependencyBindings)
@@ -284,7 +261,7 @@ class MapBindingNode(
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
     val entries: List<Callable>,
-    val dependenciesByEntry: Map<Callable, List<BindingRequest>>
+    val dependenciesByEntry: Map<Callable, List<BindingRequest>>,
 ) : BindingNode(type, Callable.CallableKind.DEFAULT, entries.any { it.eager }) {
     override val rawType: TypeRef
         get() = type
@@ -308,7 +285,7 @@ class MapBindingNode(
 
 class MissingBindingNode(
     type: TypeRef,
-    override val owner: ComponentImpl
+    override val owner: ComponentImpl,
 ) : BindingNode(type, Callable.CallableKind.DEFAULT, false) {
     override val dependencies: List<BindingRequest>
         get() = emptyList()
@@ -345,7 +322,7 @@ class SetBindingNode(
     override val owner: ComponentImpl,
     override val dependencies: List<BindingRequest>,
     val elements: List<Callable>,
-    val dependenciesByElement: Map<Callable, List<BindingRequest>>
+    val dependenciesByElement: Map<Callable, List<BindingRequest>>,
 ) : BindingNode(type, Callable.CallableKind.DEFAULT, elements.any { it.eager }) {
     override val rawType: TypeRef
         get() = type
@@ -369,7 +346,7 @@ class SetBindingNode(
 
 data class InterceptorNode(
     val callable: Callable,
-    val dependencies: List<BindingRequest>
+    val dependencies: List<BindingRequest>,
 )
 
 data class BindingRequest(
@@ -378,5 +355,5 @@ data class BindingRequest(
     val required: Boolean,
     val callableKind: Callable.CallableKind,
     val lazy: Boolean,
-    val forObjectCall: Boolean
+    val forObjectCall: Boolean,
 )

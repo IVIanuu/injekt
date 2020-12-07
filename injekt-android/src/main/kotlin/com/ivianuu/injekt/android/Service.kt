@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("NOTHING_TO_INLINE")
+
 package com.ivianuu.injekt.android
 
 import android.app.Service
@@ -34,12 +36,12 @@ fun Service.createServiceComponent(): ServiceComponent =
 abstract class ServiceComponent(@Binding protected val service: Service)
 
 typealias ServiceContext = Context
-@Binding inline val Service.serviceContext: ServiceContext
-    get() = this
+
+@Binding inline fun Service.provideServiceContext(): ServiceContext = this
 
 typealias ServiceResources = Resources
-@Binding inline val Service.serviceResources: ServiceResources
-    get() = resources
+
+@Binding inline fun Service.provideServiceResources(): ServiceResources = resources
 
 @MergeInto(ApplicationComponent::class)
 interface ServiceComponentFactoryOwner {

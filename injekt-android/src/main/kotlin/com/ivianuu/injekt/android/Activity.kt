@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("NOTHING_TO_INLINE")
+
 package com.ivianuu.injekt.android
 
 import android.content.Context
@@ -24,7 +26,6 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.TypeBinding
 import com.ivianuu.injekt.merge.MergeChildComponent
 import com.ivianuu.injekt.merge.MergeInto
 import com.ivianuu.injekt.merge.mergeComponent
@@ -39,23 +40,34 @@ val ComponentActivity.activityComponent: ActivityComponent
 @MergeChildComponent
 abstract class ActivityComponent(@Binding protected val activity: ComponentActivity)
 
-@TypeBinding inline val ComponentActivity.ActivityContext: Context
-    get() = this
+typealias ActivityContext = Context
 
-@TypeBinding inline val ComponentActivity.ActivityResources: Resources
-    get() = resources
+@Binding inline fun ComponentActivity.provideActivityContext(): ActivityContext = this
 
-@TypeBinding inline val ComponentActivity.ActivityLifecycleOwner: LifecycleOwner
-    get() = this
+typealias ActivityResources = Resources
 
-@TypeBinding inline val ComponentActivity.ActivityOnBackPressedDispatcherOwner: OnBackPressedDispatcherOwner
-    get() = this
+@Binding inline fun ComponentActivity.provideActivityResources(): ActivityResources = resources
 
-@TypeBinding inline val ComponentActivity.ActivitySavedStateRegistryOwner: SavedStateRegistryOwner
-    get() = this
+typealias ActivityLifecycleOwner = LifecycleOwner
 
-@TypeBinding inline val ComponentActivity.ActivityViewModelStoreOwner: ViewModelStoreOwner
-    get() = this
+@Binding inline fun ComponentActivity.provideActivityLifecycleOwner(): ActivityLifecycleOwner = this
+
+typealias ActivityOnBackPressedDispatcherOwner = OnBackPressedDispatcherOwner
+
+@Binding
+inline fun ComponentActivity.provideActivityOnBackPressedDispatcherOwner(): ActivityOnBackPressedDispatcherOwner =
+    this
+
+typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
+
+@Binding
+inline fun ComponentActivity.provideActivitySavedStateRegistryOwner(): ActivitySavedStateRegistryOwner =
+    this
+
+typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
+
+@Binding inline fun ComponentActivity.provideActivityViewModelStoreOwner(): ActivityViewModelStoreOwner =
+    this
 
 @MergeInto(RetainedActivityComponent::class)
 interface ActivityComponentFactoryOwner {

@@ -50,12 +50,12 @@ import java.io.File
 
 internal class KaptComponentRegistrar(
     private val processors: List<IncrementalProcessor>,
-    private val kaptOptions: KaptOptions.Builder
+    private val kaptOptions: KaptOptions.Builder,
 ) : ComponentRegistrar {
 
     override fun registerProjectComponents(
         project: MockProject,
-        configuration: CompilerConfiguration
+        configuration: CompilerConfiguration,
     ) {
         if (processors.isEmpty())
             return
@@ -117,7 +117,7 @@ internal class KaptComponentRegistrar(
     private fun KaptOptions.Builder.checkOptions(
         project: MockProject,
         logger: KaptLogger,
-        configuration: CompilerConfiguration
+        configuration: CompilerConfiguration,
     ): Boolean {
         fun abortAnalysis() =
             AnalysisHandlerExtension.registerExtension(project, AbortAnalysisHandlerExtension())
@@ -167,7 +167,7 @@ internal class KaptComponentRegistrar(
             projectContext: ProjectContext,
             files: Collection<KtFile>,
             bindingTrace: BindingTrace,
-            componentProvider: ComponentProvider
+            componentProvider: ComponentProvider,
         ): AnalysisResult? {
             return AnalysisResult.success(
                 bindingTrace.bindingContext,
@@ -180,7 +180,7 @@ internal class KaptComponentRegistrar(
             project: Project,
             module: ModuleDescriptor,
             bindingTrace: BindingTrace,
-            files: Collection<KtFile>
+            files: Collection<KtFile>,
         ): AnalysisResult? {
             return AnalysisResult.success(
                 bindingTrace.bindingContext,

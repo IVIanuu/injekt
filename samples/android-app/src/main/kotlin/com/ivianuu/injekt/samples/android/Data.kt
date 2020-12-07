@@ -17,15 +17,15 @@
 package com.ivianuu.injekt.samples.android
 
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.Scoped
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.merge.ApplicationComponent
 import java.io.File
 
 typealias DatabaseFile = File
+
 @Scoped(ApplicationComponent::class)
-@Binding fun databaseFile(applicationContext: ApplicationContext): DatabaseFile =
+@Binding fun provideDatabaseFile(applicationContext: ApplicationContext): DatabaseFile =
     applicationContext.cacheDir
 
 @Scoped(ApplicationComponent::class)
@@ -34,13 +34,15 @@ typealias DatabaseFile = File
 @Scoped(ApplicationComponent::class)
 @Binding class Repo(
     private val database: Database,
-    private val api: Api
+    private val api: Api,
 ) {
     fun refresh() {
     }
 }
 
-@FunBinding fun refreshRepo(repo: Repo) {
+typealias refreshRepo = () -> Unit
+
+@Binding fun provideRefreshRepo(repo: Repo): refreshRepo = {
     repo.refresh()
 }
 

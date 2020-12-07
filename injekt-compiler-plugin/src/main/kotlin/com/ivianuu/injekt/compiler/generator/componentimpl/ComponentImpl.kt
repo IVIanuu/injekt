@@ -90,7 +90,12 @@ typealias ComponentFactoryType = TypeRef
         initialized = true
         parent?.children?.add(this)
         graph.checkRequests(requests.map {
-            BindingRequest(it.type, it.fqName, it.modality != Modality.OPEN, it.callableKind, false, false)
+            BindingRequest(it.type,
+                it.fqName,
+                it.modality != Modality.OPEN,
+                it.callableKind,
+                false,
+                false)
         })
         requests.forEach { requestCallable ->
             val binding = graph.resolvedBindings[requestCallable.type]!!
@@ -98,7 +103,12 @@ typealias ComponentFactoryType = TypeRef
             val body = if (binding is MissingBindingNode) ({
                 emit("null")
             }) else statements.getBindingExpression(BindingRequest(
-                requestCallable.type, requestCallable.fqName, true, requestCallable.callableKind, false, false))
+                requestCallable.type,
+                requestCallable.fqName,
+                true,
+                requestCallable.callableKind,
+                false,
+                false))
             statements.getCallable(
                 type = if (requestCallable in assistedRequests) binding.type else requestCallable.type,
                 name = requestCallable.name,

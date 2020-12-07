@@ -117,7 +117,7 @@ class TypeRefTest {
 
     @Test
     fun testDifferentQualifiersIsNotAssignable() = withAnalysisContext {
-        stringType.qualified(qualifier1()) shouldNotBeAssignable  stringType.qualified(qualifier2())
+        stringType.qualified(qualifier1()) shouldNotBeAssignable stringType.qualified(qualifier2())
     }
 
     @Test
@@ -196,16 +196,18 @@ class TypeRefTest {
     }
 
     @Test
-    fun testNestedUnqualifiedSubTypeOfNestedTypeParameterWithQualifiedUpperBound() = withAnalysisContext {
-        listType.typeWith(stringType) shouldNotBeAssignable
-                listType.typeWith(typeParameter(anyNType.qualified(qualifier1())))
-    }
+    fun testNestedUnqualifiedSubTypeOfNestedTypeParameterWithQualifiedUpperBound() =
+        withAnalysisContext {
+            listType.typeWith(stringType) shouldNotBeAssignable
+                    listType.typeWith(typeParameter(anyNType.qualified(qualifier1())))
+        }
 
     @Test
-    fun testNestedQualifiedSubTypeOfNestedTypeParameterWithQualifiedUpperBound() = withAnalysisContext {
-        listType.typeWith(stringType.qualified(qualifier1())) shouldBeAssignable
-                listType.typeWith(typeParameter(anyNType.qualified(qualifier1())))
-    }
+    fun testNestedQualifiedSubTypeOfNestedTypeParameterWithQualifiedUpperBound() =
+        withAnalysisContext {
+            listType.typeWith(stringType.qualified(qualifier1())) shouldBeAssignable
+                    listType.typeWith(typeParameter(anyNType.qualified(qualifier1())))
+        }
 
     private infix fun TypeRef.shouldBeAssignable(other: TypeRef) {
         if (!isAssignableTo(other)) {
@@ -234,7 +236,7 @@ class TypeRefTest {
     // todo type parameter multuple upper bounds
 
     private fun withAnalysisContext(
-        block: AnalysisContext.() -> Unit
+        block: AnalysisContext.() -> Unit,
     ) {
         codegen(
             """
@@ -244,7 +246,7 @@ class TypeRefTest {
                 compilerPlugins += object : ComponentRegistrar {
                     override fun registerProjectComponents(
                         project: MockProject,
-                        configuration: CompilerConfiguration
+                        configuration: CompilerConfiguration,
                     ) {
                         AnalysisHandlerExtension.registerExtension(
                             project,
@@ -253,7 +255,7 @@ class TypeRefTest {
                                     project: Project,
                                     module: ModuleDescriptor,
                                     bindingTrace: BindingTrace,
-                                    files: Collection<KtFile>
+                                    files: Collection<KtFile>,
                                 ): AnalysisResult? {
                                     block(AnalysisContext(module))
                                     return null
@@ -285,12 +287,13 @@ class TypeRefTest {
 
         fun qualifier1(args: Map<Name, String> = emptyMap()) =
             qualifier(FqName("Qualifier1"), args)
+
         fun qualifier2(args: Map<Name, String> = emptyMap()) =
             qualifier(FqName("Qualifier2"), args)
 
         fun qualifier(
             fqName: FqName = FqName("Qualifier${id++}"),
-            args: Map<Name, String>
+            args: Map<Name, String>,
         ) = QualifierDescriptor(
             ClassifierRef(fqName).defaultType,
             args
@@ -300,7 +303,7 @@ class TypeRefTest {
 
         fun subType(
             vararg superTypes: TypeRef,
-            fqName: FqName = FqName("SubType${id}")
+            fqName: FqName = FqName("SubType${id}"),
         ) = ClassifierRef(
             fqName = fqName,
             superTypes = superTypes.toList()
@@ -308,7 +311,7 @@ class TypeRefTest {
 
         fun typeAlias(
             expandedType: TypeRef,
-            fqName: FqName = FqName("Alias${id++}")
+            fqName: FqName = FqName("Alias${id++}"),
         ) = ClassifierRef(
             fqName = fqName,
             expandedType = expandedType,
@@ -317,13 +320,14 @@ class TypeRefTest {
 
         fun typeParameter(
             fqName: FqName = FqName("TypeParameter${id++}"),
-            nullable: Boolean = true
-        ): TypeRef = typeParameter(upperBounds = *emptyArray(), nullable = nullable, fqName = fqName)
+            nullable: Boolean = true,
+        ): TypeRef =
+            typeParameter(upperBounds = *emptyArray(), nullable = nullable, fqName = fqName)
 
         fun typeParameter(
             vararg upperBounds: TypeRef,
             nullable: Boolean = true,
-            fqName: FqName = FqName("TypeParameter${id++}")
+            fqName: FqName = FqName("TypeParameter${id++}"),
         ) = ClassifierRef(
             fqName = fqName,
             superTypes = listOf(anyType.copy(isMarkedNullable = nullable)) + upperBounds,
@@ -340,8 +344,10 @@ class TypeRefTest {
 
     fun TypeRef.nonNull() = copy(isMarkedNullable = false)
 
-    fun TypeRef.qualified(vararg qualifiers: QualifierDescriptor) = copy(qualifiers = qualifiers.toList())
+    fun TypeRef.qualified(vararg qualifiers: QualifierDescriptor) =
+        copy(qualifiers = qualifiers.toList())
 
-    fun TypeRef.typeWith(vararg typeArguments: TypeRef) = copy(typeArguments = typeArguments.toList())
+    fun TypeRef.typeWith(vararg typeArguments: TypeRef) =
+        copy(typeArguments = typeArguments.toList())
 
 }

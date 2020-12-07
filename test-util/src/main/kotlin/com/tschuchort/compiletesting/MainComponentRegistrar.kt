@@ -28,7 +28,7 @@ class MainComponentRegistrar : ComponentRegistrar {
 
     override fun registerProjectComponents(
         project: MockProject,
-        configuration: CompilerConfiguration
+        configuration: CompilerConfiguration,
     ) {
         val parameters = threadLocalParameters.get()
 
@@ -59,6 +59,6 @@ class MainComponentRegistrar : ComponentRegistrar {
     data class ThreadLocalParameters(
         val processors: List<IncrementalProcessor>,
         val kaptOptions: KaptOptions.Builder,
-        val compilerPlugins: List<ComponentRegistrar>
+        val compilerPlugins: List<ComponentRegistrar>,
     )
 }

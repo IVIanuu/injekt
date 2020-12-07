@@ -23,12 +23,12 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.android.work.worker
 
 @Module val TestWorkerModule = worker<TestWorker>()
+
 @Binding class TestWorker(
     context: Context,
     workerParams: WorkerParameters,
@@ -41,10 +41,12 @@ import com.ivianuu.injekt.android.work.worker
     override suspend fun doWork(): Result = Result.success()
 }
 
-@FunBinding fun initializeWorkers(
+typealias initializeWorkers = () -> Unit
+
+@Binding fun provideInitializeWorkers(
     applicationContext: ApplicationContext,
     workerFactory: WorkerFactory,
-) {
+): initializeWorkers = {
     WorkManager.initialize(
         applicationContext,
         Configuration.Builder()

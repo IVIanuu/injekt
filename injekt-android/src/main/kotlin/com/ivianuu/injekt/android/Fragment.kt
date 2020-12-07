@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("NOTHING_TO_INLINE")
+
 package com.ivianuu.injekt.android
 
 import android.content.Context
@@ -30,24 +32,26 @@ import com.ivianuu.injekt.merge.MergeInto
 abstract class FragmentComponent(@Binding protected val fragment: Fragment)
 
 typealias FragmentContext = Context
-@Binding inline val Fragment.fragmentContext: FragmentContext
-    get() = requireContext()
+
+@Binding inline fun Fragment.provideFragmentContext(): FragmentContext = requireContext()
 
 typealias FragmentResources = Resources
-@Binding inline val FragmentContext.fragmentResources: FragmentResources
-    get() = resources
+
+@Binding inline fun FragmentContext.provideFragmentResources(): FragmentResources = resources
 
 typealias FragmentLifecycleOwner = LifecycleOwner
-@Binding inline val Fragment.fragmentLifecycleOwner: FragmentLifecycleOwner
-    get() = this
+
+@Binding inline fun Fragment.provideFragmentLifecycleOwner(): FragmentLifecycleOwner = this
 
 typealias FragmentSavedStateRegistryOwner = SavedStateRegistryOwner
-@Binding inline val Fragment.fragmentSavedStateRegistryOwner: FragmentSavedStateRegistryOwner
-    get() = this
+
+@Binding inline fun Fragment.provideFragmentSavedStateRegistryOwner(): FragmentSavedStateRegistryOwner =
+    this
 
 typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
-@Binding inline val Fragment.fragmentViewModelStoreOwner: FragmentViewModelStoreOwner
-    get() = this
+
+@Binding inline fun Fragment.provideFragmentViewModelStoreOwner(): FragmentViewModelStoreOwner =
+    this
 
 @MergeInto(ActivityComponent::class)
 interface FragmentComponentFactoryOwner {

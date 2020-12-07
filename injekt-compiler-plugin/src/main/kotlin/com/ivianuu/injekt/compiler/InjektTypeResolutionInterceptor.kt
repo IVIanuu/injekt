@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.findAnnotation
 import com.ivianuu.injekt.compiler.generator.hasAnnotation
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -18,14 +17,11 @@ import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
-import org.jetbrains.kotlin.resolve.constants.KClassValue
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.types.expressions.ExpressionTypingContext
 import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
-import kotlin.reflect.KClass
 
 @Suppress("INVISIBLE_REFERENCE", "EXPERIMENTAL_IS_NOT_ENABLED", "IllegalExperimentalApiUsage")
 @OptIn(org.jetbrains.kotlin.extensions.internal.InternalNonStableExtensionPoints::class)
@@ -34,7 +30,7 @@ class InjektTypeResolutionInterceptor : TypeResolutionInterceptorExtension {
     override fun interceptType(
         element: KtElement,
         context: ExpressionTypingContext,
-        resultType: KotlinType
+        resultType: KotlinType,
     ): KotlinType {
         if (resultType === TypeUtils.NO_EXPECTED_TYPE) return resultType
         if (element !is KtLambdaExpression) return resultType
@@ -46,7 +42,8 @@ class InjektTypeResolutionInterceptor : TypeResolutionInterceptorExtension {
                 annotation = element.parent.safeAs<KtAnnotated>()?.findAnnotation(annotationFqName)
             }
             if (annotation == null && context.expectedType !== TypeUtils.NO_EXPECTED_TYPE) {
-                annotation = context.expectedType.safeAs<KtAnnotated>()?.findAnnotation(annotationFqName)
+                annotation =
+                    context.expectedType.safeAs<KtAnnotated>()?.findAnnotation(annotationFqName)
             }
             if (annotation != null) {
                 val annotationDescriptor = context.trace[BindingContext.ANNOTATION, annotation]
@@ -63,7 +60,7 @@ class InjektTypeResolutionInterceptor : TypeResolutionInterceptorExtension {
     private fun makeAnnotation(
         fqName: FqName,
         module: ModuleDescriptor,
-        arguments: Map<Name, ConstantValue<*>>
+        arguments: Map<Name, ConstantValue<*>>,
     ): AnnotationDescriptor =
         object : AnnotationDescriptor {
             override val type = module.findClassAcrossModuleDependencies(

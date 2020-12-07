@@ -28,7 +28,7 @@ import com.ivianuu.injekt.merge.mergeComponent
 
 fun BroadcastReceiver.createReceiverComponent(
     context: Context,
-    intent: Intent
+    intent: Intent,
 ): ReceiverComponent =
     (context.applicationContext as Application).applicationComponent
         .mergeComponent<ReceiverComponentFactoryOwner>()
@@ -38,7 +38,7 @@ fun BroadcastReceiver.createReceiverComponent(
 abstract class ReceiverComponent(
     @Binding protected val receiver: BroadcastReceiver,
     @Binding protected val context: ReceiverContext,
-    @Binding protected val intent: ReceiverIntent
+    @Binding protected val intent: ReceiverIntent,
 )
 
 typealias ReceiverContext = Context

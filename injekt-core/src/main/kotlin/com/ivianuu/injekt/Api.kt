@@ -26,7 +26,10 @@ annotation class ChildComponent
 
 fun <T> component(vararg inputs: Any?): T = error("Intrinsic")
 
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.TYPE)
+@Target(AnnotationTarget.CLASS,
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.TYPE)
 annotation class Module
 
 @Target(
@@ -85,13 +88,3 @@ annotation class Eager
     AnnotationTarget.TYPE
 )
 annotation class Default
-
-@Target(AnnotationTarget.FUNCTION)
-annotation class FunBinding
-
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
-annotation class TypeBinding
-
-@Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class FunApi
-

@@ -34,7 +34,7 @@ abstract class SourceFile {
         fun java(
             name: String,
             @Language("java") contents: String,
-            trimIndent: Boolean = true
+            trimIndent: Boolean = true,
         ): SourceFile {
             require(File(name).hasJavaFileExtension())
             val finalContents = if (trimIndent) contents.trimIndent() else contents
@@ -47,7 +47,7 @@ abstract class SourceFile {
         fun kotlin(
             name: String,
             @Language("kotlin") contents: String,
-            trimIndent: Boolean = true
+            trimIndent: Boolean = true,
         ): SourceFile {
             require(File(name).hasKotlinFileExtension())
             val finalContents = if (trimIndent) contents.trimIndent() else contents

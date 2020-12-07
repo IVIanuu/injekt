@@ -21,12 +21,8 @@ import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.multiCodegen
-import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertNotSame
-import junit.framework.Assert.assertNull
 import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -763,8 +759,10 @@ class ComponentTest {
                 @Binding protected fun intComparator(): AliasComparator<Int> = error("")
             }
 
-            @FunBinding fun <T> compare(@FunApi a: T, @FunApi b: T, comparator: AliasComparator<T>): Int = comparator
-                .compare(a, b)
+            typealias compare<T> = (T, T) -> Int
+            @Binding fun <T> provideCompare(comparator: AliasComparator<T>): compare<T> = { a, b ->
+                comparator.compare(a, b)
+            }
         """
     )
 

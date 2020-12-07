@@ -23,14 +23,13 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.componentimpl.CallableBindingNode
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentFactoryType
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentImpl
-import com.ivianuu.injekt.compiler.generator.componentimpl.FunBindingNode
+import com.ivianuu.injekt.compiler.generator.componentimpl.Parent
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.namedDeclarationRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
-import com.ivianuu.injekt.compiler.generator.componentimpl.Parent
 
 @Binding class ComponentGenerator(
     private val bindingContext: BindingContext,
@@ -45,7 +44,7 @@ import com.ivianuu.injekt.compiler.generator.componentimpl.Parent
         @Parent ComponentImpl?,
     ) -> ComponentImpl,
     private val generateComponents: GenerateComponents,
-    private val generateMergeComponents: GenerateMergeComponents
+    private val generateMergeComponents: GenerateMergeComponents,
 ) : Generator {
     override fun generate(files: List<KtFile>) {
         if (generateComponents) {
@@ -87,11 +86,8 @@ import com.ivianuu.injekt.compiler.generator.componentimpl.Parent
         fun ComponentImpl.collectImports() {
             imports += graph.resolvedBindings.values
                 .mapNotNull {
-                    it to (when (it) {
-                        is CallableBindingNode -> it.callable
-                        is FunBindingNode -> it.callable
-                        else -> null
-                    } ?: return@mapNotNull null)
+                    it to ((if (it is CallableBindingNode) it.callable
+                    else null) ?: return@mapNotNull null)
                 }
                 .filter {
                     it.second.valueParameters.none {
@@ -105,7 +101,8 @@ import com.ivianuu.injekt.compiler.generator.componentimpl.Parent
                     .filter {
                         it.targetComponent != null && it.callableKind == Callable.CallableKind.SUSPEND
                     }
-                    .any()) {
+                    .any()
+            ) {
                 imports += FqName("kotlinx.coroutines.sync.withLock")
             }
             children.forEach { it.collectImports() }
@@ -147,8 +144,7 @@ import com.ivianuu.injekt.compiler.generator.componentimpl.Parent
             originatingFile = null,
             packageFqName = componentType.classifier.fqName.parent(),
             fileName = "${componentImplFqName.shortName()}.kt",
-            code = code,
-            forAdditionalSource = false
+            code = code
         )
     }
 }

@@ -56,7 +56,7 @@ import javax.tools.JavaFileObject
 data class PluginOption(
     val pluginId: PluginId,
     val optionName: OptionName,
-    val optionValue: OptionValue
+    val optionValue: OptionValue,
 )
 
 typealias PluginId = String
@@ -362,7 +362,7 @@ class KotlinCompilation {
         /** The exit code of the compilation */
         val exitCode: ExitCode,
         /** Messages that were printed by the compilation */
-        val messages: String
+        val messages: String,
     ) {
         /** class loader to load the compile classes */
         val classLoader = URLClassLoader(
@@ -500,10 +500,12 @@ class KotlinCompilation {
          * to the correct [CommandLineProcessor].
          */
         args.pluginOptions = pluginOptions.map { (pluginId, optionName, optionValue) ->
-            "plugin:${MainCommandLineProcessor.pluginId}:${MainCommandLineProcessor.encodeForeignOptionName(
-                pluginId,
-                optionName
-            )}=$optionValue"
+            "plugin:${MainCommandLineProcessor.pluginId}:${
+                MainCommandLineProcessor.encodeForeignOptionName(
+                    pluginId,
+                    optionName
+                )
+            }=$optionValue"
         }.toTypedArray()
 
         /* Parse extra CLI arguments that are given as strings so users can specify arguments that are not yet
@@ -657,8 +659,8 @@ class KotlinCompilation {
         )
 
         val sources = sourceFiles +
-            kaptKotlinGeneratedDir.listFilesRecursively() +
-            kaptSourceDir.listFilesRecursively()
+                kaptKotlinGeneratedDir.listFilesRecursively() +
+                kaptSourceDir.listFilesRecursively()
 
         // if no Kotlin sources are available, skip the compileKotlin step
         if (sources.none(File::hasKotlinFileExtension))
@@ -773,7 +775,8 @@ class KotlinCompilation {
                 when (diag.kind) {
                     Diagnostic.Kind.ERROR -> error(diag.getMessage(null))
                     Diagnostic.Kind.WARNING,
-                    Diagnostic.Kind.MANDATORY_WARNING -> warn(diag.getMessage(null))
+                    Diagnostic.Kind.MANDATORY_WARNING,
+                    -> warn(diag.getMessage(null))
                     else -> log(diag.getMessage(null))
                 }
             }
@@ -890,17 +893,17 @@ class KotlinCompilation {
         if (compilerSystemOut.contains("No enum constant com.sun.tools.javac.main.Option.BOOT_CLASS_PATH")) {
             warn(
                 "${this::class.simpleName} has detected that the compiler output contains an error message that may be " +
-                    "caused by including a tools.jar file together with a JDK of version 9 or later. " +
-                    if (inheritClassPath)
-                        "Make sure that no tools.jar (or unwanted JDK) is in the inherited classpath"
-                    else ""
+                        "caused by including a tools.jar file together with a JDK of version 9 or later. " +
+                        if (inheritClassPath)
+                            "Make sure that no tools.jar (or unwanted JDK) is in the inherited classpath"
+                        else ""
             )
         }
 
         if (compilerSystemOut.contains("Unable to find package java.")) {
             warn(
                 "${this::class.simpleName} has detected that the compiler output contains an error message " +
-                    "that may be caused by a missing JDK. This can happen if jdkHome=null and inheritClassPath=false."
+                        "that may be caused by a missing JDK. This can happen if jdkHome=null and inheritClassPath=false."
             )
         }
     }
@@ -909,7 +912,7 @@ class KotlinCompilation {
     private fun findInHostClasspath(
         hostClasspaths: List<File>,
         simpleName: String,
-        regex: Regex
+        regex: Regex,
     ): File? {
         val jarFile = hostClasspaths.firstOrNull { classpath ->
             classpath.name.matches(regex)

@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.ClassifierRef
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.ErrorCollector
-import com.ivianuu.injekt.compiler.generator.FunBindingDescriptor
 import com.ivianuu.injekt.compiler.generator.ModuleDescriptor
 import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
 import com.ivianuu.injekt.compiler.generator.TypeRef
@@ -60,7 +59,7 @@ import org.jetbrains.kotlin.name.Name
         @Parent ComponentImpl?,
     ) -> ComponentImpl,
     private val errorCollector: ErrorCollector,
-    private val moduleDescriptor: org.jetbrains.kotlin.descriptors.ModuleDescriptor
+    private val moduleDescriptor: org.jetbrains.kotlin.descriptors.ModuleDescriptor,
 ) {
 
     private val parent = owner.parent?.graph
@@ -132,7 +131,7 @@ import org.jetbrains.kotlin.name.Name
         addBinding: (Callable) -> Unit,
         addInterceptor: (InterceptorNode) -> Unit,
         addMapEntries: (Callable) -> Unit,
-        addSetElements: (Callable) -> Unit
+        addSetElements: (Callable) -> Unit,
     ) {
         if (type in collectedModules) return
         collectedModules += type
@@ -152,7 +151,10 @@ import org.jetbrains.kotlin.name.Name
                     if (callable.type !in collectedModules) {
                         addBinding(callable)
                         declarationStore.moduleForType(callable.type)
-                            .collectContributions(addBinding, addInterceptor, addMapEntries, addSetElements)
+                            .collectContributions(addBinding,
+                                addInterceptor,
+                                addMapEntries,
+                                addSetElements)
                     } else Unit
                 }
             }.let {}
@@ -164,7 +166,8 @@ import org.jetbrains.kotlin.name.Name
         requests.forEach { request ->
             val binding = getBinding(request)
             if (binding.callableKind != Callable.CallableKind.DEFAULT &&
-                binding.callableKind != request.callableKind) {
+                binding.callableKind != request.callableKind
+            ) {
                 errorCollector.add("Call context mismatch. '${request.origin}' is a ${request.callableKind.name} callable but " +
                         "dependency '${binding.origin}' is a ${binding.callableKind.name} callable.")
             }
@@ -205,7 +208,8 @@ import org.jetbrains.kotlin.name.Name
             .filter { it.first.callableKind != it.second.callableKind }
             .forEach { (request, dependency) ->
                 if (request.callableKind != Callable.CallableKind.DEFAULT &&
-                    request.callableKind != dependency.callableKind) {
+                    request.callableKind != dependency.callableKind
+                ) {
                     errorCollector.add("Call context mismatch. '${request.origin}' is a ${request.callableKind.name} callable but " +
                             "dependency '${dependency.origin}' is a ${dependency.callableKind.name} callable.")
                 } else {
@@ -285,8 +289,9 @@ import org.jetbrains.kotlin.name.Name
         chain.push(request)
         val binding = getBinding(request)
         if (request.type == owner.assistedRequests.singleOrNull()?.type &&
-                binding is CallableBindingNode &&
-                binding.eager) {
+            binding is CallableBindingNode &&
+            binding.eager
+        ) {
             errorCollector.add("Cannot perform assisted injection on a eager binding $request ${binding.callable.fqName}")
         }
         binding.owner.graph.check(binding)
@@ -299,7 +304,7 @@ import org.jetbrains.kotlin.name.Name
     private fun postProcess() {
         class MergeBindingGroup(
             val type: TypeRef,
-            val bindingToUse: BindingNode
+            val bindingToUse: BindingNode,
         ) {
             val keysToReplace = mutableListOf<TypeRef>()
         }
@@ -330,7 +335,7 @@ import org.jetbrains.kotlin.name.Name
     fun getBinding(request: BindingRequest): BindingNode {
         var binding = getBindingOrNull(request)
         if (binding != null) return binding
-        
+
         if (request.type.isMarkedNullable || !request.required) {
             binding = MissingBindingNode(request.type, owner)
             resolvedBindings[request.type] = binding
@@ -439,7 +444,7 @@ import org.jetbrains.kotlin.name.Name
 
     private fun getExplicitBindingsForType(
         request: BindingRequest,
-        default: Boolean
+        default: Boolean,
     ): List<BindingNode> = buildList<BindingNode> {
         this += owner.additionalInputTypes
             .filter { it.isAssignableTo(request.type) }
@@ -456,14 +461,20 @@ import org.jetbrains.kotlin.name.Name
             .map { it.toCallableBindingNode(request) }
     }
 
-    private fun getExplicitParentBindingsForType(parent: BindingGraph, request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
+    private fun getExplicitParentBindingsForType(
+        parent: BindingGraph,
+        request: BindingRequest,
+    ): List<BindingNode> = buildList<BindingNode> {
         this += parent.explicitBindings
             .filter { it.targetComponent.checkComponent() }
             .filter { it.type.isAssignableTo(request.type) }
             .map { it.toCallableBindingNode(request) }
     }
 
-    private fun getImplicitUserBindingsForType(request: BindingRequest, default: Boolean): List<BindingNode> = buildList<BindingNode> {
+    private fun getImplicitUserBindingsForType(
+        request: BindingRequest,
+        default: Boolean,
+    ): List<BindingNode> = buildList<BindingNode> {
         this += declarationStore.bindingsForType(request.type)
             .filter { it.default == default }
             .filter { it.targetComponent.checkComponent() }
@@ -474,167 +485,169 @@ import org.jetbrains.kotlin.name.Name
             .map { it.toCallableBindingNode(request) }
     }
 
-    private fun getImplicitFrameworkBindingsForType(request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
-        if (request.type == owner.componentType) {
-            this += SelfBindingNode(
-                type = SimpleTypeRef(
-                    classifier = ClassifierRef(
-                        FqName(owner.name.asString())
-                    )
-                ),
-                component = owner
-            )
-        }
+    private fun getImplicitFrameworkBindingsForType(request: BindingRequest): List<BindingNode> =
+        buildList<BindingNode> {
+            if (request.type == owner.componentType) {
+                this += SelfBindingNode(
+                    type = SimpleTypeRef(
+                        classifier = ClassifierRef(
+                            FqName(owner.name.asString())
+                        )
+                    ),
+                    component = owner
+                )
+            }
 
-        if (request.type.isFunction && request.type.typeArguments.last().let {
-                it.isChildComponent || it.isMergeChildComponent
-            }) {
-            // todo check if the arguments match the constructor arguments of the child component
-            val childComponentType = request.type.typeArguments.last()
-            val childComponentConstructor = declarationStore.constructorForComponent(childComponentType)
-            val additionalInputTypes = request.type.typeArguments.dropLast(1)
-                .filter { inputType ->
-                    childComponentConstructor == null ||
-                            childComponentConstructor.valueParameters.none {
-                                it.type == inputType
-                            }
+            if (request.type.isFunction && request.type.typeArguments.last().let {
+                    it.isChildComponent || it.isMergeChildComponent
+                }) {
+                // todo check if the arguments match the constructor arguments of the child component
+                val childComponentType = request.type.typeArguments.last()
+                val childComponentConstructor =
+                    declarationStore.constructorForComponent(childComponentType)
+                val additionalInputTypes = request.type.typeArguments.dropLast(1)
+                    .filter { inputType ->
+                        childComponentConstructor == null ||
+                                childComponentConstructor.valueParameters.none {
+                                    it.type == inputType
+                                }
+                    }
+                val existingComponents = mutableSetOf<TypeRef>()
+                var currentComponent: ComponentImpl? = owner
+                while (currentComponent != null) {
+                    existingComponents += currentComponent.componentType
+                    currentComponent = currentComponent.parent
                 }
-            val existingComponents = mutableSetOf<TypeRef>()
-            var currentComponent: ComponentImpl? = owner
-            while (currentComponent != null) {
-                existingComponents += currentComponent.componentType
-                currentComponent = currentComponent.parent
-            }
-            if (childComponentType !in existingComponents) {
-                val componentImpl = componentImplFactory(
-                    childComponentType,
-                    request.type,
-                    owner.contextTreeNameProvider(
-                        "${owner.rootComponent.name}_${childComponentType.classifier.fqName.shortName().asString()}Impl"
-                    ).asNameId(),
-                    additionalInputTypes,
-                    emptyList(),
-                    owner
-                )
-                this += ChildComponentBindingNode(
-                    type = request.type,
-                    owner = owner,
-                    origin = null,
-                    childComponent = componentImpl
-                )
-            }
-        }
-
-        if ((request.type.isFunction || request.type.isSuspendFunction) && request.type.typeArguments.size == 1 &&
-            request.type.typeArguments.last().let {
-                !it.isChildComponent && !it.isMergeChildComponent
-            }) {
-            this += ProviderBindingNode(
-                type = request.type,
-                owner = owner,
-                dependencies = listOf(
-                    BindingRequest(
-                        type = request.type.typeArguments.single(),
-                        origin = request.origin,
-                        required = true,
-                        callableKind = request.type.callableKind,
-                        lazy = true,
-                        forObjectCall = false
+                if (childComponentType !in existingComponents) {
+                    val componentImpl = componentImplFactory(
+                        childComponentType,
+                        request.type,
+                        owner.contextTreeNameProvider(
+                            "${owner.rootComponent.name}_${
+                                childComponentType.classifier.fqName.shortName().asString()
+                            }Impl"
+                        ).asNameId(),
+                        additionalInputTypes,
+                        emptyList(),
+                        owner
                     )
-                ),
-                origin = request.origin
-            )
-        }
+                    this += ChildComponentBindingNode(
+                        type = request.type,
+                        owner = owner,
+                        origin = null,
+                        childComponent = componentImpl
+                    )
+                }
+            }
 
-        this += declarationStore.funBindingsForType(request.type)
-            .filter { it.callable.targetComponent.checkComponent() }
-            .map { it.toFunBindingNode(request) }
-
-        if ((request.type.isFunction || request.type.isSuspendFunction) &&
-            request.type.typeArguments.last().let {
-                !it.isChildComponent && !it.isMergeChildComponent
-            }) {
-            val factoryExists = generateSequence(owner) { it.parent }
-                .filter { it.componentFactoryType == request.type }
-                .any()
-            val assistedTypes = request.type.typeArguments.dropLast(1).distinct()
-            if (!factoryExists && assistedTypes.isNotEmpty()) {
-                val returnType = request.type.typeArguments.last()
-                val childComponentType = moduleDescriptor.builtIns.any.toClassifierRef().defaultType
-                val bindingCallable = Callable(
-                    packageFqName = FqName.ROOT,
-                    fqName = request.origin,
-                    name = "invoke".asNameId(),
-                    type = returnType,
-                    typeParameters = emptyList(),
-                    valueParameters = emptyList(),
-                    targetComponent = null,
-                    scoped = false,
-                    eager = false,
-                    default = false,
-                    contributionKind = null,
-                    isCall = true,
-                    callableKind = request.type.callableKind,
-                    isInline = true,
-                    visibility = DescriptorVisibilities.INTERNAL,
-                    modality = Modality.FINAL,
-                    isFunBinding = false
-                )
-                val childComponent = componentImplFactory(
-                    childComponentType,
-                    request.type,
-                    owner.contextTreeNameProvider("${owner.rootComponent.name}_AC").asNameId(),
-                    assistedTypes,
-                    listOf(bindingCallable),
-                    owner
-                )
-                this += AssistedBindingNode(
+            if ((request.type.isFunction || request.type.isSuspendFunction) && request.type.typeArguments.size == 1 &&
+                request.type.typeArguments.last().let {
+                    !it.isChildComponent && !it.isMergeChildComponent
+                }
+            ) {
+                this += ProviderBindingNode(
                     type = request.type,
                     owner = owner,
-                    childComponent = childComponent,
-                    assistedTypes = assistedTypes
+                    dependencies = listOf(
+                        BindingRequest(
+                            type = request.type.typeArguments.single(),
+                            origin = request.origin,
+                            required = true,
+                            callableKind = request.type.callableKind,
+                            lazy = true,
+                            forObjectCall = false
+                        )
+                    ),
+                    origin = request.origin
                 )
             }
-        }
 
-        if (request.type.isSubTypeOf(mapType)) {
-            var mapEntries = getMapEntriesForType(request.type, false)
-            if (mapEntries.isEmpty()) {
-                mapEntries = getMapEntriesForType(request.type, true)
+            if ((request.type.isFunction || request.type.isSuspendFunction) &&
+                request.type.typeArguments.last().let {
+                    !it.isChildComponent && !it.isMergeChildComponent
+                }
+            ) {
+                val factoryExists = generateSequence(owner) { it.parent }
+                    .filter { it.componentFactoryType == request.type }
+                    .any()
+                val assistedTypes = request.type.typeArguments.dropLast(1).distinct()
+                if (!factoryExists && assistedTypes.isNotEmpty()) {
+                    val returnType = request.type.typeArguments.last()
+                    val childComponentType =
+                        moduleDescriptor.builtIns.any.toClassifierRef().defaultType
+                    val bindingCallable = Callable(
+                        packageFqName = FqName.ROOT,
+                        fqName = request.origin,
+                        name = "invoke".asNameId(),
+                        type = returnType,
+                        typeParameters = emptyList(),
+                        valueParameters = emptyList(),
+                        targetComponent = null,
+                        scoped = false,
+                        eager = false,
+                        default = false,
+                        contributionKind = null,
+                        isCall = true,
+                        callableKind = request.type.callableKind,
+                        isInline = true,
+                        visibility = DescriptorVisibilities.INTERNAL,
+                        modality = Modality.FINAL
+                    )
+                    val childComponent = componentImplFactory(
+                        childComponentType,
+                        request.type,
+                        owner.contextTreeNameProvider("${owner.rootComponent.name}_AC").asNameId(),
+                        assistedTypes,
+                        listOf(bindingCallable),
+                        owner
+                    )
+                    this += AssistedBindingNode(
+                        type = request.type,
+                        owner = owner,
+                        childComponent = childComponent,
+                        assistedTypes = assistedTypes
+                    )
+                }
             }
-            if (mapEntries.isNotEmpty()) {
-                val dependenciesByEntry = mapEntries.map { entry ->
-                    entry to entry.getDependencies(entry.type, false)
-                }.toMap()
-                this += MapBindingNode(
-                    type = request.type,
-                    owner = owner,
-                    dependencies = dependenciesByEntry.flatMap { it.value },
-                    entries = mapEntries,
-                    dependenciesByEntry = dependenciesByEntry
-                )
-            }
-        }
 
-        if (request.type.isSubTypeOf(setType)) {
-            var setElements = getSetElementsForType(request.type, false)
-            if (setElements.isEmpty()) {
-                setElements = getSetElementsForType(request.type, true)
+            if (request.type.isSubTypeOf(mapType)) {
+                var mapEntries = getMapEntriesForType(request.type, false)
+                if (mapEntries.isEmpty()) {
+                    mapEntries = getMapEntriesForType(request.type, true)
+                }
+                if (mapEntries.isNotEmpty()) {
+                    val dependenciesByEntry = mapEntries.map { entry ->
+                        entry to entry.getDependencies(entry.type, false)
+                    }.toMap()
+                    this += MapBindingNode(
+                        type = request.type,
+                        owner = owner,
+                        dependencies = dependenciesByEntry.flatMap { it.value },
+                        entries = mapEntries,
+                        dependenciesByEntry = dependenciesByEntry
+                    )
+                }
             }
-            if (setElements.isNotEmpty()) {
-                val dependenciesByElement = setElements.map { element ->
-                    element to element.getDependencies(element.type, false)
-                }.toMap()
-                this += SetBindingNode(
-                    type = request.type,
-                    owner = owner,
-                    dependencies = dependenciesByElement.flatMap { it.value },
-                    elements = setElements,
-                    dependenciesByElement = dependenciesByElement
-                )
+
+            if (request.type.isSubTypeOf(setType)) {
+                var setElements = getSetElementsForType(request.type, false)
+                if (setElements.isEmpty()) {
+                    setElements = getSetElementsForType(request.type, true)
+                }
+                if (setElements.isNotEmpty()) {
+                    val dependenciesByElement = setElements.map { element ->
+                        element to element.getDependencies(element.type, false)
+                    }.toMap()
+                    this += SetBindingNode(
+                        type = request.type,
+                        owner = owner,
+                        dependencies = dependenciesByElement.flatMap { it.value },
+                        elements = setElements,
+                        dependenciesByElement = dependenciesByElement
+                    )
+                }
             }
         }
-    }
 
     private fun getMapEntriesForType(type: TypeRef, default: Boolean) = buildList<Callable> {
         this += declarationStore.mapEntriesByType(type)
@@ -699,14 +712,13 @@ import org.jetbrains.kotlin.name.Name
     ): List<BindingRequest> {
         val substitutionMap = getSubstitutionMap(listOf(type to this.type))
         return valueParameters
-            .filter { !it.isFunApi }
             .map { it.toBindingRequest(this, substitutionMap) }
             .filter { !isInterceptor || it.type != this.type.substitute(substitutionMap) }
     }
 
     private fun getInterceptorsForType(
         type: TypeRef,
-        callableKind: Callable.CallableKind
+        callableKind: Callable.CallableKind,
     ): List<InterceptorNode> {
         val providerType = when (callableKind) {
             Callable.CallableKind.DEFAULT -> moduleDescriptor.builtIns.getFunction(0)
@@ -719,7 +731,8 @@ import org.jetbrains.kotlin.name.Name
         }
         return getInterceptorsForType(providerType)
             .map { interceptor ->
-                val substitutionMap = getSubstitutionMap(listOf(providerType to interceptor.callable.type))
+                val substitutionMap =
+                    getSubstitutionMap(listOf(providerType to interceptor.callable.type))
                 val finalCallable = interceptor.callable.substitute(substitutionMap)
                 interceptor.copy(
                     callable = finalCallable,
@@ -728,40 +741,41 @@ import org.jetbrains.kotlin.name.Name
             }
     }
 
-    private fun getInterceptorsForType(providerType: TypeRef): List<InterceptorNode> = buildList<InterceptorNode> {
-        this += explicitInterceptors
-            .filter { it.callable.type.isAssignableTo(providerType) }
-            .filter { it.callable.targetComponent.checkComponent() }
-        this += parentsBottomUp.flatMap { parent ->
-            parent.explicitInterceptors
+    private fun getInterceptorsForType(providerType: TypeRef): List<InterceptorNode> =
+        buildList<InterceptorNode> {
+            this += explicitInterceptors
                 .filter { it.callable.type.isAssignableTo(providerType) }
-                .filter {
-                    with(parent) {
-                        it.callable.targetComponent.checkComponent()
+                .filter { it.callable.targetComponent.checkComponent() }
+            this += parentsBottomUp.flatMap { parent ->
+                parent.explicitInterceptors
+                    .filter { it.callable.type.isAssignableTo(providerType) }
+                    .filter {
+                        with(parent) {
+                            it.callable.targetComponent.checkComponent()
+                        }
                     }
-                }
-        }
-        this += implicitInterceptors
-            .filter { it.callable.type.isAssignableTo(providerType) }
-            .filter { it.callable.targetComponent.checkComponent() }
-        this += parentsBottomUp.flatMap { parent ->
-            parent.implicitInterceptors
-                .filter { it.callable.type.isAssignableTo(providerType) }
-                .filter {
-                    with(parent) {
-                        it.callable.targetComponent.checkComponent()
-                    }
-                }
-        }
-        this += declarationStore.interceptorsByType(providerType)
-            .filter { it.targetComponent.checkComponent() }
-            .map { interceptor ->
-                InterceptorNode(
-                    interceptor,
-                    interceptor.getDependencies(interceptor.type, true)
-                )
             }
-    }.distinct()
+            this += implicitInterceptors
+                .filter { it.callable.type.isAssignableTo(providerType) }
+                .filter { it.callable.targetComponent.checkComponent() }
+            this += parentsBottomUp.flatMap { parent ->
+                parent.implicitInterceptors
+                    .filter { it.callable.type.isAssignableTo(providerType) }
+                    .filter {
+                        with(parent) {
+                            it.callable.targetComponent.checkComponent()
+                        }
+                    }
+            }
+            this += declarationStore.interceptorsByType(providerType)
+                .filter { it.targetComponent.checkComponent() }
+                .map { interceptor ->
+                    InterceptorNode(
+                        interceptor,
+                        interceptor.getDependencies(interceptor.type, true)
+                    )
+                }
+        }.distinct()
 
     private fun Callable.toCallableBindingNode(request: BindingRequest): CallableBindingNode {
         val substitutionMap = getSubstitutionMap(listOf(request.type to type))
@@ -776,30 +790,18 @@ import org.jetbrains.kotlin.name.Name
         )
     }
 
-    private fun FunBindingDescriptor.toFunBindingNode(request: BindingRequest): FunBindingNode {
-        val substitutionMap = getSubstitutionMap(listOf(request.type to type))
-        val finalCallable = callable.substitute(substitutionMap)
-        return FunBindingNode(
-            type = request.type.substituteStars(type),
-            rawType = originalType,
-            owner = owner,
-            dependencies = finalCallable.getDependencies(request.type, false),
-            callable = finalCallable
-        )
-    }
-
-    fun ValueParameterRef.toBindingRequest(
+    private fun ValueParameterRef.toBindingRequest(
         callable: Callable,
-        substitutionMap: Map<ClassifierRef, TypeRef>
+        substitutionMap: Map<ClassifierRef, TypeRef>,
     ): BindingRequest = BindingRequest(
         type = type.substitute(substitutionMap)
             .replaceTypeParametersWithStars(),
         origin = callable.fqName.child(name),
         required = !hasDefault,
         callableKind = callable.callableKind,
-        lazy = callable.isFunBinding,
         forObjectCall = parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER &&
-                type.classifier.isObject
+                type.classifier.isObject,
+        lazy = false
     )
 
     private fun TypeRef.makeNonNullIfPossible(callable: Callable): TypeRef {

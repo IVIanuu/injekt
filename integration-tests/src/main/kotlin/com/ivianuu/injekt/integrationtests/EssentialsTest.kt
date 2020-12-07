@@ -281,7 +281,7 @@ class EssentialsTest {
                         return state.store to state.store
                     }
                     """
-                    )
+            )
         ),
         listOf(
             source(
