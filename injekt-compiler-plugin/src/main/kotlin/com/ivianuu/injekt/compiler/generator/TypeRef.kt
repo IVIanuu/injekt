@@ -36,6 +36,7 @@ import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.types.getAbbreviation
 import org.jetbrains.kotlin.types.isError
+import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
 
 data class ClassifierRef(
     val fqName: FqName,
@@ -309,16 +310,13 @@ fun TypeRef.copy(
     default
 )
 
-fun TypeRef.substitute(
-    map: Map<ClassifierRef, TypeRef>,
-    keepQualifiers: Boolean = true
-): TypeRef {
+fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
     map[classifier]?.let {
         return it.copy(
             // we copy nullability to support T : Any? -> String
             isMarkedNullable = if (!isStarProjection) isMarkedNullable else it.isMarkedNullable,
             // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
-            qualifiers = if (keepQualifiers) qualifiers else qualifiers + it.qualifiers
+            qualifiers = qualifiers + it.qualifiers
         )
     }
 
@@ -331,11 +329,14 @@ fun TypeRef.substitute(
     )
 
     if (classifier.isTypeParameter && substituted == this) {
-        val superType = classifier.superTypes.singleOrNull() // todo support multiple
-        if (superType != null) {
-            val substitutedSuperType = superType.substitute(map)
-            if (substitutedSuperType != superType) return substitutedSuperType
-        }
+        classifier
+            .superTypes
+            .firstNotNullResult {
+                val substitutedSuperType = it.substitute(map)
+                if (substitutedSuperType != it) substitutedSuperType
+                else null
+            }
+            ?.let { return it }
     }
 
     return substituted
