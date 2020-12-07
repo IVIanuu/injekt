@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("NOTHING_TO_INLINE")
+
 package com.ivianuu.injekt.android
 
 import android.content.Context
@@ -40,33 +42,32 @@ abstract class ActivityComponent(@Binding protected val activity: ComponentActiv
 
 typealias ActivityContext = Context
 
-@Binding inline val ComponentActivity.activityContext: ActivityContext
-    get() = this
+@Binding inline fun ComponentActivity.provideActivityContext(): ActivityContext = this
 
 typealias ActivityResources = Resources
 
-@Binding inline val ComponentActivity.activityResources: ActivityResources
-    get() = resources
+@Binding inline fun ComponentActivity.provideActivityResources(): ActivityResources = resources
 
 typealias ActivityLifecycleOwner = LifecycleOwner
 
-@Binding inline val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
-    get() = this
+@Binding inline fun ComponentActivity.provideActivityLifecycleOwner(): ActivityLifecycleOwner = this
 
 typealias ActivityOnBackPressedDispatcherOwner = OnBackPressedDispatcherOwner
 
-@Binding inline val ComponentActivity.activityOnBackPressedDispatcherOwner: ActivityOnBackPressedDispatcherOwner
-    get() = this
+@Binding
+inline fun ComponentActivity.provideActivityOnBackPressedDispatcherOwner(): ActivityOnBackPressedDispatcherOwner =
+    this
 
 typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
 
-@Binding inline val ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
-    get() = this
+@Binding
+inline fun ComponentActivity.provideActivitySavedStateRegistryOwner(): ActivitySavedStateRegistryOwner =
+    this
 
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
-@Binding inline val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
-    get() = this
+@Binding inline fun ComponentActivity.provideActivityViewModelStoreOwner(): ActivityViewModelStoreOwner =
+    this
 
 @MergeInto(RetainedActivityComponent::class)
 interface ActivityComponentFactoryOwner {

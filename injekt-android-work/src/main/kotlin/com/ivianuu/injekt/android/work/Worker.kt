@@ -32,9 +32,9 @@ inline fun <reified T : ListenableWorker> worker(): @MapEntries ((Context, Worke
 typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
 
 @Suppress("NOTHING_TO_INLINE")
-@Default @SetElements inline fun defaultWorkers(): Workers = emptyMap()
+@Default @SetElements inline fun provideDefaultWorkers(): Workers = emptyMap()
 
-@Binding val InjektWorkerFactory.workerFactory: WorkerFactory get() = this
+@Binding fun InjektWorkerFactory.provideWorkerFactory(): WorkerFactory = this
 
 @Binding class InjektWorkerFactory(workersFactory: () -> Workers) : WorkerFactory() {
     private val workers by lazy(workersFactory)

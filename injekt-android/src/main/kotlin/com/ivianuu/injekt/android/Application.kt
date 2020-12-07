@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("NOTHING_TO_INLINE")
+
 package com.ivianuu.injekt.android
 
 import android.app.Application
@@ -31,20 +33,18 @@ val Application.applicationComponent: ApplicationComponent
         component(this)
     }
 
-@Binding inline val App.application: Application
+@Binding inline val App.provideApplication: Application
     get() = this as Application
 
 typealias ApplicationContext = Context
 
-@Binding inline val Application.appContext: ApplicationContext
-    get() = this
+@Binding inline fun Application.provideAppContext(): ApplicationContext = this
 
 typealias ApplicationResources = Resources
 
-@Binding inline val Application.applicationResources: ApplicationResources
-    get() = resources
+@Binding inline fun Application.provideApplicationResources(): ApplicationResources = resources
 
 typealias ApplicationLifecycleOwner = LifecycleOwner
 
-@Binding inline val Application.applicationLifecycleOwner: ApplicationLifecycleOwner
-    get() = ProcessLifecycleOwner.get()
+@Binding inline fun Application.provideApplicationLifecycleOwner(): ApplicationLifecycleOwner =
+    ProcessLifecycleOwner.get()
