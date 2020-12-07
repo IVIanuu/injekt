@@ -257,18 +257,29 @@ import org.jetbrains.kotlin.name.Name
 
     private fun check(request: BindingRequest) {
         if (request in chain) {
-            val relevantSubchain = chain.subList(
+            val cycleChain = chain.subList(
                 chain.indexOf(request), chain.size
             )
             if (request.lazy || !request.required || request.type.isMarkedNullable ||
                 request.type == owner.componentType ||
-                relevantSubchain.any {
+                cycleChain.any {
                     it.lazy || !request.required || request.type.isMarkedNullable ||
                             request.type == owner.componentType
-                }) return
+                }
+            ) return
+
+            val cycleOriginRequest = chain[chain.indexOf(request) - 1]
+
             errorCollector.add(
-                "Circular dependency\n${relevantSubchain.joinToString("\n")} " +
-                        "already contains\n$request\n\nDebug:\n${chain.joinToString("\n")}"
+                buildString {
+                    appendLine("Circular dependency:")
+                    (cycleChain.reversed() + cycleOriginRequest).forEachIndexed { index, request ->
+                        append("'${request.type.render()}' ")
+                        if (index == cycleChain.size) appendLine("is provided at")
+                        else appendLine("is injected at")
+                        appendLine("    '${request.origin}'")
+                    }
+                }
             )
         }
         chain.push(request)
