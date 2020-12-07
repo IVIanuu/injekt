@@ -23,6 +23,7 @@ import com.ivianuu.injekt.merge.ApplicationComponent
 import java.io.File
 
 typealias DatabaseFile = File
+
 @Scoped(ApplicationComponent::class)
 @Binding fun provideDatabaseFile(applicationContext: ApplicationContext): DatabaseFile =
     applicationContext.cacheDir
@@ -40,6 +41,7 @@ typealias DatabaseFile = File
 }
 
 typealias refreshRepo = () -> Unit
+
 @Binding fun provideRefreshRepo(repo: Repo): refreshRepo = {
     repo.refresh()
 }

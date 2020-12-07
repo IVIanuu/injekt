@@ -62,6 +62,7 @@ data class Callable(
     enum class ContributionKind {
         BINDING, INTERCEPTOR, MAP_ENTRIES, MODULE, SET_ELEMENTS
     }
+
     enum class CallableKind {
         DEFAULT, SUSPEND, COMPOSABLE
     }
@@ -73,7 +74,7 @@ data class ValueParameterRef(
     val parameterKind: ParameterKind,
     val name: Name,
     val hasDefault: Boolean,
-    val defaultExpression: ComponentExpression?
+    val defaultExpression: ComponentExpression?,
 ) {
     enum class ParameterKind {
         VALUE_PARAMETER, DISPATCH_RECEIVER, EXTENSION_RECEIVER
@@ -87,7 +88,7 @@ data class ModuleDescriptor(
 
 data class QualifierDescriptor(
     val type: TypeRef,
-    val args: Map<Name, String>
+    val args: Map<Name, String>,
 )
 
 private fun AnnotationDescriptor.valueArgsForAnnotation(): Map<Name, ComponentExpression> {

@@ -29,6 +29,7 @@ fun main() {
 }
 
 typealias brewCoffee = () -> Unit
+
 @Binding fun provideBrewCoffee(heater: Heater, pump: Pump): brewCoffee = {
     heater.on()
     pump.pump()
@@ -47,6 +48,7 @@ interface Heater {
 }
 
 @Module val ElectricHeaterModule = alias<ElectricHeater, Heater>()
+
 @Scoped(CoffeeComponent::class)
 @Binding class ElectricHeater : Heater {
     private var heating: Boolean = false
@@ -69,6 +71,7 @@ interface Pump {
 }
 
 @Module val ThermosiphonModule = alias<Thermosiphon, Pump>()
+
 @Binding class Thermosiphon(private val heater: Heater) : Pump {
     override fun pump() {
         if (heater.isHot) {

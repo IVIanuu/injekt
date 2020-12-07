@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -35,7 +34,7 @@ val defaultConfig = Config(
 
 data class Config(
     val rounds: Int,
-    val timeUnit: TimeUnit
+    val timeUnit: TimeUnit,
 )
 
 enum class TimeUnit {
@@ -103,12 +102,12 @@ data class Timings(
     val injectorName: String,
     val setup: Long,
     val firstInjection: Long,
-    val secondInjection: Long
+    val secondInjection: Long,
 )
 
 data class Result(
     val name: String,
-    val timings: List<Long>
+    val timings: List<Long>,
 ) {
     val average = timings.average()
     val min = timings.min()!!.toDouble()
@@ -119,14 +118,14 @@ data class Results(
     val injectorName: String,
     val setup: Result,
     val firstInjection: Result,
-    val secondInjection: Result
+    val secondInjection: Result,
 ) {
     val overall = Result(
         "Overall",
         setup.timings.indices.map {
             setup.timings[it] +
-                firstInjection.timings[it] +
-                secondInjection.timings[it]
+                    firstInjection.timings[it] +
+                    secondInjection.timings[it]
         }
     )
 }
@@ -159,16 +158,16 @@ fun Double.format(config: Config): String {
 fun Result.print(name: String, config: Config) {
     println(
         "$name | " +
-            "${average.format(config)} | " +
-            "${min.format(config)} | " +
-            "${max.format(config)}"
+                "${average.format(config)} | " +
+                "${min.format(config)} | " +
+                "${max.format(config)}"
     )
 }
 
 fun Map<String, Results>.print(config: Config) {
     fun printCategory(
         categoryTitle: String,
-        pick: Results.() -> Result
+        pick: Results.() -> Result,
     ) {
         println("$categoryTitle:")
         println("Library | Average | Min | Max")

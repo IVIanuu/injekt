@@ -77,7 +77,7 @@ fun TypeRef.superTypes(substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
 
 fun KotlinType.toTypeRef(
     variance: Variance = Variance.INVARIANT,
-    isStarProjection: Boolean = false
+    isStarProjection: Boolean = false,
 ) = KotlinTypeRef(this, variance, isStarProjection)
 
 fun ClassifierDescriptor.toClassifierRef(): ClassifierRef = ClassifierRef(
@@ -139,7 +139,7 @@ sealed class TypeRef {
         result
     }
 
-    override fun hashCode(): Int =_hashCode
+    override fun hashCode(): Int = _hashCode
 
     val isComposableRecursive: Boolean by unsafeLazy {
         isComposable || expandedType?.isComposableRecursive == true ||
@@ -157,6 +157,7 @@ class KotlinTypeRef(
             "Error type $kotlinType"
         }
     }
+
     private val finalType by unsafeLazy { kotlinType.getAbbreviation() ?: kotlinType.prepare() }
     override val classifier: ClassifierRef by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.toClassifierRef()
@@ -241,7 +242,7 @@ class SimpleTypeRef(
     override val targetComponent: TypeRef? = null,
     override val scoped: Boolean = false,
     override val eager: Boolean = false,
-    override val default: Boolean = false
+    override val default: Boolean = false,
 ) : TypeRef() {
     init {
         check(typeArguments.size == classifier.typeParameters.size) {
@@ -274,7 +275,7 @@ fun TypeRef.copy(
     targetComponent: TypeRef? = this.targetComponent,
     scoped: Boolean = this.scoped,
     eager: Boolean = this.eager,
-    default: Boolean = this.default
+    default: Boolean = this.default,
 ) = SimpleTypeRef(
     classifier,
     isMarkedNullable,
@@ -309,7 +310,8 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
     }
 
     if (typeArguments.isEmpty() && qualifiers.isEmpty() &&
-        !classifier.isTypeParameter) return this
+        !classifier.isTypeParameter
+    ) return this
 
     val substituted = copy(
         typeArguments = typeArguments.map { it.substitute(map) },
@@ -379,7 +381,8 @@ fun TypeRef.render(expanded: Boolean = false): String {
                 append("<")
                 typeArguments.forEachIndexed { index, typeArgument ->
                     if (typeArgument.variance != Variance.INVARIANT &&
-                        !typeArgument.isStarProjection)
+                        !typeArgument.isStarProjection
+                    )
                         append("${typeArgument.variance.label} ")
                     append(typeArgument.render(expanded = expanded))
                     if (index != typeArguments.lastIndex) append(", ")
@@ -427,7 +430,7 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
 
 fun getSubstitutionMap(
     pairs: List<Pair<TypeRef, TypeRef>>,
-    typeParameters: List<ClassifierRef> = emptyList()
+    typeParameters: List<ClassifierRef> = emptyList(),
 ): Map<ClassifierRef, TypeRef> {
     val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
 
@@ -491,7 +494,7 @@ fun TypeRef.getStarSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRe
 
 fun TypeRef.isAssignableTo(
     superType: TypeRef,
-    substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
+    substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap(),
 ): Boolean {
     if (isStarProjection || superType.isStarProjection) return true
 
@@ -499,7 +502,9 @@ fun TypeRef.isAssignableTo(
         if (isMarkedNullable && !superType.isMarkedNullable) return false
         if (!qualifiers.isAssignableTo(superType.qualifiers)) return false
         if (isComposableRecursive != superType.isComposableRecursive) return false
-        if (typeArguments.zip(superType.typeArguments).any { (a, b) -> !a.isAssignableTo(b, substitutionMap) })
+        if (typeArguments.zip(superType.typeArguments)
+                .any { (a, b) -> !a.isAssignableTo(b, substitutionMap) }
+        )
             return false
         return true
     }
@@ -510,7 +515,8 @@ fun TypeRef.isAssignableTo(
         }
         if (!superTypesAssignable) return false
         if (superType.qualifiers.isNotEmpty() &&
-                !qualifiers.isAssignableTo(superType.qualifiers)) return false
+            !qualifiers.isAssignableTo(superType.qualifiers)
+        ) return false
         return true
     } else if (classifier.isTypeParameter) {
         val superTypesAssignable = superTypes(substitutionMap).all { upperBound ->
@@ -518,7 +524,8 @@ fun TypeRef.isAssignableTo(
         }
         if (!superTypesAssignable) return false
         if (qualifiers.isNotEmpty() &&
-            !superType.qualifiers.isAssignableTo(qualifiers)) return false
+            !superType.qualifiers.isAssignableTo(qualifiers)
+        ) return false
         return true
     }
 
@@ -527,13 +534,15 @@ fun TypeRef.isAssignableTo(
 
 fun TypeRef.isSubTypeOf(
     superType: TypeRef,
-    substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
+    substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap(),
 ): Boolean {
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return false
         if (!qualifiers.isAssignableTo(superType.qualifiers)) return false
         if (isComposableRecursive != superType.isComposableRecursive) return false
-        if (typeArguments.zip(superType.typeArguments).any { (a, b) -> !a.isAssignableTo(b, substitutionMap) })
+        if (typeArguments.zip(superType.typeArguments)
+                .any { (a, b) -> !a.isAssignableTo(b, substitutionMap) }
+        )
             return false
         return true
     }
@@ -541,22 +550,26 @@ fun TypeRef.isSubTypeOf(
     if (superType.classifier.fqName == InjektFqNames.Any) {
         if (isMarkedNullable && !superType.isMarkedNullable) return false
         if (superType.qualifiers.isNotEmpty() &&
-            !qualifiers.isAssignableTo(superType.qualifiers)) return false
+            !qualifiers.isAssignableTo(superType.qualifiers)
+        ) return false
         return true
     }
 
     val subTypeView = subtypeView(superType.classifier, substitutionMap)
     if (subTypeView != null) {
         if (subTypeView == superType && (!subTypeView.isMarkedNullable || superType.isMarkedNullable) &&
-            (superType.qualifiers.isEmpty() || subTypeView.qualifiers.isAssignableTo(superType.qualifiers)))
+            (superType.qualifiers.isEmpty() || subTypeView.qualifiers.isAssignableTo(superType.qualifiers))
+        )
             return true
-        return subTypeView.typeArguments.zip(superType.typeArguments).all { (subTypeArg, superTypeArg) ->
-            superTypeArg.superTypes(substitutionMap).all {
-                subTypeArg.isSubTypeOf(it, substitutionMap)
+        return subTypeView.typeArguments.zip(superType.typeArguments)
+            .all { (subTypeArg, superTypeArg) ->
+                superTypeArg.superTypes(substitutionMap).all {
+                    subTypeArg.isSubTypeOf(it, substitutionMap)
+                }
             }
-        }
     } else if (superType.classifier.isTypeParameter ||
-        superType.classifier.isTypeAlias) {
+        superType.classifier.isTypeAlias
+    ) {
         return superType.superTypes(substitutionMap).all { upperBound ->
             isSubTypeOf(upperBound, substitutionMap)
         }

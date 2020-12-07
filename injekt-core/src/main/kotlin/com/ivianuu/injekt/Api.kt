@@ -26,7 +26,10 @@ annotation class ChildComponent
 
 fun <T> component(vararg inputs: Any?): T = error("Intrinsic")
 
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.TYPE)
+@Target(AnnotationTarget.CLASS,
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.TYPE)
 annotation class Module
 
 @Target(

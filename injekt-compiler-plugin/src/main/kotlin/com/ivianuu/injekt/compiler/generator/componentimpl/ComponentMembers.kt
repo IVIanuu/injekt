@@ -43,7 +43,7 @@ import org.jetbrains.kotlin.name.Name
 @Binding class ComponentStatements(
     private val declarationStore: DeclarationStore,
     private val moduleDescriptor: ModuleDescriptor,
-    private val owner: ComponentImpl
+    private val owner: ComponentImpl,
 ) {
 
     private val parent = owner.parent?.statements
@@ -58,7 +58,7 @@ import org.jetbrains.kotlin.name.Name
         callableKind: Callable.CallableKind,
         eager: Boolean,
         isInline: Boolean,
-        canBePrivate: Boolean
+        canBePrivate: Boolean,
     ): ComponentCallable {
         val existing = owner.members.firstOrNull {
             it is ComponentCallable && it.name == name
@@ -374,7 +374,7 @@ import org.jetbrains.kotlin.name.Name
         interceptors: List<InterceptorNode>,
         cacheProvider: Boolean,
         clearableProvider: Boolean,
-        create: ComponentExpression
+        create: ComponentExpression,
     ): ComponentExpression {
         val initializer: CodeBuilder.() -> Unit = {
             emitLine()
@@ -385,17 +385,20 @@ import org.jetbrains.kotlin.name.Name
                     callable.type,
                     callable.valueParameters
                         .mapNotNull { valueParameter ->
-                            val pair: Pair<ValueParameterRef, Pair<TypeRef?, ComponentExpression>> = valueParameter to (when {
-                                valueParameter.type == callable.type -> {
-                                    (valueParameter.type to prevExpression)
-                                }
-                                else -> {
-                                    val dependencyRequest = dependencies[dependencyIndex++]
-                                    val dependencyBinding = owner.graph.getBinding(dependencyRequest)
-                                    if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                                    (dependencyBinding.type to getBindingExpression(dependencyRequest))
-                                }
-                            })
+                            val pair: Pair<ValueParameterRef, Pair<TypeRef?, ComponentExpression>> =
+                                valueParameter to (when {
+                                    valueParameter.type == callable.type -> {
+                                        (valueParameter.type to prevExpression)
+                                    }
+                                    else -> {
+                                        val dependencyRequest = dependencies[dependencyIndex++]
+                                        val dependencyBinding =
+                                            owner.graph.getBinding(dependencyRequest)
+                                        if (dependencyBinding is MissingBindingNode) return@mapNotNull null
+                                        (dependencyBinding.type to getBindingExpression(
+                                            dependencyRequest))
+                                    }
+                                })
                             pair
                         }
                         .toMap()
@@ -466,7 +469,7 @@ import org.jetbrains.kotlin.name.Name
         create: ComponentExpression,
     ): ComponentExpression {
         var scopeComponent = owner
-        while(!scopeComponent.componentType.isAssignableTo(scopeComponentType)) {
+        while (!scopeComponent.componentType.isAssignableTo(scopeComponentType)) {
             scopeComponent = scopeComponent.parent!!
         }
         val scopeComponentExpression = componentExpression(scopeComponent)
@@ -583,7 +586,7 @@ import org.jetbrains.kotlin.name.Name
     private fun CodeBuilder.emitCallableInvocation(
         callable: Callable,
         type: TypeRef,
-        arguments: Map<ValueParameterRef, Pair<TypeRef?, ComponentExpression?>>
+        arguments: Map<ValueParameterRef, Pair<TypeRef?, ComponentExpression?>>,
     ) {
         val finalCallable = if (callable.visibility == DescriptorVisibilities.PROTECTED &&
             callable.valueParameters.any {
@@ -649,6 +652,7 @@ import org.jetbrains.kotlin.name.Name
         } else {
             callable
         }
+
         fun emitArguments() {
             if (finalCallable.isCall) {
                 if (finalCallable.typeParameters.isNotEmpty()) {
@@ -665,11 +669,15 @@ import org.jetbrains.kotlin.name.Name
                     )
 
                     check(finalCallable.typeParameters.all { it in substitutionMap }) {
-                        "Couldn't resolve all type arguments ${substitutionMap.map {
-                            it.key.fqName to it.value
-                        }} missing ${finalCallable.typeParameters.filter {
-                            it !in substitutionMap
-                        }.map { it.fqName }} in $finalCallable"
+                        "Couldn't resolve all type arguments ${
+                            substitutionMap.map {
+                                it.key.fqName to it.value
+                            }
+                        } missing ${
+                            finalCallable.typeParameters.filter {
+                                it !in substitutionMap
+                            }.map { it.fqName }
+                        } in $finalCallable"
                     }
 
                     emit("<")
@@ -698,8 +706,7 @@ import org.jetbrains.kotlin.name.Name
                                 if (!isFunctionInvoke) emit("${parameter.name} = ")
                                 argument.second!!(this)
                                 if (argumentsIndex++ != nonNullArgumentsCount) emitLine(",")
-                            }
-                            else if (!parameter.hasDefault) {
+                            } else if (!parameter.hasDefault) {
                                 if (!isFunctionInvoke) emit("${parameter.name} = null")
                                 if (argumentsIndex++ != nonNullArgumentsCount) emitLine(",")
                             }
@@ -708,6 +715,7 @@ import org.jetbrains.kotlin.name.Name
                 emitLine(")")
             }
         }
+
         val dispatchReceiverParameter = finalCallable.valueParameters.firstOrNull {
             it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER
         }

@@ -2010,5 +2010,5 @@ import javax.inject.Inject
 
 @Binding class Fib400 @Inject constructor(
     val fibM1: Fib399,
-    val fibM2: Fib398
+    val fibM2: Fib398,
 )

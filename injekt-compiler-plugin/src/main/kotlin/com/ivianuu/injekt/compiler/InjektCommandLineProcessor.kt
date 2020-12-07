@@ -55,11 +55,12 @@ class InjektCommandLineProcessor : CommandLineProcessor {
     override fun processOption(
         option: AbstractCliOption,
         value: String,
-        configuration: CompilerConfiguration
+        configuration: CompilerConfiguration,
     ) {
         when (option.optionName) {
             "generateComponents" -> configuration.put(GenerateComponentsKey, value.toBoolean())
-            "generateMergeComponents" -> configuration.put(GenerateMergeComponentsKey, value.toBoolean())
+            "generateMergeComponents" -> configuration.put(GenerateMergeComponentsKey,
+                value.toBoolean())
             "srcDir" -> configuration.put(SrcDirKey, value)
             "cacheDir" -> configuration.put(CacheDirKey, value)
         }

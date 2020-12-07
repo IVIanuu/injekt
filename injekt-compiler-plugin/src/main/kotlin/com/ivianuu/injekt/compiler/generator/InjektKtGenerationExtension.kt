@@ -32,10 +32,10 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtensi
 @Binding class InjektKtGenerationExtension(
     private val generationComponentFactory: (
         ModuleDescriptor,
-        BindingContext
+        BindingContext,
     ) -> GenerationComponent,
     private val generateComponents: GenerateComponents,
-    private val generateMergeComponents: GenerateMergeComponents
+    private val generateMergeComponents: GenerateMergeComponents,
 ) : PartialAnalysisHandlerExtension() {
 
     override val analyzePartially: Boolean
@@ -51,7 +51,7 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtensi
         projectContext: ProjectContext,
         files: Collection<KtFile>,
         bindingTrace: BindingTrace,
-        componentProvider: ComponentProvider
+        componentProvider: ComponentProvider,
     ): AnalysisResult? {
         files as ArrayList<KtFile>
         if (!generatedCode) {

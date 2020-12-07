@@ -35,7 +35,7 @@ fun source(
     @Language("kotlin") source: String,
     name: String = "File${fileIndex++}.kt",
     injektImports: Boolean = true,
-    packageFqName: FqName = FqName("com.ivianuu.injekt.integrationtests")
+    packageFqName: FqName = FqName("com.ivianuu.injekt.integrationtests"),
 ) = SourceFile.kotlin(
     name = name,
     contents = buildString {
@@ -61,13 +61,13 @@ fun source(
 fun singleSource(
     @Language("kotlin") source: String,
     name: String = "File.kt",
-    injektImports: Boolean = true
+    injektImports: Boolean = true,
 ) = source(source, name, injektImports)
 
 fun codegen(
     @Language("kotlin") source: String,
     config: KotlinCompilation.() -> Unit = {},
-    assertions: KotlinCompilation.Result.() -> Unit = { assertOk() }
+    assertions: KotlinCompilation.Result.() -> Unit = { assertOk() },
 ) = codegen(
     singleSource(source),
     config = config,
@@ -77,7 +77,7 @@ fun codegen(
 fun codegen(
     vararg sources: SourceFile,
     config: KotlinCompilation.() -> Unit = {},
-    assertions: KotlinCompilation.Result.() -> Unit = { assertOk() }
+    assertions: KotlinCompilation.Result.() -> Unit = { assertOk() },
 ) {
     val result = compile {
         this.sources = sources.toList()
@@ -168,14 +168,14 @@ private fun KotlinCompilation.Result.getSingleClass(): KClass<*> =
     classLoader.loadClass("com.ivianuu.injekt.integrationtests.FileKt").kotlin
 
 fun KotlinCompilation.Result.assertInternalError(
-    message: String? = null
+    message: String? = null,
 ) {
     assertEquals(KotlinCompilation.ExitCode.INTERNAL_ERROR, exitCode)
     message?.let { assertTrue(messages.toLowerCase().contains(it.toLowerCase())) }
 }
 
 fun KotlinCompilation.Result.assertCompileError(
-    message: String? = null
+    message: String? = null,
 ) {
     assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, exitCode)
     message?.let { assertTrue(messages.toLowerCase().contains(it.toLowerCase())) }

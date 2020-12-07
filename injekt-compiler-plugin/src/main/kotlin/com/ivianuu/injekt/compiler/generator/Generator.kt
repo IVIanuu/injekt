@@ -29,7 +29,7 @@ interface Generator {
 @ChildComponent
 abstract class GenerationComponent(
     @Binding protected val moduleDescriptor: ModuleDescriptor,
-    @Binding protected val bindingContext: BindingContext
+    @Binding protected val bindingContext: BindingContext,
 ) {
     abstract val fileManager: FileManager
     abstract val componentGenerator: ComponentGenerator

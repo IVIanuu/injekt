@@ -16,10 +16,8 @@
 
 package com.ivianuu.injekt.gradle
 
-import com.android.build.gradle.BaseExtension
 import com.google.auto.service.AutoService
 import org.gradle.api.Project
-import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.jetbrains.kotlin.gradle.dsl.KotlinCommonOptions
 import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
@@ -28,8 +26,6 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinGradleSubplugin
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.jetbrains.kotlin.gradle.utils.`is`
 
 @AutoService(KotlinGradleSubplugin::class)
 open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
@@ -44,7 +40,7 @@ open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
         javaCompile: AbstractCompile?,
         variantData: Any?,
         androidProjectHandler: Any?,
-        kotlinCompilation: KotlinCompilation<KotlinCommonOptions>?
+        kotlinCompilation: KotlinCompilation<KotlinCommonOptions>?,
     ): List<SubpluginOption> = (kotlinCompile as AbstractKotlinCompile<*>)
         .setupForInjekt()
 

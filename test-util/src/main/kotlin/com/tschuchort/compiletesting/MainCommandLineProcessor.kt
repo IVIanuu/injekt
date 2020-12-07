@@ -86,7 +86,7 @@ class MainCommandLineProcessor : CommandLineProcessor {
     override fun processOption(
         option: AbstractCliOption,
         value: String,
-        configuration: CompilerConfiguration
+        configuration: CompilerConfiguration,
     ) {
         val (foreignPluginId, foreignOptionName) = decodeForeignOptionName(option.optionName)
         val params = threadLocalParameters.get()

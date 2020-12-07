@@ -30,7 +30,7 @@ class InjektTypeResolutionInterceptor : TypeResolutionInterceptorExtension {
     override fun interceptType(
         element: KtElement,
         context: ExpressionTypingContext,
-        resultType: KotlinType
+        resultType: KotlinType,
     ): KotlinType {
         if (resultType === TypeUtils.NO_EXPECTED_TYPE) return resultType
         if (element !is KtLambdaExpression) return resultType
@@ -42,7 +42,8 @@ class InjektTypeResolutionInterceptor : TypeResolutionInterceptorExtension {
                 annotation = element.parent.safeAs<KtAnnotated>()?.findAnnotation(annotationFqName)
             }
             if (annotation == null && context.expectedType !== TypeUtils.NO_EXPECTED_TYPE) {
-                annotation = context.expectedType.safeAs<KtAnnotated>()?.findAnnotation(annotationFqName)
+                annotation =
+                    context.expectedType.safeAs<KtAnnotated>()?.findAnnotation(annotationFqName)
             }
             if (annotation != null) {
                 val annotationDescriptor = context.trace[BindingContext.ANNOTATION, annotation]
@@ -59,7 +60,7 @@ class InjektTypeResolutionInterceptor : TypeResolutionInterceptorExtension {
     private fun makeAnnotation(
         fqName: FqName,
         module: ModuleDescriptor,
-        arguments: Map<Name, ConstantValue<*>>
+        arguments: Map<Name, ConstantValue<*>>,
     ): AnnotationDescriptor =
         object : AnnotationDescriptor {
             override val type = module.findClassAcrossModuleDependencies(

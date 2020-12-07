@@ -47,7 +47,8 @@ class InjektIrIntrinsicTransformer : IrGenerationExtension {
             override fun visitCall(expression: IrCall): IrExpression {
                 val result = super.visitCall(expression) as IrCall
                 if (result.symbol.descriptor.fqNameSafe.asString() ==
-                        "com.ivianuu.injekt.component") {
+                    "com.ivianuu.injekt.component"
+                ) {
                     val componentClass = result.getTypeArgument(0)!!.classOrNull!!.owner
                     val componentImplFqName =
                         componentClass.descriptor.fqNameSafe.toComponentImplFqName()

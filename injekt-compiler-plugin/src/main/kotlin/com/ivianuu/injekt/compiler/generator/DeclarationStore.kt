@@ -127,10 +127,11 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
                     .map { callableForDescriptor(it.getter!!) }
     }
     private val interceptorsForType = mutableMapOf<TypeRef, List<Callable>>()
-    fun interceptorsByType(providerType: TypeRef): List<Callable> = interceptorsForType.getOrPut(providerType) {
-        allInterceptors
-            .filter { it.type.isAssignableTo(providerType) }
-    }
+    fun interceptorsByType(providerType: TypeRef): List<Callable> =
+        interceptorsForType.getOrPut(providerType) {
+            allInterceptors
+                .filter { it.type.isAssignableTo(providerType) }
+        }
 
     private val allMapEntries by unsafeLazy {
         functionIndices
@@ -233,6 +234,7 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
             ) ?: error("Could not get for $fqName")
         }
     }
+
     fun classDescriptorForFqName(fqName: FqName): ClassDescriptor =
         classifierDescriptorForFqName(fqName) as ClassDescriptor
 
@@ -274,82 +276,85 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
     }
 
     private val callablesByDescriptor = mutableMapOf<Any, Callable>()
-    fun callableForDescriptor(descriptor: FunctionDescriptor): Callable = callablesByDescriptor.getOrPut(descriptor) {
-        val owner = when (descriptor) {
-            is ConstructorDescriptor -> descriptor.constructedClass
-            is PropertyAccessorDescriptor -> descriptor.correspondingProperty
-            else -> descriptor
-        }
+    fun callableForDescriptor(descriptor: FunctionDescriptor): Callable =
+        callablesByDescriptor.getOrPut(descriptor) {
+            val owner = when (descriptor) {
+                is ConstructorDescriptor -> descriptor.constructedClass
+                is PropertyAccessorDescriptor -> descriptor.correspondingProperty
+                else -> descriptor
+            }
 
-        Callable(
-            name = owner.name,
-            packageFqName = descriptor.findPackage().fqName,
-            fqName = owner.fqNameSafe,
-            type = descriptor.returnType!!.toTypeRef(),
-            targetComponent = descriptor.targetComponent(module)
-                ?: owner.targetComponent(module),
-            scoped = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Scoped),
-            eager = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Eager),
-            default = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Default),
-            contributionKind = descriptor.contributionKind(),
-            typeParameters = (when (owner) {
-                is FunctionDescriptor -> owner.typeParameters
-                is ClassDescriptor -> owner.declaredTypeParameters
-                is PropertyDescriptor -> owner.typeParameters
-                else -> error("Unexpected owner $owner")
-            }).map { it.toClassifierRef() },
-            valueParameters = listOfNotNull(
-                descriptor.dispatchReceiverParameter?.let {
+            Callable(
+                name = owner.name,
+                packageFqName = descriptor.findPackage().fqName,
+                fqName = owner.fqNameSafe,
+                type = descriptor.returnType!!.toTypeRef(),
+                targetComponent = descriptor.targetComponent(module)
+                    ?: owner.targetComponent(module),
+                scoped = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Scoped),
+                eager = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Eager),
+                default = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Default),
+                contributionKind = descriptor.contributionKind(),
+                typeParameters = (when (owner) {
+                    is FunctionDescriptor -> owner.typeParameters
+                    is ClassDescriptor -> owner.declaredTypeParameters
+                    is PropertyDescriptor -> owner.typeParameters
+                    else -> error("Unexpected owner $owner")
+                }).map { it.toClassifierRef() },
+                valueParameters = listOfNotNull(
+                    descriptor.dispatchReceiverParameter?.let {
+                        val parameterType = it.type.toTypeRef()
+                        ValueParameterRef(
+                            type = parameterType,
+                            originalType = parameterType,
+                            parameterKind = ValueParameterRef.ParameterKind.DISPATCH_RECEIVER,
+                            name = "_dispatchReceiver".asNameId(),
+                            hasDefault = false,
+                            defaultExpression = null
+                        )
+                    },
+                    descriptor.extensionReceiverParameter?.let {
+                        val parameterType = it.type.toTypeRef()
+                        ValueParameterRef(
+                            type = parameterType,
+                            originalType = parameterType,
+                            parameterKind = ValueParameterRef.ParameterKind.EXTENSION_RECEIVER,
+                            name = "_extensionReceiver".asNameId(),
+                            hasDefault = false,
+                            defaultExpression = null
+                        )
+                    }
+                ) + descriptor.valueParameters.map {
                     val parameterType = it.type.toTypeRef()
                     ValueParameterRef(
                         type = parameterType,
                         originalType = parameterType,
-                        parameterKind = ValueParameterRef.ParameterKind.DISPATCH_RECEIVER,
-                        name = "_dispatchReceiver".asNameId(),
-                        hasDefault = false,
-                        defaultExpression = null
+                        parameterKind = ValueParameterRef.ParameterKind.VALUE_PARAMETER,
+                        name = it.name,
+                        hasDefault = it.declaresDefaultValue(),
+                        defaultExpression = if (!it.declaresDefaultValue()) null else ({
+                            emit((it.findPsi() as KtParameter).defaultValue!!.text)
+                        })
                     )
                 },
-                descriptor.extensionReceiverParameter?.let {
-                    val parameterType = it.type.toTypeRef()
-                    ValueParameterRef(
-                        type = parameterType,
-                        originalType = parameterType,
-                        parameterKind = ValueParameterRef.ParameterKind.EXTENSION_RECEIVER,
-                        name = "_extensionReceiver".asNameId(),
-                        hasDefault = false,
-                        defaultExpression = null
-                    )
-                }
-            ) + descriptor.valueParameters.map {
-                val parameterType = it.type.toTypeRef()
-                ValueParameterRef(
-                    type = parameterType,
-                    originalType = parameterType,
-                    parameterKind = ValueParameterRef.ParameterKind.VALUE_PARAMETER,
-                    name = it.name,
-                    hasDefault = it.declaresDefaultValue(),
-                    defaultExpression = if (!it.declaresDefaultValue()) null else ({
-                        emit((it.findPsi() as KtParameter).defaultValue!!.text)
-                    })
-                )
-            },
-            isCall = owner !is PropertyDescriptor &&
-                    (owner !is ClassDescriptor || owner.kind != ClassKind.OBJECT),
-            callableKind = if (owner is CallableDescriptor) {
-                when {
-                    owner.isSuspend -> Callable.CallableKind.SUSPEND
-                    owner.hasAnnotation(InjektFqNames.Composable) -> Callable.CallableKind.COMPOSABLE
-                    else -> Callable.CallableKind.DEFAULT
-                }
-            } else Callable.CallableKind.DEFAULT,
-            isInline = descriptor.isInline,
-            visibility = descriptor.visibility,
-            modality = descriptor.modality
-        )
-    }
+                isCall = owner !is PropertyDescriptor &&
+                        (owner !is ClassDescriptor || owner.kind != ClassKind.OBJECT),
+                callableKind = if (owner is CallableDescriptor) {
+                    when {
+                        owner.isSuspend -> Callable.CallableKind.SUSPEND
+                        owner.hasAnnotation(InjektFqNames.Composable) -> Callable.CallableKind.COMPOSABLE
+                        else -> Callable.CallableKind.DEFAULT
+                    }
+                } else Callable.CallableKind.DEFAULT,
+                isInline = descriptor.isInline,
+                visibility = descriptor.visibility,
+                modality = descriptor.modality
+            )
+        }
 
-    private val moduleByType = mutableMapOf<TypeRef, com.ivianuu.injekt.compiler.generator.ModuleDescriptor>()
+    private val moduleByType =
+        mutableMapOf<TypeRef, com.ivianuu.injekt.compiler.generator.ModuleDescriptor>()
+
     fun moduleForType(type: TypeRef): com.ivianuu.injekt.compiler.generator.ModuleDescriptor {
         val finalType = type.fullyExpandedType
         return moduleByType.getOrPut(finalType) {
@@ -358,62 +363,66 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
                 .zip(finalType.typeArguments)
                 .toMap()
 
-            val callables = if (finalType.contributionKind != null && (finalType.isFunction || finalType.isSuspendFunction)) {
-                val invokeDescriptor = descriptor.unsubstitutedMemberScope.getContributedDescriptors()
-                    .first { it.name.asString() == "invoke" } as FunctionDescriptor
-                val callable = callableForDescriptor(invokeDescriptor)
-                val substitutionMap = moduleSubstitutionMap.toMutableMap()
-                val finalCallable = callable.copy(
-                    type = callable.type.substitute(substitutionMap),
-                    valueParameters = callable.valueParameters.map {
-                        val parameterType = if (it.parameterKind ==
-                            ValueParameterRef.ParameterKind.DISPATCH_RECEIVER) {
-                            finalType
-                        } else it.type
-                        it.copy(
-                            type = parameterType.substitute(substitutionMap)
-                        )
-                    },
-                    targetComponent = finalType.targetComponent,
-                    scoped = finalType.scoped,
-                    eager = finalType.eager,
-                    default = finalType.default,
-                    contributionKind = finalType.contributionKind,
-                    callableKind = finalType.callableKind
-                )
-                listOf(finalCallable)
-            } else {
-                descriptor.unsubstitutedMemberScope.getContributedDescriptors().filter {
-                    it.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
-                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) ||
-                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
-                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
-                            it.hasAnnotationWithPropertyAndClass(InjektFqNames.Module)
-                }
-                    .mapNotNull {
-                        when (it) {
-                            is PropertyDescriptor -> it.getter!!
-                            is FunctionDescriptor -> it
-                            else -> null
-                        }
+            val callables =
+                if (finalType.contributionKind != null && (finalType.isFunction || finalType.isSuspendFunction)) {
+                    val invokeDescriptor =
+                        descriptor.unsubstitutedMemberScope.getContributedDescriptors()
+                            .first { it.name.asString() == "invoke" } as FunctionDescriptor
+                    val callable = callableForDescriptor(invokeDescriptor)
+                    val substitutionMap = moduleSubstitutionMap.toMutableMap()
+                    val finalCallable = callable.copy(
+                        type = callable.type.substitute(substitutionMap),
+                        valueParameters = callable.valueParameters.map {
+                            val parameterType = if (it.parameterKind ==
+                                ValueParameterRef.ParameterKind.DISPATCH_RECEIVER
+                            ) {
+                                finalType
+                            } else it.type
+                            it.copy(
+                                type = parameterType.substitute(substitutionMap)
+                            )
+                        },
+                        targetComponent = finalType.targetComponent,
+                        scoped = finalType.scoped,
+                        eager = finalType.eager,
+                        default = finalType.default,
+                        contributionKind = finalType.contributionKind,
+                        callableKind = finalType.callableKind
+                    )
+                    listOf(finalCallable)
+                } else {
+                    descriptor.unsubstitutedMemberScope.getContributedDescriptors().filter {
+                        it.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
+                                it.hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) ||
+                                it.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
+                                it.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
+                                it.hasAnnotationWithPropertyAndClass(InjektFqNames.Module)
                     }
-                    .map { callableDescriptor ->
-                        val callable = callableForDescriptor(callableDescriptor)
-                        val substitutionMap = moduleSubstitutionMap.toMutableMap()
-                        callable.copy(
-                            type = callable.type.substitute(substitutionMap),
-                            valueParameters = callable.valueParameters.map {
-                                val parameterType = if (it.parameterKind ==
-                                    ValueParameterRef.ParameterKind.DISPATCH_RECEIVER) {
-                                    finalType
-                                } else it.type
-                                it.copy(
-                                    type = parameterType.substitute(substitutionMap)
-                                )
+                        .mapNotNull {
+                            when (it) {
+                                is PropertyDescriptor -> it.getter!!
+                                is FunctionDescriptor -> it
+                                else -> null
                             }
-                        )
-                    }
-            }
+                        }
+                        .map { callableDescriptor ->
+                            val callable = callableForDescriptor(callableDescriptor)
+                            val substitutionMap = moduleSubstitutionMap.toMutableMap()
+                            callable.copy(
+                                type = callable.type.substitute(substitutionMap),
+                                valueParameters = callable.valueParameters.map {
+                                    val parameterType = if (it.parameterKind ==
+                                        ValueParameterRef.ParameterKind.DISPATCH_RECEIVER
+                                    ) {
+                                        finalType
+                                    } else it.type
+                                    it.copy(
+                                        type = parameterType.substitute(substitutionMap)
+                                    )
+                                }
+                            )
+                        }
+                }
 
             ModuleDescriptor(type = finalType, callables = callables)
         }

@@ -23,7 +23,7 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 
 @Component abstract class ApplicationComponent(
     @Binding protected val project: Project,
-    @Binding protected val configuration: CompilerConfiguration
+    @Binding protected val configuration: CompilerConfiguration,
 ) {
     abstract val registerExtensions: registerExtensions
 }

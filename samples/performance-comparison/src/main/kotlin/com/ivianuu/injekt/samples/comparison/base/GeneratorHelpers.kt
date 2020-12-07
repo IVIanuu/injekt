@@ -21,7 +21,7 @@ import com.ivianuu.injekt.samples.comparison.fibonacci.FIB_COUNT
 fun mainstreamKotlinDslGenerator(
     header: String,
     bindKeyword: String,
-    getKeyword: String
+    getKeyword: String,
 ): String = buildString {
     appendLine(header)
     (1..FIB_COUNT).forEach { index ->

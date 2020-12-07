@@ -28,6 +28,7 @@ import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.android.work.worker
 
 @Module val TestWorkerModule = worker<TestWorker>()
+
 @Binding class TestWorker(
     context: Context,
     workerParams: WorkerParameters,
@@ -41,6 +42,7 @@ import com.ivianuu.injekt.android.work.worker
 }
 
 typealias initializeWorkers = () -> Unit
+
 @Binding fun provideInitializeWorkers(
     applicationContext: ApplicationContext,
     workerFactory: WorkerFactory,

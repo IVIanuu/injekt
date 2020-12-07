@@ -44,7 +44,7 @@ import org.jetbrains.kotlin.resolve.BindingContext
         @Parent ComponentImpl?,
     ) -> ComponentImpl,
     private val generateComponents: GenerateComponents,
-    private val generateMergeComponents: GenerateMergeComponents
+    private val generateMergeComponents: GenerateMergeComponents,
 ) : Generator {
     override fun generate(files: List<KtFile>) {
         if (generateComponents) {
@@ -101,7 +101,8 @@ import org.jetbrains.kotlin.resolve.BindingContext
                     .filter {
                         it.targetComponent != null && it.callableKind == Callable.CallableKind.SUSPEND
                     }
-                    .any()) {
+                    .any()
+            ) {
                 imports += FqName("kotlinx.coroutines.sync.withLock")
             }
             children.forEach { it.collectImports() }

@@ -80,7 +80,7 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
 }
 
 fun KtAnnotated.hasAnnotationWithPropertyAndClass(
-    fqName: FqName
+    fqName: FqName,
 ): Boolean = hasAnnotation(fqName) ||
         (this is KtPropertyAccessor && property.hasAnnotation(fqName)) ||
         (this is KtConstructor<*> && containingClassOrObject!!.hasAnnotation(fqName))
@@ -99,14 +99,15 @@ fun KotlinType.prepare(): KotlinType {
 }
 
 fun Annotated.hasAnnotationWithPropertyAndClass(
-    fqName: FqName
+    fqName: FqName,
 ): Boolean = hasAnnotation(fqName) ||
-    (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotation(fqName)) ||
-    (this is ConstructorDescriptor && constructedClass.hasAnnotation(fqName))
+        (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotation(fqName)) ||
+        (this is ConstructorDescriptor && constructedClass.hasAnnotation(fqName))
 
 fun ClassDescriptor.getInjectConstructor(): ConstructorDescriptor? {
     if (hasAnnotation(InjektFqNames.Binding) ||
-        hasAnnotation(InjektFqNames.Module)) return unsubstitutedPrimaryConstructor
+        hasAnnotation(InjektFqNames.Module)
+    ) return unsubstitutedPrimaryConstructor
     constructors
         .firstOrNull {
             it.hasAnnotation(InjektFqNames.Binding) ||
@@ -143,11 +144,12 @@ fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescri
         inner.hasAnnotation(annotation)
     }
 
-val TypeRef.callableKind: Callable.CallableKind get() = when {
-    fullyExpandedType.isSuspendFunction -> Callable.CallableKind.SUSPEND
-    fullyExpandedType.isComposable -> Callable.CallableKind.COMPOSABLE
-    else -> Callable.CallableKind.DEFAULT
-}
+val TypeRef.callableKind: Callable.CallableKind
+    get() = when {
+        fullyExpandedType.isSuspendFunction -> Callable.CallableKind.SUSPEND
+        fullyExpandedType.isComposable -> Callable.CallableKind.COMPOSABLE
+        else -> Callable.CallableKind.DEFAULT
+    }
 
 fun Callable.substitute(map: Map<ClassifierRef, TypeRef>): Callable {
     return copy(
@@ -159,7 +161,7 @@ fun Callable.substitute(map: Map<ClassifierRef, TypeRef>): Callable {
 }
 
 fun QualifierDescriptor.substitute(
-    map: Map<ClassifierRef, TypeRef>
+    map: Map<ClassifierRef, TypeRef>,
 ): QualifierDescriptor = copy(type = type.substitute(map))
 
 fun Annotated.contributionKind() = when {
