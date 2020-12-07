@@ -50,9 +50,6 @@ annotation class Interceptor
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Qualifier
 
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.TYPE)
-annotation class Deferred
-
 @Target(
     AnnotationTarget.FUNCTION,
     AnnotationTarget.CLASS,
