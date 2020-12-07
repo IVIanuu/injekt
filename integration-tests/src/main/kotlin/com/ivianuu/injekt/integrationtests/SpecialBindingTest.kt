@@ -40,19 +40,6 @@ class SpecialBindingTest {
     )
 
     @Test
-    fun testSimpleTypeBinding() = codegen(
-        """
-            @TypeBinding
-            fun isLoggedIn(string: String): Boolean = true
-            
-            @Component
-            abstract class TestComponent(@Binding val string: String) {
-                abstract val isLoggedIn: isLoggedIn
-            }
-        """
-    )
-
-    @Test
     fun testFunBindingWithExtension() = codegen(
         """
             @FunBinding fun String.function() {
@@ -327,8 +314,7 @@ class SpecialBindingTest {
         listOf(
             source(
                 """
-                    @FunBinding
-                    internal fun function() {
+                    @FunBinding internal fun function() {
                     }
                 """
             )
@@ -469,6 +455,29 @@ class SpecialBindingTest {
             
             @Component abstract class MyComponent {
                 abstract val aboutPage: AboutPage
+            }
+        """
+    )
+
+    @Test
+    fun testSimpleTypeBinding() = codegen(
+        """
+            @TypeBinding fun isLoggedIn(string: String): Boolean = true
+            
+            @Component abstract class TestComponent(@Binding val string: String) {
+                abstract val isLoggedIn: isLoggedIn
+            }
+        """
+    )
+
+    @Test
+    fun testGenericTypeBinding() = codegen(
+        """
+            @TypeBinding
+            fun <T> isLoggedIn(string: String): List<T> = emptyList()
+            
+            @Component abstract class TestComponent {
+                abstract val isLoggedIn: isLoggedIn<Boolean>
             }
         """
     )
