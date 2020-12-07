@@ -177,6 +177,17 @@ class CollectionsTest {
     }
 
     @Test
+    fun testDefaultMap() = codegen(
+        """
+            @Default @MapEntries fun defaultMap() = mapOf<KClass<out Command>, Command>()
+
+            @Component abstract class TestComponent {
+                abstract val map: Map<KClass<out Command>, Command>
+            }
+        """
+    )
+
+    @Test
     fun testUndeclaredMap() = codegen(
         """
             @Component abstract class TestComponent {
@@ -335,6 +346,17 @@ class CollectionsTest {
         assertTrue(set.any { it("a") is CommandA })
         assertTrue(set.any { it("b") is CommandB })
     }
+
+    @Test
+    fun testDefaultSet() = codegen(
+        """
+            @Default @SetElements fun defaultSet() = setOf<Command>()
+
+            @Component abstract class TestComponent {
+                abstract val map: Set<Command>
+            }
+        """
+    )
 
     @Test
     fun testUndeclaredSet() = codegen(

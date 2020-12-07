@@ -598,31 +598,10 @@ import org.jetbrains.kotlin.name.Name
         }
 
         if (request.type.isSubTypeOf(mapType)) {
-            val mapEntries = buildList<Callable> {
-                this += declarationStore.mapEntriesByType(request.type)
-                    .filter { it.targetComponent.checkComponent() }
-                parentsTopDown.forEach { parent ->
-                    parent.implicitMapEntries[request.type]
-                        ?.filter {
-                            with(parent) {
-                                it.targetComponent.checkComponent()
-                            }
-                        }
-                        ?.let { this += it }
-                }
-                implicitMapEntries[request.type]
-                    ?.filter { it.targetComponent.checkComponent() }
-                    ?.let { this += it }
-                parentsTopDown.forEach { parent ->
-                    parent.explicitMapEntries[request.type]?.let { this += it }
-                }
-                explicitMapEntries[request.type]?.let { this += it }
+            var mapEntries = getMapEntriesForType(request.type, false)
+            if (mapEntries.isEmpty()) {
+                mapEntries = getMapEntriesForType(request.type, true)
             }
-                .map { entry ->
-                    entry.substitute(
-                        getSubstitutionMap(listOf(request.type to entry.type))
-                    )
-                }
             if (mapEntries.isNotEmpty()) {
                 val dependenciesByEntry = mapEntries.map { entry ->
                     entry to entry.getDependencies(entry.type, false)
@@ -638,31 +617,10 @@ import org.jetbrains.kotlin.name.Name
         }
 
         if (request.type.isSubTypeOf(setType)) {
-            val setElements = buildList<Callable> {
-                this += declarationStore.setElementsByType(request.type)
-                    .filter { it.targetComponent.checkComponent() }
-                parentsTopDown.forEach { parent ->
-                    parent.implicitSetElements[request.type]
-                        ?.filter {
-                            with(parent) {
-                                it.targetComponent.checkComponent()
-                            }
-                        }
-                        ?.let { this += it }
-                }
-                implicitSetElements[request.type]
-                    ?.filter { it.targetComponent.checkComponent() }
-                    ?.let { this += it }
-                parentsTopDown.forEach { parent ->
-                    parent.explicitSetElements[request.type]?.let { this += it }
-                }
-                explicitSetElements[request.type]?.let { this += it }
+            var setElements = getSetElementsForType(request.type, false)
+            if (setElements.isEmpty()) {
+                setElements = getSetElementsForType(request.type, true)
             }
-                .map { element ->
-                    element.substitute(
-                        getSubstitutionMap(listOf(request.type to element.type))
-                    )
-                }
             if (setElements.isNotEmpty()) {
                 val dependenciesByElement = setElements.map { element ->
                     element to element.getDependencies(element.type, false)
@@ -678,10 +636,67 @@ import org.jetbrains.kotlin.name.Name
         }
     }
 
+    private fun getMapEntriesForType(type: TypeRef, default: Boolean) = buildList<Callable> {
+        this += declarationStore.mapEntriesByType(type)
+            .filter { it.targetComponent.checkComponent() }
+        parentsTopDown.forEach { parent ->
+            parent.implicitMapEntries[type]
+                ?.filter {
+                    with(parent) {
+                        it.targetComponent.checkComponent()
+                    }
+                }
+                ?.let { this += it }
+        }
+        implicitMapEntries[type]
+            ?.filter { it.targetComponent.checkComponent() }
+            ?.let { this += it }
+        parentsTopDown.forEach { parent ->
+            parent.explicitMapEntries[type]?.let { this += it }
+        }
+        explicitMapEntries[type]?.let { this += it }
+    }
+        .filter { it.default == default }
+        .map { entry ->
+            entry.substitute(
+                getSubstitutionMap(listOf(type to entry.type))
+            )
+        }
+
+    private fun getSetElementsForType(type: TypeRef, default: Boolean) = buildSet<Callable> {
+        this += declarationStore.setElementsByType(type)
+            .filter { it.targetComponent.checkComponent() }
+        parentsTopDown.forEach { parent ->
+            parent.implicitSetElements[type]
+                ?.filter {
+                    with(parent) {
+                        it.targetComponent.checkComponent()
+                    }
+                }
+                ?.let { this += it }
+        }
+        implicitSetElements[type]
+            ?.filter { it.targetComponent.checkComponent() }
+            ?.let { this += it }
+        parentsTopDown.forEach { parent ->
+            parent.explicitSetElements[type]?.let { this += it }
+        }
+        explicitSetElements[type]?.let { this += it }
+    }
+        .filter { it.default == default }
+        .map { element ->
+            element.substitute(
+                getSubstitutionMap(listOf(type to element.type))
+            )
+        }
+
     private fun TypeRef?.checkComponent(): Boolean =
         this == null || this.isAssignableTo(owner.nonAssistedComponent.componentType)
 
-    private fun Callable.getDependencies(type: TypeRef, isInterceptor: Boolean): List<BindingRequest> {
+    private fun Callable.getDependencies(
+        type: TypeRef,
+        isInterceptor: Boolean,
+    ): List<BindingRequest> {
         val substitutionMap = getSubstitutionMap(listOf(type to this.type))
         return valueParameters
             .filter { !it.isFunApi }

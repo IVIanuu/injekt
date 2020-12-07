@@ -24,6 +24,7 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Default
 import com.ivianuu.injekt.MapEntries
 import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.SetElements
 import com.ivianuu.injekt.alias
 import kotlin.reflect.KClass
 
@@ -33,7 +34,7 @@ inline fun <reified T : ListenableWorker> worker(): @MapEntries ((Context, Worke
 typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
 
 @Suppress("NOTHING_TO_INLINE")
-@Default @Binding inline fun defaultWorkers(): Workers = emptyMap()
+@Default @SetElements inline fun defaultWorkers(): Workers = emptyMap()
 
 @Module val InjektWorkerFactoryModule = alias<InjektWorkerFactory, WorkerFactory>()
 @Binding class InjektWorkerFactory(workersFactory: () -> Workers) : WorkerFactory() {
