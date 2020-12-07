@@ -24,6 +24,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.TypeBinding
 import com.ivianuu.injekt.merge.MergeChildComponent
 import com.ivianuu.injekt.merge.MergeInto
 import com.ivianuu.injekt.merge.mergeComponent
@@ -38,28 +39,22 @@ val ComponentActivity.activityComponent: ActivityComponent
 @MergeChildComponent
 abstract class ActivityComponent(@Binding protected val activity: ComponentActivity)
 
-typealias ActivityContext = Context
-@Binding inline val ComponentActivity.activityContext: ActivityContext
+@TypeBinding inline val ComponentActivity.ActivityContext: Context
     get() = this
 
-typealias ActivityResources = Resources
-@Binding inline val ComponentActivity.activityResources: ActivityResources
+@TypeBinding inline val ComponentActivity.ActivityResources: Resources
     get() = resources
 
-typealias ActivityLifecycleOwner = LifecycleOwner
-@Binding inline val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
+@TypeBinding inline val ComponentActivity.ActivityLifecycleOwner: LifecycleOwner
     get() = this
 
-typealias ActivityOnBackPressedDispatcherOwner = OnBackPressedDispatcherOwner
-@Binding inline val ComponentActivity.activityOnBackPressedDispatcherOwner: ActivityOnBackPressedDispatcherOwner
+@TypeBinding inline val ComponentActivity.ActivityOnBackPressedDispatcherOwner: OnBackPressedDispatcherOwner
     get() = this
 
-typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
-@Binding inline val ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
+@TypeBinding inline val ComponentActivity.ActivitySavedStateRegistryOwner: SavedStateRegistryOwner
     get() = this
 
-typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
-@Binding inline val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
+@TypeBinding inline val ComponentActivity.ActivityViewModelStoreOwner: ViewModelStoreOwner
     get() = this
 
 @MergeInto(RetainedActivityComponent::class)

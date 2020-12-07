@@ -30,8 +30,9 @@ import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityContext
-import com.ivianuu.injekt.android.activityViewModel
+import com.ivianuu.injekt.android.ActivityResources
 import com.ivianuu.injekt.android.activityComponent
+import com.ivianuu.injekt.android.activityViewModel
 import com.ivianuu.injekt.merge.MergeInto
 import com.ivianuu.injekt.merge.mergeComponent
 import kotlinx.coroutines.GlobalScope
@@ -56,6 +57,7 @@ class MainActivity : AppCompatActivity() {
 interface MainActivityComponent {
     val WithMainViewModel: WithMainViewModel
     val enqueueWork: enqueueWork
+    val activityResources: ActivityResources
 }
 
 @FunBinding @Composable fun WithMainViewModel(

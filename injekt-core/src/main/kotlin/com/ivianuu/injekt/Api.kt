@@ -95,6 +95,3 @@ annotation class TypeBinding
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class FunApi
 
-@Qualifier
-@Target(AnnotationTarget.TYPE)
-annotation class TargetType
