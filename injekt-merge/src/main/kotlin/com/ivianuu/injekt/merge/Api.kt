@@ -18,14 +18,14 @@ package com.ivianuu.injekt.merge
 
 import kotlin.reflect.KClass
 
-@Target(AnnotationTarget.CLASS)
-annotation class MergeComponent
+@Target(AnnotationTarget.TYPEALIAS)
+annotation class MergeFactory
+
+@Target(AnnotationTarget.TYPEALIAS, AnnotationTarget.TYPE)
+annotation class MergeSubFactory
 
 @Target(AnnotationTarget.CLASS)
-annotation class MergeChildComponent
-
-@Target(AnnotationTarget.CLASS)
-annotation class MergeInto(val component: KClass<*>)
+annotation class MergeInto(val target: KClass<*>)
 
 @Suppress("UNCHECKED_CAST")
 fun <T> Any.mergeComponent(): T = this as T

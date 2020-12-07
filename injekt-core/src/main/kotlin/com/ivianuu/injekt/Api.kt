@@ -18,13 +18,13 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
-@Target(AnnotationTarget.CLASS)
-annotation class Component
+@Target(AnnotationTarget.TYPEALIAS)
+annotation class Factory
 
-@Target(AnnotationTarget.CLASS)
-annotation class ChildComponent
+fun <T> factory(): T = error("Intrinsic")
 
-fun <T> component(vararg inputs: Any?): T = error("Intrinsic")
+@Target(AnnotationTarget.TYPEALIAS, AnnotationTarget.TYPE)
+annotation class SubFactory
 
 @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.TYPE)
 annotation class Module
@@ -55,9 +55,10 @@ annotation class Qualifier
     AnnotationTarget.CLASS,
     AnnotationTarget.CONSTRUCTOR,
     AnnotationTarget.PROPERTY,
-    AnnotationTarget.TYPE
+    AnnotationTarget.TYPE,
+    AnnotationTarget.TYPEALIAS
 )
-annotation class Scoped(val component: KClass<*> = Nothing::class)
+annotation class Scoped(val scope: KClass<*> = Nothing::class)
 
 @Target(
     AnnotationTarget.FUNCTION,
@@ -66,7 +67,7 @@ annotation class Scoped(val component: KClass<*> = Nothing::class)
     AnnotationTarget.PROPERTY,
     AnnotationTarget.TYPE
 )
-annotation class Bound(val component: KClass<*> = Nothing::class)
+annotation class Bound(val scope: KClass<*> = Nothing::class)
 
 @Target(
     AnnotationTarget.FUNCTION,

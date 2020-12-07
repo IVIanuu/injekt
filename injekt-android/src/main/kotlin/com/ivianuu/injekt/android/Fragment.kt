@@ -23,11 +23,17 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.merge.MergeChildComponent
+import com.ivianuu.injekt.Scoped
+import com.ivianuu.injekt.merge.MergeSubFactory
 import com.ivianuu.injekt.merge.MergeInto
 
-@MergeChildComponent
-abstract class FragmentComponent(@Binding protected val fragment: Fragment)
+sealed class FragmentScope
+
+interface FragmentComponent
+
+@Scoped(FragmentScope::class)
+@MergeSubFactory
+typealias FragmentComponentFactory = (Fragment) -> FragmentComponent
 
 typealias FragmentContext = Context
 @Binding inline val Fragment.fragmentContext: FragmentContext
@@ -51,5 +57,5 @@ typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
 
 @MergeInto(ActivityComponent::class)
 interface FragmentComponentFactoryOwner {
-    val fragmentComponentFactoryOwner: (Fragment) -> FragmentComponent
+    val fragmentComponentFactoryOwner: FragmentComponentFactory
 }

@@ -22,16 +22,16 @@ import android.content.res.Resources
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.component
-import com.ivianuu.injekt.merge.App
+import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.merge.ApplicationComponent
+import com.ivianuu.injekt.merge.ApplicationComponentFactory
 
 val Application.applicationComponent: ApplicationComponent
     get() = ProcessLifecycleOwner.get().lifecycle.singleton {
-        component(this)
+        factory<ApplicationComponentFactory>()(this)
     }
 
-@Binding inline val App.application: Application
+@Binding inline val com.ivianuu.injekt.merge.Application.application: Application
     get() = this as Application
 
 typealias ApplicationContext = Context

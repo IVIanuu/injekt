@@ -17,17 +17,18 @@
 package com.ivianuu.injekt.samples.coffeemaker
 
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.Scoped
 import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.component
+import com.ivianuu.injekt.factory
 
 fun main() {
-    val component = component<CoffeeComponent>()
-    component.brewCoffee()
+    factory<BrewCoffeeFactory>()()()
 }
+
+typealias brewCoffee = () -> Unit
 
 @FunBinding fun brewCoffee(heater: Heater, pump: Pump) {
     heater.on()
@@ -36,9 +37,10 @@ fun main() {
     heater.off()
 }
 
-@Component abstract class CoffeeComponent {
-    abstract val brewCoffee: brewCoffee
-}
+sealed class CoffeeScope
+
+@Scoped(CoffeeScope::class)
+@Factory typealias BrewCoffeeFactory = () -> brewCoffee
 
 interface Heater {
     fun on()
@@ -47,7 +49,7 @@ interface Heater {
 }
 
 @Module val ElectricHeaterModule = alias<ElectricHeater, Heater>()
-@Scoped(CoffeeComponent::class)
+@Scoped(CoffeeScope::class)
 @Binding class ElectricHeater : Heater {
     private var heating: Boolean = false
 

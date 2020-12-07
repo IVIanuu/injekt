@@ -20,8 +20,9 @@ import android.app.Service
 import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.Scoped
 import com.ivianuu.injekt.merge.ApplicationComponent
-import com.ivianuu.injekt.merge.MergeChildComponent
+import com.ivianuu.injekt.merge.MergeSubFactory
 import com.ivianuu.injekt.merge.MergeInto
 import com.ivianuu.injekt.merge.mergeComponent
 
@@ -30,8 +31,13 @@ fun Service.createServiceComponent(): ServiceComponent =
         .mergeComponent<ServiceComponentFactoryOwner>()
         .serviceComponentFactoryOwner(this)
 
-@MergeChildComponent
-abstract class ServiceComponent(@Binding protected val service: Service)
+sealed class ServiceScope
+
+interface ServiceComponent
+
+@Scoped(ServiceScope::class)
+@MergeSubFactory
+typealias ServiceComponentFactory = (Service) -> ServiceComponent
 
 typealias ServiceContext = Context
 @Binding inline val Service.serviceContext: ServiceContext
@@ -43,5 +49,5 @@ typealias ServiceResources = Resources
 
 @MergeInto(ApplicationComponent::class)
 interface ServiceComponentFactoryOwner {
-    val serviceComponentFactoryOwner: (Service) -> ServiceComponent
+    val serviceComponentFactoryOwner: ServiceComponentFactory
 }

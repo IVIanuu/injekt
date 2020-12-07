@@ -24,7 +24,8 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.merge.MergeChildComponent
+import com.ivianuu.injekt.Scoped
+import com.ivianuu.injekt.merge.MergeSubFactory
 import com.ivianuu.injekt.merge.MergeInto
 import com.ivianuu.injekt.merge.mergeComponent
 
@@ -35,8 +36,13 @@ val ComponentActivity.activityComponent: ActivityComponent
             .activityComponentFactoryOwner(this)
     }
 
-@MergeChildComponent
-abstract class ActivityComponent(@Binding protected val activity: ComponentActivity)
+sealed class ActivityScope
+
+interface ActivityComponent
+
+@Scoped(ActivityScope::class)
+@MergeSubFactory
+typealias ActivityComponentFactory = (ComponentActivity) -> ActivityComponent
 
 typealias ActivityContext = Context
 @Binding inline val ComponentActivity.activityContext: ActivityContext
@@ -64,5 +70,5 @@ typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
 @MergeInto(RetainedActivityComponent::class)
 interface ActivityComponentFactoryOwner {
-    val activityComponentFactoryOwner: (ComponentActivity) -> ActivityComponent
+    val activityComponentFactoryOwner: ActivityComponentFactory
 }
