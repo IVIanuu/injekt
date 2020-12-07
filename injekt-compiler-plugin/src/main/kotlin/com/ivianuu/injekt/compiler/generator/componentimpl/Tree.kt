@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.TypeRef
-import com.ivianuu.injekt.compiler.generator.ValueParameterRef
 import com.ivianuu.injekt.compiler.generator.callableKind
 import com.ivianuu.injekt.compiler.generator.getStarSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.render
@@ -133,7 +132,6 @@ sealed class BindingNode(
     abstract val origin: FqName?
     abstract val targetComponent: TypeRef?
     abstract val scoped: Boolean
-    abstract val isExternal: Boolean
     abstract val inline: Boolean
 
     lateinit var interceptors: List<InterceptorNode>
@@ -164,8 +162,6 @@ class SelfBindingNode(
     override val targetComponent: TypeRef? get() = null
     override val scoped: Boolean
         get() = false
-    override val isExternal: Boolean
-        get() = false
     override val inline: Boolean
         get() = true
 }
@@ -178,8 +174,6 @@ class AssistedBindingNode(
 ) : BindingNode(type, Callable.CallableKind.DEFAULT, true) {
     override val dependencies: List<BindingRequest>
         get() = emptyList()
-    override val isExternal: Boolean
-        get() = false
     override val origin: FqName?
         get() = null
     override val rawType: TypeRef
@@ -215,8 +209,6 @@ class ChildComponentBindingNode(
         get() = null
     override val scoped: Boolean
         get() = false
-    override val isExternal: Boolean
-        get() = false
     override val inline: Boolean
         get() = false
 }
@@ -227,8 +219,6 @@ class InputBindingNode(
 ) : BindingNode(type, Callable.CallableKind.DEFAULT, false) {
     override val dependencies: List<BindingRequest>
         get() = emptyList()
-    override val isExternal: Boolean
-        get() = false
     override val origin: FqName?
         get() = null
     override val rawType: TypeRef
@@ -248,8 +238,6 @@ class CallableBindingNode(
     override val dependencies: List<BindingRequest>,
     val callable: Callable
 ) : BindingNode(type, callable.callableKind, callable.eager) {
-    override val isExternal: Boolean
-        get() = callable.isExternal
     override val targetComponent: TypeRef?
         get() = callable.targetComponent
     override val scoped: Boolean
@@ -275,8 +263,6 @@ class FunBindingNode(
     override val dependencies: List<BindingRequest>,
     val callable: Callable
 ) : BindingNode(type, Callable.CallableKind.DEFAULT, true) {
-    override val isExternal: Boolean
-        get() = callable.isExternal
     override val targetComponent: TypeRef?
         get() = callable.targetComponent
     override val scoped: Boolean
@@ -308,8 +294,6 @@ class MapBindingNode(
         get() = null
     override val scoped: Boolean
         get() = false
-    override val isExternal: Boolean
-        get() = false
     override val inline: Boolean
         get() = false
 
@@ -329,8 +313,6 @@ class MissingBindingNode(
     override val dependencies: List<BindingRequest>
         get() = emptyList()
     override val inline: Boolean
-        get() = false
-    override val isExternal: Boolean
         get() = false
     override val origin: FqName?
         get() = null
@@ -352,8 +334,6 @@ class ProviderBindingNode(
         get() = type
     override val targetComponent: TypeRef?
         get() = null
-    override val isExternal: Boolean
-        get() = false
     override val inline: Boolean
         get() = false
     override val scoped: Boolean
@@ -373,8 +353,6 @@ class SetBindingNode(
         get() = null
     override val targetComponent: TypeRef?
         get() = null
-    override val isExternal: Boolean
-        get() = false
     override val inline: Boolean
         get() = false
     override val scoped: Boolean

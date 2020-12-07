@@ -35,7 +35,7 @@ class BindingResolutionTest {
     }
 
     @Test
-    fun testMultipleResolvableExplicitBindingFails() = codegen(
+    fun testMultipleExplicitBindingFails() = codegen(
         """
             @Component abstract class MyComponent(
                 @Binding protected val foo1: Foo,
@@ -49,45 +49,7 @@ class BindingResolutionTest {
     }
 
     @Test
-    fun testPrefersInternalImplicitOverExternalImplicitBinding() = multiCodegen(
-        listOf(
-            source(
-                """
-                    var externalFooField: Foo? = null
-                    @Binding val externalFoo: Foo get() = externalFooField!!
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    var internalFooField: Foo? = null
-                    @Binding val internalFoo: Foo get() = internalFooField!!
-
-                    @Component abstract class MyComponent {
-                        abstract val foo: Foo
-                    }
-                    
-                    fun invoke(
-                        internalFoo: Foo,
-                        externalFoo: Foo
-                    ): Foo {
-                        externalFooField = externalFoo
-                        internalFooField = internalFoo
-                        return component<MyComponent>().foo
-                    }
-                """,
-                name = "File.kt"
-            )
-        )
-    ) {
-        val externalFoo = Foo()
-        val internalFoo = Foo()
-        assertSame(internalFoo, it.last().invokeSingleFile(internalFoo, externalFoo))
-    }
-
-    @Test
-    fun testMultipleResolvableInternalImplicitBindingFails() = codegen(
+    fun testMultipleImplicitBindingFails() = codegen(
         """
         @Binding fun foo1() = Foo()
         @Binding fun foo2() = Foo()
@@ -101,43 +63,11 @@ class BindingResolutionTest {
         }
         """
     ) {
-        assertInternalError("multiple internal implicit bindings")
+        assertInternalError("multiple implicit bindings")
     }
 
     @Test
-    fun testMultipleResolvableExternalImplicitBindingsFails() = multiCodegen(
-        listOf(
-            source(
-                """
-                    @Binding fun foo1() = Foo()
-            """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    @Binding fun foo2() = Foo()
-            """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    @Component abstract class MyComponent {
-                        abstract val foo: Foo
-                    }
-                    fun invoke(): Foo { 
-                        return component<MyComponent>().foo
-                    }
-                """
-            )
-        )
-    ) {
-        it.last().assertInternalError("multiple external implicit bindings")
-    }
-
-    @Test
-    fun testPrefersUserOverDefaultBinding() = codegen(
+    fun testPrefersNonDefaultOverDefaultBinding() = codegen(
         """
             class Dep
 
@@ -172,7 +102,7 @@ class BindingResolutionTest {
             }
         """
     ) {
-        assertInternalError("Multiple internal implicit default bindings")
+        assertInternalError("Multiple implicit default bindings")
     }
 
     @Test
@@ -187,28 +117,6 @@ class BindingResolutionTest {
             fun invoke(): Pair<() -> Foo, () -> Foo> {
                 val lazyFoo = { Foo() }
                 return lazyFoo to component<MyComponent>(lazyFoo).lazyFoo
-            }
-        """
-    ) {
-        val (a, b) = invokeSingleFile<Pair<Any, Any>>()
-        assertSame(a, b)
-    }
-
-    @Test
-    fun testPrefersResolvableBinding() = codegen(
-        """
-            val defaultFoo = Foo()
-            
-            @Binding fun bar() = Bar(defaultFoo)
-            
-            @Binding fun bar(foo: Foo) = Bar(foo)
-            
-            @Component abstract class MyComponent { 
-                abstract val bar: Bar
-            }
-            
-            fun invoke(): Pair<Any, Any> {
-                return defaultFoo to component<MyComponent>().bar.foo
             }
         """
     ) {

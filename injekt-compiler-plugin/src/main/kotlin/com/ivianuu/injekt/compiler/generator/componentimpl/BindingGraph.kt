@@ -215,7 +215,6 @@ import org.jetbrains.kotlin.name.Name
 
         binding.refineType(binding.dependencies.map { getBinding(it) })
 
-        // todo callable interceptors
         binding.interceptors = if (binding !is SelfBindingNode)
             getInterceptorsForType(binding.type, binding.callableKind)
         else emptyList()
@@ -372,23 +371,6 @@ import org.jetbrains.kotlin.name.Name
             val exact = filter { it.rawType == request.type }
             if (exact.size == 1) return exact.single()
 
-            // todo pick most concrete
-
-            // todo guard against stack overflow
-            exact
-                .singleOrNull { candidate ->
-                    candidate.dependencies.all { dependency ->
-                        getBindingOrNull(dependency) != null
-                    }
-                }
-                ?.let { return it }
-
-            singleOrNull { candidate ->
-                candidate.dependencies.all { dependency ->
-                    getBindingOrNull(dependency) != null
-                }
-            }?.let { return it }
-
             errorCollector.add(
                 "Multiple $bindingKind bindings found for '${request.type.render()}' required by ${request.origin} at:\n${
                     joinToString("\n") { "    '${it.origin.orUnknown()}' $it" }
@@ -411,16 +393,9 @@ import org.jetbrains.kotlin.name.Name
             }
         }
 
-        val (implicitInternalUserBindings, externalImplicitUserBindings) = getImplicitUserBindingsForType(request, false)
-            .partition { !it.isExternal }
+        val implicitUserBindings = getImplicitUserBindingsForType(request, false)
 
-        binding = implicitInternalUserBindings.mostSpecificOrFail("internal implicit")
-        binding?.let {
-            resolvedBindings[request.type] = it
-            return it
-        }
-
-        binding = externalImplicitUserBindings.mostSpecificOrFail("external implicit")
+        binding = implicitUserBindings.mostSpecificOrFail("implicit")
         binding?.let {
             resolvedBindings[request.type] = it
             return it
@@ -433,17 +408,10 @@ import org.jetbrains.kotlin.name.Name
             return it
         }
 
-        val (implicitDefaultInternalUserBindings, externalDefaultImplicitUserBindings) =
+        val implicitDefaultUserBindings =
             getImplicitUserBindingsForType(request, true)
-                .partition { !it.isExternal }
 
-        binding = implicitDefaultInternalUserBindings.mostSpecificOrFail("internal implicit default")
-        binding?.let {
-            resolvedBindings[request.type] = it
-            return it
-        }
-
-        binding = externalDefaultImplicitUserBindings.mostSpecificOrFail("external implicit default")
+        binding = implicitDefaultUserBindings.mostSpecificOrFail("implicit default")
         binding?.let {
             resolvedBindings[request.type] = it
             return it
@@ -602,7 +570,6 @@ import org.jetbrains.kotlin.name.Name
                     contributionKind = null,
                     isCall = true,
                     callableKind = request.type.callableKind,
-                    isExternal = false,
                     isInline = true,
                     visibility = DescriptorVisibilities.INTERNAL,
                     modality = Modality.FINAL,
