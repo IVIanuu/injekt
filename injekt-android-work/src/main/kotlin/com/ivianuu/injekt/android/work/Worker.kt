@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("NOTHING_TO_INLINE")
+
 package com.ivianuu.injekt.android.work
 
 import android.content.Context
@@ -31,7 +33,6 @@ inline fun <reified T : ListenableWorker> worker(): @MapEntries ((Context, Worke
 
 typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
 
-@Suppress("NOTHING_TO_INLINE")
 @Default @SetElements inline fun provideDefaultWorkers(): Workers = emptyMap()
 
 @Binding fun InjektWorkerFactory.provideWorkerFactory(): WorkerFactory = this

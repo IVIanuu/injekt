@@ -33,8 +33,7 @@ val Application.applicationComponent: ApplicationComponent
         component(this)
     }
 
-@Binding inline val App.provideApplication: Application
-    get() = this as Application
+@Binding inline fun App.provideApplication(): Application = this as Application
 
 typealias ApplicationContext = Context
 
