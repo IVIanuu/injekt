@@ -39,6 +39,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
+import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
 
 @Scoped(GenerationComponent::class)
 @Binding class DeclarationStore(val module: ModuleDescriptor) {
@@ -356,15 +357,16 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
         mutableMapOf<TypeRef, com.ivianuu.injekt.compiler.generator.ModuleDescriptor>()
 
     fun moduleForType(type: TypeRef): com.ivianuu.injekt.compiler.generator.ModuleDescriptor {
-        val finalType = type.fullyExpandedType
-        return moduleByType.getOrPut(finalType) {
-            val descriptor = classDescriptorForFqName(finalType.classifier.fqName)
-            val moduleSubstitutionMap = finalType.classifier.typeParameters
-                .zip(finalType.typeArguments)
+        return moduleByType.getOrPut(type) {
+            val expandedType = type.fullyExpandedType
+            val descriptor = classDescriptorForFqName(expandedType.classifier.fqName)
+            val moduleSubstitutionMap = expandedType.classifier.typeParameters
+                .zip(expandedType.typeArguments)
                 .toMap()
 
+            val contributionKind = type.allTypes.firstNotNullResult { it.contributionKind }
             val callables =
-                if (finalType.contributionKind != null && (finalType.isFunction || finalType.isSuspendFunction)) {
+                if (contributionKind != null && (type.allTypes.any { it.isFunction || it.isSuspendFunction })) {
                     val invokeDescriptor =
                         descriptor.unsubstitutedMemberScope.getContributedDescriptors()
                             .first { it.name.asString() == "invoke" } as FunctionDescriptor
@@ -376,18 +378,18 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
                             val parameterType = if (it.parameterKind ==
                                 ValueParameterRef.ParameterKind.DISPATCH_RECEIVER
                             ) {
-                                finalType
+                                expandedType
                             } else it.type
                             it.copy(
                                 type = parameterType.substitute(substitutionMap)
                             )
                         },
-                        targetComponent = finalType.targetComponent,
-                        scoped = finalType.scoped,
-                        eager = finalType.eager,
-                        default = finalType.default,
-                        contributionKind = finalType.contributionKind,
-                        callableKind = finalType.callableKind
+                        targetComponent = type.allTypes.firstNotNullResult { it.targetComponent },
+                        scoped = type.allTypes.any { it.scoped },
+                        eager = type.allTypes.any { it.eager },
+                        default = type.allTypes.any { it.default },
+                        contributionKind = type.contributionKind,
+                        callableKind = type.callableKind
                     )
                     listOf(finalCallable)
                 } else {
@@ -414,7 +416,7 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
                                     val parameterType = if (it.parameterKind ==
                                         ValueParameterRef.ParameterKind.DISPATCH_RECEIVER
                                     ) {
-                                        finalType
+                                        expandedType
                                     } else it.type
                                     it.copy(
                                         type = parameterType.substitute(substitutionMap)
@@ -424,7 +426,7 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
                         }
                 }
 
-            ModuleDescriptor(type = finalType, callables = callables)
+            ModuleDescriptor(type = type, callables = callables)
         }
     }
 

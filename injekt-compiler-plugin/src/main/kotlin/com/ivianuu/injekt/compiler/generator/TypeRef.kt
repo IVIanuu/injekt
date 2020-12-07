@@ -141,9 +141,12 @@ sealed class TypeRef {
 
     override fun hashCode(): Int = _hashCode
 
-    val isComposableRecursive: Boolean by unsafeLazy {
-        isComposable || expandedType?.isComposableRecursive == true ||
-                superTypes().any { it.isComposableRecursive }
+    val allTypes: Set<TypeRef> by unsafeLazy {
+        buildSet<TypeRef> {
+            this += this@TypeRef
+            expandedType?.let { this += it.allTypes }
+            this += superTypes().flatMap { it.allTypes }
+        }
     }
 }
 
@@ -501,7 +504,7 @@ fun TypeRef.isAssignableTo(
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return false
         if (!qualifiers.isAssignableTo(superType.qualifiers)) return false
-        if (isComposableRecursive != superType.isComposableRecursive) return false
+        if (allTypes.any { it.isComposable } != superType.allTypes.any { it.isComposable }) return false
         if (typeArguments.zip(superType.typeArguments)
                 .any { (a, b) -> !a.isAssignableTo(b, substitutionMap) }
         )
@@ -539,7 +542,7 @@ fun TypeRef.isSubTypeOf(
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return false
         if (!qualifiers.isAssignableTo(superType.qualifiers)) return false
-        if (isComposableRecursive != superType.isComposableRecursive) return false
+        if (allTypes.any { it.isComposable } != superType.allTypes.any { it.isComposable }) return false
         if (typeArguments.zip(superType.typeArguments)
                 .any { (a, b) -> !a.isAssignableTo(b, substitutionMap) }
         )
