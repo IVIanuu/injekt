@@ -105,8 +105,12 @@ import java.io.File
 
         log { "generated file $packageFqName.$fileName $code" }
 
-        newFile.createNewFile()
-        newFile.writeText(code)
+        try {
+            newFile.createNewFile()
+            newFile.writeText(code)
+        } catch (e: Throwable) {
+            throw RuntimeException("Failed to create file ${newFile.absolutePath}\n$code")
+        }
     }
 
     fun postGenerate() {
