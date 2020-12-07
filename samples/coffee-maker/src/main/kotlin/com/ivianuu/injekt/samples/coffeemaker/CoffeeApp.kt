@@ -29,7 +29,6 @@ fun main() {
 }
 
 typealias brewCoffee = () -> Unit
-
 @Binding fun provideBrewCoffee(heater: Heater, pump: Pump): brewCoffee = {
     heater.on()
     pump.pump()

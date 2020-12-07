@@ -23,7 +23,6 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Deferred
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.android.work.worker
@@ -42,8 +41,7 @@ import com.ivianuu.injekt.android.work.worker
 }
 
 typealias initializeWorkers = () -> Unit
-
-@Deferred @Binding fun initializeWorkers(
+@Binding fun provideInitializeWorkers(
     applicationContext: ApplicationContext,
     workerFactory: WorkerFactory,
 ): initializeWorkers = {

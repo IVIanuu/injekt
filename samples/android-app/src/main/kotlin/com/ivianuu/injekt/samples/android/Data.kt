@@ -40,7 +40,6 @@ typealias DatabaseFile = File
 }
 
 typealias refreshRepo = () -> Unit
-
 @Binding fun provideRefreshRepo(repo: Repo): refreshRepo = {
     repo.refresh()
 }

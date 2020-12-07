@@ -59,14 +59,12 @@ interface MainActivityComponent {
 }
 
 typealias WithMainViewModel = @Composable (@Composable (MainViewModel) -> Unit) -> Unit
-
 @Binding fun provideWithMainViewModel(viewModelFactory: () -> MainViewModel): WithMainViewModel = {
     val viewModel = remember(viewModelFactory)
     it(viewModel)
 }
 
 typealias enqueueWork = () -> Unit
-
 @Binding fun provideEnqueueWork(context: ActivityContext): enqueueWork = {
     WorkManager.getInstance(context)
         .enqueue(
