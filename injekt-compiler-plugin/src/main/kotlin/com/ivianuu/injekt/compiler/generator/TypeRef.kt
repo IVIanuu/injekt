@@ -506,25 +506,26 @@ fun TypeRef.isAssignable(
 ): Boolean {
     if (isStarProjection || superType.isStarProjection) return true
 
-    if (this == superType &&
-        !isMarkedNullable && superType.isMarkedNullable) return false
-
-    if (!qualifiers.isAssignable(superType.qualifiers)) return false
-    if (classifier.fqName == superType.classifier.fqName &&
-        isComposableRecursive != superType.isComposableRecursive) return false
-
-    if (superType.classifier.isTypeParameter) {
-        return superType.superTypes(substitutionMap).all { upperBound ->
-            isSubTypeOf(upperBound, substitutionMap)
-        }
+    if (classifier.fqName == superType.classifier.fqName) {
+        if (isMarkedNullable && !superType.isMarkedNullable) return false
+        if (!qualifiers.isAssignable(superType.qualifiers)) return false
+        if (isComposableRecursive != superType.isComposableRecursive) return false
+        if (typeArguments.zip(superType.typeArguments).any { (a, b) -> !a.isAssignable(b, substitutionMap) })
+            return false
+        return true
     }
 
-    if (classifier.fqName != superType.classifier.fqName) return false
+    if (superType.classifier.isTypeParameter) {
+        val superTypesAssignable = superType.superTypes(substitutionMap).all { upperBound ->
+            isSubTypeOf(upperBound, substitutionMap)
+        }
+        if (!superTypesAssignable) return false
+        if (superType.qualifiers.isNotEmpty() &&
+                !qualifiers.isAssignable(superType.qualifiers)) return false
+        return true
+    }
 
-    if (!typeArguments.zip(superType.typeArguments).all { (a, b) -> a.isAssignable(b, substitutionMap) })
-        return false
-
-    return true
+    return false
 }
 
 fun TypeRef.isSubTypeOf(
@@ -532,16 +533,23 @@ fun TypeRef.isSubTypeOf(
     substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
 ): Boolean {
     if (isMarkedNullable && !superType.isMarkedNullable) return false
-    if (this == superType && (!isMarkedNullable || superType.isMarkedNullable) &&
-        (superType.qualifiers.isEmpty() || qualifiers.isAssignable(superType.qualifiers))
-    ) return true
-    if (superType.classifier.fqName.asString() == StandardNames.FqNames.any.asString() &&
-        (!isMarkedNullable || superType.isMarkedNullable) &&
-        (superType.qualifiers.isEmpty() || qualifiers.isAssignable(superType.qualifiers)))
-        return true
 
-    if (classifier == superType.classifier && (!isMarkedNullable || superType.isMarkedNullable) &&
-        isComposableRecursive != superType.isComposableRecursive) return false
+    if (classifier.fqName == superType.classifier.fqName) {
+        if (isMarkedNullable && !superType.isMarkedNullable) return false
+        if (!qualifiers.isAssignable(superType.qualifiers)) return false
+        if (isComposableRecursive != superType.isComposableRecursive) return false
+        if (typeArguments.zip(superType.typeArguments).any { (a, b) -> !a.isAssignable(b, substitutionMap) })
+            return false
+        return true
+    }
+
+    if (superType.classifier.fqName == InjektFqNames.Any) {
+        if (isMarkedNullable && !superType.isMarkedNullable) return false
+        if (superType.qualifiers.isNotEmpty() &&
+            !qualifiers.isAssignable(superType.qualifiers)) return false
+        return true
+    }
+
     val subTypeView = subtypeView(superType.classifier, substitutionMap)
     if (subTypeView != null) {
         if (subTypeView == superType && (!subTypeView.isMarkedNullable || superType.isMarkedNullable) &&

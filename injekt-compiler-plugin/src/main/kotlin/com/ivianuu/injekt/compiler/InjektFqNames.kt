@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.generator.asNameId
+import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.name.FqName
 
 object InjektFqNames {
@@ -52,4 +53,6 @@ object InjektFqNames {
     val Composable = FqName("androidx.compose.runtime.Composable")
 
     val Mutex = FqName("kotlinx.coroutines.sync.Mutex")
+
+    val Any = StandardNames.FqNames.any.toSafe()
 }

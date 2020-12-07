@@ -45,12 +45,12 @@ class TypeRefTest {
 
     @Test
     fun testNonNullIsAssignableToNullable() = withAnalysisContext {
-        stringType.nullable() shouldBeAssignable stringType
+        stringType shouldBeAssignable stringType.nullable()
     }
 
     @Test
     fun testNullableIsNotAssignableToNonNullable() = withAnalysisContext {
-        stringType shouldNotBeAssignable stringType.nullable()
+        stringType.nullable() shouldNotBeAssignable stringType
     }
 
     @Test
@@ -187,12 +187,27 @@ class TypeRefTest {
     }
 
     @Test
+    fun testNestedQualifiedSubTypeOfNestedQualifiedTypeParameter() = withAnalysisContext {
+        listType.typeWith(stringType.qualified(qualifier1())) shouldBeAssignable
+                listType.typeWith(typeParameter(nullable = false).qualified(qualifier1()))
+    }
+
+    @Test
     fun testUnqualifiedSubTypeOfTypeParameterWithQualifiedUpperBound() = withAnalysisContext {
-       /* anyNType
-        assertFalse(
-            anyNType.copy()
-                .isAssignable(typeParameter(stringType.copy(qualifiers = listOf(qualifier1()))))
-        )*/
+        stringType shouldNotBeAssignable
+                typeParameter(anyNType.qualified(qualifier1()))
+    }
+
+    @Test
+    fun testNestedUnqualifiedSubTypeOfNestedTypeParameterWithQualifiedUpperBound() = withAnalysisContext {
+        listType.typeWith(stringType) shouldNotBeAssignable
+                listType.typeWith(typeParameter(anyNType.qualified(qualifier1())))
+    }
+
+    @Test
+    fun testNestedQualifiedSubTypeOfNestedTypeParameterWithQualifiedUpperBound() = withAnalysisContext {
+        listType.typeWith(stringType.qualified(qualifier1())) shouldBeAssignable
+                listType.typeWith(typeParameter(anyNType.qualified(qualifier1())))
     }
 
     private infix fun TypeRef.shouldBeAssignable(other: TypeRef) {
@@ -220,25 +235,6 @@ class TypeRefTest {
     }
 
     // todo type parameter multuple upper bounds
-
-    // todo effect
-
-    // todo @Test
-    fun testGeneric() = codegen(
-        """
-            @Binding class Dep<T : Any>(val value: T)
-            
-            @Binding fun <T> any(): @MyQualifier T = error("")
- 
-            @Qualifier
-            @Target(AnnotationTarget.TYPE)
-            annotation class MyQualifier
- 
-            @Component abstract class MyComponent {
-                abstract val foo: Dep<@MyQualifier Foo>
-            }
-        """
-    )
 
     private fun withAnalysisContext(
         block: AnalysisContext.() -> Unit
