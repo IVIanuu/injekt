@@ -69,7 +69,7 @@ annotation class Scoped(val component: KClass<*> = Nothing::class)
     AnnotationTarget.PROPERTY,
     AnnotationTarget.TYPE
 )
-annotation class Bound(val component: KClass<*> = Nothing::class)
+annotation class Bound(val component: KClass<*>)
 
 @Target(
     AnnotationTarget.FUNCTION,
