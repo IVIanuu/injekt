@@ -183,6 +183,38 @@ class LambdaContributionsTest {
     }
 
     @Test
+    fun testMultipleInterceptorLambdas2() = codegen(
+        """
+            var calledA = false
+            typealias InterceptorA<T> = (() -> T) -> () -> T
+            fun <T> interceptorFactoryA(): @Interceptor InterceptorA<T> = { calledA = true; it }
+            var calledB = false
+            typealias InterceptorB<T> = (() -> T) -> () -> T
+            fun <T> interceptorFactoryB(): @Interceptor InterceptorB<T> = { calledB = true; it }
+
+            @Module val fooInterceptorModule = moduleOf(
+                interceptorFactoryA<Foo>(),
+                interceptorFactoryB<Foo>()
+            )
+
+            @Binding fun foo() = Foo()
+
+            @Component abstract class MyComponent {
+                abstract val foo: Foo
+            }
+
+            fun invoke(): Pair<Boolean, Boolean> {
+                component<MyComponent>().foo
+                return calledA to calledB
+            }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Boolean, Boolean>>()
+        assertTrue(a)
+        assertTrue(b)
+    }
+
+    @Test
     fun testModuleLambda() = codegen(
         """
             class Dep<T>(val value: T)
