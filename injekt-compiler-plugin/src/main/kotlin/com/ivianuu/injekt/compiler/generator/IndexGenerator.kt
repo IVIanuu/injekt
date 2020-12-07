@@ -105,6 +105,7 @@ import org.jetbrains.kotlin.psi.psiUtil.containingClass
                 )
                 file to indices
             }
+            .filter { it.second.isNotEmpty() }
             .forEach { (file, indices) ->
                 indices.forEach { declarationStore.addInternalIndex(it) }
                 val fileName = file.packageFqName.pathSegments().joinToString("_") + "_${file.name}"
