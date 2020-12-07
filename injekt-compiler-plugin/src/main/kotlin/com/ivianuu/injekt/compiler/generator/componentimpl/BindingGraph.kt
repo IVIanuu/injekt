@@ -377,7 +377,7 @@ import org.jetbrains.kotlin.name.Name
             if (exact.size == 1) return exact.single()
 
             errorCollector.add(
-                "Multiple $bindingKind bindings found for '${request.type.render()}' required by ${request.origin} at:\n${
+                "Multiple $bindingKind bindings found for '${request.type.render()}' required by '${request.origin}' at:\n${
                     joinToString("\n") { "    '${it.origin}' $it" }
                 }"
             )
