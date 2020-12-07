@@ -1,20 +1,18 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.generator.ClassifierRef
-import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.QualifierDescriptor
 import com.ivianuu.injekt.compiler.generator.STAR_PROJECTION_TYPE
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.copy
 import com.ivianuu.injekt.compiler.generator.defaultType
-import com.ivianuu.injekt.compiler.generator.isAssignable
+import com.ivianuu.injekt.compiler.generator.isAssignableTo
 import com.ivianuu.injekt.compiler.generator.isSubTypeOf
 import com.ivianuu.injekt.compiler.generator.toTypeRef
 import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.test.codegen
 import org.jetbrains.kotlin.analyzer.AnalysisResult
-import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -28,7 +26,6 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
-import org.junit.Before
 import org.junit.Test
 
 class TypeRefTest {
@@ -211,13 +208,13 @@ class TypeRefTest {
     }
 
     private infix fun TypeRef.shouldBeAssignable(other: TypeRef) {
-        if (!isAssignable(other)) {
+        if (!isAssignableTo(other)) {
             throw AssertionError("'$this' is not assignable '$other'")
         }
     }
 
     private infix fun TypeRef.shouldNotBeAssignable(other: TypeRef) {
-        if (isAssignable(other)) {
+        if (isAssignableTo(other)) {
             throw AssertionError("'$this' is assignable '$other'")
         }
     }

@@ -501,7 +501,7 @@ fun TypeRef.getStarSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRe
     return substitutionMap
 }
 
-fun TypeRef.isAssignable(
+fun TypeRef.isAssignableTo(
     superType: TypeRef,
     substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
 ): Boolean {
@@ -509,9 +509,9 @@ fun TypeRef.isAssignable(
 
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return false
-        if (!qualifiers.isAssignable(superType.qualifiers)) return false
+        if (!qualifiers.isAssignableTo(superType.qualifiers)) return false
         if (isComposableRecursive != superType.isComposableRecursive) return false
-        if (typeArguments.zip(superType.typeArguments).any { (a, b) -> !a.isAssignable(b, substitutionMap) })
+        if (typeArguments.zip(superType.typeArguments).any { (a, b) -> !a.isAssignableTo(b, substitutionMap) })
             return false
         return true
     }
@@ -522,7 +522,15 @@ fun TypeRef.isAssignable(
         }
         if (!superTypesAssignable) return false
         if (superType.qualifiers.isNotEmpty() &&
-                !qualifiers.isAssignable(superType.qualifiers)) return false
+                !qualifiers.isAssignableTo(superType.qualifiers)) return false
+        return true
+    } else if (classifier.isTypeParameter) {
+        val superTypesAssignable = superTypes(substitutionMap).all { upperBound ->
+            superType.isSubTypeOf(upperBound, substitutionMap)
+        }
+        if (!superTypesAssignable) return false
+        if (qualifiers.isNotEmpty() &&
+            !superType.qualifiers.isAssignableTo(qualifiers)) return false
         return true
     }
 
@@ -533,13 +541,11 @@ fun TypeRef.isSubTypeOf(
     superType: TypeRef,
     substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
 ): Boolean {
-    if (isMarkedNullable && !superType.isMarkedNullable) return false
-
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return false
-        if (!qualifiers.isAssignable(superType.qualifiers)) return false
+        if (!qualifiers.isAssignableTo(superType.qualifiers)) return false
         if (isComposableRecursive != superType.isComposableRecursive) return false
-        if (typeArguments.zip(superType.typeArguments).any { (a, b) -> !a.isAssignable(b, substitutionMap) })
+        if (typeArguments.zip(superType.typeArguments).any { (a, b) -> !a.isAssignableTo(b, substitutionMap) })
             return false
         return true
     }
@@ -547,14 +553,14 @@ fun TypeRef.isSubTypeOf(
     if (superType.classifier.fqName == InjektFqNames.Any) {
         if (isMarkedNullable && !superType.isMarkedNullable) return false
         if (superType.qualifiers.isNotEmpty() &&
-            !qualifiers.isAssignable(superType.qualifiers)) return false
+            !qualifiers.isAssignableTo(superType.qualifiers)) return false
         return true
     }
 
     val subTypeView = subtypeView(superType.classifier, substitutionMap)
     if (subTypeView != null) {
         if (subTypeView == superType && (!subTypeView.isMarkedNullable || superType.isMarkedNullable) &&
-            (superType.qualifiers.isEmpty() || subTypeView.qualifiers.isAssignable(superType.qualifiers)))
+            (superType.qualifiers.isEmpty() || subTypeView.qualifiers.isAssignableTo(superType.qualifiers)))
             return true
         return subTypeView.typeArguments.zip(superType.typeArguments).all { (subTypeArg, superTypeArg) ->
             superTypeArg.superTypes(substitutionMap).all {
@@ -570,15 +576,15 @@ fun TypeRef.isSubTypeOf(
     return false
 }
 
-fun List<QualifierDescriptor>.isAssignable(superQualifiers: List<QualifierDescriptor>): Boolean {
+fun List<QualifierDescriptor>.isAssignableTo(superQualifiers: List<QualifierDescriptor>): Boolean {
     if (size != superQualifiers.size) return false
     return zip(superQualifiers).all { (thisQualifier, superQualifier) ->
-        thisQualifier.isAssignable(superQualifier)
+        thisQualifier.isAssignableTo(superQualifier)
     }
 }
 
-fun QualifierDescriptor.isAssignable(superQualifier: QualifierDescriptor): Boolean {
-    if (!type.isAssignable(superQualifier.type)) return false
+fun QualifierDescriptor.isAssignableTo(superQualifier: QualifierDescriptor): Boolean {
+    if (!type.isAssignableTo(superQualifier.type)) return false
     return args == superQualifier.args
 }
 

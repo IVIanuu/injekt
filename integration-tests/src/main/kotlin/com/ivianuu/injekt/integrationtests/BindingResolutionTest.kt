@@ -357,17 +357,21 @@ class BindingResolutionTest {
     }
 
     @Test
-    fun testCanInjectNullableTypeForNonNullType() = codegen(
+    fun testCanUseNonNullBindingForNullableRequest() = codegen(
         """
             @Component abstract class FooComponent { 
                 abstract val foo: Foo?
                 @Binding protected fun foo(): Foo = Foo()
             }
+
+            fun invoke() = component<FooComponent>().foo
             """
-    )
+    ) {
+        assertNotNull(invokeSingleFile())
+    }
 
     @Test
-    fun testCannotInjectNonNullTypeForNullableBinding() = codegen(
+    fun testCannotUseNullableBindingForNonNullRequest() = codegen(
         """
             @Component abstract class FooComponent { 
                 abstract val foo: Foo
@@ -389,22 +393,6 @@ class BindingResolutionTest {
             }
         """
     )
-
-    @Test
-    fun testReturnsInstanceForNullableBinding() = codegen(
-        """
-            @Component abstract class FooComponent {
-                abstract val foo: Foo?
-                @Binding protected fun foo(): Foo = Foo()
-            }
-            
-            fun invoke(): Foo? {
-                return component<FooComponent>().foo
-            }
-        """
-    ) {
-        assertNotNull(invokeSingleFile())
-    }
 
     @Test
     fun testReturnsNullOnMissingNullableRequest() = codegen(

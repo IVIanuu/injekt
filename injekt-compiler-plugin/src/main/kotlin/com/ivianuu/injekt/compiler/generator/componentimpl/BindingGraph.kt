@@ -32,7 +32,7 @@ import com.ivianuu.injekt.compiler.generator.callableKind
 import com.ivianuu.injekt.compiler.generator.copy
 import com.ivianuu.injekt.compiler.generator.defaultType
 import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
-import com.ivianuu.injekt.compiler.generator.isAssignable
+import com.ivianuu.injekt.compiler.generator.isAssignableTo
 import com.ivianuu.injekt.compiler.generator.isSubTypeOf
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.replaceTypeParametersWithStars
@@ -320,7 +320,7 @@ import org.jetbrains.kotlin.name.Name
     fun getBinding(request: BindingRequest): BindingNode {
         var binding = getBindingOrNull(request)
         if (binding != null) return binding
-
+        
         if (request.type.isMarkedNullable || !request.required) {
             binding = MissingBindingNode(request.type, owner)
             resolvedBindings[request.type] = binding
@@ -469,7 +469,7 @@ import org.jetbrains.kotlin.name.Name
         default: Boolean
     ): List<BindingNode> = buildList<BindingNode> {
         this += owner.additionalInputTypes
-            .filter { request.type.isAssignable(it) }
+            .filter { it.isAssignableTo(request.type) }
             .map {
                 InputBindingNode(
                     type = it,
@@ -479,14 +479,14 @@ import org.jetbrains.kotlin.name.Name
 
         this += explicitBindings
             .filter { it.default == default }
-            .filter { request.type.isAssignable(it.type) }
+            .filter { it.type.isAssignableTo(request.type) }
             .map { it.toCallableBindingNode(request) }
     }
 
     private fun getExplicitParentBindingsForType(parent: BindingGraph, request: BindingRequest): List<BindingNode> = buildList<BindingNode> {
         this += parent.explicitBindings
             .filter { it.targetComponent.checkComponent() }
-            .filter { request.type.isAssignable(it.type) }
+            .filter { it.type.isAssignableTo(request.type) }
             .map { it.toCallableBindingNode(request) }
     }
 
@@ -497,7 +497,7 @@ import org.jetbrains.kotlin.name.Name
             .map { it.toCallableBindingNode(request) }
         this += implicitBindings
             .filter { it.default == default }
-            .filter { request.type.isAssignable(it.type) }
+            .filter { it.type.isAssignableTo(request.type) }
             .map { it.toCallableBindingNode(request) }
     }
 
@@ -707,7 +707,7 @@ import org.jetbrains.kotlin.name.Name
     }
 
     private fun TypeRef?.checkComponent(): Boolean =
-        this == null || owner.nonAssistedComponent.componentType.isAssignable(this)
+        this == null || this.isAssignableTo(owner.nonAssistedComponent.componentType)
 
     private fun Callable.getDependencies(type: TypeRef, isInterceptor: Boolean): List<BindingRequest> {
         val substitutionMap = getSubstitutionMap(listOf(type to this.type))
@@ -743,11 +743,11 @@ import org.jetbrains.kotlin.name.Name
 
     private fun getInterceptorsForType(providerType: TypeRef): List<InterceptorNode> = buildList<InterceptorNode> {
         this += explicitInterceptors
-            .filter { providerType.isAssignable(it.callable.type) }
+            .filter { it.callable.type.isAssignableTo(providerType) }
             .filter { it.callable.targetComponent.checkComponent() }
         this += parentsBottomUp.flatMap { parent ->
             parent.explicitInterceptors
-                .filter { providerType.isAssignable(it.callable.type) }
+                .filter { it.callable.type.isAssignableTo(providerType) }
                 .filter {
                     with(parent) {
                         it.callable.targetComponent.checkComponent()
@@ -755,11 +755,11 @@ import org.jetbrains.kotlin.name.Name
                 }
         }
         this += implicitInterceptors
-            .filter { providerType.isAssignable(it.callable.type) }
+            .filter { it.callable.type.isAssignableTo(providerType) }
             .filter { it.callable.targetComponent.checkComponent() }
         this += parentsBottomUp.flatMap { parent ->
             parent.implicitInterceptors
-                .filter { providerType.isAssignable(it.callable.type) }
+                .filter { it.callable.type.isAssignableTo(providerType) }
                 .filter {
                     with(parent) {
                         it.callable.targetComponent.checkComponent()

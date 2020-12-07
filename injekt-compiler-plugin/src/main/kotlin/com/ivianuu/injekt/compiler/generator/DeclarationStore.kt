@@ -18,48 +18,27 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentExpression
 import org.jetbrains.kotlin.backend.common.descriptors.isSuspend
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DeserializedDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.findClassifierAcrossModuleDependencies
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtParameter
-import org.jetbrains.kotlin.resolve.constants.ArrayValue
-import org.jetbrains.kotlin.resolve.constants.BooleanValue
-import org.jetbrains.kotlin.resolve.constants.ByteValue
-import org.jetbrains.kotlin.resolve.constants.CharValue
-import org.jetbrains.kotlin.resolve.constants.ConstantValue
-import org.jetbrains.kotlin.resolve.constants.DoubleValue
-import org.jetbrains.kotlin.resolve.constants.EnumValue
-import org.jetbrains.kotlin.resolve.constants.FloatValue
-import org.jetbrains.kotlin.resolve.constants.IntValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
-import org.jetbrains.kotlin.resolve.constants.LongValue
-import org.jetbrains.kotlin.resolve.constants.ShortValue
-import org.jetbrains.kotlin.resolve.constants.StringValue
-import org.jetbrains.kotlin.resolve.constants.UByteValue
-import org.jetbrains.kotlin.resolve.constants.UIntValue
-import org.jetbrains.kotlin.resolve.constants.ULongValue
-import org.jetbrains.kotlin.resolve.constants.UShortValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
-import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 
 @Binding(GenerationComponent::class)
@@ -118,7 +97,7 @@ class DeclarationStore(val module: ModuleDescriptor) {
     private val bindingsByType = mutableMapOf<TypeRef, List<Callable>>()
     fun bindingsForType(type: TypeRef): List<Callable> = bindingsByType.getOrPut(type) {
         allBindings
-            .filter { type.isAssignable(it.type) }
+            .filter { it.type.isAssignableTo(type) }
             .distinct()
     }
 
@@ -149,7 +128,7 @@ class DeclarationStore(val module: ModuleDescriptor) {
     private val funBindingsByType = mutableMapOf<TypeRef, List<FunBindingDescriptor>>()
     fun funBindingsForType(type: TypeRef): List<FunBindingDescriptor> = funBindingsByType.getOrPut(type) {
         allFunBindings
-            .filter { type.isAssignable(it.type) }
+            .filter { it.type.isAssignableTo(type) }
     }
 
     private val allInterceptors by unsafeLazy {
@@ -163,7 +142,7 @@ class DeclarationStore(val module: ModuleDescriptor) {
     private val interceptorsForType = mutableMapOf<TypeRef, List<Callable>>()
     fun interceptorsByType(providerType: TypeRef): List<Callable> = interceptorsForType.getOrPut(providerType) {
         allInterceptors
-            .filter { providerType.isAssignable(it.type) }
+            .filter { it.type.isAssignableTo(providerType) }
     }
 
     private val allMapEntries by unsafeLazy {
@@ -177,7 +156,7 @@ class DeclarationStore(val module: ModuleDescriptor) {
     private val mapEntriesForType = mutableMapOf<TypeRef, List<Callable>>()
     fun mapEntriesByType(type: TypeRef): List<Callable> = mapEntriesForType.getOrPut(type) {
         allMapEntries
-            .filter { type.isAssignable(it.type) }
+            .filter { it.type.isAssignableTo(type) }
     }
 
     private val allSetElements by unsafeLazy {
@@ -191,7 +170,7 @@ class DeclarationStore(val module: ModuleDescriptor) {
     private val setElementsForType = mutableMapOf<TypeRef, List<Callable>>()
     fun setElementsByType(type: TypeRef): List<Callable> = setElementsForType.getOrPut(type) {
         allSetElements
-            .filter { type.isAssignable(it.type) }
+            .filter { it.type.isAssignableTo(type) }
     }
 
     val mergeComponents: List<TypeRef> by unsafeLazy {
