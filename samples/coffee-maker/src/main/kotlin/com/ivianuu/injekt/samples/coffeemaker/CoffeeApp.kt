@@ -26,7 +26,6 @@ import com.ivianuu.injekt.component
 fun main() {
     val component = component<CoffeeComponent>()
     component.brewCoffee()
-    component.disposables.dispose()
 }
 
 typealias brewCoffee = () -> Unit
@@ -40,7 +39,6 @@ typealias brewCoffee = () -> Unit
 
 @Component abstract class CoffeeComponent {
     abstract val brewCoffee: brewCoffee
-    abstract val disposables: Disposables
 }
 
 interface Heater {
@@ -74,14 +72,10 @@ interface Pump {
 
 @Module val ThermosiphonModule = alias<Thermosiphon, Pump>()
 
-@Binding class Thermosiphon(private val heater: Heater) : Pump, Disposable {
+@Binding class Thermosiphon(private val heater: Heater) : Pump {
     override fun pump() {
         if (heater.isHot) {
             println("=> => pumping => =>")
         }
-    }
-
-    override fun dispose() {
-
     }
 }
