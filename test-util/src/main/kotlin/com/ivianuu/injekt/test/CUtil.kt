@@ -89,15 +89,15 @@ fun codegen(
 
 fun multiCodegen(
     vararg sources: List<SourceFile>,
-    config: KotlinCompilation.() -> Unit = {},
-    assertions: (List<KotlinCompilation.Result>) -> Unit = { it.forEach { it.assertOk() } }
+    config: KotlinCompilation.(Int) -> Unit = {},
+    assertions: (List<KotlinCompilation.Result>) -> Unit = { it.forEach { it.assertOk() } },
 ) {
     val prevCompilations = mutableListOf<KotlinCompilation>()
-    val results = sources.map { sourceFiles ->
+    val results = sources.mapIndexed { index, sourceFiles ->
         compile {
             this.sources = sourceFiles
             this.classpaths += prevCompilations.map { it.classesDir }
-            config()
+            config(index)
             prevCompilations += this
         }
     }
@@ -115,16 +115,6 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
     block()
     pluginOptions += PluginOption(
         "com.ivianuu.injekt",
-        "generateComponents",
-        "true"
-    )
-    pluginOptions += PluginOption(
-        "com.ivianuu.injekt",
-        "generateMergeComponents",
-        "true"
-    )
-    pluginOptions += PluginOption(
-        "com.ivianuu.injekt",
         "srcDir",
         workingDir.resolve("injekt/generated/src").absolutePath
     )
@@ -132,6 +122,26 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
         "com.ivianuu.injekt",
         "cacheDir",
         workingDir.resolve("injekt/cache").absolutePath
+    )
+    setGenerateComponents(true)
+    setGenerateMergeComponents(false)
+}
+
+fun KotlinCompilation.setGenerateComponents(value: Boolean) {
+    pluginOptions = pluginOptions
+        .filter { it.optionName != "generateComponents" } + PluginOption(
+        "com.ivianuu.injekt",
+        "generateComponents",
+        value.toString()
+    )
+}
+
+fun KotlinCompilation.setGenerateMergeComponents(value: Boolean) {
+    pluginOptions = pluginOptions
+        .filter { it.optionName != "generateMergeComponents" } + PluginOption(
+        "com.ivianuu.injekt",
+        "generateMergeComponents",
+        value.toString()
     )
 }
 

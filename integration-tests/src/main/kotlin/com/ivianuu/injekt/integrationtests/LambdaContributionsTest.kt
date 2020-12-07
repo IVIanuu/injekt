@@ -3,6 +3,7 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.setGenerateMergeComponents
 import com.ivianuu.injekt.test.source
 import org.junit.Test
 
@@ -44,7 +45,12 @@ class LambdaContributionsTest {
                         abstract class MyComponent {
                             abstract val bar: Bar
                         }
-
+                        """
+            )
+        ),
+        listOf(
+            source(
+                """
                         @Module val barModule = @Scoped(MyComponent::class) @Binding { foo: Foo -> Bar(foo) }
         """
             )
@@ -55,7 +61,8 @@ class LambdaContributionsTest {
                         @Binding fun foo() = Foo()
                 """
             )
-        )
+        ),
+        config = { if (it == 2) setGenerateMergeComponents(true) }
     )
 
     @Test

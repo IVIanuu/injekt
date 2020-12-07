@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.setGenerateMergeComponents
 import org.junit.Test
 
 class MergeTest {
@@ -34,13 +35,13 @@ class MergeTest {
                 val foo: Foo
             }
             
-            @GenerateMergeComponents
             fun invoke() {
                 val component = component<MyComponent>()
                 val fooComponent = component.mergeComponent<FooComponent>()
                 fooComponent.foo
             }
-        """
+        """,
+        config = { setGenerateMergeComponents(true) }
     )
 
     @Test
@@ -60,14 +61,14 @@ class MergeTest {
                 val foo: Foo
             }
             
-            @GenerateMergeComponents
             fun invoke() {
                 val parentComponent = component<MyParentComponent>()
                 val childComponent = parentComponent.myChildComponentFactory()
                 val fooComponent = childComponent.mergeComponent<FooComponent>()
                 fooComponent.foo
             }
-        """
+        """,
+        config = { setGenerateMergeComponents(true) }
     )
 
     @Test
@@ -83,13 +84,13 @@ class MergeTest {
                 val foo: Foo
             }
             
-            @GenerateMergeComponents
             fun invoke() {
                 val component = component<MyComponent>()
                 val fooComponent = component.mergeComponent<FooComponent>()
                 fooComponent.foo
             }
-        """
+        """,
+        config = { setGenerateMergeComponents(true) }
     )
 
 }
