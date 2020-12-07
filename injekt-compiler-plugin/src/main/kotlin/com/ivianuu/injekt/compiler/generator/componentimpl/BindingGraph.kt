@@ -165,8 +165,8 @@ import org.jetbrains.kotlin.name.Name
             val binding = getBinding(request)
             if (binding.callableKind != Callable.CallableKind.DEFAULT &&
                 binding.callableKind != request.callableKind) {
-                errorCollector.add("Call context mismatch. '${request.origin.orUnknown()}' is a ${request.callableKind.name} callable but " +
-                        "dependency '${binding.origin.orUnknown()}' is a ${binding.callableKind.name} callable.")
+                errorCollector.add("Call context mismatch. '${request.origin}' is a ${request.callableKind.name} callable but " +
+                        "dependency '${binding.origin}' is a ${binding.callableKind.name} callable.")
             }
         }
         postProcess()
@@ -189,10 +189,10 @@ import org.jetbrains.kotlin.name.Name
                 .filter { it.second.callableKind != Callable.CallableKind.DEFAULT }
                 .groupBy { it.second.callableKind }
             if (dependenciesByCallableKind.size > 1) {
-                errorCollector.add("Dependencies call context mismatch. Dependencies of '${binding.origin.orUnknown()}' have different call contexts\n" +
+                errorCollector.add("Dependencies call context mismatch. Dependencies of '${binding.origin}' have different call contexts\n" +
                         binding.dependencies.joinToString("\n") { dependency ->
                             val dependencyBinding = getBinding(dependency)
-                            "${dependency.origin} -> '${dependencyBinding.origin.orUnknown()}' = ${dependencyBinding.callableKind.name}"
+                            "${dependency.origin} -> '${dependencyBinding.origin}' = ${dependencyBinding.callableKind.name}"
                         }
                 )
             }
@@ -206,8 +206,8 @@ import org.jetbrains.kotlin.name.Name
             .forEach { (request, dependency) ->
                 if (request.callableKind != Callable.CallableKind.DEFAULT &&
                     request.callableKind != dependency.callableKind) {
-                    errorCollector.add("Call context mismatch. '${request.origin.orUnknown()}' is a ${request.callableKind.name} callable but " +
-                            "dependency '${dependency.origin.orUnknown()}' is a ${dependency.callableKind.name} callable.")
+                    errorCollector.add("Call context mismatch. '${request.origin}' is a ${request.callableKind.name} callable but " +
+                            "dependency '${dependency.origin}' is a ${dependency.callableKind.name} callable.")
                 } else {
                     binding.callableKind = dependency.callableKind
                 }
@@ -343,15 +343,14 @@ import org.jetbrains.kotlin.name.Name
                 fun indent() {
                     indendation = "$indendation    "
                 }
-                appendLine("No binding found for '${request.type.render()}' ${request.type} in '${owner.nonAssistedComponent.componentType.render()}':")
-                appendLine("${request.origin.orUnknown()} requires '${request.type.render()}'")
-                chain.forEach {
-                    appendLine("chain $it" + it.origin.orUnknown())
+                appendLine("No binding found for '${request.type.render()}':")
+
+                chain.reversed().forEachIndexed { index, request ->
+                    append("'${request.type.render()}' ")
+                    if (index == chain.lastIndex) appendLine("is provided at")
+                    else appendLine("is injected at")
+                    appendLine("    '${request.origin}'")
                 }
-                /*chain.forEachIndexed { index, binding ->
-                    appendLine("${indendation}${binding.origin.orUnknown()} requires binding '${binding.type.render()}'")
-                    indent()
-                }*/
             }
         )
     }
@@ -384,7 +383,7 @@ import org.jetbrains.kotlin.name.Name
 
             errorCollector.add(
                 "Multiple $bindingKind bindings found for '${request.type.render()}' required by ${request.origin} at:\n${
-                    joinToString("\n") { "    '${it.origin.orUnknown()}' $it" }
+                    joinToString("\n") { "    '${it.origin}' $it" }
                 }"
             )
         }
@@ -800,8 +799,6 @@ import org.jetbrains.kotlin.name.Name
     }
 
 }
-
-private fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"
 
 @Qualifier
 @Target(AnnotationTarget.TYPE)
