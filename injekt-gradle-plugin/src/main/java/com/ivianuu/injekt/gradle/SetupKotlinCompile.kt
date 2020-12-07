@@ -1,9 +1,7 @@
 package com.ivianuu.injekt.gradle
 
 import com.android.build.gradle.BaseExtension
-import com.android.build.gradle.internal.crash.afterEvaluate
 import org.gradle.api.tasks.SourceSetContainer
-import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
@@ -93,31 +91,22 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
                 "variant data $androidVariantData")
     }
 
-    return if (project.name == "injekt-compiler-plugin") {
-        listOf(
-            SubpluginOption(
-                key = "srcDir",
-                value = srcDir.absolutePath
-            )
+    return listOf(
+        SubpluginOption(
+            key = "generateComponents",
+            value = extension.generateComponents.toString()
+        ),
+        SubpluginOption(
+            key = "generateMergeComponents",
+            value = extension.generateMergeComponents.toString()
+        ),
+        SubpluginOption(
+            key = "srcDir",
+            value = srcDir.absolutePath
+        ),
+        SubpluginOption(
+            key = "cacheDir",
+            value = cacheDir.absolutePath
         )
-    } else {
-        listOf(
-            SubpluginOption(
-                key = "generateComponents",
-                value = extension.generateComponents.toString()
-            ),
-            SubpluginOption(
-                key = "generateMergeComponents",
-                value = extension.generateMergeComponents.toString()
-            ),
-            SubpluginOption(
-                key = "srcDir",
-                value = srcDir.absolutePath
-            ),
-            SubpluginOption(
-                key = "cacheDir",
-                value = cacheDir.absolutePath
-            )
-        )
-    }
+    )
 }

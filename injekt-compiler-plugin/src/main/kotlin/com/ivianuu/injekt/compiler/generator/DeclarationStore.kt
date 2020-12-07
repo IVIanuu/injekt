@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.Scoped
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.backend.common.descriptors.isSuspend
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
@@ -40,8 +41,8 @@ import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 
-@Binding(GenerationComponent::class)
-class DeclarationStore(val module: ModuleDescriptor) {
+@Scoped((GenerationComponent::class))
+@Binding class DeclarationStore(val module: ModuleDescriptor) {
 
     fun constructorForComponent(type: TypeRef): Callable? {
         return classDescriptorForFqName(type.classifier.fqName)

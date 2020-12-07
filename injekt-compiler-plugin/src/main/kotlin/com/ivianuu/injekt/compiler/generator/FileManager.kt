@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.Scoped
 import com.ivianuu.injekt.compiler.ApplicationComponent
 import com.ivianuu.injekt.compiler.CacheDir
 import com.ivianuu.injekt.compiler.SrcDir
@@ -29,12 +30,12 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
-@Binding(ApplicationComponent::class)
-class FileManager(
+@Scoped(ApplicationComponent::class)
+@Binding class FileManager(
     private val srcDir: SrcDir,
     private val cacheDir: CacheDir,
     private val log: log,
-    private val psiManager: PsiManager
+    private val psiManager: PsiManager,
 ) {
     private val originatingFilePaths = mutableMapOf<File, String>()
 

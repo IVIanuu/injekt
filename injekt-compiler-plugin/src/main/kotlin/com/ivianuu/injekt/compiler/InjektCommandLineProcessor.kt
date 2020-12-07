@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.Scoped
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
@@ -67,26 +68,30 @@ class InjektCommandLineProcessor : CommandLineProcessor {
 
 val GenerateComponentsKey = CompilerConfigurationKey<Boolean>("generateComponents")
 typealias GenerateComponents = Boolean
-@Binding(ApplicationComponent::class)
-fun generateComponents(configuration: CompilerConfiguration): GenerateComponents =
+
+@Scoped(ApplicationComponent::class)
+@Binding fun generateComponents(configuration: CompilerConfiguration): GenerateComponents =
     configuration.getNotNull(GenerateComponentsKey)
 
 val GenerateMergeComponentsKey = CompilerConfigurationKey<Boolean>("generateMergeComponents")
 typealias GenerateMergeComponents = Boolean
-@Binding(ApplicationComponent::class)
-fun generateMergeComponents(configuration: CompilerConfiguration): GenerateMergeComponents =
+
+@Scoped(ApplicationComponent::class)
+@Binding fun generateMergeComponents(configuration: CompilerConfiguration): GenerateMergeComponents =
     configuration.getNotNull(GenerateMergeComponentsKey)
 
 val SrcDirKey = CompilerConfigurationKey<String>("srcDir")
 typealias SrcDir = File
-@Binding(ApplicationComponent::class)
-fun srcDir(configuration: CompilerConfiguration): SrcDir =
+
+@Scoped(ApplicationComponent::class)
+@Binding fun srcDir(configuration: CompilerConfiguration): SrcDir =
     File(configuration.getNotNull(SrcDirKey))
         .also { it.mkdirs() }
 
 val CacheDirKey = CompilerConfigurationKey<String>("cacheDir")
 typealias CacheDir = File
-@Binding(ApplicationComponent::class)
-fun cacheDir(configuration: CompilerConfiguration): CacheDir =
+
+@Scoped(ApplicationComponent::class)
+@Binding fun cacheDir(configuration: CompilerConfiguration): CacheDir =
     File(configuration.getNotNull(CacheDirKey))
         .also { it.mkdirs() }

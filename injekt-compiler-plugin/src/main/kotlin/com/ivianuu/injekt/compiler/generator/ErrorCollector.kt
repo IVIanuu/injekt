@@ -1,10 +1,11 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.Scoped
 import com.ivianuu.injekt.compiler.ApplicationComponent
 
-@Binding(ApplicationComponent::class)
-class ErrorCollector {
+@Scoped(ApplicationComponent::class)
+@Binding class ErrorCollector {
 
     private val errors = mutableListOf<Throwable>()
 
