@@ -24,7 +24,6 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.TypeBinding
 import com.ivianuu.injekt.merge.MergeChildComponent
 import com.ivianuu.injekt.merge.MergeInto
 import com.ivianuu.injekt.merge.mergeComponent
@@ -39,22 +38,34 @@ val ComponentActivity.activityComponent: ActivityComponent
 @MergeChildComponent
 abstract class ActivityComponent(@Binding protected val activity: ComponentActivity)
 
-@TypeBinding inline val ComponentActivity.ActivityContext: Context
+typealias ActivityContext = Context
+
+@Binding inline val ComponentActivity.activityContext: ActivityContext
     get() = this
 
-@TypeBinding inline val ComponentActivity.ActivityResources: Resources
+typealias ActivityResources = Resources
+
+@Binding inline val ComponentActivity.activityResources: ActivityResources
     get() = resources
 
-@TypeBinding inline val ComponentActivity.ActivityLifecycleOwner: LifecycleOwner
+typealias ActivityLifecycleOwner = LifecycleOwner
+
+@Binding inline val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
     get() = this
 
-@TypeBinding inline val ComponentActivity.ActivityOnBackPressedDispatcherOwner: OnBackPressedDispatcherOwner
+typealias ActivityOnBackPressedDispatcherOwner = OnBackPressedDispatcherOwner
+
+@Binding inline val ComponentActivity.activityOnBackPressedDispatcherOwner: ActivityOnBackPressedDispatcherOwner
     get() = this
 
-@TypeBinding inline val ComponentActivity.ActivitySavedStateRegistryOwner: SavedStateRegistryOwner
+typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
+
+@Binding inline val ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
     get() = this
 
-@TypeBinding inline val ComponentActivity.ActivityViewModelStoreOwner: ViewModelStoreOwner
+typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
+
+@Binding inline val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
     get() = this
 
 @MergeInto(RetainedActivityComponent::class)

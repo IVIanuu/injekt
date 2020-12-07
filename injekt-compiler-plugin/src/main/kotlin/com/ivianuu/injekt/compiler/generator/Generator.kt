@@ -26,10 +26,6 @@ interface Generator {
     fun generate(files: List<KtFile>)
 }
 
-interface ElementProcessor {
-    fun process(files: List<KtFile>): List<KtFile>
-}
-
 @ChildComponent
 abstract class GenerationComponent(
     @Binding protected val moduleDescriptor: ModuleDescriptor,
@@ -37,5 +33,6 @@ abstract class GenerationComponent(
 ) {
     abstract val fileManager: FileManager
     abstract val componentGenerator: ComponentGenerator
+    abstract val indexGenerator: IndexGenerator
     abstract val errorCollector: ErrorCollector
 }

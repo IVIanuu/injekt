@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.generator.asNameId
 import com.ivianuu.injekt.compiler.generator.findAnnotation
 import com.ivianuu.injekt.compiler.generator.hasAnnotation
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -18,14 +17,11 @@ import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
-import org.jetbrains.kotlin.resolve.constants.KClassValue
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.types.expressions.ExpressionTypingContext
 import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
-import kotlin.reflect.KClass
 
 @Suppress("INVISIBLE_REFERENCE", "EXPERIMENTAL_IS_NOT_ENABLED", "IllegalExperimentalApiUsage")
 @OptIn(org.jetbrains.kotlin.extensions.internal.InternalNonStableExtensionPoints::class)

@@ -50,6 +50,9 @@ annotation class Interceptor
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Qualifier
 
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.TYPE)
+annotation class Deferred
+
 @Target(
     AnnotationTarget.FUNCTION,
     AnnotationTarget.CLASS,
@@ -85,13 +88,3 @@ annotation class Eager
     AnnotationTarget.TYPE
 )
 annotation class Default
-
-@Target(AnnotationTarget.FUNCTION)
-annotation class FunBinding
-
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
-annotation class TypeBinding
-
-@Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class FunApi
-

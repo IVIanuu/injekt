@@ -58,7 +58,6 @@ data class Callable(
     val isInline: Boolean,
     val visibility: DescriptorVisibility,
     val modality: Modality,
-    val isFunBinding: Boolean
 ) {
     enum class ContributionKind {
         BINDING, INTERCEPTOR, MAP_ENTRIES, MODULE, SET_ELEMENTS
@@ -73,7 +72,6 @@ data class ValueParameterRef(
     val originalType: TypeRef,
     val parameterKind: ParameterKind,
     val name: Name,
-    val isFunApi: Boolean,
     val hasDefault: Boolean,
     val defaultExpression: ComponentExpression?
 ) {
@@ -138,8 +136,4 @@ fun AnnotationDescriptor.toQualifierDescriptor(): QualifierDescriptor {
     )
 }
 
-data class FunBindingDescriptor(
-    val callable: Callable,
-    val type: TypeRef,
-    val originalType: TypeRef
-)
+data class Index(val fqName: FqName, val type: String)

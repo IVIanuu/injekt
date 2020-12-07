@@ -29,21 +29,17 @@ object InjektFqNames {
     val ChildComponent = InjektPackage.child("ChildComponent".asNameId())
     val Default = InjektPackage.child("Default".asNameId())
     val Eager = InjektPackage.child("Eager".asNameId())
-    val FunApi = InjektPackage.child("FunApi".asNameId())
-    val FunBinding = InjektPackage.child("FunBinding".asNameId())
     val Interceptor = InjektPackage.child("Interceptor".asNameId())
     val MapEntries = InjektPackage.child("MapEntries".asNameId())
     val Module = InjektPackage.child("Module".asNameId())
     val Qualifier = InjektPackage.child("Qualifier".asNameId())
     val Scoped = InjektPackage.child("Scoped".asNameId())
     val SetElements = InjektPackage.child("SetElements".asNameId())
-    val TypeBinding = InjektPackage.child("TypeBinding".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
     val Index = InternalPackage.child("Index".asNameId())
 
     val IndexPackage = InternalPackage.child("index".asNameId())
-    val FunApiParams = InternalPackage.child("FunApiParams".asNameId())
 
     val MergePackage = InjektPackage.child("merge".asNameId())
 

@@ -18,32 +18,24 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Scoped
-import com.ivianuu.injekt.compiler.ApplicationComponent
 import com.ivianuu.injekt.compiler.CacheDir
 import com.ivianuu.injekt.compiler.SrcDir
 import com.ivianuu.injekt.compiler.log
-import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalFileSystem
-import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalVirtualFile
-import org.jetbrains.kotlin.com.intellij.psi.PsiManager
-import org.jetbrains.kotlin.com.intellij.psi.SingleRootFileViewProvider
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
-@Scoped(ApplicationComponent::class)
+@Scoped(GenerationComponent::class)
 @Binding class FileManager(
     private val srcDir: SrcDir,
     private val cacheDir: CacheDir,
     private val log: log,
-    private val psiManager: PsiManager,
 ) {
     private val originatingFilePaths = mutableMapOf<File, String>()
 
     private val cacheFile = cacheDir.resolve("file_pairs")
 
     val newFiles = mutableListOf<File>()
-
-    private val additionalFiles = mutableListOf<File>()
 
     private var compilingFiles = emptyList<KtFile>()
 
@@ -61,11 +53,6 @@ import java.io.File
         val finalFiles = mutableListOf<KtFile>()
 
         files.forEach { file ->
-            if (additionalFiles.any { it.absolutePath == file.virtualFilePath }) {
-                finalFiles += file
-                return@forEach
-            }
-
             val originatingFilePath = cacheEntries
                 .singleOrNull { it.second == file.virtualFilePath }
                 ?.first
@@ -106,16 +93,12 @@ import java.io.File
         fileName: String,
         originatingFile: KtFile?,
         code: String,
-        forAdditionalSource: Boolean
-    ): KtFile? {
+    ) {
         val newFile = srcDir
             .resolve(packageFqName.asString().replace(".", "/"))
             .also { it.mkdirs() }
             .resolve(fileName)
-            .also {
-                if (forAdditionalSource) additionalFiles += it
-                else newFiles += it
-            }
+            .also { newFiles += it }
         if (originatingFile != null) {
             originatingFilePaths[newFile] = originatingFile.virtualFilePath
         }
@@ -124,18 +107,6 @@ import java.io.File
 
         newFile.createNewFile()
         newFile.writeText(code)
-
-        return if (forAdditionalSource) {
-            val virtualFile = CoreLocalVirtualFile(CoreLocalFileSystem(), newFile)
-            KtFile(
-                object : SingleRootFileViewProvider(
-                    psiManager,
-                    virtualFile
-                ) {
-                },
-                false
-            )
-        } else null
     }
 
     fun postGenerate() {

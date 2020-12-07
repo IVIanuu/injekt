@@ -17,8 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
-import com.ivianuu.injekt.FunBinding
-import com.ivianuu.injekt.compiler.generator.InjektCollectAdditionalSourcesExtension
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.generator.InjektKtGenerationExtension
 import com.ivianuu.injekt.component
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -27,16 +26,12 @@ import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.JVMConfigurationKeys
-import org.jetbrains.kotlin.extensions.CollectAdditionalSourcesExtension
 import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
-import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
-import org.jetbrains.kotlin.resolve.jvm.extensions.PackageFragmentProviderExtension
 import java.io.File
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
-
     override fun registerProjectComponents(
         project: MockProject,
         configuration: CompilerConfiguration,
@@ -65,15 +60,12 @@ class InjektComponentRegistrar : ComponentRegistrar {
     }
 }
 
-@FunBinding fun registerExtensions(
+typealias registerExtensions = () -> Unit
+
+@Binding fun provideRegisterExtensions(
     project: Project,
-    additionalSourcesExtension: InjektCollectAdditionalSourcesExtension,
-    generationExtension: InjektKtGenerationExtension
-) {
-    CollectAdditionalSourcesExtension.registerExtension(
-        project,
-        additionalSourcesExtension
-    )
+    generationExtension: InjektKtGenerationExtension,
+): registerExtensions = {
     AnalysisHandlerExtension.registerExtension(
         project,
         generationExtension

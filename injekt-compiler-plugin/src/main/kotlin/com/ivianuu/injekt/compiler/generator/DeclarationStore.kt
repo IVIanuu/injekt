@@ -30,10 +30,8 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.findClassifierAcrossModuleDependencies
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
-import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.resolve.constants.KClassValue
@@ -42,7 +40,7 @@ import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 
-@Scoped((GenerationComponent::class))
+@Scoped(GenerationComponent::class)
 @Binding class DeclarationStore(val module: ModuleDescriptor) {
 
     fun constructorForComponent(type: TypeRef): Callable? {
@@ -51,8 +49,13 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
             ?.let { callableForDescriptor(it) }
     }
 
+    private val internalIndices = mutableListOf<Index>()
+    fun addInternalIndex(index: Index) {
+        internalIndices += index
+    }
+
     private val allIndices by unsafeLazy {
-        memberScopeForFqName(InjektFqNames.IndexPackage)
+        internalIndices + (memberScopeForFqName(InjektFqNames.IndexPackage)
             ?.getContributedDescriptors(DescriptorKindFilter.VALUES)
             ?.filterIsInstance<PropertyDescriptor>()
             ?.map { indexProperty ->
@@ -60,7 +63,7 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
                 val fqName = annotation.allValueArguments["fqName".asNameId()]!!.value as String
                 val type = annotation.allValueArguments["type".asNameId()]!!.value as String
                 Index(FqName(fqName), type)
-            } ?: emptyList()
+            } ?: emptyList())
     }
 
     private val classIndices by unsafeLazy {
@@ -113,23 +116,6 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
                 propertyIndices
                     .filter { it.hasAnnotation(InjektFqNames.Module) }
                     .map { callableForDescriptor(it.getter!!) }
-    }
-
-    private val allFunBindings by unsafeLazy {
-        functionIndices
-            .filter { it.hasAnnotation(InjektFqNames.FunBinding) }
-            .map {
-                val callable = callableForDescriptor(it)
-                val type = module.findClassifierAcrossModuleDependencies(
-                    ClassId.topLevel(callable.fqName)
-                )!!.toClassifierRef().defaultType
-                FunBindingDescriptor(callable, type, type)
-            }
-    }
-    private val funBindingsByType = mutableMapOf<TypeRef, List<FunBindingDescriptor>>()
-    fun funBindingsForType(type: TypeRef): List<FunBindingDescriptor> = funBindingsByType.getOrPut(type) {
-        allFunBindings
-            .filter { it.type.isAssignableTo(type) }
     }
 
     private val allInterceptors by unsafeLazy {
@@ -295,22 +281,11 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
             else -> descriptor
         }
 
-        val type = (if (owner.hasAnnotation(InjektFqNames.TypeBinding)) {
-            classifierDescriptorForFqName(owner.fqNameSafe)
-                .defaultType
-        } else descriptor.returnType!!).toTypeRef()
-
-        val funApiParams = if (descriptor.hasAnnotation(InjektFqNames.FunBinding)) {
-            module.findClassifierAcrossModuleDependencies(
-                ClassId.topLevel(owner.fqNameSafe)
-            )?.toClassifierRef()?.funApiParams ?: error("Wtf $descriptor")
-        } else emptyList()
-
         Callable(
             name = owner.name,
             packageFqName = descriptor.findPackage().fqName,
             fqName = owner.fqNameSafe,
-            type = type,
+            type = descriptor.returnType!!.toTypeRef(),
             targetComponent = descriptor.targetComponent(module)
                 ?: owner.targetComponent(module),
             scoped = descriptor.hasAnnotationWithPropertyAndClass(InjektFqNames.Scoped),
@@ -331,7 +306,6 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
                         originalType = parameterType,
                         parameterKind = ValueParameterRef.ParameterKind.DISPATCH_RECEIVER,
                         name = "_dispatchReceiver".asNameId(),
-                        isFunApi = false,
                         hasDefault = false,
                         defaultExpression = null
                     )
@@ -343,7 +317,6 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
                         originalType = parameterType,
                         parameterKind = ValueParameterRef.ParameterKind.EXTENSION_RECEIVER,
                         name = "_extensionReceiver".asNameId(),
-                        isFunApi = "_extensionReceiver" in funApiParams.map { it.asString() },
                         hasDefault = false,
                         defaultExpression = null
                     )
@@ -355,7 +328,6 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
                     originalType = parameterType,
                     parameterKind = ValueParameterRef.ParameterKind.VALUE_PARAMETER,
                     name = it.name,
-                    isFunApi = it.name in funApiParams,
                     hasDefault = it.declaresDefaultValue(),
                     defaultExpression = if (!it.declaresDefaultValue()) null else ({
                         emit((it.findPsi() as KtParameter).defaultValue!!.text)
@@ -373,8 +345,7 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
             } else Callable.CallableKind.DEFAULT,
             isInline = descriptor.isInline,
             visibility = descriptor.visibility,
-            modality = descriptor.modality,
-            isFunBinding = descriptor.hasAnnotation(InjektFqNames.FunBinding)
+            modality = descriptor.modality
         )
     }
 

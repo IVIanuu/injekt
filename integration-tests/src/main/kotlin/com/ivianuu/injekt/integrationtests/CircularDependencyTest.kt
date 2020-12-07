@@ -60,28 +60,13 @@ class CircularDependencyTest {
     )
 
     @Test
-    fun testFunBindingBreaksCircularDependency() = codegen(
-        """
-            @FunBinding fun A(b: B) {
-            }
-            
-            @FunBinding fun B(a: A) {
-            }
-            
-            @Component abstract class MyComponent {
-                abstract val b: B
-            }
-        """
-    )
-
-    @Test
     fun testLazyRequestInSetBreaksCircularDependency() = codegen(
         """
-            @FunBinding fun A(b: B) {
-            }
+            typealias A = () -> Unit
+            @Binding fun A(b: () -> B): A = { }
             
-            @FunBinding fun B(a: A) {
-            }
+            typealias B = () -> Unit
+            @Binding fun B(a: () -> A): B = { }
             
             @SetElements fun set(a: A, b: B): Set<Any> = setOf(a, b)
             
@@ -94,11 +79,11 @@ class CircularDependencyTest {
     @Test
     fun testLazyRequestInMapBreaksCircularDependency() = codegen(
         """
-            @FunBinding fun A(b: B) {
-            }
+            typealias A = () -> Unit
+            @Binding fun A(b: () -> B): A = { }
             
-            @FunBinding fun B(a: A) {
-            }
+            typealias B = () -> Unit
+            @Binding fun B(a: () -> A): B = { }
             
             @MapEntries fun map(a: A, b: B): Map<String, Any> = mapOf("a" to a, "b" to b)
             
@@ -115,11 +100,11 @@ class CircularDependencyTest {
                 return factory
             }
             
-            @FunBinding fun A(b: B) {
-            }
+            typealias A = () -> Unit
+            @Binding fun A(b: () -> B): A = { }
             
-            @FunBinding fun B(a: A) {
-            }
+            typealias B = () -> Unit
+            @Binding fun B(a: () -> A): B = { }
             
             @MapEntries fun map(a: A, b: B): Map<String, Any> = mapOf("a" to a, "b" to b)
             

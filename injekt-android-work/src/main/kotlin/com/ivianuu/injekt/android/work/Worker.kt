@@ -23,9 +23,7 @@ import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Default
 import com.ivianuu.injekt.MapEntries
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.SetElements
-import com.ivianuu.injekt.alias
 import kotlin.reflect.KClass
 
 inline fun <reified T : ListenableWorker> worker(): @MapEntries ((Context, WorkerParameters) -> T) -> Workers =
@@ -36,7 +34,8 @@ typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters
 @Suppress("NOTHING_TO_INLINE")
 @Default @SetElements inline fun defaultWorkers(): Workers = emptyMap()
 
-@Module val InjektWorkerFactoryModule = alias<InjektWorkerFactory, WorkerFactory>()
+@Binding val InjektWorkerFactory.workerFactory: WorkerFactory get() = this
+
 @Binding class InjektWorkerFactory(workersFactory: () -> Workers) : WorkerFactory() {
     private val workers by lazy(workersFactory)
     override fun createWorker(

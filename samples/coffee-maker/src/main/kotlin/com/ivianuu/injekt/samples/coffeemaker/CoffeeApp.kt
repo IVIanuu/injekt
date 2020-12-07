@@ -18,7 +18,6 @@ package com.ivianuu.injekt.samples.coffeemaker
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.FunBinding
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Scoped
 import com.ivianuu.injekt.alias
@@ -29,7 +28,9 @@ fun main() {
     component.brewCoffee()
 }
 
-@FunBinding fun brewCoffee(heater: Heater, pump: Pump) {
+typealias brewCoffee = () -> Unit
+
+@Binding fun provideBrewCoffee(heater: Heater, pump: Pump): brewCoffee = {
     heater.on()
     pump.pump()
     println(" [_]P coffee! [_]P ")

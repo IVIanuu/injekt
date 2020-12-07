@@ -256,29 +256,6 @@ class CallableBindingNode(
     }
 }
 
-class FunBindingNode(
-    type: TypeRef,
-    override val rawType: TypeRef,
-    override val owner: ComponentImpl,
-    override val dependencies: List<BindingRequest>,
-    val callable: Callable
-) : BindingNode(type, Callable.CallableKind.DEFAULT, true) {
-    override val targetComponent: TypeRef?
-        get() = callable.targetComponent
-    override val scoped: Boolean
-        get() = false
-    override val origin: FqName
-        get() = callable.fqName
-    override val inline: Boolean
-        get() = false
-
-    override fun refineType(dependencyBindings: List<BindingNode>) {
-        super.refineType(dependencyBindings)
-        val substitutionMap = callable.type.getStarSubstitutionMap(type)
-        _type = _type.substitute(substitutionMap)
-    }
-}
-
 class MapBindingNode(
     type: TypeRef,
     override val owner: ComponentImpl,

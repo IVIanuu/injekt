@@ -135,7 +135,6 @@ import org.jetbrains.kotlin.name.Name
             is AssistedBindingNode -> assistedExpression(binding)
             is ChildComponentBindingNode -> childFactoryExpression(binding)
             is CallableBindingNode -> callableExpression(binding)
-            is FunBindingNode -> funBindingExpression(binding)
             is InputBindingNode -> inputExpression(binding)
             is MapBindingNode -> mapExpression(binding)
             is MissingBindingNode -> if (binding.type.isMarkedNullable) {
@@ -250,46 +249,6 @@ import org.jetbrains.kotlin.name.Name
                 }
             }
             emitLine(")")
-        }
-
-        emit("}")
-    }
-
-    private fun funBindingExpression(binding: FunBindingNode): ComponentExpression = {
-        emit("{ ")
-
-        val funApiParameters = binding.callable.valueParameters
-            .filter { it.isFunApi }
-
-        funApiParameters
-            .filterNot { it.parameterKind == ValueParameterRef.ParameterKind.EXTENSION_RECEIVER }
-            .forEachIndexed { index, param ->
-                emit("${param.name}: ${param.type.render(expanded = true)}")
-                if (index != funApiParameters.lastIndex) emit(", ")
-            }
-        emitLine(" ->")
-
-        indented {
-            emitCallableInvocation(
-                callable = binding.callable,
-                type = binding.type.fullyExpandedType.typeArguments.last(),
-                arguments = binding.callable.valueParameters.mapNotNull { valueParameter ->
-                    if (valueParameter in funApiParameters) {
-                        val expression: ComponentExpression = {
-                            if (valueParameter.parameterKind == ValueParameterRef.ParameterKind.EXTENSION_RECEIVER) emit("this")
-                            else emit(valueParameter.name)
-                        }
-                        valueParameter to (valueParameter.type to expression)
-                    } else {
-                        val request = with(owner.graph) {
-                            valueParameter.toBindingRequest(binding.callable, emptyMap())
-                        }
-                        val dependencyBinding = owner.graph.getBinding(request)
-                        if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                        valueParameter to (dependencyBinding.type to getBindingExpression(request))
-                    }
-                }.toMap()
-            )
         }
 
         emit("}")

@@ -17,8 +17,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.FunApi
-import com.ivianuu.injekt.FunBinding
 
 var loggingEnabled = true
 
@@ -34,9 +32,6 @@ object LoggerImpl : Logger {
 
 @Binding fun logger(): Logger? = if (loggingEnabled) LoggerImpl else null
 
-@FunBinding fun log(
-    logger: Logger?,
-    @FunApi msg: () -> String,
-) {
-    logger?.log(msg())
-}
+typealias log = (() -> String) -> Unit
+
+@Binding fun provideLog(logger: Logger?): log = { logger?.log(it()) }

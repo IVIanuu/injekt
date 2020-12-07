@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.generator.Callable
 import com.ivianuu.injekt.compiler.generator.ClassifierRef
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.ErrorCollector
-import com.ivianuu.injekt.compiler.generator.FunBindingDescriptor
 import com.ivianuu.injekt.compiler.generator.ModuleDescriptor
 import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
 import com.ivianuu.injekt.compiler.generator.TypeRef
@@ -546,10 +545,6 @@ import org.jetbrains.kotlin.name.Name
             )
         }
 
-        this += declarationStore.funBindingsForType(request.type)
-            .filter { it.callable.targetComponent.checkComponent() }
-            .map { it.toFunBindingNode(request) }
-
         if ((request.type.isFunction || request.type.isSuspendFunction) &&
             request.type.typeArguments.last().let {
                 !it.isChildComponent && !it.isMergeChildComponent
@@ -577,8 +572,7 @@ import org.jetbrains.kotlin.name.Name
                     callableKind = request.type.callableKind,
                     isInline = true,
                     visibility = DescriptorVisibilities.INTERNAL,
-                    modality = Modality.FINAL,
-                    isFunBinding = false
+                    modality = Modality.FINAL
                 )
                 val childComponent = componentImplFactory(
                     childComponentType,
@@ -699,7 +693,6 @@ import org.jetbrains.kotlin.name.Name
     ): List<BindingRequest> {
         val substitutionMap = getSubstitutionMap(listOf(type to this.type))
         return valueParameters
-            .filter { !it.isFunApi }
             .map { it.toBindingRequest(this, substitutionMap) }
             .filter { !isInterceptor || it.type != this.type.substitute(substitutionMap) }
     }
@@ -776,30 +769,18 @@ import org.jetbrains.kotlin.name.Name
         )
     }
 
-    private fun FunBindingDescriptor.toFunBindingNode(request: BindingRequest): FunBindingNode {
-        val substitutionMap = getSubstitutionMap(listOf(request.type to type))
-        val finalCallable = callable.substitute(substitutionMap)
-        return FunBindingNode(
-            type = request.type.substituteStars(type),
-            rawType = originalType,
-            owner = owner,
-            dependencies = finalCallable.getDependencies(request.type, false),
-            callable = finalCallable
-        )
-    }
-
-    fun ValueParameterRef.toBindingRequest(
+    private fun ValueParameterRef.toBindingRequest(
         callable: Callable,
-        substitutionMap: Map<ClassifierRef, TypeRef>
+        substitutionMap: Map<ClassifierRef, TypeRef>,
     ): BindingRequest = BindingRequest(
         type = type.substitute(substitutionMap)
             .replaceTypeParametersWithStars(),
         origin = callable.fqName.child(name),
         required = !hasDefault,
         callableKind = callable.callableKind,
-        lazy = callable.isFunBinding,
         forObjectCall = parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER &&
-                type.classifier.isObject
+                type.classifier.isObject,
+        lazy = false
     )
 
     private fun TypeRef.makeNonNullIfPossible(callable: Callable): TypeRef {

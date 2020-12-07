@@ -85,6 +85,7 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtensi
         generationComponent.errorCollector.report()
 
         val generators = listOfNotNull(
+            generationComponent.indexGenerator,
             if (generateComponents || generateMergeComponents)
                 generationComponent.componentGenerator else null
         )

@@ -28,7 +28,6 @@ import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
@@ -42,12 +41,10 @@ data class ClassifierRef(
     val fqName: FqName,
     val typeParameters: List<ClassifierRef> = emptyList(),
     val superTypes: List<TypeRef> = emptyList(),
-    // todo make read only
-    var expandedType: TypeRef? = null,
+    val expandedType: TypeRef? = null,
     val isTypeParameter: Boolean = false,
     val isObject: Boolean = false,
     val isTypeAlias: Boolean = false,
-    var funApiParams: List<Name> = emptyList()
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
     override fun hashCode(): Int = fqName.hashCode()
@@ -91,16 +88,7 @@ fun ClassifierDescriptor.toClassifierRef(): ClassifierRef = ClassifierRef(
     expandedType = (original as? TypeAliasDescriptor)?.expandedType?.toTypeRef()?.fullyExpandedType,
     isTypeParameter = this is TypeParameterDescriptor,
     isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
-    isTypeAlias = this is TypeAliasDescriptor,
-    funApiParams = annotations.findAnnotation(InjektFqNames.FunApiParams)
-        ?.allValueArguments
-        ?.values
-        ?.single()
-        ?.let { it as ArrayValue }
-        ?.value
-        ?.map { it.value as String }
-        ?.map { it.asNameId() }
-        ?: emptyList()
+    isTypeAlias = this is TypeAliasDescriptor
 )
 
 sealed class TypeRef {
@@ -171,7 +159,7 @@ class KotlinTypeRef(
     }
     private val finalType by unsafeLazy { kotlinType.getAbbreviation() ?: kotlinType.prepare() }
     override val classifier: ClassifierRef by unsafeLazy {
-        finalType.constructor.declarationDescriptor!!.let { it.toClassifierRef() }
+        finalType.constructor.declarationDescriptor!!.toClassifierRef()
     }
     override val isFunction: Boolean by unsafeLazy {
         finalType.isFunctionType
