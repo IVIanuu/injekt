@@ -2,9 +2,11 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.setGenerateMergeComponents
 import com.ivianuu.injekt.test.source
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LambdaContributionsTest {
@@ -115,7 +117,8 @@ class LambdaContributionsTest {
     @Test
     fun testInterceptorLambda() = codegen(
         """
-            fun <T> interceptorFactory(): @Interceptor (() -> T) -> () -> T = { it }
+            var called = false
+            fun <T> interceptorFactory(): @Interceptor (() -> T) -> () -> T = { called = true; it }
            
             @Module val fooInterceptorModule = interceptorFactory<Foo>()
 
@@ -124,8 +127,45 @@ class LambdaContributionsTest {
             @Component abstract class MyComponent {
                 abstract val foo: Foo
             }
+
+            fun invoke(): Boolean {
+                component<MyComponent>().foo
+                return called
+            }
         """
-    )
+    ) {
+        assertTrue(invokeSingleFile<Boolean>())
+    }
+
+    @Test
+    fun testMultipleInterceptorLambdas() = codegen(
+        """
+            var calledA = false
+            fun <T> interceptorFactoryA(): @Interceptor (() -> T) -> () -> T = { calledA = true; it }
+            var calledB = false
+            fun <T> interceptorFactoryB(): @Interceptor (() -> T) -> () -> T = { calledB = true; it }
+
+            @Module val fooInterceptorModule = moduleOf(
+                interceptorFactoryA<Foo>(),
+                interceptorFactoryB<Foo>()
+            )
+
+            @Binding fun foo() = Foo()
+
+            @Component abstract class MyComponent {
+                abstract val foo: Foo
+            }
+
+            fun invoke(): Pair<Boolean, Boolean> {
+                component<MyComponent>().foo
+                return calledA to calledB
+            }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Boolean, Boolean>>()
+        assertTrue(a)
+        assertTrue(b)
+    }
 
     @Test
     fun testModuleLambda() = codegen(

@@ -308,7 +308,7 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
                             type = parameterType,
                             originalType = parameterType,
                             parameterKind = ValueParameterRef.ParameterKind.DISPATCH_RECEIVER,
-                            name = "_dispatchReceiver".asNameId(),
+                            name = "\$dispatchReceiver".asNameId(),
                             hasDefault = false,
                             defaultExpression = null
                         )
@@ -319,7 +319,7 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
                             type = parameterType,
                             originalType = parameterType,
                             parameterKind = ValueParameterRef.ParameterKind.EXTENSION_RECEIVER,
-                            name = "_extensionReceiver".asNameId(),
+                            name = "\$receiver".asNameId(),
                             hasDefault = false,
                             defaultExpression = null
                         )
