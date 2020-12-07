@@ -339,12 +339,7 @@ import org.jetbrains.kotlin.name.Name
 
         errorCollector.add(
             buildString {
-                var indendation = ""
-                fun indent() {
-                    indendation = "$indendation    "
-                }
                 appendLine("No binding found for '${request.type.render()}':")
-
                 chain.reversed().forEachIndexed { index, request ->
                     append("'${request.type.render()}' ")
                     if (index == chain.lastIndex) appendLine("is provided at")
