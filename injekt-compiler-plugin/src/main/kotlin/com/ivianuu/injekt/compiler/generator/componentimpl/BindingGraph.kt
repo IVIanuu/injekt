@@ -243,19 +243,29 @@ import org.jetbrains.kotlin.name.Name
 
         // we mark all scoped dependencies of the binding as eager
         // to avoid to create additional properties for their instances
-        if (binding.scoped && binding.eager && binding.owner == owner)
-            makeAllScopedDependenciesEager(binding)
+        markDependenciesAndInterceptorsAsEager(binding)
     }
 
-    private fun makeAllScopedDependenciesEager(binding: BindingNode) {
-        binding
-            .dependencies
+    private fun markDependenciesAndInterceptorsAsEager(binding: BindingNode) {
+        if (binding.scoped && binding.eager && binding.owner == owner) {
+            markScopedRequestsAsEager(binding.dependencies)
+        }
+        // interceptors will be eagerly created so
+        // mark each of their dependencies as eager
+        markScopedRequestsAsEager(
+            binding.interceptors
+                .flatMap { it.dependencies }
+        )
+    }
+
+    private fun markScopedRequestsAsEager(requests: List<BindingRequest>) {
+        requests
             .filterNot { it.lazy || it.type == owner.componentType }
             .map { getBinding(it) }
             .filter { it.scoped && !it.eager && it.owner == owner }
             .forEach {
                 it.eager = true
-                makeAllScopedDependenciesEager(it)
+                markDependenciesAndInterceptorsAsEager(it)
             }
     }
 
