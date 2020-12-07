@@ -150,8 +150,13 @@ import org.jetbrains.kotlin.name.Name
 
         val maybeScopedExpression = if (binding.targetComponent == null || binding.eager)
             rawExpression else
-            scoped(binding.type, binding.callableKind, false,
-                binding.targetComponent!!, binding.interceptors.isNotEmpty(), rawExpression)
+            scoped(
+                type = binding.type,
+                callableKind = binding.callableKind,
+                scopeComponentType = binding.targetComponent!!,
+                clearProvider = binding.interceptors.isNotEmpty(),
+                create = rawExpression
+            )
 
         val maybeInterceptedExpression = if (binding.interceptors.isEmpty()) maybeScopedExpression
         else intercepted(binding.type, binding.callableKind, binding.interceptors, !binding.eager,
@@ -211,8 +216,12 @@ import org.jetbrains.kotlin.name.Name
                 emitLine(".invoke()")
             }
             if (binding.scoped) {
-                scoped(binding.type.typeArguments.last(), binding.callableKind, false,
-                    binding.targetComponent!!, false) {
+                scoped(
+                    type = binding.type.typeArguments.last(),
+                    callableKind = binding.callableKind,
+                    scopeComponentType = binding.targetComponent!!,
+                    clearProvider = false
+                ) {
                     emitNewInstance()
                 }
             } else {
@@ -291,30 +300,42 @@ import org.jetbrains.kotlin.name.Name
     }
 
     private fun mapExpression(binding: MapBindingNode): ComponentExpression = {
-        fun Callable.emit() {
-            emitCallableInvocation(
-                this,
-                binding.type,
-                valueParameters
-                    .mapNotNull { parameter ->
-                        val requests = binding.dependenciesByEntry[this]!!
-                        val request = requests.first { it.origin.shortName() == parameter.name }
-                        val dependencyBinding = owner.graph.getBinding(request)
-                        if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                        parameter to (dependencyBinding.type to getBindingExpression(request))
-                    }
-                    .toMap()
-            )
+        fun Callable.emitCallableExpression(index: Int) {
+            val rawExpression: ComponentExpression = {
+                emitCallableInvocation(
+                    this@emitCallableExpression,
+                    binding.type,
+                    valueParameters
+                        .mapNotNull { parameter ->
+                            val requests =
+                                binding.dependenciesByEntry[this@emitCallableExpression]!!
+                            val request = requests.first { it.origin.shortName() == parameter.name }
+                            val dependencyBinding = owner.graph.getBinding(request)
+                            if (dependencyBinding is MissingBindingNode) return@mapNotNull null
+                            parameter to (dependencyBinding.type to getBindingExpression(request))
+                        }
+                        .toMap()
+                )
+            }
+
+            (if (targetComponent != null) scoped(
+                type = binding.type,
+                callableKind = callableKind,
+                scopeComponentType = targetComponent,
+                clearProvider = false,
+                prefix = "mapEntries_${index}_",
+                create = rawExpression
+            ) else rawExpression)()
         }
         if (binding.entries.size == 1) {
-            binding.entries.single().emit()
+            binding.entries.single().emitCallableExpression(0)
         } else {
             emit("mutableMapOf<${binding.type.fullyExpandedType.typeArguments[0].render(expanded = true)}, " +
                     "${binding.type.fullyExpandedType.typeArguments[1].render(expanded = true)}>().also ")
             braced {
-                binding.entries.forEach { entry ->
+                binding.entries.forEachIndexed { index, entry ->
                     emit("it.putAll(")
-                    entry.emit()
+                    entry.emitCallableExpression(index)
                     emitLine(")")
                 }
             }
@@ -322,29 +343,41 @@ import org.jetbrains.kotlin.name.Name
     }
 
     private fun setExpression(binding: SetBindingNode): ComponentExpression = {
-        fun Callable.emit() {
-            emitCallableInvocation(
-                this,
-                binding.type,
-                valueParameters
-                    .mapNotNull { parameter ->
-                        val requests = binding.dependenciesByElement[this]!!
-                        val request = requests.first { it.origin.shortName() == parameter.name }
-                        val dependencyBinding = owner.graph.getBinding(request)
-                        if (dependencyBinding is MissingBindingNode) return@mapNotNull null
-                        parameter to (dependencyBinding.type to getBindingExpression(request))
-                    }
-                    .toMap()
-            )
+        fun Callable.emitCallableExpression(index: Int) {
+            val rawExpression: ComponentExpression = {
+                emitCallableInvocation(
+                    this@emitCallableExpression,
+                    binding.type,
+                    valueParameters
+                        .mapNotNull { parameter ->
+                            val requests =
+                                binding.dependenciesByElement[this@emitCallableExpression]!!
+                            val request = requests.first { it.origin.shortName() == parameter.name }
+                            val dependencyBinding = owner.graph.getBinding(request)
+                            if (dependencyBinding is MissingBindingNode) return@mapNotNull null
+                            parameter to (dependencyBinding.type to getBindingExpression(request))
+                        }
+                        .toMap()
+                )
+            }
+
+            (if (targetComponent != null) scoped(
+                type = binding.type,
+                callableKind = callableKind,
+                scopeComponentType = targetComponent,
+                clearProvider = false,
+                prefix = "setElements_${index}_",
+                create = rawExpression
+            ) else rawExpression)()
         }
         if (binding.elements.size == 1) {
-            binding.elements.single().emit()
+            binding.elements.single().emitCallableExpression(0)
         } else {
             emit("mutableSetOf<${binding.type.fullyExpandedType.typeArguments[0].render(expanded = true)}>().also ")
             braced {
-                binding.elements.forEach { element ->
+                binding.elements.forEachIndexed { index, element ->
                     emit("it.addAll(")
-                    element.emit()
+                    element.emitCallableExpression(index)
                     emitLine(")")
                 }
             }
@@ -468,10 +501,10 @@ import org.jetbrains.kotlin.name.Name
     private fun scoped(
         type: TypeRef,
         callableKind: Callable.CallableKind,
-        frameworkType: Boolean,
         scopeComponentType: TypeRef,
         clearProvider: Boolean,
-        create: ComponentExpression
+        prefix: String = "",
+        create: ComponentExpression,
     ): ComponentExpression {
         var scopeComponent = owner
         while(!scopeComponent.componentType.isAssignableTo(scopeComponentType)) {
@@ -479,7 +512,7 @@ import org.jetbrains.kotlin.name.Name
         }
         val scopeComponentExpression = componentExpression(scopeComponent)
 
-        val name = "${if (frameworkType) "_" else ""}_${type.uniqueTypeName()}".asNameId()
+        val name = "${prefix}_${type.uniqueTypeName()}".asNameId()
         val cacheProperty = scopeComponent.members.firstOrNull {
             it is ComponentCallable && it.name == name
         } as? ComponentCallable ?: ComponentCallable(
@@ -510,11 +543,11 @@ import org.jetbrains.kotlin.name.Name
                 initializer = null,
                 isMutable = true,
                 body = scoped(
-                    mutexType,
-                    Callable.CallableKind.DEFAULT,
-                    true,
-                    scopeComponentType,
-                    false
+                    type = mutexType,
+                    callableKind = Callable.CallableKind.DEFAULT,
+                    scopeComponentType = scopeComponentType,
+                    clearProvider = false,
+                    prefix = "_"
                 ) {
                     emit("${InjektFqNames.Mutex}()")
                 },

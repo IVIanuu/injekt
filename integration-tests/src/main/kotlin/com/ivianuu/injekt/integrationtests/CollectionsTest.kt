@@ -23,6 +23,8 @@ import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertNotSame
+import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 import kotlin.reflect.KClass
@@ -202,6 +204,38 @@ class CollectionsTest {
     )
 
     @Test
+    fun testScopedMap() = codegen(
+        """
+            @Binding 
+            fun commandA() = CommandA()
+            
+            @Scoped(MapComponent::class)
+            @MapEntries fun commandAIntoMap(
+                commandA: CommandA
+            ): Map<KClass<out Command>, Command> = mapOf(CommandA::class to commandA)
+            
+            @Component abstract class MapComponent {
+                abstract val map: Map<KClass<out Command>, Command>
+                
+                @Binding protected fun commandB() = CommandB()
+        
+                @MapEntries protected fun commandBIntoMap(
+                    commandB: CommandB
+                ): Map<KClass<out Command>, Command> = mapOf(CommandB::class to commandB)
+            }
+            
+            fun invoke(): Pair<Map<KClass<out Command>, Command>, Map<KClass<out Command>, Command>> {
+                val component = component<MapComponent>()
+                return component.map to component.map
+            }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Map<KClass<out Command>, Command>, Map<KClass<out Command>, Command>>>()
+        assertSame(a[CommandA::class], b[CommandA::class])
+        assertNotSame(a[CommandB::class], b[CommandB::class])
+    }
+
+    @Test
     fun testSimpleSet() = codegen(
         """
             @Binding 
@@ -328,5 +362,33 @@ class CollectionsTest {
             }
         """
     )
+
+    @Test
+    fun testScopedSet() = codegen(
+        """
+            @Binding fun commandA() = CommandA()
+            
+            @Scoped(SetComponent::class)
+            @SetElements fun commandAIntoSet(commandA: CommandA): Set<Command> = setOf(commandA)
+            
+            @Component abstract class SetComponent {
+                abstract val set: Set<Command>
+                
+                @Binding protected fun commandB() = CommandB()
+                
+                @SetElements protected fun commandBIntoSet(commandB: CommandB): Set<Command> = setOf(commandB)
+            }
+         
+            fun invoke(): Pair<Set<Command>, Set<Command>> {
+                val component = component<SetComponent>()
+                return component.set to component.set
+            }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Set<Command>, Set<Command>>>()
+            .let { it.first.toList() to it.second.toList() }
+        assertSame(a[0], b[0])
+        assertNotSame(a[1], b[1])
+    }
 
 }
