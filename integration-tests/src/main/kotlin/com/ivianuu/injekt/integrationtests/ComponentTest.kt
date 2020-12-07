@@ -153,7 +153,7 @@ class ComponentTest {
         """
             @Component abstract class MyComponent { 
                 abstract val foo: Foo
-                @Scoped(MyComponent::class)
+                @Scoped
                 @Binding protected fun foo() = Foo()
             }
         

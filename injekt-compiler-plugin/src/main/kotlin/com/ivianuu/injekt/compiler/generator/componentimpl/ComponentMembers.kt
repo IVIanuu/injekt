@@ -147,12 +147,12 @@ import org.jetbrains.kotlin.name.Name
             is SetBindingNode -> setExpression(binding)
         }
 
-        val maybeScopedExpression = if (binding.targetComponent == null || binding.eager)
+        val maybeScopedExpression = if (!binding.scoped || binding.eager)
             rawExpression else
             scoped(
                 type = binding.type,
                 callableKind = binding.callableKind,
-                scopeComponentType = binding.targetComponent!!,
+                scopeComponentType = binding.targetComponent,
                 clearProvider = binding.interceptors.isNotEmpty(),
                 create = rawExpression
             )
@@ -463,14 +463,16 @@ import org.jetbrains.kotlin.name.Name
     private fun scoped(
         type: TypeRef,
         callableKind: Callable.CallableKind,
-        scopeComponentType: TypeRef,
+        scopeComponentType: TypeRef?,
         clearProvider: Boolean,
         prefix: String = "",
         create: ComponentExpression,
     ): ComponentExpression {
         var scopeComponent = owner
-        while (!scopeComponent.componentType.isAssignableTo(scopeComponentType)) {
-            scopeComponent = scopeComponent.parent!!
+        if (scopeComponentType != null) {
+            while (!scopeComponent.componentType.isAssignableTo(scopeComponentType)) {
+                scopeComponent = scopeComponent.parent!!
+            }
         }
         val scopeComponentExpression = componentExpression(scopeComponent)
 
