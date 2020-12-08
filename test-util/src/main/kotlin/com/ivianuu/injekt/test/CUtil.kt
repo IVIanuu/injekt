@@ -112,7 +112,6 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
     jvmTarget = "1.8"
     verbose = false
     kotlincArguments += "-XXLanguage:+NewInference"
-    block()
     pluginOptions += PluginOption(
         "com.ivianuu.injekt",
         "srcDir",
@@ -125,6 +124,7 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
     )
     setGenerateComponents(true)
     setGenerateMergeComponents(false)
+    block()
 }
 
 fun KotlinCompilation.setGenerateComponents(value: Boolean) {
