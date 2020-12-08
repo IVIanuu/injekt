@@ -39,23 +39,26 @@ import com.ivianuu.injekt.compiler.generator.substitute
 import com.ivianuu.injekt.compiler.generator.substituteStars
 import com.ivianuu.injekt.compiler.generator.toClassifierRef
 import com.ivianuu.injekt.compiler.generator.typeWith
+import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import com.ivianuu.injekt.compiler.generator.unsafeLazy
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+
 
 @Binding class BindingGraph(
     private val owner: ComponentImpl,
     private val declarationStore: DeclarationStore,
     private val componentImplFactory: (
-        TypeRef,
+        ComponentType?,
+        Callable?,
+        ScopeType?,
         ComponentFactoryType,
         Name,
         List<TypeRef>,
-        List<Callable>,
+        Boolean,
         @Parent ComponentImpl?,
     ) -> ComponentImpl,
     private val errorCollector: ErrorCollector,
@@ -98,21 +101,55 @@ import org.jetbrains.kotlin.name.Name
     private val collectedModules = mutableSetOf<TypeRef>()
 
     init {
-        declarationStore.moduleForType(owner.componentType)
-            .collectContributions(
-                path = listOf(owner.componentType.classifier.fqName),
-                addBinding = { explicitBindings += it },
-                addInterceptor = { explicitInterceptors += it },
-                addMapEntries = {
-                    explicitMapEntries.getOrPut(it.type) { mutableListOf() } += it
-                },
-                addSetElements = {
-                    explicitSetElements.getOrPut(it.type) { mutableListOf() } += it
-                }
-            )
+        explicitBindings += owner.inputTypes
+            .map {
+                Callable(
+                    FqName.ROOT,
+                    FqName.ROOT,
+                    "i_${it.uniqueTypeName()}".asNameId(),
+                    it,
+                    it,
+                    emptyList(),
+                    listOf(
+                        ValueParameterRef(
+                            owner.type,
+                            owner.type,
+                            ValueParameterRef.ParameterKind.DISPATCH_RECEIVER,
+                            "\$dispatchReceiver".asNameId(),
+                            false,
+                            null
+                        )
+                    ),
+                    null,
+                    false,
+                    false,
+                    false,
+                    null,
+                    false,
+                    Callable.CallableKind.DEFAULT,
+                    false,
+                    Modality.FINAL
+                )
+            }
+
+        owner.inputTypes
+            .map { it to declarationStore.moduleForType(it) }
+            .forEach { (origin, explicitModule) ->
+                explicitModule.collectContributions(
+                    path = listOf(origin.classifier.fqName),
+                    addBinding = { explicitBindings += it },
+                    addInterceptor = { explicitInterceptors += it },
+                    addMapEntries = {
+                        explicitMapEntries.getOrPut(it.type) { mutableListOf() } += it
+                    },
+                    addSetElements = {
+                        explicitSetElements.getOrPut(it.type) { mutableListOf() } += it
+                    }
+                )
+            }
 
         declarationStore.allModules
-            .filter { it.targetComponent.checkComponent() }
+            .filter { it.targetComponent.checkScope() }
             .map { it to declarationStore.moduleForType(it.type) }
             .forEach { (origin, implicitModule) ->
                 implicitModule.collectContributions(
@@ -236,7 +273,10 @@ import org.jetbrains.kotlin.name.Name
 
         binding.refineType(binding.dependencies.map { getBinding(it) })
 
-        binding.interceptors = if (binding !is SelfBindingNode)
+        binding.interceptors = if (binding !is SelfBindingNode &&
+            (binding !is CallableBindingNode ||
+                    binding.callable.contributionKind != Callable.ContributionKind.MODULE)
+        )
             getInterceptorsForType(binding.type, binding.callableKind)
         else emptyList()
 
@@ -315,7 +355,8 @@ import org.jetbrains.kotlin.name.Name
         }
         chain.push(request)
         val binding = getBinding(request)
-        if (request.type == owner.assistedRequests.singleOrNull()?.type &&
+        if (owner.isAssisted &&
+            request.type == owner.requests.singleOrNull()?.type &&
             binding is CallableBindingNode &&
             binding.eager
         ) {
@@ -383,7 +424,6 @@ import org.jetbrains.kotlin.name.Name
     }
 
     private fun getBindingOrNull(request: BindingRequest): BindingNode? {
-        println()
         var binding = resolvedBindings[request.type]
         if (binding != null) return binding
 
@@ -474,15 +514,6 @@ import org.jetbrains.kotlin.name.Name
         request: BindingRequest,
         default: Boolean,
     ): List<BindingNode> = buildList<BindingNode> {
-        this += owner.additionalInputTypes
-            .filter { it.isAssignableTo(request.type) }
-            .map {
-                InputBindingNode(
-                    type = it,
-                    owner = owner
-                )
-            }
-
         this += explicitBindings
             .filter { it.default == default }
             .filter { it.type.isAssignableTo(request.type) }
@@ -494,7 +525,7 @@ import org.jetbrains.kotlin.name.Name
         request: BindingRequest,
     ): List<BindingNode> = buildList<BindingNode> {
         this += parent.explicitBindings
-            .filter { it.targetComponent.checkComponent() }
+            .filter { it.targetComponent.checkScope() }
             .filter { it.type.isAssignableTo(request.type) }
             .map { it.toCallableBindingNode(request) }
     }
@@ -505,7 +536,7 @@ import org.jetbrains.kotlin.name.Name
     ): List<BindingNode> = buildList<BindingNode> {
         this += declarationStore.bindingsForType(request.type)
             .filter { it.default == default }
-            .filter { it.targetComponent.checkComponent() }
+            .filter { it.targetComponent.checkScope() }
             .map { it.toCallableBindingNode(request) }
         this += implicitBindings
             .filter { it.default == default }
@@ -515,7 +546,9 @@ import org.jetbrains.kotlin.name.Name
 
     private fun getImplicitFrameworkBindingsForType(request: BindingRequest): List<BindingNode> =
         buildList<BindingNode> {
-            if (request.type == owner.componentType) {
+            if (request.type == owner.componentType ||
+                request.type == owner.type
+            ) {
                 this += SelfBindingNode(
                     type = SimpleTypeRef(
                         classifier = ClassifierRef(
@@ -527,13 +560,13 @@ import org.jetbrains.kotlin.name.Name
             }
 
             if (request.type.isFunction && request.type.typeArguments.last().let {
-                    it.isChildComponent || it.isMergeChildComponent
+                    it.classifier.isComponent || it.classifier.isMergeComponent
                 }) {
                 // todo check if the arguments match the constructor arguments of the child component
                 val childComponentType = request.type.typeArguments.last()
                 val childComponentConstructor =
                     declarationStore.constructorForComponent(childComponentType)
-                val additionalInputTypes = request.type.typeArguments.dropLast(1)
+                val inputTypes = request.type.typeArguments.dropLast(1)
                     .filter { inputType ->
                         childComponentConstructor == null ||
                                 childComponentConstructor.valueParameters.none {
@@ -543,20 +576,23 @@ import org.jetbrains.kotlin.name.Name
                 val existingComponents = mutableSetOf<TypeRef>()
                 var currentComponent: ComponentImpl? = owner
                 while (currentComponent != null) {
-                    existingComponents += currentComponent.componentType
+                    if (currentComponent.componentType != null)
+                        existingComponents += currentComponent.componentType!!
                     currentComponent = currentComponent.parent
                 }
                 if (childComponentType !in existingComponents) {
                     val componentImpl = componentImplFactory(
                         childComponentType,
+                        null,
+                        childComponentType.classifier.targetScope,
                         request.type,
                         owner.contextTreeNameProvider(
                             "${owner.rootComponent.name}_${
                                 childComponentType.classifier.fqName.shortName().asString()
                             }Impl"
                         ).asNameId(),
-                        additionalInputTypes,
-                        emptyList(),
+                        inputTypes,
+                        false,
                         owner
                     )
                     this += ChildComponentBindingNode(
@@ -570,7 +606,7 @@ import org.jetbrains.kotlin.name.Name
 
             if ((request.type.isFunction || request.type.isSuspendFunction) && request.type.typeArguments.size == 1 &&
                 request.type.typeArguments.last().let {
-                    !it.isChildComponent && !it.isMergeChildComponent
+                    !it.classifier.isComponent && !it.classifier.isMergeComponent
                 }
             ) {
                 this += ProviderBindingNode(
@@ -592,17 +628,16 @@ import org.jetbrains.kotlin.name.Name
 
             if ((request.type.isFunction || request.type.isSuspendFunction) &&
                 request.type.typeArguments.last().let {
-                    !it.isChildComponent && !it.isMergeChildComponent
+                    !it.classifier.isComponent && !it.classifier.isMergeComponent
                 }
             ) {
                 val factoryExists = generateSequence(owner) { it.parent }
                     .filter { it.componentFactoryType == request.type }
                     .any()
-                val assistedTypes = request.type.typeArguments.dropLast(1).distinct()
-                if (!factoryExists && assistedTypes.isNotEmpty()) {
+                val inputTypes = request.type.typeArguments.dropLast(1).distinct()
+                if (!factoryExists && inputTypes.isNotEmpty()) {
                     val returnType = request.type.typeArguments.last()
-                    val childComponentType =
-                        moduleDescriptor.builtIns.any.toClassifierRef().defaultType
+
                     val bindingCallable = Callable(
                         packageFqName = FqName.ROOT,
                         fqName = request.origin,
@@ -618,22 +653,24 @@ import org.jetbrains.kotlin.name.Name
                         isCall = true,
                         callableKind = request.type.callableKind,
                         isInline = true,
-                        visibility = DescriptorVisibilities.INTERNAL,
                         modality = Modality.FINAL
                     )
+
                     val childComponent = componentImplFactory(
-                        childComponentType,
+                        null,
+                        bindingCallable,
+                        null,
                         request.type,
                         owner.contextTreeNameProvider("${owner.rootComponent.name}_AC").asNameId(),
-                        assistedTypes,
-                        listOf(bindingCallable),
+                        inputTypes,
+                        true,
                         owner
                     )
                     this += AssistedBindingNode(
                         type = request.type,
                         owner = owner,
                         childComponent = childComponent,
-                        assistedTypes = assistedTypes
+                        assistedTypes = inputTypes
                     )
                 }
             }
@@ -679,18 +716,18 @@ import org.jetbrains.kotlin.name.Name
 
     private fun getMapEntriesForType(type: TypeRef, default: Boolean) = buildList<Callable> {
         this += declarationStore.mapEntriesByType(type)
-            .filter { it.targetComponent.checkComponent() }
+            .filter { it.targetComponent.checkScope() }
         parentsTopDown.forEach { parent ->
             parent.implicitMapEntries[type]
                 ?.filter {
                     with(parent) {
-                        it.targetComponent.checkComponent()
+                        it.targetComponent.checkScope()
                     }
                 }
                 ?.let { this += it }
         }
         implicitMapEntries[type]
-            ?.filter { it.targetComponent.checkComponent() }
+            ?.filter { it.targetComponent.checkScope() }
             ?.let { this += it }
         parentsTopDown.forEach { parent ->
             parent.explicitMapEntries[type]?.let { this += it }
@@ -706,18 +743,18 @@ import org.jetbrains.kotlin.name.Name
 
     private fun getSetElementsForType(type: TypeRef, default: Boolean) = buildSet<Callable> {
         this += declarationStore.setElementsByType(type)
-            .filter { it.targetComponent.checkComponent() }
+            .filter { it.targetComponent.checkScope() }
         parentsTopDown.forEach { parent ->
             parent.implicitSetElements[type]
                 ?.filter {
                     with(parent) {
-                        it.targetComponent.checkComponent()
+                        it.targetComponent.checkScope()
                     }
                 }
                 ?.let { this += it }
         }
         implicitSetElements[type]
-            ?.filter { it.targetComponent.checkComponent() }
+            ?.filter { it.targetComponent.checkScope() }
             ?.let { this += it }
         parentsTopDown.forEach { parent ->
             parent.explicitSetElements[type]?.let { this += it }
@@ -731,8 +768,9 @@ import org.jetbrains.kotlin.name.Name
             )
         }
 
-    private fun TypeRef?.checkComponent(): Boolean =
-        this == null || this.isAssignableTo(owner.nonAssistedComponent.componentType)
+    private fun TypeRef?.checkScope(): Boolean =
+        this == null || (owner.nonAssistedComponent.scopeType != null &&
+                this.isAssignableTo(owner.nonAssistedComponent.scopeType!!))
 
     private fun Callable.getDependencies(
         type: TypeRef,
@@ -773,35 +811,60 @@ import org.jetbrains.kotlin.name.Name
         buildList<InterceptorNode> {
             this += explicitInterceptors
                 .filter { it.callable.type.isAssignableTo(providerType) }
-                .filter { it.callable.targetComponent.checkComponent() }
+                .filter { it.callable.targetComponent.checkScope() }
+                .filter {
+                    providerType.typeArguments.last() != it.callable.valueParameters
+                        .firstOrNull { it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER }
+                        ?.type
+                }
             this += parentsBottomUp.flatMap { parent ->
                 parent.explicitInterceptors
                     .filter { it.callable.type.isAssignableTo(providerType) }
                     .filter {
                         with(parent) {
-                            it.callable.targetComponent.checkComponent()
+                            it.callable.targetComponent.checkScope()
                         }
+                    }
+                    .filter {
+                        providerType.typeArguments.last() != it.callable.valueParameters
+                            .firstOrNull { it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER }
+                            ?.type
                     }
             }
             this += implicitInterceptors
                 .filter { it.callable.type.isAssignableTo(providerType) }
-                .filter { it.callable.targetComponent.checkComponent() }
+                .filter { it.callable.targetComponent.checkScope() }
+                .filter {
+                    providerType.typeArguments.last() != it.callable.valueParameters
+                        .firstOrNull { it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER }
+                        ?.type
+                }
             this += parentsBottomUp.flatMap { parent ->
                 parent.implicitInterceptors
                     .filter { it.callable.type.isAssignableTo(providerType) }
                     .filter {
                         with(parent) {
-                            it.callable.targetComponent.checkComponent()
+                            it.callable.targetComponent.checkScope()
                         }
+                    }
+                    .filter {
+                        providerType.typeArguments.last() != it.callable.valueParameters
+                            .firstOrNull { it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER }
+                            ?.type
                     }
             }
             this += declarationStore.interceptorsByType(providerType)
-                .filter { it.targetComponent.checkComponent() }
+                .filter { it.targetComponent.checkScope() }
                 .map { interceptor ->
                     InterceptorNode(
                         interceptor,
                         interceptor.getDependencies(interceptor.type, true)
                     )
+                }
+                .filter {
+                    providerType.typeArguments.last() != it.callable.valueParameters
+                        .firstOrNull { it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER }
+                        ?.type
                 }
         }.distinct()
 

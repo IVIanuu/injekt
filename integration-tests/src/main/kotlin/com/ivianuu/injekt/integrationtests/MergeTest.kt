@@ -33,7 +33,7 @@ class MergeTest {
             @Binding fun foo() = Foo()
 
             fun invoke() {
-                val component = component<MyComponent>()
+                val component = create<MyComponent>()
                 component.get<Foo>()
             }
         """,
@@ -56,7 +56,7 @@ class MergeTest {
                 """
                     @Binding fun foo() = Foo()
                     fun invoke() {
-                        val component = component<MyComponent>()
+                        val component = create<MyComponent>()
                         component.get<Foo>()        
                     }
                 """,
@@ -72,8 +72,8 @@ class MergeTest {
     @Test
     fun testMergeChildComponent() = codegen(
         """
-            @Component abstract class MyParentComponent {
-                abstract val myChildComponentFactory: () -> MyChildComponent
+            @Component interface MyParentComponent {
+                val myChildComponentFactory: () -> MyChildComponent
             }
             
             @MergeChildComponent
@@ -82,7 +82,7 @@ class MergeTest {
             @Binding fun foo() = Foo()
             
             fun invoke() {
-                val parentComponent = component<MyParentComponent>()
+                val parentComponent = create<MyParentComponent>()
                 val childComponent = parentComponent.myChildComponentFactory()
                 childComponent.get<Foo>()
             }

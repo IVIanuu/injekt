@@ -20,13 +20,9 @@ class BindingResolutionTest {
         """
             @Binding class Dep
             
-            @Component abstract class MyComponent(@Binding protected val _dep: Dep) { 
-                abstract val dep: Dep
-            }
-            
             fun invoke(): Pair<Any, Any> {
                 val dep = Dep()
-                return dep to component<MyComponent>(dep).dep
+                return dep to create<Dep>(dep)
             }
         """
     ) {
@@ -37,12 +33,14 @@ class BindingResolutionTest {
     @Test
     fun testMultipleExplicitBindingFails() = codegen(
         """
-            @Component abstract class MyComponent(
-                @Binding protected val foo1: Foo,
-                @Binding protected val foo2: Foo
-            ) {
-                abstract val foo: Foo
+            class Module1 { 
+                @Binding val foo = Foo() 
             }
+            class Module2 {
+                @Binding val foo = Foo()
+            }
+
+            fun invoke() = create<Foo>(Module1(), Module2())
         """
     ) {
         assertInternalError("multiple explicit bindings")
@@ -54,12 +52,12 @@ class BindingResolutionTest {
         @Binding fun foo1() = Foo()
         @Binding fun foo2() = Foo()
         
-        @Component abstract class MyComponent {
-            abstract val foo: Foo
+        @Component interface MyComponent {
+            val foo: Foo
         }
         
         fun invoke(): Foo { 
-            return component<MyComponent>().foo
+            return create<MyComponent>().foo
         }
         """
     ) {
@@ -71,16 +69,11 @@ class BindingResolutionTest {
         """
             class Dep
 
-            @Default
-            @Binding fun dep() = Dep()
-
-            @Component abstract class MyComponent(@Binding protected val _dep: Dep) { 
-                abstract val dep: Dep
-            }
+            @Default @Binding fun dep() = Dep()
             
             fun invoke(): Pair<Any, Any> {
                 val dep = Dep()
-                return dep to component<MyComponent>(dep).dep
+                return dep to create<Dep>(dep)
             }
         """
     ) {
@@ -97,9 +90,7 @@ class BindingResolutionTest {
             @Default
             @Binding fun foo2() = Foo()
             
-            @Component abstract class MyComponent { 
-                abstract val foo: Foo
-            }
+            fun invoke() = create<Foo>()
         """
     ) {
         assertInternalError("Multiple implicit default bindings")
@@ -108,15 +99,9 @@ class BindingResolutionTest {
     @Test
     fun testPrefsUserBindingOverFrameworkBinding() = codegen(
         """
-            @Component abstract class MyComponent(
-                @Binding protected val _lazyFoo: () -> Foo
-            ) {
-                abstract val lazyFoo: () -> Foo
-            }
-            
             fun invoke(): Pair<() -> Foo, () -> Foo> {
                 val lazyFoo = { Foo() }
-                return lazyFoo to component<MyComponent>(lazyFoo).lazyFoo
+                return lazyFoo to create<() -> Foo>(lazyFoo)
             }
         """
     ) {
@@ -128,20 +113,14 @@ class BindingResolutionTest {
     fun testPrefersExactType() = codegen(
         """
             class Dep<T>(val value: T)
-            
-            @Component abstract class FooComponent {
-                abstract val fooDep: Dep<Foo>
+
+            @Binding fun <T> genericDep(t: T): Dep<T> = error("")
                 
-                @Binding protected fun <T> genericDep(t: T): Dep<T> = error("")
+            @Binding fun fooDep(foo: Foo): Dep<Foo> = Dep(foo)
                 
-                @Binding protected fun fooDep(foo: Foo): Dep<Foo> = Dep(foo)
-                
-                @Binding protected fun foo() = Foo()
-            }
-            
-            fun invoke() {
-                component<FooComponent>().fooDep
-            }
+            @Binding fun foo() = Foo()
+
+            fun invoke() = create<Dep<Foo>>()
         """
     ) {
         invokeSingleFile()
@@ -151,10 +130,7 @@ class BindingResolutionTest {
     fun testMissingBindingFails() = codegen(
         """
             class Dep
-            
-            @Component abstract class DepComponent {
-                abstract val dep: Dep
-            }
+            fun invoke() = create<Dep>()
         """
     ) {
         assertInternalError("no binding")
@@ -163,13 +139,9 @@ class BindingResolutionTest {
     @Test
     fun testDeeplyMissingBindingFails() = codegen(
         """
-            @Component abstract class BazComponent {
-                abstract val baz: Baz
-            
-                @Binding protected fun bar(foo: Foo) = Bar(foo)
-        
-                @Binding protected fun baz(bar: Bar, foo: Foo) = Baz(bar, foo)
-            }
+            @Binding fun bar(foo: Foo) = Bar(foo)
+            @Binding fun baz(bar: Bar, foo: Foo) = Baz(bar, foo)
+            fun invoke() = create<Baz>()
         """
     ) {
         assertInternalError("no binding")
@@ -178,16 +150,16 @@ class BindingResolutionTest {
     @Test
     fun testDistinctTypeParameter() = codegen(
         """
-            @Component abstract class MyComponent {
-                abstract val setOfStrings: Set<String>
-                abstract val setOfInts: Set<Int>
+            @SetElements fun setA() = setOf("a")
+            @SetElements fun setB() = setOf(0)
             
-                @SetElements protected fun _setA() = setOf("a")
-                @SetElements protected fun _setB() = setOf(0)
+            @Component interface MyComponent {
+                val setOfStrings: Set<String>
+                val setOfInts: Set<Int>
             }
 
             fun invoke(): Pair<Set<String>, Set<Int>> {
-                val component = component<MyComponent>()
+                val component = create<MyComponent>()
                 return component.setOfStrings to component.setOfInts
             }
             """
@@ -201,16 +173,17 @@ class BindingResolutionTest {
         """
             typealias Foo1 = Foo
             typealias Foo2 = Foo
-            
-            @Component abstract class FooComponent {
-                abstract val foo1: Foo1
-                abstract val foo2: Foo2
-                @Binding protected fun _foo1(): Foo1 = Foo()
-                @Binding protected fun _foo2(): Foo2 = Foo()
+
+            @Binding fun _foo1(): Foo1 = Foo()
+            @Binding fun _foo2(): Foo2 = Foo()
+
+            @Component interface FooComponent {
+                val foo1: Foo1
+                val foo2: Foo2
             }
        
             fun invoke(): Pair<Foo, Foo> {
-                val component = component<FooComponent>()
+                val component = create<FooComponent>()
                 return component.foo1 to component.foo2
             }
             """
@@ -225,9 +198,7 @@ class BindingResolutionTest {
             source(
                 """
                     typealias Foo1 = Foo
-                    object Foo1Module {
-                        @Binding fun foo1(): Foo1 = Foo()
-                    }
+                    @Binding fun foo1(): Foo1 = Foo()
             """
             )
         ),
@@ -235,24 +206,19 @@ class BindingResolutionTest {
             source(
                 """
                     typealias Foo2 = Foo
-                    object Foo2Module {
-                        @Binding fun foo2(): Foo2 = Foo()
-                    }
+                    @Binding fun foo2(): Foo2 = Foo()
             """
             )
         ),
         listOf(
             source(
                 """
-                    @Component abstract class MyComponent {
-                        abstract val foo1: Foo1
-                        abstract val foo2: Foo2
-                        
-                        @Module protected val foo1Module = Foo1Module
-                        @Module protected val foo2Module = Foo2Module
+                    @Component interface MyComponent {
+                        val foo1: Foo1
+                        val foo2: Foo2
                     }
                     fun invoke(): Pair<Foo1, Foo2> {
-                        val component = component<MyComponent>()
+                        val component = create<MyComponent>()
                         return component.foo1 to component.foo2
                     }
             """,
@@ -267,12 +233,9 @@ class BindingResolutionTest {
     @Test
     fun testCanUseNonNullBindingForNullableRequest() = codegen(
         """
-            @Component abstract class FooComponent { 
-                abstract val foo: Foo?
-                @Binding protected fun foo(): Foo = Foo()
-            }
+            @Binding fun foo(): Foo = Foo()
 
-            fun invoke() = component<FooComponent>().foo
+            fun invoke() = create<Foo?>()
             """
     ) {
         assertNotNull(invokeSingleFile())
@@ -281,10 +244,8 @@ class BindingResolutionTest {
     @Test
     fun testCannotUseNullableBindingForNonNullRequest() = codegen(
         """
-            @Component abstract class FooComponent { 
-                abstract val foo: Foo
-                @Binding protected fun foo(): Foo? = Foo()
-            }
+            @Binding fun foo(): Foo? = Foo()
+            fun invoke() = create<Foo>()
             """
     ) {
         assertInternalError("No binding")
@@ -293,11 +254,11 @@ class BindingResolutionTest {
     @Test
     fun testBindingForNullableRequestCanGetUsedForNonNullRequest() = codegen(
         """
-            @Component abstract class MyComponent {
-                abstract val nullableFoo: Foo?
-                abstract val nonNullFoo: Foo
+            @Component interface MyComponent {
+                val nullableFoo: Foo?
+                val nonNullFoo: Foo
                 
-                @Binding protected fun foo() = Foo()
+                @Binding fun foo() = Foo()
             }
         """
     )
@@ -305,11 +266,11 @@ class BindingResolutionTest {
     @Test
     fun testReturnsNullOnMissingNullableRequest() = codegen(
         """
-            @Component abstract class FooComponent {
-                abstract val foo: Foo?
+            @Component interface FooComponent {
+                val foo: Foo?
             }
             fun invoke(): Foo? { 
-                return component<FooComponent>().foo
+                return create<FooComponent>().foo
             }
         """
     ) {
@@ -320,11 +281,11 @@ class BindingResolutionTest {
     fun testReturnsDefaultOnMissingOpenRequest() = codegen(
         """
             val DEFAULT_FOO = Foo()
-            @Component abstract class FooComponent {
-                open val foo: Foo = DEFAULT_FOO
+            @Component interface FooComponent {
+                val foo: Foo get() = DEFAULT_FOO
             }
             fun invoke(): Pair<Foo, Foo> { 
-                return DEFAULT_FOO to component<FooComponent>().foo
+                return DEFAULT_FOO to create<FooComponent>().foo
             }
         """
     ) {
@@ -333,14 +294,14 @@ class BindingResolutionTest {
     }
 
     @Test
-    fun testReturnsDefaultOnMissingOpenNullableRequest() = codegen(
+    fun testReturnsDefaultOnMissingNullableRequestWithDefault() = codegen(
         """
             val DEFAULT_FOO = Foo()
-            @Component abstract class FooComponent {
-                open val foo: Foo? = DEFAULT_FOO
+            @Component interface FooComponent {
+                val foo: Foo? get() = DEFAULT_FOO
             }
             fun invoke(): Pair<Foo?, Foo?> { 
-                return DEFAULT_FOO to component<FooComponent>().foo
+                return DEFAULT_FOO to create<FooComponent>().foo
             }
         """
     ) {
@@ -353,12 +314,12 @@ class BindingResolutionTest {
         """
             @Binding class Dep(val foo: Foo?)
             
-            @Component abstract class FooComponent {
-                abstract val dep: Dep
+            @Component interface FooComponent {
+                val dep: Dep
             }
             
             fun invoke(): Foo? { 
-                return component<FooComponent>().dep.foo
+                return create<FooComponent>().dep.foo
             }
         """
     ) {
@@ -370,12 +331,12 @@ class BindingResolutionTest {
         """
             @Binding class Dep<T>(val value: T?)
             
-            @Component abstract class FooComponent {
-                abstract val dep: Dep<Foo>
+            @Component interface FooComponent {
+                val dep: Dep<Foo>
             }
             
             fun invoke(): Foo? { 
-                return component<FooComponent>().dep.value
+                return create<FooComponent>().dep.value
             }
         """
     ) {
@@ -388,12 +349,12 @@ class BindingResolutionTest {
             @Binding class Dep(val foo: Foo? = DEFAULT_FOO)
             val DEFAULT_FOO = Foo()
             
-            @Component abstract class FooComponent {
-                abstract val dep: Dep
+            @Component interface FooComponent {
+                val dep: Dep
             }
             
             fun invoke(): Pair<Foo?, Foo?> { 
-                return DEFAULT_FOO to component<FooComponent>().dep.foo
+                return DEFAULT_FOO to create<FooComponent>().dep.foo
             }
         """
     ) {
@@ -408,11 +369,11 @@ class BindingResolutionTest {
             class Dep(val foo: Foo = DEFAULT_FOO)
             val DEFAULT_FOO = Foo()
             
-            @Component abstract class FooComponent {
-                abstract val dep: Dep
+            @Component interface FooComponent {
+                val dep: Dep
             }
             fun invoke(): Pair<Foo, Foo> { 
-                return DEFAULT_FOO to component<FooComponent>().dep.foo
+                return DEFAULT_FOO to create<FooComponent>().dep.foo
             }
         """
     ) {
@@ -423,18 +384,17 @@ class BindingResolutionTest {
     @Test
     fun testPrefersExplicitOverExplicitParentBinding() = codegen(
         """
-            @Component abstract class MyComponent(@Binding protected val stringBinding: String) {
-                abstract val string: String
-                abstract val childFactory: (String) -> MyChildComponent
+            @Component interface MyComponent {
+                val string: String
+                val childFactory: (String) -> MyChildComponent
             }
 
-            @ChildComponent
-            abstract class MyChildComponent(@Binding protected val stringBinding: String) {
-                abstract val string: String
+            @Component interface MyChildComponent {
+                val string: String
             }
 
             fun invoke(): Pair<String, String> {
-                val parent = component<MyComponent>("parent")
+                val parent = create<MyComponent>("parent")
                 return parent.string to parent.childFactory("child").string
             }
         """
@@ -447,19 +407,18 @@ class BindingResolutionTest {
     @Test
     fun testPrefersExplicitParentBindingOverImplicitBinding() = codegen(
         """
-            @Component abstract class MyComponent(@Binding protected val stringBinding: String) {
-                abstract val childFactory: () -> MyChildComponent
+            @Component interface MyComponent {
+                val childFactory: () -> MyChildComponent
             }
 
-            @ChildComponent
-            abstract class MyChildComponent {
-                abstract val string: String
+            @Component interface MyChildComponent {
+                val string: String
             }
 
             @Binding fun implicit() = "implicit"
 
             fun invoke(): String {
-                return component<MyComponent>("parent").childFactory().string
+                return create<MyComponent>("parent").childFactory().string
             }
         """
     ) {

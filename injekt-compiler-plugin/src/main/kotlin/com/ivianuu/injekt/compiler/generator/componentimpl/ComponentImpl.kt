@@ -19,33 +19,36 @@ package com.ivianuu.injekt.compiler.generator.componentimpl
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.generator.Callable
+import com.ivianuu.injekt.compiler.generator.ClassifierRef
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.defaultType
-import com.ivianuu.injekt.compiler.generator.getSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.render
-import com.ivianuu.injekt.compiler.generator.substitute
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
+typealias ComponentType = TypeRef
+typealias ScopeType = TypeRef
 typealias ComponentFactoryType = TypeRef
 
 @Binding class ComponentImpl(
     private val declarationStore: DeclarationStore,
     membersFactory: (ComponentImpl) -> ComponentMembers,
     graphFactory: (ComponentImpl) -> BindingGraph,
-    val componentType: TypeRef,
-    val componentFactoryType: ComponentFactoryType,
+    val componentType: ComponentType?,
+    val request: Callable?,
+    val scopeType: ScopeType?,
+    val componentFactoryType: ComponentFactoryType?,
     val name: Name,
-    val additionalInputTypes: List<TypeRef>,
-    val assistedRequests: List<Callable>,
+    val inputTypes: List<TypeRef>,
+    val isAssisted: Boolean,
     val parent: @Parent ComponentImpl?,
 ) {
 
-    val isAssisted: Boolean
-        get() = assistedRequests.isNotEmpty()
+    val type = ClassifierRef(FqName.topLevel(name)).defaultType
 
     val nonAssistedComponent: ComponentImpl
         get() = if (isAssisted) parent!!.nonAssistedComponent else this
@@ -56,8 +59,9 @@ typealias ComponentFactoryType = TypeRef
     val contextTreeNameProvider: UniqueNameProvider =
         parent?.contextTreeNameProvider ?: UniqueNameProvider()
 
-    val mergeDeclarations =
+    val mergeDeclarations = if (componentType != null)
         declarationStore.mergeDeclarationsForMergeComponent(componentType.classifier.fqName)
+    else emptyList()
 
     val children = mutableListOf<ComponentImpl>()
     val members = mutableListOf<ComponentMember>()
@@ -65,23 +69,13 @@ typealias ComponentFactoryType = TypeRef
     val statements = membersFactory(this)
     val graph = graphFactory(this)
 
-    private val superComponentConstructor = declarationStore.constructorForComponent(componentType)
-
-    private val superConstructorParameters = if (superComponentConstructor != null) {
-        val substitutionMap = getSubstitutionMap(
-            listOf(componentType to componentType.classifier.defaultType)
-        )
-        superComponentConstructor
-            .valueParameters
-            .map { it.copy(type = it.type.substitute(substitutionMap)) }
-    } else {
-        emptyList()
-    }
-
-    val requests = (listOf(componentType) + mergeDeclarations
-        .filterNot { it.isModule })
+    val requests = (componentType?.let {
+        declarationStore.allCallablesForType(componentType)
+            .filter { it.modality != Modality.FINAL }
+    } ?: listOfNotNull(request)) + mergeDeclarations
+        .filterNot { it.isModule }
         .flatMap { declarationStore.allCallablesForType(it) }
-        .filter { it.modality != Modality.FINAL } + assistedRequests
+        .filter { it.modality != Modality.FINAL }
 
     private var initialized = false
 
@@ -89,14 +83,17 @@ typealias ComponentFactoryType = TypeRef
         if (initialized) return
         initialized = true
         parent?.children?.add(this)
-        graph.checkRequests(requests.map {
-            BindingRequest(it.type,
-                it.fqName,
-                it.modality != Modality.OPEN,
-                it.callableKind,
-                false,
-                false)
-        })
+        graph.checkRequests(
+            requests.map {
+                BindingRequest(it.type,
+                    it.fqName,
+                    it.modality != Modality.OPEN,
+                    it.callableKind,
+                    false,
+                    false
+                )
+            }
+        )
         requests.forEach { requestCallable ->
             val binding = graph.resolvedBindings[requestCallable.type]!!
             if (binding is MissingBindingNode && requestCallable.modality == Modality.OPEN) return
@@ -108,17 +105,17 @@ typealias ComponentFactoryType = TypeRef
                 true,
                 requestCallable.callableKind,
                 false,
-                false))
+                false)
+            )
             statements.getCallable(
-                type = if (requestCallable in assistedRequests) binding.type else requestCallable.type,
+                type = requestCallable.type,
                 name = requestCallable.name,
-                isOverride = requestCallable !in assistedRequests,
+                isOverride = componentType != null,
                 body = body,
                 isProperty = !requestCallable.isCall,
                 callableKind = requestCallable.callableKind,
                 eager = binding.eager,
-                isInline = requestCallable in assistedRequests,
-                canBePrivate = requestCallable in assistedRequests
+                isInline = componentType == null
             )
         }
     }
@@ -127,9 +124,6 @@ typealias ComponentFactoryType = TypeRef
         if (parent != null) emit("private ")
         emit("class $name")
 
-        val inputTypes = superConstructorParameters
-            .map { it.type } + additionalInputTypes
-
         if (parent != null || inputTypes.isNotEmpty()) {
             emit("(")
             if (parent != null) {
@@ -137,36 +131,28 @@ typealias ComponentFactoryType = TypeRef
                 if (inputTypes.isNotEmpty()) emit(", ")
             }
             inputTypes.forEachIndexed { index, input ->
-                if (input in additionalInputTypes) emit("internal val ")
+                if (input in this@ComponentImpl.inputTypes) emit("internal val ")
                 emit("i_${input.uniqueTypeName()}: ${input.render(expanded = true)}")
                 if (index != inputTypes.lastIndex) emit(", ")
             }
             emit(")")
         }
 
-        emit(" : ${componentType.render(expanded = true)}")
-        if (superComponentConstructor != null) {
-            emit("(")
-            superConstructorParameters.forEachIndexed { index, param ->
-                emit("i_${param.type.uniqueTypeName()}")
-                if (index != superConstructorParameters.lastIndex) emit(", ")
+        if (componentType != null) {
+            emit(" : ${componentType.render(expanded = true)}")
+            val mergeSuperTypes = mergeDeclarations
+                .filterNot { it.isModule }
+
+            if (mergeSuperTypes.isNotEmpty()) {
+                emit(", ")
+                mergeSuperTypes.forEachIndexed { index, superType ->
+                    emit(superType.render())
+                    if (index != mergeSuperTypes.lastIndex) emit(", ")
+                }
             }
-            emit(") ")
-        } else {
-            emitSpace()
         }
 
-        val mergeSuperTypes = mergeDeclarations
-            .filterNot { it.isModule }
-
-        if (mergeSuperTypes.isNotEmpty()) {
-            emit(", ")
-            mergeSuperTypes.forEachIndexed { index, superType ->
-                emit(superType.render())
-                if (index != mergeSuperTypes.lastIndex) emit(", ")
-            }
-            emitSpace()
-        }
+        emitSpace()
 
         braced {
             val renderedMembers = mutableSetOf<ComponentMember>()

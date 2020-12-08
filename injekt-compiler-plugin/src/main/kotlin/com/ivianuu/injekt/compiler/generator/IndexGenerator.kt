@@ -49,10 +49,6 @@ import org.jetbrains.kotlin.psi.psiUtil.containingClass
                             val prevModuleLikeScope = moduleLikeScope
                             val isModuleLikeScope =
                                 classOrObject.hasAnnotation(InjektFqNames.Module) ||
-                                        classOrObject.hasAnnotation(InjektFqNames.Component) ||
-                                        classOrObject.hasAnnotation(InjektFqNames.ChildComponent) ||
-                                        classOrObject.hasAnnotation(InjektFqNames.MergeComponent) ||
-                                        classOrObject.hasAnnotation(InjektFqNames.MergeChildComponent) ||
                                         classOrObject !is KtObjectDeclaration
                             moduleLikeScope = if (isModuleLikeScope) classOrObject else null
                             super.visitClassOrObject(classOrObject)
@@ -78,8 +74,6 @@ import org.jetbrains.kotlin.psi.psiUtil.containingClass
                                         declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) ||
                                         declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
                                         declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
-                                        declaration.hasAnnotation(InjektFqNames.MergeComponent) ||
-                                        declaration.hasAnnotation(InjektFqNames.MergeChildComponent) ||
                                         declaration.hasAnnotation(InjektFqNames.MergeInto) ||
                                         declaration.hasAnnotation(InjektFqNames.Module)
                             if (!needsIndexing) return

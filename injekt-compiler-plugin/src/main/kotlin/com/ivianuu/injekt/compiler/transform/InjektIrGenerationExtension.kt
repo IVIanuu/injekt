@@ -6,10 +6,9 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
-@Binding class InjektIrGenerationExtension(
-) : IrGenerationExtension {
+@Binding class InjektIrGenerationExtension : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val transformers = listOf(ComponentIntrinsicTransformer(pluginContext),
+        val transformers = listOf(CreateTransformer(pluginContext),
             MergeAccessorTransformer(pluginContext))
         transformers.forEach { moduleFragment.transformChildrenVoid(it) }
     }

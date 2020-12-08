@@ -25,7 +25,9 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.merge.MergeChildComponent
+import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.Scoped
+import com.ivianuu.injekt.merge.MergeComponent
 import com.ivianuu.injekt.merge.get
 
 val Fragment.fragmentComponent: FragmentComponent
@@ -34,9 +36,9 @@ val Fragment.fragmentComponent: FragmentComponent
             .get<(Fragment) -> FragmentComponent>()(this)
     }
 
+@Scope interface FragmentScope
 
-@MergeChildComponent
-abstract class FragmentComponent(@Binding protected val fragment: Fragment)
+@Scoped(FragmentScope::class) @MergeComponent interface FragmentComponent
 
 typealias FragmentContext = Context
 

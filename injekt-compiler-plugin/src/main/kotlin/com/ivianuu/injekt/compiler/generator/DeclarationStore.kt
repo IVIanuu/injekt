@@ -367,7 +367,6 @@ import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
                     }
                 } else Callable.CallableKind.DEFAULT,
                 isInline = descriptor.isInline,
-                visibility = descriptor.visibility,
                 modality = descriptor.modality
             )
         }
@@ -403,7 +402,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
                                 type = parameterType.substitute(substitutionMap)
                             )
                         },
-                        targetComponent = type.allTypes.firstNotNullResult { it.targetComponent },
+                        targetComponent = type.allTypes.firstNotNullResult { it.targetScope },
                         scoped = type.allTypes.any { it.scoped },
                         eager = type.allTypes.any { it.eager },
                         default = type.allTypes.any { it.default },

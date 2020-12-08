@@ -35,7 +35,6 @@ import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.toClassifierRef
 import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -58,7 +57,6 @@ import org.jetbrains.kotlin.name.Name
         callableKind: Callable.CallableKind,
         eager: Boolean,
         isInline: Boolean,
-        canBePrivate: Boolean,
     ): ComponentCallable {
         val existing = owner.members.firstOrNull {
             it is ComponentCallable && it.name == name
@@ -77,7 +75,6 @@ import org.jetbrains.kotlin.name.Name
             initializer = if (eager) body else null,
             isMutable = false,
             isInline = isInline,
-            canBePrivate = canBePrivate,
             valueParameters = emptyList(),
             typeParameters = emptyList()
         )
@@ -98,8 +95,7 @@ import org.jetbrains.kotlin.name.Name
                 callableKind = callableKind,
                 isProperty = callableKind != Callable.CallableKind.SUSPEND,
                 eager = binding.eager,
-                isInline = false,
-                canBePrivate = false
+                isInline = false
             )
             return it
         }
@@ -152,7 +148,7 @@ import org.jetbrains.kotlin.name.Name
             scoped(
                 type = binding.type,
                 callableKind = binding.callableKind,
-                scopeComponentType = binding.targetComponent,
+                scopeType = binding.targetComponent,
                 clearProvider = binding.interceptors.isNotEmpty(),
                 create = rawExpression
             )
@@ -162,7 +158,7 @@ import org.jetbrains.kotlin.name.Name
             binding.interceptors.isNotEmpty(), maybeScopedExpression)
 
         val requestForType = owner.requests
-            .filterNot { it in owner.assistedRequests }
+            .filterNot { it in owner.requests }
             .firstOrNull { it.type == binding.type }
 
         val callableName = requestForType
@@ -172,7 +168,7 @@ import org.jetbrains.kotlin.name.Name
         else binding.callableKind != Callable.CallableKind.SUSPEND
 
         val isOverride = requestForType != null &&
-                requestForType !in owner.assistedRequests
+                requestForType !in owner.requests
 
         getCallable(
             type = binding.type,
@@ -182,8 +178,7 @@ import org.jetbrains.kotlin.name.Name
             isProperty = isProperty,
             callableKind = requestForType?.callableKind ?: callableKind,
             eager = binding.eager,
-            isInline = requestForType in owner.assistedRequests || (!isOverride && binding.inline),
-            canBePrivate = requestForType in owner.assistedRequests || !isOverride
+            isInline = requestForType in owner.requests || (!isOverride && binding.inline)
         )
 
         val accessExpression: ComponentExpression = {
@@ -218,7 +213,7 @@ import org.jetbrains.kotlin.name.Name
                 scoped(
                     type = binding.type.typeArguments.last(),
                     callableKind = binding.callableKind,
-                    scopeComponentType = binding.targetComponent!!,
+                    scopeType = binding.targetComponent!!,
                     clearProvider = false
                 ) {
                     emitNewInstance()
@@ -280,7 +275,7 @@ import org.jetbrains.kotlin.name.Name
             (if (targetComponent != null) scoped(
                 type = binding.type,
                 callableKind = callableKind,
-                scopeComponentType = targetComponent,
+                scopeType = targetComponent,
                 clearProvider = false,
                 prefix = "mapEntries_${index}_",
                 create = rawExpression
@@ -323,7 +318,7 @@ import org.jetbrains.kotlin.name.Name
             (if (targetComponent != null) scoped(
                 type = binding.type,
                 callableKind = callableKind,
-                scopeComponentType = targetComponent,
+                scopeType = targetComponent,
                 clearProvider = false,
                 prefix = "setElements_${index}_",
                 create = rawExpression
@@ -440,7 +435,6 @@ import org.jetbrains.kotlin.name.Name
                 isProperty = true,
                 callableKind = Callable.CallableKind.DEFAULT,
                 isInline = false,
-                canBePrivate = true,
                 valueParameters = emptyList(),
                 typeParameters = emptyList()
             ).also { owner.members += it }
@@ -463,14 +457,14 @@ import org.jetbrains.kotlin.name.Name
     private fun scoped(
         type: TypeRef,
         callableKind: Callable.CallableKind,
-        scopeComponentType: TypeRef?,
+        scopeType: TypeRef?,
         clearProvider: Boolean,
         prefix: String = "",
         create: ComponentExpression,
     ): ComponentExpression {
         var scopeComponent = owner
-        if (scopeComponentType != null) {
-            while (!scopeComponent.componentType.isAssignableTo(scopeComponentType)) {
+        if (scopeType != null) {
+            while (scopeComponent.scopeType?.isAssignableTo(scopeType) != true) {
                 scopeComponent = scopeComponent.parent!!
             }
         }
@@ -489,7 +483,6 @@ import org.jetbrains.kotlin.name.Name
             isProperty = true,
             callableKind = Callable.CallableKind.DEFAULT,
             isInline = false,
-            canBePrivate = true,
             valueParameters = emptyList(),
             typeParameters = emptyList()
         ).also { scopeComponent.members += it }
@@ -509,7 +502,7 @@ import org.jetbrains.kotlin.name.Name
                 body = scoped(
                     type = mutexType,
                     callableKind = Callable.CallableKind.DEFAULT,
-                    scopeComponentType = scopeComponentType,
+                    scopeType = scopeType,
                     clearProvider = false,
                     prefix = "_"
                 ) {
@@ -519,7 +512,6 @@ import org.jetbrains.kotlin.name.Name
                 isProperty = false,
                 callableKind = Callable.CallableKind.DEFAULT,
                 isInline = false,
-                canBePrivate = true,
                 valueParameters = emptyList(),
                 typeParameters = emptyList()
             ).also { scopeComponent.members += it }
@@ -590,110 +582,45 @@ import org.jetbrains.kotlin.name.Name
         type: TypeRef,
         arguments: Map<ValueParameterRef, Pair<TypeRef?, ComponentExpression?>>,
     ) {
-        val finalCallable = if (callable.visibility == DescriptorVisibilities.PROTECTED &&
-            callable.valueParameters.any {
-                it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER
-                        && it.type != owner.componentType
-            }
-        ) {
-            val ownerType = callable.valueParameters.first {
-                it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER
-            }.type
-            var current: ComponentImpl? = owner
-            while (current != null) {
-                if (current.componentType == ownerType) break
-                current = current.parent
-            }
-            val accessorName = "_${callable.name}".asNameId()
-            current!!.members.firstOrNull {
-                it is ComponentCallable &&
-                        it.name == accessorName
-            } ?: ComponentCallable(
-                name = accessorName,
-                type = callable.type,
-                isProperty = !callable.isCall,
-                callableKind = callable.callableKind,
-                initializer = null,
-                body = {
-                    emit("${callable.name}")
-                    if (callable.isCall) {
-                        emit("(")
-                        callable.valueParameters
-                            .filterNot { it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER }
-                            .forEachIndexed { index, parameter ->
-                                emit(parameter.name)
-                                if (index != callable.valueParameters.lastIndex) emit(", ")
-                            }
-                        emit(")")
-                    }
-                },
-                isMutable = false,
-                isOverride = false,
-                isInline = false,
-                canBePrivate = true,
-                valueParameters = callable.valueParameters
-                    .filterNot { it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER }
-                    .map {
-                        ComponentCallable.ValueParameter(
-                            it.name,
-                            it.type
-                        )
-                    },
-                typeParameters = callable.typeParameters
-                    .map {
-                        ComponentCallable.TypeParameter(
-                            it.fqName.shortName(),
-                            it.superTypes
-                        )
-                    }
-            ).also { current.members += it }
-            callable.copy(
-                name = accessorName,
-                visibility = DescriptorVisibilities.INTERNAL
-            )
-        } else {
-            callable
-        }
-
         fun emitArguments() {
-            if (finalCallable.isCall) {
-                if (finalCallable.typeParameters.isNotEmpty()) {
+            if (callable.isCall) {
+                if (callable.typeParameters.isNotEmpty()) {
                     val substitutionMap = getSubstitutionMap(
-                        listOf(type to finalCallable.originalType) +
-                                finalCallable.valueParameters
+                        listOf(type to callable.originalType) +
+                                callable.valueParameters
                                     .mapNotNull {
                                         val argumentType = arguments[it]?.first
                                         if (argumentType != null) {
                                             argumentType to it.originalType
                                         } else null
                                     },
-                        finalCallable.typeParameters
+                        callable.typeParameters
                     )
 
-                    check(finalCallable.typeParameters.all { it in substitutionMap }) {
+                    check(callable.typeParameters.all { it in substitutionMap }) {
                         "Couldn't resolve all type arguments ${
                             substitutionMap.map {
                                 it.key.fqName to it.value
                             }
                         } missing ${
-                            finalCallable.typeParameters.filter {
+                            callable.typeParameters.filter {
                                 it !in substitutionMap
                             }.map { it.fqName }
-                        } in $finalCallable"
+                        } in $callable"
                     }
 
                     emit("<")
-                    finalCallable.typeParameters.forEachIndexed { index, typeParameter ->
+                    callable.typeParameters.forEachIndexed { index, typeParameter ->
                         val typeArgument = substitutionMap[typeParameter]!!
                         emit(typeArgument.render(expanded = true))
-                        if (index != finalCallable.typeParameters.lastIndex) emit(", ")
+                        if (index != callable.typeParameters.lastIndex) emit(", ")
                     }
                     emit(">")
                 }
                 emitLine("(")
                 indented {
                     var argumentsIndex = 0
-                    val nonNullArgumentsCount = finalCallable.valueParameters
+                    val nonNullArgumentsCount = callable.valueParameters
                         .filter { it.parameterKind == ValueParameterRef.ParameterKind.VALUE_PARAMETER }
                         .count { it in arguments }
                     val isFunctionInvoke = callable.valueParameters
@@ -701,7 +628,7 @@ import org.jetbrains.kotlin.name.Name
                         ?.type
                         ?.allTypes
                         ?.any { it.isFunction || it.isSuspendFunction } ?: false
-                    finalCallable.valueParameters
+                    callable.valueParameters
                         .filter { it.parameterKind == ValueParameterRef.ParameterKind.VALUE_PARAMETER }
                         .forEach { parameter ->
                             val argument = arguments[parameter]
@@ -719,10 +646,10 @@ import org.jetbrains.kotlin.name.Name
             }
         }
 
-        val dispatchReceiverParameter = finalCallable.valueParameters.firstOrNull {
+        val dispatchReceiverParameter = callable.valueParameters.firstOrNull {
             it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER
         }
-        val extensionReceiverParameter = finalCallable.valueParameters.firstOrNull {
+        val extensionReceiverParameter = callable.valueParameters.firstOrNull {
             it.parameterKind == ValueParameterRef.ParameterKind.EXTENSION_RECEIVER
         }
         if (dispatchReceiverParameter != null) {
@@ -735,11 +662,11 @@ import org.jetbrains.kotlin.name.Name
                     emitOrNull(arguments[extensionReceiverParameter]?.second)
                     emit(") ")
                     braced {
-                        emit(finalCallable.name)
+                        emit(callable.name)
                         emitArguments()
                     }
                 } else {
-                    emit(finalCallable.name)
+                    emit(callable.name)
                     emitArguments()
                 }
             }
@@ -749,11 +676,11 @@ import org.jetbrains.kotlin.name.Name
                 emitOrNull(arguments[extensionReceiverParameter]?.second)
                 emit(") ")
                 braced {
-                    emit(finalCallable.name)
+                    emit(callable.name)
                     emitArguments()
                 }
             } else {
-                emit(finalCallable.fqName)
+                emit(callable.fqName)
                 emitArguments()
             }
         }

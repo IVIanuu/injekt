@@ -12,24 +12,18 @@ class ModuleTest {
                 @Binding val foo: Foo get() = Foo()
             }
 
-            @Component abstract class MyComponent {
-                @Module protected val myModule = MyModule()
-                abstract val foo: Foo
-            }
+            fun invoke() = create<Foo>(MyModule())
         """
     )
 
     @Test
     fun testImplicitModule() = codegen(
         """
-            @Module
-            class MyModule {
+            @Module class MyModule {
                 @Binding val foo: Foo get() = Foo()
             }
 
-            @Component abstract class MyComponent {
-                abstract val foo: Foo
-            }
+            fun invoke() = create<Foo>()
         """
     )
 
@@ -40,11 +34,15 @@ class ModuleTest {
                 @Binding val foo: Foo get() = Foo()
             }
 
-            @Component abstract class MyComponent {
-                @Module protected val myModule = MyModule()
-                @Module protected val myModule1 = MyModule()
-                abstract val foo: Foo
+            class Module1 {
+                @Module val myModule = MyModule()
             }
+
+            class Module2 {
+                @Module val myModule = MyModule()
+            }
+
+            fun invoke() = create<Foo>(Module1(), Module2())
         """
     )
 
@@ -58,8 +56,8 @@ class ModuleTest {
 
             @Binding fun foo() = Foo()
 
-            @Component abstract class MyComponent {
-                abstract val bar: Bar
+            @Component interface MyComponent {
+                val bar: Bar
             }
         """
     )

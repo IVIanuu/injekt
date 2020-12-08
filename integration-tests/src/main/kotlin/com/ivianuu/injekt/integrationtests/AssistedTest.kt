@@ -12,14 +12,10 @@ class AssistedTest {
     @Test
     fun testAssistedSuspendBindingFunction() = codegen(
         """
-            @Component abstract class BarComponent {
-                abstract val barFactory: suspend (Foo) -> Bar
-                
-                @Binding protected suspend fun bar(foo: Foo) = Bar(foo)
-            }
+            @Binding suspend fun bar(foo: Foo) = Bar(foo)
 
             fun invoke(foo: Foo): Bar { 
-                return runBlocking { component<BarComponent>().barFactory(foo) }
+                return runBlocking { create<suspend (Foo) -> Bar>()(foo) }
             }
     """
     ) {
@@ -29,16 +25,12 @@ class AssistedTest {
     @Test
     fun testAssistedComposableBindingFunction() = codegen(
         """
-            @Component abstract class BarComponent {
-                abstract val barFactory: @Composable (Foo) -> Bar
-                
-                @Binding
-                @Composable
-                protected fun bar(foo: Foo) = Bar(foo)
-            }
+            @Binding
+            @Composable
+            fun bar(foo: Foo) = Bar(foo)
 
             fun invoke(foo: Foo) { 
-                component<BarComponent>().barFactory
+                create<@Composable (Foo) -> Bar>()
             }
     """
     ) {
@@ -48,14 +40,10 @@ class AssistedTest {
     @Test
     fun testAssistedBindingFunction() = codegen(
         """
-            @Component abstract class BarComponent {
-                abstract val barFactory: (Foo) -> Bar
-                
-                @Binding protected fun bar(foo: Foo) = Bar(foo)
-            }
+            @Binding fun bar(foo: Foo) = Bar(foo)
 
             fun invoke(foo: Foo): Bar { 
-                return component<BarComponent>().barFactory(foo)
+                return create<(Foo) -> Bar>()(foo)
             }
     """
     ) {
@@ -65,15 +53,14 @@ class AssistedTest {
     @Test
     fun testComplexAssistedBindingFunction() = codegen(
         """
-            @Component abstract class BarComponent {
-                abstract val barFactory: (Foo, Int) -> Bar
-                
-                @Binding protected fun bar(foo: Foo, string: String, int: Int) = Bar(foo)
-                
-                @Binding protected val string = ""
+            @Binding fun bar(foo: Foo, string: String, int: Int) = Bar(foo)
+            @Binding val string = ""
+            
+            @Component interface BarComponent {
+                val barFactory: (Foo, Int) -> Bar
             }
             fun invoke(foo: Foo): Bar { 
-                return component<BarComponent>().barFactory(foo, 0)
+                return create<BarComponent>().barFactory(foo, 0)
             }
     """
     ) {
@@ -83,17 +70,13 @@ class AssistedTest {
     @Test
     fun testScopedAssistedBinding() = codegen(
         """
-            @Component abstract class BarComponent {
-                abstract val barFactory: (Foo) -> Bar
-                
-                @Scoped(BarComponent::class)
-                @Binding protected fun bar(foo: Foo) = Bar(foo)
-            }
-            
-            private val component = component<BarComponent>()
+            @Scoped(TestScope1::class)
+            @Binding fun bar(foo: Foo) = Bar(foo)
+
+            private val createBar = create<@Scoped(TestScope1::class) (Foo) -> Bar>()
 
             fun invoke(): Pair<Bar, Bar> { 
-                return component.barFactory(Foo()) to component.barFactory(Foo())
+                return createBar(Foo()) to createBar(Foo())
             }
     """
     ) {
@@ -104,18 +87,17 @@ class AssistedTest {
     // todo @Test
     fun testScopedAssistedBindingInChild() = codegen(
         """
-            @Component abstract class ParentComponent {
-                abstract val childFactory: () -> MyChildComponent
+            @Component interface ParentComponent {
+                val childFactory: () -> MyChildComponent
                 @Binding(BarComponent::class)
-                protected fun bar(foo: Foo) = Bar(foo)
+                fun bar(foo: Foo) = Bar(foo)
             }
             
-            @ChildComponent
-            abstract class MyChildComponent {
-                abstract val barFactory: (Foo) -> Bar
+            @Component interface MyChildComponent {
+                val barFactory: (Foo) -> Bar
             }
             
-            private val parentComponent = component<BarComponent>()
+            private val parentComponent = create<BarComponent>()
             private val childComponent = parentComponent.childFactory()
 
             fun invoke(): Pair<Bar, Bar> { 
@@ -132,11 +114,11 @@ class AssistedTest {
         """
             @Binding class AnnotatedBar(foo: Foo)
             
-            @Component abstract class MyComponent {
-                abstract val annotatedBar: (Foo) -> AnnotatedBar
+            @Component interface MyComponent {
+                val annotatedBar: (Foo) -> AnnotatedBar
             }
 
-            fun invoke(foo: Foo): AnnotatedBar = component<MyComponent>().annotatedBar(foo)
+            fun invoke(foo: Foo): AnnotatedBar = create<MyComponent>().annotatedBar(foo)
     """
     ) {
         invokeSingleFile(Foo())
@@ -150,12 +132,12 @@ class AssistedTest {
                 val myBindingFactory: (String) -> MyBinding
             )
             
-            @Component abstract class MyComponent {
-                abstract val myBindingFactory: (String) -> MyBinding
+            @Component interface MyComponent {
+                val myBindingFactory: (String) -> MyBinding
             }
 
             fun invoke() {
-                val component = component<MyComponent>()
+                val component = create<MyComponent>()
                 val myBindingA = component.myBindingFactory("a")
                 val myBindingB = myBindingA.myBindingFactory("b")
             }
@@ -177,12 +159,12 @@ class AssistedTest {
                 val myBindingFactoryA: (String) -> MyBindingA
             )
             
-            @Component abstract class MyComponent {
-                abstract val myBindingAFactory: (String) -> MyBindingA
+            @Component interface MyComponent {
+                val myBindingAFactory: (String) -> MyBindingA
             }
 
             fun invoke() {
-                val component = component<MyComponent>()
+                val component = create<MyComponent>()
                 val myBindingA = component.myBindingAFactory("a")
                 val myBindingB = myBindingA.myBindingFactoryB("b")
                 val myBindingA2 = myBindingB.myBindingFactoryA("a2")
@@ -200,12 +182,12 @@ class AssistedTest {
                 val parent: MyBinding?
             )
             
-            @Component abstract class MyComponent {
-                abstract val myBindingFactory: (MyBinding?) -> MyBinding
+            @Component interface MyComponent {
+                val myBindingFactory: (MyBinding?) -> MyBinding
             }
 
             fun invoke() {
-                val component = component<MyComponent>()
+                val component = create<MyComponent>()
                 val myBindingA = component.myBindingFactory(null)
                 val myBindingB = myBindingA.myBindingFactory(myBindingA)
             }

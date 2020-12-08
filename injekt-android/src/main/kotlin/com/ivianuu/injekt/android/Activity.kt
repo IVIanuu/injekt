@@ -26,7 +26,8 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.merge.MergeChildComponent
+import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.merge.MergeComponent
 import com.ivianuu.injekt.merge.get
 
 val ComponentActivity.activityComponent: ActivityComponent
@@ -35,8 +36,9 @@ val ComponentActivity.activityComponent: ActivityComponent
             .get<(ComponentActivity) -> ActivityComponent>()(this)
     }
 
-@MergeChildComponent
-abstract class ActivityComponent(@Binding protected val activity: ComponentActivity)
+@Scope interface ActivityScope
+
+@MergeComponent interface ActivityComponent
 
 typealias ActivityContext = Context
 

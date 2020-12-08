@@ -2,7 +2,6 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
@@ -21,7 +20,7 @@ import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 @Binding class MergeAccessorGenerator(
-    private val context: BindingContext,
+    private val bindingContext: BindingContext,
     private val declarationStore: DeclarationStore,
     private val fileManager: FileManager,
     private val lazyTopDownAnalyzer: LazyTopDownAnalyzer,
@@ -45,14 +44,14 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
                                 TopDownAnalysisMode.LocalDeclarations,
                                 listOf(scope)
                             )
-                            val resolvedCall = expression.getResolvedCall(context)!!
+                            val resolvedCall = expression.getResolvedCall(bindingContext)!!
                             if (resolvedCall.resultingDescriptor.fqNameSafe ==
-                                InjektFqNames.MergeComponentGet
+                                InjektFqNames.get
                             ) {
                                 try {
                                     generateAccessor(resolvedCall, scope)
                                 } catch (e: Exception) {
-                                    error("Wtf $resolvedCall ${expression.text} ${scope.text} ${scope.javaClass}")
+                                    error("Failed to create merge accessor $resolvedCall ${expression.text} ${scope.text} ${scope.javaClass}")
                                 }
                             }
                         }
@@ -104,7 +103,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
                         false,
                         Callable.CallableKind.DEFAULT,
                         false,
-                        DescriptorVisibilities.PUBLIC,
                         Modality.ABSTRACT
                     )
                 )

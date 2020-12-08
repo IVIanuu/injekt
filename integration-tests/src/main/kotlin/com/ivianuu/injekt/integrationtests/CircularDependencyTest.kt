@@ -11,10 +11,7 @@ class CircularDependencyTest {
         """
             @Binding class A(b: B)
             @Binding class B(a: A)
-
-            @Component abstract class MyComponent {
-                abstract val b: B
-            }
+            fun invoke() = create<B>()
         """
     ) {
         assertInternalError("circular")
@@ -26,8 +23,8 @@ class CircularDependencyTest {
             @Binding class A(b: B)
             @Scoped(MyComponent::class) @Binding class B(a: () -> A)
             
-            @Component abstract class MyComponent {
-                abstract val b: B
+            @Component interface MyComponent {
+                val b: B
             }
         """
     )
@@ -38,10 +35,7 @@ class CircularDependencyTest {
             @Binding class A(b: () -> B)
             @Binding class B(b: C)
             @Binding class C(b: B)
-            
-            @Component abstract class MyComponent {
-                abstract val c: C
-            }
+            fun invoke() = create<C>()
         """
     ) {
         assertInternalError("circular")
@@ -53,8 +47,8 @@ class CircularDependencyTest {
             @Binding class A(b: B)
             @Scoped(MyComponent::class) @Binding class B(a: (B) -> A)
             
-            @Component abstract class MyComponent {
-                abstract val b: B
+            @Component interface MyComponent {
+                val b: B
             }
         """
     )
@@ -70,8 +64,8 @@ class CircularDependencyTest {
             
             @SetElements fun set(a: A, b: B): Set<Any> = setOf(a, b)
             
-            @Component abstract class MyComponent {
-                abstract val set: Set<Any>
+            @Component interface MyComponent {
+                val set: Set<Any>
             }
         """
     )
@@ -87,8 +81,8 @@ class CircularDependencyTest {
             
             @MapEntries fun map(a: A, b: B): Map<String, Any> = mapOf("a" to a, "b" to b)
             
-            @Component abstract class MyComponent {
-                abstract val map: Map<String, Any>
+            @Component interface MyComponent {
+                val map: Map<String, Any>
             }
         """
     )
@@ -108,8 +102,8 @@ class CircularDependencyTest {
             
             @MapEntries fun map(a: A, b: B): Map<String, Any> = mapOf("a" to a, "b" to b)
             
-            @Component abstract class MyComponent {
-                abstract val map: Map<String, Any>
+            @Component interface MyComponent {
+                val map: Map<String, Any>
             }
         """
     )

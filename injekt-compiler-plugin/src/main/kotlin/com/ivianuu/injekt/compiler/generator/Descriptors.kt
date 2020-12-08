@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.compiler.generator.componentimpl.ComponentExpression
-import org.jetbrains.kotlin.descriptors.DescriptorVisibility
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName
@@ -56,7 +55,6 @@ data class Callable(
     val isCall: Boolean,
     val callableKind: CallableKind,
     val isInline: Boolean,
-    val visibility: DescriptorVisibility,
     val modality: Modality,
 ) {
     enum class ContributionKind {

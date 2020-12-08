@@ -23,7 +23,7 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
 
 injekt {
-    generateMergeComponents = true
+    generateComponents = true
 }
 
 dependencies {

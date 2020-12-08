@@ -1,7 +1,6 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
@@ -28,12 +27,12 @@ class InterceptorTest {
             
             @Binding fun baz(foo: Foo, bar: Bar) = Baz(bar, foo)
             
-            @Component abstract class MyComponent {
-                abstract val baz: Baz
+            @Component interface MyComponent {
+                val baz: Baz
             }
             
             fun invoke(): Int {
-                component<MyComponent>().baz
+                create<MyComponent>().baz
                 return callCount
             }
         """
@@ -51,10 +50,8 @@ class InterceptorTest {
             @Binding fun bar(foo: Foo) = Bar(foo)
             
             @Binding fun baz(foo: Foo, bar: Bar) = Baz(bar, foo)
-            
-            @Component abstract class MyComponent {
-                abstract val baz: Baz
-                
+
+            class MyModule {
                 @Interceptor fun <T> intercept(factory: () -> T): () -> T { 
                     return {
                         callCount++
@@ -64,7 +61,7 @@ class InterceptorTest {
             }
             
             fun invoke(): Int {
-                component<MyComponent>().baz
+                create<Baz>(MyModule())
                 return callCount
             }
         """
@@ -73,30 +70,31 @@ class InterceptorTest {
     }
 
     @Test
-    fun testImplicitInterceptorInParentInterceptsChild() = codegen(
+    fun testExplicitInterceptorInParentInterceptsChild() = codegen(
         """
             var callCount = 0
 
             @Binding fun foo() = Foo()
-            
-            @Component abstract class ParentComponent {
-                abstract val childComponent: () -> MyChildComponent
-            
+
+            class MyParentModule {
                 @Interceptor fun <T : Foo> intercept(factory: () -> T): () -> T { 
                     return {
                         callCount++
                         factory()
                     }
                 }
+            }
+            
+            @Component interface ParentComponent {
+                val childComponent: () -> MyChildComponent
                 
-                @ChildComponent
-                abstract class MyChildComponent {
-                    abstract val foo: Foo
+                @Component interface MyChildComponent {
+                    val foo: Foo
                 }
             }
             
             fun invoke(): Int {
-                component<ParentComponent>().childComponent().foo
+                create<ParentComponent>(MyParentModule()).childComponent().foo
                 return callCount
             }
         """
@@ -117,12 +115,12 @@ class InterceptorTest {
             
             @Binding fun foo() = Foo()
             
-            @Component abstract class MyComponent {
-                abstract val foo: Foo
+            @Component interface MyComponent {
+                val foo: Foo
             }
             
             fun invoke(): Pair<Foo, Foo> {
-                val component = component<MyComponent>()
+                val component = create<MyComponent>()
                 return component.foo to component.foo
             }
         """
@@ -138,8 +136,8 @@ class InterceptorTest {
 
             @Binding fun foo() = Foo()
             
-            @Component abstract class MyComponent {
-                abstract val foo: Foo
+            @Component interface MyComponent {
+                val foo: Foo
             }
         """
     )
@@ -157,12 +155,12 @@ class InterceptorTest {
             
             @Binding fun foo() = Foo()
 
-            @Component abstract class MyComponent {
-                abstract val foo: Foo
+            @Component interface MyComponent {
+                val foo: Foo
             }
             
             fun invoke(): Int {
-                component<MyComponent>().foo
+                create<MyComponent>().foo
                 return callCount
             }
         """
@@ -184,12 +182,12 @@ class InterceptorTest {
             @Binding
             suspend fun foo() = Foo()
 
-            @Component abstract class MyComponent {
+            @Component interface MyComponent {
                 abstract suspend fun foo(): Foo
             }
             
             fun invoke(): Boolean {
-                runBlocking { component<MyComponent>().foo() }
+                runBlocking { create<MyComponent>().foo() }
                 return called
             }
         """
@@ -205,7 +203,7 @@ class InterceptorTest {
             @Binding
             suspend fun foo() = Foo()
             
-            @Component abstract class MyComponent {
+            @Component interface MyComponent {
                 abstract suspend fun foo(): Foo
             }
         """
@@ -220,9 +218,9 @@ class InterceptorTest {
             @Composable
             fun foo() = Foo()
             
-            @Component abstract class MyComponent {
+            @Component interface MyComponent {
                 @Composable
-                abstract val foo: Foo
+                val foo: Foo
             }
         """
     )
@@ -231,7 +229,7 @@ class InterceptorTest {
     fun testInterceptorWithTargetComponentOnlyInterceptsBindingsOfTheComponent() = codegen(
         """
             var callCount = 0
-            @Bound(ParentComponent::class)
+            @Bound(TestScope1::class)
             @Interceptor fun <T : Foo> intercept(factory: () -> T): () -> T {
                 return {
                     callCount++
@@ -241,17 +239,16 @@ class InterceptorTest {
             
             @Binding fun foo() = Foo()
             
-            @Component abstract class ParentComponent {
-                abstract val foo: Foo
-                abstract val childFactory: () -> MyChildComponent
-                @ChildComponent
-                abstract class MyChildComponent {
-                    abstract val foo: Foo
+            @Scoped(TestScope1::class) @Component interface ParentComponent {
+                val foo: Foo
+                val childFactory: () -> MyChildComponent
+                @Scoped(TestScope2::class) @Component interface MyChildComponent {
+                    val foo: Foo
                 }
             }
             
             fun invoke(): Int {
-                val component = component<ParentComponent>()
+                val component = create<ParentComponent>()
                 component.foo
                 component.childFactory().foo
                 return callCount
@@ -269,8 +266,8 @@ class InterceptorTest {
             @Scoped(MyComponent::class)
             @Binding fun foo() = Foo()
             
-            @Component abstract class MyComponent {
-                abstract val foo: Foo
+            @Component interface MyComponent {
+                val foo: Foo
             }
         """
     )

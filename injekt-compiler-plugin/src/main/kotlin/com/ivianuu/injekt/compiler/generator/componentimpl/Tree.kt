@@ -24,7 +24,6 @@ import com.ivianuu.injekt.compiler.generator.callableKind
 import com.ivianuu.injekt.compiler.generator.getStarSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.substitute
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -44,13 +43,12 @@ class ComponentCallable(
     val isMutable: Boolean,
     var isOverride: Boolean,
     val isInline: Boolean,
-    val canBePrivate: Boolean,
     val valueParameters: List<ValueParameter>,
     val typeParameters: List<TypeParameter>,
 ) : ComponentMember {
     override fun CodeBuilder.emit() {
         if (callableKind == Callable.CallableKind.COMPOSABLE) emitLine("@${InjektFqNames.Composable}")
-        if (isOverride) emit("override ") else if (canBePrivate) emit("internal ")
+        if (isOverride) emit("override ") else emit("internal ")
         if (!isOverride && isInline) emit("inline ")
         if (callableKind == Callable.CallableKind.SUSPEND) emit("suspend ")
         if (isProperty) {
@@ -245,9 +243,8 @@ class CallableBindingNode(
     override val origin: FqName
         get() = callable.fqName
     override val inline: Boolean
-        get() = callable.visibility != DescriptorVisibilities.PROTECTED &&
-                (((!callable.isCall || callable.valueParameters.isEmpty()) ||
-                        callable.isInline) && !eager && targetComponent == null)
+        get() = ((!callable.isCall || callable.valueParameters.isEmpty()) ||
+                callable.isInline) && !eager && targetComponent == null
 
     override fun refineType(dependencyBindings: List<BindingNode>) {
         super.refineType(dependencyBindings)

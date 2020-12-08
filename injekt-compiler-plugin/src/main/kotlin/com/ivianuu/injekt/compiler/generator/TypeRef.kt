@@ -42,6 +42,10 @@ data class ClassifierRef(
     val typeParameters: List<ClassifierRef> = emptyList(),
     val superTypes: List<TypeRef> = emptyList(),
     val expandedType: TypeRef? = null,
+    val isComponent: Boolean = false,
+    val isMergeComponent: Boolean = false,
+    val targetScope: TypeRef? = null,
+    val isModule: Boolean = false,
     val isTypeParameter: Boolean = false,
     val isObject: Boolean = false,
     val isTypeAlias: Boolean = false,
@@ -87,6 +91,10 @@ fun ClassifierDescriptor.toClassifierRef(): ClassifierRef = ClassifierRef(
     superTypes = typeConstructor.supertypes.map { it.toTypeRef() },
     expandedType = (original as? TypeAliasDescriptor)?.expandedType?.toTypeRef()?.fullyExpandedType,
     isTypeParameter = this is TypeParameterDescriptor,
+    isComponent = hasAnnotation(InjektFqNames.Component),
+    isMergeComponent = hasAnnotation(InjektFqNames.MergeComponent),
+    targetScope = targetComponent(module),
+    isModule = hasAnnotation(InjektFqNames.Module),
     isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
     isTypeAlias = this is TypeAliasDescriptor
 )
@@ -101,14 +109,11 @@ sealed class TypeRef {
     abstract val isExtensionFunction: Boolean
     abstract val isModule: Boolean
     abstract val isBinding: Boolean
-    abstract val isMergeComponent: Boolean
-    abstract val isMergeChildComponent: Boolean
-    abstract val isChildComponent: Boolean
     abstract val isComposable: Boolean
     abstract val isStarProjection: Boolean
     abstract val qualifiers: List<QualifierDescriptor>
     abstract val contributionKind: Callable.ContributionKind?
-    abstract val targetComponent: TypeRef?
+    abstract val targetScope: TypeRef?
     abstract val scoped: Boolean
     abstract val eager: Boolean
     abstract val default: Boolean
@@ -131,9 +136,6 @@ sealed class TypeRef {
         result = 31 * result + isExtensionFunction.hashCode()
         result = 31 * result + isModule.hashCode()
         result = 31 * result + isBinding.hashCode()
-        result = 31 * result + isMergeComponent.hashCode()
-        result = 31 * result + isMergeChildComponent.hashCode()
-        result = 31 * result + isChildComponent.hashCode()
         result = 31 * result + isComposable.hashCode()
         result = 31 * result + isStarProjection.hashCode()
         result = 31 * result + qualifiers.hashCode()
@@ -183,15 +185,6 @@ class KotlinTypeRef(
         (kotlinType.constructor.declarationDescriptor!! as? ClassDescriptor)
             ?.getInjectConstructor() != null
     }
-    override val isMergeComponent: Boolean by unsafeLazy {
-        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.MergeComponent)
-    }
-    override val isMergeChildComponent: Boolean by unsafeLazy {
-        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.MergeChildComponent)
-    }
-    override val isChildComponent: Boolean by unsafeLazy {
-        finalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ChildComponent)
-    }
     override val isComposable: Boolean by unsafeLazy {
         kotlinType.hasAnnotation(InjektFqNames.Composable) &&
                 kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
@@ -211,7 +204,7 @@ class KotlinTypeRef(
     override val contributionKind: Callable.ContributionKind? by unsafeLazy {
         kotlinType.contributionKind()
     }
-    override val targetComponent: TypeRef? by unsafeLazy {
+    override val targetScope: TypeRef? by unsafeLazy {
         kotlinType.targetComponent(
             kotlinType.constructor.declarationDescriptor!!.module
         )
@@ -239,14 +232,11 @@ class SimpleTypeRef(
     override val isExtensionFunction: Boolean = false,
     override val isModule: Boolean = false,
     override val isBinding: Boolean = false,
-    override val isMergeComponent: Boolean = false,
-    override val isMergeChildComponent: Boolean = false,
-    override val isChildComponent: Boolean = false,
     override val isComposable: Boolean = false,
     override val isStarProjection: Boolean = false,
     override val qualifiers: List<QualifierDescriptor> = emptyList(),
     override val contributionKind: Callable.ContributionKind? = null,
-    override val targetComponent: TypeRef? = null,
+    override val targetScope: TypeRef? = null,
     override val scoped: Boolean = false,
     override val eager: Boolean = false,
     override val default: Boolean = false,
@@ -273,14 +263,11 @@ fun TypeRef.copy(
     isExtensionFunction: Boolean = this.isExtensionFunction,
     isModule: Boolean = this.isModule,
     isBinding: Boolean = this.isBinding,
-    isMergeComponent: Boolean = this.isMergeComponent,
-    isMergeChildComponent: Boolean = this.isMergeChildComponent,
-    isChildComponent: Boolean = this.isChildComponent,
     isComposable: Boolean = this.isComposable,
     isStarProjection: Boolean = this.isStarProjection,
     qualifiers: List<QualifierDescriptor> = this.qualifiers,
     contributionKind: Callable.ContributionKind? = this.contributionKind,
-    targetComponent: TypeRef? = this.targetComponent,
+    targetComponent: TypeRef? = this.targetScope,
     scoped: Boolean = this.scoped,
     eager: Boolean = this.eager,
     default: Boolean = this.default,
@@ -295,9 +282,6 @@ fun TypeRef.copy(
     isExtensionFunction,
     isModule,
     isBinding,
-    isMergeComponent,
-    isMergeChildComponent,
-    isChildComponent,
     isComposable,
     isStarProjection,
     qualifiers,

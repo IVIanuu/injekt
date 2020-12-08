@@ -17,16 +17,12 @@
 package com.ivianuu.injekt.samples.coffeemaker
 
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Scoped
-import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.component
+import com.ivianuu.injekt.create
 import com.ivianuu.injekt.merge.ApplicationComponent
-import com.ivianuu.injekt.merge.get
 
 fun main() {
-    val component = component<ApplicationComponent>(Any())
-    component.get<brewCoffee>()()
+    create<brewCoffee>()()
 }
 
 typealias brewCoffee = () -> Unit
@@ -44,7 +40,7 @@ interface Heater {
     val isHot: Boolean
 }
 
-@Module val ElectricHeaterModule = alias<ElectricHeater, Heater>()
+@Binding fun ElectricHeater.provideHeater(): Heater = this
 
 @Scoped(ApplicationComponent::class)
 @Binding class ElectricHeater : Heater {
@@ -67,7 +63,7 @@ interface Pump {
     fun pump()
 }
 
-@Module val ThermosiphonModule = alias<Thermosiphon, Pump>()
+@Binding fun Thermosiphon.providePump(): Pump = this
 
 @Binding class Thermosiphon(private val heater: Heater) : Pump {
     override fun pump() {

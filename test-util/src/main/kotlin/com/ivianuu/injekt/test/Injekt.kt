@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.test
 
+import com.ivianuu.injekt.Scope
+
 class Foo
 
 class Bar(val foo: Foo)
@@ -27,3 +29,7 @@ interface Command
 class CommandA : Command
 
 class CommandB : Command
+
+@Scope interface TestScope1
+@Scope interface TestScope2
+@Scope interface TestScope3

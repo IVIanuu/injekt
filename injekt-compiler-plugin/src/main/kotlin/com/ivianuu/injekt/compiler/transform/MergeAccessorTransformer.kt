@@ -41,7 +41,7 @@ class MergeAccessorTransformer(private val context: IrPluginContext) : IrElement
         inScope(declaration) { super.visitProperty(declaration) }
 
     override fun visitCall(expression: IrCall): IrExpression {
-        return if (expression.symbol.descriptor.fqNameSafe == InjektFqNames.MergeComponentGet) {
+        return if (expression.symbol.descriptor.fqNameSafe == InjektFqNames.get) {
             val accessorName = scope!!.file.fqName
                 .child("${
                     scope!!.descriptor.fqNameSafe.pathSegments().joinToString("_")

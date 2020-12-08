@@ -19,8 +19,8 @@ class LambdaContributionsTest {
 
             @Binding fun foo() = Foo()
 
-            @Component abstract class MyComponent {
-                abstract val bar: Bar
+            @Component interface MyComponent {
+                val bar: Bar
             }
         """
     )
@@ -32,8 +32,8 @@ class LambdaContributionsTest {
 
             @Binding fun foo() = Foo()
 
-            @Component abstract class MyComponent {
-                abstract val bar: Bar
+            @Component interface MyComponent {
+                val bar: Bar
             }
         """
     )
@@ -43,9 +43,8 @@ class LambdaContributionsTest {
         listOf(
             source(
                 """
-                        @MergeComponent
-                        abstract class MyComponent {
-                            abstract val bar: Bar
+                        @MergeComponent interface MyComponent {
+                            val bar: Bar
                         }
                         """
             )
@@ -76,8 +75,8 @@ class LambdaContributionsTest {
 
             @Binding fun foo() = Foo()
 
-            @Component abstract class MyComponent {
-                abstract val bar: Bar
+            @Component interface MyComponent {
+                val bar: Bar
             }
         """
     )
@@ -91,8 +90,8 @@ class LambdaContributionsTest {
 
             @Binding fun foo() = Foo()
 
-            @Component abstract class MyComponent {
-                abstract val bar: Bar
+            @Component interface MyComponent {
+                val bar: Bar
             }
         """
     )
@@ -107,8 +106,8 @@ class LambdaContributionsTest {
 
             @Binding fun foo() = Foo()
 
-            @Component abstract class MyComponent {
-                abstract val classMap: Map<KClass<*>, Any>
+            @Component interface MyComponent {
+                val classMap: Map<KClass<*>, Any>
             }
         """
     )
@@ -123,8 +122,8 @@ class LambdaContributionsTest {
 
             @Binding fun foo() = Foo()
 
-            @Component abstract class MyComponent {
-                abstract val set: Set<Any>
+            @Component interface MyComponent {
+                val set: Set<Any>
             }
         """
     )
@@ -139,12 +138,12 @@ class LambdaContributionsTest {
 
             @Binding fun foo() = Foo()
 
-            @Component abstract class MyComponent {
-                abstract val foo: Foo
+            @Component interface MyComponent {
+                val foo: Foo
             }
 
             fun invoke(): Boolean {
-                component<MyComponent>().foo
+                create<MyComponent>().foo
                 return called
             }
         """
@@ -167,12 +166,12 @@ class LambdaContributionsTest {
 
             @Binding fun foo() = Foo()
 
-            @Component abstract class MyComponent {
-                abstract val foo: Foo
+            @Component interface MyComponent {
+                val foo: Foo
             }
 
             fun invoke(): Pair<Boolean, Boolean> {
-                component<MyComponent>().foo
+                create<MyComponent>().foo
                 return calledA to calledB
             }
         """
@@ -199,12 +198,12 @@ class LambdaContributionsTest {
 
             @Binding fun foo() = Foo()
 
-            @Component abstract class MyComponent {
-                abstract val foo: Foo
+            @Component interface MyComponent {
+                val foo: Foo
             }
 
             fun invoke(): Pair<Boolean, Boolean> {
-                component<MyComponent>().foo
+                create<MyComponent>().foo
                 return calledA to calledB
             }
         """
@@ -223,8 +222,8 @@ class LambdaContributionsTest {
 
             @Binding fun foo() = Foo()
 
-            @Component abstract class MyComponent {
-                abstract val dep: Dep<Foo>
+            @Component interface MyComponent {
+                val dep: Dep<Foo>
             }
         """
     )
@@ -237,9 +236,7 @@ class LambdaContributionsTest {
 
             @Binding fun foo() = Foo()
 
-            @Component abstract class MyComponent {
-                abstract val bar: Bar
-            }
+            fun invoke() = create<Bar>()
         """
     ) {
         assertInternalError("Call context mismatch")
@@ -253,9 +250,7 @@ class LambdaContributionsTest {
 
             @Binding fun foo() = Foo()
 
-            @Component abstract class MyComponent {
-                abstract val bar: Bar
-            }
+            fun invoke() = create<Bar>()
         """
     ) {
         assertInternalError("Call context mismatch")

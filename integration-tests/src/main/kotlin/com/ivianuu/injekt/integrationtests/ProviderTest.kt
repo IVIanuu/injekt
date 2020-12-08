@@ -10,13 +10,9 @@ class ProviderTest {
     @Test
     fun testProvider() = codegen(
         """
-            @Component abstract class ProviderComponent {
-                abstract val fooFactory: () -> Foo
-                @Binding protected fun foo() = Foo()
-            }
-
+            @Binding fun foo() = Foo()
             fun invoke() {
-                component<ProviderComponent>().fooFactory()
+                create<() -> Foo>()()
             }
         """
     ) {
@@ -26,15 +22,9 @@ class ProviderTest {
     @Test
     fun testSuspendProvider() = codegen(
         """
-            @Component abstract class ProviderComponent {
-                abstract val fooFactory: suspend () -> Foo
-                @Binding protected suspend fun foo() = Foo()
-            }
-
+            @Binding suspend fun foo() = Foo()
             fun invoke() {
-                runBlocking {
-                    component<ProviderComponent>().fooFactory()
-                }
+                runBlocking { create<suspend () -> Foo>()() }
             }
         """
     ) {
@@ -44,14 +34,10 @@ class ProviderTest {
     @Test
     fun testComposableProvider() = codegen(
         """
-            @Component abstract class ProviderComponent {
-                abstract val fooFactory: @Composable () -> Foo
-                @Composable
-                @Binding protected fun foo() = Foo()
-            }
+            @Composable @Binding fun foo() = Foo()
 
             fun invoke() {
-                component<ProviderComponent>().fooFactory
+                create<@Composable () -> Foo>()
             }
         """
     ) {
@@ -61,11 +47,11 @@ class ProviderTest {
     @Test
     fun testNullableProviderMissingBinding() = codegen(
         """
-            @Component abstract class ProviderComponent {
-                abstract val fooFactory: () -> Foo?
+            @Component interface ProviderComponent {
+                val fooFactory: () -> Foo?
             }
 
-            fun invoke() = component<ProviderComponent>().fooFactory()
+            fun invoke() = create<ProviderComponent>().fooFactory()
         """
     ) {
         assertNull(invokeSingleFile())

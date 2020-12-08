@@ -16,16 +16,17 @@ class QualifierTest {
             @Target(AnnotationTarget.TYPE)
             @Qualifier
             annotation class MyQualifier
+
+            @Binding fun foo1(): Foo = Foo()
+            @Binding fun foo2(): @MyQualifier Foo = Foo()
             
-            @Component abstract class FooComponent {
-                abstract val foo1: Foo
-                abstract val foo2: @MyQualifier Foo
-                @Binding protected fun _foo1(): Foo = Foo()
-                @Binding protected fun _foo2(): @MyQualifier Foo = Foo()
+            @Component interface FooComponent {
+                val foo1: Foo
+                val foo2: @MyQualifier Foo
             }
        
             fun invoke(): Pair<Foo, Foo> {
-                val component = component<FooComponent>()
+                val component = create<FooComponent>()
                 return component.foo1 to component.foo2
             }
             """
@@ -42,7 +43,7 @@ class QualifierTest {
                     @Target(AnnotationTarget.TYPE)
                     @Qualifier
                     annotation class MyQualifier
-                    object Foo1Module {
+                    class Foo1Module {
                         @Binding fun foo1(): @MyQualifier Foo = Foo()
                     }
             """
@@ -51,7 +52,7 @@ class QualifierTest {
         listOf(
             source(
                 """
-                    object Foo2Module {
+                    class Foo2Module {
                         @Binding fun foo2(): Foo = Foo()
                     }
             """
@@ -60,15 +61,12 @@ class QualifierTest {
         listOf(
             source(
                 """
-                    @Component abstract class MyComponent {
-                        abstract val foo1: @MyQualifier Foo
-                        abstract val foo2: Foo
-                        
-                        @Module protected val foo1Module = Foo1Module
-                        @Module protected val foo2Module = Foo2Module
+                    @Component interface MyComponent {
+                        val foo1: @MyQualifier Foo
+                        val foo2: Foo
                     }
                     fun invoke(): Pair<Foo, Foo> {
-                        val component = component<MyComponent>()
+                        val component = create<MyComponent>(Foo1Module(), Foo2Module())
                         return component.foo1 to component.foo2
                     }
             """,
@@ -86,16 +84,17 @@ class QualifierTest {
             @Target(AnnotationTarget.TYPE)
             @Qualifier
             annotation class MyQualifier(val value: String)
-            
-            @Component abstract class FooComponent {
-                abstract val foo1: @MyQualifier("1") Foo
-                abstract val foo2: @MyQualifier("2") Foo
-                @Binding protected fun _foo1(): @MyQualifier("1") Foo = Foo()
-                @Binding protected fun _foo2(): @MyQualifier("2") Foo = Foo()
+
+            @Binding fun _foo1(): @MyQualifier("1") Foo = Foo()
+            @Binding fun _foo2(): @MyQualifier("2") Foo = Foo()
+
+            @Component interface FooComponent {
+                val foo1: @MyQualifier("1") Foo
+                val foo2: @MyQualifier("2") Foo
             }
        
             fun invoke(): Pair<Foo, Foo> {
-                val component = component<FooComponent>()
+                val component = create<FooComponent>()
                 return component.foo1 to component.foo2
             }
             """
@@ -110,16 +109,17 @@ class QualifierTest {
             @Target(AnnotationTarget.TYPE)
             @Qualifier
             annotation class MyQualifier<T>
+
+            @Binding fun _foo1(): @MyQualifier<String> Foo = Foo()
+            @Binding fun _foo2(): @MyQualifier<Int> Foo = Foo()
             
-            @Component abstract class FooComponent {
-                abstract val foo1: @MyQualifier<String> Foo
-                abstract val foo2: @MyQualifier<Int> Foo
-                @Binding protected fun _foo1(): @MyQualifier<String> Foo = Foo()
-                @Binding protected fun _foo2(): @MyQualifier<Int> Foo = Foo()
+            @Component interface FooComponent {
+                val foo1: @MyQualifier<String> Foo
+                val foo2: @MyQualifier<Int> Foo
             }
        
             fun invoke(): Pair<Foo, Foo> {
-                val component = component<FooComponent>()
+                val component = create<FooComponent>()
                 return component.foo1 to component.foo2
             }
             """
@@ -139,8 +139,8 @@ class QualifierTest {
             
             @Binding fun qualified(): @MyQualifier String = ""
             
-            @Component abstract class FooComponent {
-                abstract val dep: Dep<String>
+            @Component interface FooComponent {
+                val dep: Dep<String>
             }
             """
     )
@@ -154,8 +154,8 @@ class QualifierTest {
             
             @Binding fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
              
-            @Component abstract class FooComponent {
-                abstract val foo: @MyQualifier<String> Foo
+            @Component interface FooComponent {
+                val foo: @MyQualifier<String> Foo
             }
             """
     )
@@ -176,8 +176,8 @@ class QualifierTest {
         listOf(
             source(
                 """
-                    @Component abstract class FooComponent {
-                        abstract val foo: @MyQualifier<String> Foo
+                    @Component interface FooComponent {
+                        val foo: @MyQualifier<String> Foo
                     }
                 """
             )

@@ -1,15 +1,8 @@
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.multiCodegen
-import com.ivianuu.injekt.test.source
-import junit.framework.Assert.assertSame
-import org.junit.Test
-
 class EssentialsTest {
 
-    @Test
+    /*@Test
     fun testStore() = codegen(
         """
             interface Scope
@@ -42,12 +35,12 @@ class EssentialsTest {
                 return state.store to dispatch.store
             }
             
-            @Component abstract class MyComponent {
-                abstract val myPage: MyPage
+            @Component interface MyComponent {
+                val myPage: MyPage
             }
             
             fun invoke(): Pair<Any, Any> {
-                return component<MyComponent>().myPage()
+                return create<MyComponent>().myPage()
             }
         """
     ) {
@@ -91,12 +84,12 @@ class EssentialsTest {
                 return state.store to dispatch.store
             }
             
-            @Component abstract class MyComponent {
-                abstract val myPage: MyPage
+            @Component interface MyComponent {
+                val myPage: MyPage
             }
             
             fun invoke(): Pair<Any, Any> {
-                return component<MyComponent>().myPage()
+                return create<MyComponent>().myPage()
             }
         """
     ) {
@@ -144,12 +137,12 @@ class EssentialsTest {
                 return state.store to dispatch.store
             }
             
-            @Component abstract class MyComponent {
-                abstract val myPage: MyPage
+            @Component interface MyComponent {
+                val myPage: MyPage
             }
             
             fun invoke(): Pair<Any, Any> {
-                return component<MyComponent>().myPage()
+                return create<MyComponent>().myPage()
             }
         """
     ) {
@@ -196,12 +189,12 @@ class EssentialsTest {
                 return state.store to state.store
             }
             
-            @Component abstract class MyComponent {
-                abstract val myPage: MyPage
+            @Component interface MyComponent {
+                val myPage: MyPage
             }
             
             fun invoke(): Pair<Any, Any> {
-                return component<MyComponent>().myPage()
+                return create<MyComponent>().myPage()
             }
         """
     ) {
@@ -286,13 +279,13 @@ class EssentialsTest {
         listOf(
             source(
                 """
-                    @Component abstract class MyComponent {
-                        abstract val myPage: MyPage
-                        abstract val myPage2: MyPage2
+                    @Component interface MyComponent {
+                        val myPage: MyPage
+                        val myPage2: MyPage2
                     }
                     
                     fun invoke(): Pair<Any, Any> {
-                        return component<MyComponent>().myPage()
+                        return create<MyComponent>().myPage()
                     } 
                 """
             )
@@ -349,8 +342,8 @@ class EssentialsTest {
             typealias MyType = String
             @Binding fun initialMyType(): @Initial MyType = "" 
 
-            @Component abstract class MyComponent {
-                abstract val flow: Flow<MyType>
+            @Component interface MyComponent {
+                val flow: Flow<MyType>
             }
         """
     )
@@ -436,8 +429,8 @@ class EssentialsTest {
                 
             }
 
-            @Component abstract class MyComponent {
-                abstract val produceResult: produceResult<Params, Result>
+            @Component interface MyComponent {
+                val produceResult: produceResult<Params, Result>
             }
         """
     )
@@ -459,8 +452,8 @@ class EssentialsTest {
             @KeyFactoryBinding
             @FunBinding fun myKeyFactory(@FunApi string: String): Key = error("")
 
-            @Component abstract class MyComponent {
-                abstract val stringKeyFactory: KeyFactory<String>
+            @Component interface MyComponent {
+                val stringKeyFactory: KeyFactory<String>
             }
         """
     )
@@ -484,8 +477,8 @@ class EssentialsTest {
             @KeyUiBinding<String>
             @FunBinding fun foo(@FunApi string: String) = Foo()
 
-            @Component abstract class MyComponent {
-                abstract val stringFooFactory: Map<Unit, Factory<Any, Any>>
+            @Component interface MyComponent {
+                val stringFooFactory: Map<Unit, Factory<Any, Any>>
 
             }
         """
@@ -513,10 +506,10 @@ class EssentialsTest {
 
             @Binding class MyWorker : Worker
 
-            @Component abstract class MyComponent {
-                abstract val workers: Workers
+            @Component interface MyComponent {
+                val workers: Workers
             }
         """
-    )
+    )*/
 
 }

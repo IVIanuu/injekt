@@ -19,12 +19,12 @@ class EagerTest {
                 return Foo()
             }
 
-            @Component abstract class MyComponent {
-                abstract val foo: Foo
+            @Component interface MyComponent {
+                val foo: Foo
             }
 
             fun invoke(): Boolean {
-                val component = component<MyComponent>()
+                val component = create<MyComponent>()
                 return called
             }
         """
@@ -39,18 +39,17 @@ class EagerTest {
 
             @Interceptor fun interceptFoo(factory: () -> Foo) = factory
 
-            @Eager
-            @Binding fun foo(): Foo {
+            @Eager @Binding fun foo(): Foo {
                 called = true
                 return Foo()
             }
 
-            @Component abstract class MyComponent {
-                abstract val foo: Foo
+            @Component interface MyComponent {
+                val foo: Foo
             }
 
             fun invoke(): Boolean {
-                val component = component<MyComponent>()
+                val component = create<MyComponent>()
                 return called
             }
         """
@@ -64,18 +63,18 @@ class EagerTest {
             var called = false
 
             @Eager
-            @Scoped(MyComponent::class)
+            @Scoped(TestScope1::class)
             @Binding fun foo(): Foo {
                 called = true
                 return Foo()
             }
 
-            @Component abstract class MyComponent {
-                abstract val foo: Foo
+            @Scoped(TestScope1::class) @Component interface MyComponent {
+                val foo: Foo
             }
 
             fun invoke(): Boolean {
-                val component = component<MyComponent>()
+                val component = create<MyComponent>()
                 return called
             }
         """
@@ -93,8 +92,8 @@ class EagerTest {
             @Scoped(MyComponent::class)
             @Binding fun bar(foo: Foo) = Bar(foo)
 
-            @Component abstract class MyComponent {
-                abstract val bar: Bar
+            @Component interface MyComponent {
+                val bar: Bar
             }
         """
     )
@@ -110,8 +109,8 @@ class EagerTest {
             @Scoped(MyComponent::class)
             @Binding fun bar(foo: () -> Foo) = Bar(Foo())
 
-            @Component abstract class MyComponent {
-                abstract val bar: Bar
+            @Component interface MyComponent {
+                val bar: Bar
             }
         """
     )
@@ -119,12 +118,8 @@ class EagerTest {
     @Test
     fun testEagerAssistedBindingFails() = codegen(
         """
-            @Eager
-            @Binding fun bar(foo: Foo) = Bar(foo)
-
-            @Component abstract class MyComponent {
-                abstract val barFactory: (Foo) -> Bar
-            }
+            @Eager @Binding fun bar(foo: Foo) = Bar(foo)
+            fun invoke() = create<(Foo) -> Bar>()
         """
     ) {
         assertInternalError("Cannot perform assisted injection on a eager binding")

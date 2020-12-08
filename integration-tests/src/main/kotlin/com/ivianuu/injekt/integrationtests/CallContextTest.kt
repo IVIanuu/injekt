@@ -16,9 +16,7 @@ class CallContextTest {
             @Binding
             suspend fun bar(foo: Foo) = Bar(foo)
 
-            @Component abstract class MyComponent {
-                abstract val bar: Bar
-            }
+            fun invoke() = create<Bar>()
         """
     ) {
         assertInternalError("Call context mismatch")
@@ -34,9 +32,7 @@ class CallContextTest {
             @Composable
             fun bar(foo: Foo) = Bar(foo)
 
-            @Component abstract class MyComponent {
-                abstract val bar: Bar
-            }
+            fun invoke() = create<Bar>()
         """
     ) {
         assertInternalError("Call context mismatch")
@@ -54,9 +50,7 @@ class CallContextTest {
             
             @Binding fun baz(bar: Bar, foo: Foo) = Baz(bar, foo)
 
-            @Component abstract class MyComponent {
-                abstract val baz: Baz
-            }
+            fun invoke() = create<Baz>()
         """
     ) {
         assertInternalError("Dependencies call context mismatch")
@@ -71,9 +65,9 @@ class CallContextTest {
 
             @Binding fun bar(foo: Foo) = Bar(foo)
 
-            @Component abstract class MyComponent {
+            @Component interface MyComponent {
                 @Composable
-                abstract val bar: Bar
+                val bar: Bar
             }
         """
     )
@@ -84,10 +78,7 @@ class CallContextTest {
             @Binding
             @Composable
             fun foo() = Foo()
-
-            @Component abstract class MyComponent {
-                abstract val foo: Foo
-            }
+            fun invoke() = create<Foo>()
         """
     ) {
         assertInternalError("Call context mismatch")

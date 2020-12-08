@@ -17,37 +17,68 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.generator.toComponentImplFqName
+import com.ivianuu.injekt.compiler.generator.asNameId
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.descriptors.impl.EmptyPackageFragmentDescriptor
+import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildClass
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
+import org.jetbrains.kotlin.ir.declarations.IrProperty
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.impl.IrExternalPackageFragmentImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrExternalPackageFragmentSymbolImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.file
+import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ComponentIntrinsicTransformer(
+class CreateTransformer(
     private val context: IrPluginContext,
 ) : IrElementTransformerVoid() {
+
+    private var scope: IrDeclarationWithName? = null
+    private inline fun <R> inScope(scope: IrDeclarationWithName, block: () -> R): R {
+        val prevScope = scope
+        this.scope = scope
+        val result = block()
+        this.scope = prevScope
+        return result
+    }
+
+    override fun visitClass(declaration: IrClass): IrStatement =
+        inScope(declaration) { super.visitClass(declaration) }
+
+    override fun visitSimpleFunction(declaration: IrSimpleFunction): IrStatement {
+        return if (declaration.name.isSpecial) super.visitSimpleFunction(declaration)
+        else inScope(declaration) { super.visitSimpleFunction(declaration) }
+    }
+
+    override fun visitProperty(declaration: IrProperty): IrStatement =
+        inScope(declaration) { super.visitProperty(declaration) }
+
     override fun visitCall(expression: IrCall): IrExpression {
         val result = super.visitCall(expression) as IrCall
-        if (result.symbol.descriptor.fqNameSafe == InjektFqNames.ComponentFun) {
-            val componentClass = result.getTypeArgument(0)!!.classOrNull!!.owner
-            val componentImplFqName =
-                componentClass.descriptor.fqNameSafe.toComponentImplFqName()
+        return if (result.symbol.descriptor.fqNameSafe == InjektFqNames.create) {
+            val componentName = scope!!.file.fqName
+                .child("${
+                    scope!!.descriptor.fqNameSafe.pathSegments().joinToString("_")
+                }_${expression.startOffset}".asNameId())
             val componentImplClassStub = IrFactoryImpl.buildClass {
-                this.name = componentImplFqName.shortName()
+                this.name = componentName.shortName()
                 origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
             }.apply clazz@{
                 createImplicitParameterDeclarationWithWrappedDescriptor()
@@ -55,44 +86,65 @@ class ComponentIntrinsicTransformer(
                     IrExternalPackageFragmentSymbolImpl(
                         EmptyPackageFragmentDescriptor(
                             context.moduleDescriptor,
-                            componentImplFqName.parent()
+                            componentName.parent()
                         )
                     ),
-                    componentImplFqName.parent()
+                    componentName.parent()
                 )
             }
 
-            val componentConstructor = componentClass.constructors.singleOrNull()
+            val arguments = (expression.getValueArgument(0) as? IrVarargImpl)
+                ?.elements ?: emptyList()
 
             val componentImplConstructorStub = componentImplClassStub.addConstructor {
                 origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
             }.apply {
                 parent = componentImplClassStub
-                componentConstructor?.valueParameters?.forEach {
-                    addValueParameter(it.name.asString(), it.type)
-                }
+                arguments
+                    .map { it as IrExpression }
+                    .forEachIndexed { index, arg ->
+                        addValueParameter(index.toString(), arg.type)
+                    }
             }
 
-            return IrConstructorCallImpl(
+            val componentInit = IrConstructorCallImpl(
                 result.startOffset,
                 result.endOffset,
-                result.type,
+                componentImplClassStub.defaultType,
                 componentImplConstructorStub.symbol,
                 0,
                 0,
                 componentImplConstructorStub.valueParameters.size,
                 null
             ).apply {
-                val arguments = (expression.getValueArgument(0) as? IrVarargImpl)
-                    ?.elements ?: emptyList()
-
                 arguments
                     .map { it as IrExpression }
                     .forEachIndexed { index, argument ->
                         putValueArgument(index, argument)
                     }
             }
-        }
-        return result
+
+            if (expression.getTypeArgument(0)
+                !!.classOrNull!!.owner.let {
+                    it.hasAnnotation(InjektFqNames.Component) ||
+                            it.hasAnnotation(InjektFqNames.MergeComponent)
+                }
+            ) {
+                componentInit
+            } else {
+                IrCallImpl(
+                    expression.startOffset,
+                    expression.endOffset,
+                    expression.type,
+                    context.irBuiltIns.function(0)
+                        .functions
+                        .first { it.owner.name.asString() == "invoke" },
+                    null,
+                    null
+                ).apply {
+                    dispatchReceiver = componentInit
+                }
+            }
+        } else result
     }
 }

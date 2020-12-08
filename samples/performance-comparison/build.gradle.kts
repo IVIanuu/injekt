@@ -38,7 +38,7 @@ android {
 }
 
 injekt {
-    generateMergeComponents = true
+    generateComponents = true
 }
 
 dependencies {

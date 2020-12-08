@@ -13,9 +13,8 @@ class InternalBindingTest {
                 """
                     internal typealias InternalFoo = Foo
 
-                    object FooBarModule {
+                    class FooBarModule {
                         @Binding fun foo(): InternalFoo = Foo()
-                        
                         @Binding fun bar(foo: () -> InternalFoo) = Bar(foo())
                     }
                 """
@@ -24,12 +23,8 @@ class InternalBindingTest {
         listOf(
             source(
                 """
-                    @Component 
-                    abstract class MyComponent {
-                        abstract val bar: Bar
-                        
-                        @Module
-                        protected val fooBarModule = FooBarModule
+                    fun invoke() {
+                        create<Bar>(FooBarModule())
                     }
                 """
             )
@@ -45,7 +40,7 @@ class InternalBindingTest {
                     @Target(AnnotationTarget.TYPE)
                     internal annotation class Internal
 
-                    object FooBarModule {
+                    class FooBarModule {
                         @Binding fun foo(): @Internal Foo = Foo()
                         
                         @Binding fun bar(foo: () -> @Internal Foo) = Bar(foo())
@@ -56,12 +51,8 @@ class InternalBindingTest {
         listOf(
             source(
                 """
-                    @Component 
-                    abstract class MyComponent {
-                        abstract val bar: Bar
-                        
-                        @Module
-                        protected val fooBarModule = FooBarModule
+                    fun invoke() {
+                        create<Bar>(FooBarModule())
                     }
                 """
             )

@@ -22,15 +22,18 @@ import android.app.Service
 import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.merge.MergeChildComponent
+import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.Scoped
+import com.ivianuu.injekt.merge.MergeComponent
 import com.ivianuu.injekt.merge.get
 
 fun Service.createServiceComponent(): ServiceComponent =
     application.applicationComponent
         .get<(Service) -> ServiceComponent>()(this)
 
-@MergeChildComponent
-abstract class ServiceComponent(@Binding protected val service: Service)
+@Scope interface ServiceScope
+
+@Scoped(ServiceScope::class) @MergeComponent interface ServiceComponent
 
 typealias ServiceContext = Context
 

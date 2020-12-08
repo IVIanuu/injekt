@@ -177,7 +177,7 @@ fun Annotated.targetComponent(module: ModuleDescriptor) = (annotations
     .findAnnotation(InjektFqNames.Scoped)
     ?: annotations.findAnnotation(InjektFqNames.Bound))
     ?.allValueArguments
-    ?.let { it["component".asNameId()] }
+    ?.let { it["scope".asNameId()] }
     ?.let { it as KClassValue }
     ?.getArgumentType(module)
     ?.toTypeRef()

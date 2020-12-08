@@ -20,8 +20,9 @@ import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.merge.MergeChildComponent
+import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.Scoped
+import com.ivianuu.injekt.merge.MergeComponent
 import com.ivianuu.injekt.merge.get
 
 fun BroadcastReceiver.createReceiverComponent(
@@ -29,16 +30,12 @@ fun BroadcastReceiver.createReceiverComponent(
     intent: Intent,
 ): ReceiverComponent =
     (context.applicationContext as Application).applicationComponent
-        .get<(BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent>()(this,
-        context,
-        intent)
+        .get<(BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent>()(
+        this, context, intent)
 
-@MergeChildComponent
-abstract class ReceiverComponent(
-    @Binding protected val receiver: BroadcastReceiver,
-    @Binding protected val context: ReceiverContext,
-    @Binding protected val intent: ReceiverIntent,
-)
+@Scope interface ReceiverScope
+
+@Scoped(ReceiverScope::class) @MergeComponent interface ReceiverComponent
 
 typealias ReceiverContext = Context
 

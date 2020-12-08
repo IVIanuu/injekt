@@ -21,10 +21,7 @@ import kotlin.reflect.KClass
 @Target(AnnotationTarget.CLASS)
 annotation class Component
 
-@Target(AnnotationTarget.CLASS)
-annotation class ChildComponent
-
-fun <T> component(vararg inputs: Any?): T = error("Must be compiled with the injekt compiler.")
+fun <T> create(vararg inputs: Any?): T = error("Must be compiled with the injekt compiler.")
 
 @Target(AnnotationTarget.CLASS,
     AnnotationTarget.FUNCTION,
@@ -53,14 +50,8 @@ annotation class Interceptor
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Qualifier
 
-@Target(
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.CLASS,
-    AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.PROPERTY,
-    AnnotationTarget.TYPE
-)
-annotation class Scoped(val component: KClass<*> = Nothing::class)
+@Target(AnnotationTarget.CLASS)
+annotation class Scope
 
 @Target(
     AnnotationTarget.FUNCTION,
@@ -69,7 +60,16 @@ annotation class Scoped(val component: KClass<*> = Nothing::class)
     AnnotationTarget.PROPERTY,
     AnnotationTarget.TYPE
 )
-annotation class Bound(val component: KClass<*>)
+annotation class Scoped(val scope: KClass<*> = Nothing::class)
+
+@Target(
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.CLASS,
+    AnnotationTarget.CONSTRUCTOR,
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.TYPE
+)
+annotation class Bound(val scope: KClass<*>)
 
 @Target(
     AnnotationTarget.FUNCTION,

@@ -16,8 +16,9 @@
 
 package com.ivianuu.injekt.merge
 
-import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.Scoped
 
-typealias App = Any
+@Scope interface ApplicationScope
 
-@MergeComponent abstract class ApplicationComponent(@Binding protected val app: App)
+@Scoped(ApplicationScope::class) @MergeComponent interface ApplicationComponent

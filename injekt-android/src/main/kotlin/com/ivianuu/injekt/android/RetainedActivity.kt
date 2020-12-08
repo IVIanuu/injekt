@@ -17,14 +17,17 @@
 package com.ivianuu.injekt.android
 
 import androidx.activity.ComponentActivity
-import com.ivianuu.injekt.merge.MergeChildComponent
+import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.Scoped
+import com.ivianuu.injekt.merge.MergeComponent
 import com.ivianuu.injekt.merge.get
-
-@MergeChildComponent
-abstract class RetainedActivityComponent
 
 val ComponentActivity.retainedActivityComponent: RetainedActivityComponent
     get() = viewModelStore.singleton {
         application.applicationComponent
             .get<() -> RetainedActivityComponent>()()
     }
+
+@Scope interface RetainedActivityScope
+
+@Scoped(RetainedActivityScope::class) @MergeComponent interface RetainedActivityComponent
