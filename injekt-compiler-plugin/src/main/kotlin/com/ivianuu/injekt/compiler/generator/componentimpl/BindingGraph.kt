@@ -100,6 +100,7 @@ import org.jetbrains.kotlin.name.Name
     init {
         declarationStore.moduleForType(owner.componentType)
             .collectContributions(
+                path = listOf(owner.componentType.classifier.fqName),
                 addBinding = { explicitBindings += it },
                 addInterceptor = { explicitInterceptors += it },
                 addMapEntries = {
@@ -112,9 +113,10 @@ import org.jetbrains.kotlin.name.Name
 
         declarationStore.allModules
             .filter { it.targetComponent.checkComponent() }
-            .map { declarationStore.moduleForType(it.type) }
-            .forEach { implicitModule ->
+            .map { it to declarationStore.moduleForType(it.type) }
+            .forEach { (origin, implicitModule) ->
                 implicitModule.collectContributions(
+                    path = listOf(origin.fqName),
                     addBinding = { implicitBindings += it },
                     addInterceptor = { implicitInterceptors += it },
                     addMapEntries = {
@@ -128,16 +130,19 @@ import org.jetbrains.kotlin.name.Name
     }
 
     private fun ModuleDescriptor.collectContributions(
+        path: List<Any>,
         addBinding: (Callable) -> Unit,
         addInterceptor: (InterceptorNode) -> Unit,
         addMapEntries: (Callable) -> Unit,
         addSetElements: (Callable) -> Unit,
     ) {
-        if (type in collectedModules) return
-        collectedModules += type
+        if (!type.allTypes.any { it.isFunction || it.isSuspendFunction }) {
+            if (type in collectedModules) return
+            collectedModules += type
+        }
         for (callable in callables) {
             if (callable.contributionKind == null) continue
-            when (callable.contributionKind) {
+            when (callable.contributionKind!!) {
                 Callable.ContributionKind.BINDING -> addBinding(callable)
                 Callable.ContributionKind.INTERCEPTOR -> addInterceptor(
                     InterceptorNode(
@@ -148,13 +153,25 @@ import org.jetbrains.kotlin.name.Name
                 Callable.ContributionKind.MAP_ENTRIES -> addMapEntries(callable)
                 Callable.ContributionKind.SET_ELEMENTS -> addSetElements(callable)
                 Callable.ContributionKind.MODULE -> {
-                    if (callable.type !in collectedModules) {
-                        addBinding(callable)
-                        declarationStore.moduleForType(callable.type)
-                            .collectContributions(addBinding,
-                                addInterceptor,
-                                addMapEntries,
-                                addSetElements)
+                    val isFunction =
+                        callable.type.allTypes.any { it.isFunction || it.isSuspendFunction }
+                    if (isFunction || callable.type !in collectedModules) {
+                        val nextPath = path + callable.fqName
+                        val (nextCallable, nextModule) = if (isFunction) {
+                            val nextCallable =
+                                callable.copy(type = callable.type.copy(path = nextPath))
+                            nextCallable to declarationStore.moduleForType(nextCallable.type)
+                        } else {
+                            callable to declarationStore.moduleForType(callable.type)
+                        }
+                        addBinding(nextCallable)
+                        nextModule.collectContributions(
+                            nextPath,
+                            addBinding,
+                            addInterceptor,
+                            addMapEntries,
+                            addSetElements
+                        )
                     } else Unit
                 }
             }.let {}
@@ -366,6 +383,7 @@ import org.jetbrains.kotlin.name.Name
     }
 
     private fun getBindingOrNull(request: BindingRequest): BindingNode? {
+        println()
         var binding = resolvedBindings[request.type]
         if (binding != null) return binding
 

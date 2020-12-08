@@ -15,7 +15,7 @@ class LambdaContributionsTest {
     fun testBindingLambda() = codegen(
         """
             val barProvider: @Binding (Foo) -> Bar = { Bar(it) }
-            @Module val barModule = moduleOf(barProvider)
+            @Module val barModule = moduleOf(moduleOf(barProvider))
 
             @Binding fun foo() = Foo()
 

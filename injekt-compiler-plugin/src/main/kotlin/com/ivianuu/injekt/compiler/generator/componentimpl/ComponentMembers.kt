@@ -40,7 +40,7 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
-@Binding class ComponentStatements(
+@Binding class ComponentMembers(
     private val declarationStore: DeclarationStore,
     private val moduleDescriptor: ModuleDescriptor,
     private val owner: ComponentImpl,
@@ -699,7 +699,8 @@ import org.jetbrains.kotlin.name.Name
                     val isFunctionInvoke = callable.valueParameters
                         .firstOrNull { it.parameterKind == ValueParameterRef.ParameterKind.DISPATCH_RECEIVER }
                         ?.type
-                        ?.let { it.isFunction || it.isSuspendFunction } ?: false
+                        ?.allTypes
+                        ?.any { it.isFunction || it.isSuspendFunction } ?: false
                     finalCallable.valueParameters
                         .filter { it.parameterKind == ValueParameterRef.ParameterKind.VALUE_PARAMETER }
                         .forEach { parameter ->

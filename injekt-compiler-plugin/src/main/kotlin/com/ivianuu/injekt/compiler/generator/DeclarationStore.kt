@@ -378,7 +378,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
                             val parameterType = if (it.parameterKind ==
                                 ValueParameterRef.ParameterKind.DISPATCH_RECEIVER
                             ) {
-                                expandedType
+                                type
                             } else it.type
                             it.copy(
                                 type = parameterType.substitute(substitutionMap)

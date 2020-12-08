@@ -112,6 +112,7 @@ sealed class TypeRef {
     abstract val scoped: Boolean
     abstract val eager: Boolean
     abstract val default: Boolean
+    abstract val path: List<Any>
 
     private val typeName by unsafeLazy { uniqueTypeName(includeNullability = false) }
 
@@ -136,6 +137,7 @@ sealed class TypeRef {
         result = 31 * result + isComposable.hashCode()
         result = 31 * result + isStarProjection.hashCode()
         result = 31 * result + qualifiers.hashCode()
+        result = 31 * result + path.hashCode()
         result
     }
 
@@ -223,6 +225,8 @@ class KotlinTypeRef(
     override val default: Boolean by unsafeLazy {
         kotlinType.hasAnnotation(InjektFqNames.Default)
     }
+    override val path: List<Any>
+        get() = emptyList()
 }
 
 class SimpleTypeRef(
@@ -246,6 +250,7 @@ class SimpleTypeRef(
     override val scoped: Boolean = false,
     override val eager: Boolean = false,
     override val default: Boolean = false,
+    override val path: List<Any> = emptyList(),
 ) : TypeRef() {
     init {
         check(typeArguments.size == classifier.typeParameters.size) {
@@ -279,6 +284,7 @@ fun TypeRef.copy(
     scoped: Boolean = this.scoped,
     eager: Boolean = this.eager,
     default: Boolean = this.default,
+    path: List<Any> = this.path,
 ) = SimpleTypeRef(
     classifier,
     isMarkedNullable,
@@ -299,7 +305,8 @@ fun TypeRef.copy(
     targetComponent,
     scoped,
     eager,
-    default
+    default,
+    path
 )
 
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
@@ -417,6 +424,9 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
                     if (index != typeArguments.lastIndex) append("_")
                 }
             }
+            if (path.isNotEmpty()) {
+                append(path.hashCode())
+            }
         }
     }
 
@@ -504,6 +514,7 @@ fun TypeRef.isAssignableTo(
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return false
         if (!qualifiers.isAssignableTo(superType.qualifiers)) return false
+        if (path != superType.path) return false
         if (allTypes.any { it.isComposable } != superType.allTypes.any { it.isComposable }) return false
         if (typeArguments.zip(superType.typeArguments)
                 .any { (a, b) -> !a.isAssignableTo(b, substitutionMap) }
@@ -542,6 +553,7 @@ fun TypeRef.isSubTypeOf(
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return false
         if (!qualifiers.isAssignableTo(superType.qualifiers)) return false
+        if (path != superType.path) return false
         if (allTypes.any { it.isComposable } != superType.allTypes.any { it.isComposable }) return false
         if (typeArguments.zip(superType.typeArguments)
                 .any { (a, b) -> !a.isAssignableTo(b, substitutionMap) }

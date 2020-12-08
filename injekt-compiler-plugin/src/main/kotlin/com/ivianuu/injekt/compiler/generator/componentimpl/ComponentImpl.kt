@@ -34,7 +34,7 @@ typealias ComponentFactoryType = TypeRef
 
 @Binding class ComponentImpl(
     private val declarationStore: DeclarationStore,
-    statementsFactory: (ComponentImpl) -> ComponentStatements,
+    membersFactory: (ComponentImpl) -> ComponentMembers,
     graphFactory: (ComponentImpl) -> BindingGraph,
     val componentType: TypeRef,
     val componentFactoryType: ComponentFactoryType,
@@ -62,7 +62,7 @@ typealias ComponentFactoryType = TypeRef
     val children = mutableListOf<ComponentImpl>()
     val members = mutableListOf<ComponentMember>()
 
-    val statements = statementsFactory(this)
+    val statements = membersFactory(this)
     val graph = graphFactory(this)
 
     private val superComponentConstructor = declarationStore.constructorForComponent(componentType)
