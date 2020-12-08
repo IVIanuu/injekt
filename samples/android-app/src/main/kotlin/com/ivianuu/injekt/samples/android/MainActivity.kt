@@ -37,14 +37,21 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            activityComponent.get<WithMainViewModel>().invoke {
-                GlobalScope.launch {
-                    activityComponent.get<enqueueWork>()()
+            with(activityComponent.get<MainActivityDependencies>()) {
+                withMainViewModel {
+                    GlobalScope.launch {
+                        enqueueWork()
+                    }
                 }
             }
         }
     }
 }
+
+@Binding data class MainActivityDependencies(
+    val withMainViewModel: WithMainViewModel,
+    val enqueueWork: enqueueWork,
+)
 
 typealias WithMainViewModel = @Composable (@Composable (MainViewModel) -> Unit) -> Unit
 
