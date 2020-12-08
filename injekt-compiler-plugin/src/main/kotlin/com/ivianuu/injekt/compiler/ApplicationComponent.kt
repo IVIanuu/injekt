@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
+import org.jetbrains.kotlin.com.intellij.psi.PsiManager
 import org.jetbrains.kotlin.config.CompilerConfiguration
 
 @Component abstract class ApplicationComponent(
@@ -27,3 +28,5 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 ) {
     abstract val registerExtensions: registerExtensions
 }
+
+@Binding fun providePsiManager(project: Project) = PsiManager.getInstance(project)

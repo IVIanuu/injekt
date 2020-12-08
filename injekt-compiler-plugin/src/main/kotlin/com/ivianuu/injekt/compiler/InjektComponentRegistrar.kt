@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler
 import com.google.auto.service.AutoService
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.generator.InjektKtGenerationExtension
+import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import com.ivianuu.injekt.component
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -48,14 +49,6 @@ class InjektComponentRegistrar : ComponentRegistrar {
         if (!isGenerateKaptStubs) {
             component<ApplicationComponent>(project, configuration)
                 .registerExtensions()
-            IrGenerationExtension.registerExtension(
-                project,
-                InjektIrIntrinsicTransformer()
-            )
-            TypeResolutionInterceptor.registerExtension(
-                project,
-                InjektTypeResolutionInterceptor()
-            )
         }
     }
 }
@@ -65,9 +58,19 @@ typealias registerExtensions = () -> Unit
 @Binding fun provideRegisterExtensions(
     project: Project,
     generationExtension: InjektKtGenerationExtension,
+    injektIrGenerationExtension: InjektIrGenerationExtension,
+    typeResolutionInterceptorExtension: InjektTypeResolutionInterceptorExtension,
 ): registerExtensions = {
     AnalysisHandlerExtension.registerExtension(
         project,
         generationExtension
+    )
+    IrGenerationExtension.registerExtension(
+        project,
+        injektIrGenerationExtension
+    )
+    TypeResolutionInterceptor.registerExtension(
+        project,
+        typeResolutionInterceptorExtension
     )
 }

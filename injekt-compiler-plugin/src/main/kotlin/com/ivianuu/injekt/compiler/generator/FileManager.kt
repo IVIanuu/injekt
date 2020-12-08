@@ -21,6 +21,10 @@ import com.ivianuu.injekt.Scoped
 import com.ivianuu.injekt.compiler.CacheDir
 import com.ivianuu.injekt.compiler.SrcDir
 import com.ivianuu.injekt.compiler.log
+import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalFileSystem
+import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalVirtualFile
+import org.jetbrains.kotlin.com.intellij.psi.PsiManager
+import org.jetbrains.kotlin.com.intellij.psi.SingleRootFileViewProvider
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
@@ -30,12 +34,14 @@ import java.io.File
     private val srcDir: SrcDir,
     private val cacheDir: CacheDir,
     private val log: log,
+    private val psiManager: PsiManager,
 ) {
     private val originatingFilePaths = mutableMapOf<File, String>()
 
     private val cacheFile = cacheDir.resolve("file_pairs")
 
     val newFiles = mutableListOf<File>()
+    val newKtFiles = mutableListOf<KtFile>()
 
     private var compilingFiles = emptyList<KtFile>()
 
@@ -104,6 +110,16 @@ import java.io.File
         }
 
         log { "generated file $packageFqName.$fileName $code" }
+
+        val virtualFile = CoreLocalVirtualFile(CoreLocalFileSystem(), newFile)
+        newKtFiles += KtFile(
+            object : SingleRootFileViewProvider(
+                psiManager,
+                virtualFile
+            ) {
+            },
+            false
+        )
 
         try {
             newFile.createNewFile()

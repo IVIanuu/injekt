@@ -36,6 +36,8 @@ object InjektFqNames {
     val Scoped = InjektPackage.child("Scoped".asNameId())
     val SetElements = InjektPackage.child("SetElements".asNameId())
 
+    val ComponentFun = InjektPackage.child("component".asNameId())
+
     val InternalPackage = InjektPackage.child("internal".asNameId())
     val Index = InternalPackage.child("Index".asNameId())
 
@@ -46,6 +48,7 @@ object InjektFqNames {
     val MergeComponent = MergePackage.child("MergeComponent".asNameId())
     val MergeChildComponent = MergePackage.child("MergeChildComponent".asNameId())
     val MergeInto = MergePackage.child("MergeInto".asNameId())
+    val MergeComponentGet = MergePackage.child("get".asNameId())
 
     val Composable = FqName("androidx.compose.runtime.Composable")
 

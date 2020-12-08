@@ -38,7 +38,7 @@ android {
 }
 
 injekt {
-    generateComponents = true
+    generateMergeComponents = true
 }
 
 dependencies {
@@ -57,6 +57,7 @@ dependencies {
     implementation(Deps.guice)
 
     implementation(project(":injekt-core"))
+    implementation(project(":injekt-merge"))
     kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
 
     implementation(Deps.katana)

@@ -35,4 +35,5 @@ abstract class GenerationComponent(
     abstract val componentGenerator: ComponentGenerator
     abstract val indexGenerator: IndexGenerator
     abstract val errorCollector: ErrorCollector
+    abstract val mergeAccessorGenerator: MergeAccessorGenerator
 }

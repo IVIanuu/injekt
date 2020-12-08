@@ -1,22 +1,15 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.generator.findAnnotation
 import com.ivianuu.injekt.compiler.generator.hasAnnotation
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.SourceElement
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptorExtension
-import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.types.expressions.ExpressionTypingContext
@@ -25,7 +18,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 @Suppress("INVISIBLE_REFERENCE", "EXPERIMENTAL_IS_NOT_ENABLED", "IllegalExperimentalApiUsage")
 @OptIn(org.jetbrains.kotlin.extensions.internal.InternalNonStableExtensionPoints::class)
-class InjektTypeResolutionInterceptor : TypeResolutionInterceptorExtension {
+@Binding class InjektTypeResolutionInterceptorExtension : TypeResolutionInterceptorExtension {
 
     override fun interceptType(
         element: KtElement,
@@ -56,19 +49,6 @@ class InjektTypeResolutionInterceptor : TypeResolutionInterceptorExtension {
             current
         }
     }
-
-    private fun makeAnnotation(
-        fqName: FqName,
-        module: ModuleDescriptor,
-        arguments: Map<Name, ConstantValue<*>>,
-    ): AnnotationDescriptor =
-        object : AnnotationDescriptor {
-            override val type = module.findClassAcrossModuleDependencies(
-                ClassId.topLevel(fqName)
-            )!!.defaultType
-            override val allValueArguments = arguments
-            override val source = SourceElement.NO_SOURCE
-        }
 
     private companion object {
         private val ANNOTATIONS = listOf(

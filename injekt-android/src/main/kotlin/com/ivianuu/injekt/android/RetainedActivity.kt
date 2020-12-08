@@ -17,10 +17,8 @@
 package com.ivianuu.injekt.android
 
 import androidx.activity.ComponentActivity
-import com.ivianuu.injekt.merge.ApplicationComponent
 import com.ivianuu.injekt.merge.MergeChildComponent
-import com.ivianuu.injekt.merge.MergeInto
-import com.ivianuu.injekt.merge.mergeComponent
+import com.ivianuu.injekt.merge.get
 
 @MergeChildComponent
 abstract class RetainedActivityComponent
@@ -28,11 +26,5 @@ abstract class RetainedActivityComponent
 val ComponentActivity.retainedActivityComponent: RetainedActivityComponent
     get() = viewModelStore.singleton {
         application.applicationComponent
-            .mergeComponent<RetainedActivityComponentFactoryOwner>()
-            .retainedActivityComponentFactory()
+            .get<() -> RetainedActivityComponent>()()
     }
-
-@MergeInto(ApplicationComponent::class)
-interface RetainedActivityComponentFactoryOwner {
-    val retainedActivityComponentFactory: () -> RetainedActivityComponent
-}

@@ -22,17 +22,20 @@ import com.ivianuu.injekt.compiler.GenerateMergeComponents
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.container.ComponentProvider
+import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
 import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtension
 
 @Binding class InjektKtGenerationExtension(
     private val generationComponentFactory: (
         ModuleDescriptor,
         BindingContext,
+        LazyTopDownAnalyzer,
     ) -> GenerationComponent,
     private val generateComponents: GenerateComponents,
     private val generateMergeComponents: GenerateMergeComponents,
@@ -55,7 +58,9 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtensi
     ): AnalysisResult? {
         files as ArrayList<KtFile>
         if (!generatedCode) {
-            generationComponent = generationComponentFactory(module, bindingTrace.bindingContext)
+            val lazyTopDownAnalyzer = componentProvider.get<LazyTopDownAnalyzer>()
+            generationComponent = generationComponentFactory(module,
+                bindingTrace.bindingContext, lazyTopDownAnalyzer)
             val tmpFiles = files.toList()
             files.clear()
             files += generationComponent!!.fileManager.preGenerate(tmpFiles)
@@ -85,6 +90,7 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtensi
         generationComponent.errorCollector.report()
 
         val generators = listOfNotNull(
+            generationComponent.mergeAccessorGenerator,
             generationComponent.indexGenerator,
             if (generateComponents || generateMergeComponents)
                 generationComponent.componentGenerator else null

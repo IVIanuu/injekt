@@ -22,15 +22,12 @@ import android.app.Service
 import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.merge.ApplicationComponent
 import com.ivianuu.injekt.merge.MergeChildComponent
-import com.ivianuu.injekt.merge.MergeInto
-import com.ivianuu.injekt.merge.mergeComponent
+import com.ivianuu.injekt.merge.get
 
 fun Service.createServiceComponent(): ServiceComponent =
     application.applicationComponent
-        .mergeComponent<ServiceComponentFactoryOwner>()
-        .serviceComponentFactoryOwner(this)
+        .get<(Service) -> ServiceComponent>()(this)
 
 @MergeChildComponent
 abstract class ServiceComponent(@Binding protected val service: Service)
@@ -42,8 +39,3 @@ typealias ServiceContext = Context
 typealias ServiceResources = Resources
 
 @Binding inline fun Service.provideServiceResources(): ServiceResources = resources
-
-@MergeInto(ApplicationComponent::class)
-interface ServiceComponentFactoryOwner {
-    val serviceComponentFactoryOwner: (Service) -> ServiceComponent
-}

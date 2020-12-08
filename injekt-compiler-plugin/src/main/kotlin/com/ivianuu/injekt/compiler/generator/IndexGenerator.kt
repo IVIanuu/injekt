@@ -37,7 +37,7 @@ import org.jetbrains.kotlin.psi.psiUtil.containingClass
 ) : Generator {
 
     override fun generate(files: List<KtFile>) {
-        files
+        (files + fileManager.newKtFiles.toList())
             .map { file ->
                 val indices = mutableListOf<Index>()
 

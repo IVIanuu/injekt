@@ -21,18 +21,17 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.merge.ApplicationComponent
 import com.ivianuu.injekt.merge.MergeChildComponent
-import com.ivianuu.injekt.merge.MergeInto
-import com.ivianuu.injekt.merge.mergeComponent
+import com.ivianuu.injekt.merge.get
 
 fun BroadcastReceiver.createReceiverComponent(
     context: Context,
     intent: Intent,
 ): ReceiverComponent =
     (context.applicationContext as Application).applicationComponent
-        .mergeComponent<ReceiverComponentFactoryOwner>()
-        .receiverComponentFactoryOwner(this, context, intent)
+        .get<(BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent>()(this,
+        context,
+        intent)
 
 @MergeChildComponent
 abstract class ReceiverComponent(
@@ -44,8 +43,3 @@ abstract class ReceiverComponent(
 typealias ReceiverContext = Context
 
 typealias ReceiverIntent = Intent
-
-@MergeInto(ApplicationComponent::class)
-interface ReceiverComponentFactoryOwner {
-    val receiverComponentFactoryOwner: (BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent
-}

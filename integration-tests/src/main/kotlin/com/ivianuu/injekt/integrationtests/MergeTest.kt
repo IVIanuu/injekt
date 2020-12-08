@@ -17,7 +17,10 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.setGenerateMergeComponents
+import com.ivianuu.injekt.test.source
 import org.junit.Test
 
 class MergeTest {
@@ -25,24 +28,46 @@ class MergeTest {
     @Test
     fun testMergeComponent() = codegen(
         """
-            @MergeComponent
-            abstract class MyComponent
+            @MergeComponent abstract class MyComponent
             
             @Binding fun foo() = Foo()
-            
-            @MergeInto(MyComponent::class)
-            interface FooComponent {
-                val foo: Foo
-            }
-            
+
             fun invoke() {
                 val component = component<MyComponent>()
-                val fooComponent = component.mergeComponent<FooComponent>()
-                fooComponent.foo
+                component.get<Foo>()
             }
         """,
         config = { setGenerateMergeComponents(true) }
-    )
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testMergeComponentMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                        @MergeComponent abstract class MyComponent
+        """)
+        ),
+
+        listOf(
+            source(
+                """
+                    @Binding fun foo() = Foo()
+                    fun invoke() {
+                        val component = component<MyComponent>()
+                        component.get<Foo>()        
+                    }
+                """,
+                name = "File.kt"
+            ),
+        ),
+        listOf(source("")),
+        config = { if (it == 2) setGenerateMergeComponents(true) }
+    ) {
+        it.last().invokeSingleFile()
+    }
 
     @Test
     fun testMergeChildComponent() = codegen(
@@ -56,41 +81,15 @@ class MergeTest {
             
             @Binding fun foo() = Foo()
             
-            @MergeInto(MyChildComponent::class)
-            interface FooComponent {
-                val foo: Foo
-            }
-            
             fun invoke() {
                 val parentComponent = component<MyParentComponent>()
                 val childComponent = parentComponent.myChildComponentFactory()
-                val fooComponent = childComponent.mergeComponent<FooComponent>()
-                fooComponent.foo
+                childComponent.get<Foo>()
             }
         """,
         config = { setGenerateMergeComponents(true) }
-    )
-
-    @Test
-    fun testMergeComponentObjectModule() = codegen(
-        """
-            @MergeComponent
-            abstract class MyComponent
-            
-            @Binding fun foo() = Foo()
-            
-            @MergeInto(MyComponent::class)
-            interface FooComponent {
-                val foo: Foo
-            }
-            
-            fun invoke() {
-                val component = component<MyComponent>()
-                val fooComponent = component.mergeComponent<FooComponent>()
-                fooComponent.foo
-            }
-        """,
-        config = { setGenerateMergeComponents(true) }
-    )
+    ) {
+        invokeSingleFile()
+    }
 
 }

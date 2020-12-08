@@ -70,6 +70,11 @@ import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
     private val classIndices by unsafeLazy {
         allIndices
             .filter { it.type == "class" }
+            .filterNot {
+                it.fqName in internalMergeAccessors.map {
+                    it.type.classifier.fqName
+                }
+            }
             .map { classDescriptorForFqName(it.fqName) }
     }
 
@@ -186,7 +191,17 @@ import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
                         it.toClassifierRef().defaultType
                     }
                 }
+
+            internalMergeAccessors
+                .forEach { accessor ->
+                    getOrPut(accessor.componentFqName) { mutableListOf() } += accessor.type
+                }
         }
+    }
+
+    private val internalMergeAccessors = mutableListOf<MergeAccessorDescriptor>()
+    fun addInternalMergeAccessor(accessor: MergeAccessorDescriptor) {
+        internalMergeAccessors += accessor
     }
 
     fun mergeDeclarationsForMergeComponent(component: FqName): List<TypeRef> =
@@ -195,6 +210,10 @@ import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
     private val callablesByType = mutableMapOf<TypeRef, List<Callable>>()
     fun allCallablesForType(type: TypeRef): List<Callable> {
         return callablesByType.getOrPut(type) {
+            internalMergeAccessors.singleOrNull {
+                it.type == type
+            }?.let { return@getOrPut it.callables }
+
             val callables = mutableListOf<Callable>()
 
             fun TypeRef.collect(typeArguments: List<TypeRef>) {

@@ -23,10 +23,11 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
 
 injekt {
-    generateComponents = true
+    generateMergeComponents = true
 }
 
 dependencies {
     api(project(":injekt-core"))
+    api(project(":injekt-merge"))
     kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
 }

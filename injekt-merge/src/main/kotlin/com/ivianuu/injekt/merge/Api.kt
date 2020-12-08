@@ -29,3 +29,5 @@ annotation class MergeInto(val component: KClass<*>)
 
 @Suppress("UNCHECKED_CAST")
 fun <T> Any.mergeComponent(): T = this as T
+
+fun <T> Any.get(): T = error("")

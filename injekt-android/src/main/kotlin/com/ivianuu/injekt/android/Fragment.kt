@@ -26,7 +26,14 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.merge.MergeChildComponent
-import com.ivianuu.injekt.merge.MergeInto
+import com.ivianuu.injekt.merge.get
+
+val Fragment.fragmentComponent: FragmentComponent
+    get() = lifecycle.singleton {
+        requireActivity().activityComponent
+            .get<(Fragment) -> FragmentComponent>()(this)
+    }
+
 
 @MergeChildComponent
 abstract class FragmentComponent(@Binding protected val fragment: Fragment)
@@ -52,8 +59,3 @@ typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
 
 @Binding inline fun Fragment.provideFragmentViewModelStoreOwner(): FragmentViewModelStoreOwner =
     this
-
-@MergeInto(ActivityComponent::class)
-interface FragmentComponentFactoryOwner {
-    val fragmentComponentFactoryOwner: (Fragment) -> FragmentComponent
-}

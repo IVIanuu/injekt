@@ -138,3 +138,9 @@ fun AnnotationDescriptor.toQualifierDescriptor(): QualifierDescriptor {
 }
 
 data class Index(val fqName: FqName, val type: String)
+
+data class MergeAccessorDescriptor(
+    val componentFqName: FqName,
+    val type: TypeRef,
+    val callables: List<Callable>,
+)

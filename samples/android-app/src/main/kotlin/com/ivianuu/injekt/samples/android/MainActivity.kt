@@ -26,13 +26,10 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityContext
-import com.ivianuu.injekt.android.ActivityResources
 import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.android.activityViewModel
-import com.ivianuu.injekt.merge.MergeInto
-import com.ivianuu.injekt.merge.mergeComponent
+import com.ivianuu.injekt.merge.get
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
@@ -40,22 +37,13 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            with(activityComponent.mergeComponent<MainActivityComponent>()) {
-                WithMainViewModel {
-                    GlobalScope.launch {
-                        enqueueWork()
-                    }
+            activityComponent.get<WithMainViewModel>().invoke {
+                GlobalScope.launch {
+                    activityComponent.get<enqueueWork>()()
                 }
             }
         }
     }
-}
-
-@MergeInto(ActivityComponent::class)
-interface MainActivityComponent {
-    val WithMainViewModel: WithMainViewModel
-    val enqueueWork: enqueueWork
-    val activityResources: ActivityResources
 }
 
 typealias WithMainViewModel = @Composable (@Composable (MainViewModel) -> Unit) -> Unit
