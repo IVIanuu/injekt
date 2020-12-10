@@ -319,7 +319,7 @@ class GivenResolutionTest {
             )
         )
     ) {
-        it.last().assertCompileError("Unresolved given for com.ivianuu.injekt.test.Foo")
+        it.last().assertCompileError("No given found for com.ivianuu.injekt.test.Foo")
     }
 
     @Test
@@ -330,7 +330,7 @@ class GivenResolutionTest {
             }
         """
     ) {
-        assertCompileError("Unresolved given for kotlin.String")
+        assertCompileError("No given found for kotlin.String")
     }
 
     @Test
@@ -340,7 +340,7 @@ class GivenResolutionTest {
             fun invoke() = given<Bar>()
         """
     ) {
-        assertCompileError("Unresolved given for com.ivianuu.injekt.test.Foo")
+        assertCompileError("No given found for com.ivianuu.injekt.test.Foo")
     }
 
     @Test
@@ -361,7 +361,7 @@ class GivenResolutionTest {
             )
         )
     ) {
-        it.last().assertCompileError("Unresolved given for com.ivianuu.injekt.test.Foo")
+        it.last().assertCompileError("No given found for com.ivianuu.injekt.test.Foo")
     }
 
     @Test

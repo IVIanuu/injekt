@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.Binding
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.container.ComponentProvider
@@ -30,7 +29,7 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
 import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtension
 
-@Binding class InjektKtGenerationExtension(
+class InjektKtGenerationExtension(
     private val generationComponentFactory: (
         ModuleDescriptor,
         BindingContext,

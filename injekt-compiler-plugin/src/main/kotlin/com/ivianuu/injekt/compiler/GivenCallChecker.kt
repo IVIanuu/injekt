@@ -41,14 +41,14 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
     private val lazyTopDownAnalyzer: LazyTopDownAnalyzer,
 ) : KtTreeVisitorVoid() {
 
+    private val chain = mutableListOf<GivenRequest>()
+
     private abstract inner class Scope(
         private val declaration: KtDeclaration?,
         private val parent: Scope?,
     ) {
 
         private val checkedRequests = mutableSetOf<GivenRequest>()
-
-        private val chain = mutableListOf<GivenRequest>()
 
         private var resolved = false
 
@@ -124,7 +124,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
                 givens.size > 1 -> {
                     bindingTrace.report(
                         InjektErrors.MULTIPLE_GIVENS
-                            .on(reportOn, request.type, givens)
+                            .on(reportOn, request.type, request.origin, givens)
                     )
                 }
                 givens.isEmpty() && request.required -> {
@@ -132,7 +132,9 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
                         InjektErrors.UNRESOLVED_GIVEN
                             .on(
                                 reportOn,
-                                request.type
+                                request.type,
+                                request.origin,
+                                chain
                             )
                     )
                 }

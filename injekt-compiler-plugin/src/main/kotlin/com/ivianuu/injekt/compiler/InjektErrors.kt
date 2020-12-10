@@ -1,18 +1,20 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.GivenNode
+import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.render
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
-import org.jetbrains.kotlin.diagnostics.DiagnosticFactory1
-import org.jetbrains.kotlin.diagnostics.DiagnosticFactory2
+import org.jetbrains.kotlin.diagnostics.DiagnosticFactory3
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.diagnostics.rendering.DefaultErrorMessages
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticParameterRenderer
+import org.jetbrains.kotlin.diagnostics.rendering.Renderers
 import org.jetbrains.kotlin.diagnostics.rendering.RenderingContext
+import org.jetbrains.kotlin.name.FqName
 
 interface InjektErrors {
     companion object {
@@ -20,17 +22,39 @@ interface InjektErrors {
         val MAP = DiagnosticFactoryToRendererMap("Injekt")
 
         @JvmField
-        val UNRESOLVED_GIVEN = DiagnosticFactory1.create<PsiElement, TypeRef>(Severity.ERROR)
-            .also { MAP.put(it, "Unresolved given for {0}", TypeRefRenderer) }
-
-        @JvmField
-        val MULTIPLE_GIVENS =
-            DiagnosticFactory2.create<PsiElement, TypeRef, List<GivenNode>>(Severity.ERROR)
+        val UNRESOLVED_GIVEN =
+            DiagnosticFactory3.create<PsiElement, TypeRef, FqName, List<GivenRequest>>(Severity.ERROR)
                 .also {
                     MAP.put(
                         it,
-                        "Multiple givens found for {0}:\n{1}",
+                        "No given found for {0} required by {1}:{2}",
                         TypeRefRenderer,
+                        Renderers.TO_STRING,
+                        object : DiagnosticParameterRenderer<List<GivenRequest>> {
+                            override fun render(
+                                obj: List<GivenRequest>,
+                                renderingContext: RenderingContext,
+                            ): String = buildString {
+                                obj.reversed().forEachIndexed { index, request ->
+                                    append("'${request.type.render()}' ")
+                                    if (index == obj.lastIndex) appendLine("is given by")
+                                    else appendLine("is given at")
+                                    appendLine("    '${request.origin}'")
+                                }
+                            }
+                        }
+                    )
+                }
+
+        @JvmField
+        val MULTIPLE_GIVENS =
+            DiagnosticFactory3.create<PsiElement, TypeRef, FqName, List<GivenNode>>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "Multiple givens found for {0} required by {1}:\n",
+                        TypeRefRenderer,
+                        Renderers.TO_STRING,
                         object : DiagnosticParameterRenderer<List<GivenNode>> {
                             override fun render(
                                 obj: List<GivenNode>,

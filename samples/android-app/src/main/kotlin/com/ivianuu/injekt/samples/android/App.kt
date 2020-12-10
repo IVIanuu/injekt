@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.samples.android
 
 import android.app.Application
+import androidx.work.WorkerFactory
 import com.ivianuu.injekt.Given
 
 class App : Application() {
@@ -30,3 +31,5 @@ class App : Application() {
         @Given lateinit var application: Application
     }
 }
+
+@Given fun workerFactoryStub(): WorkerFactory = error("")
