@@ -25,10 +25,6 @@ import androidx.activity.OnBackPressedDispatcherOwner
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.merge.MergeComponent
-import com.ivianuu.injekt.merge.get
 
 val ComponentActivity.activityComponent: ActivityComponent
     get() = lifecycle.singleton {

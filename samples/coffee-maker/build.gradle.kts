@@ -28,6 +28,5 @@ injekt {
 
 dependencies {
     api(project(":injekt-core"))
-    api(project(":injekt-merge"))
     kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
 }

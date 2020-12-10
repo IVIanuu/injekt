@@ -1,0 +1,143 @@
+package com.ivianuu.injekt.integrationtests
+
+import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
+import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertSame
+import junit.framework.Assert.assertTrue
+import org.junit.Test
+
+class GivenDeclarationTest {
+
+    @Test
+    fun testGivenClass() = codegen(
+        """
+            @Given val foo = Foo()
+            @Given class Dep(val foo: @Given Foo = given)
+            fun invoke() = given<Dep>()
+        """
+    ) {
+        assertEquals("com.ivianuu.injekt.integrationtests.Dep",
+            invokeSingleFile<Any>().javaClass.name)
+    }
+
+    // todo given class constructor
+
+    @Test
+    fun testGivenObject() = codegen(
+        """
+            @Given val foo = Foo()
+            @Given object Dep {
+                init {
+                    given<Foo>()
+                }
+            }
+            fun invoke() = given<Dep>()
+        """
+    ) {
+        assertEquals("com.ivianuu.injekt.integrationtests.Dep",
+            invokeSingleFile<Any>().javaClass.name)
+    }
+
+    @Test
+    fun testGivenProperty() = codegen(
+        """
+            @Given val foo = Foo()
+            fun invoke() = given<Foo>()
+        """
+    ) {
+        assertTrue(invokeSingleFile<Any>() is Foo)
+    }
+
+    @Test
+    fun testGivenFunction() = codegen(
+        """
+            @Given fun foo() = Foo()
+            fun invoke() = given<Foo>()
+        """
+    ) {
+        assertTrue(invokeSingleFile<Any>() is Foo)
+    }
+
+    @Test
+    fun testGivenValueParameter() = codegen(
+        """
+            fun invoke(@Given foo: Foo) = given<Foo>()
+        """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile<Any>(foo))
+    }
+
+    @Test
+    fun testGivenExtensionReceiver() = codegen(
+        """
+            fun @receiver:Given Foo.invoke() = given<Foo>()
+        """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile<Any>(foo))
+    }
+
+    @Test
+    fun testGivenLocalVariable() = codegen(
+        """
+            fun invoke(foo: Foo): Foo {
+                @Given val givenFoo = foo
+                return given()
+            }
+        """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile<Any>(foo))
+    }
+
+    @Test
+    fun testGivenLambdaParameterDeclarationSite() = codegen(
+        """
+            inline fun <T, R> withGiven(value: T, block: (@Given T) -> Unit) = block(value)
+            fun invoke(foo: Foo): Foo {
+                return withGiven(value) { given<Foo>() }
+            }
+        """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile<Any>(foo))
+    }
+
+    @Test
+    fun testGivenLambdaParameterUseSite() = codegen(
+        """
+            inline fun <T, R> withGiven(value: T, block: (T) -> Unit) = block(value)
+            fun invoke(foo: Foo): Foo {
+                return withGiven(value) { foo: @Given Foo -> given<Foo>() }
+            }
+        """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile<Any>(foo))
+    }
+
+    @Test
+    fun testGivenInNestedBlock() = codegen(
+        """
+            fun invoke(a: Foo, b: Foo): Pair<Foo, Foo> {
+                return run {
+                    @Given val givenA = a
+                    given<Foo>() to run {
+                        @Given val givenB = b
+                        given<Foo>()
+                    }
+                }
+            }
+        """
+    ) {
+        val a = Foo()
+        val b = Foo()
+        val result = invokeSingleFile<Pair<Foo, Foo>>()
+        assertSame(a, result.first)
+        assertSame(b, result.second)
+    }
+
+}

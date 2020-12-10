@@ -16,75 +16,18 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
-@Target(AnnotationTarget.CLASS)
-annotation class Component
-
-fun <T> create(vararg inputs: Any?): T = error("Must be compiled with the injekt compiler.")
-
-@Target(AnnotationTarget.CLASS,
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.PROPERTY,
-    AnnotationTarget.TYPE)
-annotation class Module
-
 @Target(
-    AnnotationTarget.FUNCTION,
     AnnotationTarget.CLASS,
     AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.PROPERTY,
-    AnnotationTarget.TYPE
-)
-annotation class Binding
-
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.TYPE)
-annotation class MapEntries
-
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.TYPE)
-annotation class SetElements
-
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.TYPE)
-annotation class Interceptor
-
-@Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class Qualifier
-
-@Target(AnnotationTarget.CLASS)
-annotation class Scope
-
-@Target(
     AnnotationTarget.FUNCTION,
-    AnnotationTarget.CLASS,
-    AnnotationTarget.CONSTRUCTOR,
     AnnotationTarget.PROPERTY,
+    AnnotationTarget.LOCAL_VARIABLE,
+    AnnotationTarget.VALUE_PARAMETER,
     AnnotationTarget.TYPE
 )
-annotation class Scoped(val scope: KClass<*> = Nothing::class)
+annotation class Given
 
-@Target(
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.CLASS,
-    AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.PROPERTY,
-    AnnotationTarget.TYPE
-)
-annotation class Bound(val scope: KClass<*>)
+val given: Nothing = error("Must be compiled with the injekt compiler")
 
-@Target(
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.CLASS,
-    AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.PROPERTY,
-    AnnotationTarget.TYPE
-)
-annotation class Eager
-
-@Target(
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.CLASS,
-    AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.PROPERTY,
-    AnnotationTarget.TYPE
-)
-annotation class Default
+@Suppress("NOTHING_TO_INLINE")
+inline fun <T> given(value: @Given T = given): T = value

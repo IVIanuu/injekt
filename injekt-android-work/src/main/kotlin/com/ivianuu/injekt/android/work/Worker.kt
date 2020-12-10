@@ -22,10 +22,6 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Default
-import com.ivianuu.injekt.MapEntries
-import com.ivianuu.injekt.SetElements
 import kotlin.reflect.KClass
 
 inline fun <reified T : ListenableWorker> worker(): @MapEntries ((Context, WorkerParameters) -> T) -> Workers =

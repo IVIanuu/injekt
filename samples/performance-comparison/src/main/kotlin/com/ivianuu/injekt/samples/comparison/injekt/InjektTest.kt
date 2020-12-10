@@ -16,19 +16,18 @@
 
 package com.ivianuu.injekt.samples.comparison.injekt
 
-import com.ivianuu.injekt.create
+import com.ivianuu.injekt.given
 import com.ivianuu.injekt.samples.comparison.base.InjectionTest
 import com.ivianuu.injekt.samples.comparison.fibonacci.Fib8
 
 object InjektTest : InjectionTest {
-
     override val name = "Injekt"
 
     override fun setup() {
     }
 
     override fun inject() {
-        create<Fib8>()
+        given<Fib8>()
     }
 
     override fun shutdown() {

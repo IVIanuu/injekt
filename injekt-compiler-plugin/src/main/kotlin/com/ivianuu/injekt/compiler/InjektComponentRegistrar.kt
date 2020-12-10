@@ -18,16 +18,17 @@ package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.compiler.generator.InjektKtGenerationExtension
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import com.ivianuu.injekt.component
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
+import org.jetbrains.kotlin.com.intellij.openapi.extensions.ExtensionPointName
+import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.JVMConfigurationKeys
-import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
+import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.io.File
 
@@ -59,18 +60,34 @@ typealias registerExtensions = () -> Unit
     project: Project,
     generationExtension: InjektKtGenerationExtension,
     injektIrGenerationExtension: InjektIrGenerationExtension,
-    typeResolutionInterceptorExtension: InjektTypeResolutionInterceptorExtension,
+    storageComponentContainerContributor: InjektStorageComponentContainerContributor,
 ): registerExtensions = {
     AnalysisHandlerExtension.registerExtension(
         project,
         generationExtension
     )
-    IrGenerationExtension.registerExtension(
+    StorageComponentContainerContributor.registerExtension(
         project,
+        storageComponentContainerContributor
+    )
+    registerExtensionAtFirst(
+        project,
+        IrGenerationExtension.extensionPointName,
         injektIrGenerationExtension
     )
-    TypeResolutionInterceptor.registerExtension(
-        project,
-        typeResolutionInterceptorExtension
-    )
+}
+
+private fun <T : Any> registerExtensionAtFirst(
+    project: Project,
+    extensionPointName: ExtensionPointName<T>,
+    extension: T,
+) {
+    val extensionPoint = Extensions.getArea(project)
+        .getExtensionPoint(extensionPointName)
+
+    val registeredExtensions = extensionPoint.extensionList
+    registeredExtensions.forEach { extensionPoint.unregisterExtension(it::class.java) }
+
+    extensionPoint.registerExtension(extension, {})
+    registeredExtensions.forEach { extensionPoint.registerExtension(it, {}) }
 }

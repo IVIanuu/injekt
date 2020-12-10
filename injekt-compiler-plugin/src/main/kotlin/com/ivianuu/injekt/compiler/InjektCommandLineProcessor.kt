@@ -29,6 +29,8 @@ import java.io.File
 @AutoService(CommandLineProcessor::class)
 class InjektCommandLineProcessor : CommandLineProcessor {
     override val pluginId = "com.ivianuu.injekt"
+
+    // todo remove options
     override val pluginOptions = listOf(
         CliOption(
             optionName = "generateComponents",
@@ -58,28 +60,11 @@ class InjektCommandLineProcessor : CommandLineProcessor {
         configuration: CompilerConfiguration,
     ) {
         when (option.optionName) {
-            "generateComponents" -> configuration.put(GenerateComponentsKey, value.toBoolean())
-            "generateMergeComponents" -> configuration.put(GenerateMergeComponentsKey,
-                value.toBoolean())
             "srcDir" -> configuration.put(SrcDirKey, value)
             "cacheDir" -> configuration.put(CacheDirKey, value)
         }
     }
 }
-
-val GenerateComponentsKey = CompilerConfigurationKey<Boolean>("generateComponents")
-typealias GenerateComponents = Boolean
-
-@Scoped(ApplicationComponent::class)
-@Binding fun generateComponents(configuration: CompilerConfiguration): GenerateComponents =
-    configuration.getNotNull(GenerateComponentsKey)
-
-val GenerateMergeComponentsKey = CompilerConfigurationKey<Boolean>("generateMergeComponents")
-typealias GenerateMergeComponents = Boolean
-
-@Scoped(ApplicationComponent::class)
-@Binding fun generateMergeComponents(configuration: CompilerConfiguration): GenerateMergeComponents =
-    configuration.getNotNull(GenerateMergeComponentsKey)
 
 val SrcDirKey = CompilerConfigurationKey<String>("srcDir")
 typealias SrcDir = File

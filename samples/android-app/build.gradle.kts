@@ -35,7 +35,6 @@ dependencies {
     implementation(project(":injekt-android"))
     implementation(project(":injekt-android-work"))
     implementation(project(":injekt-core"))
-    implementation(project(":injekt-merge"))
     kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
 
     implementation(Deps.AndroidX.Compose.runtime)
