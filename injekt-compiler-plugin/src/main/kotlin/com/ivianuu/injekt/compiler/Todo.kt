@@ -5,6 +5,13 @@ package com.ivianuu.injekt.compiler
 // object -> ok
 // class companion -> ok
 // class member -> ok
-// function parameter
-// function body
-// lambda body
+// function parameter -> ok
+// lambda parameter
+// expression body
+
+// generics
+
+// multi binding map
+// multi binding set
+// () -> T
+// module like?

@@ -20,6 +20,8 @@ import com.ivianuu.injekt.Binding
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithVisibility
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -64,6 +66,10 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
                             ) ?: return
 
                             if (descriptor is LocalVariableDescriptor) return
+                            if (descriptor is DeclarationDescriptorWithVisibility &&
+                                descriptor.visibility == DescriptorVisibilities.PRIVATE
+                            )
+                                return
 
                             val owner = when (descriptor) {
                                 is ClassDescriptor -> descriptor
@@ -74,7 +80,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
                             if (descriptor.hasAnnotation(InjektFqNames.Given)) {
                                 val index = Index(
-                                    owner!!.fqNameSafe,
+                                    owner.fqNameSafe,
                                     when (owner) {
                                         is ClassDescriptor -> "class"
                                         is FunctionDescriptor -> "function"
@@ -83,6 +89,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
                                     }
                                 )
                                 indices += index
+                                declarationStore.addInternalIndex(index)
                             }
 
                             val givens = when (descriptor) {
@@ -126,7 +133,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
             }
             .filter { it.second.isNotEmpty() || it.third.isNotEmpty() }
             .forEach { (file, indices, givenInfos) ->
-                indices.forEach { declarationStore.addInternalIndex(it) }
                 val fileName = file.packageFqName.pathSegments().joinToString("_") + "_${file.name}"
                 val nameProvider = UniqueNameProvider()
                 fileManager.generateFile(
