@@ -145,7 +145,7 @@ import org.jetbrains.kotlin.resolve.scopes.MemberScope
 
     private fun createGivenInfoOrNull(descriptor: DeclarationDescriptor): GivenInfo? {
         val declaration = descriptor.findPsi()
-            ?.let { it as KtDeclaration }
+            ?.let { it as? KtDeclaration }
             ?: return null
         val givens = when (declaration) {
             is KtConstructor<*> -> declaration.valueParameters

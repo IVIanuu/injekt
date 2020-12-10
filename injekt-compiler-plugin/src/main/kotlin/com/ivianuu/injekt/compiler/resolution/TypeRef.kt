@@ -190,6 +190,7 @@ fun TypeRef.copy(
 )
 
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
+    if (map.isEmpty()) return this
     map[classifier]?.let {
         return it.copy(
             // we copy nullability to support T : Any? -> String
@@ -317,10 +318,14 @@ fun getSubstitutionMap(
     typeParameters: List<ClassifierRef> = emptyList(),
 ): Map<ClassifierRef, TypeRef> {
     val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
+    val visitedTypes = mutableSetOf<TypeRef>()
     fun visitType(
         thisType: TypeRef,
         baseType: TypeRef,
     ) {
+        if (thisType in visitedTypes && baseType in visitedTypes) return
+        visitedTypes += thisType
+        visitedTypes += baseType
         if (baseType.classifier.isTypeParameter) {
             substitutionMap[baseType.classifier] = thisType
             baseType.superTypes()

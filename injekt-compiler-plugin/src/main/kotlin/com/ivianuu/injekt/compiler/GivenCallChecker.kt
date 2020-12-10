@@ -258,7 +258,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
     override fun visitCallExpression(expression: KtCallExpression) {
         super.visitCallExpression(expression)
         scope.resolve(expression)
-        scope.check(expression.getResolvedCall(bindingTrace.bindingContext)!!, expression)
+        scope.check(expression.getResolvedCall(bindingTrace.bindingContext) ?: return, expression)
     }
 
 }
