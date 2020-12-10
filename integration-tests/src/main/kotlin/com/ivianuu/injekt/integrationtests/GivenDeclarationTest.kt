@@ -22,6 +22,22 @@ class GivenDeclarationTest {
             invokeSingleFile<Any>().javaClass.name)
     }
 
+    @Test
+    fun testGivenAliasClass() = codegen(
+        """
+            interface Dep<T> {
+                val value: T
+            }
+            @Given class DepImpl<T>(override val value: @Given T = given) : @Given Dep<T>
+
+            @Given val foo = Foo()
+            fun invoke() = given<Dep<Foo>>()
+        """
+    ) {
+        assertEquals("com.ivianuu.injekt.integrationtests.DepImpl",
+            invokeSingleFile<Any>().javaClass.name)
+    }
+
     // todo given class constructor
 
     @Test

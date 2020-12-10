@@ -80,18 +80,27 @@ import org.jetbrains.kotlin.resolve.scopes.MemberScope
             .flatMap { propertyDescriptorsForFqName(it.fqName) }
     }
 
-    private val globalGivens by unsafeLazy {
-        (classIndices
-            .mapNotNull { it.getGivenConstructor() } +
-                functionIndices +
-                propertyIndices)
+    private val globalGivens: List<Pair<TypeRef, CallableDescriptor>> by unsafeLazy {
+        classIndices
+            .mapNotNull { it.getGivenConstructor() }
             .filter { it.hasAnnotationWithPropertyAndClass(InjektFqNames.Given) }
+            .flatMap { constructor ->
+                constructor.allGivenTypes()
+                    .map { it to constructor }
+            } +
+                functionIndices
+                    .filter { it.hasAnnotationWithPropertyAndClass(InjektFqNames.Given) }
+                    .map { it.returnType!!.toTypeRef() to it } +
+                propertyIndices
+                    .filter { it.hasAnnotationWithPropertyAndClass(InjektFqNames.Given) }
+                    .map { it.type.toTypeRef() to it }
     }
 
     private val givensByType = mutableMapOf<TypeRef, List<CallableDescriptor>>()
     fun givensForType(type: TypeRef): List<CallableDescriptor> = givensByType.getOrPut(type) {
         globalGivens
-            .filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
+            .filter { it.first.isAssignableTo(type) }
+            .map { it.second }
             .distinct()
     }
 

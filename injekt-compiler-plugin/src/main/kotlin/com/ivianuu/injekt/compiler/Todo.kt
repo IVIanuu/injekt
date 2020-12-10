@@ -16,3 +16,4 @@ package com.ivianuu.injekt.compiler
 // () -> T
 // module like?
 // optional nullable requests
+// @Given local class

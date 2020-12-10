@@ -15,7 +15,6 @@ import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.js.inline.util.hasCallerQualifier
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
@@ -81,32 +80,11 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
             chain.push(request)
             val givens = givensFor(request.type)
             when {
-                givens.size == 1 -> {
-                    val callable = givens.single()
-                    val info = declarationStore.givenInfoForCallable(callable)
-                    val substitutionMap = getSubstitutionMap(
-                        listOf(request.type to callable.returnType!!.toTypeRef())
-                    )
-                    val node = CallableGivenNode(
-                        request.type,
-                        callable.valueParameters
-                            .filter { it.type.hasAnnotation(InjektFqNames.Given) }
-                            .map {
-                                GivenRequest(
-                                    it.type.toTypeRef()
-                                        .substitute(substitutionMap),
-                                    it.name in info.requiredGivens,
-                                    it.fqNameSafe
-                                )
-                            },
-                        callable
-                    )
-                    check(node, call)
-                }
+                givens.size == 1 -> check(givens.single(), call)
                 givens.size > 1 -> {
                     bindingTrace.report(
                         InjektErrors.MULTIPLE_GIVENS
-                            .on(call)
+                            .on(call, request.type, givens)
                     )
                 }
                 givens.isEmpty() && request.required -> {
@@ -122,8 +100,28 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
             chain.pop()
         }
 
-        private fun givensFor(type: TypeRef): List<CallableDescriptor> {
+        private fun givensFor(type: TypeRef): List<GivenNode> {
             val givens = givensForInThisScope(type)
+                .map { callable ->
+                    val info = declarationStore.givenInfoForCallable(callable)
+                    val substitutionMap = getSubstitutionMap(
+                        listOf(type to callable.returnType!!.toTypeRef())
+                    )
+                    CallableGivenNode(
+                        type,
+                        callable.valueParameters
+                            .filter { it.type.hasAnnotation(InjektFqNames.Given) }
+                            .map {
+                                GivenRequest(
+                                    it.type.toTypeRef()
+                                        .substitute(substitutionMap),
+                                    it.name in info.requiredGivens,
+                                    it.fqNameSafe
+                                )
+                            },
+                        callable
+                    )
+                }
             return when {
                 givens.isNotEmpty() -> return givens
                 parent != null -> parent.givensFor(type)
@@ -153,7 +151,9 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
     ) : Scope(parent) {
         private val allGivens = descriptor.extractGivensOfDeclaration(bindingContext)
         override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
-            allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
+            allGivens
+                .filter { it.first.isAssignableTo(type) }
+                .map { it.second }
     }
 
     private inner class FunctionScope(

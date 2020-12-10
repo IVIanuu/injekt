@@ -1,10 +1,12 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.resolution.GivenNode
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.render
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory1
+import org.jetbrains.kotlin.diagnostics.DiagnosticFactory2
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.diagnostics.rendering.DefaultErrorMessages
@@ -22,8 +24,27 @@ interface InjektErrors {
             .also { MAP.put(it, "Unresolved given for {0}", TypeRefRenderer) }
 
         @JvmField
-        val MULTIPLE_GIVENS = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-            .also { MAP.put(it, "Multiple givens found") }
+        val MULTIPLE_GIVENS =
+            DiagnosticFactory2.create<PsiElement, TypeRef, List<GivenNode>>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "Multiple givens found for {0}:\n{1}",
+                        TypeRefRenderer,
+                        object : DiagnosticParameterRenderer<List<GivenNode>> {
+                            override fun render(
+                                obj: List<GivenNode>,
+                                renderingContext: RenderingContext,
+                            ): String {
+                                return buildString {
+                                    obj.forEach {
+                                        appendLine("${it.type.render()}: ${it.origin}")
+                                    }
+                                }
+                            }
+                        }
+                    )
+                }
 
         @JvmField
         val GIVEN_CALL_NOT_AS_DEFAULT_VALUE = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)

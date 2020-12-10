@@ -32,9 +32,7 @@ interface Heater {
     val isHot: Boolean
 }
 
-@Given fun provideHeater(): Heater = given<ElectricHeater>()
-
-@Given object ElectricHeater : Heater {
+@Given object ElectricHeater : @Given Heater {
     private var heating: Boolean = false
 
     override fun on() {
@@ -54,9 +52,7 @@ interface Pump {
     fun pump()
 }
 
-@Given fun providePump(): Pump = given<Thermosiphon>()
-
-@Given class Thermosiphon(private val heater: @Given Heater = given) : Pump {
+@Given class Thermosiphon(private val heater: @Given Heater = given) : @Given Pump {
     override fun pump() {
         if (heater.isHot) {
             println("=> => pumping => =>")

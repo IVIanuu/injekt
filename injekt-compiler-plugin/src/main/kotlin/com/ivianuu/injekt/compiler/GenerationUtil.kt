@@ -16,13 +16,17 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DeserializedDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.js.translate.utils.refineType
@@ -105,11 +109,15 @@ fun Annotated.hasAnnotationWithPropertyAndClass(
         (this is ConstructorDescriptor && constructedClass.hasAnnotation(fqName))
 
 fun ClassDescriptor.getGivenConstructor(): ConstructorDescriptor? {
-    if (hasAnnotation(InjektFqNames.Given)) return unsubstitutedPrimaryConstructor
     constructors
         .firstOrNull {
             it.hasAnnotation(InjektFqNames.Given)
         }?.let { return it }
+    if (hasAnnotation(InjektFqNames.Given) ||
+        defaultType.constructor.supertypes.any {
+            it.hasAnnotation(InjektFqNames.Given)
+        }
+    ) return unsubstitutedPrimaryConstructor
     return null
 }
 
@@ -141,21 +149,44 @@ fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescri
         inner.hasAnnotation(annotation)
     }
 
-fun ClassDescriptor.extractGivensOfDeclaration(bindingContext: BindingContext): List<CallableDescriptor> {
-    return (unsubstitutedPrimaryConstructor
+fun ClassDescriptor.extractGivensOfDeclaration(bindingContext: BindingContext): List<Pair<TypeRef, CallableDescriptor>> {
+    val primaryConstructorGivens = (unsubstitutedPrimaryConstructor
         ?.valueParameters
         ?.filter {
             it.hasAnnotation(InjektFqNames.Given) ||
                     it.type.hasAnnotation(InjektFqNames.Given)
         }
-        ?.mapNotNull {
-            bindingContext[BindingContext.VALUE_PARAMETER_AS_PROPERTY, it]
-        } ?: emptyList()) + unsubstitutedMemberScope.getContributedDescriptors()
-        .mapNotNull {
-            it.takeIf { it.hasAnnotation(InjektFqNames.Given) }
-                ?.let { it as? CallableDescriptor }
-                ?: (it as? ClassDescriptor)?.getGivenConstructor()
+        ?.mapNotNull { bindingContext[BindingContext.VALUE_PARAMETER_AS_PROPERTY, it] }
+        ?.map { it.type.toTypeRef() to it }
+        ?: emptyList())
+
+    val memberGivens = unsubstitutedMemberScope.getContributedDescriptors()
+        .flatMap { declaration ->
+            when (declaration) {
+                is ClassDescriptor -> declaration.getGivenConstructor()
+                    ?.let { constructor ->
+                        declaration.allGivenTypes()
+                            .map { it to constructor }
+                    } ?: emptyList()
+                is PropertyDescriptor -> if (declaration.hasAnnotation(InjektFqNames.Given))
+                    listOf(declaration.returnType!!.toTypeRef() to declaration) else emptyList()
+                is FunctionDescriptor -> if (declaration.hasAnnotation(InjektFqNames.Given))
+                    listOf(declaration.returnType!!.toTypeRef() to declaration) else emptyList()
+                else -> emptyList()
+            }
         }
+
+    return primaryConstructorGivens + memberGivens
+}
+
+fun ConstructorDescriptor.allGivenTypes(): List<TypeRef> =
+    constructedClass.allGivenTypes()
+
+fun ClassDescriptor.allGivenTypes(): List<TypeRef> = buildList<TypeRef> {
+    this += defaultType.toTypeRef()
+    this += defaultType.constructor.supertypes
+        .filter { it.hasAnnotation(InjektFqNames.Given) }
+        .map { it.toTypeRef() }
 }
 
 fun CallableDescriptor.extractGivensOfCallable(): List<CallableDescriptor> {
