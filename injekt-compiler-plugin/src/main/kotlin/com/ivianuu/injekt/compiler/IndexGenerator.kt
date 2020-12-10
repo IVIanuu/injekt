@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Scoped
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
@@ -31,8 +29,7 @@ import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierType
 
-@Scoped(GenerationComponent::class)
-@Binding class IndexGenerator(
+class IndexGenerator(
     private val declarationStore: DeclarationStore,
     private val fileManager: FileManager,
 ) {

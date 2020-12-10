@@ -17,14 +17,9 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
-import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
-import com.ivianuu.injekt.component
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
-import org.jetbrains.kotlin.com.intellij.openapi.extensions.ExtensionPointName
-import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
-import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.JVMConfigurationKeys
@@ -48,45 +43,20 @@ class InjektComponentRegistrar : ComponentRegistrar {
         ).map { File(it.joinToString(File.separator)) }
         val isGenerateKaptStubs = kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
         if (!isGenerateKaptStubs) {
-            component<ApplicationComponent>(project, configuration)
-                .registerExtensions()
+            val declarationStore = DeclarationStore()
+            AnalysisHandlerExtension.registerExtension(
+                project,
+                InjektKtGenerationExtension(declarationStore,
+                    srcDir(configuration), cacheDir(configuration))
+            )
+            StorageComponentContainerContributor.registerExtension(
+                project,
+                InjektStorageComponentContainerContributor()
+            )
+            IrGenerationExtension.registerExtension(
+                project,
+                InjektIrGenerationExtension(declarationStore)
+            )
         }
     }
-}
-
-typealias registerExtensions = () -> Unit
-
-@Binding fun provideRegisterExtensions(
-    project: Project,
-    generationExtension: InjektKtGenerationExtension,
-    injektIrGenerationExtension: InjektIrGenerationExtension,
-    storageComponentContainerContributor: InjektStorageComponentContainerContributor,
-): registerExtensions = {
-    AnalysisHandlerExtension.registerExtension(
-        project,
-        generationExtension
-    )
-    StorageComponentContainerContributor.registerExtension(
-        project,
-        storageComponentContainerContributor
-    )
-    IrGenerationExtension.registerExtension(
-        project,
-        injektIrGenerationExtension
-    )
-}
-
-private fun <T : Any> registerExtensionAtFirst(
-    project: Project,
-    extensionPointName: ExtensionPointName<T>,
-    extension: T,
-) {
-    val extensionPoint = Extensions.getArea(project)
-        .getExtensionPoint(extensionPointName)
-
-    val registeredExtensions = extensionPoint.extensionList
-    registeredExtensions.forEach { extensionPoint.unregisterExtension(it::class.java) }
-
-    extensionPoint.registerExtension(extension, {})
-    registeredExtensions.forEach { extensionPoint.registerExtension(it, {}) }
 }

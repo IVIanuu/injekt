@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
@@ -35,7 +34,7 @@ import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-@Binding class GivenCallChecker(
+class GivenCallChecker(
     private val bindingTrace: BindingTrace,
     private val declarationStore: DeclarationStore,
     private val lazyTopDownAnalyzer: LazyTopDownAnalyzer,

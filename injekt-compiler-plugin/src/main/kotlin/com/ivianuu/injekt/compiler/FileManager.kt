@@ -16,14 +16,11 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Scoped
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
-@Scoped(GenerationComponent::class)
-@Binding class FileManager(
+class FileManager(
     private val srcDir: SrcDir,
     private val cacheDir: CacheDir,
 ) {

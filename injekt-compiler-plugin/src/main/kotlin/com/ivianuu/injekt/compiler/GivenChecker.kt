@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.Binding
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -19,12 +18,12 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-@Binding class GivenChecker : CallChecker, DeclarationChecker {
+class GivenChecker : CallChecker, DeclarationChecker {
 
     override fun check(
         resolvedCall: ResolvedCall<*>,
         reportOn: PsiElement,
-        context: CallCheckerContext
+        context: CallCheckerContext,
     ) {
         if (resolvedCall.resultingDescriptor.fqNameSafe == InjektFqNames.givenFun &&
             resolvedCall.resultingDescriptor.valueParameters.isEmpty()

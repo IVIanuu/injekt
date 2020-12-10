@@ -89,10 +89,7 @@ object Deps {
 
     object Injekt {
         const val version = "0.0.1-dev421"
-        const val core = "com.ivianuu.injekt:injekt-core:$version"
-        const val compilerPlugin = "com.ivianuu.injekt:injekt-compiler-plugin:$version"
         const val gradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:$version"
-        const val merge = "com.ivianuu.injekt:injekt-merge:$version"
     }
 
     const val junit = "junit:junit:4.12"

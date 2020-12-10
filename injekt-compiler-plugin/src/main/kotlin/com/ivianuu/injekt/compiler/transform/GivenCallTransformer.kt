@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.extractGivensOfCallable
 import com.ivianuu.injekt.compiler.extractGivensOfDeclaration
@@ -45,7 +44,7 @@ import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-@Binding class GivenCallTransformer(
+class GivenCallTransformer(
     private val declarationStore: DeclarationStore,
     private val pluginContext: IrPluginContext,
 ) : IrElementTransformerVoid() {

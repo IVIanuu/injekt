@@ -1,6 +1,3 @@
-import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -17,7 +14,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  * limitations under the License.
  */
 plugins {
-    id("com.ivianuu.injekt")
     kotlin("jvm")
     kotlin("kapt")
 }
@@ -27,14 +23,7 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 //apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
 
-injekt {
-    generateComponents = true
-}
-
 dependencies {
-    implementation(Deps.Injekt.core)
-    implementation(Deps.Injekt.merge)
-    kotlinCompilerPluginClasspath(Deps.Injekt.compilerPlugin)
     implementation(Deps.processingX)
     kapt(Deps.processingX)
     compileOnly(Deps.Kotlin.compilerEmbeddable)

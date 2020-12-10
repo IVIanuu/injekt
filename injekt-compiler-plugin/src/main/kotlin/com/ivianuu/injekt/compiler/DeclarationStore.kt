@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Scoped
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.isAssignableTo
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
@@ -40,8 +38,7 @@ import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 
-@Scoped(ApplicationComponent::class)
-@Binding class DeclarationStore {
+class DeclarationStore {
 
     lateinit var module: ModuleDescriptor
 
