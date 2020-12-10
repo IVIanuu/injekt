@@ -61,9 +61,19 @@ class GivenDeclarationTest {
     }
 
     @Test
-    fun testGivenValueParameter() = codegen(
+    fun testExplicitGivenValueParameter() = codegen(
         """
             fun invoke(@Given foo: Foo) = given<Foo>()
+        """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile<Any>(foo))
+    }
+
+    @Test
+    fun testImplicitGivenValueParameter() = codegen(
+        """
+            fun invoke(foo: @Given Foo = given) = given<Foo>()
         """
     ) {
         val foo = Foo()

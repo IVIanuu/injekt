@@ -6,6 +6,11 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.extractGivensOfCallable
 import com.ivianuu.injekt.compiler.extractGivensOfDeclaration
 import com.ivianuu.injekt.compiler.isExternalDeclaration
+import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
+import com.ivianuu.injekt.compiler.resolution.isAssignableTo
+import com.ivianuu.injekt.compiler.resolution.toClassifierRef
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -31,14 +36,12 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.interpreter.hasAnnotation
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
-import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.companionObject
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.KotlinType
 
 @Binding class GivenCallTransformer(
     private val declarationStore: DeclarationStore,
@@ -47,7 +50,7 @@ import org.jetbrains.kotlin.types.KotlinType
 
     private abstract inner class Scope(private val parent: Scope?) {
 
-        private val expressionsByType = mutableMapOf<IrType, () -> IrExpression>()
+        private val expressionsByType = mutableMapOf<TypeRef, () -> IrExpression>()
 
         fun fillGivens(call: IrFunctionAccessExpression) {
             val callee = call.symbol.owner
@@ -65,7 +68,8 @@ import org.jetbrains.kotlin.types.KotlinType
                     .filter { call.getValueArgument(it.index) == null }
                     .map {
                         it to getExpressionForType(
-                            it.type.substitute(substitutionMap),
+                            it.type.substitute(substitutionMap)
+                                .toTypeRef(),
                             call.symbol
                         )
                     }
@@ -73,14 +77,14 @@ import org.jetbrains.kotlin.types.KotlinType
             }
         }
 
-        private fun getExpressionForType(type: IrType, symbol: IrSymbol): IrExpression {
+        private fun getExpressionForType(type: TypeRef, symbol: IrSymbol): IrExpression {
             return expressionsByType.getOrPut(type) {
                 val callable = givensFor(type).singleOrNull() ?: error("Wtf $type")
                 val expression: () -> IrExpression = {
                     when (callable) {
-                        is ConstructorDescriptor -> classExpression(callable, symbol)
-                        is PropertyDescriptor -> propertyExpression(callable, symbol)
-                        is FunctionDescriptor -> functionExpression(callable, symbol)
+                        is ConstructorDescriptor -> classExpression(type, callable, symbol)
+                        is PropertyDescriptor -> propertyExpression(type, callable, symbol)
+                        is FunctionDescriptor -> functionExpression(type, callable, symbol)
                         is ReceiverParameterDescriptor -> parameterExpression(callable, symbol)
                         is ValueParameterDescriptor -> parameterExpression(callable, symbol)
                         else -> error("Unsupported callable $callable")
@@ -91,6 +95,7 @@ import org.jetbrains.kotlin.types.KotlinType
         }
 
         private fun classExpression(
+            type: TypeRef,
             descriptor: ConstructorDescriptor,
             symbol: IrSymbol,
         ): IrExpression {
@@ -103,13 +108,31 @@ import org.jetbrains.kotlin.types.KotlinType
                 val constructor =
                     pluginContext.referenceConstructors(descriptor.constructedClass.fqNameSafe)
                         .single()
+                        .owner
                 DeclarationIrBuilder(pluginContext, symbol)
-                    .irCall(constructor.owner.symbol)
-                    .apply { fillGivens(this) }
+                    .irCall(constructor.symbol)
+                    .apply {
+                        val substitutionMap = getSubstitutionMap(
+                            listOf(type to constructor.returnType.toTypeRef()),
+                            constructor.typeParameters.map { it.descriptor.toClassifierRef() }
+                        )
+
+                        constructor.typeParameters
+                            .map {
+                                substitutionMap[it.descriptor.toClassifierRef()]
+                                    ?: error("No substitution found for ${it.dump()}")
+                            }
+                            .forEachIndexed { index, typeArgument ->
+                                putTypeArgument(index, typeArgument.toIrType(pluginContext))
+                            }
+
+                        fillGivens(this)
+                    }
             }
         }
 
         private fun propertyExpression(
+            type: TypeRef,
             descriptor: PropertyDescriptor,
             symbol: IrSymbol,
         ): IrExpression {
@@ -126,16 +149,31 @@ import org.jetbrains.kotlin.types.KotlinType
                                 DeclarationIrBuilder(pluginContext, symbol)
                                     .irGetObject(dispatchReceiverParameter.type.classOrNull!!)
                             } else {
-                                dispatchReceiverAccessors.reversed()
-                                    .first { it.first == dispatchReceiverParameter.type.classOrNull?.owner }
+                                dispatchReceiverAccessors
+                                    .last { it.first == dispatchReceiverParameter.type.classOrNull?.owner }
                                     .second()
                             }
                     }
+                    val substitutionMap = getSubstitutionMap(
+                        listOf(type to getter.returnType.toTypeRef()),
+                        getter.typeParameters.map { it.descriptor.toClassifierRef() }
+                    )
+
+                    getter.typeParameters
+                        .map {
+                            substitutionMap[it.descriptor.toClassifierRef()]
+                                ?: error("No substitution found for ${it.dump()}")
+                        }
+                        .forEachIndexed { index, typeArgument ->
+                            putTypeArgument(index, typeArgument.toIrType(pluginContext))
+                        }
+
                     fillGivens(this)
                 }
         }
 
         private fun functionExpression(
+            type: TypeRef,
             descriptor: FunctionDescriptor,
             symbol: IrSymbol,
         ): IrExpression {
@@ -155,6 +193,21 @@ import org.jetbrains.kotlin.types.KotlinType
                                     .second()
                             }
                     }
+
+                    val substitutionMap = getSubstitutionMap(
+                        listOf(type to function.returnType.toTypeRef()),
+                        function.typeParameters.map { it.descriptor.toClassifierRef() }
+                    )
+
+                    function.typeParameters
+                        .map {
+                            substitutionMap[it.descriptor.toClassifierRef()]
+                                ?: error("No substitution found for ${it.dump()}")
+                        }
+                        .forEachIndexed { index, typeArgument ->
+                            putTypeArgument(index, typeArgument.toIrType(pluginContext))
+                        }
+
                     fillGivens(this)
                 }
         }
@@ -169,7 +222,10 @@ import org.jetbrains.kotlin.types.KotlinType
                         .allParameters
                         .single { it.name == descriptor.name }
                     is FunctionDescriptor -> containingDeclaration.irFunction()
-                        .allParameters
+                        .let { function ->
+                            function.allParameters
+                                .filter { it != function.dispatchReceiverParameter }
+                        }
                         .single { it.name == descriptor.name }
                     else -> error("Unexpected parent $descriptor $containingDeclaration")
                 }
@@ -186,8 +242,8 @@ import org.jetbrains.kotlin.types.KotlinType
         private fun FunctionDescriptor.irFunction() = pluginContext.referenceFunctions(fqNameSafe)
             .singleOrNull()?.owner ?: error("Nothing found for $this")
 
-        private fun givensFor(type: IrType): List<CallableDescriptor> {
-            val givens = givensForInThisScope(type.toKotlinType())
+        private fun givensFor(type: TypeRef): List<CallableDescriptor> {
+            val givens = givensForInThisScope(type)
             return when {
                 givens.isNotEmpty() -> givens
                 parent != null -> parent.givensFor(type)
@@ -195,18 +251,18 @@ import org.jetbrains.kotlin.types.KotlinType
             }
         }
 
-        protected abstract fun givensForInThisScope(type: KotlinType): List<CallableDescriptor>
+        protected abstract fun givensForInThisScope(type: TypeRef): List<CallableDescriptor>
     }
 
     private inner class ExternalScope : Scope(null) {
-        override fun givensForInThisScope(type: KotlinType): List<CallableDescriptor> =
+        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
             declarationStore.givensForType(type)
                 .filter { it.isExternalDeclaration() }
                 .filter { it.visibility == DescriptorVisibilities.PUBLIC }
     }
 
     private inner class InternalScope(parent: Scope?) : Scope(parent) {
-        override fun givensForInThisScope(type: KotlinType): List<CallableDescriptor> =
+        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
             declarationStore.givensForType(type)
                 .filterNot { it.isExternalDeclaration() }
     }
@@ -218,8 +274,8 @@ import org.jetbrains.kotlin.types.KotlinType
         private val allGivens =
             declaration.descriptor.extractGivensOfDeclaration(pluginContext.bindingContext)
 
-        override fun givensForInThisScope(type: KotlinType): List<CallableDescriptor> =
-            allGivens.filter { it.returnType == type }
+        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
     }
 
     private inner class FunctionScope(
@@ -227,10 +283,10 @@ import org.jetbrains.kotlin.types.KotlinType
         parent: Scope?,
     ) : Scope(parent) {
         private val allGivens =
-            declaration.descriptor.extractGivensOfCallable(pluginContext.bindingContext)
+            declaration.descriptor.extractGivensOfCallable()
 
-        override fun givensForInThisScope(type: KotlinType): List<CallableDescriptor> =
-            allGivens.filter { it.returnType == type }
+        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
     }
 
     private var scope: Scope = InternalScope(ExternalScope())

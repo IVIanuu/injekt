@@ -1,13 +1,21 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
+import com.ivianuu.injekt.compiler.resolution.GivenNode
+import com.ivianuu.injekt.compiler.resolution.GivenRequest
+import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
+import com.ivianuu.injekt.compiler.resolution.isAssignableTo
+import com.ivianuu.injekt.compiler.resolution.substitute
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.js.inline.util.hasCallerQualifier
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
@@ -22,7 +30,6 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.KotlinType
 
 @Binding class GivenCallChecker(
     private val bindingContext: BindingContext,
@@ -30,17 +37,11 @@ import org.jetbrains.kotlin.types.KotlinType
     private val declarationStore: DeclarationStore,
 ) : Generator {
 
-    private data class Request(
-        val type: KotlinType,
-        val required: Boolean,
-        val origin: FqName,
-    )
-
     private abstract inner class Scope(private val parent: Scope?) {
 
-        private val checkedRequests = mutableSetOf<Request>()
+        private val checkedRequests = mutableSetOf<GivenRequest>()
 
-        private val chain = mutableListOf<Request>()
+        private val chain = mutableListOf<GivenRequest>()
 
         fun check(call: KtCallExpression) {
             val resolvedCall = call.getResolvedCall(bindingContext)
@@ -59,8 +60,8 @@ import org.jetbrains.kotlin.types.KotlinType
                 }
                 .filter { it.value is DefaultValueArgument }
                 .map {
-                    Request(
-                        it.key.type,
+                    GivenRequest(
+                        it.key.type.toTypeRef(),
                         it.key.name in givenInfo.requiredGivens,
                         it.key.fqNameSafe
                     )
@@ -68,28 +69,40 @@ import org.jetbrains.kotlin.types.KotlinType
                 .forEach { check(it, call) }
         }
 
-        private fun check(callable: CallableDescriptor, call: KtCallExpression) {
-            val info = declarationStore.givenInfoForCallable(callable)
-            callable.valueParameters
-                .filter { it.type.hasAnnotation(InjektFqNames.Given) }
-                .map {
-                    Request(
-                        it.type,
-                        it.name in info.requiredGivens,
-                        it.fqNameSafe
-                    )
-                }
+        private fun check(node: GivenNode, call: KtCallExpression) {
+            node.dependencies
                 .forEach { check(it, call) }
         }
 
-        private fun check(request: Request, call: KtCallExpression) {
+        private fun check(request: GivenRequest, call: KtCallExpression) {
             if (request in checkedRequests) return
             checkedRequests += request
 
             chain.push(request)
             val givens = givensFor(request.type)
             when {
-                givens.size == 1 -> check(givens.single(), call)
+                givens.size == 1 -> {
+                    val callable = givens.single()
+                    val info = declarationStore.givenInfoForCallable(callable)
+                    val substitutionMap = getSubstitutionMap(
+                        listOf(request.type to callable.returnType!!.toTypeRef())
+                    )
+                    val node = CallableGivenNode(
+                        request.type,
+                        callable.valueParameters
+                            .filter { it.type.hasAnnotation(InjektFqNames.Given) }
+                            .map {
+                                GivenRequest(
+                                    it.type.toTypeRef()
+                                        .substitute(substitutionMap),
+                                    it.name in info.requiredGivens,
+                                    it.fqNameSafe
+                                )
+                            },
+                        callable
+                    )
+                    check(node, call)
+                }
                 givens.size > 1 -> {
                     bindingTrace.report(
                         InjektErrors.MULTIPLE_GIVENS
@@ -109,7 +122,7 @@ import org.jetbrains.kotlin.types.KotlinType
             chain.pop()
         }
 
-        private fun givensFor(type: KotlinType): List<CallableDescriptor> {
+        private fun givensFor(type: TypeRef): List<CallableDescriptor> {
             val givens = givensForInThisScope(type)
             return when {
                 givens.isNotEmpty() -> return givens
@@ -118,18 +131,18 @@ import org.jetbrains.kotlin.types.KotlinType
             }
         }
 
-        protected abstract fun givensForInThisScope(type: KotlinType): List<CallableDescriptor>
+        protected abstract fun givensForInThisScope(type: TypeRef): List<CallableDescriptor>
     }
 
     private inner class ExternalScope : Scope(null) {
-        override fun givensForInThisScope(type: KotlinType): List<CallableDescriptor> =
+        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
             declarationStore.givensForType(type)
                 .filter { it.isExternalDeclaration() }
                 .filter { it.visibility == DescriptorVisibilities.PUBLIC }
     }
 
     private inner class InternalScope(parent: Scope?) : Scope(parent) {
-        override fun givensForInThisScope(type: KotlinType): List<CallableDescriptor> =
+        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
             declarationStore.givensForType(type)
                 .filterNot { it.isExternalDeclaration() }
     }
@@ -139,17 +152,17 @@ import org.jetbrains.kotlin.types.KotlinType
         parent: Scope?,
     ) : Scope(parent) {
         private val allGivens = descriptor.extractGivensOfDeclaration(bindingContext)
-        override fun givensForInThisScope(type: KotlinType): List<CallableDescriptor> =
-            allGivens.filter { it.returnType == type }
+        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
     }
 
     private inner class FunctionScope(
         private val descriptor: FunctionDescriptor,
         parent: Scope?,
     ) : Scope(parent) {
-        private val allGivens = descriptor.extractGivensOfCallable(bindingContext)
-        override fun givensForInThisScope(type: KotlinType): List<CallableDescriptor> =
-            allGivens.filter { it.returnType == type }
+        private val allGivens = descriptor.extractGivensOfCallable()
+        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
     }
 
     private var scope: Scope = InternalScope(ExternalScope())

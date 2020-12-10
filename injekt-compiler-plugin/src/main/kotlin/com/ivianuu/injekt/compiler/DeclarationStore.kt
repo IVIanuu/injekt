@@ -18,6 +18,9 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Scoped
+import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.isAssignableTo
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
@@ -35,7 +38,6 @@ import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
-import org.jetbrains.kotlin.types.KotlinType
 
 @Scoped(ApplicationComponent::class)
 @Binding class DeclarationStore {
@@ -86,10 +88,10 @@ import org.jetbrains.kotlin.types.KotlinType
             .filter { it.hasAnnotationWithPropertyAndClass(InjektFqNames.Given) }
     }
 
-    private val givensByType = mutableMapOf<KotlinType, List<CallableDescriptor>>()
-    fun givensForType(type: KotlinType): List<CallableDescriptor> = givensByType.getOrPut(type) {
+    private val givensByType = mutableMapOf<TypeRef, List<CallableDescriptor>>()
+    fun givensForType(type: TypeRef): List<CallableDescriptor> = givensByType.getOrPut(type) {
         globalGivens
-            .filter { it.returnType!! == type }
+            .filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
             .distinct()
     }
 
@@ -149,7 +151,7 @@ import org.jetbrains.kotlin.types.KotlinType
     }
 
     private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor>()
-    fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor {
+    private fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor {
         return classifierDescriptorByFqName.getOrPut(fqName) {
             memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
@@ -157,11 +159,11 @@ import org.jetbrains.kotlin.types.KotlinType
         }
     }
 
-    fun classDescriptorForFqName(fqName: FqName): ClassDescriptor =
+    private fun classDescriptorForFqName(fqName: FqName): ClassDescriptor =
         classifierDescriptorForFqName(fqName) as ClassDescriptor
 
     private val functionDescriptorsByFqName = mutableMapOf<FqName, List<FunctionDescriptor>>()
-    fun functionDescriptorForFqName(fqName: FqName): List<FunctionDescriptor> {
+    private fun functionDescriptorForFqName(fqName: FqName): List<FunctionDescriptor> {
         return functionDescriptorsByFqName.getOrPut(fqName) {
             memberScopeForFqName(fqName.parent())!!.getContributedFunctions(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
@@ -170,7 +172,7 @@ import org.jetbrains.kotlin.types.KotlinType
     }
 
     private val propertyDescriptorsByFqName = mutableMapOf<FqName, List<PropertyDescriptor>>()
-    fun propertyDescriptorsForFqName(fqName: FqName): List<PropertyDescriptor> {
+    private fun propertyDescriptorsForFqName(fqName: FqName): List<PropertyDescriptor> {
         return propertyDescriptorsByFqName.getOrPut(fqName) {
             memberScopeForFqName(fqName.parent())!!.getContributedVariables(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
@@ -179,7 +181,7 @@ import org.jetbrains.kotlin.types.KotlinType
     }
 
     private val memberScopeByFqName = mutableMapOf<FqName, MemberScope?>()
-    fun memberScopeForFqName(fqName: FqName): MemberScope? {
+    private fun memberScopeForFqName(fqName: FqName): MemberScope? {
         return memberScopeByFqName.getOrPut(fqName) {
             val pkg = module.getPackage(fqName)
 

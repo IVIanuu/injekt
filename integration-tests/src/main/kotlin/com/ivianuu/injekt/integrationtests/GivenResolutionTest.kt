@@ -237,7 +237,7 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testFunctionParameterGivenOverClassGiven() = codegen(
+    fun testPrefersFunctionParameterGivenOverClassGiven() = codegen(
         """
             class MyClass(@Given val classFoo: Foo) {
                 fun resolve(@Given functionFoo: Foo) = given<Foo>()
@@ -271,7 +271,7 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testFunctionReceiverGivenOverClassGiven() = codegen(
+    fun testPrefersFunctionReceiverGivenOverClassGiven() = codegen(
         """
             class MyClass(@Given val classFoo: Foo) {
                 fun @receiver:Given Foo.resolve() = given<Foo>()
@@ -287,7 +287,7 @@ class GivenResolutionTest {
         val classFoo = Foo()
         val functionFoo = Foo()
         val result = invokeSingleFile(classFoo, functionFoo)
-        assertSame(classFoo, result)
+        assertSame(functionFoo, result)
     }
 
     @Test
@@ -319,7 +319,7 @@ class GivenResolutionTest {
             )
         )
     ) {
-        it.last().assertCompileError("Unresolved given for Foo")
+        it.last().assertCompileError("Unresolved given for com.ivianuu.injekt.test.Foo")
     }
 
     @Test
@@ -328,7 +328,7 @@ class GivenResolutionTest {
             fun invoke() = given<String>()
         """
     ) {
-        assertCompileError("Unresolved given for String")
+        assertCompileError("Unresolved given for kotlin.String")
     }
 
     @Test
@@ -338,7 +338,7 @@ class GivenResolutionTest {
             fun invoke() = given<Bar>()
         """
     ) {
-        assertCompileError("Unresolved given for Foo")
+        assertCompileError("Unresolved given for com.ivianuu.injekt.test.Foo")
     }
 
     @Test
@@ -350,6 +350,18 @@ class GivenResolutionTest {
         """
     ) {
         assertCompileError("Multiple givens")
+    }
+
+    @Test
+    fun testGenericGiven() = codegen(
+        """
+            @Given val foo = Foo()
+            @Given fun <T> givenList(value: @Given T = given): List<T> = listOf(value)
+            fun invoke() = given<List<Foo>>()
+        """
+    ) {
+        val (foo) = invokeSingleFile<List<Foo>>()
+        assertTrue(foo is Foo)
     }
 
 }

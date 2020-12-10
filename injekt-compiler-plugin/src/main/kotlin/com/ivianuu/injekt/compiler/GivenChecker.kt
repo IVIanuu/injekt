@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Binding
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
@@ -9,11 +10,34 @@ import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
+import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-@Binding class GivenChecker : DeclarationChecker {
+@Binding class GivenChecker : CallChecker, DeclarationChecker {
+
+    override fun check(
+        resolvedCall: ResolvedCall<*>,
+        reportOn: PsiElement,
+        context: CallCheckerContext
+    ) {
+        if (resolvedCall.resultingDescriptor.fqNameSafe == InjektFqNames.givenFun &&
+                resolvedCall.resultingDescriptor.valueParameters.isEmpty()) {
+            val parameter = (resolvedCall.call.callElement.parent as? KtParameter)
+                ?.descriptor<ValueParameterDescriptor>(context.trace.bindingContext)
+            if (parameter == null || !parameter.type.hasAnnotation(InjektFqNames.Given)) {
+                context.trace.report(
+                    InjektErrors.GIVEN_CALL_NOT_AS_DEFAULT_VALUE
+                        .on(reportOn)
+                )
+            }
+        }
+    }
 
     override fun check(
         declaration: KtDeclaration,

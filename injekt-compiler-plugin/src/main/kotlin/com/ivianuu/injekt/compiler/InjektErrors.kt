@@ -1,5 +1,7 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.render
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory1
@@ -7,8 +9,8 @@ import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.diagnostics.rendering.DefaultErrorMessages
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
-import org.jetbrains.kotlin.diagnostics.rendering.Renderers
-import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticParameterRenderer
+import org.jetbrains.kotlin.diagnostics.rendering.RenderingContext
 
 interface InjektErrors {
     companion object {
@@ -16,12 +18,16 @@ interface InjektErrors {
         val MAP = DiagnosticFactoryToRendererMap("Injekt")
 
         @JvmField
-        val UNRESOLVED_GIVEN = DiagnosticFactory1.create<PsiElement, KotlinType>(Severity.ERROR)
-            .also { MAP.put(it, "Unresolved given for {0}", Renderers.RENDER_TYPE) }
+        val UNRESOLVED_GIVEN = DiagnosticFactory1.create<PsiElement, TypeRef>(Severity.ERROR)
+            .also { MAP.put(it, "Unresolved given for {0}", TypeRefRenderer) }
 
         @JvmField
         val MULTIPLE_GIVENS = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
             .also { MAP.put(it, "Multiple givens found") }
+
+        @JvmField
+        val GIVEN_CALL_NOT_AS_DEFAULT_VALUE = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+            .also { MAP.put(it, "The given property can only be used on a parameter with a @Given type") }
 
         @JvmField
         val NON_GIVEN_VALUE_PARAMETER_ON_GIVEN_DECLARATION =
@@ -61,5 +67,11 @@ interface InjektErrors {
             override fun getMap() = MAP
         }
 
+    }
+}
+
+private val TypeRefRenderer = object : DiagnosticParameterRenderer<TypeRef> {
+    override fun render(obj: TypeRef, renderingContext: RenderingContext): String {
+        return obj.render()
     }
 }

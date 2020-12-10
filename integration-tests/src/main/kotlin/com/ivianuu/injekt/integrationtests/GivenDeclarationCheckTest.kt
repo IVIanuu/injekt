@@ -54,4 +54,22 @@ class GivenDeclarationCheckTest {
         assertCompileError("@Given declaration cannot have a extension receiver")
     }
 
+    @Test
+    fun testGivenPropertyCallWithoutGivenParameter() = codegen(
+        """
+            fun bar() = given
+        """
+    ) {
+        assertCompileError("The given property can only be used on a parameter with a @Given type")
+    }
+
+    @Test
+    fun testGivenPropertyCallWithoutGiven() = codegen(
+        """
+            fun bar(p1: String = given) = p1
+        """
+    ) {
+        assertCompileError("The given property can only be used on a parameter with a @Given type")
+    }
+
 }

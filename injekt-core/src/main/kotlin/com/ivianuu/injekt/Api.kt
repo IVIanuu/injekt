@@ -31,3 +31,6 @@ val given: Nothing = error("Must be compiled with the injekt compiler")
 
 @Suppress("NOTHING_TO_INLINE")
 inline fun <T> given(value: @Given T = given): T = value
+
+@Target(AnnotationTarget.ANNOTATION_CLASS)
+annotation class Qualifier

@@ -119,7 +119,7 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtensi
                 bindingTrace.bindingContext, module, emptyList(), newFiles, true
             )
         } else {
-            AnalysisResult.compilationError(bindingTrace.bindingContext)
+            AnalysisResult.success(bindingTrace.bindingContext, module)
         }
     }
 }

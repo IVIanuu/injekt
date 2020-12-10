@@ -19,8 +19,8 @@ package com.ivianuu.injekt.android
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
-import com.ivianuu.injekt.Interceptor
-import kotlin.reflect.KClass
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.given
 
 inline fun <reified VM : ViewModel> activityViewModel() =
     viewModel<ActivityViewModelStoreOwner, VM>()
@@ -28,16 +28,16 @@ inline fun <reified VM : ViewModel> activityViewModel() =
 inline fun <reified VM : ViewModel> fragmentViewModel() =
     viewModel<FragmentViewModelStoreOwner, VM>()
 
-inline fun <O : ViewModelStoreOwner, reified VM : ViewModel> viewModel():
-        @Interceptor (O, () -> VM) -> () -> VM = { storeOwner, factory ->
-    {
-        ViewModelProvider(
-            storeOwner,
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel?> create(modelClass: Class<T>): T =
-                    factory() as T
-            }
-        )[VM::class.java]
-    }
+inline fun <O : ViewModelStoreOwner, reified VM : ViewModel> viewModel(
+    owner: @Given O = given,
+    noinline factory: @Given () -> VM = given
+): VM {
+    return ViewModelProvider(
+        owner,
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel?> create(modelClass: Class<T>): T =
+                factory() as T
+        }
+    )[VM::class.java]
 }
