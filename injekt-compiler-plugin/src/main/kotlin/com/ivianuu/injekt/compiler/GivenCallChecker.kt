@@ -11,7 +11,11 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtFunction
+import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
+import org.jetbrains.kotlin.psi.KtPrimaryConstructor
+import org.jetbrains.kotlin.psi.KtSecondaryConstructor
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -139,6 +143,15 @@ import org.jetbrains.kotlin.types.KotlinType
             allGivens.filter { it.returnType == type }
     }
 
+    private inner class FunctionScope(
+        private val descriptor: FunctionDescriptor,
+        parent: Scope?,
+    ) : Scope(parent) {
+        private val allGivens = descriptor.extractGivensOfCallable(bindingContext)
+        override fun givensForInThisScope(type: KotlinType): List<CallableDescriptor> =
+            allGivens.filter { it.returnType == type }
+    }
+
     private var scope: Scope = InternalScope(ExternalScope())
 
     private inline fun <R> inScope(scope: Scope, block: () -> R): R {
@@ -169,6 +182,26 @@ import org.jetbrains.kotlin.types.KotlinType
                         ?: scope
                     inScope(ClassScope(descriptor, parentScope)) {
                         super.visitClass(klass)
+                    }
+                }
+
+                override fun visitPrimaryConstructor(constructor: KtPrimaryConstructor) {
+                    visitFunction(constructor) { super.visitPrimaryConstructor(constructor) }
+                }
+
+                override fun visitSecondaryConstructor(constructor: KtSecondaryConstructor) {
+                    visitFunction(constructor) { super.visitSecondaryConstructor(constructor) }
+                }
+
+                override fun visitNamedFunction(function: KtNamedFunction) {
+                    visitFunction(function) { super.visitNamedFunction(function) }
+                }
+
+                private fun visitFunction(function: KtFunction, block: () -> Unit) {
+                    val descriptor =
+                        function.descriptor<FunctionDescriptor>(bindingContext) ?: return
+                    inScope(FunctionScope(descriptor, scope)) {
+                        block()
                     }
                 }
 

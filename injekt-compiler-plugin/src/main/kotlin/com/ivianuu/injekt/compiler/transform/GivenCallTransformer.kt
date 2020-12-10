@@ -3,9 +3,11 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.extractGivensOfCallable
 import com.ivianuu.injekt.compiler.extractGivensOfDeclaration
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
@@ -14,7 +16,10 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
@@ -76,6 +81,8 @@ import org.jetbrains.kotlin.types.KotlinType
                         is ConstructorDescriptor -> classExpression(callable, symbol)
                         is PropertyDescriptor -> propertyExpression(callable, symbol)
                         is FunctionDescriptor -> functionExpression(callable, symbol)
+                        is ReceiverParameterDescriptor -> parameterExpression(callable, symbol)
+                        is ValueParameterDescriptor -> parameterExpression(callable, symbol)
                         else -> error("Unsupported callable $callable")
                     }
                 }
@@ -132,8 +139,7 @@ import org.jetbrains.kotlin.types.KotlinType
             descriptor: FunctionDescriptor,
             symbol: IrSymbol,
         ): IrExpression {
-            val function = pluginContext.referenceFunctions(descriptor.fqNameSafe)
-                .singleOrNull()?.owner ?: error("Nothing found for $descriptor")
+            val function = descriptor.irFunction()
             return DeclarationIrBuilder(pluginContext, symbol)
                 .irCall(function.symbol)
                 .apply {
@@ -152,6 +158,33 @@ import org.jetbrains.kotlin.types.KotlinType
                     fillGivens(this)
                 }
         }
+
+        private fun parameterExpression(
+            descriptor: ParameterDescriptor,
+            symbol: IrSymbol,
+        ): IrExpression {
+            val valueParameter =
+                when (val containingDeclaration = descriptor.containingDeclaration) {
+                    is ConstructorDescriptor -> containingDeclaration.irConstructor()
+                        .allParameters
+                        .single { it.name == descriptor.name }
+                    is FunctionDescriptor -> containingDeclaration.irFunction()
+                        .allParameters
+                        .single { it.name == descriptor.name }
+                    else -> error("Unexpected parent $descriptor $containingDeclaration")
+                }
+
+            return DeclarationIrBuilder(pluginContext, symbol)
+                .irGet(valueParameter)
+        }
+
+        private fun ConstructorDescriptor.irConstructor() =
+            pluginContext.referenceConstructors(constructedClass.fqNameSafe).first {
+                it.descriptor.original == this.original
+            }.owner
+
+        private fun FunctionDescriptor.irFunction() = pluginContext.referenceFunctions(fqNameSafe)
+            .singleOrNull()?.owner ?: error("Nothing found for $this")
 
         private fun givensFor(type: IrType): List<CallableDescriptor> {
             val givens = givensForInThisScope(type.toKotlinType())
@@ -184,6 +217,17 @@ import org.jetbrains.kotlin.types.KotlinType
     ) : Scope(parent) {
         private val allGivens =
             declaration.descriptor.extractGivensOfDeclaration(pluginContext.bindingContext)
+
+        override fun givensForInThisScope(type: KotlinType): List<CallableDescriptor> =
+            allGivens.filter { it.returnType == type }
+    }
+
+    private inner class FunctionScope(
+        private val declaration: IrFunction,
+        parent: Scope?,
+    ) : Scope(parent) {
+        private val allGivens =
+            declaration.descriptor.extractGivensOfCallable(pluginContext.bindingContext)
 
         override fun givensForInThisScope(type: KotlinType): List<CallableDescriptor> =
             allGivens.filter { it.returnType == type }
@@ -230,7 +274,9 @@ import org.jetbrains.kotlin.types.KotlinType
                 }
             )
         }
-        val result = super.visitFunction(declaration)
+        val result = inScope(FunctionScope(declaration, scope)) {
+            super.visitFunction(declaration)
+        }
         if (dispatchReceiver != null) {
             dispatchReceiverAccessors.pop()
         }

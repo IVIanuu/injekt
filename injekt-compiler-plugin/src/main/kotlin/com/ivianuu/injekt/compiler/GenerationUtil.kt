@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -152,4 +153,9 @@ fun ClassDescriptor.extractGivensOfDeclaration(bindingContext: BindingContext): 
                 ?.let { it as? CallableDescriptor }
                 ?: (it as? ClassDescriptor)?.getGivenConstructor()
         }
+}
+
+fun CallableDescriptor.extractGivensOfCallable(bindingContext: BindingContext): List<CallableDescriptor> {
+    return allParameters
+        .filter { it.hasAnnotation(InjektFqNames.Given) }
 }

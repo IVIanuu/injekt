@@ -221,6 +221,76 @@ class GivenResolutionTest {
     // todo class constructor given in init
 
     @Test
+    fun testPrefersFunctionParameterGivenOverInternalGiven() = codegen(
+        """
+            @Given lateinit var internalFoo: Foo
+            fun invoke(internal: Foo, @Given functionFoo: Foo): Foo {
+                internalFoo = internal
+                return given()
+            }
+        """
+    ) {
+        val internal = Foo()
+        val functionFoo = Foo()
+        val result = invokeSingleFile(internal, functionFoo)
+        assertSame(functionFoo, result)
+    }
+
+    @Test
+    fun testFunctionParameterGivenOverClassGiven() = codegen(
+        """
+            class MyClass(@Given val classFoo: Foo) {
+                fun resolve(@Given functionFoo: Foo) = given<Foo>()
+            }
+
+            fun invoke(classFoo: Foo, functionFoo: Foo): Foo {
+                return MyClass(classFoo).resolve(functionFoo)
+            }
+        """
+    ) {
+        val classFoo = Foo()
+        val functionFoo = Foo()
+        val result = invokeSingleFile(classFoo, functionFoo)
+        assertSame(functionFoo, result)
+    }
+
+    @Test
+    fun testPrefersFunctionReceiverGivenOverInternalGiven() = codegen(
+        """
+            @Given lateinit var internalFoo: Foo
+            fun @receiver:Given Foo.invoke(internal: Foo): Foo {
+                internalFoo = internal
+                return given()
+            }
+        """
+    ) {
+        val internal = Foo()
+        val functionFoo = Foo()
+        val result = invokeSingleFile(functionFoo, internal)
+        assertSame(functionFoo, result)
+    }
+
+    @Test
+    fun testFunctionReceiverGivenOverClassGiven() = codegen(
+        """
+            class MyClass(@Given val classFoo: Foo) {
+                fun @receiver:Given Foo.resolve() = given<Foo>()
+            }
+
+            fun invoke(classFoo: Foo, functionFoo: Foo): Foo {
+                return with(MyClass(classFoo)) {
+                    functionFoo.resolve()
+                }
+            }
+        """
+    ) {
+        val classFoo = Foo()
+        val functionFoo = Foo()
+        val result = invokeSingleFile(classFoo, functionFoo)
+        assertSame(classFoo, result)
+    }
+
+    @Test
     fun testDerivedGiven() = codegen(
         """
             @Given val foo = Foo()

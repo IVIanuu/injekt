@@ -1,10 +1,10 @@
 package com.ivianuu.injekt.compiler
 
-// external global
-// internal global
-// object
-// class companion
-// class member
+// external global -> ok
+// internal global -> ok
+// object -> ok
+// class companion -> ok
+// class member -> ok
 // function parameter
 // function body
 // lambda body

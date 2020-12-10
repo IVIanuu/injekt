@@ -26,6 +26,8 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
@@ -130,6 +132,8 @@ import org.jetbrains.kotlin.types.KotlinType
             is ConstructorDescriptor -> callable.constructedClass.uniqueKey()
             is PropertyAccessorDescriptor -> callable.correspondingProperty.uniqueKey()
             is FunctionDescriptor -> callable.uniqueKey()
+            is ReceiverParameterDescriptor -> callable.uniqueKey()
+            is ValueParameterDescriptor -> callable.uniqueKey()
             else -> error("Unexpected callable $callable")
         }
         return givenInfosByKey.getOrPut(key) {
