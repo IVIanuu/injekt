@@ -224,7 +224,7 @@ class GivenResolutionTest {
     fun testPrefersFunctionParameterGivenOverInternalGiven() = codegen(
         """
             @Given lateinit var internalFoo: Foo
-            fun invoke(internal: Foo, @Given functionFoo: Foo): Foo {
+            fun invoke(internal: Foo, functionFoo: Foo = given): Foo {
                 internalFoo = internal
                 return given()
             }
@@ -325,20 +325,43 @@ class GivenResolutionTest {
     @Test
     fun testUnresolvedGiven() = codegen(
         """
-            fun invoke() = given<String>()
+            fun invoke() {
+                given<String>()
+            }
         """
     ) {
         assertCompileError("Unresolved given for kotlin.String")
     }
 
     @Test
-    fun testNestedUnresolved() = codegen(
+    fun testNestedUnresolvedGiven() = codegen(
         """
-            @Given fun bar(foo: @Given Foo = given) = Bar(foo)
+            @Given fun bar(foo: Foo = given) = Bar(foo)
             fun invoke() = given<Bar>()
         """
     ) {
         assertCompileError("Unresolved given for com.ivianuu.injekt.test.Foo")
+    }
+
+    @Test
+    fun testNestedUnresolvedGivenMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                   @Given fun bar(foo: Foo = given) = Bar(foo) 
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun callee(bar: Bar = given) = bar
+                    fun invoke() = callee()
+                """
+            )
+        )
+    ) {
+        it.last().assertCompileError("Unresolved given for com.ivianuu.injekt.test.Foo")
     }
 
     @Test
@@ -356,7 +379,7 @@ class GivenResolutionTest {
     fun testGenericGiven() = codegen(
         """
             @Given val foo = Foo()
-            @Given fun <T> givenList(value: @Given T = given): List<T> = listOf(value)
+            @Given fun <T> givenList(value: T = given): List<T> = listOf(value)
             fun invoke() = given<List<Foo>>()
         """
     ) {

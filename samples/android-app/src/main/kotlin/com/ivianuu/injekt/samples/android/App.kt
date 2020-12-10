@@ -17,21 +17,16 @@
 package com.ivianuu.injekt.samples.android
 
 import android.app.Application
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.merge.get
+import com.ivianuu.injekt.Given
 
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
-        with(applicationComponent.get<AppDependencies>()) {
-            initializeWorkers()
-            refreshRepo()
-        }
+        initializeWorkers()
+        refreshRepo()
+    }
+
+    companion object {
+        @Given lateinit var application: Application
     }
 }
-
-@Binding data class AppDependencies(
-    val initializeWorkers: initializeWorkers,
-    val refreshRepo: refreshRepo,
-)

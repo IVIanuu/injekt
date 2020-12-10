@@ -20,6 +20,12 @@ package com.ivianuu.injekt.android
 
 import android.app.Application
 import android.content.Context
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.given
+
+/*
+import android.app.Application
+import android.content.Context
 import android.content.res.Resources
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -28,12 +34,14 @@ import com.ivianuu.injekt.create
 import com.ivianuu.injekt.merge.ApplicationComponent
 
 val Application.applicationComponent: ApplicationComponent
-    get() = ProcessLifecycleOwner.get().lifecycle.singleton { create(this) }
+    get() = ProcessLifecycleOwner.get().lifecycle.singleton { create(this) }*/
 
 typealias ApplicationContext = Context
 
-@Binding inline fun Application.provideAppContext(): ApplicationContext = this
+@Given inline fun applicationContext(context: @Given Application = given): ApplicationContext =
+    context
 
+/*
 typealias ApplicationResources = Resources
 
 @Binding inline fun Application.provideApplicationResources(): ApplicationResources = resources
@@ -42,3 +50,4 @@ typealias ApplicationLifecycleOwner = LifecycleOwner
 
 @Binding inline fun Application.provideApplicationLifecycleOwner(): ApplicationLifecycleOwner =
     ProcessLifecycleOwner.get()
+*/

@@ -70,9 +70,8 @@ typealias registerExtensions = () -> Unit
         project,
         storageComponentContainerContributor
     )
-    registerExtensionAtFirst(
+    IrGenerationExtension.registerExtension(
         project,
-        IrGenerationExtension.extensionPointName,
         injektIrGenerationExtension
     )
 }

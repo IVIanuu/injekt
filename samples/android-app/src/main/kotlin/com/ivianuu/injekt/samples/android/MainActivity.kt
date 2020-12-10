@@ -18,35 +18,23 @@ package com.ivianuu.injekt.samples.android
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.setContent
-import androidx.lifecycle.ViewModel
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.android.ActivityContext
-import com.ivianuu.injekt.android.activityComponent
-import com.ivianuu.injekt.android.activityViewModel
-import com.ivianuu.injekt.merge.get
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            with(activityComponent.get<MainActivityDependencies>()) {
+            /*with(activityComponent.get<MainActivityDependencies>()) {
                 withMainViewModel {
                     GlobalScope.launch {
                         enqueueWork()
                     }
                 }
-            }
+            }*/
         }
     }
 }
+/*
 
 @Binding data class MainActivityDependencies(
     val withMainViewModel: WithMainViewModel,
@@ -82,3 +70,4 @@ typealias enqueueWork = () -> Unit
         super.onCleared()
     }
 }
+*/

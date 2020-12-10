@@ -26,7 +26,6 @@ import java.io.File
 @Binding class FileManager(
     private val srcDir: SrcDir,
     private val cacheDir: CacheDir,
-    private val log: log,
 ) {
     private val originatingFilePaths = mutableMapOf<File, String>()
 
@@ -100,11 +99,10 @@ import java.io.File
             originatingFilePaths[newFile] = originatingFile.virtualFilePath
         }
 
-        log { "generated file $packageFqName.$fileName $code" }
-
         try {
             newFile.createNewFile()
             newFile.writeText(code)
+            println("Generated $newFile:\n$code")
         } catch (e: Throwable) {
             throw RuntimeException("Failed to create file ${newFile.absolutePath}\n$code")
         }
@@ -141,7 +139,6 @@ import java.io.File
                     cacheFile.createNewFile()
                 }
                 cacheFile.writeText(it)
-                log { "Updated cache:\n $it" }
             }
     }
 

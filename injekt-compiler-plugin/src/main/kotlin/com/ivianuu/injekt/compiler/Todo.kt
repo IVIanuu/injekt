@@ -1,19 +1,13 @@
 package com.ivianuu.injekt.compiler
 
-// external global -> ok
-// internal global -> ok
-// object -> ok
-// class companion -> ok
-// class member -> ok
-// function parameter -> ok
-// lambda parameter
-// expression body
-
-// generics
+// lambda parameter given declaration site
+// lambda parameter given use site
+// expression body given
 
 // multi binding map
 // multi binding set
-// () -> T
+// providers () -> T
 // module like?
 // optional nullable requests
+
 // @Given local class

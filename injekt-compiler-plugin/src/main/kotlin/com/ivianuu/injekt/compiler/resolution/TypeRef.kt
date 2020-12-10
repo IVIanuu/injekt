@@ -15,8 +15,6 @@ import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
-import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -65,9 +63,6 @@ fun TypeRef.superTypes(substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
     return classifier.superTypes
         .map { it.substitute(merged) }
 }
-
-fun IrType.toTypeRef(variance: Variance = Variance.INVARIANT, isStarProjection: Boolean = false) =
-    toKotlinType().toTypeRef(variance, isStarProjection)
 
 fun KotlinType.toTypeRef(
     variance: Variance = Variance.INVARIANT,

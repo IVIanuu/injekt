@@ -19,24 +19,20 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.ChildComponent
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
-
-interface Generator {
-    fun generate(files: List<KtFile>)
-}
 
 @ChildComponent
 abstract class GenerationComponent(
     @Binding protected val moduleDescriptor: ModuleDescriptor,
     @Binding protected val bindingContext: BindingContext,
     @Binding protected val bindingTrace: BindingTrace,
+    @Binding protected val lazyTopDownAnalyzer: LazyTopDownAnalyzer,
 ) {
     abstract val declarationStore: DeclarationStore
     abstract val fileManager: FileManager
     abstract val givenCallChecker: GivenCallChecker
+    abstract val givenInfoGenerator: GivenInfoGenerator
     abstract val indexGenerator: IndexGenerator
-    abstract val lazyTopDownAnalyzer: LazyTopDownAnalyzer
 }

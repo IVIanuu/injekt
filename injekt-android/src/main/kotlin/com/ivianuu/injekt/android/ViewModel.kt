@@ -16,12 +16,7 @@
 
 package com.ivianuu.injekt.android
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStoreOwner
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.given
-
+/*
 inline fun <reified VM : ViewModel> activityViewModel() =
     viewModel<ActivityViewModelStoreOwner, VM>()
 
@@ -41,3 +36,4 @@ inline fun <O : ViewModelStoreOwner, reified VM : ViewModel> viewModel(
         }
     )[VM::class.java]
 }
+*/

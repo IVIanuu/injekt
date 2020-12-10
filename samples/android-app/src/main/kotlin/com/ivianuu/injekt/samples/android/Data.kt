@@ -16,35 +16,28 @@
 
 package com.ivianuu.injekt.samples.android
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Scoped
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.android.ApplicationContext
-import com.ivianuu.injekt.merge.ApplicationComponent
+import com.ivianuu.injekt.given
 import java.io.File
 
 typealias DatabaseFile = File
 
-@Scoped(ApplicationComponent::class)
-@Binding fun provideDatabaseFile(applicationContext: ApplicationContext): DatabaseFile =
-    applicationContext.cacheDir
+@Given fun databaseFile(context: ApplicationContext = given): DatabaseFile =
+    context.cacheDir
 
-@Scoped(ApplicationComponent::class)
-@Binding class Database(private val file: DatabaseFile)
+@Given object Database {
+    private val file by lazy { given<DatabaseFile>() }
+}
 
-@Scoped(ApplicationComponent::class)
-@Binding class Repo(
-    private val database: Database,
-    private val api: Api,
-) {
+@Given object Repo {
     fun refresh() {
+        given<Api>()
     }
 }
 
-typealias refreshRepo = () -> Unit
-
-@Binding fun provideRefreshRepo(repo: Repo): refreshRepo = {
+fun refreshRepo(repo: Repo = given) {
     repo.refresh()
 }
 
-@Scoped(ApplicationComponent::class)
-@Binding class Api
+@Given object Api

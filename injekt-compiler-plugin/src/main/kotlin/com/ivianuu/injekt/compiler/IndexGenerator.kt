@@ -17,159 +17,86 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Binding
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithVisibility
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor
-import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import com.ivianuu.injekt.Scoped
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtFunction
+import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
-import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierType
 
+@Scoped(GenerationComponent::class)
 @Binding class IndexGenerator(
-    private val bindingContext: BindingContext,
     private val declarationStore: DeclarationStore,
     private val fileManager: FileManager,
-) : Generator {
+) {
+    fun generate(files: List<KtFile>) {
+        files.forEach { file ->
+            val indices = mutableListOf<Index>()
+            file.accept(object : KtTreeVisitorVoid() {
+                override fun visitDeclaration(declaration: KtDeclaration) {
+                    super.visitDeclaration(declaration)
+                    if (declaration !is KtNamedFunction &&
+                        declaration !is KtClassOrObject &&
+                        declaration !is KtProperty &&
+                        declaration !is KtConstructor<*>
+                    ) return
 
-    override fun generate(files: List<KtFile>) {
-        files
-            .map { file ->
-                val indices = mutableListOf<Index>()
-                val givenInfos = mutableListOf<GivenInfo>()
+                    if (declaration is KtProperty && declaration.isLocal) return
+                    if (declaration.visibilityModifierType() == KtTokens.PRIVATE_KEYWORD) return
 
-                file.accept(
-                    object : KtTreeVisitorVoid() {
-                        override fun visitDeclaration(declaration: KtDeclaration) {
-                            super.visitDeclaration(declaration)
+                    val owner = when (declaration) {
+                        is KtConstructor<*> -> declaration.getContainingClassOrObject()
+                        is KtPropertyAccessor -> declaration.property
+                        else -> declaration
+                    } as KtNamedDeclaration
 
-                            if (declaration !is KtNamedFunction &&
-                                declaration !is KtClassOrObject &&
-                                declaration !is KtProperty &&
-                                declaration !is KtConstructor<*>
-                            ) return
-
-                            val descriptor = declaration.descriptor<DeclarationDescriptor>(
-                                bindingContext
-                            ) ?: return
-
-                            if (descriptor is LocalVariableDescriptor) return
-                            if (descriptor is DeclarationDescriptorWithVisibility &&
-                                descriptor.visibility == DescriptorVisibilities.PRIVATE
-                            )
-                                return
-
-                            val owner = when (descriptor) {
-                                is ClassDescriptor -> descriptor
-                                is ConstructorDescriptor -> descriptor.constructedClass
-                                is PropertyAccessorDescriptor -> descriptor.correspondingProperty
-                                else -> descriptor
+                    if (declaration.hasAnnotation(InjektFqNames.Given)) {
+                        val index = Index(
+                            owner.fqName!!,
+                            when (owner) {
+                                is KtClassOrObject -> "class"
+                                is KtConstructor<*> -> "constructor"
+                                is KtFunction -> "function"
+                                is KtProperty -> "property"
+                                else -> error("Unexpected declaration ${declaration.text}")
                             }
+                        )
+                        indices += index
+                        declarationStore.addInternalIndex(index)
+                    }
+                }
+            })
 
-                            if (descriptor.hasAnnotation(InjektFqNames.Given)) {
-                                val index = Index(
-                                    owner.fqNameSafe,
-                                    when (owner) {
-                                        is ClassDescriptor -> "class"
-                                        is FunctionDescriptor -> "function"
-                                        is PropertyDescriptor -> "property"
-                                        else -> error("Unexpected declaration ${declaration.text}")
-                                    }
-                                )
-                                indices += index
-                                declarationStore.addInternalIndex(index)
-                            }
+            if (indices.isEmpty()) return@forEach
 
-                            val givens = when (descriptor) {
-                                is ConstructorDescriptor -> descriptor.valueParameters
-                                    .filter { it.type.hasAnnotation(InjektFqNames.Given) }
-                                is ClassDescriptor -> descriptor.getGivenConstructor()
-                                    ?.valueParameters
-                                    ?.filter { it.type.hasAnnotation(InjektFqNames.Given) }
-                                    ?: emptyList()
-                                is PropertyDescriptor -> emptyList()
-                                is FunctionDescriptor -> descriptor.valueParameters
-                                    .filter { it.type.hasAnnotation(InjektFqNames.Given) }
-                                else -> error("Unexpected descriptor $descriptor")
-                            }
-
-                            val (requiredGivens, givensWithDefault) = givens
-                                .partition { givenParameter ->
-                                    (givenParameter.findPsi() as KtParameter)
-                                        .defaultValue?.text == "given"
-                                }
-
-                            if (requiredGivens.isNotEmpty() || givensWithDefault.isNotEmpty()) {
-                                val givenInfo = GivenInfo(
-                                    descriptor.fqNameSafe,
-                                    owner.uniqueKey(),
-                                    requiredGivens
-                                        .map { it.name },
-                                    givensWithDefault
-                                        .map { it.name }
-                                )
-                                givenInfos += givenInfo
-                                declarationStore.addGivenInfoForKey(
-                                    owner.uniqueKey(),
-                                    givenInfo
-                                )
-                            }
+            val fileName = file.packageFqName.pathSegments().joinToString("_") +
+                    "_${file.name.removeSuffix(".kt")}Indices.kt"
+            val nameProvider = UniqueNameProvider()
+            fileManager.generateFile(
+                originatingFile = file,
+                packageFqName = InjektFqNames.IndexPackage,
+                fileName = fileName,
+                code = buildString {
+                    appendLine("package ${InjektFqNames.IndexPackage}")
+                    appendLine("import ${InjektFqNames.Index}")
+                    indices
+                        .distinct()
+                        .forEach { index ->
+                            val indexName = nameProvider(
+                                index.fqName.pathSegments().joinToString("_") + "_index"
+                            ).asNameId()
+                            appendLine("@Index(fqName = \"${index.fqName}\", type = \"${index.type}\")")
+                            appendLine("internal val $indexName = Unit")
                         }
-                    }
-                )
-                Triple(file, indices, givenInfos)
-            }
-            .filter { it.second.isNotEmpty() || it.third.isNotEmpty() }
-            .forEach { (file, indices, givenInfos) ->
-                val fileName = file.packageFqName.pathSegments().joinToString("_") + "_${file.name}"
-                val nameProvider = UniqueNameProvider()
-                fileManager.generateFile(
-                    originatingFile = file,
-                    packageFqName = InjektFqNames.IndexPackage,
-                    fileName = fileName,
-                    code = buildCodeString {
-                        emitLine("@file:Suppress(\"UNCHECKED_CAST\", \"NOTHING_TO_INLINE\")")
-                        emitLine("package ${InjektFqNames.IndexPackage}")
-                        if (indices.isNotEmpty()) emitLine("import ${InjektFqNames.Index}")
-                        if (givenInfos.isNotEmpty()) emitLine("import ${InjektFqNames.GivenInfo}")
-
-                        indices
-                            .distinct()
-                            .forEach { index ->
-                                val indexName = nameProvider(
-                                    index.fqName.pathSegments().joinToString("_")
-                                ).asNameId()
-                                emitLine("@Index(fqName = \"${index.fqName}\", type = \"${index.type}\")")
-                                emitLine("internal val $indexName = Unit")
-                            }
-
-                        givenInfos
-                            .forEach { info ->
-                                val infoName = nameProvider(
-                                    info.fqName.pathSegments().joinToString("_")
-                                ).asNameId()
-                                emitLine("@GivenInfo(fqName = \"${info.fqName}\",\nkey = \"${info.key}\",\n" +
-                                        "requiredGivens = [${info.requiredGivens.joinToString(", ") { "\"$it\"" }}],\n" +
-                                        "givensWithDefault = [${
-                                            info.givensWithDefault.joinToString(", ") { "\"$it\"" }
-                                        }]\n" +
-                                        ")")
-                                emitLine("internal val $infoName = Unit")
-                            }
-                    }
-                )
-            }
+                }
+            )
+        }
     }
 }

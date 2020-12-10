@@ -18,6 +18,7 @@
 
 package com.ivianuu.injekt.android
 
+/*
 import android.content.Context
 import android.content.res.Resources
 import androidx.fragment.app.Fragment
@@ -61,3 +62,4 @@ typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
 
 @Binding inline fun Fragment.provideFragmentViewModelStoreOwner(): FragmentViewModelStoreOwner =
     this
+*/

@@ -18,6 +18,7 @@
 
 package com.ivianuu.injekt.android
 
+/*
 import android.app.Service
 import android.content.Context
 import android.content.res.Resources
@@ -42,3 +43,4 @@ typealias ServiceContext = Context
 typealias ServiceResources = Resources
 
 @Binding inline fun Service.provideServiceResources(): ServiceResources = resources
+*/

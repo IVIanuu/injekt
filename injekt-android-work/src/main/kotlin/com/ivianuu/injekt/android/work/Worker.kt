@@ -18,6 +18,7 @@
 
 package com.ivianuu.injekt.android.work
 
+/*
 import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
@@ -46,3 +47,4 @@ typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters
         )
     }
 }
+*/

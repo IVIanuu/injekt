@@ -23,11 +23,11 @@ import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
-import org.jetbrains.kotlin.resolve.TopDownAnalysisMode
 import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtension
 
 @Binding class InjektKtGenerationExtension(
@@ -45,6 +45,7 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtensi
     private var generatedCode = false
 
     private var generationComponent: GenerationComponent? = null
+    private var hasErrors = false
 
     override fun doAnalysis(
         project: Project,
@@ -57,19 +58,32 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtensi
         files as ArrayList<KtFile>
         if (!generatedCode) {
             val lazyTopDownAnalyzer = componentProvider.get<LazyTopDownAnalyzer>()
-            generationComponent = generationComponentFactory(module,
+            val generationComponent = generationComponentFactory(module,
                 bindingTrace.bindingContext, bindingTrace, lazyTopDownAnalyzer)
-            generationComponent!!.declarationStore.module = module
+                .also { this.generationComponent = it }
+            generationComponent.declarationStore.module = module
             val tmpFiles = files.toList()
             files.clear()
-            files += generationComponent!!.fileManager.preGenerate(tmpFiles)
+            files += generationComponent.fileManager.preGenerate(tmpFiles)
+
+            val result = super.doAnalysis(project,
+                module,
+                projectContext,
+                files,
+                bindingTrace,
+                componentProvider)
+
+            generationComponent.indexGenerator.generate(files)
+
+            files.forEach { it.accept(generationComponent.givenCallChecker) }
+            generationComponent.givenInfoGenerator.generate(files)
+
+            hasErrors = bindingTrace.bindingContext.diagnostics.any {
+                it.severity == Severity.ERROR
+            }
+            return result
         }
-        return super.doAnalysis(project,
-            module,
-            projectContext,
-            files,
-            bindingTrace,
-            componentProvider)
+        return null
     }
 
     override fun analysisCompleted(
@@ -78,48 +92,18 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtensi
         bindingTrace: BindingTrace,
         files: Collection<KtFile>,
     ): AnalysisResult? {
-        if (generatedCode) return null
+        if (generatedCode || hasErrors) return null
         generatedCode = true
 
         files as List<KtFile>
 
         val generationComponent = generationComponent!!
-
-        val generators = listOfNotNull(
-            generationComponent.indexGenerator,
-            generationComponent.givenCallChecker
-        )
-
-        files.forEach {
-            it.declarations
-                .forEach {
-                    try {
-                        generationComponent.lazyTopDownAnalyzer.analyzeDeclarations(
-                            TopDownAnalysisMode.LocalDeclarations,
-                            listOf(it)
-                        )
-                    } catch (e: Throwable) {
-                    }
-                }
-        }
-
-        val initialDiagnosticCount = bindingTrace.bindingContext.diagnostics.count()
-        generators.forEach {
-            runExitCatching {
-                it.generate(files)
-            }
-        }
         generationComponent.fileManager.postGenerate()
         val newFiles = generationComponent.fileManager.newFiles
-
         this.generationComponent = null
 
-        return if (initialDiagnosticCount == bindingTrace.bindingContext.diagnostics.count()) {
-            AnalysisResult.RetryWithAdditionalRoots(
-                bindingTrace.bindingContext, module, emptyList(), newFiles, true
-            )
-        } else {
-            AnalysisResult.success(bindingTrace.bindingContext, module)
-        }
+        return AnalysisResult.RetryWithAdditionalRoots(
+            bindingTrace.bindingContext, module, emptyList(), newFiles, true
+        )
     }
 }

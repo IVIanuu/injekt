@@ -18,6 +18,7 @@
 
 package com.ivianuu.injekt.android
 
+/*
 import android.content.Context
 import android.content.res.Resources
 import androidx.activity.ComponentActivity
@@ -25,20 +26,11 @@ import androidx.activity.OnBackPressedDispatcherOwner
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
-
-val ComponentActivity.activityComponent: ActivityComponent
-    get() = lifecycle.singleton {
-        retainedActivityComponent
-            .get<(ComponentActivity) -> ActivityComponent>()(this)
-    }
-
-@Scope interface ActivityScope
-
-@MergeComponent interface ActivityComponent
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.given
 
 typealias ActivityContext = Context
-
-@Binding inline fun ComponentActivity.provideActivityContext(): ActivityContext = this
+@Given inline fun activityContext(activity: @Given ComponentActivity = given): ActivityContext = activity
 
 typealias ActivityResources = Resources
 
@@ -64,3 +56,4 @@ typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
 @Binding inline fun ComponentActivity.provideActivityViewModelStoreOwner(): ActivityViewModelStoreOwner =
     this
+*/

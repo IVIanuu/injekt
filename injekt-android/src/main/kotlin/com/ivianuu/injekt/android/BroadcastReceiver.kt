@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android
 
+/*
 import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -40,3 +41,4 @@ fun BroadcastReceiver.createReceiverComponent(
 typealias ReceiverContext = Context
 
 typealias ReceiverIntent = Intent
+*/

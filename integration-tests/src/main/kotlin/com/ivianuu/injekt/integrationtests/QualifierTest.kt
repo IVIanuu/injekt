@@ -72,7 +72,7 @@ class QualifierTest {
             @Qualifier
             annotation class MyQualifier
             
-            @Given class Dep<T>(val value: @Given @MyQualifier T = given)
+            @Given class Dep<T>(val value: @MyQualifier T = given)
             
             @Given fun qualified(): @MyQualifier String = ""
             

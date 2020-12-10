@@ -2,7 +2,6 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.DeclarationStore
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.extractGivensOfCallable
 import com.ivianuu.injekt.compiler.extractGivensOfDeclaration
 import com.ivianuu.injekt.compiler.isExternalDeclaration
@@ -37,12 +36,11 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
-import org.jetbrains.kotlin.ir.interpreter.hasAnnotation
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructedClass
-import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -62,16 +60,16 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
         ) {
             val callee = call.symbol.owner
             val calleeDescriptor = callee.descriptor
-            val givenInfo = declarationStore.givenInfoForCallable(calleeDescriptor)
+            val givenInfo = declarationStore.givenInfoFor(calleeDescriptor)
 
-            if (givenInfo.requiredGivens.isNotEmpty() || givenInfo.givensWithDefault.isNotEmpty()) {
+            if (givenInfo.allGivens.isNotEmpty()) {
                 callee
                     .valueParameters
-                    .filter { it.type.hasAnnotation(InjektFqNames.Given) }
+                    .filter { it.name in givenInfo.allGivens }
                     .filter { call.getValueArgument(it.index) == null }
                     .map {
                         it to getExpressionForType(
-                            it.type.toTypeRef().substitute(substitutionMap),
+                            it.descriptor.type.toTypeRef().substitute(substitutionMap),
                             call.symbol
                         )
                     }
@@ -115,7 +113,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
                     .irCall(constructor.symbol)
                     .apply {
                         val substitutionMap = getSubstitutionMap(
-                            listOf(type to constructor.constructedClass.defaultType.toTypeRef()
+                            listOf(type to constructor.constructedClass.descriptor.defaultType.toTypeRef()
                                 .subtypeView(type.classifier)!!)
                         )
 
@@ -157,7 +155,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
                             }
                     }
                     val substitutionMap = getSubstitutionMap(
-                        listOf(type to getter.returnType.toTypeRef()),
+                        listOf(type to getter.descriptor.returnType!!.toTypeRef()),
                         getter.typeParameters.map { it.descriptor.toClassifierRef() }
                     )
 
@@ -197,7 +195,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
                     }
 
                     val substitutionMap = getSubstitutionMap(
-                        listOf(type to function.returnType.toTypeRef()),
+                        listOf(type to function.descriptor.returnType!!.toTypeRef()),
                         function.typeParameters.map { it.descriptor.toClassifierRef() }
                     )
 
@@ -274,7 +272,8 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
         parent: Scope?,
     ) : Scope(parent) {
         private val allGivens =
-            declaration.descriptor.extractGivensOfDeclaration(pluginContext.bindingContext)
+            declaration.descriptor.extractGivensOfDeclaration(pluginContext.bindingContext,
+                declarationStore)
 
         override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
             allGivens.filter { it.first.isAssignableTo(type) }
@@ -286,7 +285,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
         parent: Scope?,
     ) : Scope(parent) {
         private val allGivens =
-            declaration.descriptor.extractGivensOfCallable()
+            declaration.descriptor.extractGivensOfCallable(declarationStore)
 
         override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
             allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
@@ -346,13 +345,17 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
         super.visitCall(expression.apply {
             val substitutionMap = getSubstitutionMap(
                 (0 until expression.typeArgumentsCount)
-                    .map { getTypeArgument(it)!!.toTypeRef() }
+                    .map { getTypeArgument(it)!!.toKotlinType().toTypeRef() }
                     .zip(
                         expression.symbol.descriptor.typeParameters
                             .map { it.defaultType.toTypeRef() }
                     )
             )
-            scope.fillGivens(this, substitutionMap)
+            try {
+                scope.fillGivens(this, substitutionMap)
+            } catch (e: Throwable) {
+                throw RuntimeException("Wtf ${expression.dump()}", e)
+            }
         })
 
 }

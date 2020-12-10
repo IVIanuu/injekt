@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
+import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
@@ -113,11 +114,16 @@ fun ClassDescriptor.getGivenConstructor(): ConstructorDescriptor? {
         .firstOrNull {
             it.hasAnnotation(InjektFqNames.Given)
         }?.let { return it }
-    if (hasAnnotation(InjektFqNames.Given) ||
-        defaultType.constructor.supertypes.any {
+    if (hasAnnotation(InjektFqNames.Given)) return unsubstitutedPrimaryConstructor
+    return null
+}
+
+fun KtClassOrObject.getGivenConstructor(): KtConstructor<*>? {
+    (listOfNotNull(primaryConstructor) + secondaryConstructors)
+        .firstOrNull {
             it.hasAnnotation(InjektFqNames.Given)
-        }
-    ) return unsubstitutedPrimaryConstructor
+        }?.let { return it }
+    if (hasAnnotation(InjektFqNames.Given)) return primaryConstructor
     return null
 }
 
@@ -149,15 +155,21 @@ fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescri
         inner.hasAnnotation(annotation)
     }
 
-fun ClassDescriptor.extractGivensOfDeclaration(bindingContext: BindingContext): List<Pair<TypeRef, CallableDescriptor>> {
+fun ClassDescriptor.extractGivensOfDeclaration(
+    bindingContext: BindingContext,
+    declarationStore: DeclarationStore,
+): List<Pair<TypeRef, CallableDescriptor>> {
     val primaryConstructorGivens = (unsubstitutedPrimaryConstructor
-        ?.valueParameters
-        ?.filter {
-            it.hasAnnotation(InjektFqNames.Given) ||
-                    it.type.hasAnnotation(InjektFqNames.Given)
+        ?.let { primaryConstructor ->
+            val info = declarationStore.givenInfoFor(primaryConstructor)
+            primaryConstructor.valueParameters
+                .filter {
+                    it.hasAnnotation(InjektFqNames.Given) ||
+                            it.name in info.allGivens
+                }
+                .mapNotNull { bindingContext[BindingContext.VALUE_PARAMETER_AS_PROPERTY, it] }
+                .map { it.type.toTypeRef() to it }
         }
-        ?.mapNotNull { bindingContext[BindingContext.VALUE_PARAMETER_AS_PROPERTY, it] }
-        ?.map { it.type.toTypeRef() to it }
         ?: emptyList())
 
     val memberGivens = unsubstitutedMemberScope.getContributedDescriptors()
@@ -189,10 +201,13 @@ fun ClassDescriptor.allGivenTypes(): List<TypeRef> = buildList<TypeRef> {
         .map { it.toTypeRef() }
 }
 
-fun CallableDescriptor.extractGivensOfCallable(): List<CallableDescriptor> {
+fun CallableDescriptor.extractGivensOfCallable(
+    declarationStore: DeclarationStore,
+): List<CallableDescriptor> {
+    val info = declarationStore.givenInfoFor(this)
     return allParameters
         .filter {
             it.hasAnnotation(InjektFqNames.Given) ||
-                    it.type.hasAnnotation(InjektFqNames.Given)
+                    it.name in info.allGivens
         }
 }

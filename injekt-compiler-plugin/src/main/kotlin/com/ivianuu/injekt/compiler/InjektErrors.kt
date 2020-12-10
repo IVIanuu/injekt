@@ -48,7 +48,18 @@ interface InjektErrors {
 
         @JvmField
         val GIVEN_CALL_NOT_AS_DEFAULT_VALUE = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-            .also { MAP.put(it, "The given property can only be used on a parameter with a @Given type") }
+            .also {
+                MAP.put(it,
+                    "given property can only be used as a default value for a parameter")
+            }
+
+        @JvmField
+        val GIVEN_OR_ELSE_CALL_NOT_AS_DEFAULT_VALUE =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also {
+                    MAP.put(it,
+                        "givenOrElse can only be used as a default value for a parameter")
+                }
 
         @JvmField
         val NON_GIVEN_VALUE_PARAMETER_ON_GIVEN_DECLARATION =

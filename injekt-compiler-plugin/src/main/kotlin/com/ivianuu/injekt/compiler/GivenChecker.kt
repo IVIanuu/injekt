@@ -27,12 +27,22 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
         context: CallCheckerContext
     ) {
         if (resolvedCall.resultingDescriptor.fqNameSafe == InjektFqNames.givenFun &&
-                resolvedCall.resultingDescriptor.valueParameters.isEmpty()) {
+            resolvedCall.resultingDescriptor.valueParameters.isEmpty()
+        ) {
             val parameter = (resolvedCall.call.callElement.parent as? KtParameter)
                 ?.descriptor<ValueParameterDescriptor>(context.trace.bindingContext)
-            if (parameter == null || !parameter.type.hasAnnotation(InjektFqNames.Given)) {
+            if (parameter == null) {
                 context.trace.report(
                     InjektErrors.GIVEN_CALL_NOT_AS_DEFAULT_VALUE
+                        .on(reportOn)
+                )
+            }
+        } else if (resolvedCall.resultingDescriptor.fqNameSafe == InjektFqNames.givenOrElseFun) {
+            val parameter = (resolvedCall.call.callElement.parent as? KtParameter)
+                ?.descriptor<ValueParameterDescriptor>(context.trace.bindingContext)
+            if (parameter == null) {
+                context.trace.report(
+                    InjektErrors.GIVEN_OR_ELSE_CALL_NOT_AS_DEFAULT_VALUE
                         .on(reportOn)
                 )
             }
@@ -109,7 +119,9 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
             }
         if (descriptor.hasAnnotation(InjektFqNames.Given)) {
             this
-                .filterNot { it.type.hasAnnotation(InjektFqNames.Given) }
+                .filter {
+                    (it.findPsi() as? KtParameter)?.defaultValue?.text != "given"
+                }
                 .forEach {
                     trace.report(
                         InjektErrors.NON_GIVEN_VALUE_PARAMETER_ON_GIVEN_DECLARATION

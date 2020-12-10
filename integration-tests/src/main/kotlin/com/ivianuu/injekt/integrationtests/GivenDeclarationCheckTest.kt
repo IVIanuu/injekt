@@ -19,8 +19,8 @@ class GivenDeclarationCheckTest {
     fun testClassWithMultipleGivenConstructors() = codegen(
         """
             class Dep {
-                @Given constructor(foo: @Given Foo = given)
-                @Given constructor(bar: @Given Bar = given)
+                @Given constructor(foo: Foo = given)
+                @Given constructor(bar: Bar = given)
             }
         """
     ) {
@@ -34,15 +34,6 @@ class GivenDeclarationCheckTest {
         """
     ) {
         assertCompileError("Non @Given value parameter")
-    }
-
-    @Test
-    fun testGivenValueParameterWithoutDefault() = codegen(
-        """
-            fun bar(foo: @Given Foo) = Bar(foo)
-        """
-    ) {
-        assertCompileError("@Given parameter must have have default")
     }
 
     @Test
@@ -60,16 +51,16 @@ class GivenDeclarationCheckTest {
             fun bar() = given
         """
     ) {
-        assertCompileError("The given property can only be used on a parameter with a @Given type")
+        assertCompileError("given property can only be used as a default value for a parameter")
     }
 
     @Test
-    fun testGivenPropertyCallWithoutGiven() = codegen(
+    fun testGivenOrElseCallWithoutGivenParameter() = codegen(
         """
-            fun bar(p1: String = given) = p1
+            fun bar() = givenOrElse { Unit }
         """
     ) {
-        assertCompileError("The given property can only be used on a parameter with a @Given type")
+        assertCompileError("givenOrElse can only be used as a default value for a parameter")
     }
 
 }

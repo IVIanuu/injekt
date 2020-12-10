@@ -11,52 +11,92 @@ import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
-import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtPrimaryConstructor
 import org.jetbrains.kotlin.psi.KtSecondaryConstructor
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
-import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
+import org.jetbrains.kotlin.resolve.TopDownAnalysisMode
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 @Binding class GivenCallChecker(
-    private val bindingContext: BindingContext,
     private val bindingTrace: BindingTrace,
     private val declarationStore: DeclarationStore,
-) : Generator {
+    private val lazyTopDownAnalyzer: LazyTopDownAnalyzer,
+) : KtTreeVisitorVoid() {
 
-    private abstract inner class Scope(private val parent: Scope?) {
+    private abstract inner class Scope(
+        private val declaration: KtDeclaration?,
+        private val parent: Scope?,
+    ) {
 
         private val checkedRequests = mutableSetOf<GivenRequest>()
 
         private val chain = mutableListOf<GivenRequest>()
 
-        fun check(call: KtCallExpression) {
-            val resolvedCall = call.getResolvedCall(bindingContext)
-                ?: return
+        private var resolved = false
 
-            val resultingDescriptor = resolvedCall.resultingDescriptor
+        fun resolve(call: KtElement) {
+            if (!resolved) {
+                resolved = true
+                if (declaration != null) {
+                    try {
+                        lazyTopDownAnalyzer.analyzeDeclarations(
+                            TopDownAnalysisMode.TopLevelDeclarations,
+                            listOfNotNull(declaration)
+                        )
+                    } catch (e: Throwable) {
+                    }
+                    try {
+                        lazyTopDownAnalyzer.analyzeDeclarations(
+                            TopDownAnalysisMode.LocalDeclarations,
+                            listOfNotNull(declaration)
+                        )
+                    } catch (e: Throwable) {
+                    }
+                }
+                try {
+                    lazyTopDownAnalyzer.analyzeDeclarations(
+                        TopDownAnalysisMode.TopLevelDeclarations,
+                        listOfNotNull(call)
+                    )
+                } catch (e: Throwable) {
+                }
+                try {
+                    lazyTopDownAnalyzer.analyzeDeclarations(
+                        TopDownAnalysisMode.LocalDeclarations,
+                        listOfNotNull(call)
+                    )
+                } catch (e: Throwable) {
+                }
+            }
+        }
+
+        fun check(call: ResolvedCall<*>, reportOn: PsiElement) {
+            val resultingDescriptor = call.resultingDescriptor
             if (resultingDescriptor !is FunctionDescriptor) return
 
-            val givenInfo = declarationStore.givenInfoForCallable(resultingDescriptor)
+            val givenInfo = declarationStore.givenInfoFor(resultingDescriptor)
 
-            resolvedCall
+            call
                 .valueArguments
-                .filterKeys { parameter ->
-                    parameter.name in givenInfo.requiredGivens ||
-                            parameter.name in givenInfo.givensWithDefault
-                }
+                .filterKeys { it.name in givenInfo.allGivens }
                 .filter { it.value is DefaultValueArgument }
                 .map {
                     GivenRequest(
@@ -65,33 +105,33 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
                         it.key.fqNameSafe
                     )
                 }
-                .forEach { check(it, call) }
+                .forEach { check(it, reportOn) }
         }
 
-        private fun check(node: GivenNode, call: KtCallExpression) {
+        private fun check(node: GivenNode, reportOn: PsiElement) {
             node.dependencies
-                .forEach { check(it, call) }
+                .forEach { check(it, reportOn) }
         }
 
-        private fun check(request: GivenRequest, call: KtCallExpression) {
+        private fun check(request: GivenRequest, reportOn: PsiElement) {
             if (request in checkedRequests) return
             checkedRequests += request
 
             chain.push(request)
             val givens = givensFor(request.type)
             when {
-                givens.size == 1 -> check(givens.single(), call)
+                givens.size == 1 -> check(givens.single(), reportOn)
                 givens.size > 1 -> {
                     bindingTrace.report(
                         InjektErrors.MULTIPLE_GIVENS
-                            .on(call, request.type, givens)
+                            .on(reportOn, request.type, givens)
                     )
                 }
                 givens.isEmpty() && request.required -> {
                     bindingTrace.report(
                         InjektErrors.UNRESOLVED_GIVEN
                             .on(
-                                call,
+                                reportOn,
                                 request.type
                             )
                     )
@@ -103,14 +143,14 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
         private fun givensFor(type: TypeRef): List<GivenNode> {
             val givens = givensForInThisScope(type)
                 .map { callable ->
-                    val info = declarationStore.givenInfoForCallable(callable)
+                    val info = declarationStore.givenInfoFor(callable)
                     val substitutionMap = getSubstitutionMap(
                         listOf(type to callable.returnType!!.toTypeRef())
                     )
                     CallableGivenNode(
                         type,
                         callable.valueParameters
-                            .filter { it.type.hasAnnotation(InjektFqNames.Given) }
+                            .filter { it.name in info.allGivens }
                             .map {
                                 GivenRequest(
                                     it.type.toTypeRef()
@@ -132,24 +172,29 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
         protected abstract fun givensForInThisScope(type: TypeRef): List<CallableDescriptor>
     }
 
-    private inner class ExternalScope : Scope(null) {
+    private inner class ExternalScope : Scope(null, null) {
         override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
             declarationStore.givensForType(type)
                 .filter { it.isExternalDeclaration() }
                 .filter { it.visibility == DescriptorVisibilities.PUBLIC }
     }
 
-    private inner class InternalScope(parent: Scope?) : Scope(parent) {
+    private inner class InternalScope(parent: Scope?) : Scope(null, parent) {
         override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
             declarationStore.givensForType(type)
                 .filterNot { it.isExternalDeclaration() }
     }
 
     private inner class ClassScope(
-        private val descriptor: ClassDescriptor,
+        private val declaration: KtClassOrObject,
         parent: Scope?,
-    ) : Scope(parent) {
-        private val allGivens = descriptor.extractGivensOfDeclaration(bindingContext)
+    ) : Scope(declaration, parent) {
+        private val allGivens by unsafeLazy {
+            declaration.descriptor<ClassDescriptor>(bindingTrace.bindingContext)
+                ?.extractGivensOfDeclaration(bindingTrace.bindingContext, declarationStore)
+                ?: emptyList()
+        }
+
         override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
             allGivens
                 .filter { it.first.isAssignableTo(type) }
@@ -157,10 +202,14 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
     }
 
     private inner class FunctionScope(
-        private val descriptor: FunctionDescriptor,
+        private val declaration: KtFunction,
         parent: Scope?,
-    ) : Scope(parent) {
-        private val allGivens = descriptor.extractGivensOfCallable()
+    ) : Scope(declaration, parent) {
+        private val allGivens by unsafeLazy {
+            declaration.descriptor<FunctionDescriptor>(bindingTrace.bindingContext)
+                ?.extractGivensOfCallable(declarationStore) ?: emptyList()
+        }
+
         override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
             allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
     }
@@ -175,55 +224,41 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
         return result
     }
 
-    override fun generate(files: List<KtFile>) {
-        files.forEach { file ->
-            file.accept(object : KtTreeVisitorVoid() {
-                override fun visitObjectDeclaration(declaration: KtObjectDeclaration) {
-                    inScope(
-                        ClassScope(
-                            declaration.descriptor(bindingContext) ?: return, scope
-                        )
-                    ) {
-                        super.visitObjectDeclaration(declaration)
-                    }
-                }
-
-                override fun visitClass(klass: KtClass) {
-                    val descriptor = klass.descriptor<ClassDescriptor>(bindingContext) ?: return
-                    val parentScope = descriptor.companionObjectDescriptor
-                        ?.let { ClassScope(it, scope) }
-                        ?: scope
-                    inScope(ClassScope(descriptor, parentScope)) {
-                        super.visitClass(klass)
-                    }
-                }
-
-                override fun visitPrimaryConstructor(constructor: KtPrimaryConstructor) {
-                    visitFunction(constructor) { super.visitPrimaryConstructor(constructor) }
-                }
-
-                override fun visitSecondaryConstructor(constructor: KtSecondaryConstructor) {
-                    visitFunction(constructor) { super.visitSecondaryConstructor(constructor) }
-                }
-
-                override fun visitNamedFunction(function: KtNamedFunction) {
-                    visitFunction(function) { super.visitNamedFunction(function) }
-                }
-
-                private fun visitFunction(function: KtFunction, block: () -> Unit) {
-                    val descriptor =
-                        function.descriptor<FunctionDescriptor>(bindingContext) ?: return
-                    inScope(FunctionScope(descriptor, scope)) {
-                        block()
-                    }
-                }
-
-                override fun visitCallExpression(expression: KtCallExpression) {
-                    super.visitCallExpression(expression)
-                    scope.check(expression)
-                }
-            })
+    override fun visitObjectDeclaration(declaration: KtObjectDeclaration) {
+        inScope(ClassScope(declaration, scope)) {
+            super.visitObjectDeclaration(declaration)
         }
+    }
+
+    override fun visitClass(klass: KtClass) {
+        val parentScope = klass.companionObjects.singleOrNull()
+            ?.let { ClassScope(it, scope) }
+            ?: scope
+        inScope(ClassScope(klass, parentScope)) {
+            super.visitClass(klass)
+        }
+    }
+
+    override fun visitPrimaryConstructor(constructor: KtPrimaryConstructor) {
+        visitFunction(constructor) { super.visitPrimaryConstructor(constructor) }
+    }
+
+    override fun visitSecondaryConstructor(constructor: KtSecondaryConstructor) {
+        visitFunction(constructor) { super.visitSecondaryConstructor(constructor) }
+    }
+
+    override fun visitNamedFunction(function: KtNamedFunction) {
+        visitFunction(function) { super.visitNamedFunction(function) }
+    }
+
+    private fun visitFunction(function: KtFunction, block: () -> Unit) {
+        inScope(FunctionScope(function, scope)) { block() }
+    }
+
+    override fun visitCallExpression(expression: KtCallExpression) {
+        super.visitCallExpression(expression)
+        scope.resolve(expression)
+        scope.check(expression.getResolvedCall(bindingTrace.bindingContext)!!, expression)
     }
 
 }

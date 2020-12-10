@@ -24,18 +24,19 @@ import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtConstructor
+import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 
@@ -112,7 +113,6 @@ import org.jetbrains.kotlin.resolve.scopes.MemberScope
             ?.map { givenInfoProperty ->
                 val annotation =
                     givenInfoProperty.annotations.findAnnotation(InjektFqNames.GivenInfo)!!
-                val fqName = annotation.allValueArguments["fqName".asNameId()]!!.value as String
                 val key = annotation.allValueArguments["key".asNameId()]!!.value as String
                 val requiredGivens =
                     annotation.allValueArguments["requiredGivens".asNameId()]!!
@@ -127,36 +127,63 @@ import org.jetbrains.kotlin.resolve.scopes.MemberScope
                         .filterIsInstance<StringValue>()
                         .map { it.value.asNameId() }
 
-                GivenInfo(FqName(fqName), key, requiredGivens, givensWithDefault)
+                GivenInfo(key, requiredGivens, givensWithDefault)
             } ?: emptyList())
             .associateBy { it.key }
     }
 
     private val givenInfosByKey = mutableMapOf<String, GivenInfo>()
-    fun addGivenInfoForKey(key: String, info: GivenInfo) {
-        givenInfosByKey[key] = info
-    }
 
-    fun givenInfoForCallable(callable: CallableDescriptor): GivenInfo {
-        val key = when (callable) {
-            is PropertyDescriptor -> callable.uniqueKey()
-            is ConstructorDescriptor -> callable.constructedClass.uniqueKey()
-            is PropertyAccessorDescriptor -> callable.correspondingProperty.uniqueKey()
-            is FunctionDescriptor -> callable.uniqueKey()
-            is ReceiverParameterDescriptor -> callable.uniqueKey()
-            is ValueParameterDescriptor -> callable.uniqueKey()
-            else -> error("Unexpected callable $callable")
-        }
+    fun givenInfoFor(declaration: DeclarationDescriptor): GivenInfo {
+        val key = declaration.uniqueKey()
         return givenInfosByKey.getOrPut(key) {
             allGivenInfos.getOrElse(key) {
-                GivenInfo(
-                    callable.fqNameSafe,
-                    key,
-                    emptyList(),
-                    emptyList()
-                )
+                createGivenInfoOrNull(declaration.original) ?: GivenInfo.Empty
             }
         }
+    }
+
+    private fun createGivenInfoOrNull(descriptor: DeclarationDescriptor): GivenInfo? {
+        val declaration = descriptor.findPsi()
+            ?.let { it as KtDeclaration }
+            ?: return null
+        val givens = when (declaration) {
+            is KtConstructor<*> -> declaration.valueParameters
+                .filter {
+                    it.defaultValue?.text == "given" ||
+                            it.defaultValue?.text == "givenOrElse"
+                }
+            is KtClassOrObject -> declaration.getGivenConstructor()
+                ?.valueParameters
+                ?.filter {
+                    it.defaultValue?.text == "given" ||
+                            it.defaultValue?.text == "givenOrElse"
+                }
+                ?: emptyList()
+            is KtFunction -> declaration.valueParameters
+                .filter {
+                    it.defaultValue?.text == "given" ||
+                            it.defaultValue?.text == "givenOrElse"
+                }
+            else -> return null
+        }
+
+        val (requiredGivens, givensWithDefault) = givens
+            .partition { givenParameter ->
+                givenParameter.defaultValue?.text == "given"
+            }
+
+        if (requiredGivens.isNotEmpty() || givensWithDefault.isNotEmpty()) {
+            return GivenInfo(
+                descriptor.uniqueKey(),
+                requiredGivens
+                    .map { it.name!!.asNameId() },
+                givensWithDefault
+                    .map { it.name!!.asNameId() },
+            )
+        }
+
+        return null
     }
 
     private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor>()
