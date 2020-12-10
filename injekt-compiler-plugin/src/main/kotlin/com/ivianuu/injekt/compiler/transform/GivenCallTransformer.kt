@@ -3,6 +3,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.extractGivensOfDeclaration
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -12,14 +13,17 @@ import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.interpreter.hasAnnotation
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -64,35 +68,9 @@ import org.jetbrains.kotlin.types.KotlinType
                 val callable = givensFor(type).singleOrNull() ?: error("Wtf $type")
                 val expression: () -> IrExpression = {
                     when (callable) {
-                        is ConstructorDescriptor -> {
-                            if (callable.constructedClass.kind == ClassKind.OBJECT) {
-                                val clazz =
-                                    pluginContext.referenceClass(callable.constructedClass.fqNameSafe)!!
-                                DeclarationIrBuilder(pluginContext, symbol)
-                                    .irGetObject(clazz)
-                            } else {
-                                val constructor =
-                                    pluginContext.referenceConstructors(callable.constructedClass.fqNameSafe)
-                                        .single()
-                                DeclarationIrBuilder(pluginContext, symbol)
-                                    .irCall(constructor.owner.symbol)
-                                    .apply { fillGivens(this) }
-                            }
-                        }
-                        is PropertyDescriptor -> {
-                            val property = pluginContext.referenceProperties(callable.fqNameSafe)
-                                .single()
-                            DeclarationIrBuilder(pluginContext, symbol)
-                                .irCall(property.owner.getter!!.symbol)
-                                .apply { fillGivens(this) }
-                        }
-                        is FunctionDescriptor -> {
-                            val function = pluginContext.referenceFunctions(callable.fqNameSafe)
-                                .singleOrNull() ?: error("Nothing found for $callable")
-                            DeclarationIrBuilder(pluginContext, symbol)
-                                .irCall(function)
-                                .apply { fillGivens(this) }
-                        }
+                        is ConstructorDescriptor -> classExpression(callable, symbol)
+                        is PropertyDescriptor -> propertyExpression(callable, symbol)
+                        is FunctionDescriptor -> functionExpression(callable, symbol)
                         else -> error("Unsupported callable $callable")
                     }
                 }
@@ -100,10 +78,76 @@ import org.jetbrains.kotlin.types.KotlinType
             }()
         }
 
+        private fun classExpression(
+            descriptor: ConstructorDescriptor,
+            symbol: IrSymbol,
+        ): IrExpression {
+            return if (descriptor.constructedClass.kind == ClassKind.OBJECT) {
+                val clazz =
+                    pluginContext.referenceClass(descriptor.constructedClass.fqNameSafe)!!
+                DeclarationIrBuilder(pluginContext, symbol)
+                    .irGetObject(clazz)
+            } else {
+                val constructor =
+                    pluginContext.referenceConstructors(descriptor.constructedClass.fqNameSafe)
+                        .single()
+                DeclarationIrBuilder(pluginContext, symbol)
+                    .irCall(constructor.owner.symbol)
+                    .apply { fillGivens(this) }
+            }
+        }
+
+        private fun propertyExpression(
+            descriptor: PropertyDescriptor,
+            symbol: IrSymbol,
+        ): IrExpression {
+            val property = pluginContext.referenceProperties(descriptor.fqNameSafe)
+                .single()
+            val getter = property.owner.getter!!
+            return DeclarationIrBuilder(pluginContext, symbol)
+                .irCall(getter.symbol)
+                .apply {
+                    val dispatchReceiverParameter = getter.dispatchReceiverParameter
+                    if (dispatchReceiverParameter != null) {
+                        dispatchReceiver =
+                            if (dispatchReceiverParameter.type.classOrNull?.owner?.kind == ClassKind.OBJECT) {
+                                DeclarationIrBuilder(pluginContext, symbol)
+                                    .irGetObject(dispatchReceiverParameter.type.classOrNull!!)
+                            } else {
+                                TODO()
+                            }
+                    }
+                    fillGivens(this)
+                }
+        }
+
+        private fun functionExpression(
+            descriptor: FunctionDescriptor,
+            symbol: IrSymbol,
+        ): IrExpression {
+            val function = pluginContext.referenceFunctions(descriptor.fqNameSafe)
+                .singleOrNull()?.owner ?: error("Nothing found for $descriptor")
+            return DeclarationIrBuilder(pluginContext, symbol)
+                .irCall(function.symbol)
+                .apply {
+                    val dispatchReceiverParameter = function.dispatchReceiverParameter
+                    if (dispatchReceiverParameter != null) {
+                        dispatchReceiver =
+                            if (dispatchReceiverParameter.type.classOrNull?.owner?.kind == ClassKind.OBJECT) {
+                                DeclarationIrBuilder(pluginContext, symbol)
+                                    .irGetObject(dispatchReceiverParameter.type.classOrNull!!)
+                            } else {
+                                TODO()
+                            }
+                    }
+                    fillGivens(this)
+                }
+        }
+
         private fun givensFor(type: IrType): List<CallableDescriptor> {
             val givens = givensForInThisScope(type.toKotlinType())
             return when {
-                givens.isNotEmpty() -> return givens
+                givens.isNotEmpty() -> givens
                 parent != null -> parent.givensFor(type)
                 else -> emptyList()
             }
@@ -125,7 +169,31 @@ import org.jetbrains.kotlin.types.KotlinType
                 .filterNot { it.isExternalDeclaration() }
     }
 
+    private inner class ObjectScope(
+        private val declaration: IrClass,
+        parent: Scope?,
+    ) : Scope(parent) {
+        override fun givensForInThisScope(type: KotlinType): List<CallableDescriptor> {
+            return declaration.descriptor.extractGivensOfDeclaration()
+                .filter { it.returnType == type }
+        }
+    }
+
     private var scope: Scope = InternalScope(ExternalScope())
+
+    private inline fun <R> inScope(scope: Scope, block: () -> R): R {
+        val prevScope = this.scope
+        this.scope = scope
+        val result = block()
+        this.scope = prevScope
+        return result
+    }
+
+    override fun visitClass(declaration: IrClass): IrStatement {
+        return if (declaration.kind == ClassKind.OBJECT) {
+            inScope(ObjectScope(declaration, scope)) { super.visitClass(declaration) }
+        } else super.visitClass(declaration)
+    }
 
     override fun visitCall(expression: IrCall): IrExpression =
         super.visitCall(expression.apply { scope.fillGivens(this) })

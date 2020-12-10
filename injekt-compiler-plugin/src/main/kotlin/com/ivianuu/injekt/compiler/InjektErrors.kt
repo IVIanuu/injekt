@@ -40,6 +40,16 @@ interface InjektErrors {
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also { MAP.put(it, "@Given declaration cannot have a extension receiver") }
 
+        @JvmField
+        val GIVEN_CLASS_WITH_GIVEN_CONSTRUCTOR =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also { MAP.put(it, "Class cannot be given and have a given constructor") }
+
+        @JvmField
+        val CLASS_WITH_MULTIPLE_GIVEN_CONSTRUCTORS =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also { MAP.put(it, "Class cannot have multiple given constructors") }
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,

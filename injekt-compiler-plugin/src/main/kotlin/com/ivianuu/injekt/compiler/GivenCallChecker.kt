@@ -4,11 +4,13 @@ import com.ivianuu.injekt.Binding
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -127,6 +129,14 @@ import org.jetbrains.kotlin.types.KotlinType
                 .filterNot { it.isExternalDeclaration() }
     }
 
+    private inner class ObjectScope(
+        private val descriptor: ClassDescriptor,
+        parent: Scope?,
+    ) : Scope(parent) {
+        override fun givensForInThisScope(type: KotlinType): List<CallableDescriptor> =
+            descriptor.extractGivensOfDeclaration()
+    }
+
     private var scope: Scope = InternalScope(ExternalScope())
 
     private inline fun <R> inScope(scope: Scope, block: () -> R): R {
@@ -140,6 +150,16 @@ import org.jetbrains.kotlin.types.KotlinType
     override fun generate(files: List<KtFile>) {
         files.forEach { file ->
             file.accept(object : KtTreeVisitorVoid() {
+                override fun visitObjectDeclaration(declaration: KtObjectDeclaration) {
+                    inScope(
+                        ObjectScope(
+                            declaration.descriptor(bindingContext)!!, scope
+                        )
+                    ) {
+                        super.visitObjectDeclaration(declaration)
+                    }
+                }
+
                 override fun visitCallExpression(expression: KtCallExpression) {
                     super.visitCallExpression(expression)
                     scope.check(expression)

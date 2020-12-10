@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -138,3 +139,12 @@ fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescri
         val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
         inner.hasAnnotation(annotation)
     }
+
+fun ClassDescriptor.extractGivensOfDeclaration(): List<CallableDescriptor> {
+    return unsubstitutedMemberScope.getContributedDescriptors()
+        .mapNotNull {
+            it.takeIf { it.hasAnnotation(InjektFqNames.Given) }
+                ?.let { it as? CallableDescriptor }
+                ?: (it as? ClassDescriptor)?.getGivenConstructor()
+        }
+}

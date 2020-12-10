@@ -14,16 +14,6 @@ import org.junit.Test
 class GivenResolutionTest {
 
     @Test
-    fun testResolvesInternalGiven() = codegen(
-        """
-            @Given val foo = Foo()
-            fun invoke() = given<Foo>()
-        """
-    ) {
-        assertTrue(invokeSingleFile() is Foo)
-    }
-
-    @Test
     fun testResolvesExternalGiven() = multiCodegen(
         listOf(
             source(
@@ -42,6 +32,16 @@ class GivenResolutionTest {
         )
     ) {
         assertTrue(it.last().invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testResolvesInternalGiven() = codegen(
+        """
+            @Given val foo = Foo()
+            fun invoke() = given<Foo>()
+        """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
     }
 
     @Test
@@ -72,6 +72,41 @@ class GivenResolutionTest {
         val external = Foo()
         val result = it.last().invokeSingleFile(internal, external)
         assertSame(result, internal)
+    }
+
+    @Test
+    fun testResolvesObjectGiven() = codegen(
+        """
+            object MyObject {
+                @Given val foo = Foo()
+            }
+
+            fun invoke() = given<Foo>()
+        """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testPrefersObjectGivenOverInternalGiven() = codegen(
+        """
+            @Given lateinit var internalFoo: Foo
+            object MyObject {
+                @Given lateinit var objectFoo: Foo
+                fun resolve() = given<Foo>()
+            }
+
+            fun invoke(internal: Foo, objectFoo: Foo): Foo {
+                internalFoo = internal
+                MyObject.objectFoo = objectFoo
+                return MyObject.resolve()
+            }
+        """
+    ) {
+        val internal = Foo()
+        val objectFoo = Foo()
+        val result = invokeSingleFile(internal, objectFoo)
+        assertSame(objectFoo, result)
     }
 
     @Test

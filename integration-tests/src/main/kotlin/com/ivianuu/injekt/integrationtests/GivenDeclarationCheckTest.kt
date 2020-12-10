@@ -7,6 +7,27 @@ import org.junit.Test
 class GivenDeclarationCheckTest {
 
     @Test
+    fun testClassWithGivenAnnotationAndGivenConstructor() = codegen(
+        """
+            @Given class Dep @Given constructor()
+        """
+    ) {
+        assertCompileError("Class cannot be given and have a given constructor")
+    }
+
+    @Test
+    fun testClassWithMultipleGivenConstructors() = codegen(
+        """
+            class Dep {
+                @Given constructor(foo: @Given Foo = given)
+                @Given constructor(bar: @Given Bar = given)
+            }
+        """
+    ) {
+        assertCompileError("Class cannot have multiple given constructors")
+    }
+
+    @Test
     fun testNonGivenValueParameterOnGivenDeclaration() = codegen(
         """
             @Given fun bar(foo: Foo) = Bar(foo)

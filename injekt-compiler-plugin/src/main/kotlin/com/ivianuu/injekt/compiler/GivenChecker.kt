@@ -32,6 +32,25 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
             descriptor.valueParameters
                 .checkParameters(declaration, descriptor, context.trace)
         } else if (descriptor is ClassDescriptor) {
+            val givenConstructors = descriptor.constructors
+                .filter { it.hasAnnotation(InjektFqNames.Given) }
+
+            if (descriptor.hasAnnotation(InjektFqNames.Given) &&
+                givenConstructors.isNotEmpty()
+            ) {
+                context.trace.report(
+                    InjektErrors.GIVEN_CLASS_WITH_GIVEN_CONSTRUCTOR
+                        .on(declaration)
+                )
+            }
+
+            if (givenConstructors.size > 1) {
+                context.trace.report(
+                    InjektErrors.CLASS_WITH_MULTIPLE_GIVEN_CONSTRUCTORS
+                        .on(declaration)
+                )
+            }
+
             descriptor.constructors
                 .forEach {
                     it.valueParameters
