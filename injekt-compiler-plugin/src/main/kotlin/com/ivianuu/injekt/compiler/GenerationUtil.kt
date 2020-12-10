@@ -140,8 +140,13 @@ fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescri
         inner.hasAnnotation(annotation)
     }
 
-fun ClassDescriptor.extractGivensOfDeclaration(): List<CallableDescriptor> {
-    return unsubstitutedMemberScope.getContributedDescriptors()
+fun ClassDescriptor.extractGivensOfDeclaration(bindingContext: BindingContext): List<CallableDescriptor> {
+    return (unsubstitutedPrimaryConstructor
+        ?.valueParameters
+        ?.filter { it.hasAnnotation(InjektFqNames.Given) }
+        ?.mapNotNull {
+            bindingContext[BindingContext.VALUE_PARAMETER_AS_PROPERTY, it]
+        } ?: emptyList()) + unsubstitutedMemberScope.getContributedDescriptors()
         .mapNotNull {
             it.takeIf { it.hasAnnotation(InjektFqNames.Given) }
                 ?.let { it as? CallableDescriptor }

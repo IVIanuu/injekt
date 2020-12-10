@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
@@ -129,12 +130,13 @@ import org.jetbrains.kotlin.types.KotlinType
                 .filterNot { it.isExternalDeclaration() }
     }
 
-    private inner class ObjectScope(
+    private inner class ClassScope(
         private val descriptor: ClassDescriptor,
         parent: Scope?,
     ) : Scope(parent) {
+        private val allGivens = descriptor.extractGivensOfDeclaration(bindingContext)
         override fun givensForInThisScope(type: KotlinType): List<CallableDescriptor> =
-            descriptor.extractGivensOfDeclaration()
+            allGivens.filter { it.returnType == type }
     }
 
     private var scope: Scope = InternalScope(ExternalScope())
@@ -152,11 +154,21 @@ import org.jetbrains.kotlin.types.KotlinType
             file.accept(object : KtTreeVisitorVoid() {
                 override fun visitObjectDeclaration(declaration: KtObjectDeclaration) {
                     inScope(
-                        ObjectScope(
-                            declaration.descriptor(bindingContext)!!, scope
+                        ClassScope(
+                            declaration.descriptor(bindingContext) ?: return, scope
                         )
                     ) {
                         super.visitObjectDeclaration(declaration)
+                    }
+                }
+
+                override fun visitClass(klass: KtClass) {
+                    val descriptor = klass.descriptor<ClassDescriptor>(bindingContext) ?: return
+                    val parentScope = descriptor.companionObjectDescriptor
+                        ?.let { ClassScope(it, scope) }
+                        ?: scope
+                    inScope(ClassScope(descriptor, parentScope)) {
+                        super.visitClass(klass)
                     }
                 }
 

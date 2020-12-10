@@ -110,6 +110,117 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testResolvesClassCompanionGiven() = codegen(
+        """
+            class MyClass {
+                fun resolve() = given<Foo>()
+                companion object {
+                    @Given val foo = Foo()
+                }
+            }
+
+            fun invoke() = MyClass().resolve()
+        """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testPrefersClassCompanionGivenOverInternalGiven() = codegen(
+        """
+            @Given lateinit var internalFoo: Foo
+            class MyClass {
+                fun resolve() = given<Foo>()
+                companion object {
+                    @Given lateinit var companionFoo: Foo
+                }
+            }
+
+            fun invoke(internal: Foo, companionFoo: Foo): Foo {
+                internalFoo = internal
+                MyClass.companionFoo = companionFoo
+                return MyClass().resolve()
+            }
+        """
+    ) {
+        val internal = Foo()
+        val companionFoo = Foo()
+        val result = invokeSingleFile(internal, companionFoo)
+        assertSame(companionFoo, result)
+    }
+
+    @Test
+    fun testResolvesClassConstructorGiven() = codegen(
+        """
+            class MyClass(@Given val foo: Foo = Foo()) {
+                fun resolve() = given<Foo>()
+            }
+
+            fun invoke() = MyClass().resolve()
+        """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testResolvesClassGiven() = codegen(
+        """
+            class MyClass {
+                @Given val foo = Foo()
+                fun resolve() = given<Foo>()
+            }
+
+            fun invoke() = MyClass().resolve()
+        """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testPrefersClassGivenOverInternalGiven() = codegen(
+        """
+            @Given lateinit var internalFoo: Foo
+            class MyClass(@Given val classFoo: Foo) {
+                fun resolve() = given<Foo>()
+            }
+
+            fun invoke(internal: Foo, classFoo: Foo): Foo {
+                internalFoo = internal
+                return MyClass(classFoo).resolve()
+            }
+        """
+    ) {
+        val internal = Foo()
+        val classFoo = Foo()
+        val result = invokeSingleFile(internal, classFoo)
+        assertSame(classFoo, result)
+    }
+
+    @Test
+    fun testPrefersClassGivenOverClassCompanionGiven() = codegen(
+        """
+            class MyClass(@Given val classFoo: Foo) {
+                fun resolve() = given<Foo>()
+                companion object {
+                    @Given lateinit var companionFoo: Foo
+                }
+            }
+
+            fun invoke(classFoo: Foo, companionFoo: Foo): Foo {
+                MyClass.companionFoo = companionFoo
+                return MyClass(classFoo).resolve()
+            }
+        """
+    ) {
+        val classFoo = Foo()
+        val companionFoo = Foo()
+        val result = invokeSingleFile(classFoo, companionFoo)
+        assertSame(classFoo, result)
+    }
+
+    // todo class constructor given in init
+
+    @Test
     fun testDerivedGiven() = codegen(
         """
             @Given val foo = Foo()

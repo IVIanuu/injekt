@@ -7,6 +7,8 @@ import com.ivianuu.injekt.compiler.extractGivensOfDeclaration
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.backend.common.pop
+import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -15,8 +17,10 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
@@ -25,6 +29,7 @@ import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.toKotlinType
+import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -114,7 +119,9 @@ import org.jetbrains.kotlin.types.KotlinType
                                 DeclarationIrBuilder(pluginContext, symbol)
                                     .irGetObject(dispatchReceiverParameter.type.classOrNull!!)
                             } else {
-                                TODO()
+                                dispatchReceiverAccessors.reversed()
+                                    .first { it.first == dispatchReceiverParameter.type.classOrNull?.owner }
+                                    .second()
                             }
                     }
                     fillGivens(this)
@@ -137,7 +144,9 @@ import org.jetbrains.kotlin.types.KotlinType
                                 DeclarationIrBuilder(pluginContext, symbol)
                                     .irGetObject(dispatchReceiverParameter.type.classOrNull!!)
                             } else {
-                                TODO()
+                                dispatchReceiverAccessors.reversed()
+                                    .first { it.first == dispatchReceiverParameter.type.classOrNull?.owner }
+                                    .second()
                             }
                     }
                     fillGivens(this)
@@ -169,17 +178,20 @@ import org.jetbrains.kotlin.types.KotlinType
                 .filterNot { it.isExternalDeclaration() }
     }
 
-    private inner class ObjectScope(
+    private inner class ClassScope(
         private val declaration: IrClass,
         parent: Scope?,
     ) : Scope(parent) {
-        override fun givensForInThisScope(type: KotlinType): List<CallableDescriptor> {
-            return declaration.descriptor.extractGivensOfDeclaration()
-                .filter { it.returnType == type }
-        }
+        private val allGivens =
+            declaration.descriptor.extractGivensOfDeclaration(pluginContext.bindingContext)
+
+        override fun givensForInThisScope(type: KotlinType): List<CallableDescriptor> =
+            allGivens.filter { it.returnType == type }
     }
 
     private var scope: Scope = InternalScope(ExternalScope())
+
+    private val dispatchReceiverAccessors = mutableListOf<Pair<IrClass, () -> IrExpression>>()
 
     private inline fun <R> inScope(scope: Scope, block: () -> R): R {
         val prevScope = this.scope
@@ -190,9 +202,39 @@ import org.jetbrains.kotlin.types.KotlinType
     }
 
     override fun visitClass(declaration: IrClass): IrStatement {
-        return if (declaration.kind == ClassKind.OBJECT) {
-            inScope(ObjectScope(declaration, scope)) { super.visitClass(declaration) }
-        } else super.visitClass(declaration)
+        dispatchReceiverAccessors.push(
+            declaration to {
+                DeclarationIrBuilder(pluginContext, declaration.symbol)
+                    .irGet(declaration.thisReceiver!!)
+            }
+        )
+        val result = if (declaration.kind == ClassKind.OBJECT) {
+            inScope(ClassScope(declaration, scope)) { super.visitClass(declaration) }
+        } else {
+            val parentScope = declaration.companionObject()
+                ?.let { it as? IrClass }
+                ?.let { ClassScope(it, scope) } ?: scope
+            inScope(ClassScope(declaration, parentScope)) { super.visitClass(declaration) }
+        }
+        dispatchReceiverAccessors.pop()
+        return result
+    }
+
+    override fun visitFunction(declaration: IrFunction): IrStatement {
+        val dispatchReceiver = declaration.dispatchReceiverParameter?.type?.classOrNull?.owner
+        if (dispatchReceiver != null) {
+            dispatchReceiverAccessors.push(
+                dispatchReceiver to {
+                    DeclarationIrBuilder(pluginContext, declaration.symbol)
+                        .irGet(declaration.dispatchReceiverParameter!!)
+                }
+            )
+        }
+        val result = super.visitFunction(declaration)
+        if (dispatchReceiver != null) {
+            dispatchReceiverAccessors.pop()
+        }
+        return result
     }
 
     override fun visitCall(expression: IrCall): IrExpression =
