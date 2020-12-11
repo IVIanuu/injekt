@@ -135,6 +135,52 @@ interface InjektErrors {
                     )
                 }
 
+        @JvmField
+        val DEBUG_GIVEN =
+            DiagnosticFactory1.create<PsiElement, Pair<GivenNode, Map<GivenRequest, GivenNode>>>(
+                Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "\n{0}",
+                        object :
+                            DiagnosticParameterRenderer<Pair<GivenNode, Map<GivenRequest, GivenNode>>> {
+                            override fun render(
+                                obj: Pair<GivenNode, Map<GivenRequest, GivenNode>>,
+                                renderingContext: RenderingContext,
+                            ): String {
+                                val (given, givensByType) = obj
+                                var indent = 0
+                                fun withIndent(block: () -> Unit) {
+                                    indent++
+                                    block()
+                                    indent--
+                                }
+
+                                fun indent() = buildString {
+                                    repeat(indent) { append("    ") }
+                                }
+                                return buildString {
+                                    fun GivenNode.append() {
+                                        appendLine("${indent()}${type.render()}")
+                                        withIndent {
+                                            appendLine("${indent()}by $origin")
+                                            withIndent {
+                                                dependencies
+                                                    .map { it to givensByType[it]!! }
+                                                    .forEach { (request, givenNode) ->
+                                                        givenNode.append()
+                                                    }
+                                            }
+                                        }
+                                    }
+                                    given.append()
+                                }
+                            }
+                        }
+                    )
+                }
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,

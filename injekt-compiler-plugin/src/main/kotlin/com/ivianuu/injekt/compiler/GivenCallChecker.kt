@@ -48,6 +48,8 @@ class GivenCallChecker(
 
     private abstract inner class Scope(private val parent: Scope?) {
 
+        private val givensByRequest = mutableMapOf<GivenRequest, GivenNode>()
+
         fun check(call: ResolvedCall<*>, reportOn: KtElement) {
             val resultingDescriptor = call.resultingDescriptor
             if (resultingDescriptor !is FunctionDescriptor) return
@@ -66,6 +68,18 @@ class GivenCallChecker(
                     )
                 }
                 .forEach { check(it, reportOn) }
+
+            if (call.resultingDescriptor.fqNameSafe == InjektFqNames.debugGiven) {
+                val type = call.typeArguments.values.single().toTypeRef()
+                val given = givensByRequest.toList().firstOrNull { it.first.type == type }
+                    ?.second
+                if (given != null) {
+                    bindingTrace.report(
+                        InjektErrors.DEBUG_GIVEN
+                            .on(reportOn, given to givensByRequest)
+                    )
+                }
+            }
         }
 
         private fun check(node: GivenNode, reportOn: KtElement) {
@@ -99,6 +113,7 @@ class GivenCallChecker(
             when {
                 givens.size == 1 -> {
                     val given = givens.single()
+                    givensByRequest[request] = given
                     if (given is CallableGivenNode) {
                         val lookedUpDeclaration = when (val callable = given.callable) {
                             is ClassConstructorDescriptor -> callable.constructedClass
