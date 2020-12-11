@@ -191,11 +191,14 @@ fun ClassDescriptor.extractGivensOfDeclaration(
     return primaryConstructorGivens + memberGivens
 }
 
-fun ClassDescriptor.extractGivenSetsOfDeclaration(bindingContext: BindingContext): List<Pair<TypeRef, CallableDescriptor>> {
+fun ClassDescriptor.extractGivenCollectionElementsOfDeclaration(bindingContext: BindingContext): List<Pair<TypeRef, CallableDescriptor>> {
     val primaryConstructorGivens = (unsubstitutedPrimaryConstructor
         ?.let { primaryConstructor ->
             primaryConstructor.valueParameters
-                .filter { it.hasAnnotation(InjektFqNames.GivenSet) }
+                .filter {
+                    it.hasAnnotation(InjektFqNames.GivenMap) ||
+                            it.hasAnnotation(InjektFqNames.GivenSet)
+                }
                 .mapNotNull { bindingContext[BindingContext.VALUE_PARAMETER_AS_PROPERTY, it] }
                 .map { it.type.toTypeRef() to it }
         }
@@ -204,9 +207,13 @@ fun ClassDescriptor.extractGivenSetsOfDeclaration(bindingContext: BindingContext
     val memberGivens = unsubstitutedMemberScope.getContributedDescriptors()
         .flatMap { declaration ->
             when (declaration) {
-                is PropertyDescriptor -> if (declaration.hasAnnotation(InjektFqNames.GivenSet))
+                is PropertyDescriptor -> if (declaration.hasAnnotation(InjektFqNames.GivenMap) ||
+                    declaration.hasAnnotation(InjektFqNames.GivenSet)
+                )
                     listOf(declaration.returnType!!.toTypeRef() to declaration) else emptyList()
-                is FunctionDescriptor -> if (declaration.hasAnnotation(InjektFqNames.GivenSet))
+                is FunctionDescriptor -> if (declaration.hasAnnotation(InjektFqNames.GivenMap) ||
+                    declaration.hasAnnotation(InjektFqNames.GivenSet)
+                )
                     listOf(declaration.returnType!!.toTypeRef() to declaration) else emptyList()
                 else -> emptyList()
             }
@@ -237,14 +244,11 @@ fun CallableDescriptor.extractGivensOfCallable(
         }
 }
 
-fun CallableDescriptor.extractGivenSetsOfCallable(
-    declarationStore: DeclarationStore,
-): List<CallableDescriptor> {
-    val info = declarationStore.givenInfoFor(this)
-    return allParameters
+fun CallableDescriptor.extractGivenCollectionElementsOfCallable(): List<CallableDescriptor> =
+    allParameters
         .filter {
-            it.hasAnnotation(InjektFqNames.GivenSet) ||
-                    it.type.hasAnnotation(InjektFqNames.GivenSet) ||
-                    it.name in info.allGivens
+            it.hasAnnotation(InjektFqNames.GivenMap) ||
+                    it.hasAnnotation(InjektFqNames.GivenSet) ||
+                    it.hasAnnotation(InjektFqNames.GivenSet) ||
+                    it.type.hasAnnotation(InjektFqNames.GivenSet)
         }
-}

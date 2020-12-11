@@ -123,7 +123,7 @@ class GivenCallChecker(
                 request,
                 this,
                 { givensForInThisScope(it) to parent },
-                { givenSetsForInThisScope(it) to parent }
+                { givenCollectionElementsForInThisScope(it) to parent }
             )
             when {
                 givens.size == 1 -> check(givens.single(), reportOn)
@@ -150,7 +150,7 @@ class GivenCallChecker(
 
         protected abstract fun givensForInThisScope(type: TypeRef): List<GivenNode>
 
-        protected abstract fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor>
+        protected abstract fun givenCollectionElementsForInThisScope(type: TypeRef): List<CallableDescriptor>
     }
 
     private inner class ExternalScope : Scope(null, null) {
@@ -160,8 +160,8 @@ class GivenCallChecker(
                 .filter { it.visibility == DescriptorVisibilities.PUBLIC }
                 .map { it.toGivenNode(type, declarationStore) }
 
-        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
-            declarationStore.givenSetsForType(type)
+        override fun givenCollectionElementsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            declarationStore.givenCollectionElementsFor(type)
                 .filter { it.isExternalDeclaration() }
     }
 
@@ -171,8 +171,8 @@ class GivenCallChecker(
                 .filterNot { it.isExternalDeclaration() }
                 .map { it.toGivenNode(type, declarationStore) }
 
-        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
-            declarationStore.givenSetsForType(type)
+        override fun givenCollectionElementsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            declarationStore.givenCollectionElementsFor(type)
                 .filterNot { it.isExternalDeclaration() }
     }
 
@@ -185,9 +185,9 @@ class GivenCallChecker(
                 ?.extractGivensOfDeclaration(bindingTrace.bindingContext, declarationStore)
                 ?: emptyList()
         }
-        private val allGivenSets by unsafeLazy {
+        private val allGivenCollectionElements by unsafeLazy {
             declaration.descriptor<ClassDescriptor>(bindingTrace.bindingContext)
-                ?.extractGivenSetsOfDeclaration(bindingTrace.bindingContext)
+                ?.extractGivenCollectionElementsOfDeclaration(bindingTrace.bindingContext)
                 ?: emptyList()
         }
 
@@ -197,8 +197,8 @@ class GivenCallChecker(
                 .map { it.second }
                 .map { it.toGivenNode(type, declarationStore) }
 
-        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
-            allGivenSets.filter { it.first.isAssignableTo(type) }
+        override fun givenCollectionElementsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            allGivenCollectionElements.filter { it.first.isAssignableTo(type) }
                 .map { it.second }
     }
 
@@ -210,9 +210,9 @@ class GivenCallChecker(
             declaration.descriptor<FunctionDescriptor>(bindingTrace.bindingContext)
                 ?.extractGivensOfCallable(declarationStore) ?: emptyList()
         }
-        private val allGivenSets by unsafeLazy {
+        private val allGivenCollectionElements by unsafeLazy {
             declaration.descriptor<FunctionDescriptor>(bindingTrace.bindingContext)
-                ?.extractGivenSetsOfCallable(declarationStore)
+                ?.extractGivenCollectionElementsOfCallable()
                 ?: emptyList()
         }
 
@@ -220,8 +220,8 @@ class GivenCallChecker(
             allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
                 .map { it.toGivenNode(type, declarationStore) }
 
-        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
-            allGivenSets.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
+        override fun givenCollectionElementsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            allGivenCollectionElements.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
     }
 
     private inner class LambdaScope(
@@ -231,32 +231,34 @@ class GivenCallChecker(
         private val allGivens by unsafeLazy {
             descriptor.extractGivensOfCallable(declarationStore)
         }
-        private val allGivenSets by unsafeLazy {
-            descriptor.extractGivensOfCallable(declarationStore)
+        private val allGivenCollectionElements by unsafeLazy {
+            descriptor.extractGivenCollectionElementsOfCallable()
         }
 
         override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
                 .map { it.toGivenNode(type, declarationStore) }
 
-        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
-            allGivenSets.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
+        override fun givenCollectionElementsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            allGivenCollectionElements.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
     }
 
     private inner class BlockScope(parent: Scope?) : Scope(null, parent) {
         private val givenVariables = mutableListOf<VariableDescriptor>()
-        private val givenSetVariables = mutableListOf<VariableDescriptor>()
+        private val givenCollectionElementsVariables = mutableListOf<VariableDescriptor>()
         fun pushVariable(variable: VariableDescriptor) {
             if (variable.hasAnnotation(InjektFqNames.Given)) givenVariables += variable
-            else if (variable.hasAnnotation(InjektFqNames.GivenSet)) givenVariables += variable
+            else if (variable.hasAnnotation(InjektFqNames.GivenMap) ||
+                variable.hasAnnotation(InjektFqNames.GivenSet)
+            ) givenVariables += variable
         }
 
         override fun givensForInThisScope(type: TypeRef): List<GivenNode> = givenVariables
             .filter { it.type.toTypeRef().isAssignableTo(type) }
             .map { it.toGivenNode(type, declarationStore) }
 
-        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
-            givenSetVariables
+        override fun givenCollectionElementsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            givenCollectionElementsVariables
                 .filter { it.type.toTypeRef().isAssignableTo(type) }
     }
 

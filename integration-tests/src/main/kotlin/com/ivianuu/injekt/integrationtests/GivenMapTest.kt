@@ -1,31 +1,29 @@
-class CollectionsTest {
+import com.ivianuu.injekt.test.Command
+import com.ivianuu.injekt.test.CommandA
+import com.ivianuu.injekt.test.CommandB
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
+import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertTrue
+import org.junit.Test
+import kotlin.reflect.KClass
 
-    /*
+class GivenMapTest {
+
     @Test
     fun testSimpleMap() = codegen(
         """
-            @Binding
-            fun commandA() = CommandA()
-
-            @MapEntries fun commandAIntoMap(
-                commandA: CommandA
+            @Given  fun commandA() = CommandA()
+            @GivenMap fun commandAIntoMap(
+                commandA: CommandA = given
             ): Map<KClass<out Command>, Command> = mapOf(CommandA::class to commandA)
+            @Given fun commandB() = CommandB()
+            @GivenMap
+            fun commandBIntoMap(
+                commandB: CommandB = given
+            ): Map<KClass<out Command>, Command> = mapOf(CommandB::class to commandB)
 
-            @Component abstract class MapComponent {
-                abstract val map: Map<KClass<out Command>, Command>
-
-                @Binding
-                protected fun commandB() = CommandB()
-
-                @MapEntries
-                protected fun commandBIntoMap(
-                    commandB: CommandB
-                ): Map<KClass<out Command>, Command> = mapOf(CommandB::class to commandB)
-            }
-
-            fun invoke(): Map<KClass<out Command>, Command> {
-                return component<MapComponent>().map
-            }
+            fun invoke() = given<Map<KClass<out Command>, Command>>()
         """
     ) {
         val map = invokeSingleFile<Map<KClass<out Command>, Command>>()
@@ -34,6 +32,7 @@ class CollectionsTest {
         assertTrue(map[CommandB::class] is CommandB)
     }
 
+    /*
     @Test
     fun testNestedMap() = codegen(
         """

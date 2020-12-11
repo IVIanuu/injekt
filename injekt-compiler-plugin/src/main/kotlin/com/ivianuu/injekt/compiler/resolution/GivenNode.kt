@@ -19,7 +19,7 @@ class CallableGivenNode(
         get() = callable.fqNameSafe
 }
 
-class SetGivenNode(
+class CollectionGivenNode(
     type: TypeRef,
     override val origin: FqName,
     val elements: List<CallableDescriptor>,

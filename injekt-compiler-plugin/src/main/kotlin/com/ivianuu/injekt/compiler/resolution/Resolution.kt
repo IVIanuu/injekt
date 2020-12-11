@@ -8,7 +8,7 @@ fun <T : Any> resolveGivens(
     request: GivenRequest,
     initial: T,
     getGivens: T.(TypeRef) -> Pair<List<GivenNode>, T?>,
-    getGivenSets: T.(TypeRef) -> Pair<List<CallableDescriptor>, T?>,
+    getGivenCollectionElements: T.(TypeRef) -> Pair<List<CallableDescriptor>, T?>,
 ): List<GivenNode> {
     var current: T? = initial
     while (current != null) {
@@ -27,22 +27,24 @@ fun <T : Any> resolveGivens(
         )
     }
 
+    val mapType = declarationStore.module.builtIns.map.defaultType.toTypeRef()
     val setType = declarationStore.module.builtIns.set.defaultType.toTypeRef()
-    if (request.type.isSubTypeOf(setType)) {
-        val setElements = mutableListOf<CallableDescriptor>()
-        var currentForSetElements: T? = initial
-        while (currentForSetElements != null) {
-            val (currentSetElements, next) = getGivenSets(currentForSetElements, request.type)
-            setElements += currentSetElements
-            currentForSetElements = next
+    if (request.type.isSubTypeOf(mapType) || request.type.isSubTypeOf(setType)) {
+        val elements = mutableListOf<CallableDescriptor>()
+        var currentForElements: T? = initial
+        while (currentForElements != null) {
+            val (currentElements, next) = getGivenCollectionElements(currentForElements,
+                request.type)
+            elements += currentElements
+            currentForElements = next
         }
-        if (setElements.isNotEmpty()) {
+        if (elements.isNotEmpty()) {
             return listOf(
-                SetGivenNode(
+                CollectionGivenNode(
                     request.type,
                     request.origin,
-                    setElements,
-                    setElements
+                    elements,
+                    elements
                         .flatMap { element ->
                             element.getGivenRequests(request.type, declarationStore)
                         }

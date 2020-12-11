@@ -2,22 +2,23 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.extractGivenSetsOfCallable
-import com.ivianuu.injekt.compiler.extractGivenSetsOfDeclaration
+import com.ivianuu.injekt.compiler.extractGivenCollectionElementsOfCallable
+import com.ivianuu.injekt.compiler.extractGivenCollectionElementsOfDeclaration
 import com.ivianuu.injekt.compiler.extractGivensOfCallable
 import com.ivianuu.injekt.compiler.extractGivensOfDeclaration
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
+import com.ivianuu.injekt.compiler.resolution.CollectionGivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.ProviderGivenNode
-import com.ivianuu.injekt.compiler.resolution.SetGivenNode
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.fullyExpandedType
 import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
 import com.ivianuu.injekt.compiler.resolution.isAssignableTo
+import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
 import com.ivianuu.injekt.compiler.resolution.resolveGivens
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.subtypeView
@@ -110,14 +111,14 @@ class GivenCallTransformer(
                     request,
                     this,
                     { givensForInThisScope(it) to parent },
-                    { givenSetsForInThisScope(it) to parent }
+                    { givenCollectionElementsForInThisScope(it) to parent }
                 ).let { givens ->
                     givens.singleOrNull() ?: error("Wtf $request $givens")
                 }
                 when (given) {
                     is CallableGivenNode -> callableExpression(given, symbol)
                     is ProviderGivenNode -> providerExpression(given, symbol)
-                    is SetGivenNode -> setExpression(given, symbol)
+                    is CollectionGivenNode -> collectionExpression(given, symbol)
                 }
             }()
         }
@@ -132,8 +133,8 @@ class GivenCallTransformer(
                 }
         }
 
-        private fun setExpression(
-            given: SetGivenNode,
+        private fun collectionExpression(
+            given: CollectionGivenNode,
             symbol: IrSymbol,
         ): () -> IrExpression {
             return if (given.elements.size == 1) {
@@ -145,40 +146,83 @@ class GivenCallTransformer(
             } else {
                 {
                     DeclarationIrBuilder(pluginContext, symbol).irBlock {
-                        val elementType =
-                            given.type.fullyExpandedType.typeArguments.single()
-                                .toIrType(pluginContext)
+                        if (given.type.isSubTypeOf(pluginContext.builtIns.map.defaultType.toTypeRef())) {
+                            val keyType =
+                                given.type.fullyExpandedType.typeArguments[0]
+                                    .toIrType(pluginContext)
+                            val valueType =
+                                given.type.fullyExpandedType.typeArguments[1]
+                                    .toIrType(pluginContext)
 
-                        val mutableSetOf = pluginContext.referenceFunctions(
-                            FqName("kotlin.collections.mutableSetOf")
-                        ).single { it.owner.valueParameters.isEmpty() }
+                            val mutableMapOf = pluginContext.referenceFunctions(
+                                FqName("kotlin.collections.mutableMapOf")
+                            ).single { it.owner.valueParameters.isEmpty() }
 
-                        val setAddAll = mutableSetOf.owner.returnType
-                            .classOrNull!!
-                            .owner
-                            .functions
-                            .single { it.name.asString() == "addAll" }
+                            val mapPutAll = mutableMapOf.owner.returnType
+                                .classOrNull!!
+                                .owner
+                                .functions
+                                .single { it.name.asString() == "putAll" }
 
-                        val tmpSet = irTemporary(
-                            irCall(mutableSetOf)
-                                .apply { putTypeArgument(0, elementType) }
-                        )
+                            val tmpMap = irTemporary(
+                                irCall(mutableMapOf)
+                                    .apply {
+                                        putTypeArgument(0, keyType)
+                                        putTypeArgument(1, valueType)
+                                    }
+                            )
 
-                        given.elements
-                            .forEach {
-                                +irCall(setAddAll).apply {
-                                    dispatchReceiver = irGet(tmpSet)
-                                    putValueArgument(
-                                        0,
-                                        callableExpression(
-                                            it.toGivenNode(given.type, declarationStore),
-                                            symbol
-                                        )()
-                                    )
+                            given.elements
+                                .forEach {
+                                    +irCall(mapPutAll).apply {
+                                        dispatchReceiver = irGet(tmpMap)
+                                        putValueArgument(
+                                            0,
+                                            callableExpression(
+                                                it.toGivenNode(given.type, declarationStore),
+                                                symbol
+                                            )()
+                                        )
+                                    }
                                 }
-                            }
 
-                        +irGet(tmpSet)
+                            +irGet(tmpMap)
+                        } else if (given.type.isSubTypeOf(pluginContext.builtIns.set.defaultType.toTypeRef())) {
+                            val elementType =
+                                given.type.fullyExpandedType.typeArguments.single()
+                                    .toIrType(pluginContext)
+
+                            val mutableSetOf = pluginContext.referenceFunctions(
+                                FqName("kotlin.collections.mutableSetOf")
+                            ).single { it.owner.valueParameters.isEmpty() }
+
+                            val setAddAll = mutableSetOf.owner.returnType
+                                .classOrNull!!
+                                .owner
+                                .functions
+                                .single { it.name.asString() == "addAll" }
+
+                            val tmpSet = irTemporary(
+                                irCall(mutableSetOf)
+                                    .apply { putTypeArgument(0, elementType) }
+                            )
+
+                            given.elements
+                                .forEach {
+                                    +irCall(setAddAll).apply {
+                                        dispatchReceiver = irGet(tmpSet)
+                                        putValueArgument(
+                                            0,
+                                            callableExpression(
+                                                it.toGivenNode(given.type, declarationStore),
+                                                symbol
+                                            )()
+                                        )
+                                    }
+                                }
+
+                            +irGet(tmpSet)
+                        }
                     }
                 }
             }
@@ -376,7 +420,7 @@ class GivenCallTransformer(
 
         protected abstract fun givensForInThisScope(type: TypeRef): List<GivenNode>
 
-        protected abstract fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor>
+        protected abstract fun givenCollectionElementsForInThisScope(type: TypeRef): List<CallableDescriptor>
     }
 
     private inner class ExternalScope : Scope(null) {
@@ -386,8 +430,8 @@ class GivenCallTransformer(
                 .filter { it.visibility == DescriptorVisibilities.PUBLIC }
                 .map { it.toGivenNode(type, declarationStore) }
 
-        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
-            declarationStore.givenSetsForType(type)
+        override fun givenCollectionElementsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            declarationStore.givenCollectionElementsFor(type)
                 .filter { it.isExternalDeclaration() }
     }
 
@@ -397,8 +441,8 @@ class GivenCallTransformer(
                 .filterNot { it.isExternalDeclaration() }
                 .map { it.toGivenNode(type, declarationStore) }
 
-        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
-            declarationStore.givenSetsForType(type)
+        override fun givenCollectionElementsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            declarationStore.givenCollectionElementsFor(type)
                 .filterNot { it.isExternalDeclaration() }
     }
 
@@ -409,16 +453,16 @@ class GivenCallTransformer(
         private val allGivens =
             declaration.descriptor.extractGivensOfDeclaration(pluginContext.bindingContext,
                 declarationStore)
-        private val allGivenSets =
-            declaration.descriptor.extractGivenSetsOfDeclaration(pluginContext.bindingContext)
+        private val allGivenCollectionElements =
+            declaration.descriptor.extractGivenCollectionElementsOfDeclaration(pluginContext.bindingContext)
 
         override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             allGivens.filter { it.first.isAssignableTo(type) }
                 .map { it.second }
                 .map { it.toGivenNode(type, declarationStore) }
 
-        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
-            allGivenSets.filter { it.first.isAssignableTo(type) }
+        override fun givenCollectionElementsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            allGivenCollectionElements.filter { it.first.isAssignableTo(type) }
                 .map { it.second }
     }
 
@@ -428,23 +472,25 @@ class GivenCallTransformer(
     ) : Scope(parent) {
         private val allGivens =
             declaration.descriptor.extractGivensOfCallable(declarationStore)
-        private val allGivenSets = declaration.descriptor
-            .extractGivenSetsOfCallable(declarationStore)
+        private val allGivenCollectionElements = declaration.descriptor
+            .extractGivenCollectionElementsOfCallable()
 
         override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
                 .map { it.toGivenNode(type, declarationStore) }
 
-        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
-            allGivenSets.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
+        override fun givenCollectionElementsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            allGivenCollectionElements.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
     }
 
     private inner class BlockScope(parent: Scope?) : Scope(parent) {
         private val givenVariables = mutableListOf<VariableDescriptor>()
-        private val givenSetVariables = mutableListOf<VariableDescriptor>()
+        private val givenCollectionElementsVariables = mutableListOf<VariableDescriptor>()
         fun pushVariable(variable: VariableDescriptor) {
             if (variable.hasAnnotation(InjektFqNames.Given)) givenVariables += variable
-            else if (variable.hasAnnotation(InjektFqNames.GivenSet)) givenVariables += variable
+            else if (variable.hasAnnotation(InjektFqNames.GivenMap) ||
+                variable.hasAnnotation(InjektFqNames.GivenSet)
+            ) givenCollectionElementsVariables += variable
         }
 
         override fun givensForInThisScope(type: TypeRef): List<GivenNode> {
@@ -453,8 +499,8 @@ class GivenCallTransformer(
                 .map { it.toGivenNode(type, declarationStore) }
         }
 
-        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
-            givenSetVariables
+        override fun givenCollectionElementsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            givenCollectionElementsVariables
                 .filter { it.type.toTypeRef().isAssignableTo(type) }
     }
 

@@ -103,16 +103,22 @@ class DeclarationStore {
             .distinct()
     }
 
-    private val allSetElements by unsafeLazy {
+    private val allGivenCollectionElements by unsafeLazy {
         functionIndices
-            .filter { it.hasAnnotation(InjektFqNames.GivenSet) } +
+            .filter {
+                it.hasAnnotation(InjektFqNames.GivenMap) ||
+                        it.hasAnnotation(InjektFqNames.GivenSet)
+            } +
                 propertyIndices
-                    .filter { it.hasAnnotation(InjektFqNames.GivenSet) }
+                    .filter {
+                        it.hasAnnotation(InjektFqNames.GivenMap) ||
+                                it.hasAnnotation(InjektFqNames.GivenSet)
+                    }
     }
-    private val setElementsForType = mutableMapOf<TypeRef, List<CallableDescriptor>>()
-    fun givenSetsForType(type: TypeRef): List<CallableDescriptor> =
-        setElementsForType.getOrPut(type) {
-            allSetElements
+    private val givenCollectionElementsByType = mutableMapOf<TypeRef, List<CallableDescriptor>>()
+    fun givenCollectionElementsFor(type: TypeRef): List<CallableDescriptor> =
+        givenCollectionElementsByType.getOrPut(type) {
+            allGivenCollectionElements
                 .filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
         }
 
