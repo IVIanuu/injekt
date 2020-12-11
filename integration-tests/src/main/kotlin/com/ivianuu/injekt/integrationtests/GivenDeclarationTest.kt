@@ -143,12 +143,12 @@ class GivenDeclarationTest {
         assertSame(foo, invokeSingleFile<Any>(foo))
     }
 
-    // @Test
+    @Test
     fun testGivenLambdaParameterDeclarationSite() = codegen(
         """
-            inline fun <T, R> withGiven(value: T, block: (@Given T) -> Unit) = block(value)
+            inline fun <T, R> withGiven(value: T, block: (@Given T) -> R) = block(value)
             fun invoke(foo: Foo): Foo {
-                return withGiven(value) { given<Foo>() }
+                return withGiven(foo) { given<Foo>() }
             }
         """
     ) {

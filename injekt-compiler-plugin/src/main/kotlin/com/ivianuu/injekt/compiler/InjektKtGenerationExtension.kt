@@ -23,10 +23,10 @@ import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
+import org.jetbrains.kotlin.resolve.TopDownAnalysisMode
 import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtension
 
 class InjektKtGenerationExtension(
@@ -42,7 +42,7 @@ class InjektKtGenerationExtension(
 
     private var generatedCode = false
 
-    private var hasErrors = false
+    private lateinit var lazyTopDownAnalyzer: LazyTopDownAnalyzer
 
     override fun doAnalysis(
         project: Project,
@@ -54,38 +54,33 @@ class InjektKtGenerationExtension(
     ): AnalysisResult? {
         files as ArrayList<KtFile>
         if (!generatedCode) {
-            val lazyTopDownAnalyzer = componentProvider.get<LazyTopDownAnalyzer>()
+            lazyTopDownAnalyzer = componentProvider.get()
             declarationStore.module = module
             val tmpFiles = files.toList()
             files.clear()
             files += fileManager.preGenerate(tmpFiles)
 
-            val result = super.doAnalysis(project,
+            IndexGenerator(declarationStore, fileManager)
+                .generate(files)
+            super.doAnalysis(project,
                 module,
                 projectContext,
                 files,
                 bindingTrace,
                 componentProvider)
-
-            IndexGenerator(declarationStore, fileManager)
-                .generate(files)
-
-            val givenCallChecker = GivenCallChecker(
-                bindingTrace,
-                declarationStore,
-                lazyTopDownAnalyzer
-            )
-            files.forEach { it.accept(givenCallChecker) }
             GivenInfoGenerator(bindingTrace.bindingContext, declarationStore, fileManager)
                 .generate(files)
-
-            hasErrors = bindingTrace.bindingContext.diagnostics.any {
-                it.severity == Severity.ERROR
-            }
-            return result
+            fileManager.postGenerate()
+            generatedCode = true
+            return AnalysisResult.RetryWithAdditionalRoots(
+                bindingTrace.bindingContext, module, emptyList(), fileManager.newFiles, true
+            )
         }
+
         return null
     }
+
+    private var completedOnce = false
 
     override fun analysisCompleted(
         project: Project,
@@ -93,12 +88,26 @@ class InjektKtGenerationExtension(
         bindingTrace: BindingTrace,
         files: Collection<KtFile>,
     ): AnalysisResult? {
-        if (generatedCode || hasErrors) return null
-        generatedCode = true
-        files as List<KtFile>
-        fileManager.postGenerate()
-        return AnalysisResult.RetryWithAdditionalRoots(
-            bindingTrace.bindingContext, module, emptyList(), fileManager.newFiles, true
-        )
+        if (generatedCode && !completedOnce) {
+            completedOnce = true
+        } else if (generatedCode && completedOnce) {
+            try {
+                lazyTopDownAnalyzer.analyzeDeclarations(
+                    TopDownAnalysisMode.TopLevelDeclarations,
+                    files
+                )
+            } catch (e: Throwable) {
+            }
+            try {
+                lazyTopDownAnalyzer.analyzeDeclarations(
+                    TopDownAnalysisMode.LocalDeclarations,
+                    files
+                )
+            } catch (e: Throwable) {
+            }
+            val checker = GivenCallChecker(bindingTrace, declarationStore)
+            files.forEach { it.accept(checker) }
+        }
+        return null
     }
 }

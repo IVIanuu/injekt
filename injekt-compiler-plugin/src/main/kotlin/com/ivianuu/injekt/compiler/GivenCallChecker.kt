@@ -15,13 +15,10 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
-import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassOrObject
-import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
@@ -32,8 +29,6 @@ import org.jetbrains.kotlin.psi.KtSecondaryConstructor
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
-import org.jetbrains.kotlin.resolve.TopDownAnalysisMode
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
@@ -42,51 +37,13 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class GivenCallChecker(
     private val bindingTrace: BindingTrace,
     private val declarationStore: DeclarationStore,
-    private val lazyTopDownAnalyzer: LazyTopDownAnalyzer,
 ) : KtTreeVisitorVoid() {
 
     private val chain = mutableListOf<GivenRequest>()
 
-    private abstract inner class Scope(
-        private val declaration: KtDeclaration?,
-        private val parent: Scope?,
-    ) {
+    private abstract inner class Scope(private val parent: Scope?) {
 
         private val checkedRequests = mutableSetOf<GivenRequest>()
-
-        fun resolve(call: KtElement) {
-            if (declaration != null) {
-                try {
-                    lazyTopDownAnalyzer.analyzeDeclarations(
-                        TopDownAnalysisMode.TopLevelDeclarations,
-                        listOfNotNull(declaration)
-                    )
-                } catch (e: Throwable) {
-                }
-                try {
-                    lazyTopDownAnalyzer.analyzeDeclarations(
-                        TopDownAnalysisMode.LocalDeclarations,
-                        listOfNotNull(declaration)
-                    )
-                } catch (e: Throwable) {
-                }
-            }
-            try {
-                lazyTopDownAnalyzer.analyzeDeclarations(
-                    TopDownAnalysisMode.TopLevelDeclarations,
-                    listOfNotNull(call)
-                )
-            } catch (e: Throwable) {
-            }
-            try {
-                lazyTopDownAnalyzer.analyzeDeclarations(
-                    TopDownAnalysisMode.LocalDeclarations,
-                    listOfNotNull(call)
-                )
-            } catch (e: Throwable) {
-            }
-            parent?.resolve(call)
-        }
 
         fun check(call: ResolvedCall<*>, reportOn: PsiElement) {
             val resultingDescriptor = call.resultingDescriptor
@@ -153,7 +110,7 @@ class GivenCallChecker(
         protected abstract fun givenCollectionElementsForInThisScope(type: TypeRef): List<CallableDescriptor>
     }
 
-    private inner class ExternalScope : Scope(null, null) {
+    private inner class ExternalScope : Scope(null) {
         override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             declarationStore.givensForType(type)
                 .filter { it.isExternalDeclaration() }
@@ -165,7 +122,7 @@ class GivenCallChecker(
                 .filter { it.isExternalDeclaration() }
     }
 
-    private inner class InternalScope(parent: Scope?) : Scope(null, parent) {
+    private inner class InternalScope(parent: Scope?) : Scope(parent) {
         override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             declarationStore.givensForType(type)
                 .filterNot { it.isExternalDeclaration() }
@@ -179,7 +136,7 @@ class GivenCallChecker(
     private inner class ClassScope(
         private val declaration: KtClassOrObject,
         parent: Scope?,
-    ) : Scope(declaration, parent) {
+    ) : Scope(parent) {
         private val allGivens by unsafeLazy {
             declaration.descriptor<ClassDescriptor>(bindingTrace.bindingContext)
                 ?.extractGivensOfDeclaration(bindingTrace.bindingContext, declarationStore)
@@ -205,7 +162,7 @@ class GivenCallChecker(
     private inner class FunctionScope(
         private val declaration: KtFunction,
         parent: Scope?,
-    ) : Scope(declaration, parent) {
+    ) : Scope(parent) {
         private val allGivens by unsafeLazy {
             declaration.descriptor<FunctionDescriptor>(bindingTrace.bindingContext)
                 ?.extractGivensOfCallable(declarationStore) ?: emptyList()
@@ -227,7 +184,7 @@ class GivenCallChecker(
     private inner class LambdaScope(
         private val descriptor: FunctionDescriptor,
         parent: Scope?,
-    ) : Scope(descriptor.findPsi() as? KtDeclaration, parent) {
+    ) : Scope(parent) {
         private val allGivens by unsafeLazy {
             descriptor.extractGivensOfCallable(declarationStore)
         }
@@ -243,7 +200,7 @@ class GivenCallChecker(
             allGivenCollectionElements.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
     }
 
-    private inner class BlockScope(parent: Scope?) : Scope(null, parent) {
+    private inner class BlockScope(parent: Scope?) : Scope(parent) {
         private val givenVariables = mutableListOf<VariableDescriptor>()
         private val givenCollectionElementsVariables = mutableListOf<VariableDescriptor>()
         fun pushVariable(variable: VariableDescriptor) {
@@ -304,7 +261,6 @@ class GivenCallChecker(
     }
 
     override fun visitLambdaExpression(lambdaExpression: KtLambdaExpression) {
-        scope.resolve(lambdaExpression)
         val function = bindingTrace[BindingContext.FUNCTION, lambdaExpression.functionLiteral]!!
         inScope(LambdaScope(function, scope)) {
             super.visitLambdaExpression(lambdaExpression)
@@ -313,7 +269,6 @@ class GivenCallChecker(
 
     private var blockScope: BlockScope? = null
     override fun visitBlockExpression(expression: KtBlockExpression) {
-        scope.resolve(expression)
         val prevScope = blockScope
         val scope = BlockScope(scope)
         this.blockScope = scope
@@ -325,15 +280,12 @@ class GivenCallChecker(
 
     override fun visitProperty(property: KtProperty) {
         super.visitProperty(property)
-        scope.resolve(property)
-        blockScope?.resolve(property)
         val descriptor = property.descriptor<VariableDescriptor>(bindingTrace.bindingContext)!!
         blockScope?.pushVariable(descriptor)
     }
 
     override fun visitCallExpression(expression: KtCallExpression) {
         super.visitCallExpression(expression)
-        scope.resolve(expression)
         scope.check(expression.getResolvedCall(bindingTrace.bindingContext) ?: return, expression)
     }
 
