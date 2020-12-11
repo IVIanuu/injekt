@@ -20,11 +20,13 @@ import com.google.auto.service.AutoService
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
+import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.JVMConfigurationKeys
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
+import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.io.File
 
@@ -57,6 +59,9 @@ class InjektComponentRegistrar : ComponentRegistrar {
                 project,
                 InjektIrGenerationExtension(DeclarationStore())
             )
+            @Suppress("DEPRECATION")
+            Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
+                .registerExtension(InjektDiagnosticSupressor())
         }
     }
 }
