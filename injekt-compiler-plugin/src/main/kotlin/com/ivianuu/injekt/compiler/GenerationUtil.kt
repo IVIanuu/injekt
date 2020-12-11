@@ -248,7 +248,7 @@ fun CallableDescriptor.extractGivenCollectionElementsOfCallable(): List<Callable
     allParameters
         .filter {
             it.hasAnnotation(InjektFqNames.GivenMap) ||
-                    it.hasAnnotation(InjektFqNames.GivenSet) ||
+                    it.type.hasAnnotation(InjektFqNames.GivenMap) ||
                     it.hasAnnotation(InjektFqNames.GivenSet) ||
                     it.type.hasAnnotation(InjektFqNames.GivenSet)
         }

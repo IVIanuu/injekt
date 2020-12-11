@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.TypeRef
@@ -9,16 +10,20 @@ import com.ivianuu.injekt.compiler.resolution.toGivenNode
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
-import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
@@ -45,7 +50,7 @@ class GivenCallChecker(
 
         private val checkedRequests = mutableSetOf<GivenRequest>()
 
-        fun check(call: ResolvedCall<*>, reportOn: PsiElement) {
+        fun check(call: ResolvedCall<*>, reportOn: KtElement) {
             val resultingDescriptor = call.resultingDescriptor
             if (resultingDescriptor !is FunctionDescriptor) return
 
@@ -65,12 +70,12 @@ class GivenCallChecker(
                 .forEach { check(it, reportOn) }
         }
 
-        private fun check(node: GivenNode, reportOn: PsiElement) {
+        private fun check(node: GivenNode, reportOn: KtElement) {
             node.dependencies
                 .forEach { check(it, reportOn) }
         }
 
-        private fun check(request: GivenRequest, reportOn: PsiElement) {
+        private fun check(request: GivenRequest, reportOn: KtElement) {
             if (request in checkedRequests) return
             checkedRequests += request
 
@@ -83,7 +88,21 @@ class GivenCallChecker(
                 { givenCollectionElementsForInThisScope(it) to parent }
             )
             when {
-                givens.size == 1 -> check(givens.single(), reportOn)
+                givens.size == 1 -> {
+                    val given = givens.single()
+                    if (given is CallableGivenNode) {
+                        val lookedUpDeclaration = when (val callable = given.callable) {
+                            is ClassConstructorDescriptor -> callable.constructedClass
+                            else -> callable
+                        } as DeclarationDescriptor
+                        when (val parent = lookedUpDeclaration.containingDeclaration) {
+                            is ClassDescriptor -> parent.unsubstitutedMemberScope
+                            is PackageFragmentDescriptor -> parent.getMemberScope()
+                            else -> null
+                        }?.recordLookup(given.callable.name, KotlinLookupLocation(reportOn))
+                    }
+                    check(given, reportOn)
+                }
                 givens.size > 1 -> {
                     bindingTrace.report(
                         InjektErrors.MULTIPLE_GIVENS
@@ -261,7 +280,8 @@ class GivenCallChecker(
     }
 
     override fun visitLambdaExpression(lambdaExpression: KtLambdaExpression) {
-        val function = bindingTrace[BindingContext.FUNCTION, lambdaExpression.functionLiteral]!!
+        val function = bindingTrace[BindingContext.FUNCTION, lambdaExpression.functionLiteral]
+            ?: return
         inScope(LambdaScope(function, scope)) {
             super.visitLambdaExpression(lambdaExpression)
         }
@@ -280,7 +300,8 @@ class GivenCallChecker(
 
     override fun visitProperty(property: KtProperty) {
         super.visitProperty(property)
-        val descriptor = property.descriptor<VariableDescriptor>(bindingTrace.bindingContext)!!
+        val descriptor = property.descriptor<VariableDescriptor>(bindingTrace.bindingContext)
+            ?: return
         blockScope?.pushVariable(descriptor)
     }
 

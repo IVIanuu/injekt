@@ -54,7 +54,7 @@ interface InjektErrors {
                 .also {
                     MAP.put(
                         it,
-                        "Multiple givens found for {0} required by {1}:\n",
+                        "Multiple givens found for {0} required by {1}:\n{2}",
                         TypeRefRenderer,
                         Renderers.TO_STRING,
                         object : DiagnosticParameterRenderer<List<GivenNode>> {
