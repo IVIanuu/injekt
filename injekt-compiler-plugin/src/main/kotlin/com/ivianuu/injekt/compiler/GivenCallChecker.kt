@@ -1,12 +1,10 @@
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
 import com.ivianuu.injekt.compiler.resolution.isAssignableTo
-import com.ivianuu.injekt.compiler.resolution.substitute
+import com.ivianuu.injekt.compiler.resolution.toGivenNode
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
@@ -145,26 +143,7 @@ class GivenCallChecker(
 
         private fun givensFor(type: TypeRef): List<GivenNode> {
             val givens = givensForInThisScope(type)
-                .map { callable ->
-                    val info = declarationStore.givenInfoFor(callable)
-                    val substitutionMap = getSubstitutionMap(
-                        listOf(type to callable.returnType!!.toTypeRef())
-                    )
-                    CallableGivenNode(
-                        type,
-                        callable.valueParameters
-                            .filter { it.name in info.allGivens }
-                            .map {
-                                GivenRequest(
-                                    it.type.toTypeRef()
-                                        .substitute(substitutionMap),
-                                    it.name in info.requiredGivens,
-                                    it.fqNameSafe
-                                )
-                            },
-                        callable
-                    )
-                }
+                .map { it.toGivenNode(type, declarationStore) }
             return when {
                 givens.isNotEmpty() -> return givens
                 parent != null -> parent.givensFor(type)

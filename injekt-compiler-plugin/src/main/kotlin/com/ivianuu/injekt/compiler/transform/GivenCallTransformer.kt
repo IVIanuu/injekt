@@ -4,13 +4,16 @@ import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.extractGivensOfCallable
 import com.ivianuu.injekt.compiler.extractGivensOfDeclaration
 import com.ivianuu.injekt.compiler.isExternalDeclaration
+import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
+import com.ivianuu.injekt.compiler.resolution.GivenNode
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
 import com.ivianuu.injekt.compiler.resolution.isAssignableTo
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.subtypeView
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
+import com.ivianuu.injekt.compiler.resolution.toGivenNode
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
@@ -18,7 +21,6 @@ import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -85,21 +87,27 @@ class GivenCallTransformer(
 
         private fun getExpressionForType(type: TypeRef, symbol: IrSymbol): IrExpression {
             return expressionsByType.getOrPut(type) {
-                val callable = givensFor(type).singleOrNull()
+                val given = givensFor(type).singleOrNull()
                     ?: error("Wtf $type")
-                val expression: () -> IrExpression = {
-                    when (callable) {
-                        is ConstructorDescriptor -> classExpression(type, callable, symbol)
-                        is PropertyDescriptor -> propertyExpression(type, callable, symbol)
-                        is FunctionDescriptor -> functionExpression(type, callable, symbol)
-                        is ReceiverParameterDescriptor -> parameterExpression(callable, symbol)
-                        is ValueParameterDescriptor -> parameterExpression(callable, symbol)
-                        is VariableDescriptor -> variableExpression(callable, symbol)
-                        else -> error("Unsupported callable $callable")
-                    }
+                when (given) {
+                    is CallableGivenNode -> callableExpression(given, symbol)
                 }
-                expression
             }()
+        }
+
+        private fun callableExpression(
+            given: CallableGivenNode,
+            symbol: IrSymbol,
+        ): () -> IrExpression = {
+            when (given.callable) {
+                is ConstructorDescriptor -> classExpression(given.type, given.callable, symbol)
+                is PropertyDescriptor -> propertyExpression(given.type, given.callable, symbol)
+                is FunctionDescriptor -> functionExpression(given.type, given.callable, symbol)
+                is ReceiverParameterDescriptor -> parameterExpression(given.callable, symbol)
+                is ValueParameterDescriptor -> parameterExpression(given.callable, symbol)
+                is VariableDescriptor -> variableExpression(given.callable, symbol)
+                else -> error("Unsupported callable $given")
+            }
         }
 
         private fun classExpression(
@@ -277,7 +285,7 @@ class GivenCallTransformer(
                 }
                 .owner
 
-        private fun givensFor(type: TypeRef): List<CallableDescriptor> {
+        private fun givensFor(type: TypeRef): List<GivenNode> {
             val givens = givensForInThisScope(type)
             return when {
                 givens.isNotEmpty() -> givens
@@ -286,20 +294,22 @@ class GivenCallTransformer(
             }
         }
 
-        protected abstract fun givensForInThisScope(type: TypeRef): List<CallableDescriptor>
+        protected abstract fun givensForInThisScope(type: TypeRef): List<GivenNode>
     }
 
     private inner class ExternalScope : Scope(null) {
-        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
+        override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             declarationStore.givensForType(type)
                 .filter { it.isExternalDeclaration() }
                 .filter { it.visibility == DescriptorVisibilities.PUBLIC }
+                .map { it.toGivenNode(type, declarationStore) }
     }
 
     private inner class InternalScope(parent: Scope?) : Scope(parent) {
-        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
+        override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             declarationStore.givensForType(type)
                 .filterNot { it.isExternalDeclaration() }
+                .map { it.toGivenNode(type, declarationStore) }
     }
 
     private inner class ClassScope(
@@ -310,9 +320,10 @@ class GivenCallTransformer(
             declaration.descriptor.extractGivensOfDeclaration(pluginContext.bindingContext,
                 declarationStore)
 
-        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
+        override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             allGivens.filter { it.first.isAssignableTo(type) }
                 .map { it.second }
+                .map { it.toGivenNode(type, declarationStore) }
     }
 
     private inner class FunctionScope(
@@ -322,8 +333,9 @@ class GivenCallTransformer(
         private val allGivens =
             declaration.descriptor.extractGivensOfCallable(declarationStore)
 
-        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
+        override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
+                .map { it.toGivenNode(type, declarationStore) }
     }
 
     private inner class BlockScope(parent: Scope?) : Scope(parent) {
@@ -332,10 +344,11 @@ class GivenCallTransformer(
             variableStack += variable
         }
 
-        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> {
+        override fun givensForInThisScope(type: TypeRef): List<GivenNode> {
             return variableStack
                 .filter { it.type.toKotlinType().toTypeRef().isAssignableTo(type) }
                 .map { it.descriptor }
+                .map { it.toGivenNode(type, declarationStore) }
         }
     }
 
