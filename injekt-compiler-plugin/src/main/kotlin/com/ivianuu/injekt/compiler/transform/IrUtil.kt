@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.expandedType
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -59,7 +60,6 @@ import org.jetbrains.kotlin.resolve.constants.NullValue
 import org.jetbrains.kotlin.resolve.constants.ShortValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
-import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
@@ -69,7 +69,23 @@ import org.jetbrains.kotlin.types.withAbbreviation
 fun TypeRef.toIrType(pluginContext: IrPluginContext): IrType =
     pluginContext.typeTranslator.translateType(toKotlinType())
 
-fun TypeRef.toKotlinType(): KotlinType {
+fun TypeRef.toKotlinType(): SimpleType {
+    return if (classifier.isTypeAlias) {
+        expandedType!!.toKotlinType()
+            .withAbbreviation(toAbbreviation())
+    } else {
+        classifier.descriptor!!.defaultType
+            .replace(newArguments = typeArguments.map {
+                TypeProjectionImpl(
+                    it.variance,
+                    it.toKotlinType()
+                )
+            })
+            .makeNullableAsSpecified(isMarkedNullable)
+    }
+}
+
+fun TypeRef.toAbbreviation(): SimpleType {
     val defaultType = classifier.descriptor!!.defaultType
     return defaultType
         .replace(newArguments = typeArguments.map {
