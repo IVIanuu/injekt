@@ -1,16 +1,15 @@
 package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtObjectLiteralExpression
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
-import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierType
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -24,6 +23,9 @@ class GivenInfoGenerator(
             val givenInfos = mutableListOf<Pair<FqName, GivenInfo>>()
 
             file.accept(object : KtTreeVisitorVoid() {
+                override fun visitObjectLiteralExpression(expression: KtObjectLiteralExpression) {
+                }
+
                 override fun visitDeclaration(declaration: KtDeclaration) {
                     super.visitDeclaration(declaration)
                     if (declaration !is KtNamedFunction &&
@@ -33,9 +35,9 @@ class GivenInfoGenerator(
                     ) return
 
                     if (declaration is KtProperty && declaration.isLocal) return
-                    if (declaration.visibilityModifierType() == KtTokens.PRIVATE_KEYWORD) return
 
-                    val descriptor = declaration.descriptor<DeclarationDescriptor>(bindingContext)!!
+                    val descriptor = declaration.descriptor<DeclarationDescriptor>(bindingContext)
+                        ?: error("Wtf $declaration ${declaration.text}")
 
                     val givenInfo = declarationStore.givenInfoFor(descriptor)
 

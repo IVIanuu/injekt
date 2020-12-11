@@ -48,8 +48,6 @@ class GivenCallChecker(
 
     private abstract inner class Scope(private val parent: Scope?) {
 
-        private val checkedRequests = mutableSetOf<GivenRequest>()
-
         fun check(call: ResolvedCall<*>, reportOn: KtElement) {
             val resultingDescriptor = call.resultingDescriptor
             if (resultingDescriptor !is FunctionDescriptor) return
@@ -76,8 +74,19 @@ class GivenCallChecker(
         }
 
         private fun check(request: GivenRequest, reportOn: KtElement) {
-            if (request in checkedRequests) return
-            checkedRequests += request
+            if (request in chain) {
+                val cycleChain = chain.subList(
+                    chain.indexOf(request), chain.size
+                )
+
+                val cycleOriginRequest = chain[chain.indexOf(request) - 1]
+
+                bindingTrace.report(
+                    InjektErrors.CIRCULAR_DEPENDENCY
+                        .on(reportOn, cycleChain.reversed() + cycleOriginRequest),
+                )
+                return
+            }
 
             chain.push(request)
             val givens = resolveGivens(

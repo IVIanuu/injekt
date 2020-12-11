@@ -595,15 +595,15 @@ class GivenCallTransformer(
         super.visitFunctionAccess(expression.apply {
             val givenInfo = declarationStore.givenInfoFor(expression.symbol.descriptor)
             if (givenInfo.allGivens.isNotEmpty()) {
-                val substitutionMap = getSubstitutionMap(
-                    (0 until expression.typeArgumentsCount)
-                        .map { getTypeArgument(it)!!.toKotlinType().toTypeRef() }
-                        .zip(
-                            expression.symbol.descriptor.typeParameters
-                                .map { it.defaultType.toTypeRef() }
-                        )
-                )
                 try {
+                    val substitutionMap = getSubstitutionMap(
+                        (0 until expression.typeArgumentsCount)
+                            .map { getTypeArgument(it)!!.toKotlinType().toTypeRef() }
+                            .zip(
+                                expression.symbol.descriptor.typeParameters
+                                    .map { it.defaultType.toTypeRef() }
+                            )
+                    )
                     scope.fillGivens(this, substitutionMap)
                 } catch (e: Throwable) {
                     throw RuntimeException("Wtf ${expression.dump()}", e)

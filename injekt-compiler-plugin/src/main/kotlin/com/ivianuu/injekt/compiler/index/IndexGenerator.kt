@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.hasAnnotation
-import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -33,7 +32,6 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
-import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierType
 
 class IndexGenerator(
     private val declarationStore: DeclarationStore,
@@ -52,7 +50,6 @@ class IndexGenerator(
                     ) return
 
                     if (declaration is KtProperty && declaration.isLocal) return
-                    if (declaration.visibilityModifierType() == KtTokens.PRIVATE_KEYWORD) return
 
                     val owner = when (declaration) {
                         is KtConstructor<*> -> declaration.getContainingClassOrObject()

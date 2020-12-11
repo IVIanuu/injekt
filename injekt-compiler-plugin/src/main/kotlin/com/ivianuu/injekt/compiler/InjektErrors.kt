@@ -113,6 +113,28 @@ interface InjektErrors {
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also { MAP.put(it, "Class cannot have multiple given constructors") }
 
+        @JvmField
+        val CIRCULAR_DEPENDENCY =
+            DiagnosticFactory1.create<PsiElement, List<GivenRequest>>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "Circular dependency:\n{0}",
+                        object : DiagnosticParameterRenderer<List<GivenRequest>> {
+                            override fun render(
+                                obj: List<GivenRequest>,
+                                renderingContext: RenderingContext,
+                            ): String = buildString {
+                                obj.forEachIndexed { index, request ->
+                                    append("${request.type.render()} ")
+                                    appendLine("is given at")
+                                    appendLine("    '${request.origin}'")
+                                }
+                            }
+                        }
+                    )
+                }
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,

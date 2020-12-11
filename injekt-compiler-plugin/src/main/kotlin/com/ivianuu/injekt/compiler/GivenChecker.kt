@@ -112,7 +112,9 @@ class GivenChecker : CallChecker, DeclarationChecker {
         ) {
             this
                 .filter {
-                    (it.findPsi() as? KtParameter)?.defaultValue?.text != "given"
+                    val defaultValue = (it.findPsi() as? KtParameter)?.defaultValue
+                    defaultValue?.text != "given" &&
+                            defaultValue?.text?.startsWith("givenOrElse") != true
                 }
                 .forEach {
                     trace.report(
