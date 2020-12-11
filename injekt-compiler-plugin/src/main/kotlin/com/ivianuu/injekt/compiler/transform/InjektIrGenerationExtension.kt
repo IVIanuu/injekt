@@ -14,6 +14,7 @@ class InjektIrGenerationExtension(
     private val declarationStore: DeclarationStore,
 ) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+        declarationStore.module = pluginContext.moduleDescriptor
         generateSymbols(pluginContext)
         moduleFragment.transformChildrenVoid(GivenCallTransformer(declarationStore, pluginContext))
         moduleFragment.transformChildrenVoid(GivenOptimizationTransformer())

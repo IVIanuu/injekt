@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
@@ -23,12 +24,14 @@ import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFunction
+import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtPrimaryConstructor
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtSecondaryConstructor
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
+import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
 import org.jetbrains.kotlin.resolve.TopDownAnalysisMode
@@ -214,6 +217,18 @@ class GivenCallChecker(
             allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
     }
 
+    private inner class LambdaScope(
+        private val descriptor: FunctionDescriptor,
+        parent: Scope?,
+    ) : Scope(descriptor.findPsi() as? KtDeclaration, parent) {
+        private val allGivens by unsafeLazy {
+            descriptor.extractGivensOfCallable(declarationStore)
+        }
+
+        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
+    }
+
     private inner class BlockScope(parent: Scope?) : Scope(null, parent) {
         private val variableStack = mutableListOf<VariableDescriptor>()
         fun pushVariable(variable: VariableDescriptor) {
@@ -267,8 +282,17 @@ class GivenCallChecker(
         inScope(FunctionScope(function, scope)) { block() }
     }
 
+    override fun visitLambdaExpression(lambdaExpression: KtLambdaExpression) {
+        scope.resolve(lambdaExpression)
+        val function = bindingTrace[BindingContext.FUNCTION, lambdaExpression.functionLiteral]!!
+        inScope(LambdaScope(function, scope)) {
+            super.visitLambdaExpression(lambdaExpression)
+        }
+    }
+
     private var blockScope: BlockScope? = null
     override fun visitBlockExpression(expression: KtBlockExpression) {
+        scope.resolve(expression)
         val prevScope = blockScope
         val scope = BlockScope(scope)
         this.blockScope = scope
@@ -279,6 +303,7 @@ class GivenCallChecker(
     }
 
     override fun visitProperty(property: KtProperty) {
+        scope.resolve(property)
         blockScope?.resolve(property)
         val descriptor = property.descriptor<VariableDescriptor>(bindingTrace.bindingContext)!!
         blockScope?.pushVariable(descriptor)

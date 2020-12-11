@@ -20,34 +20,23 @@ package com.ivianuu.injekt.android
 
 import android.app.Application
 import android.content.Context
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.given
-
-/*
-import android.app.Application
-import android.content.Context
 import android.content.res.Resources
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.create
-import com.ivianuu.injekt.merge.ApplicationComponent
-
-val Application.applicationComponent: ApplicationComponent
-    get() = ProcessLifecycleOwner.get().lifecycle.singleton { create(this) }*/
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.given
 
 typealias ApplicationContext = Context
 
-@Given inline fun applicationContext(context: @Given Application = given): ApplicationContext =
+@Given inline fun applicationContext(context: Application = given): ApplicationContext =
     context
 
-/*
 typealias ApplicationResources = Resources
 
-@Binding inline fun Application.provideApplicationResources(): ApplicationResources = resources
+@Given inline fun applicationResources(context: Application = given): ApplicationResources =
+    context.resources
 
 typealias ApplicationLifecycleOwner = LifecycleOwner
 
-@Binding inline fun Application.provideApplicationLifecycleOwner(): ApplicationLifecycleOwner =
+@Given inline fun applicationLifecycleOwner(context: Application = given): ApplicationLifecycleOwner =
     ProcessLifecycleOwner.get()
-*/

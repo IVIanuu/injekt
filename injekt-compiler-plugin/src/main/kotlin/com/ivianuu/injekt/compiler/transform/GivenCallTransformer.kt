@@ -12,13 +12,14 @@ import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.subtypeView
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
@@ -225,7 +226,7 @@ class GivenCallTransformer(
         ): IrExpression {
             val valueParameter =
                 when (val containingDeclaration = descriptor.containingDeclaration) {
-                    is ConstructorDescriptor -> containingDeclaration.irConstructor()
+                    is ClassConstructorDescriptor -> containingDeclaration.irConstructor()
                         .allParameters
                         .single { it.name == descriptor.name }
                     is FunctionDescriptor -> containingDeclaration.irFunction()
@@ -249,14 +250,32 @@ class GivenCallTransformer(
                 .irGet(variables.single { it.descriptor == descriptor })
         }
 
-        private fun ConstructorDescriptor.irConstructor() =
-            pluginContext.referenceConstructors(constructedClass.fqNameSafe).single {
-                it.descriptor.uniqueKey() == uniqueKey()
-            }.owner
+        private fun ClassConstructorDescriptor.irConstructor() =
+            pluginContext.symbolTable.referenceConstructor(original)
+                .also {
+                    try {
+                        with((pluginContext as IrPluginContextImpl).linker) {
+                            getDeclaration(it)
+                            postProcess()
+                        }
+                    } catch (e: Throwable) {
+                    }
+                }
+                .owner
 
-        private fun FunctionDescriptor.irFunction() = pluginContext.referenceFunctions(fqNameSafe)
-            .singleOrNull { it.descriptor.uniqueKey() == uniqueKey() }
-            ?.owner ?: error("Nothing found for $this")
+        private fun FunctionDescriptor.irFunction() =
+            pluginContext.symbolTable.referenceSimpleFunction(original)
+                .also {
+                    try {
+                        with((pluginContext as IrPluginContextImpl).linker) {
+                            getDeclaration(it)
+                            postProcess()
+                        }
+                    } catch (e: Throwable) {
+                        e.printStackTrace()
+                    }
+                }
+                .owner
 
         private fun givensFor(type: TypeRef): List<CallableDescriptor> {
             val givens = givensForInThisScope(type)

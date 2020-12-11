@@ -208,6 +208,7 @@ fun CallableDescriptor.extractGivensOfCallable(
     return allParameters
         .filter {
             it.hasAnnotation(InjektFqNames.Given) ||
+                    it.type.hasAnnotation(InjektFqNames.Given) ||
                     it.name in info.allGivens
         }
 }
