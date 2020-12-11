@@ -6,6 +6,7 @@ import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtObjectLiteralExpression
 import org.jetbrains.kotlin.psi.KtProperty
@@ -35,6 +36,7 @@ class GivenInfoGenerator(
                     ) return
 
                     if (declaration is KtProperty && declaration.isLocal) return
+                    if (declaration is KtFunction && declaration.isLocal) return
 
                     val descriptor = declaration.descriptor<DeclarationDescriptor>(bindingContext)
                         ?: error("Wtf $declaration ${declaration.text}")
