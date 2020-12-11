@@ -23,6 +23,8 @@ object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
 
     val Given = InjektPackage.child("Given".asNameId())
+    val GivenMap = InjektPackage.child("GivenMap".asNameId())
+    val GivenSet = InjektPackage.child("GivenSet".asNameId())
     val Qualifier = InjektPackage.child("Qualifier".asNameId())
     val givenFun = InjektPackage.child("given".asNameId())
     val givenOrElseFun = InjektPackage.child("givenOrElse".asNameId())

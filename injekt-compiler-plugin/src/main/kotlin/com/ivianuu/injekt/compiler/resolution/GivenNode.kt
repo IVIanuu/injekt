@@ -19,6 +19,13 @@ class CallableGivenNode(
         get() = callable.fqNameSafe
 }
 
+class SetGivenNode(
+    type: TypeRef,
+    override val origin: FqName,
+    val elements: List<CallableDescriptor>,
+    override val dependencies: List<GivenRequest>,
+) : GivenNode(type)
+
 class ProviderGivenNode(
     type: TypeRef,
     override val origin: FqName,
@@ -32,22 +39,9 @@ fun CallableDescriptor.toGivenNode(
     type: TypeRef,
     declarationStore: DeclarationStore,
 ): CallableGivenNode {
-    val info = declarationStore.givenInfoFor(this)
-    val substitutionMap = getSubstitutionMap(
-        listOf(type to returnType!!.toTypeRef())
-    )
     return CallableGivenNode(
         type,
-        valueParameters
-            .filter { it.name in info.allGivens }
-            .map {
-                GivenRequest(
-                    it.type.toTypeRef()
-                        .substitute(substitutionMap),
-                    it.name in info.requiredGivens,
-                    it.fqNameSafe
-                )
-            },
+        getGivenRequests(type, declarationStore),
         this
     )
 }
@@ -57,3 +51,23 @@ data class GivenRequest(
     val required: Boolean,
     val origin: FqName,
 )
+
+fun CallableDescriptor.getGivenRequests(
+    type: TypeRef,
+    declarationStore: DeclarationStore,
+): List<GivenRequest> {
+    val info = declarationStore.givenInfoFor(this)
+    val substitutionMap = getSubstitutionMap(
+        listOf(type to returnType!!.toTypeRef())
+    )
+    return valueParameters
+        .filter { it.name in info.allGivens }
+        .map {
+            GivenRequest(
+                it.type.toTypeRef()
+                    .substitute(substitutionMap),
+                it.name in info.requiredGivens,
+                it.fqNameSafe
+            )
+        }
+}

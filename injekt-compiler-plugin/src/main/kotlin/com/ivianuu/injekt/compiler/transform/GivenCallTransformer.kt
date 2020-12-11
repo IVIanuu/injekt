@@ -1,15 +1,21 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.extractGivenSetsOfCallable
+import com.ivianuu.injekt.compiler.extractGivenSetsOfDeclaration
 import com.ivianuu.injekt.compiler.extractGivensOfCallable
 import com.ivianuu.injekt.compiler.extractGivensOfDeclaration
+import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.GivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.ProviderGivenNode
+import com.ivianuu.injekt.compiler.resolution.SetGivenNode
 import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.fullyExpandedType
 import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
 import com.ivianuu.injekt.compiler.resolution.isAssignableTo
 import com.ivianuu.injekt.compiler.resolution.resolveGivens
@@ -24,6 +30,7 @@ import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -35,9 +42,11 @@ import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrAnonymousInitializer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -53,7 +62,9 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class GivenCallTransformer(
@@ -95,15 +106,18 @@ class GivenCallTransformer(
         private fun expressionFor(request: GivenRequest, symbol: IrSymbol): IrExpression {
             return expressionsByType.getOrPut(request.type) {
                 val given = resolveGivens(
+                    declarationStore,
                     request,
                     this,
-                    { givensForInThisScope(it) to parent }
+                    { givensForInThisScope(it) to parent },
+                    { givenSetsForInThisScope(it) to parent }
                 ).let { givens ->
                     givens.singleOrNull() ?: error("Wtf $request $givens")
                 }
                 when (given) {
                     is CallableGivenNode -> callableExpression(given, symbol)
                     is ProviderGivenNode -> providerExpression(given, symbol)
+                    is SetGivenNode -> setExpression(given, symbol)
                 }
             }()
         }
@@ -116,6 +130,58 @@ class GivenCallTransformer(
                 .irLambda(given.type.toIrType(pluginContext)) {
                     expressionFor(given.dependencies.single(), symbol)
                 }
+        }
+
+        private fun setExpression(
+            given: SetGivenNode,
+            symbol: IrSymbol,
+        ): () -> IrExpression {
+            return if (given.elements.size == 1) {
+                callableExpression(
+                    given.elements.single()
+                        .toGivenNode(given.type, declarationStore),
+                    symbol
+                )
+            } else {
+                {
+                    DeclarationIrBuilder(pluginContext, symbol).irBlock {
+                        val elementType =
+                            given.type.fullyExpandedType.typeArguments.single()
+                                .toIrType(pluginContext)
+
+                        val mutableSetOf = pluginContext.referenceFunctions(
+                            FqName("kotlin.collections.mutableSetOf")
+                        ).single { it.owner.valueParameters.isEmpty() }
+
+                        val setAddAll = mutableSetOf.owner.returnType
+                            .classOrNull!!
+                            .owner
+                            .functions
+                            .single { it.name.asString() == "addAll" }
+
+                        val tmpSet = irTemporary(
+                            irCall(mutableSetOf)
+                                .apply { putTypeArgument(0, elementType) }
+                        )
+
+                        given.elements
+                            .forEach {
+                                +irCall(setAddAll).apply {
+                                    dispatchReceiver = irGet(tmpSet)
+                                    putValueArgument(
+                                        0,
+                                        callableExpression(
+                                            it.toGivenNode(given.type, declarationStore),
+                                            symbol
+                                        )()
+                                    )
+                                }
+                            }
+
+                        +irGet(tmpSet)
+                    }
+                }
+            }
         }
 
         private fun callableExpression(
@@ -309,6 +375,8 @@ class GivenCallTransformer(
                 .owner
 
         protected abstract fun givensForInThisScope(type: TypeRef): List<GivenNode>
+
+        protected abstract fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor>
     }
 
     private inner class ExternalScope : Scope(null) {
@@ -317,6 +385,10 @@ class GivenCallTransformer(
                 .filter { it.isExternalDeclaration() }
                 .filter { it.visibility == DescriptorVisibilities.PUBLIC }
                 .map { it.toGivenNode(type, declarationStore) }
+
+        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            declarationStore.givenSetsForType(type)
+                .filter { it.isExternalDeclaration() }
     }
 
     private inner class InternalScope(parent: Scope?) : Scope(parent) {
@@ -324,6 +396,10 @@ class GivenCallTransformer(
             declarationStore.givensForType(type)
                 .filterNot { it.isExternalDeclaration() }
                 .map { it.toGivenNode(type, declarationStore) }
+
+        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            declarationStore.givenSetsForType(type)
+                .filterNot { it.isExternalDeclaration() }
     }
 
     private inner class ClassScope(
@@ -333,11 +409,17 @@ class GivenCallTransformer(
         private val allGivens =
             declaration.descriptor.extractGivensOfDeclaration(pluginContext.bindingContext,
                 declarationStore)
+        private val allGivenSets =
+            declaration.descriptor.extractGivenSetsOfDeclaration(pluginContext.bindingContext)
 
         override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             allGivens.filter { it.first.isAssignableTo(type) }
                 .map { it.second }
                 .map { it.toGivenNode(type, declarationStore) }
+
+        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            allGivenSets.filter { it.first.isAssignableTo(type) }
+                .map { it.second }
     }
 
     private inner class FunctionScope(
@@ -346,24 +428,34 @@ class GivenCallTransformer(
     ) : Scope(parent) {
         private val allGivens =
             declaration.descriptor.extractGivensOfCallable(declarationStore)
+        private val allGivenSets = declaration.descriptor
+            .extractGivenSetsOfCallable(declarationStore)
 
         override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
                 .map { it.toGivenNode(type, declarationStore) }
+
+        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            allGivenSets.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
     }
 
     private inner class BlockScope(parent: Scope?) : Scope(parent) {
-        private val variableStack = mutableListOf<IrVariable>()
-        fun pushVariable(variable: IrVariable) {
-            variableStack += variable
+        private val givenVariables = mutableListOf<VariableDescriptor>()
+        private val givenSetVariables = mutableListOf<VariableDescriptor>()
+        fun pushVariable(variable: VariableDescriptor) {
+            if (variable.hasAnnotation(InjektFqNames.Given)) givenVariables += variable
+            else if (variable.hasAnnotation(InjektFqNames.GivenSet)) givenVariables += variable
         }
 
         override fun givensForInThisScope(type: TypeRef): List<GivenNode> {
-            return variableStack
-                .filter { it.type.toKotlinType().toTypeRef().isAssignableTo(type) }
-                .map { it.descriptor }
+            return givenVariables
+                .filter { it.type.toTypeRef().isAssignableTo(type) }
                 .map { it.toGivenNode(type, declarationStore) }
         }
+
+        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            givenSetVariables
+                .filter { it.type.toTypeRef().isAssignableTo(type) }
     }
 
     private var scope: Scope = InternalScope(ExternalScope())
@@ -449,7 +541,7 @@ class GivenCallTransformer(
     override fun visitVariable(declaration: IrVariable): IrStatement {
         return super.visitVariable(declaration)
             .also {
-                blockScope?.pushVariable(declaration)
+                blockScope?.pushVariable(declaration.descriptor)
                 variables += declaration
             }
     }

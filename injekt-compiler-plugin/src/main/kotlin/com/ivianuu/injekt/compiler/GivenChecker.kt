@@ -106,17 +106,9 @@ class GivenChecker : CallChecker, DeclarationChecker {
         descriptor: DeclarationDescriptor,
         trace: BindingTrace,
     ) {
-        this
-            .filterIsInstance<ValueParameterDescriptor>()
-            .filter { it.type.hasAnnotation(InjektFqNames.Given) }
-            .filterNot { it.declaresDefaultValue() }
-            .forEach {
-                trace.report(
-                    InjektErrors.GIVEN_PARAMETER_WITHOUT_DEFAULT
-                        .on(it.findPsi() ?: declaration)
-                )
-            }
-        if (descriptor.hasAnnotation(InjektFqNames.Given)) {
+        if (descriptor.hasAnnotation(InjektFqNames.Given) ||
+            descriptor.hasAnnotation(InjektFqNames.GivenSet)
+        ) {
             this
                 .filter {
                     (it.findPsi() as? KtParameter)?.defaultValue?.text != "given"
@@ -124,7 +116,14 @@ class GivenChecker : CallChecker, DeclarationChecker {
                 .forEach {
                     trace.report(
                         InjektErrors.NON_GIVEN_VALUE_PARAMETER_ON_GIVEN_DECLARATION
-                            .on(it.findPsi() ?: declaration)
+                            .on(
+                                it.findPsi() ?: declaration,
+                                when {
+                                    descriptor.hasAnnotation(InjektFqNames.Given) -> InjektFqNames.Given.shortName()
+                                    descriptor.hasAnnotation(InjektFqNames.GivenSet) -> InjektFqNames.GivenSet.shortName()
+                                    else -> error("")
+                                }
+                            )
                     )
                 }
         }

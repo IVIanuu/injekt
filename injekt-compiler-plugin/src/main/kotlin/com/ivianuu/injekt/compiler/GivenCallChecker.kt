@@ -10,6 +10,7 @@ import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -117,7 +118,13 @@ class GivenCallChecker(
             checkedRequests += request
 
             chain.push(request)
-            val givens = resolveGivens(request, this) { givensForInThisScope(it) to parent }
+            val givens = resolveGivens(
+                declarationStore,
+                request,
+                this,
+                { givensForInThisScope(it) to parent },
+                { givenSetsForInThisScope(it) to parent }
+            )
             when {
                 givens.size == 1 -> check(givens.single(), reportOn)
                 givens.size > 1 -> {
@@ -142,6 +149,8 @@ class GivenCallChecker(
         }
 
         protected abstract fun givensForInThisScope(type: TypeRef): List<GivenNode>
+
+        protected abstract fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor>
     }
 
     private inner class ExternalScope : Scope(null, null) {
@@ -150,6 +159,10 @@ class GivenCallChecker(
                 .filter { it.isExternalDeclaration() }
                 .filter { it.visibility == DescriptorVisibilities.PUBLIC }
                 .map { it.toGivenNode(type, declarationStore) }
+
+        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            declarationStore.givenSetsForType(type)
+                .filter { it.isExternalDeclaration() }
     }
 
     private inner class InternalScope(parent: Scope?) : Scope(null, parent) {
@@ -157,6 +170,10 @@ class GivenCallChecker(
             declarationStore.givensForType(type)
                 .filterNot { it.isExternalDeclaration() }
                 .map { it.toGivenNode(type, declarationStore) }
+
+        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            declarationStore.givenSetsForType(type)
+                .filterNot { it.isExternalDeclaration() }
     }
 
     private inner class ClassScope(
@@ -168,12 +185,21 @@ class GivenCallChecker(
                 ?.extractGivensOfDeclaration(bindingTrace.bindingContext, declarationStore)
                 ?: emptyList()
         }
+        private val allGivenSets by unsafeLazy {
+            declaration.descriptor<ClassDescriptor>(bindingTrace.bindingContext)
+                ?.extractGivenSetsOfDeclaration(bindingTrace.bindingContext)
+                ?: emptyList()
+        }
 
         override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             allGivens
                 .filter { it.first.isAssignableTo(type) }
                 .map { it.second }
                 .map { it.toGivenNode(type, declarationStore) }
+
+        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            allGivenSets.filter { it.first.isAssignableTo(type) }
+                .map { it.second }
     }
 
     private inner class FunctionScope(
@@ -184,10 +210,18 @@ class GivenCallChecker(
             declaration.descriptor<FunctionDescriptor>(bindingTrace.bindingContext)
                 ?.extractGivensOfCallable(declarationStore) ?: emptyList()
         }
+        private val allGivenSets by unsafeLazy {
+            declaration.descriptor<FunctionDescriptor>(bindingTrace.bindingContext)
+                ?.extractGivenSetsOfCallable(declarationStore)
+                ?: emptyList()
+        }
 
         override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
                 .map { it.toGivenNode(type, declarationStore) }
+
+        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            allGivenSets.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
     }
 
     private inner class LambdaScope(
@@ -197,23 +231,33 @@ class GivenCallChecker(
         private val allGivens by unsafeLazy {
             descriptor.extractGivensOfCallable(declarationStore)
         }
+        private val allGivenSets by unsafeLazy {
+            descriptor.extractGivensOfCallable(declarationStore)
+        }
 
         override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
                 .map { it.toGivenNode(type, declarationStore) }
+
+        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            allGivenSets.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
     }
 
     private inner class BlockScope(parent: Scope?) : Scope(null, parent) {
-        private val variableStack = mutableListOf<VariableDescriptor>()
+        private val givenVariables = mutableListOf<VariableDescriptor>()
+        private val givenSetVariables = mutableListOf<VariableDescriptor>()
         fun pushVariable(variable: VariableDescriptor) {
-            variableStack += variable
+            if (variable.hasAnnotation(InjektFqNames.Given)) givenVariables += variable
+            else if (variable.hasAnnotation(InjektFqNames.GivenSet)) givenVariables += variable
         }
 
-        override fun givensForInThisScope(type: TypeRef): List<GivenNode> {
-            return variableStack
+        override fun givensForInThisScope(type: TypeRef): List<GivenNode> = givenVariables
+            .filter { it.type.toTypeRef().isAssignableTo(type) }
+            .map { it.toGivenNode(type, declarationStore) }
+
+        override fun givenSetsForInThisScope(type: TypeRef): List<CallableDescriptor> =
+            givenSetVariables
                 .filter { it.type.toTypeRef().isAssignableTo(type) }
-                .map { it.toGivenNode(type, declarationStore) }
-        }
     }
 
     private var scope: Scope = InternalScope(ExternalScope())

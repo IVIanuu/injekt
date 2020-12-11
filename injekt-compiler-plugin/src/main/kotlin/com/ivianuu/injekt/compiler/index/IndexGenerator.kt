@@ -60,7 +60,10 @@ class IndexGenerator(
                         else -> declaration
                     } as KtNamedDeclaration
 
-                    if (declaration.hasAnnotation(InjektFqNames.Given)) {
+                    if (declaration.hasAnnotation(InjektFqNames.Given) ||
+                        declaration.hasAnnotation(InjektFqNames.GivenSet) ||
+                        declaration.hasAnnotation(InjektFqNames.GivenMap)
+                    ) {
                         val index = Index(
                             owner.fqName!!,
                             when (owner) {

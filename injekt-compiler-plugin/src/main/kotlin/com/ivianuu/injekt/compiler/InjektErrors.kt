@@ -6,6 +6,7 @@ import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.render
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
+import org.jetbrains.kotlin.diagnostics.DiagnosticFactory1
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory3
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.diagnostics.Severity
@@ -15,6 +16,7 @@ import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticParameterRenderer
 import org.jetbrains.kotlin.diagnostics.rendering.Renderers
 import org.jetbrains.kotlin.diagnostics.rendering.RenderingContext
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 
 interface InjektErrors {
     companion object {
@@ -87,15 +89,14 @@ interface InjektErrors {
 
         @JvmField
         val NON_GIVEN_VALUE_PARAMETER_ON_GIVEN_DECLARATION =
-            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "Non @Given value parameter on @Given declaration") }
-
-        @JvmField
-        val GIVEN_PARAMETER_WITHOUT_DEFAULT = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-            .also {
-                MAP.put(it,
-                    "@Given parameter must have have default value either 'given' or a fallback")
-            }
+            DiagnosticFactory1.create<PsiElement, Name>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "Non @Given value parameter on @{0} declaration",
+                        Renderers.TO_STRING
+                    )
+                }
 
         @JvmField
         val GIVEN_DECLARATION_WITH_EXTENSION_RECEIVER =

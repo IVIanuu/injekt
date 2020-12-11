@@ -191,6 +191,30 @@ fun ClassDescriptor.extractGivensOfDeclaration(
     return primaryConstructorGivens + memberGivens
 }
 
+fun ClassDescriptor.extractGivenSetsOfDeclaration(bindingContext: BindingContext): List<Pair<TypeRef, CallableDescriptor>> {
+    val primaryConstructorGivens = (unsubstitutedPrimaryConstructor
+        ?.let { primaryConstructor ->
+            primaryConstructor.valueParameters
+                .filter { it.hasAnnotation(InjektFqNames.GivenSet) }
+                .mapNotNull { bindingContext[BindingContext.VALUE_PARAMETER_AS_PROPERTY, it] }
+                .map { it.type.toTypeRef() to it }
+        }
+        ?: emptyList())
+
+    val memberGivens = unsubstitutedMemberScope.getContributedDescriptors()
+        .flatMap { declaration ->
+            when (declaration) {
+                is PropertyDescriptor -> if (declaration.hasAnnotation(InjektFqNames.GivenSet))
+                    listOf(declaration.returnType!!.toTypeRef() to declaration) else emptyList()
+                is FunctionDescriptor -> if (declaration.hasAnnotation(InjektFqNames.GivenSet))
+                    listOf(declaration.returnType!!.toTypeRef() to declaration) else emptyList()
+                else -> emptyList()
+            }
+        }
+
+    return primaryConstructorGivens + memberGivens
+}
+
 fun ConstructorDescriptor.allGivenTypes(): List<TypeRef> =
     constructedClass.allGivenTypes()
 
@@ -209,6 +233,18 @@ fun CallableDescriptor.extractGivensOfCallable(
         .filter {
             it.hasAnnotation(InjektFqNames.Given) ||
                     it.type.hasAnnotation(InjektFqNames.Given) ||
+                    it.name in info.allGivens
+        }
+}
+
+fun CallableDescriptor.extractGivenSetsOfCallable(
+    declarationStore: DeclarationStore,
+): List<CallableDescriptor> {
+    val info = declarationStore.givenInfoFor(this)
+    return allParameters
+        .filter {
+            it.hasAnnotation(InjektFqNames.GivenSet) ||
+                    it.type.hasAnnotation(InjektFqNames.GivenSet) ||
                     it.name in info.allGivens
         }
 }
