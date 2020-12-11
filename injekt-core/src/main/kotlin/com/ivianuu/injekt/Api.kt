@@ -29,7 +29,7 @@ annotation class Given
 
 val given: Nothing = error("Must be compiled with the injekt compiler")
 
-inline fun <T> givenOrElse(defaultValue: () -> T): Nothing =
+inline fun <T> givenOrElse(defaultValue: () -> T): T =
     error("Must be compiled with the injekt compiler")
 
 @Suppress("NOTHING_TO_INLINE")
