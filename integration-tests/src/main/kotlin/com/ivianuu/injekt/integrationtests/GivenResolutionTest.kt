@@ -391,11 +391,12 @@ class GivenResolutionTest {
     fun testProviderGiven() = codegen(
         """
             @Given val foo = Foo()
-            fun invoke() = given<() -> Foo>()
+            fun invoke(): Foo {
+                return given<() -> Foo>()()
+            }
         """
     ) {
-        val fooProvider = invokeSingleFile<() -> Foo>()
-        fooProvider()
+        assertTrue(invokeSingleFile() is Foo)
     }
 
 }

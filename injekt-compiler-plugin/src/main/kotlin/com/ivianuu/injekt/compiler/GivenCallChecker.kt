@@ -278,11 +278,11 @@ class GivenCallChecker(
     }
 
     override fun visitProperty(property: KtProperty) {
+        super.visitProperty(property)
         scope.resolve(property)
         blockScope?.resolve(property)
         val descriptor = property.descriptor<VariableDescriptor>(bindingTrace.bindingContext)!!
         blockScope?.pushVariable(descriptor)
-        super.visitProperty(property)
     }
 
     override fun visitCallExpression(expression: KtCallExpression) {

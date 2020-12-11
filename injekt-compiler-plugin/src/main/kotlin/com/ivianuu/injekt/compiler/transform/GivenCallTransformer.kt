@@ -447,9 +447,11 @@ class GivenCallTransformer(
     }
 
     override fun visitVariable(declaration: IrVariable): IrStatement {
-        blockScope?.pushVariable(declaration)
-        variables += declaration
         return super.visitVariable(declaration)
+            .also {
+                blockScope?.pushVariable(declaration)
+                variables += declaration
+            }
     }
 
     override fun visitCall(expression: IrCall): IrExpression =

@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
+import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
 class InjektIrGenerationExtension(
@@ -19,6 +20,7 @@ class InjektIrGenerationExtension(
         moduleFragment.transformChildrenVoid(GivenCallTransformer(declarationStore, pluginContext))
         moduleFragment.transformChildrenVoid(GivenOptimizationTransformer())
         generateSymbols(pluginContext)
+        moduleFragment.patchDeclarationParents()
     }
 }
 
