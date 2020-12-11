@@ -7,9 +7,12 @@ import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.GivenNode
+import com.ivianuu.injekt.compiler.resolution.GivenRequest
+import com.ivianuu.injekt.compiler.resolution.ProviderGivenNode
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
 import com.ivianuu.injekt.compiler.resolution.isAssignableTo
+import com.ivianuu.injekt.compiler.resolution.resolveGivens
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.subtypeView
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
@@ -76,8 +79,12 @@ class GivenCallTransformer(
                     .filter { it.name in givenInfo.allGivens }
                     .filter { call.getValueArgument(it.index) == null }
                     .map {
-                        it to getExpressionForType(
-                            it.descriptor.type.toTypeRef().substitute(substitutionMap),
+                        it to expressionFor(
+                            GivenRequest(
+                                it.descriptor.type.toTypeRef().substitute(substitutionMap),
+                                it.name in givenInfo.requiredGivens,
+                                it.descriptor.fqNameSafe
+                            ),
                             call.symbol
                         )
                     }
@@ -85,14 +92,30 @@ class GivenCallTransformer(
             }
         }
 
-        private fun getExpressionForType(type: TypeRef, symbol: IrSymbol): IrExpression {
-            return expressionsByType.getOrPut(type) {
-                val given = givensFor(type).singleOrNull()
-                    ?: error("Wtf $type")
+        private fun expressionFor(request: GivenRequest, symbol: IrSymbol): IrExpression {
+            return expressionsByType.getOrPut(request.type) {
+                val given = resolveGivens(
+                    request,
+                    this,
+                    { givensForInThisScope(it) to parent }
+                ).let { givens ->
+                    givens.singleOrNull() ?: error("Wtf $request $givens")
+                }
                 when (given) {
                     is CallableGivenNode -> callableExpression(given, symbol)
+                    is ProviderGivenNode -> providerExpression(given, symbol)
                 }
             }()
+        }
+
+        private fun providerExpression(
+            given: ProviderGivenNode,
+            symbol: IrSymbol,
+        ): () -> IrExpression = {
+            DeclarationIrBuilder(pluginContext, symbol)
+                .irLambda(given.type.toIrType(pluginContext)) {
+                    expressionFor(given.dependencies.single(), symbol)
+                }
         }
 
         private fun callableExpression(
@@ -284,15 +307,6 @@ class GivenCallTransformer(
                     }
                 }
                 .owner
-
-        private fun givensFor(type: TypeRef): List<GivenNode> {
-            val givens = givensForInThisScope(type)
-            return when {
-                givens.isNotEmpty() -> givens
-                parent != null -> parent.givensFor(type)
-                else -> emptyList()
-            }
-        }
 
         protected abstract fun givensForInThisScope(type: TypeRef): List<GivenNode>
     }

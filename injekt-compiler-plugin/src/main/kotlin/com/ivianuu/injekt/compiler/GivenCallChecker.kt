@@ -4,12 +4,12 @@ import com.ivianuu.injekt.compiler.resolution.GivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.isAssignableTo
+import com.ivianuu.injekt.compiler.resolution.resolveGivens
 import com.ivianuu.injekt.compiler.resolution.toGivenNode
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -117,7 +117,7 @@ class GivenCallChecker(
             checkedRequests += request
 
             chain.push(request)
-            val givens = givensFor(request.type)
+            val givens = resolveGivens(request, this) { givensForInThisScope(it) to parent }
             when {
                 givens.size == 1 -> check(givens.single(), reportOn)
                 givens.size > 1 -> {
@@ -141,30 +141,22 @@ class GivenCallChecker(
             chain.pop()
         }
 
-        private fun givensFor(type: TypeRef): List<GivenNode> {
-            val givens = givensForInThisScope(type)
-                .map { it.toGivenNode(type, declarationStore) }
-            return when {
-                givens.isNotEmpty() -> return givens
-                parent != null -> parent.givensFor(type)
-                else -> emptyList()
-            }
-        }
-
-        protected abstract fun givensForInThisScope(type: TypeRef): List<CallableDescriptor>
+        protected abstract fun givensForInThisScope(type: TypeRef): List<GivenNode>
     }
 
     private inner class ExternalScope : Scope(null, null) {
-        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
+        override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             declarationStore.givensForType(type)
                 .filter { it.isExternalDeclaration() }
                 .filter { it.visibility == DescriptorVisibilities.PUBLIC }
+                .map { it.toGivenNode(type, declarationStore) }
     }
 
     private inner class InternalScope(parent: Scope?) : Scope(null, parent) {
-        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
+        override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             declarationStore.givensForType(type)
                 .filterNot { it.isExternalDeclaration() }
+                .map { it.toGivenNode(type, declarationStore) }
     }
 
     private inner class ClassScope(
@@ -177,10 +169,11 @@ class GivenCallChecker(
                 ?: emptyList()
         }
 
-        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
+        override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             allGivens
                 .filter { it.first.isAssignableTo(type) }
                 .map { it.second }
+                .map { it.toGivenNode(type, declarationStore) }
     }
 
     private inner class FunctionScope(
@@ -192,8 +185,9 @@ class GivenCallChecker(
                 ?.extractGivensOfCallable(declarationStore) ?: emptyList()
         }
 
-        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
+        override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
+                .map { it.toGivenNode(type, declarationStore) }
     }
 
     private inner class LambdaScope(
@@ -204,8 +198,9 @@ class GivenCallChecker(
             descriptor.extractGivensOfCallable(declarationStore)
         }
 
-        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> =
+        override fun givensForInThisScope(type: TypeRef): List<GivenNode> =
             allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
+                .map { it.toGivenNode(type, declarationStore) }
     }
 
     private inner class BlockScope(parent: Scope?) : Scope(null, parent) {
@@ -214,9 +209,10 @@ class GivenCallChecker(
             variableStack += variable
         }
 
-        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> {
+        override fun givensForInThisScope(type: TypeRef): List<GivenNode> {
             return variableStack
                 .filter { it.type.toTypeRef().isAssignableTo(type) }
+                .map { it.toGivenNode(type, declarationStore) }
         }
     }
 

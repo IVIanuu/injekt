@@ -14,8 +14,14 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.index
 
+import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.FileManager
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.UniqueNameProvider
+import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor

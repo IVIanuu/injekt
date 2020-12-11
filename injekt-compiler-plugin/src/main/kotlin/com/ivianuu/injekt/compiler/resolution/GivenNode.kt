@@ -19,6 +19,15 @@ class CallableGivenNode(
         get() = callable.fqNameSafe
 }
 
+class ProviderGivenNode(
+    type: TypeRef,
+    override val origin: FqName,
+    isRequired: Boolean,
+) : GivenNode(type) {
+    override val dependencies: List<GivenRequest> =
+        listOf(GivenRequest(type.typeArguments.last(), isRequired, origin))
+}
+
 fun CallableDescriptor.toGivenNode(
     type: TypeRef,
     declarationStore: DeclarationStore,

@@ -383,8 +383,19 @@ class GivenResolutionTest {
             fun invoke() = given<List<Foo>>()
         """
     ) {
-        val (foo) = invokeSingleFile<List<Foo>>()
+        val (foo) = invokeSingleFile<List<Any>>()
         assertTrue(foo is Foo)
+    }
+
+    @Test
+    fun testProviderGiven() = codegen(
+        """
+            @Given val foo = Foo()
+            fun invoke() = given<() -> Foo>()
+        """
+    ) {
+        val fooProvider = invokeSingleFile<() -> Foo>()
+        fooProvider()
     }
 
 }
