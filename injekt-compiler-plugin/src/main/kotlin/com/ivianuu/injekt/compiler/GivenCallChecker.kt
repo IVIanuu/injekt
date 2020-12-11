@@ -15,6 +15,8 @@ import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassOrObject
@@ -24,6 +26,7 @@ import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtPrimaryConstructor
+import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtSecondaryConstructor
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -49,42 +52,38 @@ class GivenCallChecker(
 
         private val checkedRequests = mutableSetOf<GivenRequest>()
 
-        private var resolved = false
-
         fun resolve(call: KtElement) {
-            if (!resolved) {
-                resolved = true
-                if (declaration != null) {
-                    try {
-                        lazyTopDownAnalyzer.analyzeDeclarations(
-                            TopDownAnalysisMode.TopLevelDeclarations,
-                            listOfNotNull(declaration)
-                        )
-                    } catch (e: Throwable) {
-                    }
-                    try {
-                        lazyTopDownAnalyzer.analyzeDeclarations(
-                            TopDownAnalysisMode.LocalDeclarations,
-                            listOfNotNull(declaration)
-                        )
-                    } catch (e: Throwable) {
-                    }
-                }
+            if (declaration != null) {
                 try {
                     lazyTopDownAnalyzer.analyzeDeclarations(
                         TopDownAnalysisMode.TopLevelDeclarations,
-                        listOfNotNull(call)
+                        listOfNotNull(declaration)
                     )
                 } catch (e: Throwable) {
                 }
                 try {
                     lazyTopDownAnalyzer.analyzeDeclarations(
                         TopDownAnalysisMode.LocalDeclarations,
-                        listOfNotNull(call)
+                        listOfNotNull(declaration)
                     )
                 } catch (e: Throwable) {
                 }
             }
+            try {
+                lazyTopDownAnalyzer.analyzeDeclarations(
+                    TopDownAnalysisMode.TopLevelDeclarations,
+                    listOfNotNull(call)
+                )
+            } catch (e: Throwable) {
+            }
+            try {
+                lazyTopDownAnalyzer.analyzeDeclarations(
+                    TopDownAnalysisMode.LocalDeclarations,
+                    listOfNotNull(call)
+                )
+            } catch (e: Throwable) {
+            }
+            parent?.resolve(call)
         }
 
         fun check(call: ResolvedCall<*>, reportOn: PsiElement) {
@@ -215,6 +214,18 @@ class GivenCallChecker(
             allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
     }
 
+    private inner class BlockScope(parent: Scope?) : Scope(null, parent) {
+        private val variableStack = mutableListOf<VariableDescriptor>()
+        fun pushVariable(variable: VariableDescriptor) {
+            variableStack += variable
+        }
+
+        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> {
+            return variableStack
+                .filter { it.type.toTypeRef().isAssignableTo(type) }
+        }
+    }
+
     private var scope: Scope = InternalScope(ExternalScope())
 
     private inline fun <R> inScope(scope: Scope, block: () -> R): R {
@@ -254,6 +265,24 @@ class GivenCallChecker(
 
     private fun visitFunction(function: KtFunction, block: () -> Unit) {
         inScope(FunctionScope(function, scope)) { block() }
+    }
+
+    private var blockScope: BlockScope? = null
+    override fun visitBlockExpression(expression: KtBlockExpression) {
+        val prevScope = blockScope
+        val scope = BlockScope(scope)
+        this.blockScope = scope
+        inScope(scope) {
+            super.visitBlockExpression(expression)
+        }
+        blockScope = prevScope
+    }
+
+    override fun visitProperty(property: KtProperty) {
+        blockScope?.resolve(property)
+        val descriptor = property.descriptor<VariableDescriptor>(bindingTrace.bindingContext)!!
+        blockScope?.pushVariable(descriptor)
+        super.visitProperty(property)
     }
 
     override fun visitCallExpression(expression: KtCallExpression) {

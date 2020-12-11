@@ -27,12 +27,18 @@ import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
+import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.declarations.IrAnonymousInitializer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrVariable
+import org.jetbrains.kotlin.ir.expressions.IrBlock
+import org.jetbrains.kotlin.ir.expressions.IrBlockBody
+import org.jetbrains.kotlin.ir.expressions.IrBody
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
@@ -87,6 +93,7 @@ class GivenCallTransformer(
                         is FunctionDescriptor -> functionExpression(type, callable, symbol)
                         is ReceiverParameterDescriptor -> parameterExpression(callable, symbol)
                         is ValueParameterDescriptor -> parameterExpression(callable, symbol)
+                        is VariableDescriptor -> variableExpression(callable, symbol)
                         else -> error("Unsupported callable $callable")
                     }
                 }
@@ -234,6 +241,14 @@ class GivenCallTransformer(
                 .irGet(valueParameter)
         }
 
+        private fun variableExpression(
+            descriptor: VariableDescriptor,
+            symbol: IrSymbol,
+        ): IrExpression {
+            return DeclarationIrBuilder(pluginContext, symbol)
+                .irGet(variables.single { it.descriptor == descriptor })
+        }
+
         private fun ConstructorDescriptor.irConstructor() =
             pluginContext.referenceConstructors(constructedClass.fqNameSafe).single {
                 it.descriptor.uniqueKey() == uniqueKey()
@@ -292,9 +307,24 @@ class GivenCallTransformer(
             allGivens.filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
     }
 
+    private inner class BlockScope(parent: Scope?) : Scope(parent) {
+        private val variableStack = mutableListOf<IrVariable>()
+        fun pushVariable(variable: IrVariable) {
+            variableStack += variable
+        }
+
+        override fun givensForInThisScope(type: TypeRef): List<CallableDescriptor> {
+            return variableStack
+                .filter { it.type.toKotlinType().toTypeRef().isAssignableTo(type) }
+                .map { it.descriptor }
+        }
+    }
+
     private var scope: Scope = InternalScope(ExternalScope())
 
     private val dispatchReceiverAccessors = mutableListOf<Pair<IrClass, () -> IrExpression>>()
+
+    private val variables = mutableListOf<IrVariable>()
 
     private inline fun <R> inScope(scope: Scope, block: () -> R): R {
         val prevScope = this.scope
@@ -340,6 +370,40 @@ class GivenCallTransformer(
             dispatchReceiverAccessors.pop()
         }
         return result
+    }
+
+    private var blockScope: BlockScope? = null
+
+    override fun visitAnonymousInitializer(declaration: IrAnonymousInitializer): IrStatement {
+        return inBlockScope(BlockScope(scope)) {
+            super.visitAnonymousInitializer(declaration)
+        }
+    }
+
+    override fun visitBlock(expression: IrBlock): IrExpression {
+        return inBlockScope(BlockScope(scope)) {
+            super.visitBlock(expression)
+        }
+    }
+
+    override fun visitBlockBody(body: IrBlockBody): IrBody {
+        return inBlockScope(BlockScope(scope)) {
+            super.visitBlockBody(body)
+        }
+    }
+
+    private inline fun <R> inBlockScope(scope: BlockScope, block: () -> R): R {
+        val prevScope = this.blockScope
+        this.blockScope = scope
+        val result = inScope(scope, block)
+        this.blockScope = prevScope
+        return result
+    }
+
+    override fun visitVariable(declaration: IrVariable): IrStatement {
+        blockScope?.pushVariable(declaration)
+        variables += declaration
+        return super.visitVariable(declaration)
     }
 
     override fun visitCall(expression: IrCall): IrExpression =

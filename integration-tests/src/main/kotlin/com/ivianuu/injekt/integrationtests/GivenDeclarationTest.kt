@@ -130,7 +130,7 @@ class GivenDeclarationTest {
         assertSame(foo, invokeSingleFile<Any>(foo))
     }
 
-    //@Test
+    @Test
     fun testGivenLocalVariable() = codegen(
         """
             fun invoke(foo: Foo): Foo {
@@ -169,7 +169,7 @@ class GivenDeclarationTest {
         assertSame(foo, invokeSingleFile<Any>(foo))
     }
 
-    //@Test
+    @Test
     fun testGivenInNestedBlock() = codegen(
         """
             fun invoke(a: Foo, b: Foo): Pair<Foo, Foo> {
@@ -185,7 +185,7 @@ class GivenDeclarationTest {
     ) {
         val a = Foo()
         val b = Foo()
-        val result = invokeSingleFile<Pair<Foo, Foo>>()
+        val result = invokeSingleFile<Pair<Foo, Foo>>(a, b)
         assertSame(a, result.first)
         assertSame(b, result.second)
     }

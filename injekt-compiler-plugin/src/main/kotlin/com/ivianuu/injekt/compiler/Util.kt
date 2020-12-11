@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
+import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 fun DeclarationDescriptor.uniqueKey(): String {
@@ -32,6 +33,7 @@ fun DeclarationDescriptor.uniqueKey(): String {
         }"
         is ParameterDescriptor -> ""
         is ValueParameterDescriptor -> ""
+        is VariableDescriptor -> ""
         else -> error("Unexpected declaration $this")
     }
 }
