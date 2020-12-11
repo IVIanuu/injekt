@@ -55,7 +55,6 @@ import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrBody
-import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
@@ -592,8 +591,8 @@ class GivenCallTransformer(
             }
     }
 
-    override fun visitCall(expression: IrCall): IrExpression =
-        super.visitCall(expression.apply {
+    override fun visitFunctionAccess(expression: IrFunctionAccessExpression) =
+        super.visitFunctionAccess(expression.apply {
             val givenInfo = declarationStore.givenInfoFor(expression.symbol.descriptor)
             if (givenInfo.allGivens.isNotEmpty()) {
                 val substitutionMap = getSubstitutionMap(
@@ -611,5 +610,6 @@ class GivenCallTransformer(
                 }
             }
         })
+
 
 }

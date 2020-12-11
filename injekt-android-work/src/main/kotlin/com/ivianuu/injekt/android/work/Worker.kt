@@ -23,17 +23,19 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.GivenMap
+import com.ivianuu.injekt.given
 import kotlin.reflect.KClass
 
-/*
-inline fun <reified T : ListenableWorker> workerSetOf(noinline workerFactory: () -> T = given): Workers =
-    setOf(T::class to workerFactory)*/
+inline fun <reified T : ListenableWorker> workerMapOf(
+    noinline workerFactory: (Context, WorkerParameters) -> T = given,
+): Workers = mapOf(T::class to workerFactory)
 
 typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
 
-@Given inline fun defaultWorkers(): Workers = emptyMap()
+@GivenMap inline fun defaultWorkers(): Workers = emptyMap()
 
-@Given class InjektWorkerFactory(workersFactory: () -> Workers) : @Given WorkerFactory() {
+@Given class InjektWorkerFactory(workersFactory: () -> Workers = given) : @Given WorkerFactory() {
     private val workers by lazy(workersFactory)
     override fun createWorker(
         appContext: Context,

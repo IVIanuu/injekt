@@ -399,4 +399,33 @@ class GivenResolutionTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
+    @Test
+    fun testFunctionInvocationWithGivens() = codegen(
+        """
+                @Given val foo = Foo()
+                fun invoke() {
+                    usesFoo()
+                }
+
+                fun usesFoo(foo: Foo = given) {
+                }
+            """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testConstructorInvocationWithGivens() = codegen(
+        """
+                @Given val foo = Foo()
+                fun invoke() {
+                    UsesFoo()
+                }
+
+                class UsesFoo(foo: Foo = given)
+            """
+    ) {
+        invokeSingleFile()
+    }
+
 }
