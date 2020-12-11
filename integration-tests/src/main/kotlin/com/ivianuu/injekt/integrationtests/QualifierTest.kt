@@ -46,7 +46,7 @@ class QualifierTest {
         assertNotSame(foo1, foo2)
     }
 
-    @Test
+    //@Test
     fun testDistinctQualifierAnnotationWithTypeArguments() = codegen(
         """
             @Target(AnnotationTarget.TYPE)
