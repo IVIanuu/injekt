@@ -22,19 +22,12 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenMap
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.android.work.workerMapOf
 import com.ivianuu.injekt.given
 
-@GivenMap fun testWorkerIntoMap() = workerMapOf {
-        context: @Given Context,
-        workerParameters: @Given WorkerParameters,
-    ->
-    TestWorker()
-}
-
+@GivenMap fun testWorkerIntoMap() = workerMapOf { TestWorker() }
 class TestWorker(
     context: Context = given,
     workerParams: WorkerParameters = given,
@@ -46,7 +39,6 @@ class TestWorker(
 
     override suspend fun doWork(): Result = Result.success()
 }
-
 
 fun initializeWorkers(
     applicationContext: ApplicationContext = given,

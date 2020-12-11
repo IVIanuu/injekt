@@ -170,6 +170,19 @@ class GivenDeclarationTest {
     }
 
     @Test
+    fun testCanResolveGivenOfScopeFunction() = codegen(
+        """
+            class Dep(@Given val foo: Foo)
+            fun invoke(foo: Foo): Foo {
+                return with(Dep(foo)) { given<Foo>() }
+            }
+        """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile<Any>(foo))
+    }
+
+    @Test
     fun testGivenInNestedBlock() = codegen(
         """
             fun invoke(a: Foo, b: Foo): Pair<Foo, Foo> {
