@@ -95,6 +95,7 @@ class InjektKtGenerationExtension(
         if (generatedCode || hasErrors) return null
         generatedCode = true
         files as List<KtFile>
+        fileManager.postGenerate()
         return AnalysisResult.RetryWithAdditionalRoots(
             bindingTrace.bindingContext, module, emptyList(), fileManager.newFiles, true
         )

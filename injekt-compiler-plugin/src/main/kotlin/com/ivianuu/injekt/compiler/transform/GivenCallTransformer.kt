@@ -12,6 +12,7 @@ import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.subtypeView
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -37,7 +38,6 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.dump
@@ -78,7 +78,8 @@ class GivenCallTransformer(
 
         private fun getExpressionForType(type: TypeRef, symbol: IrSymbol): IrExpression {
             return expressionsByType.getOrPut(type) {
-                val callable = givensFor(type).singleOrNull() ?: error("Wtf $type")
+                val callable = givensFor(type).singleOrNull()
+                    ?: error("Wtf $type")
                 val expression: () -> IrExpression = {
                     when (callable) {
                         is ConstructorDescriptor -> classExpression(type, callable, symbol)
@@ -234,12 +235,13 @@ class GivenCallTransformer(
         }
 
         private fun ConstructorDescriptor.irConstructor() =
-            pluginContext.referenceConstructors(constructedClass.fqNameSafe).first {
-                it.descriptor.original == this.original
+            pluginContext.referenceConstructors(constructedClass.fqNameSafe).single {
+                it.descriptor.uniqueKey() == uniqueKey()
             }.owner
 
         private fun FunctionDescriptor.irFunction() = pluginContext.referenceFunctions(fqNameSafe)
-            .singleOrNull()?.owner ?: error("Nothing found for $this")
+            .singleOrNull { it.descriptor.uniqueKey() == uniqueKey() }
+            ?.owner ?: error("Nothing found for $this")
 
         private fun givensFor(type: TypeRef): List<CallableDescriptor> {
             val givens = givensForInThisScope(type)

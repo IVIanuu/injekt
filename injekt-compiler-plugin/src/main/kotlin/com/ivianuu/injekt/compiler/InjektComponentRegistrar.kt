@@ -20,6 +20,7 @@ import com.google.auto.service.AutoService
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
+import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.JVMConfigurationKeys
@@ -53,10 +54,19 @@ class InjektComponentRegistrar : ComponentRegistrar {
                 project,
                 InjektStorageComponentContainerContributor()
             )
-            IrGenerationExtension.registerExtension(
+            IrGenerationExtension.registerExtensionFirst(
                 project,
                 InjektIrGenerationExtension(declarationStore)
             )
         }
     }
+}
+
+private fun IrGenerationExtension.Companion.registerExtensionFirst(
+    project: MockProject,
+    extension: IrGenerationExtension,
+) {
+    project.extensionArea
+        .getExtensionPoint(IrGenerationExtension.extensionPointName)
+        .registerExtension(extension, LoadingOrder.FIRST, project)
 }
