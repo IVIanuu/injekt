@@ -384,7 +384,11 @@ private class IrSourcePrinterVisitor(
                 expression.getValueArgument(0)?.print()
             }
         } else {
-            print(name)
+            if (expression.dispatchReceiver != null || expression.extensionReceiver != null) {
+                print(name)
+            } else {
+                print(expression.symbol.descriptor.fqNameSafe)
+            }
             expression.printArgumentList()
         }
     }
@@ -738,7 +742,11 @@ private class IrSourcePrinterVisitor(
             expression.symbol is IrValueParameterSymbol ||
             expression.symbol is IrVariableSymbol
         ) {
-            print(expression.symbol.descriptor.name)
+            if (expression.symbol.descriptor.name.asString() == "<this>") {
+                print("this")
+            } else {
+                print(expression.symbol.descriptor.name)
+            }
         } else {
             print(expression.symbol.descriptor.fqNameSafe)
         }
