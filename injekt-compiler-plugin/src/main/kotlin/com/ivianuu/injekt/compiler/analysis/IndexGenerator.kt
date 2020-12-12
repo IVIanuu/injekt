@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.index
+package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.FileManager
 import com.ivianuu.injekt.compiler.InjektFqNames

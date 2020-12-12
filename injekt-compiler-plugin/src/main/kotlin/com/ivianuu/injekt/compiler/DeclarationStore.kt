@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.index.Index
+import com.ivianuu.injekt.compiler.analysis.Index
 import com.ivianuu.injekt.compiler.resolution.allGivenTypes
 import com.ivianuu.injekt.compiler.resolution.getGivenConstructors
 import com.ivianuu.injekt.compiler.resolution.overrideType

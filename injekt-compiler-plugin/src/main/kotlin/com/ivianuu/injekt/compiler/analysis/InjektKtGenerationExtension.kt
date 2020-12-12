@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.index.IndexGenerator
+import com.ivianuu.injekt.compiler.CacheDir
+import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.FileManager
+import com.ivianuu.injekt.compiler.SrcDir
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.container.ComponentProvider

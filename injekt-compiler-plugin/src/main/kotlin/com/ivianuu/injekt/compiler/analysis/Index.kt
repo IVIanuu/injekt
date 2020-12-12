@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler.index
+package com.ivianuu.injekt.compiler.analysis
 
 import org.jetbrains.kotlin.name.FqName
 

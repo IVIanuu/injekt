@@ -16,11 +16,18 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.resolution.uniqueTypeName
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DeserializedDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
+import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.js.translate.utils.refineType
@@ -33,6 +40,7 @@ import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
@@ -129,3 +137,29 @@ fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescri
         val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
         inner.hasAnnotation(annotation)
     }
+
+fun DeclarationDescriptor.uniqueKey(): String {
+    val original = this.original
+    return when (original) {
+        is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
+            original.valueParameters
+                .joinToString(",") { it.type.toTypeRef().uniqueTypeName().asString() }
+        }"
+        is ClassDescriptor -> "class:$fqNameSafe"
+        is FunctionDescriptor -> "function:$fqNameSafe:${
+            listOfNotNull(
+                original.dispatchReceiverParameter, original.extensionReceiverParameter)
+                .plus(original.valueParameters)
+                .joinToString(",") { it.type.toTypeRef().uniqueTypeName().asString() }
+        }"
+        is PropertyDescriptor -> "property:$fqNameSafe:${
+            listOfNotNull(
+                original.dispatchReceiverParameter, original.extensionReceiverParameter)
+                .joinToString(",") { it.type.toTypeRef().uniqueTypeName().asString() }
+        }"
+        is ParameterDescriptor -> ""
+        is ValueParameterDescriptor -> ""
+        is VariableDescriptor -> ""
+        else -> error("Unexpected declaration $this")
+    }
+}

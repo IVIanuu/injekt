@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.analysis
 
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.DiagnosticWithParameters2
@@ -8,7 +8,7 @@ import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.isNothing
 
-class InjektDiagnosticSupressor : DiagnosticSuppressor {
+class InjektDiagnosticSuppressor : DiagnosticSuppressor {
 
     override fun isSuppressed(diagnostic: Diagnostic): Boolean =
         isSuppressed(diagnostic, null)

@@ -17,6 +17,9 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
+import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
+import com.ivianuu.injekt.compiler.analysis.InjektKtGenerationExtension
+import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
 import com.ivianuu.injekt.compiler.transform.InjektIrDumper
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -67,7 +70,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
             )
             @Suppress("DEPRECATION")
             Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
-                .registerExtension(InjektDiagnosticSupressor())
+                .registerExtension(InjektDiagnosticSuppressor())
         }
     }
 }
