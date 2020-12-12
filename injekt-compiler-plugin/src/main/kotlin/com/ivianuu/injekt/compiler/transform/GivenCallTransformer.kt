@@ -59,7 +59,7 @@ class GivenCallTransformer(
     private val pluginContext: IrPluginContext,
 ) : IrElementTransformerVoid() {
 
-    private data class ResolutionContext(val graph: GivenGraph) {
+    private data class ResolutionContext(val graph: GivenGraph.Success) {
         val expressionsByType = mutableMapOf<TypeRef, () -> IrExpression>()
     }
 
@@ -95,8 +95,8 @@ class GivenCallTransformer(
         symbol: IrSymbol,
     ): IrExpression {
         return expressionsByType.getOrPut(request.type) {
-            val given = graph.givensByRequest[request]
-                ?: error("Wtf $request\n${this.graph.givensByRequest.toList().joinToString("\n")}")
+            val given = graph.givens[request]
+                ?: error("Wtf $request\n${this.graph.givens.toList().joinToString("\n")}")
             when (given) {
                 is CallableGivenNode -> callableExpression(given, symbol)
                 is ProviderGivenNode -> providerExpression(given, symbol)

@@ -10,17 +10,15 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ResolutionScope(
+    val name: String,
     val parent: ResolutionScope?,
-    private val declarationStore: DeclarationStore,
+    val declarationStore: DeclarationStore,
     initialGivensInScope: () -> List<CallableDescriptor>,
     initialGivenCollectionElementsInScope: () -> List<CallableDescriptor>,
 ) {
-
-    // todo
-    val givensByRequest = mutableMapOf<GivenRequest, GivenNode>()
-
     private val givens by unsafeLazy { initialGivensInScope().toMutableList() }
     private val givenCollectionElements by unsafeLazy {
         initialGivenCollectionElementsInScope().toMutableList()
@@ -40,10 +38,13 @@ class ResolutionScope(
             callable.hasAnnotation(InjektFqNames.GivenSet)
         ) givenCollectionElements += callable
     }
+
+    override fun toString(): String = "ResolutionScope($name)"
 }
 
 fun ExternalResolutionScope(declarationStore: DeclarationStore): ResolutionScope {
     return ResolutionScope(
+        name = "EXTERNAL",
         declarationStore = declarationStore,
         parent = null,
         initialGivensInScope = {
@@ -63,6 +64,7 @@ fun InternalResolutionScope(
     declarationStore: DeclarationStore,
 ): ResolutionScope {
     return ResolutionScope(
+        name = "INTERNAL",
         declarationStore = declarationStore,
         parent = parent,
         initialGivensInScope = {
@@ -83,6 +85,7 @@ fun ClassResolutionScope(
     parent: ResolutionScope?,
 ): ResolutionScope {
     return ResolutionScope(
+        name = "CLASS(${descriptor.fqNameSafe})",
         declarationStore = declarationStore,
         parent = parent,
         initialGivensInScope = {
@@ -101,6 +104,7 @@ fun FunctionResolutionScope(
     descriptor: FunctionDescriptor,
 ): ResolutionScope {
     return ResolutionScope(
+        name = "FUN(${descriptor.fqNameSafe})",
         declarationStore = declarationStore,
         parent = parent,
         initialGivensInScope = { descriptor.extractGivensOfCallable(declarationStore) },
@@ -115,6 +119,7 @@ fun BlockResolutionScope(
     parent: ResolutionScope?,
 ): ResolutionScope {
     return ResolutionScope(
+        name = "BLOCK",
         declarationStore = declarationStore,
         parent = parent,
         initialGivensInScope = { emptyList() },

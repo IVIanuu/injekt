@@ -2,7 +2,6 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektErrors
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.descriptor
@@ -12,14 +11,11 @@ import com.ivianuu.injekt.compiler.resolution.ClassResolutionScope
 import com.ivianuu.injekt.compiler.resolution.ExternalResolutionScope
 import com.ivianuu.injekt.compiler.resolution.FunctionResolutionScope
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
-import com.ivianuu.injekt.compiler.resolution.GivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.InternalResolutionScope
 import com.ivianuu.injekt.compiler.resolution.ResolutionScope
-import com.ivianuu.injekt.compiler.resolution.resolveGivenCandidates
+import com.ivianuu.injekt.compiler.resolution.resolveGraph
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import org.jetbrains.kotlin.backend.common.pop
-import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -52,15 +48,13 @@ class GivenCallChecker(
     private val declarationStore: DeclarationStore,
 ) : KtTreeVisitorVoid() {
 
-    private val chain = mutableListOf<GivenRequest>()
-
     private fun ResolutionScope.check(call: ResolvedCall<*>, reportOn: KtElement) {
         val resultingDescriptor = call.resultingDescriptor
         if (resultingDescriptor !is FunctionDescriptor) return
 
         val givenInfo = declarationStore.givenInfoFor(resultingDescriptor)
 
-        val givenRequests = call
+        val requests = call
             .valueArguments
             .filterKeys { it.name in givenInfo.allGivens }
             .filter { it.value is DefaultValueArgument }
@@ -71,94 +65,41 @@ class GivenCallChecker(
                     it.key.fqNameSafe
                 )
             }
-            .onEach { check(it, reportOn) }
 
-        if (givenRequests.isEmpty()) return
+        if (requests.isEmpty()) return
 
-        if (givenRequests.all { givensByRequest[it] != null }) {
-            bindingTrace.record(
-                InjektWritableSlices.GIVEN_GRAPH,
-                SourcePosition(
-                    reportOn.containingKtFile.virtualFilePath,
-                    reportOn.startOffset,
-                    reportOn.endOffset
-                ),
-                GivenGraph(givensByRequest)
-            )
-        }
+        val graph = resolveGraph(requests)
 
-        if (call.resultingDescriptor.fqNameSafe == InjektFqNames.debugGiven) {
-            val type = call.typeArguments.values.single().toTypeRef()
-            val given = givensByRequest.toList().firstOrNull { it.first.type == type }
-                ?.second
-            if (given != null) {
-                bindingTrace.report(
-                    InjektErrors.DEBUG_GIVEN
-                        .on(reportOn, given to givensByRequest)
+        when (graph) {
+            is GivenGraph.Success -> {
+                graph.givens.values
+                    .filterIsInstance<CallableGivenNode>()
+                    .forEach { given ->
+                        val lookedUpDeclaration = when (val callable = given.callable) {
+                            is ClassConstructorDescriptor -> callable.constructedClass
+                            else -> callable
+                        } as DeclarationDescriptor
+                        when (val parent = lookedUpDeclaration.containingDeclaration) {
+                            is ClassDescriptor -> parent.unsubstitutedMemberScope
+                            is PackageFragmentDescriptor -> parent.getMemberScope()
+                            else -> null
+                        }?.recordLookup(given.callable.name, KotlinLookupLocation(reportOn))
+                    }
+                bindingTrace.record(
+                    InjektWritableSlices.GIVEN_GRAPH,
+                    SourcePosition(
+                        reportOn.containingKtFile.virtualFilePath,
+                        reportOn.startOffset,
+                        reportOn.endOffset
+                    ),
+                    graph
                 )
             }
-        }
-    }
-
-    private fun ResolutionScope.check(node: GivenNode, reportOn: KtElement) {
-        node.dependencies
-            .forEach { check(it, reportOn) }
-    }
-
-    private fun ResolutionScope.check(request: GivenRequest, reportOn: KtElement) {
-        if (request in chain) {
-            val cycleChain = chain.subList(
-                chain.indexOf(request), chain.size
+            is GivenGraph.Error -> bindingTrace.report(
+                InjektErrors.UNRESOLVED_GIVEN
+                    .on(reportOn, graph)
             )
-
-            val cycleOriginRequest = chain[chain.indexOf(request) - 1]
-
-            bindingTrace.report(
-                InjektErrors.CIRCULAR_DEPENDENCY
-                    .on(reportOn, cycleChain.reversed() + cycleOriginRequest),
-            )
-            return
         }
-
-        chain.push(request)
-        val candidates = resolveGivenCandidates(declarationStore, request)
-
-        when {
-            candidates.size == 1 -> {
-                val given = candidates.single()
-                givensByRequest[request] = given
-                if (given is CallableGivenNode) {
-                    val lookedUpDeclaration = when (val callable = given.callable) {
-                        is ClassConstructorDescriptor -> callable.constructedClass
-                        else -> callable
-                    } as DeclarationDescriptor
-                    when (val parent = lookedUpDeclaration.containingDeclaration) {
-                        is ClassDescriptor -> parent.unsubstitutedMemberScope
-                        is PackageFragmentDescriptor -> parent.getMemberScope()
-                        else -> null
-                    }?.recordLookup(given.callable.name, KotlinLookupLocation(reportOn))
-                }
-                check(given, reportOn)
-            }
-            candidates.size > 1 -> {
-                bindingTrace.report(
-                    InjektErrors.MULTIPLE_GIVENS
-                        .on(reportOn, request.type, request.origin, candidates)
-                )
-            }
-            candidates.isEmpty() && request.required -> {
-                bindingTrace.report(
-                    InjektErrors.UNRESOLVED_GIVEN
-                        .on(
-                            reportOn,
-                            request.type,
-                            request.origin,
-                            chain
-                        )
-                )
-            }
-        }
-        chain.pop()
     }
 
     private var scope = InternalResolutionScope(

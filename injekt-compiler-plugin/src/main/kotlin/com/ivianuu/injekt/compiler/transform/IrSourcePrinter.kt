@@ -58,6 +58,7 @@ import org.jetbrains.kotlin.ir.expressions.IrSetValue
 import org.jetbrains.kotlin.ir.expressions.IrSpreadElement
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.IrStringConcatenation
+import org.jetbrains.kotlin.ir.expressions.IrSyntheticBody
 import org.jetbrains.kotlin.ir.expressions.IrThrow
 import org.jetbrains.kotlin.ir.expressions.IrTry
 import org.jetbrains.kotlin.ir.expressions.IrTypeOperator
@@ -217,6 +218,7 @@ private class IrSourcePrinterVisitor(
 
     fun IrFunction.printBody() {
         val body = body ?: return
+        if (body is IrSyntheticBody) return
         if (body.statements.isEmpty()) {
             println("{ }")
         } else {

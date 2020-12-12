@@ -5,32 +5,33 @@ import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-sealed class GivenNode(val type: TypeRef) {
+sealed class GivenNode {
+    abstract val type: TypeRef
     abstract val dependencies: List<GivenRequest>
     abstract val origin: FqName
 }
 
-class CallableGivenNode(
-    type: TypeRef,
+data class CallableGivenNode(
+    override val type: TypeRef,
     override val dependencies: List<GivenRequest>,
     val callable: CallableDescriptor,
-) : GivenNode(type) {
+) : GivenNode() {
     override val origin: FqName
         get() = callable.fqNameSafe
 }
 
-class CollectionGivenNode(
-    type: TypeRef,
+data class CollectionGivenNode(
+    override val type: TypeRef,
     override val origin: FqName,
     val elements: List<CallableDescriptor>,
     override val dependencies: List<GivenRequest>,
-) : GivenNode(type)
+) : GivenNode()
 
-class ProviderGivenNode(
-    type: TypeRef,
+data class ProviderGivenNode(
+    override val type: TypeRef,
     override val origin: FqName,
-    isRequired: Boolean,
-) : GivenNode(type) {
+    val isRequired: Boolean,
+) : GivenNode() {
     override val dependencies: List<GivenRequest> =
         listOf(GivenRequest(type.typeArguments.last(), isRequired, origin))
 }
@@ -65,8 +66,6 @@ fun CallableDescriptor.getGivenRequests(
             )
         }
 }
-
-data class GivenGraph(val givensByRequest: Map<GivenRequest, GivenNode>)
 
 data class GivenRequest(
     val type: TypeRef,

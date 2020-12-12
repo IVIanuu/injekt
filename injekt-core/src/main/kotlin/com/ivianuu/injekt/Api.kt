@@ -34,8 +34,6 @@ inline fun <T> givenOrElse(defaultValue: () -> T): T = defaultValue()
 @Suppress("NOTHING_TO_INLINE")
 inline fun <T> given(value: T = given): T = value
 
-fun <T> debugGiven(value: T = given): Nothing = error("Must be compiled with the injekt compiler")
-
 inline fun <T, R> withGiven(given: T, block: (@Given T) -> R) = block(given)
 
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)

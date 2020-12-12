@@ -27,7 +27,6 @@ import com.ivianuu.injekt.GivenMap
 import com.ivianuu.injekt.given
 import kotlin.reflect.KClass
 
-
 data class WorkerContext(val context: Context, val workerParameters: WorkerParameters)
 @Given fun workerContext(context: WorkerContext = given) = context.context
 @Given fun workerParameters(context: WorkerContext = given) = context.workerParameters
