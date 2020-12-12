@@ -1,5 +1,7 @@
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.resolution.render
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.Modality
@@ -437,22 +439,24 @@ private class IrSourcePrinterVisitor(
         }
         if (arguments.isNotEmpty() || trailingLambda == null) {
             print("(")
-            if (useParameterNames) {
-                // if we are using parameter names, we go on multiple lines
-                println()
-                indented {
-                    arguments.zip(paramNames).forEachIndexed { i, (arg, name) ->
-                        print(name)
-                        print(" = ")
-                        arg.print()
-                        if (i < arguments.size - 1) println(", ")
+            if (arguments.isNotEmpty()) {
+                if (useParameterNames) {
+                    // if we are using parameter names, we go on multiple lines
+                    println()
+                    indented {
+                        arguments.zip(paramNames).forEachIndexed { i, (arg, name) ->
+                            print(name)
+                            print(" = ")
+                            arg.print()
+                            if (i < arguments.size - 1) println(", ")
+                        }
                     }
-                }
-                println()
-            } else {
-                arguments.forEachIndexed { index, it ->
-                    it.print()
-                    if (index < arguments.size - 1) print(", ")
+                    println()
+                } else {
+                    arguments.forEachIndexed { index, it ->
+                        it.print()
+                        if (index < arguments.size - 1) print(", ")
+                    }
                 }
             }
             print(")")
@@ -784,6 +788,22 @@ private class IrSourcePrinterVisitor(
     override fun visitProperty(declaration: IrProperty) {
         declaration.printAnnotations(onePerLine = true)
 
+        if (declaration.descriptor.overriddenDescriptors.isNotEmpty()) {
+            print("override ")
+        } else {
+            if (
+                declaration.visibility != DescriptorVisibilities.PUBLIC &&
+                declaration.visibility != DescriptorVisibilities.LOCAL
+            ) {
+                print(declaration.visibility.toString().toLowerCase(Locale.ROOT))
+                print(" ")
+            }
+            if (declaration.modality != Modality.FINAL) {
+                print(declaration.modality.toString().toLowerCase(Locale.ROOT))
+                print(" ")
+            }
+        }
+
         if (declaration.isLateinit) {
             print("lateinit")
         }
@@ -1097,8 +1117,7 @@ private class IrSourcePrinterVisitor(
         println("typealias ${declaration.name} = ${declaration.expandedType.renderSrc()}")
     }
 
-    private fun IrType.renderSrc() =
-        "${renderTypeAnnotations(annotations)}${renderTypeInner()}"
+    private fun IrType.renderSrc() = toKotlinType().toTypeRef().render()
 
     private fun IrType.renderTypeInner() =
         when (this) {
