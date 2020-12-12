@@ -84,7 +84,7 @@ class FileManager(
     fun generateFile(
         packageFqName: FqName,
         fileName: String,
-        originatingFile: KtFile?,
+        originatingFile: String?,
         code: String,
     ) {
         val newFile = srcDir
@@ -93,7 +93,7 @@ class FileManager(
             .resolve(fileName)
             .also { newFiles += it }
         if (originatingFile != null) {
-            originatingFilePaths[newFile] = originatingFile.virtualFilePath
+            originatingFilePaths[newFile] = originatingFile
         }
 
         try {

@@ -55,7 +55,7 @@ class GivenInfoGenerator(
                     "_${file.name.removeSuffix(".kt")}GivenInfos.kt"
             val nameProvider = UniqueNameProvider()
             fileManager.generateFile(
-                originatingFile = file,
+                originatingFile = file.virtualFilePath,
                 packageFqName = InjektFqNames.IndexPackage,
                 fileName = fileName,
                 code = buildString {

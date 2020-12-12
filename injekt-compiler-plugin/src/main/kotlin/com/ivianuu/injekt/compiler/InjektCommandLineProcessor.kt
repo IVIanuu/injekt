@@ -77,3 +77,12 @@ typealias CacheDir = File
 fun cacheDir(configuration: CompilerConfiguration): CacheDir =
     File(configuration.getNotNull(CacheDirKey))
         .also { it.mkdirs() }
+
+val DumpDirKey = CompilerConfigurationKey<String>("dumpDir")
+typealias DumpDir = File
+
+fun dumpDir(configuration: CompilerConfiguration): DumpDir =
+    File(configuration.getNotNull(CacheDirKey))
+        .parentFile
+        .resolve("dump")
+        .also { it.mkdirs() }

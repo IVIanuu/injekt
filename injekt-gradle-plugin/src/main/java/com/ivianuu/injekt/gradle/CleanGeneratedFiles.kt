@@ -21,6 +21,10 @@ abstract class CleanGeneratedFiles : DefaultTask() {
 
     @get:InputFiles
     @get:Optional
+    lateinit var dumpDir: File
+
+    @get:InputFiles
+    @get:Optional
     lateinit var generatedSrcDir: File
 
     @get:Input
@@ -60,6 +64,7 @@ abstract class CleanGeneratedFiles : DefaultTask() {
         if (!isIncremental) {
             log("clean files: Clear all files because not incremental")
             generatedSrcDir.deleteRecursively()
+            dumpDir.deleteRecursively()
             project.buildDir.resolve("classes").deleteRecursively()
             project.buildDir.resolve("kotlin").deleteRecursively()
             return

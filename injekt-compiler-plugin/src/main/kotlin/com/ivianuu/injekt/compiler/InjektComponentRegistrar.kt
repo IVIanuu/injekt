@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
+import com.ivianuu.injekt.compiler.transform.InjektIrDumper
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -59,6 +60,10 @@ class InjektComponentRegistrar : ComponentRegistrar {
                 project,
                 InjektIrGenerationExtension(DeclarationStore())
             )
+            IrGenerationExtension.registerExtensionLast(
+                project,
+                InjektIrDumper(cacheDir(configuration), dumpDir(configuration))
+            )
             @Suppress("DEPRECATION")
             Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
                 .registerExtension(InjektDiagnosticSupressor())
@@ -73,4 +78,13 @@ private fun IrGenerationExtension.Companion.registerExtensionFirst(
     project.extensionArea
         .getExtensionPoint(IrGenerationExtension.extensionPointName)
         .registerExtension(extension, LoadingOrder.FIRST, project)
+}
+
+private fun IrGenerationExtension.Companion.registerExtensionLast(
+    project: MockProject,
+    extension: IrGenerationExtension,
+) {
+    project.extensionArea
+        .getExtensionPoint(IrGenerationExtension.extensionPointName)
+        .registerExtension(extension, LoadingOrder.LAST, project)
 }
