@@ -18,7 +18,7 @@ class InjektIrDumper(
             val file = File(it.fileEntry.name)
             fileManager.generateFile(
                 it.fqName,
-                "${file.name.removeSuffix(".kt")}",
+                file.name.removeSuffix(".kt"),
                 file.absolutePath,
                 it.dumpSrc()
             )
