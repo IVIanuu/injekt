@@ -3,18 +3,15 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.DeclarationStore
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 
-fun <T : Any> resolveGivenCandidates(
+fun ResolutionScope.resolveGivenCandidates(
     declarationStore: DeclarationStore,
     request: GivenRequest,
-    initial: T,
-    getGivens: T.(TypeRef) -> Pair<List<GivenNode>, T?>,
-    getGivenCollectionElements: T.(TypeRef) -> Pair<List<CallableDescriptor>, T?>,
 ): List<GivenNode> {
-    var current: T? = initial
-    while (current != null) {
-        val (givens, next) = getGivens(current, request.type)
+    var currentScope: ResolutionScope? = this
+    while (currentScope != null) {
+        val givens = currentScope.givensForTypeInThisScope(request.type)
         if (givens.isNotEmpty()) return givens
-        current = next
+        currentScope = currentScope.parent
     }
 
     if (request.type.classifier.fqName.asString() == "kotlin.Function0") {
@@ -31,12 +28,12 @@ fun <T : Any> resolveGivenCandidates(
     val setType = declarationStore.module.builtIns.set.defaultType.toTypeRef()
     if (request.type.isSubTypeOf(mapType) || request.type.isSubTypeOf(setType)) {
         val elements = mutableListOf<CallableDescriptor>()
-        var currentForElements: T? = initial
+        var currentForElements: ResolutionScope? = this
         while (currentForElements != null) {
-            val (currentElements, next) = getGivenCollectionElements(currentForElements,
-                request.type)
+            val currentElements = currentForElements
+                .givenCollectionElementsForTypeInThisScope(request.type)
             elements += currentElements
-            currentForElements = next
+            currentForElements = currentForElements.parent
         }
         if (elements.isNotEmpty()) {
             return listOf(

@@ -17,9 +17,9 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.index.Index
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.isAssignableTo
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.resolution.allGivenTypes
+import com.ivianuu.injekt.compiler.resolution.getGivenConstructors
+import com.ivianuu.injekt.compiler.resolution.overrideType
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
@@ -30,7 +30,6 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFunction
@@ -79,31 +78,20 @@ class DeclarationStore {
             .flatMap { propertyDescriptorsForFqName(it.fqName) }
     }
 
-    private val globalGivens: List<Pair<TypeRef, CallableDescriptor>> by unsafeLazy {
+    val allGivens: List<CallableDescriptor> by unsafeLazy {
         classIndices
-            .mapNotNull { it.getGivenConstructor() }
-            .filter { it.hasAnnotationWithPropertyAndClass(InjektFqNames.Given) }
+            .flatMap { it.getGivenConstructors() }
             .flatMap { constructor ->
                 constructor.allGivenTypes()
-                    .map { it to constructor }
+                    .map { constructor.overrideType(it) }
             } +
                 functionIndices
-                    .filter { it.hasAnnotationWithPropertyAndClass(InjektFqNames.Given) }
-                    .map { it.returnType!!.toTypeRef() to it } +
+                    .filter { it.hasAnnotationWithPropertyAndClass(InjektFqNames.Given) } +
                 propertyIndices
                     .filter { it.hasAnnotationWithPropertyAndClass(InjektFqNames.Given) }
-                    .map { it.type.toTypeRef() to it }
     }
 
-    private val givensByType = mutableMapOf<TypeRef, List<CallableDescriptor>>()
-    fun givensForType(type: TypeRef): List<CallableDescriptor> = givensByType.getOrPut(type) {
-        globalGivens
-            .filter { it.first.isAssignableTo(type) }
-            .map { it.second }
-            .distinct()
-    }
-
-    private val allGivenCollectionElements by unsafeLazy {
+    val allGivenCollectionElements by unsafeLazy {
         functionIndices
             .filter {
                 it.hasAnnotation(InjektFqNames.GivenMap) ||
@@ -115,12 +103,6 @@ class DeclarationStore {
                                 it.hasAnnotation(InjektFqNames.GivenSet)
                     }
     }
-    private val givenCollectionElementsByType = mutableMapOf<TypeRef, List<CallableDescriptor>>()
-    fun givenCollectionElementsFor(type: TypeRef): List<CallableDescriptor> =
-        givenCollectionElementsByType.getOrPut(type) {
-            allGivenCollectionElements
-                .filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
-        }
 
     private val allGivenInfos: Map<String, GivenInfo> by unsafeLazy {
         (memberScopeForFqName(InjektFqNames.IndexPackage)
@@ -170,13 +152,6 @@ class DeclarationStore {
                     it.defaultValue?.text == "given" ||
                             it.defaultValue?.text == "givenOrElse"
                 }
-            is KtClassOrObject -> declaration.getGivenConstructor()
-                ?.valueParameters
-                ?.filter {
-                    it.defaultValue?.text == "given" ||
-                            it.defaultValue?.text == "givenOrElse"
-                }
-                ?: emptyList()
             is KtFunction -> declaration.valueParameters
                 .filter {
                     it.defaultValue?.text == "given" ||
