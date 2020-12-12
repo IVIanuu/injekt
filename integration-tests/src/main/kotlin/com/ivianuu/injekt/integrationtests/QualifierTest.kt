@@ -46,25 +46,6 @@ class QualifierTest {
         assertNotSame(foo1, foo2)
     }
 
-    //@Test
-    fun testDistinctQualifierAnnotationWithTypeArguments() = codegen(
-        """
-            @Target(AnnotationTarget.TYPE)
-            @Qualifier
-            annotation class MyQualifier<T>
-            
-            @Given val foo1: @MyQualifier<String> Foo = Foo()
-            @Given val foo2: @MyQualifier<Int> Foo = Foo()
-       
-            fun invoke(): Pair<Foo, Foo> {
-                return given<@MyQualifier<String> Foo>() to given<@MyQualifier<Int> Foo>()
-            }
-            """
-    ) {
-        val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
-        assertNotSame(foo1, foo2)
-    }
-
     @Test
     fun testTypeParameterWithQualifierUpperBound() = codegen(
         """
