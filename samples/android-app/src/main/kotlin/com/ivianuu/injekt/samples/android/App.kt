@@ -17,16 +17,11 @@
 package com.ivianuu.injekt.samples.android
 
 import android.app.Application
-import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.android.initializeApp
 
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
-        initializeWorkers()
-        refreshRepo()
-    }
-
-    companion object {
-        @Given lateinit var application: Application
+        initializeApp()
     }
 }

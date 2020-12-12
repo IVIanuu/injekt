@@ -3,7 +3,7 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.DeclarationStore
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 
-fun <T : Any> resolveGivens(
+fun <T : Any> resolveGivenCandidates(
     declarationStore: DeclarationStore,
     request: GivenRequest,
     initial: T,

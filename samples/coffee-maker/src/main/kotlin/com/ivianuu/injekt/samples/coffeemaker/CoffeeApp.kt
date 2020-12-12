@@ -20,10 +20,11 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.given
 
 fun main() {
-    given<Heater>().on()
+    val heater = given<Heater>()
+    heater.on()
     given<Pump>().pump()
     println(" [_]P coffee! [_]P ")
-    given<Heater>().off()
+    heater.off()
 }
 
 interface Heater {

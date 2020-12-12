@@ -7,6 +7,7 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
+import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -365,7 +366,18 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testMultipleGivens() = codegen(
+    fun testPrefersResolvableGiven() = codegen(
+        """
+            @Given fun a() = "a"
+            @Given fun b(long: Long = given) = "b"
+            fun invoke() = given<String>()
+        """
+    ) {
+        assertEquals("a", invokeSingleFile())
+    }
+
+    @Test
+    fun testMultipleResolvableGivens() = codegen(
         """
             @Given val a = "a"
             @Given val b = "b"

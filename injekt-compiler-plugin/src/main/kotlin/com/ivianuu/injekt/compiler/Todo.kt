@@ -5,3 +5,5 @@ package com.ivianuu.injekt.compiler
 // Bring @Given members of receivers in to scope
 
 
+// Show all missing givens in resolution
+// Prefer resolvable in same scope

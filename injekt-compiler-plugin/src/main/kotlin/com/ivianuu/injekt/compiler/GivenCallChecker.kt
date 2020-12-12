@@ -5,7 +5,7 @@ import com.ivianuu.injekt.compiler.resolution.GivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.isAssignableTo
-import com.ivianuu.injekt.compiler.resolution.resolveGivens
+import com.ivianuu.injekt.compiler.resolution.resolveGivenCandidates
 import com.ivianuu.injekt.compiler.resolution.toGivenNode
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.pop
@@ -103,16 +103,17 @@ class GivenCallChecker(
             }
 
             chain.push(request)
-            val givens = resolveGivens(
+            val candidates = resolveGivenCandidates(
                 declarationStore,
                 request,
                 this,
                 { givensForInThisScope(it) to parent },
                 { givenCollectionElementsForInThisScope(it) to parent }
             )
+
             when {
-                givens.size == 1 -> {
-                    val given = givens.single()
+                candidates.size == 1 -> {
+                    val given = candidates.single()
                     givensByRequest[request] = given
                     if (given is CallableGivenNode) {
                         val lookedUpDeclaration = when (val callable = given.callable) {
@@ -127,13 +128,13 @@ class GivenCallChecker(
                     }
                     check(given, reportOn)
                 }
-                givens.size > 1 -> {
+                candidates.size > 1 -> {
                     bindingTrace.report(
                         InjektErrors.MULTIPLE_GIVENS
-                            .on(reportOn, request.type, request.origin, givens)
+                            .on(reportOn, request.type, request.origin, candidates)
                     )
                 }
-                givens.isEmpty() && request.required -> {
+                candidates.isEmpty() && request.required -> {
                     bindingTrace.report(
                         InjektErrors.UNRESOLVED_GIVEN
                             .on(

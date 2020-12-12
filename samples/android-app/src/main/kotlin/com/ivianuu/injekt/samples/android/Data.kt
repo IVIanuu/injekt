@@ -18,21 +18,30 @@ package com.ivianuu.injekt.samples.android
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.android.ApplicationContext
+import com.ivianuu.injekt.android.ApplicationStorage
+import com.ivianuu.injekt.android.memo
 import com.ivianuu.injekt.given
 import java.io.File
 
 typealias DatabaseFile = File
 
-@Given fun databaseFile(context: ApplicationContext = given): DatabaseFile =
-    context.cacheDir
+@Given fun databaseFile(
+    context: ApplicationContext = given,
+    storage: ApplicationStorage = given,
+): DatabaseFile = storage.memo("db_file") { context.cacheDir!! }
 
-@Given object Database {
-    private val file by lazy { given<DatabaseFile>() }
+@Given fun database(storage: ApplicationStorage = given) = storage.memo("db") {
+    Database()
 }
 
-@Given object Repo {
+class Database(private val file: DatabaseFile = given)
+
+@Given fun repo(storage: ApplicationStorage = given) = storage.memo("repo") {
+    Repo()
+}
+
+class Repo(private val api: Api = given) {
     fun refresh() {
-        given<Api>()
     }
 }
 

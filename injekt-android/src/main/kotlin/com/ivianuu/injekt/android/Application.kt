@@ -24,12 +24,35 @@ import android.content.res.Resources
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.GivenSet
 import com.ivianuu.injekt.given
+
+@Given lateinit var applicationComponent: ApplicationComponent
+
+typealias ApplicationComponent = Component<ApplicationComponentKey<*>>
+
+interface ApplicationComponentKey<T> : Component.Key<T>
+
+@GivenSet fun defaultApplicationComponentElements(): ComponentElements<ApplicationComponentKey<*>> =
+    emptyMap()
+
+object ApplicationKey : ApplicationComponentKey<Application>
+
+fun Application.initializeApp(builder: Component.Builder<ApplicationComponentKey<*>> = given) {
+    applicationComponent = builder
+        .set(ApplicationKey, this)
+        .build()
+}
+
+typealias ApplicationStorage = Storage
+
+@Given fun applicationStorage(component: ApplicationComponent = given): ApplicationStorage =
+    component.storage
 
 typealias ApplicationContext = Context
 
-@Given inline fun applicationContext(context: Application = given): ApplicationContext =
-    context
+@Given inline fun applicationContext(component: ApplicationComponent = given): ApplicationContext =
+    component[ApplicationKey]
 
 typealias ApplicationResources = Resources
 
@@ -37,6 +60,5 @@ typealias ApplicationResources = Resources
     context.resources
 
 typealias ApplicationLifecycleOwner = LifecycleOwner
-
 @Given inline fun applicationLifecycleOwner(context: Application = given): ApplicationLifecycleOwner =
     ProcessLifecycleOwner.get()

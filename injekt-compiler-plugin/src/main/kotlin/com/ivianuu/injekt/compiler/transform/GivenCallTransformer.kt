@@ -19,7 +19,7 @@ import com.ivianuu.injekt.compiler.resolution.fullyExpandedType
 import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
 import com.ivianuu.injekt.compiler.resolution.isAssignableTo
 import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
-import com.ivianuu.injekt.compiler.resolution.resolveGivens
+import com.ivianuu.injekt.compiler.resolution.resolveGivenCandidates
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.subtypeView
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
@@ -105,7 +105,7 @@ class GivenCallTransformer(
 
         private fun expressionFor(request: GivenRequest, symbol: IrSymbol): IrExpression {
             return expressionsByType.getOrPut(request.type) {
-                val given = resolveGivens(
+                val given = resolveGivenCandidates(
                     declarationStore,
                     request,
                     this,

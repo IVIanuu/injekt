@@ -40,4 +40,8 @@ dependencies {
     testImplementation(Deps.AndroidX.Test.core)
     testImplementation(Deps.AndroidX.Test.junit)
     testImplementation(Deps.roboelectric)
+
+    implementation(Deps.AndroidX.Compose.runtime)
+    kotlinCompilerPluginClasspath(Deps.AndroidX.Compose.compiler)
+    implementation(Deps.AndroidX.Compose.material)
 }

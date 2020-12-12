@@ -18,7 +18,6 @@
 
 package com.ivianuu.injekt.android
 
-/*
 import android.content.Context
 import android.content.res.Resources
 import androidx.activity.ComponentActivity
@@ -27,33 +26,76 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.GivenSet
 import com.ivianuu.injekt.given
 
+typealias ActivityComponent = Component<ActivityComponentKey<*>>
+
+interface ActivityComponentKey<T> : Component.Key<T>
+
+@GivenSet fun defaultActivityComponentElements(): ComponentElements<ActivityComponentKey<*>> =
+    emptyMap()
+
+@Given fun activityComponent(
+    activity: ComponentActivity = given,
+    activityRetainedComponent: ActivityRetainedComponent = given,
+) = activity.lifecycle.component {
+    activityRetainedComponent[ActivityComponentFactoryKey](activity)
+}
+
+object ActivityKey : ActivityComponentKey<ComponentActivity>
+
+@Given fun activity(component: ActivityComponent = given): ComponentActivity =
+    component[ActivityKey]
+
+object ActivityComponentFactoryKey :
+    ActivityRetainedComponentKey<(@Given ComponentActivity) -> ActivityComponent>
+
+@GivenSet fun activityComponentFactoryKey(
+    builderFactory: () -> Component.Builder<ActivityComponentKey<*>> = given,
+): ComponentElements<ActivityRetainedComponentKey<*>> =
+    componentElementsOf(ActivityComponentFactoryKey) {
+        builderFactory()
+            .set(ActivityKey, it)
+            .build()
+    }
+
+typealias ActivityStorage = Storage
+
+@Given fun activityStorage(component: ActivityComponent = given): ActivityStorage =
+    component.storage
+
 typealias ActivityContext = Context
-@Given inline fun activityContext(activity: @Given ComponentActivity = given): ActivityContext = activity
+
+@Given
+inline fun activityContext(activity: ComponentActivity = given): ActivityContext = activity
 
 typealias ActivityResources = Resources
 
-@Binding inline fun ComponentActivity.provideActivityResources(): ActivityResources = resources
+@Given
+inline fun activityResources(activity: ComponentActivity = given): ActivityResources =
+    activity.resources
 
 typealias ActivityLifecycleOwner = LifecycleOwner
 
-@Binding inline fun ComponentActivity.provideActivityLifecycleOwner(): ActivityLifecycleOwner = this
+@Given
+inline fun activityLifecycleOwner(activity: ComponentActivity = given): ActivityLifecycleOwner =
+    activity
 
 typealias ActivityOnBackPressedDispatcherOwner = OnBackPressedDispatcherOwner
 
-@Binding
-inline fun ComponentActivity.provideActivityOnBackPressedDispatcherOwner(): ActivityOnBackPressedDispatcherOwner =
-    this
+@Given
+inline fun activityOnBackPressedDispatcherOwner(activity: ComponentActivity = given): ActivityOnBackPressedDispatcherOwner =
+    activity
 
 typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
 
-@Binding
-inline fun ComponentActivity.provideActivitySavedStateRegistryOwner(): ActivitySavedStateRegistryOwner =
-    this
+@Given
+inline fun activitySavedStateRegistryOwner(activity: ComponentActivity = given): ActivitySavedStateRegistryOwner =
+    activity
 
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
-@Binding inline fun ComponentActivity.provideActivityViewModelStoreOwner(): ActivityViewModelStoreOwner =
-    this
-*/
+@Given
+fun activityViewModelStoreOwner(activity: ComponentActivity = given): ActivityViewModelStoreOwner =
+    activity

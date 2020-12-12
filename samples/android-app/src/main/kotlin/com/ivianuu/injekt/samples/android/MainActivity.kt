@@ -17,57 +17,44 @@
 package com.ivianuu.injekt.samples.android
 
 import android.os.Bundle
+import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.platform.setContent
+import com.ivianuu.injekt.android.ActivityRetainedStorage
+import com.ivianuu.injekt.android.ActivityStorage
+import com.ivianuu.injekt.android.ApplicationComponent
+import com.ivianuu.injekt.given
+import com.ivianuu.injekt.withGiven
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            /*with(activityComponent.get<MainActivityDependencies>()) {
-                withMainViewModel {
-                    GlobalScope.launch {
-                        enqueueWork()
+        withGiven(this as ComponentActivity) {
+            given<ApplicationComponent>()[DummyAppElementKey]()
+
+            given<StorageCoroutineScope<ActivityStorage>>().launch {
+                println("Activity work: start")
+                try {
+                    awaitCancellation()
+                } finally {
+                    println("Activity work: stop")
+                }
+            }
+            if (savedInstanceState == null) {
+                given<StorageCoroutineScope<ActivityRetainedStorage>>().launch {
+                    println("Retained work: start")
+                    try {
+                        awaitCancellation()
+                    } finally {
+                        println("Retained work: stop")
                     }
                 }
-            }*/
+            }
+            setContent {
+                MyAppUi()
+            }
         }
     }
 }
-/*
-
-@Binding data class MainActivityDependencies(
-    val withMainViewModel: WithMainViewModel,
-    val enqueueWork: enqueueWork,
-)
-
-typealias WithMainViewModel = @Composable (@Composable (MainViewModel) -> Unit) -> Unit
-
-@Binding fun provideWithMainViewModel(viewModelFactory: () -> MainViewModel): WithMainViewModel = {
-    val viewModel = remember(viewModelFactory)
-    it(viewModel)
-}
-
-typealias enqueueWork = () -> Unit
-
-@Binding fun provideEnqueueWork(context: ActivityContext): enqueueWork = {
-    WorkManager.getInstance(context)
-        .enqueue(
-            OneTimeWorkRequestBuilder<TestWorker>()
-                .build()
-        )
-}
-
-@Module val MainViewModelModule = activityViewModel<MainViewModel>()
-
-@Binding class MainViewModel : ViewModel() {
-    init {
-        println("init")
-    }
-
-    override fun onCleared() {
-        println("on cleared")
-        super.onCleared()
-    }
-}
-*/

@@ -3,10 +3,8 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.test.Command
 import com.ivianuu.injekt.test.CommandA
 import com.ivianuu.injekt.test.CommandB
-import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
-import junit.framework.Assert
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -28,6 +26,8 @@ class GivenSetTest {
         assertTrue(set.any { it is CommandA })
         assertTrue(set.any { it is CommandB })
     }
+
+    /*
 
     @Test
     fun testNestedSet() = codegen(
@@ -162,6 +162,6 @@ class GivenSetTest {
             .let { it.first.toList() to it.second.toList() }
         Assert.assertSame(a[0], b[0])
         Assert.assertNotSame(a[1], b[1])
-    }
+    }*/
 
 }
