@@ -320,7 +320,7 @@ class GivenResolutionTest {
             )
         )
     ) {
-        it.last().assertCompileError("No given found for com.ivianuu.injekt.test.Foo")
+        it.last().assertCompileError("no given argument found of type com.ivianuu.injekt.test.Foo")
     }
 
     @Test
@@ -331,7 +331,7 @@ class GivenResolutionTest {
             }
         """
     ) {
-        assertCompileError("No given found for kotlin.String")
+        assertCompileError("no given argument found of type kotlin.String")
     }
 
     @Test
@@ -341,7 +341,7 @@ class GivenResolutionTest {
             fun invoke() = given<Bar>()
         """
     ) {
-        assertCompileError("No given found for com.ivianuu.injekt.test.Foo")
+        assertCompileError(" no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
     }
 
     @Test
@@ -362,7 +362,8 @@ class GivenResolutionTest {
             )
         )
     ) {
-        it.last().assertCompileError("No given found for com.ivianuu.injekt.test.Foo")
+        it.last()
+            .assertCompileError(" no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
     }
 
     @Test
@@ -377,14 +378,14 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testMultipleResolvableGivens() = codegen(
+    fun testAmbiguousGivens() = codegen(
         """
             @Given val a = "a"
             @Given val b = "b"
             fun invoke() = given<String>()
         """
     ) {
-        assertCompileError("Multiple givens")
+        assertCompileError("ambiguous given arguments of type kotlin.String for parameter value of function com.ivianuu.injekt.given")
     }
 
     @Test

@@ -14,7 +14,7 @@ import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.InternalResolutionScope
 import com.ivianuu.injekt.compiler.resolution.ResolutionScope
-import com.ivianuu.injekt.compiler.resolution.resolveGraph
+import com.ivianuu.injekt.compiler.resolution.resolveGiven
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -60,15 +60,16 @@ class GivenCallChecker(
             .filter { it.value is DefaultValueArgument }
             .map {
                 GivenRequest(
-                    it.key.type.toTypeRef(),
-                    it.key.name in givenInfo.requiredGivens,
-                    it.key.fqNameSafe
+                    type = it.key.type.toTypeRef(),
+                    required = it.key.name in givenInfo.requiredGivens,
+                    callableFqName = resultingDescriptor.fqNameSafe,
+                    parameterName = it.key.name
                 )
             }
 
         if (requests.isEmpty()) return
 
-        val graph = resolveGraph(requests)
+        val graph = resolveGiven(requests)
 
         when (graph) {
             is GivenGraph.Success -> {

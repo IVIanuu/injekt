@@ -26,7 +26,7 @@ interface InjektErrors {
                 .also {
                     MAP.put(
                         it,
-                        "\n{0}",
+                        "{0}",
                         object : DiagnosticParameterRenderer<GivenGraph.Error> {
                             override fun render(
                                 obj: GivenGraph.Error,
@@ -46,42 +46,37 @@ interface InjektErrors {
                                 fun ResolutionResult.Failure.print() {
                                     when (this) {
                                         is ResolutionResult.Failure.CandidateAmbiguity -> {
-                                            appendLine("${indent()}Ambiguity for ${request.type.render()}")
+                                            appendLine("${indent()}ambiguous given arguments of type ${request.type.render()} " +
+                                                    "for parameter ${request.parameterName} of function ${request.callableFqName}:")
                                             withIndent {
                                                 candidateResults
                                                     .map { it.candidate }
                                                     .forEach { candidate ->
-                                                        appendLine("${indent()}${candidate.origin}")
+                                                        appendLine("${indent()}${candidate.callableFqName}")
                                                     }
                                             }
                                         }
                                         is ResolutionResult.Failure.CircularDependency -> {
-                                            appendLine("${indent()}Circular")
+                                            appendLine("${indent()}circular")
                                         }
                                         is ResolutionResult.Failure.CandidateFailures -> {
-                                            appendLine("${indent()}Given candidates for ${request.type.render()} " +
-                                                    "at ${request.origin} have failures:")
+                                            appendLine("${indent()}given candidate of type ${request.type.render()} " +
+                                                    "for parameter ${request.parameterName} of function ${request.callableFqName} has failures:")
                                             withIndent {
-                                                candidateResults
-                                                    .forEach { candidateFailure ->
-                                                        appendLine("${indent()}${candidateFailure.candidate.origin} " +
-                                                                "for ${candidateFailure.request.type.render()}:")
-                                                        withIndent {
-                                                            candidateFailure.dependencyFailureResults
-                                                                .forEach {
-                                                                    it.print()
-                                                                }
-                                                        }
-                                                    }
+                                                candidateFailure
+                                                    .failure.print()
                                             }
                                         }
-                                        is ResolutionResult.Failure.NoCandidates ->
-                                            appendLine("${indent()}No given found for" +
-                                                    " ${request.type.render()} at ${request.origin}")
+                                        is ResolutionResult.Failure.NoCandidates -> {
+                                            appendLine("${indent()}no given argument found of type " +
+                                                    "${request.type.render()} for parameter ${request.parameterName} of function ${request.callableFqName}")
+                                        }
                                     }
                                 }
+
                                 obj
                                     .failures
+                                    .flatMap { it.value }
                                     .forEach { it.print() }
                             }
                         }
@@ -232,7 +227,7 @@ interface InjektErrors {
                 .also {
                     MAP.put(
                         it,
-                        "Non @Given value parameter on @{0} declaration",
+                        "non @Given value parameter on @{0} declaration",
                         Renderers.TO_STRING
                     )
                 }
@@ -245,12 +240,12 @@ interface InjektErrors {
         @JvmField
         val GIVEN_CLASS_WITH_GIVEN_CONSTRUCTOR =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "Class cannot be given and have a given constructor") }
+                .also { MAP.put(it, "class cannot be given and have a given constructor") }
 
         @JvmField
         val CLASS_WITH_MULTIPLE_GIVEN_CONSTRUCTORS =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "Class cannot have multiple given constructors") }
+                .also { MAP.put(it, "class cannot have multiple given constructors") }
 
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(

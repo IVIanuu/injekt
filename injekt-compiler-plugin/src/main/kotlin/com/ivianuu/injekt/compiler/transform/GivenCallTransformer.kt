@@ -79,9 +79,10 @@ class GivenCallTransformer(
                 .map {
                     it to expressionFor(
                         GivenRequest(
-                            it.descriptor.type.toTypeRef().substitute(substitutionMap),
-                            it.name in givenInfo.requiredGivens,
-                            it.descriptor.fqNameSafe
+                            type = it.descriptor.type.toTypeRef().substitute(substitutionMap),
+                            required = it.name in givenInfo.requiredGivens,
+                            callableFqName = callee.descriptor.fqNameSafe,
+                            parameterName = it.name
                         ),
                         call.symbol
                     )

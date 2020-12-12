@@ -1,14 +1,17 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.asNameId
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 sealed class GivenNode {
     abstract val type: TypeRef
     abstract val dependencies: List<GivenRequest>
-    abstract val origin: FqName
+    abstract val callableFqName: FqName
 }
 
 data class CallableGivenNode(
@@ -16,24 +19,32 @@ data class CallableGivenNode(
     override val dependencies: List<GivenRequest>,
     val callable: CallableDescriptor,
 ) : GivenNode() {
-    override val origin: FqName
-        get() = callable.fqNameSafe
+    override val callableFqName: FqName = if (callable is ClassConstructorDescriptor)
+        callable.constructedClass.fqNameSafe
+    else callable.fqNameSafe
 }
 
 data class CollectionGivenNode(
     override val type: TypeRef,
-    override val origin: FqName,
     val elements: List<CallableDescriptor>,
     override val dependencies: List<GivenRequest>,
-) : GivenNode()
+) : GivenNode() {
+    override val callableFqName: FqName = FqName("givenCollectionOf")
+}
 
 data class ProviderGivenNode(
     override val type: TypeRef,
-    override val origin: FqName,
     val isRequired: Boolean,
 ) : GivenNode() {
-    override val dependencies: List<GivenRequest> =
-        listOf(GivenRequest(type.typeArguments.last(), isRequired, origin))
+    override val callableFqName: FqName = FqName("Provider")
+    override val dependencies: List<GivenRequest> = listOf(
+        GivenRequest(
+            type = type.typeArguments.last(),
+            required = isRequired,
+            callableFqName = callableFqName,
+            parameterName = "instance".asNameId()
+        )
+    )
 }
 
 fun CallableDescriptor.toGivenNode(
@@ -59,10 +70,11 @@ fun CallableDescriptor.getGivenRequests(
         .filter { it.name in info.allGivens }
         .map {
             GivenRequest(
-                it.type.toTypeRef()
+                type = it.type.toTypeRef()
                     .substitute(substitutionMap),
-                it.name in info.requiredGivens,
-                it.fqNameSafe
+                required = it.name in info.requiredGivens,
+                callableFqName = fqNameSafe,
+                parameterName = it.name
             )
         }
 }
@@ -70,5 +82,6 @@ fun CallableDescriptor.getGivenRequests(
 data class GivenRequest(
     val type: TypeRef,
     val required: Boolean,
-    val origin: FqName,
+    val callableFqName: FqName,
+    val parameterName: Name,
 )
