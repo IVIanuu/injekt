@@ -95,7 +95,7 @@ sealed class TypeRef {
     override fun toString(): String = typeName.asString()
 
     override fun equals(other: Any?) =
-        other is TypeRef && other._hashCode == _hashCode
+        other is TypeRef && other.typeName == typeName
 
     private val _hashCode by unsafeLazy {
         var result = classifier.hashCode()
@@ -104,7 +104,9 @@ sealed class TypeRef {
         // todo result result = 31 * result + variance.hashCode()
         result = 31 * result + isComposable.hashCode()
         result = 31 * result + isStarProjection.hashCode()
-        result = 31 * result + qualifiers.hashCode()
+        result = 31 * result + qualifiers
+            .map { it.type.toTypeRef() to it.allValueArguments }
+            .hashCode()
         result
     }
 

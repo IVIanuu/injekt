@@ -1,22 +1,18 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.DeclarationStore
-import com.ivianuu.injekt.compiler.resolution.BlockResolutionScope
+import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
-import com.ivianuu.injekt.compiler.resolution.ClassResolutionScope
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.CollectionGivenNode
-import com.ivianuu.injekt.compiler.resolution.ExternalResolutionScope
-import com.ivianuu.injekt.compiler.resolution.FunctionResolutionScope
+import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
-import com.ivianuu.injekt.compiler.resolution.InternalResolutionScope
 import com.ivianuu.injekt.compiler.resolution.ProviderGivenNode
-import com.ivianuu.injekt.compiler.resolution.ResolutionScope
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.fullyExpandedType
 import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
 import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
-import com.ivianuu.injekt.compiler.resolution.resolveGivenCandidates
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.subtypeView
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
@@ -43,18 +39,14 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irTemporary
-import org.jetbrains.kotlin.ir.declarations.IrAnonymousInitializer
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrVariable
-import org.jetbrains.kotlin.ir.expressions.IrBlock
-import org.jetbrains.kotlin.ir.expressions.IrBlockBody
-import org.jetbrains.kotlin.ir.expressions.IrBody
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
@@ -67,7 +59,11 @@ class GivenCallTransformer(
     private val pluginContext: IrPluginContext,
 ) : IrElementTransformerVoid() {
 
-    private fun ResolutionScope.fillGivens(
+    private data class ResolutionContext(val graph: GivenGraph) {
+        val expressionsByType = mutableMapOf<TypeRef, () -> IrExpression>()
+    }
+
+    private fun ResolutionContext.fillGivens(
         call: IrFunctionAccessExpression,
         substitutionMap: Map<ClassifierRef, TypeRef>,
     ) {
@@ -94,17 +90,13 @@ class GivenCallTransformer(
         }
     }
 
-    private fun ResolutionScope.expressionFor(
+    private fun ResolutionContext.expressionFor(
         request: GivenRequest,
         symbol: IrSymbol,
     ): IrExpression {
         return expressionsByType.getOrPut(request.type) {
-            val given = resolveGivenCandidates(
-                declarationStore,
-                request
-            ).let { givens ->
-                givens.singleOrNull() ?: error("Wtf $request $givens")
-            }
+            val given = graph.givensByRequest[request]
+                ?: error("Wtf $request\n${this.graph.givensByRequest.toList().joinToString("\n")}")
             when (given) {
                 is CallableGivenNode -> callableExpression(given, symbol)
                 is ProviderGivenNode -> providerExpression(given, symbol)
@@ -113,7 +105,7 @@ class GivenCallTransformer(
         }()
     }
 
-    private fun ResolutionScope.providerExpression(
+    private fun ResolutionContext.providerExpression(
         given: ProviderGivenNode,
         symbol: IrSymbol,
     ): () -> IrExpression = {
@@ -123,7 +115,7 @@ class GivenCallTransformer(
             }
     }
 
-    private fun ResolutionScope.collectionExpression(
+    private fun ResolutionContext.collectionExpression(
         given: CollectionGivenNode,
         symbol: IrSymbol,
     ): () -> IrExpression {
@@ -218,7 +210,7 @@ class GivenCallTransformer(
         }
     }
 
-    private fun ResolutionScope.callableExpression(
+    private fun ResolutionContext.callableExpression(
         given: CallableGivenNode,
         symbol: IrSymbol,
     ): () -> IrExpression = {
@@ -233,7 +225,7 @@ class GivenCallTransformer(
         }
     }
 
-    private fun ResolutionScope.classExpression(
+    private fun ResolutionContext.classExpression(
         type: TypeRef,
         descriptor: ConstructorDescriptor,
         symbol: IrSymbol,
@@ -270,7 +262,7 @@ class GivenCallTransformer(
         }
     }
 
-    private fun ResolutionScope.propertyExpression(
+    private fun ResolutionContext.propertyExpression(
         type: TypeRef,
         descriptor: PropertyDescriptor,
         symbol: IrSymbol,
@@ -311,7 +303,7 @@ class GivenCallTransformer(
             }
     }
 
-    private fun ResolutionScope.functionExpression(
+    private fun ResolutionContext.functionExpression(
         type: TypeRef,
         descriptor: FunctionDescriptor,
         symbol: IrSymbol,
@@ -351,7 +343,7 @@ class GivenCallTransformer(
             }
     }
 
-    private fun ResolutionScope.parameterExpression(
+    private fun ResolutionContext.parameterExpression(
         descriptor: ParameterDescriptor,
         symbol: IrSymbol,
     ): IrExpression {
@@ -373,7 +365,7 @@ class GivenCallTransformer(
             .irGet(valueParameter)
     }
 
-    private fun ResolutionScope.variableExpression(
+    private fun ResolutionContext.variableExpression(
         descriptor: VariableDescriptor,
         symbol: IrSymbol,
     ): IrExpression {
@@ -408,21 +400,15 @@ class GivenCallTransformer(
             }
             .owner
 
-    private var scope = InternalResolutionScope(
-        ExternalResolutionScope(declarationStore),
-        declarationStore
-    )
-
     private val dispatchReceiverAccessors = mutableListOf<Pair<IrClass, () -> IrExpression>>()
 
     private val variables = mutableListOf<IrVariable>()
 
-    private inline fun <R> inScope(scope: ResolutionScope, block: () -> R): R {
-        val prevScope = this.scope
-        this.scope = scope
-        val result = block()
-        this.scope = prevScope
-        return result
+    private val fileStack = mutableListOf<IrFile>()
+    override fun visitFile(declaration: IrFile): IrFile {
+        fileStack.push(declaration)
+        return super.visitFile(declaration)
+            .also { fileStack.pop() }
     }
 
     override fun visitClass(declaration: IrClass): IrStatement {
@@ -432,31 +418,7 @@ class GivenCallTransformer(
                     .irGet(declaration.thisReceiver!!)
             }
         )
-        val result = if (declaration.kind == ClassKind.OBJECT) {
-            inScope(ClassResolutionScope(
-                pluginContext.bindingContext,
-                declarationStore,
-                declaration.descriptor,
-                scope
-            )) { super.visitClass(declaration) }
-        } else {
-            val parentScope = declaration.companionObject()
-                ?.let { it as? IrClass }
-                ?.let {
-                    ClassResolutionScope(
-                        pluginContext.bindingContext,
-                        declarationStore,
-                        it.descriptor,
-                        scope
-                    )
-                } ?: scope
-            inScope(ClassResolutionScope(
-                pluginContext.bindingContext,
-                declarationStore,
-                declaration.descriptor,
-                parentScope
-            )) { super.visitClass(declaration) }
-        }
+        val result = super.visitClass(declaration)
         dispatchReceiverAccessors.pop()
         return result
     }
@@ -471,56 +433,29 @@ class GivenCallTransformer(
                 }
             )
         }
-        val result =
-            inScope(FunctionResolutionScope(declarationStore, scope, declaration.descriptor)) {
-                super.visitFunction(declaration)
-            }
+        val result = super.visitFunction(declaration)
         if (dispatchReceiver != null) {
             dispatchReceiverAccessors.pop()
         }
         return result
     }
 
-    private var blockScope: ResolutionScope? = null
-
-    override fun visitAnonymousInitializer(declaration: IrAnonymousInitializer): IrStatement {
-        return inBlockScope(BlockResolutionScope(declarationStore, scope)) {
-            super.visitAnonymousInitializer(declaration)
-        }
-    }
-
-    override fun visitBlock(expression: IrBlock): IrExpression {
-        return inBlockScope(BlockResolutionScope(declarationStore, scope)) {
-            super.visitBlock(expression)
-        }
-    }
-
-    override fun visitBlockBody(body: IrBlockBody): IrBody {
-        return inBlockScope(BlockResolutionScope(declarationStore, scope)) {
-            super.visitBlockBody(body)
-        }
-    }
-
-    private inline fun <R> inBlockScope(scope: ResolutionScope, block: () -> R): R {
-        val prevScope = this.blockScope
-        this.blockScope = scope
-        val result = inScope(scope, block)
-        this.blockScope = prevScope
-        return result
-    }
-
     override fun visitVariable(declaration: IrVariable): IrStatement {
         return super.visitVariable(declaration)
-            .also {
-                blockScope?.addIfNeeded(declaration.descriptor)
-                variables += declaration
-            }
+            .also { variables += declaration }
     }
 
     override fun visitFunctionAccess(expression: IrFunctionAccessExpression) =
         super.visitFunctionAccess(expression.apply {
-            val givenInfo = declarationStore.givenInfoFor(expression.symbol.descriptor)
-            if (givenInfo.allGivens.isNotEmpty()) {
+            val givenNodes = pluginContext.bindingContext[
+                    InjektWritableSlices.GIVEN_GRAPH,
+                    SourcePosition(
+                        fileStack.last().fileEntry.name,
+                        expression.startOffset,
+                        expression.endOffset
+                    )
+            ]
+            if (givenNodes != null) {
                 try {
                     val substitutionMap = getSubstitutionMap(
                         (0 until expression.typeArgumentsCount)
@@ -530,7 +465,8 @@ class GivenCallTransformer(
                                     .map { it.defaultType.toTypeRef() }
                             )
                     )
-                    scope.fillGivens(this, substitutionMap)
+                    ResolutionContext(givenNodes)
+                        .fillGivens(expression, substitutionMap)
                 } catch (e: Throwable) {
                     throw RuntimeException("Wtf ${expression.dump()}", e)
                 }

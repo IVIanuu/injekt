@@ -46,6 +46,8 @@ fun CallableDescriptor.toGivenNode(
     )
 }
 
+data class GivenGraph(val givensByRequest: Map<GivenRequest, GivenNode>)
+
 data class GivenRequest(
     val type: TypeRef,
     val required: Boolean,

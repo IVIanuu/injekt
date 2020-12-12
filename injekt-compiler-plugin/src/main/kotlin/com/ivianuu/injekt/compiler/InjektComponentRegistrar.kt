@@ -47,9 +47,10 @@ class InjektComponentRegistrar : ComponentRegistrar {
         ).map { File(it.joinToString(File.separator)) }
         val isGenerateKaptStubs = kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
         if (!isGenerateKaptStubs) {
+            val declarationStore = DeclarationStore()
             AnalysisHandlerExtension.registerExtension(
                 project,
-                InjektKtGenerationExtension(DeclarationStore(),
+                InjektKtGenerationExtension(declarationStore,
                     srcDir(configuration), cacheDir(configuration))
             )
             StorageComponentContainerContributor.registerExtension(
@@ -58,7 +59,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
             )
             IrGenerationExtension.registerExtensionFirst(
                 project,
-                InjektIrGenerationExtension(DeclarationStore())
+                InjektIrGenerationExtension(declarationStore)
             )
             IrGenerationExtension.registerExtensionLast(
                 project,

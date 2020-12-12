@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.index
 
-import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.FileManager
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.UniqueNameProvider
@@ -33,10 +32,7 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 
-class IndexGenerator(
-    private val declarationStore: DeclarationStore,
-    private val fileManager: FileManager,
-) {
+class IndexGenerator(private val fileManager: FileManager) {
     fun generate(files: List<KtFile>) {
         files.forEach { file ->
             val indices = mutableListOf<Index>()
@@ -72,7 +68,6 @@ class IndexGenerator(
                             }
                         )
                         indices += index
-                        declarationStore.addInternalIndex(index)
                     }
                 }
             })

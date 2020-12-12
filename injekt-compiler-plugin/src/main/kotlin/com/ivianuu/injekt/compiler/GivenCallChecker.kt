@@ -5,6 +5,7 @@ import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.ClassResolutionScope
 import com.ivianuu.injekt.compiler.resolution.ExternalResolutionScope
 import com.ivianuu.injekt.compiler.resolution.FunctionResolutionScope
+import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.GivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.InternalResolutionScope
@@ -32,6 +33,8 @@ import org.jetbrains.kotlin.psi.KtPrimaryConstructor
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtSecondaryConstructor
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
+import org.jetbrains.kotlin.psi.psiUtil.endOffset
+import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
@@ -45,13 +48,13 @@ class GivenCallChecker(
 
     private val chain = mutableListOf<GivenRequest>()
 
-    fun ResolutionScope.check(call: ResolvedCall<*>, reportOn: KtElement) {
+    private fun ResolutionScope.check(call: ResolvedCall<*>, reportOn: KtElement) {
         val resultingDescriptor = call.resultingDescriptor
         if (resultingDescriptor !is FunctionDescriptor) return
 
         val givenInfo = declarationStore.givenInfoFor(resultingDescriptor)
 
-        call
+        val givenRequests = call
             .valueArguments
             .filterKeys { it.name in givenInfo.allGivens }
             .filter { it.value is DefaultValueArgument }
@@ -62,7 +65,21 @@ class GivenCallChecker(
                     it.key.fqNameSafe
                 )
             }
-            .forEach { check(it, reportOn) }
+            .onEach { check(it, reportOn) }
+
+        if (givenRequests.isEmpty()) return
+
+        if (givenRequests.all { givensByRequest[it] != null }) {
+            bindingTrace.record(
+                InjektWritableSlices.GIVEN_GRAPH,
+                SourcePosition(
+                    reportOn.containingKtFile.virtualFilePath,
+                    reportOn.startOffset,
+                    reportOn.endOffset
+                ),
+                GivenGraph(givensByRequest)
+            )
+        }
 
         if (call.resultingDescriptor.fqNameSafe == InjektFqNames.debugGiven) {
             val type = call.typeArguments.values.single().toTypeRef()

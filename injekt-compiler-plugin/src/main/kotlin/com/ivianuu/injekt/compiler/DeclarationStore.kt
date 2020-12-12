@@ -42,13 +42,10 @@ class DeclarationStore {
 
     lateinit var module: ModuleDescriptor
 
-    private val internalIndices = mutableListOf<Index>()
-    fun addInternalIndex(index: Index) {
-        internalIndices += index
-    }
+    var generatedCode = false
 
     private val allIndices by unsafeLazy {
-        internalIndices + (memberScopeForFqName(InjektFqNames.IndexPackage)
+        (memberScopeForFqName(InjektFqNames.IndexPackage)
             ?.getContributedDescriptors(DescriptorKindFilter.VALUES)
             ?.filterIsInstance<PropertyDescriptor>()
             ?.filter { it.hasAnnotation(InjektFqNames.Index) }
@@ -105,6 +102,7 @@ class DeclarationStore {
     }
 
     private val allGivenInfos: Map<String, GivenInfo> by unsafeLazy {
+        check(generatedCode)
         (memberScopeForFqName(InjektFqNames.IndexPackage)
             ?.getContributedDescriptors(DescriptorKindFilter.VALUES)
             ?.filterIsInstance<PropertyDescriptor>()
@@ -134,11 +132,21 @@ class DeclarationStore {
     private val givenInfosByKey = mutableMapOf<String, GivenInfo>()
 
     fun givenInfoFor(declaration: DeclarationDescriptor): GivenInfo {
-        val key = declaration.uniqueKey()
-        return givenInfosByKey.getOrPut(key) {
-            allGivenInfos.getOrElse(key) {
-                createGivenInfoOrNull(declaration.original) ?: GivenInfo.Empty
+        return internalGivenInfoFor(declaration) ?: kotlin.run {
+            val key = declaration.uniqueKey()
+            givenInfosByKey.getOrPut(key) {
+                allGivenInfos.getOrElse(key) {
+                    createGivenInfoOrNull(declaration.original) ?: GivenInfo.Empty
+                }
             }
+        }
+    }
+
+    private val internalGivenInfosByKey = mutableMapOf<String, GivenInfo?>()
+    fun internalGivenInfoFor(declaration: DeclarationDescriptor): GivenInfo? {
+        val key = declaration.uniqueKey()
+        return internalGivenInfosByKey.getOrPut(key) {
+            createGivenInfoOrNull(declaration.original)
         }
     }
 

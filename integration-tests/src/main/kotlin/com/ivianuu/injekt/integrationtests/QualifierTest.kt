@@ -80,17 +80,4 @@ class QualifierTest {
             """
     )
 
-    @Test
-    fun testQualifierWithFunctionTypeParameter() = codegen(
-        """
-            @Target(AnnotationTarget.TYPE)
-            @Qualifier
-            annotation class MyQualifier<T>
-            
-            @Given fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
-             
-            fun invoke() = given<@MyQualifier<String> Foo>()
-            """
-    )
-
 }

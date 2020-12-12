@@ -9,7 +9,6 @@ import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.resolve.BindingContext
 
 class ResolutionScope(
@@ -21,9 +20,6 @@ class ResolutionScope(
 
     // todo
     val givensByRequest = mutableMapOf<GivenRequest, GivenNode>()
-
-    // todo
-    val expressionsByType = mutableMapOf<TypeRef, () -> IrExpression>()
 
     private val givens by unsafeLazy { initialGivensInScope().toMutableList() }
     private val givenCollectionElements by unsafeLazy {
