@@ -110,6 +110,8 @@ object Deps {
 
     const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.3.1"
 
+    const val kotestAssertions = "io.kotest:kotest-assertions-core:4.3.0"
+
     const val mavenGradlePlugin =
         "com.github.dcendents:android-maven-gradle-plugin:2.1"
 

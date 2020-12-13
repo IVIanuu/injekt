@@ -27,4 +27,5 @@ dependencies {
     api(project(":injekt-core"))
     kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
     testImplementation(Deps.junit)
+    testImplementation(Deps.kotestAssertions)
 }
