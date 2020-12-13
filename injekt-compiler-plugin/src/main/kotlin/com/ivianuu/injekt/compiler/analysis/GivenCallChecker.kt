@@ -197,7 +197,11 @@ class GivenCallChecker(
 
     override fun visitCallExpression(expression: KtCallExpression) {
         super.visitCallExpression(expression)
-        scope.check(expression.getResolvedCall(bindingTrace.bindingContext) ?: return, expression)
+        try {
+            scope.check(expression.getResolvedCall(bindingTrace.bindingContext) ?: return,
+                expression)
+        } catch (e: Throwable) {
+        }
     }
 
 }

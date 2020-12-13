@@ -96,7 +96,8 @@ class GivenChecker : CallChecker, DeclarationChecker {
                 }
         } else if (descriptor is PropertyDescriptor) {
             if (descriptor.hasAnnotation(InjektFqNames.Given) &&
-                descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Given) == true
+                descriptor.extensionReceiverParameter != null &&
+                descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Given) != true
             ) {
                 context.trace.report(
                     InjektErrors.GIVEN_DECLARATION_WITH_NON_GIVEN_EXTENSION_RECEIVER

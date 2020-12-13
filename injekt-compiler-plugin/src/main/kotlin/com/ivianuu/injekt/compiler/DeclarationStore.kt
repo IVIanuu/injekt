@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFunction
+import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
@@ -172,6 +173,11 @@ class DeclarationStore {
                             }
                             .map { it.nameAsSafeName to it.defaultValue?.text }
             }
+            is KtProperty -> listOfNotNull(
+                if (declaration.receiverTypeReference?.hasAnnotation(InjektFqNames.Given) == true)
+                    "_receiver".asNameId() to null
+                else null
+            )
             else -> return null
         }
 

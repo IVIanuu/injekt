@@ -11,7 +11,6 @@ import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.DslMarkerUtils
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.types.KotlinType
@@ -100,7 +99,6 @@ fun ClassDescriptor.allGivenTypes(): List<KotlinType> = buildList<KotlinType> {
 }
 
 fun CallableDescriptor.extractGivensOfCallable(
-    bindingContext: BindingContext,
     declarationStore: DeclarationStore,
 ): List<CallableDescriptor> {
     val info = declarationStore.givenInfoFor(this)

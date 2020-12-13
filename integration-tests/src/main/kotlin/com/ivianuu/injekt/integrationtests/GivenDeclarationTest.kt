@@ -112,6 +112,16 @@ class GivenDeclarationTest {
     }
 
     @Test
+    fun testGivenExtensionProperty() = codegen(
+        """
+            @Given val @Given Foo.bar get() = Bar(this)
+            fun invoke(@Given foo: Foo) = given<Bar>()
+        """
+    ) {
+        assertTrue(invokeSingleFile<Any>(Foo()) is Bar)
+    }
+
+    @Test
     fun testExplicitGivenValueParameter() = codegen(
         """
             fun invoke(@Given foo: Foo) = given<Foo>()

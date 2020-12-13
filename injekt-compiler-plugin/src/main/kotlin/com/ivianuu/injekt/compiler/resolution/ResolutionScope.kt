@@ -133,8 +133,7 @@ fun FunctionResolutionScope(
         declarationStore = declarationStore,
         parent = parent,
         initialGivensInScope = {
-            descriptor.extractGivensOfCallable(bindingContext,
-                declarationStore)
+            descriptor.extractGivensOfCallable(declarationStore)
         },
         initialGivenCollectionElementsInScope = {
             descriptor.extractGivenCollectionElementsOfCallable()

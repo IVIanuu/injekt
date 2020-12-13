@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
@@ -71,43 +72,46 @@ class GivenCallTransformer(
         substitutionMap: Map<ClassifierRef, TypeRef>,
     ) {
         val callee = call.symbol.owner
-        val calleeDescriptor = callee.descriptor
+        val calleeDescriptor = when (val calleeDescriptor = callee.descriptor) {
+            is PropertyAccessorDescriptor -> calleeDescriptor.correspondingProperty
+            else -> calleeDescriptor
+        }
         val givenInfo = declarationStore.givenInfoFor(calleeDescriptor)
 
-        if (givenInfo.allGivens.isNotEmpty()) {
-            if (callee.extensionReceiverParameter != null &&
-                call.extensionReceiver == null
-            ) {
-                call.extensionReceiver = expressionFor(
+        if (givenInfo.allGivens.isEmpty()) return
+
+        if (callee.extensionReceiverParameter != null &&
+            call.extensionReceiver == null
+        ) {
+            call.extensionReceiver = expressionFor(
+                GivenRequest(
+                    type = callee.descriptor.extensionReceiverParameter!!.type.toTypeRef()
+                        .substitute(substitutionMap),
+                    required = true,
+                    callableFqName = calleeDescriptor.fqNameSafe,
+                    parameterName = "_receiver".asNameId(),
+                    callableKey = calleeDescriptor.uniqueKey()
+                ),
+                call.symbol
+            )
+        }
+        callee
+            .valueParameters
+            .filter { it.name in givenInfo.allGivens }
+            .filter { call.getValueArgument(it.index) == null }
+            .map {
+                it to expressionFor(
                     GivenRequest(
-                        type = callee.descriptor.extensionReceiverParameter!!.type.toTypeRef()
-                            .substitute(substitutionMap),
-                        required = true,
-                        callableFqName = callee.descriptor.fqNameSafe,
-                        parameterName = "_receiver".asNameId(),
-                        callableKey = callee.descriptor.uniqueKey()
+                        type = it.descriptor.type.toTypeRef().substitute(substitutionMap),
+                        required = it.name in givenInfo.requiredGivens,
+                        callableFqName = calleeDescriptor.fqNameSafe,
+                        parameterName = it.name,
+                        callableKey = calleeDescriptor.uniqueKey()
                     ),
                     call.symbol
                 )
             }
-            callee
-                .valueParameters
-                .filter { it.name in givenInfo.allGivens }
-                .filter { call.getValueArgument(it.index) == null }
-                .map {
-                    it to expressionFor(
-                        GivenRequest(
-                            type = it.descriptor.type.toTypeRef().substitute(substitutionMap),
-                            required = it.name in givenInfo.requiredGivens,
-                            callableFqName = callee.descriptor.fqNameSafe,
-                            parameterName = it.name,
-                            callableKey = callee.descriptor.uniqueKey()
-                        ),
-                        call.symbol
-                    )
-                }
-                .forEach { call.putValueArgument(it.first.index, it.second) }
-        }
+            .forEach { call.putValueArgument(it.first.index, it.second) }
     }
 
     private fun ResolutionContext.expressionFor(
