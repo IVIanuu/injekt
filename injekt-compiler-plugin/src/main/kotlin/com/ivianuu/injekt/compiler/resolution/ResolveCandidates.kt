@@ -198,50 +198,9 @@ private fun ResolutionContext.resolveInScope(
                     it.filterIsInstance<CandidateResolutionResult.Failure>()
         }
 
-    // todo less params
-
-    fun List<CandidateResolutionResult.Success>.filterMinDepth(): List<CandidateResolutionResult.Success> {
-        if (size == 1) return this
-        val destination = mutableListOf<CandidateResolutionResult.Success>()
-        var minDepth = Int.MAX_VALUE
-        forEach { result ->
-            if (result.candidate.depth < minDepth) {
-                destination.clear()
-                destination += result
-                minDepth = result.candidate.depth
-            } else if (result.candidate.depth == minDepth) {
-                destination += result
-            }
-        }
-        return destination
-    }
-
-    fun List<CandidateResolutionResult.Success>.filterMostSpecific(): List<CandidateResolutionResult.Success> {
-        if (size == 1) return this
-        // todo
-        return this
-    }
-
-    fun List<CandidateResolutionResult.Success>.filterLessParams(): List<CandidateResolutionResult.Success> {
-        if (size == 1) return this
-        val destination = mutableListOf<CandidateResolutionResult.Success>()
-        var minParams = Int.MAX_VALUE
-        forEach { result ->
-            if (result.candidate.dependencies.size < minParams) {
-                destination.clear()
-                destination += result
-                minParams = result.candidate.dependencies.size
-            } else if (result.candidate.depth == minParams) {
-                destination += result
-            }
-        }
-        return destination
-    }
-
     return@computeForRequest if (successResults.isNotEmpty()) {
         successResults
             .filterMinDepth()
-            .filterMostSpecific()
             .filterLessParams()
             .let { finalResults ->
                 finalResults.singleOrNull()?.let {
@@ -312,4 +271,36 @@ private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<
     }
 
     return emptyList()
+}
+
+private fun List<CandidateResolutionResult.Success>.filterMinDepth(): List<CandidateResolutionResult.Success> {
+    if (size == 1) return this
+    val destination = mutableListOf<CandidateResolutionResult.Success>()
+    var minDepth = Int.MAX_VALUE
+    forEach { result ->
+        if (result.candidate.depth < minDepth) {
+            destination.clear()
+            destination += result
+            minDepth = result.candidate.depth
+        } else if (result.candidate.depth == minDepth) {
+            destination += result
+        }
+    }
+    return destination
+}
+
+private fun List<CandidateResolutionResult.Success>.filterLessParams(): List<CandidateResolutionResult.Success> {
+    if (size == 1) return this
+    val destination = mutableListOf<CandidateResolutionResult.Success>()
+    var minParams = Int.MAX_VALUE
+    forEach { result ->
+        if (result.candidate.dependencies.size < minParams) {
+            destination.clear()
+            destination += result
+            minParams = result.candidate.dependencies.size
+        } else if (result.candidate.dependencies.size == minParams) {
+            destination += result
+        }
+    }
+    return destination
 }
