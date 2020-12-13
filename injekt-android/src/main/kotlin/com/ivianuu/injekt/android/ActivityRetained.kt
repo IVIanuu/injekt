@@ -3,6 +3,7 @@ package com.ivianuu.injekt.android
 import androidx.activity.ComponentActivity
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSet
+import com.ivianuu.injekt.component.ApplicationScoped
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.componentElementsOf
 import com.ivianuu.injekt.given
@@ -19,6 +20,6 @@ private object ActivityRetainedComponentFactoryKey :
 
 @GivenSet fun activityRetainedComponentFactory(
     builderFactory: () -> Component.Builder<ActivityRetainedScoped> = given,
-) = componentElementsOf(ApplicationScoped::class, ActivityRetainedComponentFactoryKey) {
+) = componentElementsOf(ApplicationScoped, ActivityRetainedComponentFactoryKey) {
     builderFactory().build()
 }

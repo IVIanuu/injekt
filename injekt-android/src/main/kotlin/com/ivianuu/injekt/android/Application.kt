@@ -24,27 +24,17 @@ import android.content.res.Resources
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.component.App
+import com.ivianuu.injekt.component.ApplicationScoped
 import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.given
-
-@Given lateinit var _applicationComponent: Component<ApplicationScoped>
+import com.ivianuu.injekt.component._applicationComponent
 
 @Suppress("unused")
 val Application.applicationComponent: Component<ApplicationScoped>
     get() = _applicationComponent
 
-object ApplicationScoped : Component.Name
-
-object ApplicationKey : Component.Key<Application>
-
-fun Application.initializeApp(builder: Component.Builder<ApplicationScoped> = given) {
-    _applicationComponent = builder
-        .set(ApplicationKey, this)
-        .build()
-}
-
-@Given inline val @Given Component<ApplicationScoped>.application: Application
-    get() = this[ApplicationKey]
+@Given inline val @Given App.application: Application
+    get() = this as Application
 
 typealias ApplicationContext = Context
 

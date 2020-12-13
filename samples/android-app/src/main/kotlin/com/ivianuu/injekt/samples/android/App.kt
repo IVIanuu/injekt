@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.samples.android
 
 import android.app.Application
-import com.ivianuu.injekt.android.initializeApp
+import com.ivianuu.injekt.component.initializeApp
 
 class App : Application() {
     override fun onCreate() {

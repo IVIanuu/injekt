@@ -23,6 +23,7 @@ import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSet
+import com.ivianuu.injekt.component.ApplicationScoped
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.componentElementsOf
 import com.ivianuu.injekt.given
@@ -34,7 +35,7 @@ private object ServiceComponentFactoryKey : Component.Key<(Service) -> Component
 
 @GivenSet fun serviceComponentFactoryKey(
     builderFactory: () -> Component.Builder<ServiceScoped> = given,
-) = componentElementsOf(ApplicationScoped::class, ServiceComponentFactoryKey) {
+) = componentElementsOf(ApplicationScoped, ServiceComponentFactoryKey) {
     builderFactory()
         .set(ServiceKey, it)
         .build()

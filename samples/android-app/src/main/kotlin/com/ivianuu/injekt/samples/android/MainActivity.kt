@@ -22,7 +22,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.platform.setContent
 import com.ivianuu.injekt.android.ActivityRetainedScoped
 import com.ivianuu.injekt.android.ActivityScoped
-import com.ivianuu.injekt.android.ApplicationScoped
+import com.ivianuu.injekt.component.ApplicationScoped
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.Storage
 import com.ivianuu.injekt.given

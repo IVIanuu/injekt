@@ -18,7 +18,7 @@ package com.ivianuu.injekt.samples.android
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.android.ApplicationContext
-import com.ivianuu.injekt.android.ApplicationScoped
+import com.ivianuu.injekt.component.ApplicationScoped
 import com.ivianuu.injekt.component.Storage
 import com.ivianuu.injekt.component.memo
 import com.ivianuu.injekt.given

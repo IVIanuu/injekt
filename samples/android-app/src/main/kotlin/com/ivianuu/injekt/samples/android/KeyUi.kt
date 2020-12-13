@@ -5,7 +5,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.android.ApplicationScoped
+import com.ivianuu.injekt.component.ApplicationScoped
 import com.ivianuu.injekt.component.Storage
 import com.ivianuu.injekt.component.memo
 import com.ivianuu.injekt.given

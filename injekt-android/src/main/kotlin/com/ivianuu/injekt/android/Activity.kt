@@ -47,7 +47,7 @@ private object ActivityComponentFactoryKey :
 
 @GivenSet fun activityComponentFactory(
     builderFactory: () -> Component.Builder<ActivityScoped> = given,
-) = componentElementsOf(ActivityRetainedScoped::class, ActivityComponentFactoryKey) {
+) = componentElementsOf(ActivityRetainedScoped, ActivityComponentFactoryKey) {
     builderFactory()
         .set(ActivityKey, it)
         .build()

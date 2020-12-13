@@ -5,7 +5,6 @@ package com.ivianuu.injekt.component
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSet
 import com.ivianuu.injekt.given
-import kotlin.reflect.KClass
 
 interface Component<N : Component.Name> {
     val storage: Storage<N>
@@ -33,7 +32,7 @@ interface Component<N : Component.Name> {
 typealias ComponentElements<@Suppress("unused") N> = Map<Component.Key<*>, Any?>
 
 fun <N : Component.Name, K : Component.Key<T>, T> componentElementsOf(
-    @Suppress("UNUSED_PARAMETER", "unused") name: KClass<N>,
+    @Suppress("UNUSED_PARAMETER", "unused") name: N,
     key: K,
     value: T,
 ): ComponentElements<N> = mapOf(key to value)

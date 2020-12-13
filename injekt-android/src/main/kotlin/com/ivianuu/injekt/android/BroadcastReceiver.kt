@@ -22,6 +22,7 @@ import android.content.Context
 import android.content.Intent
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSet
+import com.ivianuu.injekt.component.ApplicationScoped
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.componentElementsOf
 import com.ivianuu.injekt.given
@@ -37,7 +38,7 @@ private object ReceiverComponentFactoryKey :
 
 @GivenSet fun receiverComponentFactory(
     builderFactory: () -> Component.Builder<ReceiverScoped> = given,
-) = componentElementsOf(ApplicationScoped::class,
+) = componentElementsOf(ApplicationScoped,
     ReceiverComponentFactoryKey) { receiver, context, intent ->
     builderFactory()
         .set(ReceiverKey, receiver)
