@@ -27,10 +27,10 @@ interface Component<N : Component.Name> {
     elements: ComponentElements<N> = givenOrElse { emptyMap() },
 ): Component.Builder<N> = ComponentImpl.Builder(elements.toMap(mutableMapOf()))
 
-typealias ComponentElements<N> = Map<Component.Key<*>, Any?>
+typealias ComponentElements<@Suppress("unused") N> = Map<Component.Key<*>, Any?>
 
 fun <N : Component.Name, K : Component.Key<T>, T> componentElementsOf(
-    @Suppress("UNUSED_PARAMETER") name: KClass<N>,
+    @Suppress("UNUSED_PARAMETER", "unused") name: KClass<N>,
     key: K,
     value: T,
 ): ComponentElements<N> = mapOf(key to value)
