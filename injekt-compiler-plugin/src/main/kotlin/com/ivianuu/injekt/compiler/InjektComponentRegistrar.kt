@@ -66,7 +66,8 @@ class InjektComponentRegistrar : ComponentRegistrar {
             )
             IrGenerationExtension.registerExtensionLast(
                 project,
-                InjektIrDumper(cacheDir(configuration), dumpDir(configuration))
+                InjektIrDumper(cacheDir(configuration),
+                    dumpDir(configuration, srcDir(configuration)))
             )
             @Suppress("DEPRECATION")
             Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)

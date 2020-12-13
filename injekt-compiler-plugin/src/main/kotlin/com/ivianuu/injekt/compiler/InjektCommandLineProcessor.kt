@@ -81,8 +81,10 @@ fun cacheDir(configuration: CompilerConfiguration): CacheDir =
 val DumpDirKey = CompilerConfigurationKey<String>("dumpDir")
 typealias DumpDir = File
 
-fun dumpDir(configuration: CompilerConfiguration): DumpDir =
-    File(configuration.getNotNull(CacheDirKey))
+fun dumpDir(configuration: CompilerConfiguration, srcDir: SrcDir): DumpDir {
+    val sourceSetName = srcDir.name
+    return File(configuration.getNotNull(CacheDirKey))
         .parentFile
-        .resolve("dump")
+        .resolve("dump/$sourceSetName")
         .also { it.mkdirs() }
+}
