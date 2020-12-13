@@ -170,6 +170,7 @@ class GivenCallChecker(
 
     private fun visitFunction(function: KtFunction, block: () -> Unit) {
         inScope(FunctionResolutionScope(
+            bindingTrace.bindingContext,
             declarationStore,
             scope,
             function.descriptor(bindingTrace.bindingContext) ?: return

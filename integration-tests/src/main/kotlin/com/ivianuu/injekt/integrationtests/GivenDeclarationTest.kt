@@ -157,9 +157,9 @@ class GivenDeclarationTest {
     @Test
     fun testGivenLambdaReceiverParameter() = codegen(
         """
-            inline fun <T, R> withGiven(value: T, block: @Given T.() -> R) = block(value)
+            inline fun <T, R> diyWithGiven(value: T, block: @Given T.() -> R) = block(value)
             fun invoke(foo: Foo): Foo {
-                return withGiven(foo) { given<Foo>() }
+                return diyWithGiven(foo) { given<Foo>() }
             }
         """
     ) {
@@ -193,12 +193,12 @@ class GivenDeclarationTest {
         assertSame(foo, invokeSingleFile<Any>(foo))
     }
 
-    // todo @Test
-    fun testCanResolveGivenOfScopeFunction() = codegen(
+    @Test
+    fun testCanResolveGivenOfGivenThisFunction() = codegen(
         """
             class Dep(@Given val foo: Foo)
             fun invoke(foo: Foo): Foo {
-                return with(Dep(foo)) { given<Foo>() }
+                return withGiven(Dep(foo)) { given<Foo>() }
             }
         """
     ) {

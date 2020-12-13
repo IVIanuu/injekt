@@ -37,7 +37,7 @@ class GivenDeclarationCheckTest {
     }
 
     @Test
-    fun testGivenWithExtensionReceiver() = codegen(
+    fun testGivenWithNonGivenExtensionReceiver() = codegen(
         """
             @Given fun Foo.bar() = Bar(this)
         """

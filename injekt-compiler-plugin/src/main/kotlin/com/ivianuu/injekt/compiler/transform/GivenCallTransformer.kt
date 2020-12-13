@@ -299,7 +299,7 @@ class GivenCallTransformer(
                             DeclarationIrBuilder(pluginContext, symbol)
                                 .irGetObject(dispatchReceiverParameter.type.classOrNull!!)
                         } else {
-                            dispatchReceiverAccessors
+                            receiverAccessors
                                 .last { it.first == dispatchReceiverParameter.type.classOrNull?.owner }
                                 .second()
                         }
@@ -338,7 +338,7 @@ class GivenCallTransformer(
                             DeclarationIrBuilder(pluginContext, symbol)
                                 .irGetObject(dispatchReceiverParameter.type.classOrNull!!)
                         } else {
-                            dispatchReceiverAccessors.reversed()
+                            receiverAccessors.reversed()
                                 .first { it.first == dispatchReceiverParameter.type.classOrNull?.owner }
                                 .second()
                         }
@@ -419,7 +419,7 @@ class GivenCallTransformer(
             }
             .owner
 
-    private val dispatchReceiverAccessors = mutableListOf<Pair<IrClass, () -> IrExpression>>()
+    private val receiverAccessors = mutableListOf<Pair<IrClass, () -> IrExpression>>()
 
     private val variables = mutableListOf<IrVariable>()
 
@@ -431,31 +431,39 @@ class GivenCallTransformer(
     }
 
     override fun visitClass(declaration: IrClass): IrStatement {
-        dispatchReceiverAccessors.push(
+        receiverAccessors.push(
             declaration to {
                 DeclarationIrBuilder(pluginContext, declaration.symbol)
                     .irGet(declaration.thisReceiver!!)
             }
         )
         val result = super.visitClass(declaration)
-        dispatchReceiverAccessors.pop()
+        receiverAccessors.pop()
         return result
     }
 
     override fun visitFunction(declaration: IrFunction): IrStatement {
         val dispatchReceiver = declaration.dispatchReceiverParameter?.type?.classOrNull?.owner
         if (dispatchReceiver != null) {
-            dispatchReceiverAccessors.push(
+            receiverAccessors.push(
                 dispatchReceiver to {
                     DeclarationIrBuilder(pluginContext, declaration.symbol)
                         .irGet(declaration.dispatchReceiverParameter!!)
                 }
             )
         }
-        val result = super.visitFunction(declaration)
-        if (dispatchReceiver != null) {
-            dispatchReceiverAccessors.pop()
+        val extensionReceiver = declaration.extensionReceiverParameter?.type?.classOrNull?.owner
+        if (extensionReceiver != null) {
+            receiverAccessors.push(
+                extensionReceiver to {
+                    DeclarationIrBuilder(pluginContext, declaration.symbol)
+                        .irGet(declaration.extensionReceiverParameter!!)
+                }
+            )
         }
+        val result = super.visitFunction(declaration)
+        if (dispatchReceiver != null) receiverAccessors.pop()
+        if (extensionReceiver != null) receiverAccessors.pop()
         return result
     }
 

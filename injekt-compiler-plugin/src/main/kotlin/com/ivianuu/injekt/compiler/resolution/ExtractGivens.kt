@@ -9,16 +9,26 @@ import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.DslMarkerUtils
+import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 fun ClassDescriptor.extractGivensOfDeclaration(
-    bindingContext: BindingContext,
+    declarationStore: DeclarationStore,
+): List<CallableDescriptor> =
+    unsubstitutedMemberScope.extractGivenCallables(defaultType, declarationStore)
+
+fun MemberScope.extractGivenCallables(
+    type: KotlinType,
     declarationStore: DeclarationStore,
 ): List<CallableDescriptor> {
-    val primaryConstructorGivens = (unsubstitutedPrimaryConstructor
+    val primaryConstructorGivensNames = (type.constructor.declarationDescriptor
+        ?.safeAs<ClassDescriptor>()
+        ?.unsubstitutedPrimaryConstructor
         ?.let { primaryConstructor ->
             val info = declarationStore.givenInfoFor(primaryConstructor)
             primaryConstructor.valueParameters
@@ -26,12 +36,10 @@ fun ClassDescriptor.extractGivensOfDeclaration(
                     it.hasAnnotation(InjektFqNames.Given) ||
                             it.name in info.allGivens
                 }
-                .mapNotNull { bindingContext[BindingContext.VALUE_PARAMETER_AS_PROPERTY, it] }
-                .map { it }
+                .map { it.name }
         }
         ?: emptyList())
-
-    val memberGivens = unsubstitutedMemberScope.getContributedDescriptors()
+    return getContributedDescriptors()
         .flatMap { declaration ->
             when (declaration) {
                 is ClassDescriptor -> declaration.getGivenConstructors()
@@ -39,35 +47,39 @@ fun ClassDescriptor.extractGivensOfDeclaration(
                         declaration.allGivenTypes()
                             .map { constructor.overrideType(it) }
                     }
-                is PropertyDescriptor -> if (declaration.hasAnnotation(InjektFqNames.Given))
+                is PropertyDescriptor -> if (declaration.hasAnnotation(InjektFqNames.Given) ||
+                    declaration.name in primaryConstructorGivensNames
+                )
                     listOf(declaration) else emptyList()
                 is FunctionDescriptor -> if (declaration.hasAnnotation(InjektFqNames.Given))
                     listOf(declaration) else emptyList()
                 else -> emptyList()
             }
         }
-
-    return primaryConstructorGivens + memberGivens
 }
 
-fun ClassDescriptor.extractGivenCollectionElementsOfDeclaration(bindingContext: BindingContext): List<CallableDescriptor> {
-    val primaryConstructorGivens = (unsubstitutedPrimaryConstructor
+fun ClassDescriptor.extractGivenCollectionElementsOfDeclaration(): List<CallableDescriptor> =
+    unsubstitutedMemberScope.extractGivenCollectionElements(defaultType)
+
+fun MemberScope.extractGivenCollectionElements(type: KotlinType): List<CallableDescriptor> {
+    val primaryConstructorGivensNames = (type.constructor.declarationDescriptor
+        ?.safeAs<ClassDescriptor>()
+        ?.unsubstitutedPrimaryConstructor
         ?.let { primaryConstructor ->
             primaryConstructor.valueParameters
                 .filter {
                     it.hasAnnotation(InjektFqNames.GivenMap) ||
                             it.hasAnnotation(InjektFqNames.GivenSet)
                 }
-                .mapNotNull { bindingContext[BindingContext.VALUE_PARAMETER_AS_PROPERTY, it] }
-                .map { it }
+                .map { it.name }
         }
         ?: emptyList())
-
-    val memberGivens = unsubstitutedMemberScope.getContributedDescriptors()
+    return getContributedDescriptors()
         .flatMap { declaration ->
             when (declaration) {
                 is PropertyDescriptor -> if (declaration.hasAnnotation(InjektFqNames.GivenMap) ||
-                    declaration.hasAnnotation(InjektFqNames.GivenSet)
+                    declaration.hasAnnotation(InjektFqNames.GivenSet) ||
+                    declaration.name in primaryConstructorGivensNames
                 )
                     listOf(declaration) else emptyList()
                 is FunctionDescriptor -> if (declaration.hasAnnotation(InjektFqNames.GivenMap) ||
@@ -76,8 +88,6 @@ fun ClassDescriptor.extractGivenCollectionElementsOfDeclaration(bindingContext: 
                 else -> emptyList()
             }
         }
-
-    return primaryConstructorGivens + memberGivens
 }
 
 fun ConstructorDescriptor.allGivenTypes(): List<KotlinType> =
@@ -90,17 +100,28 @@ fun ClassDescriptor.allGivenTypes(): List<KotlinType> = buildList<KotlinType> {
 }
 
 fun CallableDescriptor.extractGivensOfCallable(
+    bindingContext: BindingContext,
     declarationStore: DeclarationStore,
 ): List<CallableDescriptor> {
     val info = declarationStore.givenInfoFor(this)
     val userData = getUserData(DslMarkerUtils.FunctionTypeAnnotationsKey)
-    return allParameters
-        .filter {
-            it.hasAnnotation(InjektFqNames.Given) ||
-                    it.type.hasAnnotation(InjektFqNames.Given) ||
-                    userData?.hasAnnotation(InjektFqNames.Given) == true ||
-                    it.name in info.allGivens
-        }
+    fun ParameterDescriptor.isGiven(): Boolean {
+        return hasAnnotation(InjektFqNames.Given) ||
+                type.hasAnnotation(InjektFqNames.Given) ||
+                userData?.hasAnnotation(InjektFqNames.Given) == true ||
+                name in info.allGivens
+    }
+
+    val allGivens = mutableListOf<CallableDescriptor>()
+
+    allGivens += allParameters
+        .filter { it.isGiven() }
+
+    allGivens += extensionReceiverParameter?.type?.memberScope?.extractGivenCallables(
+        extensionReceiverParameter!!.type, declarationStore
+    ) ?: emptyList()
+
+    return allGivens
 }
 
 fun CallableDescriptor.extractGivenCollectionElementsOfCallable(): List<CallableDescriptor> =

@@ -36,17 +36,17 @@ inline fun <T> givenOrElse(defaultValue: () -> T): T = defaultValue()
 @Suppress("NOTHING_TO_INLINE")
 inline fun <T> given(value: T = given): T = value
 
-inline fun <A, R> withGiven(a: A, block: (@Given A) -> R) = block(a)
+inline fun <A, R> withGiven(a: A, block: @Given A.() -> R) = block(a)
 
-class GivenTuple2<A, B>(val a: A, val b: B) {
-    companion object {
-        //@Given fun <A> @Given GivenTuple2<A, *>.a(): A = a
-        //@Given fun <B> @Given GivenTuple2<*, B>.b(): B = b
-    }
-}
+class GivenTuple2<A, B>(@Given val a: A, @Given val b: B)
 
-inline fun <A, B, R> withGiven(a: A, b: B, block: @Given GivenTuple2<A, B>.() -> R) =
+inline fun <A, B, R> withGiven(a: A, b: B, block: GivenTuple2<A, B>.() -> R) =
     block(GivenTuple2(a, b))
+
+class GivenTuple3<A, B, C>(@Given val a: A, @Given val b: B, @Given val c: C)
+
+inline fun <A, B, C, R> withGiven(a: A, b: B, c: C, block: GivenTuple3<A, B, C>.() -> R) =
+    block(GivenTuple3(a, b, c))
 
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class GivenMap
