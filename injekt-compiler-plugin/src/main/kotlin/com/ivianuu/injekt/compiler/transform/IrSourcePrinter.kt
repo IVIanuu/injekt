@@ -1124,7 +1124,11 @@ private class IrSourcePrinterVisitor(
         println("typealias ${declaration.name} = ${declaration.expandedType.renderSrc()}")
     }
 
-    private fun IrType.renderSrc() = toKotlinType().toTypeRef().render()
+    private fun IrType.renderSrc() = try {
+        toKotlinType().toTypeRef().render()
+    } catch (e: Throwable) {
+        "<ERROR TYPE>"
+    }
 
     private inline fun buildTrimEnd(fn: StringBuilder.() -> Unit): String =
         buildString(fn).trimEnd()
