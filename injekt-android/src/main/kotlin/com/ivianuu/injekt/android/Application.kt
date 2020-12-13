@@ -27,14 +27,18 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.given
 
-@Given lateinit var applicationComponent: Component<ApplicationScoped>
+@Given lateinit var _applicationComponent: Component<ApplicationScoped>
+
+@Suppress("unused")
+val Application.applicationComponent: Component<ApplicationScoped>
+    get() = _applicationComponent
 
 object ApplicationScoped : Component.Name
 
 object ApplicationKey : Component.Key<Application>
 
 fun Application.initializeApp(builder: Component.Builder<ApplicationScoped> = given) {
-    applicationComponent = builder
+    _applicationComponent = builder
         .set(ApplicationKey, this)
         .build()
 }

@@ -9,14 +9,13 @@ import com.ivianuu.injekt.given
 
 object ActivityRetainedScoped : Component.Name
 
-@Given fun activityRetainedComponent(
-    activity: ComponentActivity = given,
-    applicationComponent: Component<ApplicationScoped> = given,
-) = activity.viewModelStore.component {
-    applicationComponent[ActivityRetainedComponentFactoryKey]()
-}
+@Given val @Given ComponentActivity.activityRetainedComponent: Component<ActivityRetainedScoped>
+    get() = viewModelStore.component {
+        application.applicationComponent[ActivityRetainedComponentFactoryKey]()
+    }
 
-object ActivityRetainedComponentFactoryKey : Component.Key<() -> Component<ActivityRetainedScoped>>
+private object ActivityRetainedComponentFactoryKey :
+    Component.Key<() -> Component<ActivityRetainedScoped>>
 
 @GivenSet fun activityRetainedComponentFactory(
     builderFactory: () -> Component.Builder<ActivityRetainedScoped> = given,

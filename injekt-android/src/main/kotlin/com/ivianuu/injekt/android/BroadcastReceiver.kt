@@ -16,40 +16,48 @@
 
 package com.ivianuu.injekt.android
 
-/**
-fun BroadcastReceiver.createReceiverComponent(
-context: Context,
-intent: Intent,
-receiverComponentFactory:
-): ReceiverComponent =
-(context.applicationContext as Application).applicationComponent
-.get<(BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent>()(
-this, context, intent)
+import android.app.Application
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.GivenSet
+import com.ivianuu.injekt.component.Component
+import com.ivianuu.injekt.component.componentElementsOf
+import com.ivianuu.injekt.given
 
-typealias ReceiverComponent = Component<ReceiverComponentKey<*>>
+object ReceiverScoped : Component.Name
 
-interface ReceiverComponentKey<T> : Component.Key<T>
+private object ReceiverKey : Component.Key<BroadcastReceiver>
+private object ContextKey : Component.Key<Context>
+private object IntentKey : Component.Key<Intent>
 
-@Given fun activityComponent(
-activity: ComponentActivity = given,
-activityRetainedComponent: ActivityRetainedComponent = given,
-) = activity.lifecycle.component {
-activityRetainedComponent[ActivityComponentFactoryKey](activity)
+private object ReceiverComponentFactoryKey :
+    Component.Key<(BroadcastReceiver, Context, Intent) -> Component<ReceiverScoped>>
+
+@GivenSet fun receiverComponentFactory(
+    builderFactory: () -> Component.Builder<ReceiverScoped> = given,
+) = componentElementsOf(ApplicationScoped::class,
+    ReceiverComponentFactoryKey) { receiver, context, intent ->
+    builderFactory()
+        .set(ReceiverKey, receiver)
+        .set(ContextKey, context)
+        .set(IntentKey, intent)
+        .build()
 }
 
-object ReceiverKey : ReceiverComponentKey<BroadcastReceiver>
+fun BroadcastReceiver.createReceiverComponent(
+    context: Context,
+    intent: Intent,
+): Component<ReceiverScoped> = (context.applicationContext as Application)
+    .applicationComponent[ReceiverComponentFactoryKey](this, context, intent)
 
-@Given fun activity(component: ReceiverComponent = given): BroadcastReceiver =
-component[ReceiverKey]
+typealias ReceiverContext = Context
 
-object ReceiverComponentFactoryKey :
-ApplicationComponentKey<(@Given BroadcastReceiver) -> ReceiverComponent>
+@Given val @Given Component<ReceiverScoped>.receiverContext: ReceiverContext
+    get() = this[ContextKey]
 
-@GivenSet fun receiverComponentFactoryKey(
-builderFactory: () -> Component.Builder<ReceiverComponentKey<*>> = given,
-): ComponentElements<ApplicationComponentKey<*>> =
-componentElementsOf(ReceiverComponentFactoryKey) {
-builderFactory()
-.set(ReceiverKey, it)
-.build()
-}*/
+typealias ReceiverIntent = Intent
+
+@Given val @Given Component<ReceiverScoped>.receiverIntent: ReceiverIntent
+    get() = this[IntentKey]

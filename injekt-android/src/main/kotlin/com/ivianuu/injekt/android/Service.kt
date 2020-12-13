@@ -18,29 +18,37 @@
 
 package com.ivianuu.injekt.android
 
-/*
 import android.app.Service
 import android.content.Context
 import android.content.res.Resources
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.Scoped
-import com.ivianuu.injekt.merge.MergeComponent
-import com.ivianuu.injekt.merge.get
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.GivenSet
+import com.ivianuu.injekt.component.Component
+import com.ivianuu.injekt.component.componentElementsOf
+import com.ivianuu.injekt.given
 
-fun Service.createServiceComponent(): ServiceComponent =
-    application.applicationComponent
-        .get<(Service) -> ServiceComponent>()(this)
+object ServiceScoped : Component.Name
 
-@Scope interface ServiceScope
+private object ServiceKey : Component.Key<Service>
+private object ServiceComponentFactoryKey : Component.Key<(Service) -> Component<ServiceScoped>>
 
-@Scoped(ServiceScope::class) @MergeComponent interface ServiceComponent
+@GivenSet fun serviceComponentFactoryKey(
+    builderFactory: () -> Component.Builder<ServiceScoped> = given,
+) = componentElementsOf(ApplicationScoped::class, ServiceComponentFactoryKey) {
+    builderFactory()
+        .set(ServiceKey, it)
+        .build()
+}
+
+fun Service.createServiceComponent(): Component<ServiceScoped> =
+    application.applicationComponent[ServiceComponentFactoryKey](this)
 
 typealias ServiceContext = Context
 
-@Binding inline fun Service.provideServiceContext(): ServiceContext = this
+@Given inline val @Given Service.serviceContext: ServiceContext
+    get() = this
 
 typealias ServiceResources = Resources
 
-@Binding inline fun Service.provideServiceResources(): ServiceResources = resources
-*/
+@Given inline val @Given Service.serviceResources: ServiceResources
+    get() = resources

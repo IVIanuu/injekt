@@ -36,10 +36,16 @@ import kotlinx.coroutines.CoroutineScope
 
 object ActivityScoped : Component.Name
 
-object ActivityComponentFactoryKey :
-    Component.Key<(@Given ComponentActivity) -> Component<ActivityScoped>>
+@Given val @Given ComponentActivity.activityComponent: Component<ActivityScoped>
+    get() = lifecycle.component {
+        activityRetainedComponent[ActivityComponentFactoryKey](this)
+    }
 
-@GivenSet fun activityComponentFactoryKey(
+private object ActivityKey : Component.Key<ComponentActivity>
+private object ActivityComponentFactoryKey :
+    Component.Key<(ComponentActivity) -> Component<ActivityScoped>>
+
+@GivenSet fun activityComponentFactory(
     builderFactory: () -> Component.Builder<ActivityScoped> = given,
 ) = componentElementsOf(ActivityRetainedScoped::class, ActivityComponentFactoryKey) {
     builderFactory()
@@ -47,16 +53,7 @@ object ActivityComponentFactoryKey :
         .build()
 }
 
-@Given fun activityComponent(
-    activity: ComponentActivity = given,
-    activityRetainedComponent: Component<ActivityRetainedScoped> = given,
-) = activity.lifecycle.component {
-    activityRetainedComponent[ActivityComponentFactoryKey](activity)
-}
-
-object ActivityKey : Component.Key<ComponentActivity>
-
-@Given inline val @Given Component<ActivityScoped>.activity: ComponentActivity
+@Given val @Given Component<ActivityScoped>.activity: ComponentActivity
     get() = this[ActivityKey]
 
 typealias ActivityContext = Context
