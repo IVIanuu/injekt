@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
@@ -98,6 +99,16 @@ class GivenDeclarationTest {
         """
     ) {
         assertTrue(invokeSingleFile<Any>() is Foo)
+    }
+
+    @Test
+    fun testGivenExtensionFunction() = codegen(
+        """
+            @Given fun @Given Foo.bar() = Bar(this)
+            fun invoke(@Given foo: Foo) = given<Bar>()
+        """
+    ) {
+        assertTrue(invokeSingleFile<Any>(Foo()) is Bar)
     }
 
     @Test

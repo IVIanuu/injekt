@@ -59,10 +59,11 @@ class GivenChecker : CallChecker, DeclarationChecker {
     ) {
         if (descriptor is SimpleFunctionDescriptor) {
             if (descriptor.hasAnnotation(InjektFqNames.Given) &&
-                descriptor.extensionReceiverParameter != null
+                descriptor.extensionReceiverParameter != null &&
+                !descriptor.extensionReceiverParameter!!.type.hasAnnotation(InjektFqNames.Given)
             ) {
                 context.trace.report(
-                    InjektErrors.GIVEN_DECLARATION_WITH_EXTENSION_RECEIVER
+                    InjektErrors.GIVEN_DECLARATION_WITH_NON_GIVEN_EXTENSION_RECEIVER
                         .on(declaration)
                 )
             }
@@ -98,7 +99,7 @@ class GivenChecker : CallChecker, DeclarationChecker {
                 descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Given) == true
             ) {
                 context.trace.report(
-                    InjektErrors.GIVEN_DECLARATION_WITH_EXTENSION_RECEIVER
+                    InjektErrors.GIVEN_DECLARATION_WITH_NON_GIVEN_EXTENSION_RECEIVER
                         .on(declaration)
                 )
             }

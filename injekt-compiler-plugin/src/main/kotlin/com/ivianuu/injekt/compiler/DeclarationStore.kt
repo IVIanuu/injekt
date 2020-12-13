@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFunction
@@ -154,32 +155,34 @@ class DeclarationStore {
         val declaration = descriptor.findPsi()
             ?.let { it as? KtDeclaration }
             ?: return null
-        val givens = when (declaration) {
+        val givens: List<Pair<Name, String?>> = when (declaration) {
             is KtConstructor<*> -> declaration.valueParameters
                 .filter {
                     it.defaultValue?.text == "given" ||
                             it.defaultValue?.text == "givenOrElse"
                 }
-            is KtFunction -> declaration.valueParameters
-                .filter {
-                    it.defaultValue?.text == "given" ||
-                            it.defaultValue?.text == "givenOrElse"
-                }
+                .map { it.nameAsSafeName to it.defaultValue?.text }
+            is KtFunction -> {
+                (if (declaration.receiverTypeReference?.hasAnnotation(InjektFqNames.Given) == true)
+                    listOf("_receiver".asNameId() to null) else emptyList()) +
+                        declaration.valueParameters
+                            .filter {
+                                it.defaultValue?.text == "given" ||
+                                        it.defaultValue?.text == "givenOrElse"
+                            }
+                            .map { it.nameAsSafeName to it.defaultValue?.text }
+            }
             else -> return null
         }
 
         val (requiredGivens, givensWithDefault) = givens
-            .partition { givenParameter ->
-                givenParameter.defaultValue?.text == "given"
-            }
+            .partition { (_, defaultValue) -> defaultValue == null || defaultValue == "given" }
 
         if (requiredGivens.isNotEmpty() || givensWithDefault.isNotEmpty()) {
             return GivenInfo(
                 descriptor.uniqueKey(),
-                requiredGivens
-                    .map { it.name!!.asNameId() },
-                givensWithDefault
-                    .map { it.name!!.asNameId() },
+                requiredGivens.map { it.first },
+                givensWithDefault.map { it.first },
             )
         }
 

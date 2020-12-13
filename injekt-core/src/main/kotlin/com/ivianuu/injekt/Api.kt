@@ -38,7 +38,12 @@ inline fun <T> given(value: T = given): T = value
 
 inline fun <A, R> withGiven(a: A, block: (@Given A) -> R) = block(a)
 
-class GivenTuple2<A, B>(@Given val a: A, @Given val b: B)
+class GivenTuple2<A, B>(val a: A, val b: B) {
+    companion object {
+        //@Given fun <A> @Given GivenTuple2<A, *>.a(): A = a
+        //@Given fun <B> @Given GivenTuple2<*, B>.b(): B = b
+    }
+}
 
 inline fun <A, B, R> withGiven(a: A, b: B, block: @Given GivenTuple2<A, B>.() -> R) =
     block(GivenTuple2(a, b))

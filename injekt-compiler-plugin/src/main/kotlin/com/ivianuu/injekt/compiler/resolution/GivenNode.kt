@@ -3,6 +3,7 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.uniqueKey
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.name.FqName
@@ -75,15 +76,19 @@ fun CallableDescriptor.getGivenRequests(
         listOf(type to returnType!!.toTypeRef())
     )
     val callableKey = uniqueKey()
-    return valueParameters
-        .filter { it.name in info.allGivens }
+    return allParameters
+        .filter {
+            val name = if (it === extensionReceiverParameter) "_receiver".asNameId() else it.name
+            name in info.allGivens
+        }
         .map {
+            val name = if (it === extensionReceiverParameter) "_receiver".asNameId() else it.name
             GivenRequest(
                 type = it.type.toTypeRef()
                     .substitute(substitutionMap),
-                required = it.name in info.requiredGivens,
+                required = name in info.requiredGivens,
                 callableFqName = fqNameSafe,
-                parameterName = it.name,
+                parameterName = name,
                 callableKey = callableKey
             )
         }

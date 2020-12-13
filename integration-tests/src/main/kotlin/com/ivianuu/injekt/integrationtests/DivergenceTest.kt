@@ -9,8 +9,6 @@ class DivergenceTest {
     @Test
     fun testWithGiven() = codegen(
         """
-            inline fun <A, B, R> withGiven(a: A, b: B, block: (@Given WithGiven1<A, B>) -> R) = block(WithGiven1(a, b)) 
-
             fun invoke() = withGiven("", 0) {
                 given<String>()
                 given<Int>()

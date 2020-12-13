@@ -3,6 +3,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.CollectionGivenNode
@@ -73,6 +74,21 @@ class GivenCallTransformer(
         val givenInfo = declarationStore.givenInfoFor(calleeDescriptor)
 
         if (givenInfo.allGivens.isNotEmpty()) {
+            if (callee.extensionReceiverParameter != null &&
+                call.extensionReceiver == null
+            ) {
+                call.extensionReceiver = expressionFor(
+                    GivenRequest(
+                        type = callee.descriptor.extensionReceiverParameter!!.type.toTypeRef()
+                            .substitute(substitutionMap),
+                        required = true,
+                        callableFqName = callee.descriptor.fqNameSafe,
+                        parameterName = "_receiver".asNameId(),
+                        callableKey = callee.descriptor.uniqueKey()
+                    ),
+                    call.symbol
+                )
+            }
             callee
                 .valueParameters
                 .filter { it.name in givenInfo.allGivens }

@@ -42,7 +42,7 @@ class GivenDeclarationCheckTest {
             @Given fun Foo.bar() = Bar(this)
         """
     ) {
-        assertCompileError("@Given declaration cannot have a extension receiver")
+        assertCompileError("@Given declaration extension receiver must be annotated with @Given")
     }
 
     @Test
