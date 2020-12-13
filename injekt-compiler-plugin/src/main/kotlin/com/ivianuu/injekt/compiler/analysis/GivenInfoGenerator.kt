@@ -48,8 +48,11 @@ class GivenInfoGenerator(
                     val descriptor = declaration.descriptor<DeclarationDescriptor>(bindingContext)
                         ?: error("Wtf $declaration ${declaration.text}")
 
-                    val givenInfo = declarationStore.internalGivenInfoFor(descriptor)
-                        ?: GivenInfo.Empty
+                    val givenInfo = try {
+                        declarationStore.internalGivenInfoFor(descriptor)
+                    } catch (e: Exception) {
+                        return
+                    } ?: GivenInfo.Empty
 
                     if (givenInfo !== GivenInfo.Empty) {
                         givenInfos += descriptor.fqNameSafe to givenInfo

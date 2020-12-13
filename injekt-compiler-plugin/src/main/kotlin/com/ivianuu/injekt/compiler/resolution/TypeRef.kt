@@ -1,11 +1,9 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.prepare
-import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -16,7 +14,6 @@ import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.Variance
@@ -90,9 +87,9 @@ sealed class TypeRef {
     abstract val isStarProjection: Boolean
     abstract val qualifiers: List<AnnotationDescriptor>
 
-    private val typeName by unsafeLazy { uniqueTypeName(includeNullability = false) }
+    private val typeName by unsafeLazy { uniqueTypeName() }
 
-    override fun toString(): String = typeName.asString()
+    override fun toString(): String = typeName
 
     override fun equals(other: Any?) =
         other is TypeRef && other.typeName == typeName
@@ -275,18 +272,15 @@ fun TypeRef.substituteStars(baseType: TypeRef): TypeRef {
     )
 }
 
-fun TypeRef.render(
-    expanded: Boolean = false,
-    depth: Int = 0,
-): String {
+fun TypeRef.render(depth: Int = 0): String {
     if (depth > 15) return ""
     return buildString {
         fun TypeRef.inner() {
-            val annotations = (if (!expanded) qualifiers.map {
+            val annotations = qualifiers.map {
                 "@${it.type}(${
                     it.allValueArguments.toList().joinToString { "${it.first}=${it.second}" }
                 })"
-            } else emptyList()) + listOfNotNull(
+            } + listOfNotNull(
                 if (isComposable) "@${InjektFqNames.Composable}" else null,
             )
             if (annotations.isNotEmpty()) {
@@ -307,47 +301,37 @@ fun TypeRef.render(
                         !typeArgument.isStarProjection
                     )
                         append("${typeArgument.variance.label} ")
-                    append(typeArgument.render(expanded, depth + 1))
+                    append(typeArgument.render(depth = depth + 1))
                     if (index != typeArguments.lastIndex) append(", ")
                 }
                 append(">")
             }
             if (isMarkedNullable && !isStarProjection) append("?")
         }
-        if (expanded) fullyExpandedType.inner() else inner()
+        inner()
     }
 }
-fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
-    fun TypeRef.renderName(includeArguments: Boolean = true, depth: Int = 0): String {
-        if (depth > 15) return ""
-        return buildString {
-            qualifiers.forEach {
-                append(it.type.constructor.declarationDescriptor!!.fqNameSafe)
-                append(it.allValueArguments.hashCode())
-                append("_")
-            }
-            if (isComposable) append("composable_")
-            // if (includeNullability && isMarkedNullable) append("nullable_")
-            if (isStarProjection) append("star")
-            else append(classifier.fqName.pathSegments().joinToString("_") { it.asString() })
-            if (includeArguments) {
-                typeArguments.forEachIndexed { index, typeArgument ->
-                    if (index == 0) append("_")
-                    append(typeArgument.renderName(depth = depth + 1))
-                    if (index != typeArguments.lastIndex) append("_")
-                }
-            }
+
+fun TypeRef.uniqueTypeName(depth: Int = 0): String {
+    if (depth > 15) return ""
+    return buildString {
+        qualifiers.forEach {
+            append(it.type.constructor.declarationDescriptor!!.fqNameSafe)
+            append(it.allValueArguments.hashCode())
+            append("_")
+        }
+        if (isComposable) append("composable_")
+        // if (includeNullability && isMarkedNullable) append("nullable_")
+        if (isStarProjection) append("star")
+        else append(classifier.fqName.pathSegments().joinToString("_") { it.asString() })
+        typeArguments.forEachIndexed { index, typeArgument ->
+            if (index == 0) append("_")
+            append(typeArgument.uniqueTypeName(depth + 1))
+            if (index != typeArguments.lastIndex) append("_")
         }
     }
-    val fullTypeName = renderName()
-    // Conservatively shorten the name if the length exceeds 128
-    return (
-            if (fullTypeName.length <= 128) fullTypeName
-            else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}")
-            )
-        .removeIllegalChars()
-        .asNameId()
 }
+
 fun getSubstitutionMap(
     pairs: List<Pair<TypeRef, TypeRef>>,
     typeParameters: List<ClassifierRef> = emptyList(),
@@ -445,6 +429,7 @@ fun TypeRef.isSubTypeOf(
     superType: TypeRef,
     substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap(),
 ): Boolean {
+    if (isStarProjection) return true
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return false
         if (!qualifiers.isAssignableTo(superType.qualifiers)) return false

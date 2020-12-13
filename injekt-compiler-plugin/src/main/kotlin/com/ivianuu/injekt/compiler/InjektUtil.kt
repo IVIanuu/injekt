@@ -144,19 +144,19 @@ fun DeclarationDescriptor.uniqueKey(): String {
     return when (original) {
         is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
             original.valueParameters
-                .joinToString(",") { it.type.toTypeRef().uniqueTypeName().asString() }
+                .joinToString(",") { it.type.toTypeRef().uniqueTypeName() }
         }"
         is ClassDescriptor -> "class:$fqNameSafe"
         is FunctionDescriptor -> "function:$fqNameSafe:${
             listOfNotNull(
                 original.dispatchReceiverParameter, original.extensionReceiverParameter)
                 .plus(original.valueParameters)
-                .joinToString(",") { it.type.toTypeRef().uniqueTypeName().asString() }
+                .joinToString(",") { it.type.toTypeRef().uniqueTypeName() }
         }"
         is PropertyDescriptor -> "property:$fqNameSafe:${
             listOfNotNull(
                 original.dispatchReceiverParameter, original.extensionReceiverParameter)
-                .joinToString(",") { it.type.toTypeRef().uniqueTypeName().asString() }
+                .joinToString(",") { it.type.toTypeRef().uniqueTypeName() }
         }"
         is ParameterDescriptor -> ""
         is ValueParameterDescriptor -> ""
