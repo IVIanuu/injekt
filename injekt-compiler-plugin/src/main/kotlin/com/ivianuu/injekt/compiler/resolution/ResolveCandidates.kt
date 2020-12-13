@@ -198,26 +198,58 @@ private fun ResolutionContext.resolveInScope(
                     it.filterIsInstance<CandidateResolutionResult.Failure>()
         }
 
-    return@computeForRequest when {
-        successResults.size == 1 -> ResolutionResult.Success(request, successResults.single())
-        successResults.size > 1 -> {
-            val minDepthResults = mutableListOf<CandidateResolutionResult.Success>()
-            var minDepth = Int.MAX_VALUE
-            successResults.forEach { result ->
-                if (result.candidate.depth < minDepth) {
-                    minDepthResults.clear()
-                    minDepthResults += result
-                    minDepth = result.candidate.depth
-                } else if (result.candidate.depth == minDepth) {
-                    minDepthResults += result
-                }
+    // todo less params
+
+    fun List<CandidateResolutionResult.Success>.filterMinDepth(): List<CandidateResolutionResult.Success> {
+        if (size == 1) return this
+        val destination = mutableListOf<CandidateResolutionResult.Success>()
+        var minDepth = Int.MAX_VALUE
+        forEach { result ->
+            if (result.candidate.depth < minDepth) {
+                destination.clear()
+                destination += result
+                minDepth = result.candidate.depth
+            } else if (result.candidate.depth == minDepth) {
+                destination += result
             }
-            // todo pick most specific
-            val result = minDepthResults.singleOrNull()
-            if (result != null) ResolutionResult.Success(request, result)
-            else ResolutionResult.Failure.CandidateAmbiguity(request, minDepthResults)
         }
-        else -> ResolutionResult.Failure.CandidateFailures(request, failureResults.first())
+        return destination
+    }
+
+    fun List<CandidateResolutionResult.Success>.filterMostSpecific(): List<CandidateResolutionResult.Success> {
+        if (size == 1) return this
+        // todo
+        return this
+    }
+
+    fun List<CandidateResolutionResult.Success>.filterLessParams(): List<CandidateResolutionResult.Success> {
+        if (size == 1) return this
+        val destination = mutableListOf<CandidateResolutionResult.Success>()
+        var minParams = Int.MAX_VALUE
+        forEach { result ->
+            if (result.candidate.dependencies.size < minParams) {
+                destination.clear()
+                destination += result
+                minParams = result.candidate.dependencies.size
+            } else if (result.candidate.depth == minParams) {
+                destination += result
+            }
+        }
+        return destination
+    }
+
+    return@computeForRequest if (successResults.isNotEmpty()) {
+        successResults
+            .filterMinDepth()
+            .filterMostSpecific()
+            .filterLessParams()
+            .let { finalResults ->
+                finalResults.singleOrNull()?.let {
+                    ResolutionResult.Success(request, it)
+                } ?: ResolutionResult.Failure.CandidateAmbiguity(request, finalResults)
+            }
+    } else {
+        ResolutionResult.Failure.CandidateFailures(request, failureResults.first())
     }
 }
 

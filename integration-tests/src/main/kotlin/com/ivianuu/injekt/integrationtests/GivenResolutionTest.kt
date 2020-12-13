@@ -411,6 +411,18 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testPrefersLesserParameters() = codegen(
+        """
+            @Given val a = "a"
+            @Given val foo = Foo()
+            @Given fun b(foo: Foo = given) = "b"
+            fun invoke() = given<String>()
+        """
+    ) {
+        assertEquals("a", invokeSingleFile())
+    }
+
+    @Test
     fun testGenericGiven() = codegen(
         """
             @Given val foo = Foo()
