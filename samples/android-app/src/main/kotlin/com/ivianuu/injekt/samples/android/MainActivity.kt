@@ -32,6 +32,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         withGiven(this as ComponentActivity) {
+            val keyUis = given<KeyUis>()
+
             given<ApplicationComponent>()[DummyAppElementKey]()
 
             given<StorageCoroutineScope<ActivityStorage>>().launch {

@@ -15,6 +15,7 @@ sealed class GivenNode {
     abstract val dependencies: List<GivenRequest>
     abstract val callableFqName: FqName
     abstract val depth: Int
+    abstract val providedGivens: List<GivenNode>
 }
 
 data class CallableGivenNode(
@@ -26,6 +27,8 @@ data class CallableGivenNode(
     override val callableFqName: FqName = if (callable is ClassConstructorDescriptor)
         callable.constructedClass.fqNameSafe
     else callable.fqNameSafe
+    override val providedGivens: List<GivenNode>
+        get() = emptyList()
 }
 
 data class CollectionGivenNode(
@@ -35,11 +38,14 @@ data class CollectionGivenNode(
     override val dependencies: List<GivenRequest>,
 ) : GivenNode() {
     override val callableFqName: FqName = FqName("givenCollectionOf")
+    override val providedGivens: List<GivenNode>
+        get() = emptyList()
 }
 
 data class ProviderGivenNode(
     override val type: TypeRef,
     override val depth: Int,
+    val declarationStore: DeclarationStore,
     val isRequired: Boolean,
 ) : GivenNode() {
     override val callableFqName: FqName = FqName("Provider")
@@ -52,6 +58,26 @@ data class ProviderGivenNode(
             callableKey = "Provider"
         )
     )
+    override val providedGivens: List<GivenNode>
+        get() = type.typeArguments.dropLast(1)
+            .mapIndexed { index, parameterType ->
+                ProviderParameterGivenNode(parameterType, index, this)
+            }
+}
+
+data class ProviderParameterGivenNode(
+    override val type: TypeRef,
+    val index: Int,
+    val provider: ProviderGivenNode,
+) : GivenNode() {
+    override val depth: Int
+        get() = -1
+    override val callableFqName: FqName
+        get() = FqName("Provider.p$index")
+    override val dependencies: List<GivenRequest>
+        get() = emptyList()
+    override val providedGivens: List<GivenNode>
+        get() = emptyList()
 }
 
 fun CallableDescriptor.toGivenNode(

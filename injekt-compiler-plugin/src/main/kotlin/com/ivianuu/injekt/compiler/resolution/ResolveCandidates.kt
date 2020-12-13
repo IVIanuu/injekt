@@ -97,7 +97,9 @@ private fun ResolutionScope.resolveRequest(
     request: GivenRequest,
 ): ResolutionResult = context.resolveInScope(
     request,
-    givensForType(request.type) + getFrameworkCandidates(request)
+    context.getProvidedCandidates(request) +
+            givensForType(request.type) +
+            getFrameworkCandidates(request)
 )
 
 private fun List<ResolutionResult.Success>.toSuccessGraph(
@@ -129,6 +131,9 @@ class ResolutionContext(val scope: ResolutionScope) {
     private val resultsByCandidate = mutableMapOf<GivenNode, CandidateResolutionResult>()
 
     private val resultsByRequest = mutableMapOf<GivenRequest, ResolutionResult>()
+
+    val providedGivens = mutableListOf<GivenNode>()
+
     fun computeForRequest(
         request: GivenRequest,
         compute: () -> ResolutionResult,
@@ -163,8 +168,10 @@ class ResolutionContext(val scope: ResolutionScope) {
         }
 
         chain += candidate
+        providedGivens += candidate.providedGivens
         val result = compute()
         chain -= candidate
+        providedGivens -= candidate.providedGivens
         return@getOrPut result
     }
 }
@@ -223,7 +230,7 @@ private fun ResolutionContext.resolveCandidate(
         when (val result = scope.resolveRequest(this, dependency)) {
             is ResolutionResult.Success -> successDependencyResults += result
             is ResolutionResult.Failure -> return@computeForCandidate CandidateResolutionResult.Failure(
-                request,
+                dependency,
                 candidate,
                 result)
         }
@@ -233,12 +240,21 @@ private fun ResolutionContext.resolveCandidate(
         successDependencyResults)
 }
 
+private fun ResolutionContext.getProvidedCandidates(request: GivenRequest): List<GivenNode> {
+    return providedGivens
+        .reversed()
+        .distinctBy { it.type }
+        .reversed()
+        .filter { it.type.isAssignableTo(request.type) }
+}
+
 private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<GivenNode> {
-    if (request.type.classifier.fqName.asString() == "kotlin.Function0") {
+    if (request.type.classifier.fqName.asString().startsWith("kotlin.Function")) {
         return listOf(
             ProviderGivenNode(
                 request.type,
                 Int.MAX_VALUE,
+                declarationStore,
                 request.required
             )
         )

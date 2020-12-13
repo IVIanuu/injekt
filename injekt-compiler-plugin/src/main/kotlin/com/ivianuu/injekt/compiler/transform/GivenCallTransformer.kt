@@ -10,6 +10,7 @@ import com.ivianuu.injekt.compiler.resolution.CollectionGivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.ProviderGivenNode
+import com.ivianuu.injekt.compiler.resolution.ProviderParameterGivenNode
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.fullyExpandedType
 import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
@@ -119,19 +120,31 @@ class GivenCallTransformer(
             when (given) {
                 is CallableGivenNode -> callableExpression(given, symbol)
                 is ProviderGivenNode -> providerExpression(given, symbol)
+                is ProviderParameterGivenNode -> providerParameterExpression(given, symbol)
                 is CollectionGivenNode -> collectionExpression(given, symbol)
             }
         }()
     }
+
+    private val lambdasByProviderGiven = mutableMapOf<ProviderGivenNode, IrFunction>()
 
     private fun ResolutionContext.providerExpression(
         given: ProviderGivenNode,
         symbol: IrSymbol,
     ): () -> IrExpression = {
         DeclarationIrBuilder(pluginContext, symbol)
-            .irLambda(given.type.toIrType(pluginContext)) {
+            .irLambda(given.type.toIrType(pluginContext)) { function ->
+                lambdasByProviderGiven[given] = function
                 expressionFor(given.dependencies.single(), symbol)
             }
+    }
+
+    private fun ResolutionContext.providerParameterExpression(
+        given: ProviderParameterGivenNode,
+        symbol: IrSymbol,
+    ): () -> IrExpression = {
+        DeclarationIrBuilder(pluginContext, symbol)
+            .irGet(lambdasByProviderGiven[given.provider]!!.valueParameters[given.index])
     }
 
     private fun ResolutionContext.collectionExpression(
