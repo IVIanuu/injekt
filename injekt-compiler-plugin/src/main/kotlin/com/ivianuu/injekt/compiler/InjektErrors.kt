@@ -59,6 +59,9 @@ interface InjektErrors {
                                         is ResolutionResult.Failure.CircularDependency -> {
                                             appendLine("${indent()}circular")
                                         }
+                                        is ResolutionResult.Failure.DivergentGiven -> {
+                                            appendLine("${indent()}divergent given $request")
+                                        }
                                         is ResolutionResult.Failure.CandidateFailures -> {
                                             appendLine("${indent()}given candidate of type ${request.type.render()} " +
                                                     "for parameter ${request.parameterName} of function ${request.callableFqName} has failures:")

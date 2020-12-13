@@ -14,7 +14,7 @@ class CircularDependencyTest {
             fun invoke() = given<A>()
         """
     ) {
-        assertCompileError("Circular dependency")
+        assertCompileError("circular")
     }
 
     /*@Test

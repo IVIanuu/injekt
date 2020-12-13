@@ -10,9 +10,8 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.psi.KtClassOrObject
-import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.calls.DslMarkerUtils
 import org.jetbrains.kotlin.types.KotlinType
 
 fun ClassDescriptor.extractGivensOfDeclaration(
@@ -94,10 +93,12 @@ fun CallableDescriptor.extractGivensOfCallable(
     declarationStore: DeclarationStore,
 ): List<CallableDescriptor> {
     val info = declarationStore.givenInfoFor(this)
+    val userData = getUserData(DslMarkerUtils.FunctionTypeAnnotationsKey)
     return allParameters
         .filter {
             it.hasAnnotation(InjektFqNames.Given) ||
                     it.type.hasAnnotation(InjektFqNames.Given) ||
+                    userData?.hasAnnotation(InjektFqNames.Given) == true ||
                     it.name in info.allGivens
         }
 }
@@ -124,13 +125,4 @@ fun ClassDescriptor.getGivenConstructors(): List<ClassConstructorDescriptor> {
             (it.isPrimary && hasAnnotation(InjektFqNames.Given)) ||
                     it.hasAnnotation(InjektFqNames.Given)
         }
-}
-
-fun KtClassOrObject.getGivenConstructors(): List<KtConstructor<*>> {
-    return listOfNotNull(primaryConstructor)
-        .filter { it.hasAnnotation(InjektFqNames.Given) || hasAnnotation(InjektFqNames.Given) } +
-            secondaryConstructors
-                .filter {
-                    it.hasAnnotation(InjektFqNames.Given)
-                }
 }

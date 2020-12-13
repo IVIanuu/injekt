@@ -22,12 +22,15 @@ import android.content.Context
 import android.content.res.Resources
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedDispatcherOwner
+import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSet
 import com.ivianuu.injekt.given
+import kotlinx.coroutines.CoroutineScope
 
 typealias ActivityComponent = Component<ActivityComponentKey<*>>
 
@@ -97,5 +100,18 @@ inline fun activitySavedStateRegistryOwner(activity: ComponentActivity = given):
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
 @Given
-fun activityViewModelStoreOwner(activity: ComponentActivity = given): ActivityViewModelStoreOwner =
+inline fun activityViewModelStoreOwner(activity: ComponentActivity = given): ActivityViewModelStoreOwner =
     activity
+
+typealias ActivityCoroutineScope = LifecycleCoroutineScope
+
+@Given
+inline fun activityCoroutineScope(activity: ComponentActivity = given): ActivityCoroutineScope =
+    activity.lifecycleScope
+
+@Given
+inline fun activityCoroutineScopeAsLifecycleScope(scope: ActivityCoroutineScope = given): CoroutineScope =
+    scope
+
+@Given inline fun lifecycleScopeAsCoroutineScope(scope: LifecycleCoroutineScope = given): CoroutineScope =
+    scope

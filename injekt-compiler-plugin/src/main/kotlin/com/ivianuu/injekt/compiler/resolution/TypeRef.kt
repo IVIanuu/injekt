@@ -112,12 +112,38 @@ sealed class TypeRef {
 
     override fun hashCode(): Int = _hashCode
 
-    val allTypes: Set<TypeRef> by unsafeLazy {
+    val thisAndAllSuperTypes: Set<TypeRef> by unsafeLazy {
         buildSet<TypeRef> {
             this += this@TypeRef
-            expandedType?.let { this += it.allTypes }
-            this += superTypes().flatMap { it.allTypes }
+            expandedType?.let { this += it.thisAndAllSuperTypes }
+            this += superTypes().flatMap { it.thisAndAllSuperTypes }
         }
+    }
+
+    val typeSize: Int by unsafeLazy {
+        var typeSize = 0
+        val seen = mutableSetOf<TypeRef>()
+        fun visit(type: TypeRef) {
+            if (type in seen) return
+            seen += type
+            typeSize++
+            type.typeArguments.forEach { visit(it) }
+        }
+        visit(this)
+        typeSize
+    }
+
+    val coveringSet: Set<ClassifierRef> by unsafeLazy {
+        val classifiers = mutableSetOf<ClassifierRef>()
+        val seen = mutableSetOf<TypeRef>()
+        fun visit(type: TypeRef) {
+            if (type in seen) return
+            seen += type
+            classifiers += type.classifier
+            type.typeArguments.forEach { visit(it) }
+        }
+        visit(this)
+        classifiers
     }
 }
 
@@ -128,7 +154,7 @@ class KotlinTypeRef(
 ) : TypeRef() {
     init {
         check(!kotlinType.isError) {
-            "Error type $kotlinType"
+            "Error type $kotlinType ${kotlinType.javaClass}"
         }
     }
 
@@ -249,11 +275,17 @@ fun TypeRef.substituteStars(baseType: TypeRef): TypeRef {
     )
 }
 
-fun TypeRef.render(expanded: Boolean = false): String {
+fun TypeRef.render(
+    expanded: Boolean = false,
+    depth: Int = 0,
+): String {
+    if (depth > 15) return ""
     return buildString {
         fun TypeRef.inner() {
             val annotations = (if (!expanded) qualifiers.map {
-                "@${it.type}(${it.allValueArguments.toList().joinToString { "${it.first}=${it.second}" }})"
+                "@${it.type}(${
+                    it.allValueArguments.toList().joinToString { "${it.first}=${it.second}" }
+                })"
             } else emptyList()) + listOfNotNull(
                 if (isComposable) "@${InjektFqNames.Composable}" else null,
             )
@@ -275,7 +307,7 @@ fun TypeRef.render(expanded: Boolean = false): String {
                         !typeArgument.isStarProjection
                     )
                         append("${typeArgument.variance.label} ")
-                    append(typeArgument.render(expanded = expanded))
+                    append(typeArgument.render(expanded, depth + 1))
                     if (index != typeArguments.lastIndex) append(", ")
                 }
                 append(">")
@@ -286,7 +318,8 @@ fun TypeRef.render(expanded: Boolean = false): String {
     }
 }
 fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
-    fun TypeRef.renderName(includeArguments: Boolean = true): String {
+    fun TypeRef.renderName(includeArguments: Boolean = true, depth: Int = 0): String {
+        if (depth > 15) return ""
         return buildString {
             qualifiers.forEach {
                 append(it.type.constructor.declarationDescriptor!!.fqNameSafe)
@@ -300,7 +333,7 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
             if (includeArguments) {
                 typeArguments.forEachIndexed { index, typeArgument ->
                     if (index == 0) append("_")
-                    append(typeArgument.renderName())
+                    append(typeArgument.renderName(depth = depth + 1))
                     if (index != typeArguments.lastIndex) append("_")
                 }
             }
@@ -380,7 +413,7 @@ fun TypeRef.isAssignableTo(
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return false
         if (!qualifiers.isAssignableTo(superType.qualifiers)) return false
-        if (allTypes.any { it.isComposable } != superType.allTypes.any { it.isComposable }) return false
+        if (thisAndAllSuperTypes.any { it.isComposable } != superType.thisAndAllSuperTypes.any { it.isComposable }) return false
         if (typeArguments.zip(superType.typeArguments)
                 .any { (a, b) -> !a.isAssignableTo(b, substitutionMap) }
         )
@@ -415,7 +448,7 @@ fun TypeRef.isSubTypeOf(
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return false
         if (!qualifiers.isAssignableTo(superType.qualifiers)) return false
-        if (allTypes.any { it.isComposable } != superType.allTypes.any { it.isComposable }) return false
+        if (thisAndAllSuperTypes.any { it.isComposable } != superType.thisAndAllSuperTypes.any { it.isComposable }) return false
         if (typeArguments.zip(superType.typeArguments)
                 .any { (a, b) -> !a.isAssignableTo(b, substitutionMap) }
         )

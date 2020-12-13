@@ -16,6 +16,7 @@ import com.ivianuu.injekt.compiler.resolution.InternalResolutionScope
 import com.ivianuu.injekt.compiler.resolution.ResolutionScope
 import com.ivianuu.injekt.compiler.resolution.resolveGiven
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -63,7 +64,8 @@ class GivenCallChecker(
                     type = it.key.type.toTypeRef(),
                     required = it.key.name in givenInfo.requiredGivens,
                     callableFqName = resultingDescriptor.fqNameSafe,
-                    parameterName = it.key.name
+                    parameterName = it.key.name,
+                    callableKey = resultingDescriptor.uniqueKey()
                 )
             }
 

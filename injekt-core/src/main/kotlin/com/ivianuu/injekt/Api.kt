@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("NOTHING_TO_INLINE")
+
 package com.ivianuu.injekt
 
 @Target(
@@ -34,7 +36,12 @@ inline fun <T> givenOrElse(defaultValue: () -> T): T = defaultValue()
 @Suppress("NOTHING_TO_INLINE")
 inline fun <T> given(value: T = given): T = value
 
-inline fun <T, R> withGiven(given: T, block: (@Given T) -> R) = block(given)
+inline fun <A, R> withGiven(a: A, block: (@Given A) -> R) = block(a)
+
+class GivenTuple2<A, B>(@Given val a: A, @Given val b: B)
+
+inline fun <A, B, R> withGiven(a: A, b: B, block: @Given GivenTuple2<A, B>.() -> R) =
+    block(GivenTuple2(a, b))
 
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class GivenMap

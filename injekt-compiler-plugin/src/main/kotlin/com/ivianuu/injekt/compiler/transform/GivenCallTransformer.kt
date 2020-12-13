@@ -18,6 +18,7 @@ import com.ivianuu.injekt.compiler.resolution.subtypeView
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toGivenNode
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.backend.common.ir.allParameters
@@ -82,7 +83,8 @@ class GivenCallTransformer(
                             type = it.descriptor.type.toTypeRef().substitute(substitutionMap),
                             required = it.name in givenInfo.requiredGivens,
                             callableFqName = callee.descriptor.fqNameSafe,
-                            parameterName = it.name
+                            parameterName = it.name,
+                            callableKey = callee.descriptor.uniqueKey()
                         ),
                         call.symbol
                     )
@@ -123,7 +125,7 @@ class GivenCallTransformer(
         return if (given.elements.size == 1) {
             callableExpression(
                 given.elements.single()
-                    .toGivenNode(given.type, declarationStore),
+                    .toGivenNode(given.type, declarationStore, 0),
                 symbol
             )
         } else {
@@ -162,7 +164,7 @@ class GivenCallTransformer(
                                     putValueArgument(
                                         0,
                                         callableExpression(
-                                            it.toGivenNode(given.type, declarationStore),
+                                            it.toGivenNode(given.type, declarationStore, 0),
                                             symbol
                                         )()
                                     )
@@ -197,7 +199,7 @@ class GivenCallTransformer(
                                     putValueArgument(
                                         0,
                                         callableExpression(
-                                            it.toGivenNode(given.type, declarationStore),
+                                            it.toGivenNode(given.type, declarationStore, 0),
                                             symbol
                                         )()
                                     )

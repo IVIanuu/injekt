@@ -1,7 +1,5 @@
 package com.ivianuu.injekt.compiler.resolution
 
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
-
 sealed class GivenGraph {
     abstract val requests: List<GivenRequest>
 
@@ -52,6 +50,11 @@ sealed class ResolutionResult {
                 get() = 0
         }
 
+        data class DivergentGiven(override val request: GivenRequest) : Failure() {
+            override val failureOrdering: Int
+                get() = 1
+        }
+
         data class CircularDependency(
             override val request: GivenRequest,
             val chain: List<GivenRequest>,
@@ -92,25 +95,10 @@ fun ResolutionScope.resolveGiven(requests: List<GivenRequest>): GivenGraph {
 private fun ResolutionScope.resolveRequest(
     context: ResolutionContext,
     request: GivenRequest,
-): ResolutionResult {
-    var currentScope: ResolutionScope? = this
-    val failureResults = mutableListOf<ResolutionResult.Failure>()
-    while (currentScope != null) {
-        when (val result =
-            context.resolveInScope(request, currentScope.givensForTypeInThisScope(request.type))) {
-            is ResolutionResult.Success -> return result
-            is ResolutionResult.Failure -> failureResults += result
-        }
-        currentScope = currentScope.parent
-    }
-
-    val frameworkGivensResult = context.resolveInScope(request, getFrameworkCandidates(request))
-    if (frameworkGivensResult is ResolutionResult.Success) return frameworkGivensResult
-
-    return if (failureResults.isNotEmpty()) {
-        failureResults.minBy { it.failureOrdering }!!
-    } else ResolutionResult.Failure.NoCandidates(request)
-}
+): ResolutionResult = context.resolveInScope(
+    request,
+    givensForType(request.type) + getFrameworkCandidates(request)
+)
 
 private fun List<ResolutionResult.Success>.toSuccessGraph(
     requests: List<GivenRequest>,
@@ -136,27 +124,48 @@ private fun List<ResolutionResult.Failure>.toErrorGraph(
     return GivenGraph.Error(requests, failuresByRequest)
 }
 
-class ResolutionContext(val originScope: ResolutionScope) {
-    private val chain: MutableSet<GivenRequest> = mutableSetOf()
-    private val successResultsForRequest = mutableMapOf<GivenRequest, ResolutionResult.Success>()
+class ResolutionContext(val scope: ResolutionScope) {
+    private val chain = mutableSetOf<GivenNode>()
+    private val resultsByCandidate = mutableMapOf<GivenNode, CandidateResolutionResult>()
 
+    private val resultsByRequest = mutableMapOf<GivenRequest, ResolutionResult>()
     fun computeForRequest(
         request: GivenRequest,
         compute: () -> ResolutionResult,
-    ): ResolutionResult {
-        successResultsForRequest[request]?.let { return it }
+    ) = resultsByRequest.getOrPut(request, compute)
 
-        if (request in chain) {
-            val chainList = chain.toList()
-            val cycleChain = chainList.subList(chainList.indexOf(request), chainList.size)
-            return ResolutionResult.Failure.CircularDependency(request, cycleChain)
+    fun computeForCandidate(
+        request: GivenRequest,
+        candidate: GivenNode,
+        compute: () -> CandidateResolutionResult,
+    ): CandidateResolutionResult = resultsByCandidate.getOrPut(candidate) {
+        chain.reversed().forEach { prev ->
+            if (prev.callableFqName == candidate.callableFqName &&
+                prev.type.coveringSet == candidate.type.coveringSet &&
+                candidate.type.typeSize > prev.type.typeSize
+            ) {
+                return@getOrPut CandidateResolutionResult.Failure(
+                    request,
+                    candidate,
+                    ResolutionResult.Failure.DivergentGiven(request)
+                )
+            }
         }
 
-        chain += request
+        if (candidate in chain) {
+            val chainList = chain.toList()
+            val cycleChain = chainList.subList(chainList.indexOf(candidate), chainList.size)
+            return@getOrPut CandidateResolutionResult.Failure(
+                request,
+                candidate,
+                ResolutionResult.Failure.CircularDependency(request, emptyList()) // todo
+            )
+        }
+
+        chain += candidate
         val result = compute()
-        if (result is ResolutionResult.Success) successResultsForRequest[request] = result
-        chain -= request
-        return result
+        chain -= candidate
+        return@getOrPut result
     }
 }
 
@@ -185,9 +194,21 @@ private fun ResolutionContext.resolveInScope(
     return@computeForRequest when {
         successResults.size == 1 -> ResolutionResult.Success(request, successResults.single())
         successResults.size > 1 -> {
-            // todo try to pick most specific
-            ResolutionResult.Failure.CandidateAmbiguity(request,
-                successResults)
+            val minDepthResults = mutableListOf<CandidateResolutionResult.Success>()
+            var minDepth = Int.MAX_VALUE
+            successResults.forEach { result ->
+                if (result.candidate.depth < minDepth) {
+                    minDepthResults.clear()
+                    minDepthResults += result
+                    minDepth = result.candidate.depth
+                } else if (result.candidate.depth == minDepth) {
+                    minDepthResults += result
+                }
+            }
+            // todo pick most specific
+            val result = minDepthResults.singleOrNull()
+            if (result != null) ResolutionResult.Success(request, result)
+            else ResolutionResult.Failure.CandidateAmbiguity(request, minDepthResults)
         }
         else -> ResolutionResult.Failure.CandidateFailures(request, failureResults.first())
     }
@@ -196,17 +217,20 @@ private fun ResolutionContext.resolveInScope(
 private fun ResolutionContext.resolveCandidate(
     request: GivenRequest,
     candidate: GivenNode,
-): CandidateResolutionResult {
+): CandidateResolutionResult = computeForCandidate(request, candidate) {
     val successDependencyResults = mutableListOf<ResolutionResult.Success>()
     for (dependency in candidate.dependencies) {
-        when (val result = originScope.resolveRequest(this, dependency)) {
+        when (val result = scope.resolveRequest(this, dependency)) {
             is ResolutionResult.Success -> successDependencyResults += result
-            is ResolutionResult.Failure -> return CandidateResolutionResult.Failure(request,
+            is ResolutionResult.Failure -> return@computeForCandidate CandidateResolutionResult.Failure(
+                request,
                 candidate,
                 result)
         }
     }
-    return CandidateResolutionResult.Success(request, candidate, successDependencyResults)
+    return@computeForCandidate CandidateResolutionResult.Success(request,
+        candidate,
+        successDependencyResults)
 }
 
 private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<GivenNode> {
@@ -214,6 +238,7 @@ private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<
         return listOf(
             ProviderGivenNode(
                 request.type,
+                Int.MAX_VALUE,
                 request.required
             )
         )
@@ -222,18 +247,12 @@ private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<
     val mapType = declarationStore.module.builtIns.map.defaultType.toTypeRef()
     val setType = declarationStore.module.builtIns.set.defaultType.toTypeRef()
     if (request.type.isSubTypeOf(mapType) || request.type.isSubTypeOf(setType)) {
-        val elements = mutableListOf<CallableDescriptor>()
-        var currentForElements: ResolutionScope? = this
-        while (currentForElements != null) {
-            val currentElements = currentForElements
-                .givenCollectionElementsForTypeInThisScope(request.type)
-            elements += currentElements
-            currentForElements = currentForElements.parent
-        }
+        val elements = givenCollectionElementsForType(request.type)
         if (elements.isNotEmpty()) {
             return listOf(
                 CollectionGivenNode(
                     request.type,
+                    Int.MAX_VALUE,
                     elements,
                     elements
                         .flatMap { element ->

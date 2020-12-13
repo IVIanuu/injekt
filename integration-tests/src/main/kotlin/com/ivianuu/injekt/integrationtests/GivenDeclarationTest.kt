@@ -143,10 +143,10 @@ class GivenDeclarationTest {
         assertSame(foo, invokeSingleFile<Any>(foo))
     }
 
-    // todo @Test
+    @Test
     fun testGivenLambdaReceiverParameter() = codegen(
         """
-            inline fun <R> withGiven(value: T, block: @Given T.() -> R) = block(value)
+            inline fun <T, R> withGiven(value: T, block: @Given T.() -> R) = block(value)
             fun invoke(foo: Foo): Foo {
                 return withGiven(foo) { given<Foo>() }
             }

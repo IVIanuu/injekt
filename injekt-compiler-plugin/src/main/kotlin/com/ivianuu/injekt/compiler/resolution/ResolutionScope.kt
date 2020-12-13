@@ -19,24 +19,48 @@ class ResolutionScope(
     initialGivensInScope: () -> List<CallableDescriptor>,
     initialGivenCollectionElementsInScope: () -> List<CallableDescriptor>,
 ) {
-    private val givens by unsafeLazy { initialGivensInScope().toMutableList() }
-    private val givenCollectionElements by unsafeLazy {
-        initialGivenCollectionElementsInScope().toMutableList()
+    private val givens: MutableList<Pair<CallableDescriptor, ResolutionScope>> by unsafeLazy {
+        (initialGivensInScope()
+            .map { it to this } + (parent?.givens ?: emptyList()))
+            .toMutableList()
+    }
+    private val givenCollectionElements: MutableList<Pair<CallableDescriptor, ResolutionScope>> by unsafeLazy {
+        (initialGivenCollectionElementsInScope()
+            .map { it to this } + (parent?.givenCollectionElements ?: emptyList()))
+            .sortedBy { it.second.depth() }
+            .toMutableList()
     }
 
-    fun givensForTypeInThisScope(type: TypeRef): List<GivenNode> = givens
-        .filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
-        .map { it.toGivenNode(type, declarationStore) }
+    private val givensByType = mutableMapOf<TypeRef, List<GivenNode>>()
+    fun givensForType(type: TypeRef): List<GivenNode> = givensByType.getOrPut(type) {
+        givens
+            .filter { it.first.returnType!!.toTypeRef().isAssignableTo(type) }
+            .map { it.first.toGivenNode(type, declarationStore, it.second.depth()) }
+    }
 
-    fun givenCollectionElementsForTypeInThisScope(type: TypeRef): List<CallableDescriptor> =
-        givenCollectionElements
-            .filter { it.returnType!!.toTypeRef().isAssignableTo(type) }
+    private val givenCollectionElementsByType = mutableMapOf<TypeRef, List<CallableDescriptor>>()
+    fun givenCollectionElementsForType(type: TypeRef): List<CallableDescriptor> =
+        givenCollectionElementsByType.getOrPut(type) {
+            givenCollectionElements
+                .filter { it.first.returnType!!.toTypeRef().isAssignableTo(type) }
+                .map { it.first }
+        }
 
     fun addIfNeeded(callable: CallableDescriptor) {
-        if (callable.hasAnnotation(InjektFqNames.Given)) givens += callable
+        if (callable.hasAnnotation(InjektFqNames.Given)) givens += callable to this
         else if (callable.hasAnnotation(InjektFqNames.GivenMap) ||
             callable.hasAnnotation(InjektFqNames.GivenSet)
-        ) givenCollectionElements += callable
+        ) givenCollectionElements += callable to this
+    }
+
+    private fun ResolutionScope.depth(): Int {
+        var scope: ResolutionScope = this@ResolutionScope
+        var depth = 0
+        while (scope != this) {
+            depth++
+            scope = scope.parent!!
+        }
+        return depth
     }
 
     override fun toString(): String = "ResolutionScope($name)"
