@@ -36,10 +36,22 @@ inline fun <T> givenOrElse(defaultValue: () -> T): T = defaultValue()
 @Suppress("NOTHING_TO_INLINE")
 inline fun <T> given(value: T = given): T = value
 
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+@Target(
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.LOCAL_VARIABLE,
+    AnnotationTarget.VALUE_PARAMETER,
+    AnnotationTarget.TYPE
+)
 annotation class GivenMap
 
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+@Target(
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.LOCAL_VARIABLE,
+    AnnotationTarget.VALUE_PARAMETER,
+    AnnotationTarget.TYPE
+)
 annotation class GivenSet
 
 @Target(AnnotationTarget.ANNOTATION_CLASS)
