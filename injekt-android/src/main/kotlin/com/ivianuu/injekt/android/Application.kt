@@ -24,41 +24,36 @@ import android.content.res.Resources
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenSet
+import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.given
 
-@Given lateinit var applicationComponent: ApplicationComponent
+@Given lateinit var applicationComponent: Component<ApplicationScoped>
 
-typealias ApplicationComponent = Component<ApplicationComponentKey<*>>
+object ApplicationScoped : Component.Name
 
-interface ApplicationComponentKey<T> : Component.Key<T>
+object ApplicationKey : Component.Key<Application>
 
-@GivenSet fun defaultApplicationComponentElements(): ComponentElements<ApplicationComponentKey<*>> =
-    emptyMap()
-
-object ApplicationKey : ApplicationComponentKey<Application>
-
-fun Application.initializeApp(builder: Component.Builder<ApplicationComponentKey<*>> = given) {
+fun Application.initializeApp(builder: Component.Builder<ApplicationScoped> = given) {
     applicationComponent = builder
         .set(ApplicationKey, this)
         .build()
 }
 
-typealias ApplicationStorage = Storage
-
-@Given fun applicationStorage(component: ApplicationComponent = given): ApplicationStorage =
-    component.storage
+@Given inline val @Given Component<ApplicationScoped>.application: Application
+    get() = this[ApplicationKey]
 
 typealias ApplicationContext = Context
 
-@Given inline fun applicationContext(component: ApplicationComponent = given): ApplicationContext =
-    component[ApplicationKey]
+@Given inline val @Given Application.appContext: ApplicationContext
+    get() = this
 
 typealias ApplicationResources = Resources
 
-@Given inline fun applicationResources(context: Application = given): ApplicationResources =
-    context.resources
+@Given inline val @Given ApplicationContext.applicationResources: ApplicationResources
+    get() = resources
 
 typealias ApplicationLifecycleOwner = LifecycleOwner
-@Given inline fun applicationLifecycleOwner(context: Application = given): ApplicationLifecycleOwner =
-    ProcessLifecycleOwner.get()
+
+@Suppress("unused")
+@Given inline val @Given Application.applicationLifecycleOwner: ApplicationLifecycleOwner
+    get() = ProcessLifecycleOwner.get()

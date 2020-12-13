@@ -5,8 +5,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.android.ApplicationStorage
-import com.ivianuu.injekt.android.memo
+import com.ivianuu.injekt.android.ApplicationScoped
+import com.ivianuu.injekt.component.Storage
+import com.ivianuu.injekt.component.memo
 import com.ivianuu.injekt.given
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
@@ -31,14 +32,15 @@ inline fun <reified K : Any, S> keyUiWithStateSetOf(
 
 typealias ActionChannel<A> = Channel<A>
 
-@Given fun <A> ActionChannel(storage: ApplicationStorage = given): ActionChannel<A> =
+@Given fun <A> ActionChannel(storage: Storage<ApplicationScoped> = given): ActionChannel<A> =
     storage.memo("action_channel") { Channel() }
 
 typealias Dispatch<A> = (A) -> Unit
 
-@Given fun <A> Dispatch(channel: ActionChannel<A> = given): Dispatch<A> =
-    { action: A -> channel.offer(action) }
+@Given val <A> @Given ActionChannel<A>.dispatch: Dispatch<A>
+    get() = { action: A -> offer(action) }
 
 typealias Actions<A> = Flow<A>
 
-@Given fun <A> Actions(channel: ActionChannel<A> = given): Actions<A> = channel.consumeAsFlow()
+@Given inline val <A> @Given ActionChannel<A>.actions: Actions<A>
+    get() = consumeAsFlow()

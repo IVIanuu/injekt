@@ -20,9 +20,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.platform.setContent
-import com.ivianuu.injekt.android.ActivityRetainedStorage
-import com.ivianuu.injekt.android.ActivityStorage
-import com.ivianuu.injekt.android.ApplicationComponent
+import com.ivianuu.injekt.android.ActivityRetainedScoped
+import com.ivianuu.injekt.android.ActivityScoped
+import com.ivianuu.injekt.android.ApplicationScoped
+import com.ivianuu.injekt.component.Component
+import com.ivianuu.injekt.component.Storage
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.withGiven
 import kotlinx.coroutines.awaitCancellation
@@ -32,11 +34,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         withGiven(this as ComponentActivity) {
-            val keyUis = given<KeyUis>()
+            given<Component<ApplicationScoped>>()[DummyAppElementKey]()
 
-            given<ApplicationComponent>()[DummyAppElementKey]()
-
-            given<StorageCoroutineScope<ActivityStorage>>().launch {
+            given<StorageCoroutineScope<Storage<ActivityScoped>>>().launch {
                 println("Activity work: start")
                 try {
                     awaitCancellation()
@@ -45,7 +45,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             if (savedInstanceState == null) {
-                given<StorageCoroutineScope<ActivityRetainedStorage>>().launch {
+                given<StorageCoroutineScope<Storage<ActivityRetainedScoped>>>().launch {
                     println("Retained work: start")
                     try {
                         awaitCancellation()
@@ -55,7 +55,8 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             setContent {
-                MyAppUi()
+                val keyUis = given<KeyUis>()
+                keyUis[CounterKey::class]!!.invoke()
             }
         }
     }

@@ -1,8 +1,8 @@
 package com.ivianuu.injekt.samples.android
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.android.Storage
-import com.ivianuu.injekt.android.memo
+import com.ivianuu.injekt.component.Storage
+import com.ivianuu.injekt.component.memo
 import com.ivianuu.injekt.given
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -13,7 +13,7 @@ import kotlin.coroutines.CoroutineContext
 
 typealias StorageCoroutineScope<S> = CoroutineScope
 
-@Given fun <S : Storage> storageCoroutineScope(storage: S = given): StorageCoroutineScope<S> =
+@Given fun <S : Storage<*>> storageCoroutineScope(storage: S = given): StorageCoroutineScope<S> =
     storage.memo("coroutine_scope") {
         object : CoroutineScope, DisposableHandle {
             override val coroutineContext: CoroutineContext = Job() + Dispatchers.Default

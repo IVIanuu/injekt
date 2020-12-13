@@ -16,29 +16,40 @@
 
 package com.ivianuu.injekt.android
 
-/*
-import android.app.Application
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.Scoped
-import com.ivianuu.injekt.merge.MergeComponent
-import com.ivianuu.injekt.merge.get
-
+/**
 fun BroadcastReceiver.createReceiverComponent(
-    context: Context,
-    intent: Intent,
+context: Context,
+intent: Intent,
+receiverComponentFactory:
 ): ReceiverComponent =
-    (context.applicationContext as Application).applicationComponent
-        .get<(BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent>()(
-        this, context, intent)
+(context.applicationContext as Application).applicationComponent
+.get<(BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent>()(
+this, context, intent)
 
-@Scope interface ReceiverScope
+typealias ReceiverComponent = Component<ReceiverComponentKey<*>>
 
-@Scoped(ReceiverScope::class) @MergeComponent interface ReceiverComponent
+interface ReceiverComponentKey<T> : Component.Key<T>
 
-typealias ReceiverContext = Context
+@Given fun activityComponent(
+activity: ComponentActivity = given,
+activityRetainedComponent: ActivityRetainedComponent = given,
+) = activity.lifecycle.component {
+activityRetainedComponent[ActivityComponentFactoryKey](activity)
+}
 
-typealias ReceiverIntent = Intent
-*/
+object ReceiverKey : ReceiverComponentKey<BroadcastReceiver>
+
+@Given fun activity(component: ReceiverComponent = given): BroadcastReceiver =
+component[ReceiverKey]
+
+object ReceiverComponentFactoryKey :
+ApplicationComponentKey<(@Given BroadcastReceiver) -> ReceiverComponent>
+
+@GivenSet fun receiverComponentFactoryKey(
+builderFactory: () -> Component.Builder<ReceiverComponentKey<*>> = given,
+): ComponentElements<ApplicationComponentKey<*>> =
+componentElementsOf(ReceiverComponentFactoryKey) {
+builderFactory()
+.set(ReceiverKey, it)
+.build()
+}*/

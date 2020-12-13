@@ -32,7 +32,6 @@ private fun CounterPage(
             Text("Dec")
         }
     }
-
 }
 
 data class CounterState(val count: Int)

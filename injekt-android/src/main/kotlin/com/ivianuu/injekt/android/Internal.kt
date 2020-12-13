@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.lifecycleScope
+import com.ivianuu.injekt.component.Component
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 
@@ -31,7 +32,7 @@ internal fun <T : Component<*>> Lifecycle.component(init: () -> T): T {
                         synchronized(componentsByLifecycle) {
                             componentsByLifecycle
                                 .remove(this@component)
-                        }?.storage?.dispose()
+                        }?.dispose()
                     }
                 }
             }
@@ -52,6 +53,6 @@ internal fun <T : Component<*>> ViewModelStore.component(init: () -> T): T {
 private class ViewModelComponentHolder<T : Component<*>>(val component: T) : ViewModel() {
     override fun onCleared() {
         super.onCleared()
-        component.storage.dispose()
+        component.dispose()
     }
 }

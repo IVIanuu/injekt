@@ -1,13 +1,13 @@
 package com.ivianuu.injekt.samples.android
 
 import com.ivianuu.injekt.GivenSet
-import com.ivianuu.injekt.android.ApplicationComponentKey
-import com.ivianuu.injekt.android.ComponentElements
-import com.ivianuu.injekt.android.componentElementsOf
+import com.ivianuu.injekt.android.ApplicationScoped
+import com.ivianuu.injekt.component.Component
+import com.ivianuu.injekt.component.componentElementsOf
 
-object DummyAppElementKey : ApplicationComponentKey<() -> Unit>
+object DummyAppElementKey : Component.Key<() -> Unit>
 
-@GivenSet fun dummyAppElement(): ComponentElements<ApplicationComponentKey<*>> =
-    componentElementsOf(DummyAppElementKey) {
+@GivenSet fun dummyAppElement() =
+    componentElementsOf(ApplicationScoped::class, DummyAppElementKey) {
         println("Hello")
     }

@@ -2,6 +2,7 @@ include(
     ":injekt-android",
     ":injekt-android-work",
     ":injekt-compiler-plugin",
+    ":injekt-component",
     ":injekt-core",
     ":injekt-gradle-plugin",
     ":integration-tests",

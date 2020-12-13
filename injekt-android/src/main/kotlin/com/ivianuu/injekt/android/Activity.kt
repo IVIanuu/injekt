@@ -29,89 +29,70 @@ import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSet
+import com.ivianuu.injekt.component.Component
+import com.ivianuu.injekt.component.componentElementsOf
 import com.ivianuu.injekt.given
 import kotlinx.coroutines.CoroutineScope
 
-typealias ActivityComponent = Component<ActivityComponentKey<*>>
+object ActivityScoped : Component.Name
 
-interface ActivityComponentKey<T> : Component.Key<T>
+object ActivityComponentFactoryKey :
+    Component.Key<(@Given ComponentActivity) -> Component<ActivityScoped>>
 
-@GivenSet fun defaultActivityComponentElements(): ComponentElements<ActivityComponentKey<*>> =
-    emptyMap()
+@GivenSet fun activityComponentFactoryKey(
+    builderFactory: () -> Component.Builder<ActivityScoped> = given,
+) = componentElementsOf(ActivityRetainedScoped::class, ActivityComponentFactoryKey) {
+    builderFactory()
+        .set(ActivityKey, it)
+        .build()
+}
 
 @Given fun activityComponent(
     activity: ComponentActivity = given,
-    activityRetainedComponent: ActivityRetainedComponent = given,
+    activityRetainedComponent: Component<ActivityRetainedScoped> = given,
 ) = activity.lifecycle.component {
     activityRetainedComponent[ActivityComponentFactoryKey](activity)
 }
 
-object ActivityKey : ActivityComponentKey<ComponentActivity>
+object ActivityKey : Component.Key<ComponentActivity>
 
-@Given fun activity(component: ActivityComponent = given): ComponentActivity =
-    component[ActivityKey]
-
-object ActivityComponentFactoryKey :
-    ActivityRetainedComponentKey<(@Given ComponentActivity) -> ActivityComponent>
-
-@GivenSet fun activityComponentFactoryKey(
-    builderFactory: () -> Component.Builder<ActivityComponentKey<*>> = given,
-): ComponentElements<ActivityRetainedComponentKey<*>> =
-    componentElementsOf(ActivityComponentFactoryKey) {
-        builderFactory()
-            .set(ActivityKey, it)
-            .build()
-    }
-
-typealias ActivityStorage = Storage
-
-@Given fun activityStorage(component: ActivityComponent = given): ActivityStorage =
-    component.storage
+@Given inline val @Given Component<ActivityScoped>.activity: ComponentActivity
+    get() = this[ActivityKey]
 
 typealias ActivityContext = Context
 
-@Given
-inline fun activityContext(activity: ComponentActivity = given): ActivityContext = activity
+@Given inline val @Given ComponentActivity.activityContext: ActivityContext
+    get() = this
 
 typealias ActivityResources = Resources
 
-@Given
-inline fun activityResources(activity: ComponentActivity = given): ActivityResources =
-    activity.resources
+@Given inline val @Given ComponentActivity.activityResources: ActivityResources
+    get() = resources
 
 typealias ActivityLifecycleOwner = LifecycleOwner
 
-@Given
-inline fun activityLifecycleOwner(activity: ComponentActivity = given): ActivityLifecycleOwner =
-    activity
+@Given inline val @Given ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
+    get() = this
 
 typealias ActivityOnBackPressedDispatcherOwner = OnBackPressedDispatcherOwner
 
-@Given
-inline fun activityOnBackPressedDispatcherOwner(activity: ComponentActivity = given): ActivityOnBackPressedDispatcherOwner =
-    activity
+@Given inline val @Given ComponentActivity.activityOnBackPressedDispatcherOwner: ActivityOnBackPressedDispatcherOwner
+    get() = this
 
 typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
 
-@Given
-inline fun activitySavedStateRegistryOwner(activity: ComponentActivity = given): ActivitySavedStateRegistryOwner =
-    activity
+@Given inline val @Given ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
+    get() = this
 
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
-@Given
-inline fun activityViewModelStoreOwner(activity: ComponentActivity = given): ActivityViewModelStoreOwner =
-    activity
+@Given inline val @Given ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
+    get() = this
 
 typealias ActivityCoroutineScope = LifecycleCoroutineScope
 
-@Given
-inline fun activityCoroutineScope(activity: ComponentActivity = given): ActivityCoroutineScope =
-    activity.lifecycleScope
+@Given inline val @Given ComponentActivity.activityCoroutineScope: ActivityCoroutineScope
+    get() = lifecycleScope
 
-@Given
-inline fun activityCoroutineScopeAsLifecycleScope(scope: ActivityCoroutineScope = given): CoroutineScope =
-    scope
-
-@Given inline fun lifecycleScopeAsCoroutineScope(scope: LifecycleCoroutineScope = given): CoroutineScope =
-    scope
+@Given inline val @Given ActivityCoroutineScope.activityCoroutineScope: CoroutineScope
+    get() = this
