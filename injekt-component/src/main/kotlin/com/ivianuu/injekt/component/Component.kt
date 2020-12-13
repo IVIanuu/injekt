@@ -3,7 +3,8 @@
 package com.ivianuu.injekt.component
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.givenOrElse
+import com.ivianuu.injekt.GivenSet
+import com.ivianuu.injekt.given
 import kotlin.reflect.KClass
 
 interface Component<N : Component.Name> {
@@ -24,8 +25,10 @@ interface Component<N : Component.Name> {
 }
 
 @Given fun <N : Component.Name> ComponentBuilder(
-    elements: ComponentElements<N> = givenOrElse { emptyMap() },
+    elements: ComponentElements<N> = given,
 ): Component.Builder<N> = ComponentImpl.Builder(elements.toMap(mutableMapOf()))
+
+@GivenSet fun <N : Component.Name> defaultComponentElements(): ComponentElements<N> = emptyMap()
 
 typealias ComponentElements<@Suppress("unused") N> = Map<Component.Key<*>, Any?>
 

@@ -27,15 +27,16 @@ import com.ivianuu.injekt.GivenMap
 import com.ivianuu.injekt.given
 import kotlin.reflect.KClass
 
-data class WorkerContext(val context: Context, val workerParameters: WorkerParameters)
-@Given fun workerContext(context: WorkerContext = given) = context.context
-@Given fun workerParameters(context: WorkerContext = given) = context.workerParameters
+data class WorkerContext(
+    @Given val context: Context,
+    @Given val workerParameters: WorkerParameters,
+)
 
 inline fun <reified T : ListenableWorker> workerMapOf(
-    noinline workerFactory: (@Given WorkerContext) -> T = given,
+    noinline workerFactory: @Given WorkerContext.() -> T = given,
 ): Workers = mapOf(T::class to workerFactory)
 
-typealias Workers = Map<KClass<out ListenableWorker>, (@Given WorkerContext) -> ListenableWorker>
+typealias Workers = Map<KClass<out ListenableWorker>, @Given WorkerContext.() -> ListenableWorker>
 
 @GivenMap inline fun defaultWorkers(): Workers = emptyMap()
 

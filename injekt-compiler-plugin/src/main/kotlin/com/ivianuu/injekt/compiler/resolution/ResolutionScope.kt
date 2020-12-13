@@ -72,12 +72,12 @@ fun ExternalResolutionScope(declarationStore: DeclarationStore): ResolutionScope
         declarationStore = declarationStore,
         parent = null,
         initialGivensInScope = {
-            declarationStore.allGivens
+            declarationStore.globalGivens
                 .filter { it.isExternalDeclaration() }
                 .filter { it.visibility == DescriptorVisibilities.PUBLIC }
         },
         initialGivenCollectionElementsInScope = {
-            declarationStore.allGivenCollectionElements
+            declarationStore.globalGivenCollectionElements
                 .filter { it.isExternalDeclaration() }
         }
     )
@@ -92,11 +92,11 @@ fun InternalResolutionScope(
         declarationStore = declarationStore,
         parent = parent,
         initialGivensInScope = {
-            declarationStore.allGivens
+            declarationStore.globalGivens
                 .filterNot { it.isExternalDeclaration() }
         },
         initialGivenCollectionElementsInScope = {
-            declarationStore.allGivenCollectionElements
+            declarationStore.globalGivenCollectionElements
                 .filterNot { it.isExternalDeclaration() }
         }
     )

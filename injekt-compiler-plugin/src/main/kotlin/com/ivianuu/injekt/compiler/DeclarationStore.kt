@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.resolution.getGivenConstructors
 import com.ivianuu.injekt.compiler.resolution.overrideType
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -39,6 +40,7 @@ import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class DeclarationStore {
 
@@ -77,7 +79,7 @@ class DeclarationStore {
             .flatMap { propertyDescriptorsForFqName(it.fqName) }
     }
 
-    val allGivens: List<CallableDescriptor> by unsafeLazy {
+    val globalGivens: List<CallableDescriptor> by unsafeLazy {
         classIndices
             .flatMap { it.getGivenConstructors() }
             .flatMap { constructor ->
@@ -85,21 +87,45 @@ class DeclarationStore {
                     .map { constructor.overrideType(it) }
             } +
                 functionIndices
-                    .filter { it.hasAnnotationWithPropertyAndClass(InjektFqNames.Given) } +
+                    .filter { it.hasAnnotationWithPropertyAndClass(InjektFqNames.Given) }
+                    .filter {
+                        val receiverClass =
+                            it.dispatchReceiverParameter?.value?.type?.constructor?.declarationDescriptor
+                                ?.safeAs<ClassDescriptor>()
+                        receiverClass == null || receiverClass.kind == ClassKind.OBJECT
+                    } +
                 propertyIndices
                     .filter { it.hasAnnotationWithPropertyAndClass(InjektFqNames.Given) }
+                    .filter {
+                        val receiverClass =
+                            it.dispatchReceiverParameter?.value?.type?.constructor?.declarationDescriptor
+                                ?.safeAs<ClassDescriptor>()
+                        receiverClass == null || receiverClass.kind == ClassKind.OBJECT
+                    }
     }
 
-    val allGivenCollectionElements by unsafeLazy {
+    val globalGivenCollectionElements by unsafeLazy {
         functionIndices
             .filter {
                 it.hasAnnotation(InjektFqNames.GivenMap) ||
                         it.hasAnnotation(InjektFqNames.GivenSet)
+            }
+            .filter {
+                val receiverClass =
+                    it.dispatchReceiverParameter?.value?.type?.constructor?.declarationDescriptor
+                        ?.safeAs<ClassDescriptor>()
+                receiverClass == null || receiverClass.kind == ClassKind.OBJECT
             } +
                 propertyIndices
                     .filter {
                         it.hasAnnotation(InjektFqNames.GivenMap) ||
                                 it.hasAnnotation(InjektFqNames.GivenSet)
+                    }
+                    .filter {
+                        val receiverClass =
+                            it.dispatchReceiverParameter?.value?.type?.constructor?.declarationDescriptor
+                                ?.safeAs<ClassDescriptor>()
+                        receiverClass == null || receiverClass.kind == ClassKind.OBJECT
                     }
     }
 

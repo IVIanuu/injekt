@@ -20,6 +20,6 @@ object ActivityRetainedComponentFactoryKey : Component.Key<() -> Component<Activ
 
 @GivenSet fun activityRetainedComponentFactory(
     builderFactory: () -> Component.Builder<ActivityRetainedScoped> = given,
-) = componentElementsOf(ActivityRetainedScoped::class, ActivityRetainedComponentFactoryKey) {
+) = componentElementsOf(ApplicationScoped::class, ActivityRetainedComponentFactoryKey) {
     builderFactory().build()
 }
