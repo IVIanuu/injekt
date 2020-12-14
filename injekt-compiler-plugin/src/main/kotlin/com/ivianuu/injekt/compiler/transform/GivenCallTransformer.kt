@@ -89,7 +89,8 @@ class GivenCallTransformer(
                     required = true,
                     callableFqName = calleeDescriptor.fqNameSafe,
                     parameterName = "_receiver".asNameId(),
-                    callableKey = calleeDescriptor.uniqueKey()
+                    callableKey = calleeDescriptor.uniqueKey(),
+                    callContext = graph.scope.callContext
                 ),
                 call.symbol
             )
@@ -105,7 +106,8 @@ class GivenCallTransformer(
                         required = it.name in givenInfo.requiredGivens,
                         callableFqName = calleeDescriptor.fqNameSafe,
                         parameterName = it.name,
-                        callableKey = calleeDescriptor.uniqueKey()
+                        callableKey = calleeDescriptor.uniqueKey(),
+                        callContext = graph.scope.callContext
                     ),
                     call.symbol
                 )
@@ -139,6 +141,9 @@ class GivenCallTransformer(
             .irLambda(given.type.toIrType(pluginContext)) { function ->
                 lambdasByProviderGiven[given] = function
                 expressionFor(given.dependencies.single(), symbol)
+            }
+            .also {
+                println()
             }
     }
 

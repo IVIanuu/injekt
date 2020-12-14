@@ -435,30 +435,6 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testProviderGiven() = codegen(
-        """
-            @Given val foo = Foo()
-            fun invoke(): Foo {
-                return given<() -> Foo>()()
-            }
-        """
-    ) {
-        assertTrue(invokeSingleFile() is Foo)
-    }
-
-    @Test
-    fun testProviderWithArgsGiven() = codegen(
-        """
-            @Given fun bar(foo: Foo = given) = Bar(foo)
-            fun invoke(): Bar {
-                return given<(Foo) -> Bar>()(Foo())
-            }
-        """
-    ) {
-        assertTrue(invokeSingleFile() is Bar)
-    }
-
-    @Test
     fun testFunctionInvocationWithGivens() = codegen(
         """
                 @Given val foo = Foo()
@@ -527,4 +503,16 @@ class GivenResolutionTest {
         assertSame(foo, invokeSingleFile(foo))
     }
 
+    @Test
+    fun testCanResolveGivenOfGivenThisFunction() = codegen(
+        """
+            class Dep(@Given val foo: Foo)
+            fun invoke(foo: Foo): Foo {
+                return withGiven(Dep(foo)) { given<Foo>() }
+            }
+        """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile<Any>(foo))
+    }
 }

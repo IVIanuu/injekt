@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.expandedType
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -10,6 +11,7 @@ import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
+import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -43,6 +45,7 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.parentAsClass
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.constants.AnnotationValue
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
@@ -60,6 +63,7 @@ import org.jetbrains.kotlin.resolve.constants.NullValue
 import org.jetbrains.kotlin.resolve.constants.ShortValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
@@ -81,6 +85,23 @@ fun TypeRef.toKotlinType(): SimpleType {
                     it.toKotlinType()
                 )
             })
+            .replaceAnnotations(
+                if (isComposable) {
+                    Annotations.create(
+                        listOf(
+                            AnnotationDescriptorImpl(
+                                classifier.descriptor!!.module.findClassAcrossModuleDependencies(
+                                    ClassId.topLevel(InjektFqNames.Composable)
+                                )!!.defaultType,
+                                emptyMap(),
+                                SourceElement.NO_SOURCE
+                            )
+                        )
+                    )
+                } else {
+                    Annotations.EMPTY
+                }
+            )
             .makeNullableAsSpecified(isMarkedNullable)
     }
 }
@@ -94,6 +115,23 @@ fun TypeRef.toAbbreviation(): SimpleType {
                 it.toKotlinType()
             )
         })
+        .replaceAnnotations(
+            if (isComposable) {
+                Annotations.create(
+                    listOf(
+                        AnnotationDescriptorImpl(
+                            classifier.descriptor!!.module.findClassAcrossModuleDependencies(
+                                ClassId.topLevel(InjektFqNames.Composable)
+                            )!!.defaultType,
+                            emptyMap(),
+                            SourceElement.NO_SOURCE
+                        )
+                    )
+                )
+            } else {
+                Annotations.EMPTY
+            }
+        )
         .makeNullableAsSpecified(isMarkedNullable)
 }
 

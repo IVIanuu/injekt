@@ -14,6 +14,7 @@ sealed class GivenNode {
     abstract val type: TypeRef
     abstract val dependencies: List<GivenRequest>
     abstract val callableFqName: FqName
+    abstract val callContext: CallContext
     abstract val depth: Int
     abstract val providedGivens: List<GivenNode>
 }
@@ -27,6 +28,8 @@ data class CallableGivenNode(
     override val callableFqName: FqName = if (callable is ClassConstructorDescriptor)
         callable.constructedClass.fqNameSafe
     else callable.fqNameSafe
+    override val callContext: CallContext
+        get() = callable.callContext
     override val providedGivens: List<GivenNode>
         get() = emptyList()
 }
@@ -38,6 +41,8 @@ data class CollectionGivenNode(
     override val dependencies: List<GivenRequest>,
 ) : GivenNode() {
     override val callableFqName: FqName = FqName("GivenSet")
+    override val callContext: CallContext
+        get() = CallContext.DEFAULT
     override val providedGivens: List<GivenNode>
         get() = emptyList()
 }
@@ -55,7 +60,8 @@ data class ProviderGivenNode(
             required = isRequired,
             callableFqName = callableFqName,
             parameterName = "instance".asNameId(),
-            callableKey = "Provider"
+            callableKey = "Provider",
+            callContext = type.callContext
         )
     )
     override val providedGivens: List<GivenNode>
@@ -63,6 +69,8 @@ data class ProviderGivenNode(
             .mapIndexed { index, parameterType ->
                 ProviderParameterGivenNode(parameterType, index, this)
             }
+    override val callContext: CallContext
+        get() = CallContext.DEFAULT
 }
 
 data class ProviderParameterGivenNode(
@@ -78,6 +86,8 @@ data class ProviderParameterGivenNode(
         get() = emptyList()
     override val providedGivens: List<GivenNode>
         get() = emptyList()
+    override val callContext: CallContext
+        get() = CallContext.DEFAULT
 }
 
 fun CallableDescriptor.toGivenNode(
@@ -115,7 +125,8 @@ fun CallableDescriptor.getGivenRequests(
                 required = name in info.requiredGivens,
                 callableFqName = fqNameSafe,
                 parameterName = name,
-                callableKey = callableKey
+                callableKey = callableKey,
+                callContext = callContext
             )
         }
 }
@@ -126,4 +137,5 @@ data class GivenRequest(
     val callableFqName: FqName,
     val parameterName: Name,
     val callableKey: String,
+    val callContext: CallContext,
 )

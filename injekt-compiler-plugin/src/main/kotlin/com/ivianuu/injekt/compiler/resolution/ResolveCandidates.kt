@@ -5,6 +5,7 @@ sealed class GivenGraph {
 
     data class Success(
         override val requests: List<GivenRequest>,
+        val scope: ResolutionScope,
         val givens: Map<GivenRequest, GivenNode>,
     ) : GivenGraph()
 
@@ -50,6 +51,14 @@ sealed class ResolutionResult {
                 get() = 0
         }
 
+        data class CallContextMismatch(
+            override val request: GivenRequest,
+            val callContext: CallContext,
+        ) : Failure() {
+            override val failureOrdering: Int
+                get() = 1
+        }
+
         data class DivergentGiven(override val request: GivenRequest) : Failure() {
             override val failureOrdering: Int
                 get() = 1
@@ -68,12 +77,12 @@ sealed class ResolutionResult {
             val candidateFailure: CandidateResolutionResult.Failure,
         ) : Failure() {
             override val failureOrdering: Int
-                get() = 2
+                get() = 1
         }
 
         data class NoCandidates(override val request: GivenRequest) : Failure() {
             override val failureOrdering: Int
-                get() = 3
+                get() = 2
         }
     }
 }
@@ -88,7 +97,7 @@ fun ResolutionScope.resolveGiven(requests: List<GivenRequest>): GivenGraph {
                     it.filterIsInstance<ResolutionResult.Failure>()
         }
     return if (failureResults.isEmpty()) {
-        successResults.toSuccessGraph(requests)
+        successResults.toSuccessGraph(this, requests)
     } else failureResults.toErrorGraph(requests)
 }
 
@@ -103,6 +112,7 @@ private fun ResolutionScope.resolveRequest(
 )
 
 private fun List<ResolutionResult.Success>.toSuccessGraph(
+    scope: ResolutionScope,
     requests: List<GivenRequest>,
 ): GivenGraph.Success {
     val givensByRequest = mutableMapOf<GivenRequest, GivenNode>()
@@ -112,7 +122,7 @@ private fun List<ResolutionResult.Success>.toSuccessGraph(
             .forEach { it.visit() }
     }
     forEach { it.visit() }
-    return GivenGraph.Success(requests, givensByRequest)
+    return GivenGraph.Success(requests, scope, givensByRequest)
 }
 
 private fun List<ResolutionResult.Failure>.toErrorGraph(
@@ -240,7 +250,9 @@ private fun ResolutionContext.getProvidedCandidates(request: GivenRequest): List
 }
 
 private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<GivenNode> {
-    if (request.type.classifier.fqName.asString().startsWith("kotlin.Function")) {
+    if (request.type.classifier.fqName.asString().startsWith("kotlin.Function")
+        || request.type.classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
+    ) {
         return listOf(
             ProviderGivenNode(
                 request.type,

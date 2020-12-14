@@ -65,7 +65,8 @@ class GivenCallChecker(
                     required = it.key.name in givenInfo.requiredGivens,
                     callableFqName = resultingDescriptor.fqNameSafe,
                     parameterName = it.key.name,
-                    callableKey = resultingDescriptor.uniqueKey()
+                    callableKey = resultingDescriptor.uniqueKey(),
+                    callContext = scope.callContext
                 )
             }
 
@@ -120,7 +121,6 @@ class GivenCallChecker(
 
     override fun visitObjectDeclaration(declaration: KtObjectDeclaration) {
         inScope(ClassResolutionScope(
-            bindingTrace.bindingContext,
             declarationStore,
             declaration.descriptor(bindingTrace.bindingContext) ?: return,
             scope
@@ -134,7 +134,6 @@ class GivenCallChecker(
         val parentScope = klass.companionObjects.singleOrNull()
             ?.let {
                 ClassResolutionScope(
-                    bindingTrace.bindingContext,
                     declarationStore,
                     it.descriptor(bindingTrace.bindingContext) ?: return,
                     scope
@@ -142,7 +141,6 @@ class GivenCallChecker(
             }
             ?: scope
         inScope(ClassResolutionScope(
-            bindingTrace.bindingContext,
             declarationStore,
             descriptor,
             parentScope
