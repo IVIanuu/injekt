@@ -113,8 +113,7 @@ class GivenChecker : CallChecker, DeclarationChecker {
         trace: BindingTrace,
     ) {
         if (descriptor.hasAnnotation(InjektFqNames.Given) ||
-            declaration.hasAnnotation(InjektFqNames.GivenMap) ||
-            descriptor.hasAnnotation(InjektFqNames.GivenSet)
+            declaration.hasAnnotation(InjektFqNames.GivenSetElement)
         ) {
             this
                 .filter {
@@ -129,8 +128,7 @@ class GivenChecker : CallChecker, DeclarationChecker {
                                 it.findPsi() ?: declaration,
                                 when {
                                     descriptor.hasAnnotation(InjektFqNames.Given) -> InjektFqNames.Given.shortName()
-                                    descriptor.hasAnnotation(InjektFqNames.GivenMap) -> InjektFqNames.GivenMap.shortName()
-                                    descriptor.hasAnnotation(InjektFqNames.GivenSet) -> InjektFqNames.GivenSet.shortName()
+                                    descriptor.hasAnnotation(InjektFqNames.GivenSetElement) -> InjektFqNames.GivenSetElement.shortName()
                                     else -> error("")
                                 }
                             )

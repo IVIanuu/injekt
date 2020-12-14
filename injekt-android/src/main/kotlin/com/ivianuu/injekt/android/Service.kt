@@ -22,10 +22,10 @@ import android.app.Service
 import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenSet
+import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.component.ApplicationScoped
 import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.componentElementsOf
+import com.ivianuu.injekt.component.componentElement
 import com.ivianuu.injekt.given
 
 object ServiceScoped : Component.Name
@@ -33,9 +33,9 @@ object ServiceScoped : Component.Name
 private object ServiceKey : Component.Key<Service>
 private object ServiceComponentFactoryKey : Component.Key<(Service) -> Component<ServiceScoped>>
 
-@GivenSet fun serviceComponentFactoryKey(
+@GivenSetElement fun serviceComponentFactoryKey(
     builderFactory: () -> Component.Builder<ServiceScoped> = given,
-) = componentElementsOf(ApplicationScoped, ServiceComponentFactoryKey) {
+) = componentElement(ApplicationScoped, ServiceComponentFactoryKey) {
     builderFactory()
         .set(ServiceKey, it)
         .build()

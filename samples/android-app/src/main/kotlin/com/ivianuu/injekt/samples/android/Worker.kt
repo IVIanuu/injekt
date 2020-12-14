@@ -22,12 +22,12 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.GivenMap
+import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.android.ApplicationContext
-import com.ivianuu.injekt.android.work.workerMapOf
+import com.ivianuu.injekt.android.work.worker
 import com.ivianuu.injekt.given
 
-@GivenMap fun testWorkerIntoMap() = workerMapOf { TestWorker() }
+@GivenSetElement fun testWorkerBinding() = worker { TestWorker() }
 class TestWorker(
     context: Context = given,
     workerParams: WorkerParameters = given,

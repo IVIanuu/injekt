@@ -251,23 +251,21 @@ private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<
         )
     }
 
-    val mapType = declarationStore.module.builtIns.map.defaultType.toTypeRef()
     val setType = declarationStore.module.builtIns.set.defaultType.toTypeRef()
-    if (request.type.isSubTypeOf(mapType) || request.type.isSubTypeOf(setType)) {
-        val elements = givenCollectionElementsForType(request.type)
-        if (elements.isNotEmpty()) {
-            return listOf(
-                CollectionGivenNode(
-                    request.type,
-                    Int.MAX_VALUE,
-                    elements,
-                    elements
-                        .flatMap { element ->
-                            element.getGivenRequests(request.type, declarationStore)
-                        }
-                )
+    if (request.type.isSubTypeOf(setType)) {
+        val setElementType = request.type.subtypeView(setType.classifier)!!.typeArguments.single()
+        val elements = givenSetElementsForType(setElementType)
+        return listOf(
+            CollectionGivenNode(
+                request.type,
+                Int.MAX_VALUE,
+                elements,
+                elements
+                    .flatMap { element ->
+                        element.getGivenRequests(request.type, declarationStore)
+                    }
             )
-        }
+        )
     }
 
     return emptyList()

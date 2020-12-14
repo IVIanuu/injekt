@@ -21,10 +21,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenSet
+import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.component.ApplicationScoped
 import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.componentElementsOf
+import com.ivianuu.injekt.component.componentElement
 import com.ivianuu.injekt.given
 
 object ReceiverScoped : Component.Name
@@ -36,9 +36,9 @@ private object IntentKey : Component.Key<Intent>
 private object ReceiverComponentFactoryKey :
     Component.Key<(BroadcastReceiver, Context, Intent) -> Component<ReceiverScoped>>
 
-@GivenSet fun receiverComponentFactory(
+@GivenSetElement fun receiverComponentFactory(
     builderFactory: () -> Component.Builder<ReceiverScoped> = given,
-) = componentElementsOf(ApplicationScoped,
+) = componentElement(ApplicationScoped,
     ReceiverComponentFactoryKey) { receiver, context, intent ->
     builderFactory()
         .set(ReceiverKey, receiver)

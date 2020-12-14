@@ -16,15 +16,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlin.reflect.KClass
 
-typealias KeyUis = Map<KClass<*>, @Composable () -> Unit>
+typealias KeyUiBinding = Pair<KClass<*>, @Composable () -> Unit>
 
-inline fun <reified K : Any> keyUiSetOf(noinline content: @Composable () -> Unit): KeyUis =
-    mapOf(K::class to content)
+inline fun <reified K : Any> keyUiBinding(noinline content: @Composable () -> Unit): KeyUiBinding =
+    K::class to content
 
-inline fun <reified K : Any, S> keyUiWithStateSetOf(
+inline fun <reified K : Any, S> keyUiWithStateBinding(
     noinline stateFactory: (CoroutineScope) -> StateFlow<S> = given,
     noinline content: @Composable (@Given S) -> Unit,
-): KeyUis = keyUiSetOf<K> {
+) = keyUiBinding<K> {
     val coroutineScope = rememberCoroutineScope()
     val state = remember { stateFactory(coroutineScope) }.collectAsState().value
     content(state)

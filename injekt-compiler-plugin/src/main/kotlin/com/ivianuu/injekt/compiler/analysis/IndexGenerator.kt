@@ -54,8 +54,7 @@ class IndexGenerator(private val fileManager: FileManager) {
                     } as KtNamedDeclaration
 
                     if (declaration.hasAnnotation(InjektFqNames.Given) ||
-                        declaration.hasAnnotation(InjektFqNames.GivenSet) ||
-                        declaration.hasAnnotation(InjektFqNames.GivenMap)
+                        declaration.hasAnnotation(InjektFqNames.GivenSetElement)
                     ) {
                         val index = Index(
                             owner.fqName!!,

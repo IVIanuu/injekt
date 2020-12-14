@@ -43,16 +43,7 @@ inline fun <T> given(value: T = given): T = value
     AnnotationTarget.VALUE_PARAMETER,
     AnnotationTarget.TYPE
 )
-annotation class GivenMap
-
-@Target(
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.PROPERTY,
-    AnnotationTarget.LOCAL_VARIABLE,
-    AnnotationTarget.VALUE_PARAMETER,
-    AnnotationTarget.TYPE
-)
-annotation class GivenSet
+annotation class GivenSetElement
 
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Qualifier

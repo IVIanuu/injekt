@@ -1,6 +1,6 @@
 package com.ivianuu.injekt.component
 
-import com.ivianuu.injekt.GivenSet
+import com.ivianuu.injekt.GivenSetElement
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 
@@ -18,7 +18,7 @@ class ComponentTest {
     @Test
     fun testInjectedComponentElement() {
         val testKey = object : Component.Key<String> {}
-        @GivenSet val injectedSet = componentElementsOf(TestComponent1, testKey, "value")
+        @GivenSetElement val injected = componentElement(TestComponent1, testKey, "value")
         val component = ComponentBuilder<TestComponent1>().build()
         component[testKey] shouldBe "value"
     }

@@ -104,12 +104,9 @@ class DeclarationStore {
                     }
     }
 
-    val globalGivenCollectionElements by unsafeLazy {
+    val globalGivenSetElements by unsafeLazy {
         functionIndices
-            .filter {
-                it.hasAnnotation(InjektFqNames.GivenMap) ||
-                        it.hasAnnotation(InjektFqNames.GivenSet)
-            }
+            .filter { it.hasAnnotation(InjektFqNames.GivenSetElement) }
             .filter {
                 val receiverClass =
                     it.dispatchReceiverParameter?.value?.type?.constructor?.declarationDescriptor
@@ -117,10 +114,7 @@ class DeclarationStore {
                 receiverClass == null || receiverClass.kind == ClassKind.OBJECT
             } +
                 propertyIndices
-                    .filter {
-                        it.hasAnnotation(InjektFqNames.GivenMap) ||
-                                it.hasAnnotation(InjektFqNames.GivenSet)
-                    }
+                    .filter { it.hasAnnotation(InjektFqNames.GivenSetElement) }
                     .filter {
                         val receiverClass =
                             it.dispatchReceiverParameter?.value?.type?.constructor?.declarationDescriptor

@@ -17,16 +17,16 @@ class ResolutionScope(
     val parent: ResolutionScope?,
     val declarationStore: DeclarationStore,
     initialGivensInScope: () -> List<CallableDescriptor>,
-    initialGivenCollectionElementsInScope: () -> List<CallableDescriptor>,
+    initialGivenSetElementsInScope: () -> List<CallableDescriptor>,
 ) {
     private val givens: MutableList<Pair<CallableDescriptor, ResolutionScope>> by unsafeLazy {
         (initialGivensInScope()
             .map { it to this } + (parent?.givens ?: emptyList()))
             .toMutableList()
     }
-    private val givenCollectionElements: MutableList<Pair<CallableDescriptor, ResolutionScope>> by unsafeLazy {
-        (initialGivenCollectionElementsInScope()
-            .map { it to this } + (parent?.givenCollectionElements ?: emptyList()))
+    private val givenSetElements: MutableList<Pair<CallableDescriptor, ResolutionScope>> by unsafeLazy {
+        (initialGivenSetElementsInScope()
+            .map { it to this } + (parent?.givenSetElements ?: emptyList()))
             .sortedBy { it.second.depth() }
             .toMutableList()
     }
@@ -38,19 +38,17 @@ class ResolutionScope(
             .map { it.first.toGivenNode(type, declarationStore, it.second.depth()) }
     }
 
-    private val givenCollectionElementsByType = mutableMapOf<TypeRef, List<CallableDescriptor>>()
-    fun givenCollectionElementsForType(type: TypeRef): List<CallableDescriptor> =
-        givenCollectionElementsByType.getOrPut(type) {
-            givenCollectionElements
+    private val givenSetElementsByType = mutableMapOf<TypeRef, List<CallableDescriptor>>()
+    fun givenSetElementsForType(type: TypeRef): List<CallableDescriptor> =
+        givenSetElementsByType.getOrPut(type) {
+            givenSetElements
                 .filter { it.first.returnType!!.toTypeRef().isAssignableTo(type) }
                 .map { it.first }
         }
 
     fun addIfNeeded(callable: CallableDescriptor) {
         if (callable.hasAnnotation(InjektFqNames.Given)) givens += callable to this
-        else if (callable.hasAnnotation(InjektFqNames.GivenMap) ||
-            callable.hasAnnotation(InjektFqNames.GivenSet)
-        ) givenCollectionElements += callable to this
+        else if (callable.hasAnnotation(InjektFqNames.GivenSetElement)) givenSetElements += callable to this
     }
 
     private fun ResolutionScope.depth(): Int {
@@ -76,8 +74,8 @@ fun ExternalResolutionScope(declarationStore: DeclarationStore): ResolutionScope
                 .filter { it.isExternalDeclaration() }
                 .filter { it.visibility == DescriptorVisibilities.PUBLIC }
         },
-        initialGivenCollectionElementsInScope = {
-            declarationStore.globalGivenCollectionElements
+        initialGivenSetElementsInScope = {
+            declarationStore.globalGivenSetElements
                 .filter { it.isExternalDeclaration() }
         }
     )
@@ -95,8 +93,8 @@ fun InternalResolutionScope(
             declarationStore.globalGivens
                 .filterNot { it.isExternalDeclaration() }
         },
-        initialGivenCollectionElementsInScope = {
-            declarationStore.globalGivenCollectionElements
+        initialGivenSetElementsInScope = {
+            declarationStore.globalGivenSetElements
                 .filterNot { it.isExternalDeclaration() }
         }
     )
@@ -116,8 +114,8 @@ fun ClassResolutionScope(
             descriptor
                 .extractGivensOfDeclaration(declarationStore)
         },
-        initialGivenCollectionElementsInScope = {
-            descriptor.extractGivenCollectionElementsOfDeclaration()
+        initialGivenSetElementsInScope = {
+            descriptor.extractGivenSetElementsOfDeclaration()
         }
     )
 }
@@ -135,8 +133,8 @@ fun FunctionResolutionScope(
         initialGivensInScope = {
             descriptor.extractGivensOfCallable(declarationStore)
         },
-        initialGivenCollectionElementsInScope = {
-            descriptor.extractGivenCollectionElementsOfCallable()
+        initialGivenSetElementsInScope = {
+            descriptor.extractGivenSetElementsOfCallable()
         }
     )
 }
@@ -150,6 +148,6 @@ fun BlockResolutionScope(
         declarationStore = declarationStore,
         parent = parent,
         initialGivensInScope = { emptyList() },
-        initialGivenCollectionElementsInScope = { emptyList() }
+        initialGivenSetElementsInScope = { emptyList() }
     )
 }

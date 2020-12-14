@@ -28,9 +28,9 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenSet
+import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.componentElementsOf
+import com.ivianuu.injekt.component.componentElement
 import com.ivianuu.injekt.given
 import kotlinx.coroutines.CoroutineScope
 
@@ -45,9 +45,9 @@ private object ActivityKey : Component.Key<ComponentActivity>
 private object ActivityComponentFactoryKey :
     Component.Key<(ComponentActivity) -> Component<ActivityScoped>>
 
-@GivenSet fun activityComponentFactory(
+@GivenSetElement fun activityComponentFactory(
     builderFactory: () -> Component.Builder<ActivityScoped> = given,
-) = componentElementsOf(ActivityRetainedScoped, ActivityComponentFactoryKey) {
+) = componentElement(ActivityRetainedScoped, ActivityComponentFactoryKey) {
     builderFactory()
         .set(ActivityKey, it)
         .build()

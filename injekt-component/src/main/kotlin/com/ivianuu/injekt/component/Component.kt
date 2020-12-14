@@ -3,7 +3,6 @@
 package com.ivianuu.injekt.component
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenSet
 import com.ivianuu.injekt.given
 
 interface Component<N : Component.Name> {
@@ -24,18 +23,16 @@ interface Component<N : Component.Name> {
 }
 
 @Given fun <N : Component.Name> ComponentBuilder(
-    elements: ComponentElements<N> = given,
+    elements: Set<ComponentElement<N>> = given,
 ): Component.Builder<N> = ComponentImpl.Builder(elements.toMap(mutableMapOf()))
 
-@GivenSet fun <N : Component.Name> defaultComponentElements(): ComponentElements<N> = emptyMap()
+typealias ComponentElement<@Suppress("unused") N> = Pair<Component.Key<*>, Any?>
 
-typealias ComponentElements<@Suppress("unused") N> = Map<Component.Key<*>, Any?>
-
-fun <N : Component.Name, K : Component.Key<T>, T> componentElementsOf(
+fun <N : Component.Name, K : Component.Key<T>, T> componentElement(
     @Suppress("UNUSED_PARAMETER", "unused") name: N,
     key: K,
     value: T,
-): ComponentElements<N> = mapOf(key to value)
+): ComponentElement<N> = key to value
 
 private class ComponentImpl<N : Component.Name>(
     private val elements: Map<Component.Key<*>, Any?>,

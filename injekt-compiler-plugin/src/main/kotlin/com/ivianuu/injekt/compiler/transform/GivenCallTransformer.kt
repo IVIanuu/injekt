@@ -14,7 +14,6 @@ import com.ivianuu.injekt.compiler.resolution.ProviderParameterGivenNode
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.fullyExpandedType
 import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
-import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.subtypeView
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
@@ -154,97 +153,45 @@ class GivenCallTransformer(
     private fun ResolutionContext.collectionExpression(
         given: CollectionGivenNode,
         symbol: IrSymbol,
-    ): () -> IrExpression {
-        return if (given.elements.size == 1) {
-            callableExpression(
-                given.elements.single()
-                    .toGivenNode(given.type, declarationStore, 0),
-                symbol
+    ): () -> IrExpression = {
+        DeclarationIrBuilder(pluginContext, symbol).irBlock {
+            val elementType =
+                given.type.fullyExpandedType.typeArguments.single()
+                    .toIrType(pluginContext)
+
+            val mutableSetOf = pluginContext.referenceFunctions(
+                FqName("kotlin.collections.mutableSetOf")
+            ).single { it.owner.valueParameters.isEmpty() }
+
+            val setAddAll = mutableSetOf.owner.returnType
+                .classOrNull!!
+                .owner
+                .functions
+                .single { it.name.asString() == "add" }
+
+            val tmpSet = irTemporary(
+                irCall(mutableSetOf)
+                    .apply { putTypeArgument(0, elementType) }
             )
-        } else {
-            {
-                DeclarationIrBuilder(pluginContext, symbol).irBlock {
-                    if (given.type.isSubTypeOf(pluginContext.builtIns.map.defaultType.toTypeRef())) {
-                        val keyType =
-                            given.type.fullyExpandedType.typeArguments[0]
-                                .toIrType(pluginContext)
-                        val valueType =
-                            given.type.fullyExpandedType.typeArguments[1]
-                                .toIrType(pluginContext)
 
-                        val mutableMapOf = pluginContext.referenceFunctions(
-                            FqName("kotlin.collections.mutableMapOf")
-                        ).single { it.owner.valueParameters.isEmpty() }
-
-                        val mapPutAll = mutableMapOf.owner.returnType
-                            .classOrNull!!
-                            .owner
-                            .functions
-                            .single { it.name.asString() == "putAll" }
-
-                        val tmpMap = irTemporary(
-                            irCall(mutableMapOf)
-                                .apply {
-                                    putTypeArgument(0, keyType)
-                                    putTypeArgument(1, valueType)
-                                }
+            given.elements
+                .forEach {
+                    +irCall(setAddAll).apply {
+                        dispatchReceiver = irGet(tmpSet)
+                        putValueArgument(
+                            0,
+                            callableExpression(
+                                it.toGivenNode(given.type, declarationStore, 0),
+                                symbol
+                            )()
                         )
-
-                        given.elements
-                            .forEach {
-                                +irCall(mapPutAll).apply {
-                                    dispatchReceiver = irGet(tmpMap)
-                                    putValueArgument(
-                                        0,
-                                        callableExpression(
-                                            it.toGivenNode(given.type, declarationStore, 0),
-                                            symbol
-                                        )()
-                                    )
-                                }
-                            }
-
-                        +irGet(tmpMap)
-                    } else if (given.type.isSubTypeOf(pluginContext.builtIns.set.defaultType.toTypeRef())) {
-                        val elementType =
-                            given.type.fullyExpandedType.typeArguments.single()
-                                .toIrType(pluginContext)
-
-                        val mutableSetOf = pluginContext.referenceFunctions(
-                            FqName("kotlin.collections.mutableSetOf")
-                        ).single { it.owner.valueParameters.isEmpty() }
-
-                        val setAddAll = mutableSetOf.owner.returnType
-                            .classOrNull!!
-                            .owner
-                            .functions
-                            .single { it.name.asString() == "addAll" }
-
-                        val tmpSet = irTemporary(
-                            irCall(mutableSetOf)
-                                .apply { putTypeArgument(0, elementType) }
-                        )
-
-                        given.elements
-                            .forEach {
-                                +irCall(setAddAll).apply {
-                                    dispatchReceiver = irGet(tmpSet)
-                                    putValueArgument(
-                                        0,
-                                        callableExpression(
-                                            it.toGivenNode(given.type, declarationStore, 0),
-                                            symbol
-                                        )()
-                                    )
-                                }
-                            }
-
-                        +irGet(tmpSet)
                     }
                 }
-            }
+
+            +irGet(tmpSet)
         }
     }
+
 
     private fun ResolutionContext.callableExpression(
         given: CallableGivenNode,

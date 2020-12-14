@@ -57,33 +57,28 @@ fun MemberScope.extractGivenCallables(
         }
 }
 
-fun ClassDescriptor.extractGivenCollectionElementsOfDeclaration(): List<CallableDescriptor> =
-    unsubstitutedMemberScope.extractGivenCollectionElements(defaultType)
+fun ClassDescriptor.extractGivenSetElementsOfDeclaration(): List<CallableDescriptor> =
+    unsubstitutedMemberScope.extractGivenSetElements(defaultType)
 
-fun MemberScope.extractGivenCollectionElements(type: KotlinType): List<CallableDescriptor> {
+fun MemberScope.extractGivenSetElements(type: KotlinType): List<CallableDescriptor> {
     val primaryConstructorGivensNames = (type.constructor.declarationDescriptor
         ?.safeAs<ClassDescriptor>()
         ?.unsubstitutedPrimaryConstructor
         ?.let { primaryConstructor ->
             primaryConstructor.valueParameters
-                .filter {
-                    it.hasAnnotation(InjektFqNames.GivenMap) ||
-                            it.hasAnnotation(InjektFqNames.GivenSet)
-                }
+                .filter { it.hasAnnotation(InjektFqNames.GivenSetElement) }
                 .map { it.name }
         }
         ?: emptyList())
     return getContributedDescriptors()
         .flatMap { declaration ->
             when (declaration) {
-                is PropertyDescriptor -> if (declaration.hasAnnotation(InjektFqNames.GivenMap) ||
-                    declaration.hasAnnotation(InjektFqNames.GivenSet) ||
+                is PropertyDescriptor -> if (declaration.hasAnnotation(InjektFqNames.GivenSetElement) ||
                     declaration.name in primaryConstructorGivensNames
                 )
                     listOf(declaration) else emptyList()
-                is FunctionDescriptor -> if (declaration.hasAnnotation(InjektFqNames.GivenMap) ||
-                    declaration.hasAnnotation(InjektFqNames.GivenSet)
-                ) listOf(declaration) else emptyList()
+                is FunctionDescriptor -> if (declaration.hasAnnotation(InjektFqNames.GivenSetElement))
+                    listOf(declaration) else emptyList()
                 else -> emptyList()
             }
         }
@@ -122,13 +117,11 @@ fun CallableDescriptor.extractGivensOfCallable(
     return allGivens
 }
 
-fun CallableDescriptor.extractGivenCollectionElementsOfCallable(): List<CallableDescriptor> =
+fun CallableDescriptor.extractGivenSetElementsOfCallable(): List<CallableDescriptor> =
     allParameters
         .filter {
-            it.hasAnnotation(InjektFqNames.GivenMap) ||
-                    it.type.hasAnnotation(InjektFqNames.GivenMap) ||
-                    it.hasAnnotation(InjektFqNames.GivenSet) ||
-                    it.type.hasAnnotation(InjektFqNames.GivenSet)
+            it.hasAnnotation(InjektFqNames.GivenSetElement) ||
+                    it.type.hasAnnotation(InjektFqNames.GivenSetElement)
         }
 
 fun ClassConstructorDescriptor.overrideType(type: KotlinType): ClassConstructorDescriptor {

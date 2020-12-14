@@ -14,10 +14,8 @@ class GivenSetTest {
     @Test
     fun testSimpleSet() = codegen(
         """
-            @Given fun commandA() = CommandA()
-            @GivenSet fun commandAIntoSet(commandA: CommandA = given): Set<Command> = setOf(commandA)
-            @Given fun commandB() = CommandB() 
-            @GivenSet fun commandBIntoSet(commandB: CommandB = given): Set<Command> = setOf(commandB)
+            @GivenSetElement fun commandA(): Command = CommandA()
+            @GivenSetElement fun commandB(): Command = CommandB() 
             fun invoke() = given<Set<Command>>()
         """
     ) {
@@ -30,13 +28,10 @@ class GivenSetTest {
     @Test
     fun testNestedSet() = codegen(
         """
-            @Given fun commandA() = CommandA()
-            @GivenSet fun commandAIntoSet(commandA: CommandA = given): Set<Command> = setOf(commandA)
+            @GivenSetElement fun commandA(): Command = CommandA()
 
             class InnerObject {
-                @Given fun commandB() = CommandB() 
-                @GivenSet fun commandBIntoSet(commandB: CommandB = given): Set<Command> = setOf(commandB)
-
+                @GivenSetElement fun commandB(): Command = CommandB()
                 val set = given<Set<Command>>()
             }
 
@@ -51,34 +46,13 @@ class GivenSetTest {
         assertTrue(childSet.any { it is CommandB })
     }
 
-    /*
     @Test
-    fun testUndeclaredSet() = codegen(
+    fun testEmptyDefault() = codegen(
         """
-            @Component abstract class SetComponent {
-                abstract val set: Set<Command>
-            }
+            fun invoke() = given<Set<Command>>()
         """
     ) {
-        assertInternalError("no binding")
+        assertEquals(emptySet<Command>(), invokeSingleFile())
     }
-
-    @Test
-    fun testGenericSet() = codegen(
-        """ 
-            @Binding fun string() = ""
-            
-            @Binding fun int() = 0
-            
-            @SetElements fun <T> genericSet(instance: T) = setOf(instance)
-            
-            @Component abstract class SetComponent {
-                abstract val stringSet: Set<String>
-                abstract val intSet: Set<Int>
-            }
-        """
-    )
-
- */
 
 }

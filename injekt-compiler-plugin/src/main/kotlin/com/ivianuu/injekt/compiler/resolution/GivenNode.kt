@@ -37,7 +37,7 @@ data class CollectionGivenNode(
     val elements: List<CallableDescriptor>,
     override val dependencies: List<GivenRequest>,
 ) : GivenNode() {
-    override val callableFqName: FqName = FqName("givenCollectionOf")
+    override val callableFqName: FqName = FqName("GivenSet")
     override val providedGivens: List<GivenNode>
         get() = emptyList()
 }
