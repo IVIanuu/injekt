@@ -89,7 +89,7 @@ class IndexGenerator(private val fileManager: FileManager) {
                         .distinct()
                         .forEach { index ->
                             val indexName = nameProvider(
-                                index.fqName.pathSegments().joinToString("_") + "_index"
+                                index.fqName.pathSegments().joinToString("_") + "${file.name}_index"
                             ).asNameId()
                             appendLine("@Index(fqName = \"${index.fqName}\", type = \"${index.type}\")")
                             appendLine("internal val $indexName = Unit")

@@ -81,7 +81,8 @@ class GivenInfoGenerator(
                     givenInfos
                         .forEach { (fqName, info) ->
                             val infoName = nameProvider(
-                                fqName.pathSegments().joinToString("_") + "_given_info"
+                                fqName.pathSegments()
+                                    .joinToString("_") + "_${info.key.hashCode()}_given_info"
                             ).asNameId()
                             appendLine("@GivenInfo(key = \"${info.key}\",\n" +
                                     "requiredGivens = [${info.requiredGivens.joinToString(", ") { "\"$it\"" }}],\n" +

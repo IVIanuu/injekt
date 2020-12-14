@@ -40,7 +40,6 @@ import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
 import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.calls.DslMarkerUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.IntersectionTypeConstructor
@@ -163,14 +162,4 @@ fun DeclarationDescriptor.uniqueKey(): String {
         is VariableDescriptor -> ""
         else -> error("Unexpected declaration $this")
     }
-}
-
-fun FunctionDescriptor.hasGivenExtensionReceiver(declarationStore: DeclarationStore): Boolean {
-    val extensionReceiverParameter = extensionReceiverParameter ?: return false
-    val userData = getUserData(DslMarkerUtils.FunctionTypeAnnotationsKey)
-    val info = declarationStore.givenInfoFor(this)
-    return extensionReceiverParameter.hasAnnotation(InjektFqNames.Given) ||
-            extensionReceiverParameter.type.hasAnnotation(InjektFqNames.Given) ||
-            userData?.hasAnnotation(InjektFqNames.Given) == true ||
-            "_receiver".asNameId() in info.allGivens
 }
