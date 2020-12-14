@@ -210,8 +210,7 @@ private fun ResolutionContext.resolveInScope(
 
     return@computeForRequest if (successResults.isNotEmpty()) {
         successResults
-            .filterMinDepth()
-            .filterLessParams()
+            .disambiguate()
             .let { finalResults ->
                 finalResults.singleOrNull()?.let {
                     ResolutionResult.Success(request, it)
@@ -291,34 +290,37 @@ private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<
     return emptyList()
 }
 
-private fun List<CandidateResolutionResult.Success>.filterMinDepth(): List<CandidateResolutionResult.Success> {
-    if (size == 1) return this
-    val destination = mutableListOf<CandidateResolutionResult.Success>()
-    var minDepth = Int.MAX_VALUE
-    forEach { result ->
-        if (result.candidate.depth < minDepth) {
-            destination.clear()
-            destination += result
-            minDepth = result.candidate.depth
-        } else if (result.candidate.depth == minDepth) {
-            destination += result
-        }
-    }
-    return destination
+private fun prefer(
+    a: CandidateResolutionResult.Success?,
+    b: CandidateResolutionResult.Success?,
+): Int {
+    if (a != null && b == null) return -1
+    if (b != null && a == null) return 1
+    if (a == null && b == null) return 0
+    a!!
+    b!!
+    if (a.candidate.depth < b.candidate.depth) return -1
+    if (b.candidate.depth < a.candidate.depth) return 1
+    if (a.dependencyResults.size < b.dependencyResults.size) return -1
+    if (b.dependencyResults.size < a.dependencyResults.size) return 1
+
+    // todo
+    return 0
 }
 
-private fun List<CandidateResolutionResult.Success>.filterLessParams(): List<CandidateResolutionResult.Success> {
-    if (size == 1) return this
-    val destination = mutableListOf<CandidateResolutionResult.Success>()
-    var minParams = Int.MAX_VALUE
+private fun List<CandidateResolutionResult.Success>.disambiguate(): List<CandidateResolutionResult.Success> {
+    if (size <= 1) return this
+    val results = mutableListOf<CandidateResolutionResult.Success>()
     forEach { result ->
-        if (result.candidate.dependencies.size < minParams) {
-            destination.clear()
-            destination += result
-            minParams = result.candidate.dependencies.size
-        } else if (result.candidate.dependencies.size == minParams) {
-            destination += result
+        when (prefer(results.lastOrNull(), result)) {
+            -1 -> {
+            } // do nothing previous result was better
+            1 -> {
+                results.clear()
+                results += result
+            }
+            0 -> results += result
         }
     }
-    return destination
+    return results
 }
