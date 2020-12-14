@@ -191,6 +191,20 @@ class GivenDeclarationTest {
     }
 
     @Test
+    fun testGivenLambdaParameterDeclarationSiteWithTypeAlias() = codegen(
+        """
+            typealias UseContext<T, R> = (@Given T) -> R
+            inline fun <T, R> withGiven(value: T, block: UseContext<T, R>) = block(value)
+            fun invoke(foo: Foo): Foo {
+                return withGiven(foo) { given<Foo>() }
+            }
+        """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile<Any>(foo))
+    }
+
+    @Test
     fun testGivenLambdaParameterUseSite() = codegen(
         """
             inline fun <T, R> withGiven(value: T, block: (T) -> R) = block(value)
