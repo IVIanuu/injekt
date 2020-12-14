@@ -487,4 +487,17 @@ class GivenResolutionTest {
         invokeSingleFile()
     }
 
+    @Test
+    fun testUsesDefaultIfNotGiven() = codegen(
+        """
+                lateinit var defaultFoo: Foo
+                fun invoke(foo: Foo) {
+                    defaultFoo = foo
+                }
+            """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile())
+    }
+
 }

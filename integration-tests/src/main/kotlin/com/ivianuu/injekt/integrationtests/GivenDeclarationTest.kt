@@ -237,4 +237,17 @@ class GivenDeclarationTest {
         assertSame(b, result.second)
     }
 
+    @Test
+    fun testGivenLocalFuncton() = codegen(
+        """
+            fun invoke(foo: Foo): Foo {
+                @Given fun foo() = foo
+                return given<Foo>()
+            }
+        """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile())
+    }
+
 }

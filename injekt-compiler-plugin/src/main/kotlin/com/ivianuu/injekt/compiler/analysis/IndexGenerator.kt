@@ -45,7 +45,9 @@ class IndexGenerator(private val fileManager: FileManager) {
                         declaration !is KtConstructor<*>
                     ) return
 
+                    if (declaration is KtClassOrObject && declaration.isLocal) return
                     if (declaration is KtProperty && declaration.isLocal) return
+                    if (declaration is KtFunction && declaration.isLocal) return
 
                     val owner = when (declaration) {
                         is KtConstructor<*> -> declaration.getContainingClassOrObject()
