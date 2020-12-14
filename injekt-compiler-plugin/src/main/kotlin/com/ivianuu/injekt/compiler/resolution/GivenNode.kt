@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 sealed class GivenNode {
     abstract val type: TypeRef
+    abstract val originalType: TypeRef
     abstract val dependencies: List<GivenRequest>
     abstract val callableFqName: FqName
     abstract val callContext: CallContext
@@ -32,6 +33,8 @@ data class CallableGivenNode(
         get() = callable.callContext
     override val providedGivens: List<GivenNode>
         get() = emptyList()
+    override val originalType: TypeRef
+        get() = callable.returnType!!.toTypeRef()
 }
 
 data class CollectionGivenNode(
@@ -45,6 +48,8 @@ data class CollectionGivenNode(
         get() = CallContext.DEFAULT
     override val providedGivens: List<GivenNode>
         get() = emptyList()
+    override val originalType: TypeRef
+        get() = type
 }
 
 data class ProviderGivenNode(
@@ -71,6 +76,8 @@ data class ProviderGivenNode(
             }
     override val callContext: CallContext
         get() = CallContext.DEFAULT
+    override val originalType: TypeRef
+        get() = type
 }
 
 data class ProviderParameterGivenNode(
@@ -88,6 +95,8 @@ data class ProviderParameterGivenNode(
         get() = emptyList()
     override val callContext: CallContext
         get() = CallContext.DEFAULT
+    override val originalType: TypeRef
+        get() = type
 }
 
 fun CallableDescriptor.toGivenNode(

@@ -106,9 +106,10 @@ private fun ResolutionScope.resolveRequest(
     request: GivenRequest,
 ): ResolutionResult = context.resolveInScope(
     request,
-    context.getProvidedCandidates(request) +
+    (context.getProvidedCandidates(request) +
             givensForType(request.type) +
-            getFrameworkCandidates(request)
+            getFrameworkCandidates(request))
+        .distinct()
 )
 
 private fun List<ResolutionResult.Success>.toSuccessGraph(
@@ -140,14 +141,7 @@ class ResolutionContext(val scope: ResolutionScope) {
     private val chain = mutableSetOf<GivenNode>()
     private val resultsByCandidate = mutableMapOf<GivenNode, CandidateResolutionResult>()
 
-    private val resultsByRequest = mutableMapOf<GivenRequest, ResolutionResult>()
-
     val providedGivens = mutableListOf<GivenNode>()
-
-    fun computeForRequest(
-        request: GivenRequest,
-        compute: () -> ResolutionResult,
-    ) = resultsByRequest.getOrPut(request, compute)
 
     fun computeForCandidate(
         request: GivenRequest,
@@ -189,11 +183,11 @@ class ResolutionContext(val scope: ResolutionScope) {
 private fun ResolutionContext.resolveInScope(
     request: GivenRequest,
     candidates: List<GivenNode>,
-): ResolutionResult = computeForRequest(request) {
-    if (candidates.isEmpty()) return@computeForRequest ResolutionResult.Failure.NoCandidates(request)
+): ResolutionResult {
+    if (candidates.isEmpty()) return ResolutionResult.Failure.NoCandidates(request)
     if (candidates.size == 1) {
         val candidate = candidates.single()
-        return@computeForRequest when (val candidateResult = resolveCandidate(request, candidate)) {
+        return when (val candidateResult = resolveCandidate(request, candidate)) {
             is CandidateResolutionResult.Success ->
                 ResolutionResult.Success(request, candidateResult)
             is CandidateResolutionResult.Failure ->
@@ -208,7 +202,7 @@ private fun ResolutionContext.resolveInScope(
                     it.filterIsInstance<CandidateResolutionResult.Failure>()
         }
 
-    return@computeForRequest if (successResults.isNotEmpty()) {
+    return if (successResults.isNotEmpty()) {
         successResults
             .disambiguate()
             .let { finalResults ->
@@ -290,7 +284,7 @@ private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<
     return emptyList()
 }
 
-private fun prefer(
+private fun compareCandidate(
     a: CandidateResolutionResult.Success?,
     b: CandidateResolutionResult.Success?,
 ): Int {
@@ -299,22 +293,62 @@ private fun prefer(
     if (a == null && b == null) return 0
     a!!
     b!!
+
     if (a.candidate.depth < b.candidate.depth) return -1
     if (b.candidate.depth < a.candidate.depth) return 1
+
     if (a.dependencyResults.size < b.dependencyResults.size) return -1
     if (b.dependencyResults.size < a.dependencyResults.size) return 1
 
-    // todo
-    return 0
+    var diff = compareType(a.candidate.originalType, b.candidate.originalType)
+    if (diff < 0) return -1
+    if (diff > 0) return 1
+
+    for (aDependency in a.dependencyResults) {
+        for (bDependency in b.dependencyResults) {
+            diff += compareCandidate(aDependency.candidateResult, bDependency.candidateResult)
+        }
+    }
+    return when {
+        diff < 0 -> -1
+        diff > 0 -> 1
+        else -> 0
+    }
+}
+
+private fun compareType(a: TypeRef, b: TypeRef): Int {
+    if (!a.classifier.isTypeParameter && b.classifier.isTypeParameter) return -1
+    if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
+
+    if (!a.classifier.isTypeAlias && b.classifier.isTypeAlias) return -1
+    if (a.classifier.isTypeAlias && !b.classifier.isTypeAlias) return 1
+
+    if (a.typeArguments.size < b.typeArguments.size) return -1
+    if (b.typeArguments.size < a.typeArguments.size) return 1
+
+    check(a.classifier == b.classifier) {
+        "Wtf ${a.render()} ${b.render()}"
+    }
+
+    var diff = 0
+    for (i in a.typeArguments.indices) {
+        val aTypeArgument = a.typeArguments[i]
+        val bTypeArgument = b.typeArguments[i]
+        diff += compareType(aTypeArgument, bTypeArgument)
+    }
+
+    return when {
+        diff < 0 -> -1
+        diff > 0 -> 1
+        else -> 0
+    }
 }
 
 private fun List<CandidateResolutionResult.Success>.disambiguate(): List<CandidateResolutionResult.Success> {
     if (size <= 1) return this
     val results = mutableListOf<CandidateResolutionResult.Success>()
     forEach { result ->
-        when (prefer(results.lastOrNull(), result)) {
-            -1 -> {
-            } // do nothing previous result was better
+        when (compareCandidate(results.lastOrNull(), result)) {
             1 -> {
                 results.clear()
                 results += result

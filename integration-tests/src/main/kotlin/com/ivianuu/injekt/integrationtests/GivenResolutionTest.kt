@@ -423,6 +423,29 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testPrefersMoreSpecificType() = codegen(
+        """
+            @Given fun stringList(): List<String> = listOf("a", "b", "c")
+            @Given fun <T> anyList(): List<T> = emptyList()
+            fun invoke() = given<List<String>>()
+        """
+    ) {
+        assertEquals(listOf("a", "b", "c"), invokeSingleFile())
+    }
+
+    @Test
+    fun testPrefersShorterTree() = codegen(
+        """
+            @Given val a = "a"
+            @Given val foo = Foo()
+            @Given fun b(foo: Foo = given) = "b"
+            fun invoke() = given<String>()
+        """
+    ) {
+        assertEquals("a", invokeSingleFile())
+    }
+
+    @Test
     fun testGenericGiven() = codegen(
         """
             @Given val foo = Foo()
