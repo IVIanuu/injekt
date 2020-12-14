@@ -24,14 +24,16 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.component.ApplicationScoped
 import com.ivianuu.injekt.component.Component
+import com.ivianuu.injekt.component.ComponentKey
 import com.ivianuu.injekt.component.componentElement
+import com.ivianuu.injekt.component.get
 import com.ivianuu.injekt.given
 
-object ReceiverScoped : Component.Name
+@Given object ReceiverScoped : Component.Name
 
-private object ReceiverKey : Component.Key<BroadcastReceiver>
-private object ContextKey : Component.Key<Context>
-private object IntentKey : Component.Key<Intent>
+private val ReceiverKey = ComponentKey<BroadcastReceiver>()
+private val ContextKey = ComponentKey<Context>()
+private val IntentKey = ComponentKey<Intent>()
 
 private object ReceiverComponentFactoryKey :
     Component.Key<(BroadcastReceiver, Context, Intent) -> Component<ReceiverScoped>>
@@ -41,9 +43,9 @@ private object ReceiverComponentFactoryKey :
 ) = componentElement(ApplicationScoped,
     ReceiverComponentFactoryKey) { receiver, context, intent ->
     builderFactory()
-        .set(ReceiverKey, receiver)
-        .set(ContextKey, context)
-        .set(IntentKey, intent)
+        .element(ReceiverKey, receiver)
+        .element(ContextKey, context)
+        .element(IntentKey, intent)
         .build()
 }
 

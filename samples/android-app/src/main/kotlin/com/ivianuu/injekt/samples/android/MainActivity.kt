@@ -25,6 +25,7 @@ import com.ivianuu.injekt.android.ActivityScoped
 import com.ivianuu.injekt.component.ApplicationScoped
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.Storage
+import com.ivianuu.injekt.component.get
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.withGiven
 import kotlinx.coroutines.awaitCancellation

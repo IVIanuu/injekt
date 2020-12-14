@@ -6,51 +6,99 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.given
 
 interface Component<N : Component.Name> {
+    val name: N
+
     val storage: Storage<N>
 
-    operator fun <K : Key<T>, T> get(element: K): T
+    fun <T : Any> getOrNull(key: Key<T>): T?
 
-    fun dispose()
+    fun <N : Name> getDependencyOrNull(name: N): Component<N>?
 
     interface Name
 
-    interface Key<T>
+    interface Key<T : Any>
 
     interface Builder<N : Name> {
-        operator fun <K : Key<T>, T> set(key: K, value: T): Builder<N>
+        fun dependency(parent: Component<*>): Builder<N>
+        fun <T : Any> element(key: Key<T>, value: T): Builder<N>
         fun build(): Component<N>
     }
 }
 
+fun <T : Any> ComponentKey(): Component.Key<T> = DefaultKey()
+private class DefaultKey<T : Any> : Component.Key<T>
+
+operator fun <T : Any> Component<*>.get(key: Component.Key<T>): T = getOrNull(key)
+    ?: error("No value for for $key in $this")
+
+
+fun <N : Component.Name> Component<*>.getDependency(name: N): Component<N> =
+    getDependencyOrNull(name)
+        ?: error("No value for for $name in $this")
+
+fun Component<*>.dispose() {
+    storage.dispose()
+}
+
 @Given fun <N : Component.Name> ComponentBuilder(
+    name: N = given,
     elements: Set<ComponentElement<N>> = given,
-): Component.Builder<N> = ComponentImpl.Builder(elements.toMap(mutableMapOf()))
+): Component.Builder<N> = ComponentImpl.Builder(name)
+    .apply { elements.forEach { element(it.first as Component.Key<Any>, it.second) } }
 
-typealias ComponentElement<@Suppress("unused") N> = Pair<Component.Key<*>, Any?>
+inline fun <N : Component.Name> Component(
+    name: N = given,
+    elements: Set<ComponentElement<N>> = given,
+    block: Component.Builder<N>.() -> Unit = {},
+): Component<N> = ComponentBuilder(name, elements).apply(block).build()
 
-fun <N : Component.Name, K : Component.Key<T>, T> componentElement(
+typealias ComponentElement<@Suppress("unused") N> = Pair<Component.Key<*>, Any>
+
+fun <N : Component.Name, T : Any> componentElement(
     @Suppress("UNUSED_PARAMETER", "unused") name: N,
-    key: K,
+    key: Component.Key<T>,
     value: T,
 ): ComponentElement<N> = key to value
 
-private class ComponentImpl<N : Component.Name>(
+@PublishedApi internal class ComponentImpl<N : Component.Name>(
+    override val name: N,
+    private val dependencies: List<Component<*>>,
     private val elements: Map<Component.Key<*>, Any?>,
 ) : Component<N> {
     override val storage = Storage<N>()
 
-    override fun <K : Component.Key<T>, T> get(element: K): T = elements[element] as T
+    override fun <T : Any> getOrNull(key: Component.Key<T>): T? {
+        elements[key]?.let { return it as T }
 
-    override fun dispose() {
-        storage.dispose()
+        for (dependency in dependencies)
+            dependency.getOrNull(key)?.let { return it }
+
+        return null
     }
 
-    class Builder<N : Component.Name>(
-        private val elements: MutableMap<Component.Key<*>, Any?>,
-    ) : Component.Builder<N> {
-        override fun <K : Component.Key<T>, T> set(key: K, value: T): Component.Builder<N> =
-            apply { elements[key] = value }
+    override fun <N : Component.Name> getDependencyOrNull(name: N): Component<N>? {
+        for (dependency in dependencies)
+            if (dependency.name == name) return dependency as Component<N>
 
-        override fun build(): Component<N> = ComponentImpl(elements)
+        for (dependency in dependencies)
+            dependency.getDependencyOrNull(name)?.let { return it }
+
+        return null
+    }
+
+    class Builder<N : Component.Name>(private val name: N) : Component.Builder<N> {
+        private val dependencies = mutableListOf<Component<*>>()
+        private val elements = mutableMapOf<Component.Key<*>, Any?>()
+
+        override fun dependency(parent: Component<*>): Component.Builder<N> = apply {
+            dependencies += parent
+        }
+
+        override fun <T : Any> element(key: Component.Key<T>, value: T): Component.Builder<N> =
+            apply {
+                elements[key] = value
+            }
+
+        override fun build(): Component<N> = ComponentImpl(name, dependencies, elements)
     }
 }

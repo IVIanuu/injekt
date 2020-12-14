@@ -25,19 +25,21 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.component.ApplicationScoped
 import com.ivianuu.injekt.component.Component
+import com.ivianuu.injekt.component.ComponentKey
 import com.ivianuu.injekt.component.componentElement
+import com.ivianuu.injekt.component.get
 import com.ivianuu.injekt.given
 
-object ServiceScoped : Component.Name
+@Given object ServiceScoped : Component.Name
 
-private object ServiceKey : Component.Key<Service>
-private object ServiceComponentFactoryKey : Component.Key<(Service) -> Component<ServiceScoped>>
+private val ServiceKey = ComponentKey<Service>()
+private val ServiceComponentFactoryKey = ComponentKey<(Service) -> Component<ServiceScoped>>()
 
 @GivenSetElement fun serviceComponentFactoryKey(
     builderFactory: () -> Component.Builder<ServiceScoped> = given,
 ) = componentElement(ApplicationScoped, ServiceComponentFactoryKey) {
     builderFactory()
-        .set(ServiceKey, it)
+        .element(ServiceKey, it)
         .build()
 }
 

@@ -30,26 +30,28 @@ import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.component.Component
+import com.ivianuu.injekt.component.ComponentKey
 import com.ivianuu.injekt.component.componentElement
+import com.ivianuu.injekt.component.get
 import com.ivianuu.injekt.given
 import kotlinx.coroutines.CoroutineScope
 
-object ActivityScoped : Component.Name
+@Given object ActivityScoped : Component.Name
 
 @Given val @Given ComponentActivity.activityComponent: Component<ActivityScoped>
     get() = lifecycle.component {
         activityRetainedComponent[ActivityComponentFactoryKey](this)
     }
 
-private object ActivityKey : Component.Key<ComponentActivity>
-private object ActivityComponentFactoryKey :
-    Component.Key<(ComponentActivity) -> Component<ActivityScoped>>
+private val ActivityKey = ComponentKey<ComponentActivity>()
+private val ActivityComponentFactoryKey =
+    ComponentKey<(ComponentActivity) -> Component<ActivityScoped>>()
 
 @GivenSetElement fun activityComponentFactory(
     builderFactory: () -> Component.Builder<ActivityScoped> = given,
 ) = componentElement(ActivityRetainedScoped, ActivityComponentFactoryKey) {
     builderFactory()
-        .set(ActivityKey, it)
+        .element(ActivityKey, it)
         .build()
 }
 

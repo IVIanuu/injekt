@@ -4,14 +4,13 @@ package com.ivianuu.injekt.component
 
 import com.ivianuu.injekt.Given
 
-interface Disposable {
-    fun dispose()
-}
-
 interface Storage<N : Component.Name> {
     operator fun <T : Any> get(key: Int): T?
     operator fun <T : Any> set(key: Int, value: T)
     fun dispose()
+    interface Disposable {
+        fun dispose()
+    }
 }
 
 fun <N : Component.Name> Storage(): Storage<N> = StorageImpl()
@@ -38,7 +37,7 @@ private class StorageImpl<N : Component.Name>(
 
     override fun dispose() {
         backing.toList().forEach { (_, value) ->
-            (value as? Disposable)?.dispose()
+            (value as? Storage.Disposable)?.dispose()
         }
         backing.clear()
     }

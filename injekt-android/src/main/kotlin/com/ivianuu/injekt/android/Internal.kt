@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.lifecycleScope
 import com.ivianuu.injekt.component.Component
+import com.ivianuu.injekt.component.dispose
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 
