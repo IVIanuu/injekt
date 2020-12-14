@@ -33,6 +33,7 @@ import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.ComponentKey
 import com.ivianuu.injekt.component.componentElement
 import com.ivianuu.injekt.component.get
+import com.ivianuu.injekt.component.getDependency
 import com.ivianuu.injekt.given
 import kotlinx.coroutines.CoroutineScope
 
@@ -54,6 +55,9 @@ private val ActivityComponentFactoryKey =
         .element(ActivityKey, it)
         .build()
 }
+
+@Given val @Given Component<ActivityScoped>.retainedComponentFromActivity: Component<ActivityRetainedScoped>
+    get() = getDependency(ActivityRetainedScoped)
 
 @Given val @Given Component<ActivityScoped>.activity: ComponentActivity
     get() = this[ActivityKey]
