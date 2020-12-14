@@ -5,8 +5,8 @@ import com.ivianuu.injekt.given
 
 object ApplicationScoped : Component.Name
 
-fun App.initializeApp(elements: Set<ComponentElement<ApplicationScoped>> = given) {
-    _applicationComponent = ComponentBuilder(ApplicationScoped)
+fun App.initializeApp(elements: (Component<ApplicationScoped>) -> Set<ComponentElement<ApplicationScoped>> = given) {
+    _applicationComponent = ComponentBuilder(ApplicationScoped, elements)
         .element(ApplicationKey, this)
         .build()
 }
@@ -16,6 +16,7 @@ typealias App = Any
 @Given val @Given Component<ApplicationScoped>.app: App
     get() = this[ApplicationKey]
 
-private object ApplicationKey : Component.Key<App>
+private val ApplicationKey = ComponentKey<App>()
 
-@Given lateinit var _applicationComponent: Component<ApplicationScoped>
+private lateinit var _applicationComponent: Component<ApplicationScoped>
+@Given val @Given App.applicationComponent: Component<ApplicationScoped> get() = _applicationComponent

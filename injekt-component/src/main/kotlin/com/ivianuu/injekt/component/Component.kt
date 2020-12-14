@@ -42,15 +42,14 @@ fun Component<*>.dispose() {
 
 @Given fun <N : Component.Name> ComponentBuilder(
     name: N = given,
-    elements: Set<ComponentElement<N>> = given,
-): Component.Builder<N> = ComponentImpl.Builder(name)
-    .apply { elements.forEach { element(it.first as Component.Key<Any>, it.second) } }
+    injectedElements: (Component<N>) -> Set<ComponentElement<N>>,
+): Component.Builder<N> = ComponentImpl.Builder(name, injectedElements)
 
 inline fun <N : Component.Name> Component(
     name: N = given,
-    elements: Set<ComponentElement<N>> = given,
+    noinline injectedElements: (Component<N>) -> Set<ComponentElement<N>> = given,
     block: Component.Builder<N>.() -> Unit = {},
-): Component<N> = ComponentBuilder(name, elements).apply(block).build()
+): Component<N> = ComponentBuilder(name, injectedElements).apply(block).build()
 
 typealias ComponentElement<@Suppress("unused") N> = Pair<Component.Key<*>, Any>
 
@@ -63,8 +62,11 @@ fun <N : Component.Name, T : Any> componentElement(
 @PublishedApi internal class ComponentImpl<N : Component.Name>(
     override val name: N,
     private val dependencies: List<Component<*>>,
-    private val elements: Map<Component.Key<*>, Any?>,
+    private val explicitElements: Map<Component.Key<*>, Any?>,
+    private val injectedElements: (Component<N>) -> Set<ComponentElement<N>>,
 ) : Component<N> {
+    private val elements = explicitElements + injectedElements(this)
+
     override val storage = Storage<N>()
 
     override fun <T : Any> getOrNull(key: Component.Key<T>): T? {
@@ -86,7 +88,10 @@ fun <N : Component.Name, T : Any> componentElement(
         return null
     }
 
-    class Builder<N : Component.Name>(private val name: N) : Component.Builder<N> {
+    class Builder<N : Component.Name>(
+        private val name: N,
+        private val injectedElements: (Component<N>) -> Set<ComponentElement<N>>,
+    ) : Component.Builder<N> {
         private val dependencies = mutableListOf<Component<*>>()
         private val elements = mutableMapOf<Component.Key<*>, Any?>()
 
@@ -99,6 +104,7 @@ fun <N : Component.Name, T : Any> componentElement(
                 elements[key] = value
             }
 
-        override fun build(): Component<N> = ComponentImpl(name, dependencies, elements)
+        override fun build(): Component<N> =
+            ComponentImpl(name, dependencies, elements, injectedElements)
     }
 }
