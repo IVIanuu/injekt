@@ -166,13 +166,6 @@ fun <T> KotlinCompilation.Result.invokeSingleFile(vararg args: Any?): T {
 private fun KotlinCompilation.Result.getSingleClass(): KClass<*> =
     classLoader.loadClass("com.ivianuu.injekt.integrationtests.FileKt").kotlin
 
-fun KotlinCompilation.Result.assertInternalError(
-    message: String? = null,
-) {
-    assertEquals(KotlinCompilation.ExitCode.INTERNAL_ERROR, exitCode)
-    message?.let { assertTrue(messages.toLowerCase().contains(it.toLowerCase())) }
-}
-
 fun KotlinCompilation.Result.assertCompileError(
     message: String? = null,
 ) {

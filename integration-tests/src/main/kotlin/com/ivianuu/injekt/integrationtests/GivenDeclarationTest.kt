@@ -250,4 +250,22 @@ class GivenDeclarationTest {
         assertSame(foo, invokeSingleFile(foo))
     }
 
+    @Test
+    fun testGivenSuspendFunction() = codegen(
+        """
+            @Given suspend fun foo() = Foo()
+            fun invoke() = runBlocking { given<Foo>() }
+        """
+    ) {
+        assertTrue(invokeSingleFile<Any>() is Foo)
+    }
+
+    @Test
+    fun testGivenComposableFunction() = codegen(
+        """
+            @Given @Composable fun foo() = Foo()
+            @Composable fun invoke() { given<Foo>() }
+        """
+    )
+
 }
