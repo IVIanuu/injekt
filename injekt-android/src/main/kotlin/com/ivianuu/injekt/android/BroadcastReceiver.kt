@@ -27,6 +27,7 @@ import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.ComponentKey
 import com.ivianuu.injekt.component.componentElement
 import com.ivianuu.injekt.component.get
+import com.ivianuu.injekt.component.getDependency
 import com.ivianuu.injekt.given
 
 @Given object ReceiverScoped : Component.Name
@@ -35,8 +36,8 @@ private val ReceiverKey = ComponentKey<BroadcastReceiver>()
 private val ContextKey = ComponentKey<Context>()
 private val IntentKey = ComponentKey<Intent>()
 
-private object ReceiverComponentFactoryKey :
-    Component.Key<(BroadcastReceiver, Context, Intent) -> Component<ReceiverScoped>>
+private val ReceiverComponentFactoryKey =
+    ComponentKey<(BroadcastReceiver, Context, Intent) -> Component<ReceiverScoped>>()
 
 @GivenSetElement fun receiverComponentFactory(
     builderFactory: () -> Component.Builder<ReceiverScoped> = given,
@@ -55,6 +56,9 @@ fun BroadcastReceiver.createReceiverComponent(
 ): Component<ReceiverScoped> = (context.applicationContext as Application)
     .applicationComponent[ReceiverComponentFactoryKey](this, context, intent)
 
+@Given val @Given Component<ReceiverScoped>.applicationComponentFromReceiver: Component<ApplicationScoped>
+    get() = getDependency(ApplicationScoped)
+
 typealias ReceiverContext = Context
 
 @Given val @Given Component<ReceiverScoped>.receiverContext: ReceiverContext
@@ -64,3 +68,6 @@ typealias ReceiverIntent = Intent
 
 @Given val @Given Component<ReceiverScoped>.receiverIntent: ReceiverIntent
     get() = this[IntentKey]
+
+@Given val @Given Component<ReceiverScoped>.applicationComponent: Component<ApplicationScoped>
+    get() = getDependency(ApplicationScoped)

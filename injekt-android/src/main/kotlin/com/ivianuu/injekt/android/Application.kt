@@ -27,11 +27,11 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.component.App
 import com.ivianuu.injekt.component.ApplicationScoped
 import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component._applicationComponent
+import com.ivianuu.injekt.component.applicationComponent
 
 @Suppress("unused")
 val Application.applicationComponent: Component<ApplicationScoped>
-    get() = _applicationComponent
+    get() = (this as App).applicationComponent
 
 @Given inline val @Given App.application: Application
     get() = this as Application

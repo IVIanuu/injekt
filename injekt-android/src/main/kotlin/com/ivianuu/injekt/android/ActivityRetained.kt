@@ -8,6 +8,7 @@ import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.ComponentKey
 import com.ivianuu.injekt.component.componentElement
 import com.ivianuu.injekt.component.get
+import com.ivianuu.injekt.component.getDependency
 import com.ivianuu.injekt.given
 
 @Given object ActivityRetainedScoped : Component.Name
@@ -25,3 +26,6 @@ private val ActivityRetainedComponentFactoryKey =
 ) = componentElement(ApplicationScoped, ActivityRetainedComponentFactoryKey) {
     builderFactory().build()
 }
+
+@Given val @Given Component<ActivityRetainedScoped>.applicationComponentFromRetained: Component<ApplicationScoped>
+    get() = getDependency(ApplicationScoped)

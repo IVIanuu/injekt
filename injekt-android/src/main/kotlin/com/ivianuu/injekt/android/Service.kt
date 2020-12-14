@@ -28,6 +28,7 @@ import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.ComponentKey
 import com.ivianuu.injekt.component.componentElement
 import com.ivianuu.injekt.component.get
+import com.ivianuu.injekt.component.getDependency
 import com.ivianuu.injekt.given
 
 @Given object ServiceScoped : Component.Name
@@ -46,6 +47,9 @@ private val ServiceComponentFactoryKey = ComponentKey<(Service) -> Component<Ser
 fun Service.createServiceComponent(): Component<ServiceScoped> =
     application.applicationComponent[ServiceComponentFactoryKey](this)
 
+@Given val @Given Component<ServiceScoped>.applicationComponentFromService: Component<ApplicationScoped>
+    get() = getDependency(ApplicationScoped)
+
 typealias ServiceContext = Context
 
 @Given inline val @Given Service.serviceContext: ServiceContext
@@ -55,3 +59,6 @@ typealias ServiceResources = Resources
 
 @Given inline val @Given Service.serviceResources: ServiceResources
     get() = resources
+
+@Given val @Given Component<ServiceScoped>.applicationComponent: Component<ApplicationScoped>
+    get() = getDependency(ApplicationScoped)
