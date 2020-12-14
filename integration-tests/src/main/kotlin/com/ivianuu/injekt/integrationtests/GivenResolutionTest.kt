@@ -474,6 +474,20 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testLocalFunctionInvocationWithGivens() = codegen(
+        """
+                @Given val foo = Foo()
+                fun invoke() {
+                    fun usesFoo(foo: Foo = given) {
+                    }                    
+                    usesFoo()
+                }
+            """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
     fun testConstructorInvocationWithGivens() = codegen(
         """
                 @Given val foo = Foo()
@@ -488,16 +502,29 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testLocalConstructorInvocationWithGivens() = codegen(
+        """
+                @Given val foo = Foo()
+                fun invoke() {
+                    class UsesFoo(foo: Foo = given)
+                    UsesFoo()
+                }
+            """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
     fun testUsesDefaultIfNotGiven() = codegen(
         """
-                lateinit var defaultFoo: Foo
-                fun invoke(foo: Foo) {
-                    defaultFoo = foo
+                fun invoke(_foo: Foo): Foo {
+                    fun inner(foo: Foo = givenOrElse { _foo }) = foo
+                    return inner()
                 }
             """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile())
+        assertSame(foo, invokeSingleFile(foo))
     }
 
 }

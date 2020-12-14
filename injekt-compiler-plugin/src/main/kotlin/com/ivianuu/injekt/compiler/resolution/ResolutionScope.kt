@@ -51,6 +51,10 @@ class ResolutionScope(
         else if (callable.hasAnnotation(InjektFqNames.GivenSetElement)) givenSetElements += callable to this
     }
 
+    fun addIfNeeded(clazz: ClassDescriptor) {
+        givens += clazz.getGivenConstructors().map { it to this }
+    }
+
     private fun ResolutionScope.depth(): Int {
         var scope: ResolutionScope = this@ResolutionScope
         var depth = 0
@@ -121,7 +125,6 @@ fun ClassResolutionScope(
 }
 
 fun FunctionResolutionScope(
-    bindingContext: BindingContext,
     declarationStore: DeclarationStore,
     parent: ResolutionScope?,
     descriptor: FunctionDescriptor,

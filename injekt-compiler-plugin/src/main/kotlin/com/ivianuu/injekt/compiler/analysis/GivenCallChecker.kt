@@ -130,6 +130,7 @@ class GivenCallChecker(
     }
 
     override fun visitClass(klass: KtClass) {
+        val descriptor = klass.descriptor<ClassDescriptor>(bindingTrace.bindingContext) ?: return
         val parentScope = klass.companionObjects.singleOrNull()
             ?.let {
                 ClassResolutionScope(
@@ -143,11 +144,12 @@ class GivenCallChecker(
         inScope(ClassResolutionScope(
             bindingTrace.bindingContext,
             declarationStore,
-            klass.descriptor(bindingTrace.bindingContext) ?: return,
+            descriptor,
             parentScope
         )) {
             super.visitClass(klass)
         }
+        blockScope?.addIfNeeded(descriptor)
     }
 
     override fun visitPrimaryConstructor(constructor: KtPrimaryConstructor) {
@@ -160,6 +162,9 @@ class GivenCallChecker(
 
     override fun visitNamedFunction(function: KtNamedFunction) {
         visitFunction(function) { super.visitNamedFunction(function) }
+        val descriptor =
+            function.descriptor<FunctionDescriptor>(bindingTrace.bindingContext) ?: return
+        blockScope?.addIfNeeded(descriptor)
     }
 
     override fun visitLambdaExpression(lambdaExpression: KtLambdaExpression) {
@@ -170,7 +175,6 @@ class GivenCallChecker(
 
     private fun visitFunction(function: KtFunction, block: () -> Unit) {
         inScope(FunctionResolutionScope(
-            bindingTrace.bindingContext,
             declarationStore,
             scope,
             function.descriptor(bindingTrace.bindingContext) ?: return

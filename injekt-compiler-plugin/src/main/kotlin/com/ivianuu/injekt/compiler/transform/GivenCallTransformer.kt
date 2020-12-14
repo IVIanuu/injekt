@@ -28,7 +28,6 @@ import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
@@ -48,6 +47,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
+import org.jetbrains.kotlin.ir.symbols.IrBindableSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructedClass
@@ -207,7 +207,7 @@ class GivenCallTransformer(
         symbol: IrSymbol,
     ): () -> IrExpression = {
         when (given.callable) {
-            is ConstructorDescriptor -> classExpression(given.type, given.callable, symbol)
+            is ClassConstructorDescriptor -> classExpression(given.type, given.callable, symbol)
             is PropertyDescriptor -> propertyExpression(given.type, given.callable, symbol)
             is FunctionDescriptor -> functionExpression(given.type, given.callable, symbol)
             is ReceiverParameterDescriptor -> parameterExpression(given.callable, symbol)
@@ -219,18 +219,18 @@ class GivenCallTransformer(
 
     private fun ResolutionContext.classExpression(
         type: TypeRef,
-        descriptor: ConstructorDescriptor,
+        descriptor: ClassConstructorDescriptor,
         symbol: IrSymbol,
     ): IrExpression {
         return if (descriptor.constructedClass.kind == ClassKind.OBJECT) {
             val clazz =
-                pluginContext.referenceClass(descriptor.constructedClass.fqNameSafe)!!
+                pluginContext.symbolTable.referenceClass(descriptor.constructedClass.original)
+                    .bind()
             DeclarationIrBuilder(pluginContext, symbol)
                 .irGetObject(clazz)
         } else {
             val constructor =
-                pluginContext.referenceConstructors(descriptor.constructedClass.fqNameSafe)
-                    .single()
+                pluginContext.symbolTable.referenceConstructor(descriptor.original).bind()
                     .owner
             DeclarationIrBuilder(pluginContext, symbol)
                 .irCall(constructor.symbol)
@@ -259,8 +259,7 @@ class GivenCallTransformer(
         descriptor: PropertyDescriptor,
         symbol: IrSymbol,
     ): IrExpression {
-        val property = pluginContext.referenceProperties(descriptor.fqNameSafe)
-            .single()
+        val property = pluginContext.symbolTable.referenceProperty(descriptor.original).bind()
         val getter = property.owner.getter!!
         return DeclarationIrBuilder(pluginContext, symbol)
             .irCall(getter.symbol)
@@ -366,31 +365,20 @@ class GivenCallTransformer(
     }
 
     private fun ClassConstructorDescriptor.irConstructor() =
-        pluginContext.symbolTable.referenceConstructor(original)
-            .also {
-                try {
-                    with((pluginContext as IrPluginContextImpl).linker) {
-                        getDeclaration(it)
-                        postProcess()
-                    }
-                } catch (e: Throwable) {
-                }
-            }
-            .owner
+        pluginContext.symbolTable.referenceConstructor(original).bind().owner
 
     private fun FunctionDescriptor.irFunction() =
         pluginContext.symbolTable.referenceSimpleFunction(original)
-            .also {
-                try {
-                    with((pluginContext as IrPluginContextImpl).linker) {
-                        getDeclaration(it)
-                        postProcess()
-                    }
-                } catch (e: Throwable) {
-                    e.printStackTrace()
-                }
-            }
+            .bind()
             .owner
+
+    private fun <T : IrBindableSymbol<*, *>> T.bind(): T {
+        (pluginContext as IrPluginContextImpl).linker.run {
+            getDeclaration(this@bind)
+            postProcess()
+        }
+        return this
+    }
 
     private val receiverAccessors = mutableListOf<Pair<IrClass, () -> IrExpression>>()
 

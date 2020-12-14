@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtObjectLiteralExpression
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
+import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -42,8 +43,12 @@ class GivenInfoGenerator(
                         declaration !is KtConstructor<*>
                     ) return
 
+                    if (declaration is KtClassOrObject && declaration.isLocal) return
                     if (declaration is KtProperty && declaration.isLocal) return
                     if (declaration is KtFunction && declaration.isLocal) return
+                    if (declaration is KtConstructor<*> && declaration.containingClassOrObject
+                            ?.isLocal == true
+                    ) return
 
                     val descriptor = declaration.descriptor<DeclarationDescriptor>(bindingContext)
                         ?: error("Wtf $declaration ${declaration.text}")

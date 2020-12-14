@@ -238,7 +238,20 @@ class GivenDeclarationTest {
     }
 
     @Test
-    fun testGivenLocalFuncton() = codegen(
+    fun testGivenLocalClass() = codegen(
+        """
+            fun invoke(_foo: Foo): Foo {
+                @Given class FooProvider(val foo: Foo = givenOrElse { _foo })
+                return given<FooProvider>().foo
+            }
+        """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
+    }
+
+    @Test
+    fun testGivenLocalFunction() = codegen(
         """
             fun invoke(foo: Foo): Foo {
                 @Given fun foo() = foo
@@ -247,7 +260,7 @@ class GivenDeclarationTest {
         """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile())
+        assertSame(foo, invokeSingleFile(foo))
     }
 
 }
