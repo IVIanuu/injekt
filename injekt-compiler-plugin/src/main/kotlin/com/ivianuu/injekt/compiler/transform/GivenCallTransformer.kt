@@ -124,7 +124,7 @@ class GivenCallTransformer(
                 is CallableGivenNode -> callableExpression(given, symbol)
                 is ProviderGivenNode -> providerExpression(given, symbol)
                 is ProviderParameterGivenNode -> providerParameterExpression(given, symbol)
-                is CollectionGivenNode -> collectionExpression(given, symbol)
+                is CollectionGivenNode -> setExpression(given, symbol)
             }
         }()
     }
@@ -150,15 +150,24 @@ class GivenCallTransformer(
             .irGet(lambdasByProviderGiven[given.provider]!!.valueParameters[given.index])
     }
 
-    private fun ResolutionContext.collectionExpression(
+    private fun ResolutionContext.setExpression(
         given: CollectionGivenNode,
         symbol: IrSymbol,
-    ): () -> IrExpression = {
-        DeclarationIrBuilder(pluginContext, symbol).irBlock {
-            val elementType =
-                given.type.fullyExpandedType.typeArguments.single()
-                    .toIrType(pluginContext)
+    ): () -> IrExpression = expr@{
+        val elementType =
+            given.type.fullyExpandedType.typeArguments.single()
+                .toIrType(pluginContext)
 
+        if (given.elements.isEmpty()) {
+            val emptySet = pluginContext.referenceFunctions(
+                FqName("kotlin.collections.emptySet")
+            ).single()
+            return@expr DeclarationIrBuilder(pluginContext, symbol)
+                .irCall(emptySet)
+                .apply { putTypeArgument(0, elementType) }
+        }
+
+        DeclarationIrBuilder(pluginContext, symbol).irBlock {
             val mutableSetOf = pluginContext.referenceFunctions(
                 FqName("kotlin.collections.mutableSetOf")
             ).single { it.owner.valueParameters.isEmpty() }
