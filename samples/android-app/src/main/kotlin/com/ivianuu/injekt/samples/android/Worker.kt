@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.samples.android
 
-import android.content.Context
 import androidx.work.Configuration
 import androidx.work.CoroutineWorker
 import androidx.work.WorkManager
@@ -24,12 +23,13 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.android.ApplicationContext
+import com.ivianuu.injekt.android.work.WorkerContext
 import com.ivianuu.injekt.android.work.worker
 import com.ivianuu.injekt.given
 
 @GivenSetElement fun testWorkerBinding() = worker { TestWorker() }
 class TestWorker(
-    context: Context = given,
+    context: WorkerContext = given,
     workerParams: WorkerParameters = given,
     repo: Repo = given,
 ) : CoroutineWorker(context, workerParams) {

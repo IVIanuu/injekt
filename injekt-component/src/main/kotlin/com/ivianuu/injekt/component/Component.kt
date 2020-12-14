@@ -42,7 +42,7 @@ fun Component<*>.dispose() {
 
 @Given fun <N : Component.Name> ComponentBuilder(
     name: N = given,
-    injectedElements: (Component<N>) -> Set<ComponentElement<N>>,
+    injectedElements: (Component<N>) -> Set<ComponentElement<N>> = given,
 ): Component.Builder<N> = ComponentImpl.Builder(name, injectedElements)
 
 inline fun <N : Component.Name> Component(

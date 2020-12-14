@@ -31,9 +31,10 @@ typealias DatabaseFile = File
     storage: Storage<ApplicationScoped> = given,
 ): DatabaseFile = storage.memo("db_file") { context.cacheDir!! }
 
-@Given fun database(storage: Storage<ApplicationScoped> = given) = storage.memo("db") {
-    Database()
-}
+@Given fun database(file: DatabaseFile = given, storage: Storage<ApplicationScoped> = given) =
+    storage.memo("db") {
+        Database()
+    }
 
 class Database(private val file: DatabaseFile = given)
 

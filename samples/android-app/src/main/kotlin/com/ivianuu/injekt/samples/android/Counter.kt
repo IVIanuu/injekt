@@ -6,6 +6,8 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
+import com.ivianuu.injekt.component.ApplicationScoped
+import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.given
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,7 +17,9 @@ import kotlinx.coroutines.flow.stateIn
 
 object CounterKey
 
-@GivenSetElement fun counterKeyUiBinding() = keyUiWithStateBinding<CounterKey, CounterState> {
+@GivenSetElement fun counterKeyUiBinding(
+    component: Component<ApplicationScoped> = given,
+) = keyUiWithStateBinding<CounterKey, CounterState> {
     CounterPage()
 }
 
