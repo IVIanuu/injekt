@@ -44,7 +44,7 @@ interface InjektErrors {
                                 }
 
                                 fun ResolutionResult.Failure.print() {
-                                    when (this) {
+                                    val any: Any = when (this) {
                                         is ResolutionResult.Failure.CandidateAmbiguity -> {
                                             appendLine("${indent()}ambiguous given arguments of type ${request.type.render()} " +
                                                     "for parameter ${request.parameterName} of function ${request.callableFqName}:")
@@ -55,6 +55,9 @@ interface InjektErrors {
                                                         appendLine("${indent()}${candidate.callableFqName}")
                                                     }
                                             }
+                                        }
+                                        is ResolutionResult.Failure.CallContextMismatch -> {
+                                            appendLine("${indent()} current call context is ${request.callContext} but ${candidate.callableFqName} is ${candidate.callContext}")
                                         }
                                         is ResolutionResult.Failure.CircularDependency -> {
                                             appendLine("${indent()}circular")

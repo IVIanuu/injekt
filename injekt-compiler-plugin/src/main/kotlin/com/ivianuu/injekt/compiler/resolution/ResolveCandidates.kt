@@ -53,7 +53,7 @@ sealed class ResolutionResult {
 
         data class CallContextMismatch(
             override val request: GivenRequest,
-            val callContext: CallContext,
+            val candidate: GivenNode,
         ) : Failure() {
             override val failureOrdering: Int
                 get() = 1
@@ -226,6 +226,14 @@ private fun ResolutionContext.resolveCandidate(
     request: GivenRequest,
     candidate: GivenNode,
 ): CandidateResolutionResult = computeForCandidate(request, candidate) {
+    if (!request.callContext.canCall(candidate.callContext)) {
+        return@computeForCandidate CandidateResolutionResult.Failure(
+            request,
+            candidate,
+            ResolutionResult.Failure.CallContextMismatch(request, candidate)
+        )
+    }
+
     val successDependencyResults = mutableListOf<ResolutionResult.Success>()
     for (dependency in candidate.dependencies) {
         when (val result = scope.resolveRequest(this, dependency)) {

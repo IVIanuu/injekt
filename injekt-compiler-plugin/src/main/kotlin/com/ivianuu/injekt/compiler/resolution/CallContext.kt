@@ -10,6 +10,9 @@ enum class CallContext {
     DEFAULT, COMPOSABLE, SUSPEND
 }
 
+fun CallContext.canCall(other: CallContext) =
+    this == other || other == CallContext.DEFAULT
+
 val CallableDescriptor.callContext: CallContext
     get() = when {
         isSuspend -> CallContext.SUSPEND
