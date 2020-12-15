@@ -43,9 +43,11 @@ private val WorkerComponentFactoryKey =
     ComponentKey<(Context, WorkerParameters) -> Component<WorkerScoped>>()
 
 @GivenSetElement fun workerComponentFactoryKey(
+    parent: Component<ApplicationScoped> = given,
     builderFactory: () -> Component.Builder<WorkerScoped> = given,
 ) = componentElement(ApplicationScoped, WorkerComponentFactoryKey) { context, params ->
     builderFactory()
+        .dependency(parent)
         .element(WorkerContextKey, context)
         .element(WorkerParametersKey, params)
         .build()
