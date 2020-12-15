@@ -1,10 +1,12 @@
 include(
     ":injekt-android",
     ":injekt-android-work",
+    ":injekt-compiler-hosted",
     ":injekt-compiler-plugin",
     ":injekt-component",
     ":injekt-core",
     ":injekt-gradle-plugin",
+    ":injekt-ide-plugin",
     ":integration-tests",
     ":test-util",
     "samples:android-app",

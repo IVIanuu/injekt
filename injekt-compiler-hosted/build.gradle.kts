@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ *  
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 plugins {
     kotlin("jvm")
     kotlin("kapt")
@@ -24,26 +23,8 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 //apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
 
 dependencies {
-    api(Deps.processingX)
+    implementation(Deps.processingX)
     kapt(Deps.processingX)
-
-    api(Deps.AndroidX.Compose.compiler)
-
-    api(project(":injekt-compiler-plugin", "shadow"))
-    api(project(":injekt-core"))
-
-    api(Deps.Coroutines.core)
-    api(Deps.Coroutines.test)
-
-    api(Deps.Kotlin.compilerEmbeddable)
-
-    api(Deps.junit)
-    api(Deps.AndroidX.Test.core)
-    api(Deps.AndroidX.Test.junit)
-    api(Deps.roboelectric)
-
-    // todo remove compile testing deps
-    api("com.squareup.okio:okio:2.1.0")
-    api("org.jetbrains.kotlin:kotlin-annotation-processing-embeddable:1.3.70")
-    api("io.github.classgraph:classgraph:4.8.64")
+    compileOnly(Deps.Kotlin.compiler)
+    implementation(Deps.Kotlin.stdlib)
 }

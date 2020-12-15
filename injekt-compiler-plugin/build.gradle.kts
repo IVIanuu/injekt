@@ -1,3 +1,5 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -15,7 +17,8 @@
  */
 plugins {
     kotlin("jvm")
-    kotlin("kapt")
+    id("com.github.johnrengelman.shadow")
+    id("maven-publish")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
@@ -23,9 +26,17 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 //apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
 
+val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
+    archiveClassifier.set("")
+    configurations = listOf(project.configurations.getByName("compileOnly"))
+    relocate("com.intellij", "org.jetbrains.kotlin.com.intellij")
+    relocate("kotlin.reflect.jvm.internal.impl.load", "org.jetbrains.kotlin.load")
+}
+
+artifacts {
+    archives(shadowJar)
+}
+
 dependencies {
-    implementation(Deps.processingX)
-    kapt(Deps.processingX)
-    compileOnly(Deps.Kotlin.compilerEmbeddable)
-    implementation(Deps.Kotlin.stdlib)
+    compileOnly(project(":injekt-compiler-hosted"))
 }

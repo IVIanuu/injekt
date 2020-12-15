@@ -13,10 +13,12 @@
             <option value="$PROJECT_DIR$/buildSrc" />
             <option value="$PROJECT_DIR$/injekt-android" />
             <option value="$PROJECT_DIR$/injekt-android-work" />
+            <option value="$PROJECT_DIR$/injekt-compiler-hosted" />
             <option value="$PROJECT_DIR$/injekt-compiler-plugin" />
             <option value="$PROJECT_DIR$/injekt-component" />
             <option value="$PROJECT_DIR$/injekt-core" />
             <option value="$PROJECT_DIR$/injekt-gradle-plugin" />
+            <option value="$PROJECT_DIR$/injekt-ide-plugin" />
             <option value="$PROJECT_DIR$/integration-tests" />
             <option value="$PROJECT_DIR$/samples" />
             <option value="$PROJECT_DIR$/samples/android-app" />

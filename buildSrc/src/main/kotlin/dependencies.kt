@@ -31,7 +31,7 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev433"
+    const val version = "${Build.versionName}-dev434"
 }
 
 object Deps {
@@ -102,6 +102,7 @@ object Deps {
 
     object Kotlin {
         private const val version = "1.4.255-SNAPSHOT"
+        const val compiler = "org.jetbrains.kotlin:kotlin-compiler:$version"
         const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
         const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
         const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
@@ -118,6 +119,8 @@ object Deps {
     const val processingX = "com.ivianuu.processingx:processingx:0.0.1-dev4"
 
     const val roboelectric = "org.robolectric:robolectric:4.4"
+
+    const val shadowGradlePlugin = "com.github.jengelman.gradle.plugins:shadow:5.2.0"
 
     const val spotlessGradlePlugin = "com.diffplug.spotless:spotless-plugin-gradle:3.26.1"
 

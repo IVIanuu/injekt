@@ -1,10 +1,10 @@
 package com.ivianuu.injekt.compiler.analysis
 
+import com.intellij.psi.PsiElement
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.hasAnnotation
-import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
