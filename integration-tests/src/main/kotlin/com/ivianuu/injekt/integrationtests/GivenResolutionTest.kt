@@ -501,6 +501,20 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testPrimaryConstructorGivenWithReceiver() = codegen(
+        """
+                fun invoke(foo: Foo) = withGiven(UsesFoo(foo)) {
+                    given<Foo>()
+                }
+
+                class UsesFoo(val foo: Foo = given)
+            """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
+    }
+
+    @Test
     fun testLocalConstructorInvocationWithGivens() = codegen(
         """
                 @Given val foo = Foo()
