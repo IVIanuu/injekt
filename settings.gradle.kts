@@ -1,7 +1,6 @@
 include(
     ":injekt-android",
     ":injekt-android-work",
-    ":injekt-compiler-hosted",
     ":injekt-compiler-plugin",
     ":injekt-component",
     ":injekt-core",

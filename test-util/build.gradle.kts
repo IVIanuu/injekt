@@ -29,7 +29,7 @@ dependencies {
 
     api(Deps.AndroidX.Compose.compiler)
 
-    api(project(":injekt-compiler-plugin", "shadow"))
+    api(project(":injekt-compiler-plugin"))
     api(project(":injekt-core"))
 
     api(Deps.Coroutines.core)

@@ -19,10 +19,6 @@ plugins {
     id("org.jetbrains.intellij") version "0.6.5"
 }
 
-dependencies {
-    api(project(":injekt-compiler-hosted"))
-}
-
 intellij {
     version = "2019.3.4"
     pluginName = "Injekt ide plugin"
@@ -30,3 +26,8 @@ intellij {
     setPlugins("org.jetbrains.kotlin:1.4.21-release-Studio4.0-1")
     localPath = "/home/ivianuu/android-studio"
 }
+
+dependencies {
+    compile(project(":injekt-compiler-plugin", "shadow"))
+}
+

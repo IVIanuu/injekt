@@ -1,9 +1,9 @@
 package com.ivianuu.injekt.compiler
 
-import com.intellij.psi.PsiElement
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.render
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory1
 import org.jetbrains.kotlin.diagnostics.Errors

@@ -23,8 +23,6 @@
     <extensions defaultExtensionNs="org.jetbrains.kotlin">
         <storageComponentContainerContributor
             implementation="com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor" />
-        <analyzeCompleteHandlerExtension
-            implementation="com.ivianuu.injekt.compiler.analysis.InjektKtGenerationExtension" />
     </extensions>
 
 </idea-plugin>

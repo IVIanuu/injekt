@@ -7,7 +7,6 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/injekt.iml" filepath="$PROJECT_DIR$/.idea/injekt.iml" group="injekt" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-android/injekt-android.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-android/injekt-android.iml" group="injekt/injekt-android" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-android-work/injekt-android-work.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-android-work/injekt-android-work.iml" group="injekt/injekt-android-work" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-compiler-hosted/injekt-compiler-hosted.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-compiler-hosted/injekt-compiler-hosted.iml" group="injekt/injekt-compiler-hosted" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-compiler-plugin/injekt-compiler-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-compiler-plugin/injekt-compiler-plugin.iml" group="injekt/injekt-compiler-plugin" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-component/injekt-component.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-component/injekt-component.iml" group="injekt/injekt-component" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-core/injekt-core.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-core/injekt-core.iml" group="injekt/injekt-core" />

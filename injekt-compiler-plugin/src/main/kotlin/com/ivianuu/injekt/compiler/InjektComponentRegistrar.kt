@@ -17,15 +17,15 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
-import com.intellij.mock.MockProject
-import com.intellij.openapi.extensions.Extensions
-import com.intellij.openapi.extensions.LoadingOrder
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektKtGenerationExtension
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
 import com.ivianuu.injekt.compiler.transform.InjektIrDumper
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
+import org.jetbrains.kotlin.com.intellij.mock.MockProject
+import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
+import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.JVMConfigurationKeys

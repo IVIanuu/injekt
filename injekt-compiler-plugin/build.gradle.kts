@@ -17,20 +17,26 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
  */
 plugins {
     kotlin("jvm")
+    kotlin("kapt")
     id("com.github.johnrengelman.shadow")
-    id("maven-publish")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
 //apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
 
 val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
-    archiveClassifier.set("")
     configurations = listOf(project.configurations.getByName("compileOnly"))
-    relocate("com.intellij", "org.jetbrains.kotlin.com.intellij")
-    relocate("kotlin.reflect.jvm.internal.impl.load", "org.jetbrains.kotlin.load")
+    relocate("org.jetbrains.kotlin.com.intellij", "com.intellij")
+    dependencies {
+        exclude(dependency("org.jetbrains.kotlin:kotlin-stdlib"))
+        exclude(dependency("org.jetbrains.kotlin:kotlin-stdlib-common"))
+        exclude(dependency("org.jetbrains:annotations"))
+
+        exclude(dependency("com.intellij:openapi"))
+        exclude(dependency("com.intellij:extensions"))
+        exclude(dependency("com.intellij:annotations"))
+    }
 }
 
 artifacts {
@@ -38,5 +44,8 @@ artifacts {
 }
 
 dependencies {
-    compileOnly(project(":injekt-compiler-hosted"))
+    implementation(Deps.processingX)
+    kapt(Deps.processingX)
+    api(Deps.Kotlin.compilerEmbeddable)
+    implementation(Deps.Kotlin.stdlib)
 }
