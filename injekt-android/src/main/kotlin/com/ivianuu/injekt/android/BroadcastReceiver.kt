@@ -40,10 +40,12 @@ private val ReceiverComponentFactoryKey =
     ComponentKey<(BroadcastReceiver, Context, Intent) -> Component<ReceiverScoped>>()
 
 @GivenSetElement fun receiverComponentFactory(
+    parent: Component<ApplicationScoped> = given,
     builderFactory: () -> Component.Builder<ReceiverScoped> = given,
 ) = componentElement(ApplicationScoped,
     ReceiverComponentFactoryKey) { receiver, context, intent ->
     builderFactory()
+        .dependency(parent)
         .element(ReceiverKey, receiver)
         .element(ContextKey, context)
         .element(IntentKey, intent)

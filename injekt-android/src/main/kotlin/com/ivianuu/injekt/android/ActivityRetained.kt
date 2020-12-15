@@ -22,9 +22,10 @@ private val ActivityRetainedComponentFactoryKey =
     ComponentKey<() -> Component<ActivityRetainedScoped>>()
 
 @GivenSetElement fun activityRetainedComponentFactory(
+    parent: Component<ApplicationScoped> = given,
     builderFactory: () -> Component.Builder<ActivityRetainedScoped> = given,
 ) = componentElement(ApplicationScoped, ActivityRetainedComponentFactoryKey) {
-    builderFactory().build()
+    builderFactory().dependency(parent).build()
 }
 
 @Given val @Given Component<ActivityRetainedScoped>.applicationComponentFromRetained: Component<ApplicationScoped>

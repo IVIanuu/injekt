@@ -29,6 +29,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
+import com.ivianuu.injekt.component.ApplicationScoped
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.ComponentKey
 import com.ivianuu.injekt.component.componentElement
@@ -49,9 +50,11 @@ private val ActivityComponentFactoryKey =
     ComponentKey<(ComponentActivity) -> Component<ActivityScoped>>()
 
 @GivenSetElement fun activityComponentFactory(
+    parent: Component<ApplicationScoped> = given,
     builderFactory: () -> Component.Builder<ActivityScoped> = given,
 ) = componentElement(ActivityRetainedScoped, ActivityComponentFactoryKey) {
     builderFactory()
+        .dependency(parent)
         .element(ActivityKey, it)
         .build()
 }

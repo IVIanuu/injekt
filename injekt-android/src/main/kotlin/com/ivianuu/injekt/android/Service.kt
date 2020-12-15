@@ -37,9 +37,11 @@ private val ServiceKey = ComponentKey<Service>()
 private val ServiceComponentFactoryKey = ComponentKey<(Service) -> Component<ServiceScoped>>()
 
 @GivenSetElement fun serviceComponentFactoryKey(
+    parent: Component<ApplicationScoped> = given,
     builderFactory: () -> Component.Builder<ServiceScoped> = given,
 ) = componentElement(ApplicationScoped, ServiceComponentFactoryKey) {
     builderFactory()
+        .dependency(parent)
         .element(ServiceKey, it)
         .build()
 }

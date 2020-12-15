@@ -29,12 +29,12 @@ fun <T : Any> ComponentKey(): Component.Key<T> = DefaultKey()
 private class DefaultKey<T : Any> : Component.Key<T>
 
 operator fun <T : Any> Component<*>.get(key: Component.Key<T>): T = getOrNull(key)
-    ?: error("No value for for $key in $this")
+    ?: error("No value for for $key in ${this.name}")
 
 
 fun <N : Component.Name> Component<*>.getDependency(name: N): Component<N> =
     getDependencyOrNull(name)
-        ?: error("No value for for $name in $this")
+        ?: error("No value for for $name in ${this.name}")
 
 fun Component<*>.dispose() {
     storage.dispose()
