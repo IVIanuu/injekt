@@ -8,7 +8,7 @@ import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
 object InjektWritableSlices {
     val GIVEN_GRAPH =
         BasicWritableSlice<SourcePosition, GivenGraph.Success>(RewritePolicy.DO_NOTHING)
-    val USED_FOR_GIVEN = BasicWritableSlice<CallableDescriptor, Unit>(RewritePolicy.DO_NOTHING)
+    val USED_GIVEN = BasicWritableSlice<CallableDescriptor, Unit>(RewritePolicy.DO_NOTHING)
 }
 
 data class SourcePosition(

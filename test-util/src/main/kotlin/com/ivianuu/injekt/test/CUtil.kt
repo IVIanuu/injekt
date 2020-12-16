@@ -24,6 +24,7 @@ import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
 import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.name.FqName
@@ -171,4 +172,14 @@ fun KotlinCompilation.Result.assertCompileError(
 ) {
     assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, exitCode)
     message?.let { assertTrue(messages.toLowerCase().contains(it.toLowerCase())) }
+}
+
+fun KotlinCompilation.Result.assertMessage(
+    message: String,
+) {
+    assertTrue(message in messages)
+}
+
+fun KotlinCompilation.Result.assertNoMessage(message: String) {
+    assertFalse(message in messages)
 }

@@ -1,6 +1,8 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.assertCompileError
+import com.ivianuu.injekt.test.assertMessage
+import com.ivianuu.injekt.test.assertNoMessage
 import com.ivianuu.injekt.test.codegen
 import org.junit.Test
 
@@ -44,4 +46,35 @@ class GivenDeclarationCheckTest {
     ) {
         assertCompileError("@Given declaration extension receiver must be annotated with @Given")
     }
+
+    @Test
+    fun testUsedGivenParameterIsNotMarkedAsUnused() = codegen(
+        """
+            fun func1(@Given foo: Foo) {
+                func2()                
+            }
+
+            fun func2(@Given foo: Foo) {
+                foo
+            } 
+        """
+    ) {
+        assertNoMessage("Parameter 'foo' is never used")
+    }
+
+    @Test
+    fun testUnusedGivenParameterIsMarkedAsUnused() = codegen(
+        """
+            fun func1(@Given foo: Foo) {
+                func2()                
+            }
+
+            fun func2(@Given foo: Foo) {
+                foo
+            } 
+        """
+    ) {
+        assertMessage("Parameter 'foo' is never used")
+    }
+
 }

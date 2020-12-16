@@ -92,6 +92,11 @@ class GivenCallChecker(
                             is PackageFragmentDescriptor -> parent.getMemberScope()
                             else -> null
                         }?.recordLookup(given.callable.name, KotlinLookupLocation(reportOn))
+                        bindingTrace.record(
+                            InjektWritableSlices.USED_GIVEN,
+                            given.callable,
+                            Unit
+                        )
                     }
                 bindingTrace.record(
                     InjektWritableSlices.GIVEN_GRAPH,
