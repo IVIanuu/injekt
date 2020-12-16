@@ -17,6 +17,10 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.GivenFunctionDescriptor
+import com.ivianuu.injekt.compiler.resolution.ClassifierRef
+import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.substitute
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -79,12 +83,16 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
     return null
 }
 
-fun CallableDescriptor.getGivenParameters(): List<ParameterDescriptor> = allParameters
-    .filterNot { it === dispatchReceiverParameter }
-    .filter {
-        it.hasAnnotation(InjektFqNames.Given) ||
-                (it === extensionReceiverParameter && it.type.hasAnnotation(InjektFqNames.Given))
-    }
+fun CallableDescriptor.getGivenParameters(substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()): List<ParameterDescriptor> =
+    allParameters
+        .filterNot { it === dispatchReceiverParameter }
+        .filter {
+            it.hasAnnotation(InjektFqNames.Given) ||
+                    if (substitutionMap.isNotEmpty()) {
+                        it.type.toTypeRef().substitute(substitutionMap)
+                            .isGiven
+                    } else it.type.hasAnnotation(InjektFqNames.Given)
+        }
 
 fun <D : DeclarationDescriptor> KtDeclaration.descriptor(
     bindingContext: BindingContext,

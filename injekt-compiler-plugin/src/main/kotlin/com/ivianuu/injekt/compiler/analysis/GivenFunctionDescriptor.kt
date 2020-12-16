@@ -26,6 +26,7 @@ class GivenValueParameterDescriptor(
     underlyingDescriptor.name,
     underlyingDescriptor.type,
     underlyingDescriptor.hasAnnotation(InjektFqNames.Given) ||
+            underlyingDescriptor.type.hasAnnotation(InjektFqNames.Given) ||
             underlyingDescriptor.declaresDefaultValue(),
     underlyingDescriptor.isCrossinline,
     underlyingDescriptor.isNoinline,

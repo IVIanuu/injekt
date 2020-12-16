@@ -84,6 +84,7 @@ sealed class TypeRef {
     abstract val typeArguments: List<TypeRef>
     abstract val variance: Variance
     abstract val isComposable: Boolean
+    abstract val isGiven: Boolean
     abstract val isStarProjection: Boolean
     abstract val qualifiers: List<AnnotationDescriptor>
 
@@ -163,6 +164,8 @@ class KotlinTypeRef(
         kotlinType.hasAnnotation(InjektFqNames.Composable) &&
                 kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
     }
+    override val isGiven: Boolean
+        get() = kotlinType.hasAnnotation(InjektFqNames.Given)
     override val isMarkedNullable: Boolean by unsafeLazy {
         kotlinType.isMarkedNullable
     }
@@ -182,6 +185,7 @@ class SimpleTypeRef(
     override val typeArguments: List<TypeRef> = emptyList(),
     override val variance: Variance = Variance.INVARIANT,
     override val isComposable: Boolean = false,
+    override val isGiven: Boolean = false,
     override val isStarProjection: Boolean = false,
     override val qualifiers: List<AnnotationDescriptor> = emptyList(),
 ) : TypeRef() {
@@ -202,14 +206,16 @@ fun TypeRef.copy(
     typeArguments: List<TypeRef> = this.typeArguments,
     variance: Variance = this.variance,
     isComposable: Boolean = this.isComposable,
+    isGiven: Boolean = this.isGiven,
     isStarProjection: Boolean = this.isStarProjection,
-    qualifiers: List<AnnotationDescriptor> = this.qualifiers
+    qualifiers: List<AnnotationDescriptor> = this.qualifiers,
 ) = SimpleTypeRef(
     classifier,
     isMarkedNullable,
     typeArguments,
     variance,
     isComposable,
+    isGiven,
     isStarProjection,
     qualifiers
 )

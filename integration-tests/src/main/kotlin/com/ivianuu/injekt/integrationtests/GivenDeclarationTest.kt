@@ -205,6 +205,19 @@ class GivenDeclarationTest {
     }
 
     @Test
+    fun testCanLeaveOutGivenLambdaParameters() = codegen(
+        """
+            val lambda: (@Given Foo) -> Foo = { given<Foo>() }
+            fun invoke(@Given foo: Foo): Foo {
+                return lambda()
+            }
+        """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile<Any>(foo))
+    }
+
+    @Test
     fun testGivenLambdaParameterUseSite() = codegen(
         """
             inline fun <T, R> withGiven(value: T, block: (T) -> R) = block(value)

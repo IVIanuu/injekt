@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringGiven
@@ -52,7 +51,10 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.symbols.IrBindableSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
+import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.defaultType
+import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
@@ -78,7 +80,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             else -> calleeDescriptor
         }
 
-        val givenParameterNames = calleeDescriptor.getGivenParameters()
+        val givenParameterNames = calleeDescriptor.getGivenParameters(substitutionMap)
             .map { it.name }
 
         if (givenParameterNames.isEmpty()) return
@@ -456,6 +458,16 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                             .zip(
                                 expression.symbol.descriptor.typeParameters
                                     .map { it.defaultType.toTypeRef() }
+                            )
+                    ) + getSubstitutionMap(
+                        ((dispatchReceiver?.type as? IrSimpleType)?.arguments
+                            ?.map { it.typeOrNull!!.toKotlinType().toTypeRef() }
+                            ?: emptyList())
+                            .zip(
+                                dispatchReceiver?.type?.classOrNull?.owner?.let {
+                                    it.typeParameters
+                                        .map { it.defaultType.toKotlinType().toTypeRef() }
+                                } ?: emptyList()
                             )
                     )
                     ResolutionContext(givenNodes)

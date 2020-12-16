@@ -48,7 +48,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class GivenCallChecker(
     private val bindingTrace: BindingTrace,
-    private val module: ModuleDescriptor
+    module: ModuleDescriptor,
 ) : KtTreeVisitorVoid() {
 
     private val declarationStore = DeclarationStore(module)
@@ -59,7 +59,10 @@ class GivenCallChecker(
 
         val requests = call
             .valueArguments
-            .filterKeys { it.hasAnnotation(InjektFqNames.Given) }
+            .filterKeys {
+                it.hasAnnotation(InjektFqNames.Given) ||
+                        it.type.hasAnnotation(InjektFqNames.Given)
+            }
             .filter { it.value is DefaultValueArgument }
             .map {
                 GivenRequest(
