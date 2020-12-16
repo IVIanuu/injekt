@@ -66,7 +66,6 @@ class GivenDeclarationCheckTest {
     fun testUnusedGivenParameterIsMarkedAsUnused() = codegen(
         """
             fun func1(@Given foo: Foo) {
-                func2()                
             }
 
             fun func2(@Given foo: Foo) {
