@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
@@ -47,8 +48,10 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class GivenCallChecker(
     private val bindingTrace: BindingTrace,
-    private val declarationStore: DeclarationStore,
+    private val module: ModuleDescriptor
 ) : KtTreeVisitorVoid() {
+
+    private val declarationStore = DeclarationStore(module)
 
     private fun ResolutionScope.check(call: ResolvedCall<*>, reportOn: KtElement) {
         val resultingDescriptor = call.resultingDescriptor

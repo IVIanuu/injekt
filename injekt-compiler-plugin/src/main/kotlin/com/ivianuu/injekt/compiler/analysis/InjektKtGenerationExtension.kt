@@ -32,11 +32,7 @@ import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
 import org.jetbrains.kotlin.resolve.TopDownAnalysisMode
 import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtension
 
-class InjektKtGenerationExtension(
-    private val declarationStore: DeclarationStore,
-    srcDir: SrcDir,
-    cacheDir: CacheDir,
-) : PartialAnalysisHandlerExtension() {
+class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : PartialAnalysisHandlerExtension() {
 
     private val fileManager = FileManager(srcDir, cacheDir)
 
@@ -57,7 +53,6 @@ class InjektKtGenerationExtension(
     ): AnalysisResult? {
         files as ArrayList<KtFile>
         if (!generatedCode) {
-            declarationStore.module = module
             lazyTopDownAnalyzer = componentProvider.get()
             val tmpFiles = files.toList()
             files.clear()
@@ -92,8 +87,6 @@ class InjektKtGenerationExtension(
         if (generatedCode && !completedOnce) {
             completedOnce = true
         } else if (generatedCode && completedOnce) {
-            declarationStore.module = module
-            declarationStore.generatedCode = true
             try {
                 lazyTopDownAnalyzer.analyzeDeclarations(
                     TopDownAnalysisMode.TopLevelDeclarations,
@@ -108,7 +101,7 @@ class InjektKtGenerationExtension(
                 )
             } catch (e: Throwable) {
             }
-            val checker = GivenCallChecker(bindingTrace, declarationStore)
+            val checker = GivenCallChecker(bindingTrace, module)
             files.forEach { it.accept(checker) }
         }
         return null

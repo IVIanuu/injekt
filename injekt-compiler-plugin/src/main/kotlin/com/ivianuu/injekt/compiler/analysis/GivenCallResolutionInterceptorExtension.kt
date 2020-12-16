@@ -20,9 +20,8 @@ import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValueWithSmartCastI
 
 @Suppress("INVISIBLE_REFERENCE", "EXPERIMENTAL_IS_NOT_ENABLED")
 @OptIn(org.jetbrains.kotlin.extensions.internal.InternalNonStableExtensionPoints::class)
-class GivenCallResolutionInterceptorExtension(
-    private val declarationStore: DeclarationStore,
-) : CallResolutionInterceptorExtension {
+class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtension {
+
     override fun interceptFunctionCandidates(
         candidates: Collection<FunctionDescriptor>,
         scopeTower: ImplicitScopeTower,
@@ -35,7 +34,6 @@ class GivenCallResolutionInterceptorExtension(
         extensionReceiver: ReceiverValueWithSmartCastInfo?,
     ): Collection<FunctionDescriptor> = candidates
         .map {
-            declarationStore.module = it.module
             if (it.getGivenParameters().isNotEmpty()) {
                 it.toGivenFunctionDescriptor()
             } else {

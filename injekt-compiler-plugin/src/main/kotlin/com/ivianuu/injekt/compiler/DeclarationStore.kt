@@ -33,18 +33,9 @@ import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-class DeclarationStore {
-
-    lateinit var module: ModuleDescriptor
-
-    var generatedCode = false
-        set(value) {
-            field = value
-            memberScopeByFqName.clear()
-        }
+class DeclarationStore(val module: ModuleDescriptor) {
 
     private val allIndices by unsafeLazy {
-        check(generatedCode)
         (memberScopeForFqName(InjektFqNames.IndexPackage)
             ?.getContributedDescriptors(DescriptorKindFilter.VALUES)
             ?.filterIsInstance<PropertyDescriptor>()
@@ -121,7 +112,6 @@ class DeclarationStore {
 
     private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor>()
     private fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor {
-        check(generatedCode)
         return classifierDescriptorByFqName.getOrPut(fqName) {
             memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
@@ -134,7 +124,6 @@ class DeclarationStore {
 
     private val functionDescriptorsByFqName = mutableMapOf<FqName, List<FunctionDescriptor>>()
     private fun functionDescriptorForFqName(fqName: FqName): List<FunctionDescriptor> {
-        check(generatedCode)
         return functionDescriptorsByFqName.getOrPut(fqName) {
             memberScopeForFqName(fqName.parent())!!.getContributedFunctions(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
@@ -144,7 +133,6 @@ class DeclarationStore {
 
     private val propertyDescriptorsByFqName = mutableMapOf<FqName, List<PropertyDescriptor>>()
     private fun propertyDescriptorsForFqName(fqName: FqName): List<PropertyDescriptor> {
-        check(generatedCode)
         return propertyDescriptorsByFqName.getOrPut(fqName) {
             memberScopeForFqName(fqName.parent())!!.getContributedVariables(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
