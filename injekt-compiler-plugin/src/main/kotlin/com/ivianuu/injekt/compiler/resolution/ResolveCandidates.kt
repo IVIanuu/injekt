@@ -184,7 +184,12 @@ private fun ResolutionContext.resolveInScope(
     request: GivenRequest,
     candidates: List<GivenNode>,
 ): ResolutionResult {
-    if (candidates.isEmpty()) return ResolutionResult.Failure.NoCandidates(request)
+    if (candidates.isEmpty()) {
+        return if (request.required) ResolutionResult.Failure.NoCandidates(request)
+        else ResolutionResult.Success(request, CandidateResolutionResult.Success(
+            request, DefaultGivenNode(request.type), emptyList()
+        ))
+    }
     if (candidates.size == 1) {
         val candidate = candidates.single()
         return when (val candidateResult = resolveCandidate(request, candidate)) {

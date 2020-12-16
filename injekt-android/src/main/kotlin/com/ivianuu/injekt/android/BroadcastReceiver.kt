@@ -28,7 +28,6 @@ import com.ivianuu.injekt.component.ComponentKey
 import com.ivianuu.injekt.component.componentElement
 import com.ivianuu.injekt.component.get
 import com.ivianuu.injekt.component.getDependency
-import com.ivianuu.injekt.given
 
 @Given object ReceiverScoped : Component.Name
 
@@ -40,8 +39,8 @@ private val ReceiverComponentFactoryKey =
     ComponentKey<(BroadcastReceiver, Context, Intent) -> Component<ReceiverScoped>>()
 
 @GivenSetElement fun receiverComponentFactory(
-    parent: Component<ApplicationScoped> = given,
-    builderFactory: () -> Component.Builder<ReceiverScoped> = given,
+    @Given parent: Component<ApplicationScoped>,
+    @Given builderFactory: () -> Component.Builder<ReceiverScoped>,
 ) = componentElement(ApplicationScoped,
     ReceiverComponentFactoryKey) { receiver, context, intent ->
     builderFactory()

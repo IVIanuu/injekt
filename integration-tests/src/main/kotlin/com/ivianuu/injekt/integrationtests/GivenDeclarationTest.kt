@@ -12,10 +12,30 @@ import org.junit.Test
 class GivenDeclarationTest {
 
     @Test
+    fun testGivenFunction() = codegen(
+        """
+            @Given fun foo() = Foo()
+            fun invoke() = given<Foo>()
+        """
+    ) {
+        assertTrue(invokeSingleFile<Any>() is Foo)
+    }
+
+    @Test
+    fun testGivenProperty() = codegen(
+        """
+            @Given val foo = Foo()
+            fun invoke() = given<Foo>()
+        """
+    ) {
+        assertTrue(invokeSingleFile<Any>() is Foo)
+    }
+
+    @Test
     fun testGivenClass() = codegen(
         """
             @Given val foo = Foo()
-            @Given class Dep(val foo: Foo = given)
+            @Given class Dep(@Given val foo: Foo)
             fun invoke() = given<Dep>()
         """
     ) {
@@ -27,7 +47,7 @@ class GivenDeclarationTest {
     fun testGivenClassPrimaryConstructor() = codegen(
         """
             @Given val foo = Foo()
-            class Dep @Given constructor(val foo: Foo = given)
+            class Dep @Given constructor(@Given val foo: Foo)
             fun invoke() = given<Dep>()
         """
     ) {
@@ -40,7 +60,7 @@ class GivenDeclarationTest {
         """
             @Given val foo = Foo()
             class Dep {
-                @Given constructor(foo: Foo = given)
+                @Given constructor(@Given foo: Foo)
             }
             fun invoke() = given<Dep>()
         """
@@ -55,7 +75,7 @@ class GivenDeclarationTest {
             interface Dep<T> {
                 val value: T
             }
-            @Given class DepImpl<T>(override val value: T = given) : @Given Dep<T>
+            @Given class DepImpl<T>(@Given override val value: T) : @Given Dep<T>
 
             @Given val foo = Foo()
             fun invoke() = given<Dep<Foo>>()
@@ -79,26 +99,6 @@ class GivenDeclarationTest {
     ) {
         assertEquals("com.ivianuu.injekt.integrationtests.Dep",
             invokeSingleFile<Any>().javaClass.name)
-    }
-
-    @Test
-    fun testGivenProperty() = codegen(
-        """
-            @Given val foo = Foo()
-            fun invoke() = given<Foo>()
-        """
-    ) {
-        assertTrue(invokeSingleFile<Any>() is Foo)
-    }
-
-    @Test
-    fun testGivenFunction() = codegen(
-        """
-            @Given fun foo() = Foo()
-            fun invoke() = given<Foo>()
-        """
-    ) {
-        assertTrue(invokeSingleFile<Any>() is Foo)
     }
 
     @Test
@@ -134,7 +134,7 @@ class GivenDeclarationTest {
     @Test
     fun testImplicitGivenValueParameter() = codegen(
         """
-            fun invoke(foo: Foo = given) = given<Foo>()
+            fun invoke(@Given foo: Foo) = given<Foo>()
         """
     ) {
         val foo = Foo()
@@ -242,7 +242,7 @@ class GivenDeclarationTest {
     fun testGivenLocalClass() = codegen(
         """
             fun invoke(_foo: Foo): Foo {
-                @Given class FooProvider(val foo: Foo = givenOrElse { _foo })
+                @Given class FooProvider(@Given val foo: Foo = _foo)
                 return given<FooProvider>().foo
             }
         """

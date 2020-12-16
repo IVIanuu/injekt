@@ -3,10 +3,12 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringGiven
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.CollectionGivenNode
+import com.ivianuu.injekt.compiler.resolution.DefaultGivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.ProviderGivenNode
@@ -41,6 +43,7 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irTemporary
+import org.jetbrains.kotlin.ir.builders.irUnit
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -53,9 +56,11 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.hasDefaultValue
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class GivenCallTransformer(
     private val declarationStore: DeclarationStore,
@@ -63,7 +68,7 @@ class GivenCallTransformer(
 ) : IrElementTransformerVoid() {
 
     private data class ResolutionContext(val graph: GivenGraph.Success) {
-        val expressionsByType = mutableMapOf<TypeRef, () -> IrExpression>()
+        val expressionsByType = mutableMapOf<TypeRef, (() -> IrExpression)?>()
     }
 
     private fun ResolutionContext.fillGivens(
@@ -77,11 +82,9 @@ class GivenCallTransformer(
         }
         val givenInfo = declarationStore.givenInfoFor(calleeDescriptor)
 
-        if (givenInfo.allGivens.isEmpty()) return
+        if (givenInfo.givens.isEmpty()) return
 
-        if (callee.extensionReceiverParameter != null &&
-            call.extensionReceiver == null
-        ) {
+        if (callee.extensionReceiverParameter != null && call.extensionReceiver == null) {
             call.extensionReceiver = expressionFor(
                 GivenRequest(
                     type = callee.descriptor.extensionReceiverParameter!!.type.toTypeRef()
@@ -97,13 +100,14 @@ class GivenCallTransformer(
         }
         callee
             .valueParameters
-            .filter { it.name in givenInfo.allGivens }
+            .filter { it.name in givenInfo.givens }
             .filter { call.getValueArgument(it.index) == null }
             .map {
                 it to expressionFor(
                     GivenRequest(
                         type = it.descriptor.type.toTypeRef().substitute(substitutionMap),
-                        required = it.name in givenInfo.requiredGivens,
+                        required = it.descriptor.safeAs<ValueParameterDescriptor>()
+                            ?.hasDefaultValueIgnoringGiven?.not() ?: !it.hasDefaultValue(),
                         callableFqName = calleeDescriptor.fqNameSafe,
                         parameterName = it.name,
                         callableKey = calleeDescriptor.uniqueKey(),
@@ -118,17 +122,18 @@ class GivenCallTransformer(
     private fun ResolutionContext.expressionFor(
         request: GivenRequest,
         symbol: IrSymbol,
-    ): IrExpression {
+    ): IrExpression? {
         return expressionsByType.getOrPut(request.type) {
             val given = graph.givens[request]
                 ?: error("Wtf $request\n${this.graph.givens.toList().joinToString("\n")}")
             when (given) {
                 is CallableGivenNode -> callableExpression(given, symbol)
+                is DefaultGivenNode -> null
                 is ProviderGivenNode -> providerExpression(given, symbol)
                 is ProviderParameterGivenNode -> providerParameterExpression(given, symbol)
                 is CollectionGivenNode -> setExpression(given, symbol)
             }
-        }()
+        }?.invoke()
     }
 
     private val lambdasByProviderGiven = mutableMapOf<ProviderGivenNode, IrFunction>()
@@ -141,6 +146,7 @@ class GivenCallTransformer(
             .irLambda(given.type.toIrType(pluginContext)) { function ->
                 lambdasByProviderGiven[given] = function
                 expressionFor(given.dependencies.single(), symbol)
+                    ?: DeclarationIrBuilder(pluginContext, symbol).irUnit()
             }
             .also {
                 println()

@@ -16,8 +16,10 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.analysis.GivenFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.resolution.uniqueTypeName
+import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -111,7 +113,12 @@ fun Annotated.hasAnnotationWithPropertyAndClass(
         (this is ConstructorDescriptor && constructedClass.hasAnnotation(fqName))
 
 fun DeclarationDescriptor.isExternalDeclaration(): Boolean = this is DeserializedDescriptor ||
-        (this is PropertyAccessorDescriptor && correspondingProperty.isExternalDeclaration())
+        (this is PropertyAccessorDescriptor && correspondingProperty.isExternalDeclaration()) ||
+        (this is GivenFunctionDescriptor && underlyingDescriptor.isExternalDeclaration())
+
+val isIde: Boolean = Project::class.java.name == "com.intellij.openapi.project.Project"
+val isCli: Boolean =
+    !isIde && Project::class.java.name == "org.jetbrains.kotlin.com.intellij.openapi.project.Project"
 
 fun String.asNameId() = Name.identifier(this)
 

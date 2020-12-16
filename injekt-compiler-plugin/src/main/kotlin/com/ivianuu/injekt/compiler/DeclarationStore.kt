@@ -16,10 +16,12 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.analysis.GivenFunctionDescriptor
 import com.ivianuu.injekt.compiler.analysis.Index
 import com.ivianuu.injekt.compiler.resolution.allGivenTypes
 import com.ivianuu.injekt.compiler.resolution.getGivenConstructors
 import com.ivianuu.injekt.compiler.resolution.overrideType
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -36,8 +38,6 @@ import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.resolve.constants.ArrayValue
-import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -47,8 +47,13 @@ class DeclarationStore {
     lateinit var module: ModuleDescriptor
 
     var generatedCode = false
+        set(value) {
+            field = value
+            memberScopeByFqName.clear()
+        }
 
     private val allIndices by unsafeLazy {
+        check(generatedCode)
         (memberScopeForFqName(InjektFqNames.IndexPackage)
             ?.getContributedDescriptors(DescriptorKindFilter.VALUES)
             ?.filterIsInstance<PropertyDescriptor>()
@@ -124,8 +129,7 @@ class DeclarationStore {
     }
 
     private val allGivenInfos: Map<String, GivenInfo> by unsafeLazy {
-        check(generatedCode)
-        (memberScopeForFqName(InjektFqNames.IndexPackage)
+        /*(memberScopeForFqName(InjektFqNames.IndexPackage)
             ?.getContributedDescriptors(DescriptorKindFilter.VALUES)
             ?.filterIsInstance<PropertyDescriptor>()
             ?.filter { it.hasAnnotation(InjektFqNames.GivenInfo) }
@@ -133,90 +137,82 @@ class DeclarationStore {
                 val annotation =
                     givenInfoProperty.annotations.findAnnotation(InjektFqNames.GivenInfo)!!
                 val key = annotation.allValueArguments["key".asNameId()]!!.value as String
-                val requiredGivens =
-                    annotation.allValueArguments["requiredGivens".asNameId()]!!
+                val givens =
+                    annotation.allValueArguments["givens".asNameId()]!!
                         .let { it as ArrayValue }
                         .value
                         .filterIsInstance<StringValue>()
                         .map { it.value.asNameId() }
-                val givensWithDefault =
-                    annotation.allValueArguments["givensWithDefault".asNameId()]!!
-                        .let { it as ArrayValue }
-                        .value
-                        .filterIsInstance<StringValue>()
-                        .map { it.value.asNameId() }
-
-                GivenInfo(key, requiredGivens, givensWithDefault)
+                GivenInfo(key, givens)
             } ?: emptyList())
-            .associateBy { it.key }
+            .associateBy { it.key }*/
+        emptyMap()
     }
 
-    private val givenInfosByKey = mutableMapOf<String, GivenInfo>()
-
+    private val givenInfosByDeclaration = mutableMapOf<DeclarationDescriptor, GivenInfo>()
     fun givenInfoFor(declaration: DeclarationDescriptor): GivenInfo {
         return internalGivenInfoFor(declaration) ?: kotlin.run {
-            val key = declaration.uniqueKey()
-            givenInfosByKey.getOrPut(key) {
-                allGivenInfos.getOrElse(key) {
+            givenInfosByDeclaration.getOrPut(declaration) {
+                allGivenInfos.getOrElse(declaration.uniqueKey()) {
                     createGivenInfoOrNull(declaration.original) ?: GivenInfo.Empty
                 }
             }
         }
     }
 
-    private val internalGivenInfosByKey = mutableMapOf<String, GivenInfo?>()
+    private val internalGivenInfosByDeclaration = mutableMapOf<DeclarationDescriptor, GivenInfo?>()
     fun internalGivenInfoFor(declaration: DeclarationDescriptor): GivenInfo? {
-        val key = declaration.uniqueKey()
-        return internalGivenInfosByKey.getOrPut(key) {
+        return internalGivenInfosByDeclaration.getOrPut(declaration) {
             createGivenInfoOrNull(declaration.original)
         }
     }
 
     private fun createGivenInfoOrNull(descriptor: DeclarationDescriptor): GivenInfo? {
-        val declaration = descriptor.findPsi()
+        if (descriptor !is CallableDescriptor) return null
+        return GivenInfo(
+            descriptor.uniqueKey(),
+            descriptor.allParameters
+                .filter {
+                    it.hasAnnotation(InjektFqNames.Given) ||
+                            it.type.hasAnnotation(InjektFqNames.Given)
+                }
+                .map {
+                    if (it !in descriptor.valueParameters)
+                        "_receiver".asNameId() else it.name
+                }
+        )
+        val declaration = (if (descriptor is GivenFunctionDescriptor)
+            descriptor.underlyingDescriptor else descriptor)
+            .findPsi()
             ?.let { it as? KtDeclaration }
             ?: return null
-        val givens: List<Pair<Name, String?>> = when (declaration) {
+
+        val givens: List<Name> = when (declaration) {
             is KtConstructor<*> -> declaration.valueParameters
-                .filter {
-                    it.defaultValue?.text == "given" ||
-                            it.defaultValue?.text == "givenOrElse"
-                }
-                .map { it.nameAsSafeName to it.defaultValue?.text }
+                .filter { it.hasAnnotation(InjektFqNames.Given) }
+                .map { it.nameAsSafeName }
             is KtFunction -> {
                 (if (declaration.receiverTypeReference?.hasAnnotation(InjektFqNames.Given) == true)
-                    listOf("_receiver".asNameId() to null) else emptyList()) +
+                    listOf("_receiver".asNameId()) else emptyList()) +
                         declaration.valueParameters
-                            .filter {
-                                it.defaultValue?.text == "given" ||
-                                        it.defaultValue?.text == "givenOrElse"
-                            }
-                            .map { it.nameAsSafeName to it.defaultValue?.text }
+                            .filter { it.hasAnnotation(InjektFqNames.Given) }
+                            .map { it.nameAsSafeName }
             }
             is KtProperty -> listOfNotNull(
                 if (declaration.receiverTypeReference?.hasAnnotation(InjektFqNames.Given) == true)
-                    "_receiver".asNameId() to null
+                    "_receiver".asNameId()
                 else null
             )
             else -> return null
         }
 
-        val (requiredGivens, givensWithDefault) = givens
-            .partition { (_, defaultValue) -> defaultValue == null || defaultValue == "given" }
-
-        if (requiredGivens.isNotEmpty() || givensWithDefault.isNotEmpty()) {
-            return GivenInfo(
-                descriptor.uniqueKey(),
-                requiredGivens.map { it.first },
-                givensWithDefault.map { it.first },
-            )
-        }
-
-        return null
+        return if (givens.isNotEmpty()) GivenInfo(descriptor.uniqueKey(), givens)
+        else null
     }
 
     private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor>()
     private fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor {
+        check(generatedCode)
         return classifierDescriptorByFqName.getOrPut(fqName) {
             memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
@@ -229,6 +225,7 @@ class DeclarationStore {
 
     private val functionDescriptorsByFqName = mutableMapOf<FqName, List<FunctionDescriptor>>()
     private fun functionDescriptorForFqName(fqName: FqName): List<FunctionDescriptor> {
+        check(generatedCode)
         return functionDescriptorsByFqName.getOrPut(fqName) {
             memberScopeForFqName(fqName.parent())!!.getContributedFunctions(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
@@ -238,6 +235,7 @@ class DeclarationStore {
 
     private val propertyDescriptorsByFqName = mutableMapOf<FqName, List<PropertyDescriptor>>()
     private fun propertyDescriptorsForFqName(fqName: FqName): List<PropertyDescriptor> {
+        check(generatedCode)
         return propertyDescriptorsByFqName.getOrPut(fqName) {
             memberScopeForFqName(fqName.parent())!!.getContributedVariables(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND

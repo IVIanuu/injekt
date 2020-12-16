@@ -9,7 +9,6 @@ import com.ivianuu.injekt.component.ComponentKey
 import com.ivianuu.injekt.component.componentElement
 import com.ivianuu.injekt.component.get
 import com.ivianuu.injekt.component.getDependency
-import com.ivianuu.injekt.given
 
 @Given object ActivityRetainedScoped : Component.Name
 
@@ -22,8 +21,8 @@ private val ActivityRetainedComponentFactoryKey =
     ComponentKey<() -> Component<ActivityRetainedScoped>>()
 
 @GivenSetElement fun activityRetainedComponentFactory(
-    parent: Component<ApplicationScoped> = given,
-    builderFactory: () -> Component.Builder<ActivityRetainedScoped> = given,
+    @Given parent: Component<ApplicationScoped>,
+    @Given builderFactory: () -> Component.Builder<ActivityRetainedScoped>,
 ) = componentElement(ApplicationScoped, ActivityRetainedComponentFactoryKey) {
     builderFactory().dependency(parent).build()
 }

@@ -1,11 +1,13 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringGiven
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -50,6 +52,21 @@ data class CollectionGivenNode(
         get() = emptyList()
     override val originalType: TypeRef
         get() = type
+}
+
+data class DefaultGivenNode(override val type: TypeRef) : GivenNode() {
+    override val callContext: CallContext
+        get() = CallContext.DEFAULT
+    override val callableFqName: FqName
+        get() = FqName.ROOT
+    override val dependencies: List<GivenRequest>
+        get() = emptyList()
+    override val originalType: TypeRef
+        get() = type
+    override val providedGivens: List<GivenNode>
+        get() = emptyList()
+    override val depth: Int
+        get() = -1
 }
 
 data class ProviderGivenNode(
@@ -124,14 +141,14 @@ fun CallableDescriptor.getGivenRequests(
     return allParameters
         .filter {
             val name = if (it === extensionReceiverParameter) "_receiver".asNameId() else it.name
-            name in info.allGivens
+            name in info.givens
         }
         .map {
             val name = if (it === extensionReceiverParameter) "_receiver".asNameId() else it.name
             GivenRequest(
                 type = it.type.toTypeRef()
                     .substitute(substitutionMap),
-                required = name in info.requiredGivens,
+                required = it !is ValueParameterDescriptor || !it.hasDefaultValueIgnoringGiven,
                 callableFqName = fqNameSafe,
                 parameterName = name,
                 callableKey = callableKey,

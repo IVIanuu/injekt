@@ -20,11 +20,11 @@ import kotlinx.coroutines.flow.stateIn
 object CounterKey
 
 @GivenSetElement fun counterKeyUiBinding(
-    bind: keyUiWithStateBinding<CounterKey, CounterState> = given,
+    @Given bind: keyUiWithStateBinding<CounterKey, CounterState>,
 ) = bind { CounterPage(given()) }
 
 @Composable
-private fun CounterPage(state: CounterState, dispatch: Dispatch<CounterAction> = given) {
+private fun CounterPage(state: CounterState, @Given dispatch: Dispatch<CounterAction>) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
@@ -48,8 +48,8 @@ sealed class CounterAction {
 }
 
 @Given fun counterState(
-    actions: Actions<CounterAction> = given,
-    scope: CoroutineScope = given,
+    @Given actions: Actions<CounterAction>,
+    @Given scope: CoroutineScope,
 ): StateFlow<CounterState> {
     return actions
         .scan(CounterState(0)) { currentState, action ->

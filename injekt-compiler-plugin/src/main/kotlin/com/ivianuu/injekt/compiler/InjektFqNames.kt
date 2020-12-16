@@ -26,7 +26,6 @@ object InjektFqNames {
     val GivenSetElement = InjektPackage.child("GivenSetElement".asNameId())
     val Qualifier = InjektPackage.child("Qualifier".asNameId())
     val givenFun = InjektPackage.child("given".asNameId())
-    val givenOrElseFun = InjektPackage.child("givenOrElse".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
     val GivenInfo = InternalPackage.child("GivenInfo".asNameId())

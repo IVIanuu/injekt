@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
+import com.ivianuu.injekt.compiler.analysis.GivenCallResolutionInterceptorExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektKtGenerationExtension
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
@@ -30,6 +31,7 @@ import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.JVMConfigurationKeys
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
+import org.jetbrains.kotlin.extensions.internal.CandidateInterceptor
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.io.File
@@ -68,6 +70,10 @@ class InjektComponentRegistrar : ComponentRegistrar {
                 project,
                 InjektIrDumper(cacheDir(configuration),
                     dumpDir(configuration, srcDir(configuration)))
+            )
+            CandidateInterceptor.registerExtension(
+                project,
+                GivenCallResolutionInterceptorExtension(declarationStore)
             )
             @Suppress("DEPRECATION")
             Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)

@@ -28,6 +28,7 @@ class GivenInfoGenerator(
     private val fileManager: FileManager,
 ) {
     fun generate(files: List<KtFile>) {
+        return
         files.forEach { file ->
             val givenInfos = mutableListOf<Pair<FqName, GivenInfo>>()
 
@@ -56,6 +57,7 @@ class GivenInfoGenerator(
                     val givenInfo = try {
                         declarationStore.internalGivenInfoFor(descriptor)
                     } catch (e: Exception) {
+                        e.printStackTrace()
                         return
                     } ?: GivenInfo.Empty
 
@@ -85,10 +87,7 @@ class GivenInfoGenerator(
                                     .joinToString("_") + "_${info.key.hashCode()}_given_info"
                             ).asNameId()
                             appendLine("@GivenInfo(key = \"${info.key}\",\n" +
-                                    "requiredGivens = [${info.requiredGivens.joinToString(", ") { "\"$it\"" }}],\n" +
-                                    "givensWithDefault = [${
-                                        info.givensWithDefault.joinToString(", ") { "\"$it\"" }
-                                    }]\n" +
+                                    "givens = [${info.givens.joinToString(", ") { "\"$it\"" }}]\n" +
                                     ")")
                             appendLine("internal val $infoName = Unit")
                         }

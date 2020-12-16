@@ -2,55 +2,19 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.hasAnnotation
-import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
-import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
-import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class GivenChecker : CallChecker, DeclarationChecker {
-
-    override fun check(
-        resolvedCall: ResolvedCall<*>,
-        reportOn: PsiElement,
-        context: CallCheckerContext,
-    ) {
-        if (resolvedCall.resultingDescriptor.fqNameSafe == InjektFqNames.givenFun &&
-            resolvedCall.resultingDescriptor.valueParameters.isEmpty()
-        ) {
-            val parameter = (resolvedCall.call.callElement.parent as? KtParameter)
-                ?.descriptor<ValueParameterDescriptor>(context.trace.bindingContext)
-            if (parameter == null) {
-                context.trace.report(
-                    InjektErrors.GIVEN_CALL_NOT_AS_DEFAULT_VALUE
-                        .on(reportOn)
-                )
-            }
-        } else if (resolvedCall.resultingDescriptor.fqNameSafe == InjektFqNames.givenOrElseFun) {
-            val parameter = (resolvedCall.call.callElement.parent as? KtParameter)
-                ?.descriptor<ValueParameterDescriptor>(context.trace.bindingContext)
-            if (parameter == null) {
-                context.trace.report(
-                    InjektErrors.GIVEN_OR_ELSE_CALL_NOT_AS_DEFAULT_VALUE
-                        .on(reportOn)
-                )
-            }
-        }
-    }
+class GivenChecker : DeclarationChecker {
 
     override fun check(
         declaration: KtDeclaration,
@@ -116,11 +80,7 @@ class GivenChecker : CallChecker, DeclarationChecker {
             declaration.hasAnnotation(InjektFqNames.GivenSetElement)
         ) {
             this
-                .filter {
-                    val defaultValue = (it.findPsi() as? KtParameter)?.defaultValue
-                    defaultValue?.text != "given" &&
-                            defaultValue?.text?.startsWith("givenOrElse") != true
-                }
+                .filter { !it.hasAnnotation(InjektFqNames.Given) }
                 .forEach {
                     trace.report(
                         InjektErrors.NON_GIVEN_VALUE_PARAMETER_ON_GIVEN_DECLARATION

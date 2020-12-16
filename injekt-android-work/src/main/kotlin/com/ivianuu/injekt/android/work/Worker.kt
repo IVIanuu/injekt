@@ -30,11 +30,10 @@ import com.ivianuu.injekt.component.ComponentKey
 import com.ivianuu.injekt.component.componentElement
 import com.ivianuu.injekt.component.get
 import com.ivianuu.injekt.component.getDependency
-import com.ivianuu.injekt.given
 import kotlin.reflect.KClass
 
 inline fun <reified T : ListenableWorker> worker(
-    noinline workerFactory: @Given Component<WorkerScoped>.() -> T = given,
+    @Given noinline workerFactory: @Given Component<WorkerScoped>.() -> T,
 ): WorkerBinding = T::class to workerFactory
 
 @Given object WorkerScoped : Component.Name
@@ -43,8 +42,8 @@ private val WorkerComponentFactoryKey =
     ComponentKey<(Context, WorkerParameters) -> Component<WorkerScoped>>()
 
 @GivenSetElement fun workerComponentFactoryKey(
-    parent: Component<ApplicationScoped> = given,
-    builderFactory: () -> Component.Builder<WorkerScoped> = given,
+    @Given parent: Component<ApplicationScoped>,
+    @Given builderFactory: () -> Component.Builder<WorkerScoped>,
 ) = componentElement(ApplicationScoped, WorkerComponentFactoryKey) { context, params ->
     builderFactory()
         .dependency(parent)
@@ -69,8 +68,8 @@ typealias WorkerBinding =
         Pair<KClass<out ListenableWorker>, @Given Component<WorkerScoped>.() -> ListenableWorker>
 
 @Given class InjektWorkerFactory(
-    workersFactory: () -> Set<WorkerBinding> = given,
-    private val workerComponentFactory: (Context, WorkerParameters) -> Component<WorkerScoped> = given,
+    @Given workersFactory: () -> Set<WorkerBinding>,
+    @Given private val workerComponentFactory: (Context, WorkerParameters) -> Component<WorkerScoped>,
 ) : @Given WorkerFactory() {
     private val workers by lazy { workersFactory().toMap() }
     override fun createWorker(

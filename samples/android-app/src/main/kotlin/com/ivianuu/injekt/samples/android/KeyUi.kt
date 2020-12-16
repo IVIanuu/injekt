@@ -10,7 +10,6 @@ import com.ivianuu.injekt.component.ApplicationScoped
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.Storage
 import com.ivianuu.injekt.component.memo
-import com.ivianuu.injekt.given
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -26,8 +25,8 @@ inline fun <reified K : Any> keyUiBinding(noinline content: @Composable () -> Un
 typealias keyUiWithStateBinding<K, S> = (@Composable @Given GivenTuple2<Component<ApplicationScoped>, S>.() -> Unit) -> KeyUiBinding
 
 @Given inline fun <reified K : Any, S> keyUiWithStateBinding(
-    c: Component<ApplicationScoped> = given,
-    noinline stateFactory: (CoroutineScope) -> StateFlow<S> = given,
+    @Given c: Component<ApplicationScoped>,
+    @Given noinline stateFactory: (CoroutineScope) -> StateFlow<S>,
 ): keyUiWithStateBinding<K, S> = { content ->
     keyUiBinding<K> {
         val coroutineScope = rememberCoroutineScope()
@@ -38,7 +37,7 @@ typealias keyUiWithStateBinding<K, S> = (@Composable @Given GivenTuple2<Componen
 
 typealias ActionChannel<A> = Channel<A>
 
-@Given fun <A> ActionChannel(storage: Storage<ApplicationScoped> = given): ActionChannel<A> =
+@Given fun <A> ActionChannel(@Given storage: Storage<ApplicationScoped>): ActionChannel<A> =
     storage.memo("action_channel") { Channel() }
 
 typealias Dispatch<A> = (A) -> Unit

@@ -19,7 +19,7 @@ class GivenDeclarationCheckTest {
     fun testClassWithMultipleGivenConstructors() = codegen(
         """
             class Dep {
-                @Given constructor(foo: Foo = given)
+                @Given constructor(@Given foo: Foo)
                 @Given constructor(bar: Bar = given)
             }
         """
@@ -44,23 +44,4 @@ class GivenDeclarationCheckTest {
     ) {
         assertCompileError("@Given declaration extension receiver must be annotated with @Given")
     }
-
-    @Test
-    fun testGivenPropertyCallWithoutGivenParameter() = codegen(
-        """
-            fun bar() = given
-        """
-    ) {
-        assertCompileError("given property can only be used as a default value for a parameter")
-    }
-
-    @Test
-    fun testGivenOrElseCallWithoutGivenParameter() = codegen(
-        """
-            fun bar() = givenOrElse { Unit }
-        """
-    ) {
-        assertCompileError("givenOrElse can only be used as a default value for a parameter")
-    }
-
 }

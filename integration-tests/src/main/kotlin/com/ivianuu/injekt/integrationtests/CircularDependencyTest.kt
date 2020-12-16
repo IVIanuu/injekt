@@ -9,8 +9,8 @@ class CircularDependencyTest {
     @Test
     fun testCircularDependencyFails() = codegen(
         """
-            @Given class A(b: B = given)
-            @Given class B(a: A = given)
+            @Given class A(@Given b: B)
+            @Given class B(@Given a: A)
             fun invoke() = given<A>()
         """
     ) {

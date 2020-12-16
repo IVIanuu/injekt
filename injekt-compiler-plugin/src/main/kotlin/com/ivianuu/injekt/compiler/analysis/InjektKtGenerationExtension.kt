@@ -57,6 +57,7 @@ class InjektKtGenerationExtension(
     ): AnalysisResult? {
         files as ArrayList<KtFile>
         if (!generatedCode) {
+            declarationStore.module = module
             lazyTopDownAnalyzer = componentProvider.get()
             val tmpFiles = files.toList()
             files.clear()
@@ -91,10 +92,10 @@ class InjektKtGenerationExtension(
         files: Collection<KtFile>,
     ): AnalysisResult? {
         if (generatedCode && !completedOnce) {
-            declarationStore.generatedCode = true
             completedOnce = true
         } else if (generatedCode && completedOnce) {
             declarationStore.module = module
+            declarationStore.generatedCode = true
             try {
                 lazyTopDownAnalyzer.analyzeDeclarations(
                     TopDownAnalysisMode.TopLevelDeclarations,

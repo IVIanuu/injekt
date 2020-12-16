@@ -9,7 +9,7 @@ class CallContextTest {
     fun testSuspendCannotBeRequestedFromComposable() = codegen(
         """
             @Given suspend fun foo() = Foo()
-            @Given suspend fun bar(foo: Foo = given) = Bar(foo)
+            @Given suspend fun bar(@Given foo: Foo) = Bar(foo)
             @Composable fun invoke() {
                 given<Bar>()
             }
@@ -22,7 +22,7 @@ class CallContextTest {
     fun testComposableDependencyCannotBeRequestedFromSuspend() = codegen(
         """
             @Given @Composable fun foo() = Foo()
-            @Given @Composable fun bar(foo: Foo = given) = Bar(foo)
+            @Given @Composable fun bar(@Given foo: Foo) = Bar(foo)
             suspend fun invoke() {
                 given<Bar>()
             }

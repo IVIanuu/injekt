@@ -23,7 +23,7 @@ class DivergenceTest {
                     val value: T
                 }
 
-                @Given fun <T> unwrapped(wrapped: Wrapper<T> = given): T = wrapped.value
+                @Given fun <T> unwrapped(@Given wrapped: Wrapper<T>): T = wrapped.value
 
                 fun lol() {
                     given<Foo>()
@@ -40,7 +40,7 @@ class DivergenceTest {
                     val value: T
                 }
 
-                @Given fun <T> unwrapped(wrapped: Wrapper<T> = given): T = wrapped.value
+                @Given fun <T> unwrapped(@Given wrapped: Wrapper<T>): T = wrapped.value
 
                 @Given fun fooWrapper(): Wrapper<Wrapper<Foo>> = error("")
 

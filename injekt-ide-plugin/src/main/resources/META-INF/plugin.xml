@@ -20,9 +20,8 @@
     <depends>com.intellij.java</depends>
     <depends>org.jetbrains.kotlin</depends>
 
-    <extensions defaultExtensionNs="org.jetbrains.kotlin">
-        <storageComponentContainerContributor
-            implementation="com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor" />
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationInitializedListener implementation="com.ivianuu.injekt.ide.AppInitializer" />
     </extensions>
 
 </idea-plugin>

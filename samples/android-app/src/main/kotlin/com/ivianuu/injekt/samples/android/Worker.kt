@@ -21,17 +21,17 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.android.work.WorkerContext
 import com.ivianuu.injekt.android.work.worker
-import com.ivianuu.injekt.given
 
 @GivenSetElement fun testWorkerBinding() = worker { TestWorker() }
 class TestWorker(
-    context: WorkerContext = given,
-    workerParams: WorkerParameters = given,
-    repo: Repo = given,
+    @Given context: WorkerContext,
+    @Given workerParams: WorkerParameters,
+    @Given repo: Repo,
 ) : CoroutineWorker(context, workerParams) {
     init {
         println("hello $context $workerParams $repo")
@@ -41,8 +41,8 @@ class TestWorker(
 }
 
 fun initializeWorkers(
-    applicationContext: ApplicationContext = given,
-    workerFactory: WorkerFactory = given,
+    @Given applicationContext: ApplicationContext,
+    @Given workerFactory: WorkerFactory,
 ) {
     WorkManager.initialize(
         applicationContext,

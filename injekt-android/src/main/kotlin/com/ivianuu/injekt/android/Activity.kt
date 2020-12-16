@@ -35,7 +35,6 @@ import com.ivianuu.injekt.component.ComponentKey
 import com.ivianuu.injekt.component.componentElement
 import com.ivianuu.injekt.component.get
 import com.ivianuu.injekt.component.getDependency
-import com.ivianuu.injekt.given
 import kotlinx.coroutines.CoroutineScope
 
 @Given object ActivityScoped : Component.Name
@@ -50,8 +49,8 @@ private val ActivityComponentFactoryKey =
     ComponentKey<(ComponentActivity) -> Component<ActivityScoped>>()
 
 @GivenSetElement fun activityComponentFactory(
-    parent: Component<ApplicationScoped> = given,
-    builderFactory: () -> Component.Builder<ActivityScoped> = given,
+    @Given parent: Component<ApplicationScoped>,
+    @Given builderFactory: () -> Component.Builder<ActivityScoped>,
 ) = componentElement(ActivityRetainedScoped, ActivityComponentFactoryKey) {
     builderFactory()
         .dependency(parent)

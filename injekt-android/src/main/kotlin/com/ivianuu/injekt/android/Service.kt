@@ -29,7 +29,6 @@ import com.ivianuu.injekt.component.ComponentKey
 import com.ivianuu.injekt.component.componentElement
 import com.ivianuu.injekt.component.get
 import com.ivianuu.injekt.component.getDependency
-import com.ivianuu.injekt.given
 
 @Given object ServiceScoped : Component.Name
 
@@ -37,8 +36,8 @@ private val ServiceKey = ComponentKey<Service>()
 private val ServiceComponentFactoryKey = ComponentKey<(Service) -> Component<ServiceScoped>>()
 
 @GivenSetElement fun serviceComponentFactoryKey(
-    parent: Component<ApplicationScoped> = given,
-    builderFactory: () -> Component.Builder<ServiceScoped> = given,
+    @Given parent: Component<ApplicationScoped>,
+    @Given builderFactory: () -> Component.Builder<ServiceScoped>,
 ) = componentElement(ApplicationScoped, ServiceComponentFactoryKey) {
     builderFactory()
         .dependency(parent)

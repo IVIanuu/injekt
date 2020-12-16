@@ -24,7 +24,7 @@ class ProviderTest {
     @Test
     fun testProviderWithArgsGiven() = codegen(
         """
-            @Given fun bar(foo: Foo = given) = Bar(foo)
+            @Given fun bar(@Given foo: Foo) = Bar(foo)
             fun invoke(): Bar {
                 return given<(Foo) -> Bar>()(Foo())
             }

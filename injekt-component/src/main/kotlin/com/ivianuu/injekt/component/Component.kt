@@ -3,7 +3,6 @@
 package com.ivianuu.injekt.component
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.given
 
 interface Component<N : Component.Name> {
     val name: N
@@ -41,13 +40,13 @@ fun Component<*>.dispose() {
 }
 
 @Given fun <N : Component.Name> ComponentBuilder(
-    name: N = given,
-    injectedElements: (Component<N>) -> Set<ComponentElement<N>> = given,
+    @Given name: N,
+    @Given injectedElements: (Component<N>) -> Set<ComponentElement<N>>,
 ): Component.Builder<N> = ComponentImpl.Builder(name, injectedElements)
 
 inline fun <N : Component.Name> Component(
-    name: N = given,
-    noinline injectedElements: (Component<N>) -> Set<ComponentElement<N>> = given,
+    @Given name: N,
+    @Given noinline injectedElements: (Component<N>) -> Set<ComponentElement<N>>,
     block: Component.Builder<N>.() -> Unit = {},
 ): Component<N> = ComponentBuilder(name, injectedElements).apply(block).build()
 

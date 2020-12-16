@@ -1,11 +1,10 @@
 package com.ivianuu.injekt.component
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.given
 
 object ApplicationScoped : Component.Name
 
-fun App.initializeApp(elements: (Component<ApplicationScoped>) -> Set<ComponentElement<ApplicationScoped>> = given) {
+fun App.initializeApp(@Given elements: (Component<ApplicationScoped>) -> Set<ComponentElement<ApplicationScoped>>) {
     _applicationComponent = ComponentBuilder(ApplicationScoped, elements)
         .element(ApplicationKey, this)
         .build()

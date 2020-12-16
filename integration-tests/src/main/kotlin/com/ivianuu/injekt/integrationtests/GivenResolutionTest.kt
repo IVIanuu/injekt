@@ -225,7 +225,7 @@ class GivenResolutionTest {
     fun testPrefersFunctionParameterGivenOverInternalGiven() = codegen(
         """
             @Given lateinit var internalFoo: Foo
-            fun invoke(internal: Foo, functionFoo: Foo = given): Foo {
+            fun invoke(internal: Foo, @Given functionFoo: Foo): Foo {
                 internalFoo = internal
                 return given()
             }
@@ -337,7 +337,7 @@ class GivenResolutionTest {
     @Test
     fun testNestedUnresolvedGiven() = codegen(
         """
-            @Given fun bar(foo: Foo = given) = Bar(foo)
+            @Given fun bar(@Given foo: Foo) = Bar(foo)
             fun invoke() = given<Bar>()
         """
     ) {
@@ -349,14 +349,14 @@ class GivenResolutionTest {
         listOf(
             source(
                 """
-                   @Given fun bar(foo: Foo = given) = Bar(foo) 
+                   @Given fun bar(@Given foo: Foo) = Bar(foo) 
                 """
             )
         ),
         listOf(
             source(
                 """
-                    fun callee(bar: Bar = given) = bar
+                    fun callee(@Given bar: Bar) = bar
                     fun invoke() = callee()
                 """
             )
@@ -392,7 +392,7 @@ class GivenResolutionTest {
     fun testPrefersResolvableGiven() = codegen(
         """
             @Given fun a() = "a"
-            @Given fun b(long: Long = given) = "b"
+            @Given fun b(@Given long: Long) = "b"
             fun invoke() = given<String>()
         """
     ) {
@@ -415,7 +415,7 @@ class GivenResolutionTest {
         """
             @Given val a = "a"
             @Given val foo = Foo()
-            @Given fun b(foo: Foo = given) = "b"
+            @Given fun b(@Given foo: Foo) = "b"
             fun invoke() = given<String>()
         """
     ) {
@@ -438,7 +438,7 @@ class GivenResolutionTest {
         """
             @Given val a = "a"
             @Given val foo = Foo()
-            @Given fun b(foo: Foo = given) = "b"
+            @Given fun b(@Given foo: Foo) = "b"
             fun invoke() = given<String>()
         """
     ) {
@@ -449,7 +449,7 @@ class GivenResolutionTest {
     fun testGenericGiven() = codegen(
         """
             @Given val foo = Foo()
-            @Given fun <T> givenList(value: T = given): List<T> = listOf(value)
+            @Given fun <T> givenList(@Given value: T): List<T> = listOf(value)
             fun invoke() = given<List<Foo>>()
         """
     ) {
@@ -465,7 +465,7 @@ class GivenResolutionTest {
                     usesFoo()
                 }
 
-                fun usesFoo(foo: Foo = given) {
+                fun usesFoo(@Given foo: Foo) {
                 }
             """
     ) {
@@ -477,7 +477,7 @@ class GivenResolutionTest {
         """
                 @Given val foo = Foo()
                 fun invoke() {
-                    fun usesFoo(foo: Foo = given) {
+                    fun usesFoo(@Given foo: Foo) {
                     }                    
                     usesFoo()
                 }
@@ -494,7 +494,7 @@ class GivenResolutionTest {
                     UsesFoo()
                 }
 
-                class UsesFoo(foo: Foo = given)
+                class UsesFoo(@Given foo: Foo)
             """
     ) {
         invokeSingleFile()
@@ -507,7 +507,7 @@ class GivenResolutionTest {
                     given<Foo>()
                 }
 
-                class UsesFoo(val foo: Foo = given)
+                class UsesFoo(@Given val foo: Foo)
             """
     ) {
         val foo = Foo()
@@ -519,7 +519,7 @@ class GivenResolutionTest {
         """
                 @Given val foo = Foo()
                 fun invoke() {
-                    class UsesFoo(foo: Foo = given)
+                    class UsesFoo(@Given foo: Foo)
                     UsesFoo()
                 }
             """
@@ -531,7 +531,7 @@ class GivenResolutionTest {
     fun testUsesDefaultIfNotGiven() = codegen(
         """
                 fun invoke(_foo: Foo): Foo {
-                    fun inner(foo: Foo = givenOrElse { _foo }) = foo
+                    fun inner(@Given foo: Foo = _foo) = foo
                     return inner()
                 }
             """

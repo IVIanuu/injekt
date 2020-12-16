@@ -19,12 +19,12 @@ package com.ivianuu.injekt.android
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
-import com.ivianuu.injekt.given
+import com.ivianuu.injekt.Given
 import kotlin.reflect.KClass
 
 inline fun <reified VM : ViewModel> activityViewModel(
-    owner: ActivityViewModelStoreOwner = given,
-    noinline factory: () -> VM = given,
+    @Given owner: ActivityViewModelStoreOwner,
+    @Given noinline factory: () -> VM,
 ): VM = viewModel<ActivityViewModelStoreOwner, VM>()
 
 /*inline fun <reified VM : ViewModel> fragmentViewModel(
@@ -33,15 +33,15 @@ inline fun <reified VM : ViewModel> activityViewModel(
 ) = viewModel<FragmentViewModelStoreOwner, VM>()*/
 
 inline fun <O : ViewModelStoreOwner, reified VM : ViewModel> viewModel(
-    owner: O = given,
-    noinline factory: () -> VM = given,
-): VM = viewModelImpl(owner, VM::class, factory)
+    @Given owner: O,
+    @Given noinline factory: () -> VM,
+): VM = viewModelImpl<O, VM>(vmClass = VM::class)
 
 @PublishedApi
 internal fun <O : ViewModelStoreOwner, VM : ViewModel> viewModelImpl(
-    owner: O = given,
     vmClass: KClass<VM>,
-    factory: () -> VM = given,
+    @Given owner: O,
+    @Given factory: () -> VM,
 ): VM {
     return ViewModelProvider(
         owner,

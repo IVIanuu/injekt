@@ -29,12 +29,8 @@ package com.ivianuu.injekt
 )
 annotation class Given
 
-val given: Nothing = error("Must be compiled with the injekt compiler")
-
-inline fun <T> givenOrElse(defaultValue: () -> T): T = defaultValue()
-
 @Suppress("NOTHING_TO_INLINE")
-inline fun <T> given(value: T = given): T = value
+inline fun <T> given(@Given value: T): T = value
 
 @Target(
     AnnotationTarget.FUNCTION,

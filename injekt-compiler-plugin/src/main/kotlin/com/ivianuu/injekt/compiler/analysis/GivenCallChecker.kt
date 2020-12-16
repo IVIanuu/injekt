@@ -57,12 +57,12 @@ class GivenCallChecker(
 
         val requests = call
             .valueArguments
-            .filterKeys { it.name in givenInfo.allGivens }
+            .filterKeys { it.name in givenInfo.givens }
             .filter { it.value is DefaultValueArgument }
             .map {
                 GivenRequest(
                     type = it.key.type.toTypeRef(),
-                    required = it.key.name in givenInfo.requiredGivens,
+                    required = !it.key.hasDefaultValueIgnoringGiven,
                     callableFqName = resultingDescriptor.fqNameSafe,
                     parameterName = it.key.name,
                     callableKey = resultingDescriptor.uniqueKey(),
@@ -203,6 +203,7 @@ class GivenCallChecker(
             scope.check(expression.getResolvedCall(bindingTrace.bindingContext) ?: return,
                 expression)
         } catch (e: Throwable) {
+            e.printStackTrace()
         }
     }
 

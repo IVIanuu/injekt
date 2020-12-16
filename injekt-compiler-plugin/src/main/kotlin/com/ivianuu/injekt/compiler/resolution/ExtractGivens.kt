@@ -33,7 +33,7 @@ fun MemberScope.extractGivenCallables(
             primaryConstructor.valueParameters
                 .filter {
                     it.hasAnnotation(InjektFqNames.Given) ||
-                            it.name in info.allGivens
+                            it.name in info.givens
                 }
                 .map { it.name }
         }
@@ -102,19 +102,19 @@ fun CallableDescriptor.extractGivensOfCallable(
         return hasAnnotation(InjektFqNames.Given) ||
                 type.hasAnnotation(InjektFqNames.Given) ||
                 userData?.hasAnnotation(InjektFqNames.Given) == true ||
-                name in info.allGivens
+                name in info.givens
     }
 
-    val allGivens = mutableListOf<CallableDescriptor>()
+    val givens = mutableListOf<CallableDescriptor>()
 
-    allGivens += allParameters
+    givens += allParameters
         .filter { it.isGiven() }
 
-    allGivens += extensionReceiverParameter?.type?.memberScope?.extractGivenCallables(
+    givens += extensionReceiverParameter?.type?.memberScope?.extractGivenCallables(
         extensionReceiverParameter!!.type, declarationStore
     ) ?: emptyList()
 
-    return allGivens
+    return givens
 }
 
 fun CallableDescriptor.extractGivenSetElementsOfCallable(): List<CallableDescriptor> =
