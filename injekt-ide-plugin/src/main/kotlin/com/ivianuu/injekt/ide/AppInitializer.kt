@@ -8,7 +8,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.project.ProjectManagerListener
 import com.intellij.util.messages.Topic
-import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.analysis.GivenCallResolutionInterceptorExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
@@ -20,14 +19,13 @@ class AppInitializer : ApplicationInitializedListener {
     override fun componentsInitialized() {
         ApplicationManager.getApplication()
             ?.projectOpened { project ->
-                val declarationStore = DeclarationStore()
                 StorageComponentContainerContributor.registerExtension(
                     project,
                     InjektStorageComponentContainerContributor()
                 )
                 CandidateInterceptor.registerExtension(
                     project,
-                    GivenCallResolutionInterceptorExtension(declarationStore)
+                    GivenCallResolutionInterceptorExtension()
                 )
                 @Suppress("DEPRECATION")
                 Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
