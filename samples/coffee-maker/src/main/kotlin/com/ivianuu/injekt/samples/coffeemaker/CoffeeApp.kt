@@ -53,7 +53,7 @@ interface Pump {
     fun pump()
 }
 
-@Given class Thermosiphon(private val heater: Heater = given) : @Given Pump {
+@Given class Thermosiphon(@Given private val heater: Heater) : @Given Pump {
     override fun pump() {
         if (heater.isHot) {
             println("=> => pumping => =>")
