@@ -118,10 +118,10 @@ fun ClassResolutionScope(
         parent = parent,
         initialGivensInScope = {
             descriptor
-                .extractGivensOfDeclaration(declarationStore)
+                .collectGivensOfDeclaration(declarationStore)
         },
         initialGivenSetElementsInScope = {
-            descriptor.extractGivenSetElementsOfDeclaration()
+            descriptor.collectGivenSetElementsOfDeclaration()
         }
     )
 }
@@ -136,9 +136,9 @@ fun FunctionResolutionScope(
         declarationStore = declarationStore,
         callContext = descriptor.callContext,
         parent = parent,
-        initialGivensInScope = { descriptor.extractGivensOfCallable() },
+        initialGivensInScope = { descriptor.collectGivensOfCallable() },
         initialGivenSetElementsInScope = {
-            descriptor.extractGivenSetElementsOfCallable()
+            descriptor.collectGivenSetElementsOfCallable()
         }
     )
 }

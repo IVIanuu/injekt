@@ -17,12 +17,12 @@ import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-fun ClassDescriptor.extractGivensOfDeclaration(
+fun ClassDescriptor.collectGivensOfDeclaration(
     declarationStore: DeclarationStore,
 ): List<CallableDescriptor> =
-    unsubstitutedMemberScope.extractGivenCallables(defaultType)
+    unsubstitutedMemberScope.collectGivenCallables(defaultType)
 
-fun MemberScope.extractGivenCallables(type: KotlinType): List<CallableDescriptor> {
+fun MemberScope.collectGivenCallables(type: KotlinType): List<CallableDescriptor> {
     val primaryConstructorGivensNames = (type.constructor.declarationDescriptor
         ?.safeAs<ClassDescriptor>()
         ?.unsubstitutedPrimaryConstructor
@@ -51,10 +51,10 @@ fun MemberScope.extractGivenCallables(type: KotlinType): List<CallableDescriptor
         }
 }
 
-fun ClassDescriptor.extractGivenSetElementsOfDeclaration(): List<CallableDescriptor> =
-    unsubstitutedMemberScope.extractGivenSetElements(defaultType)
+fun ClassDescriptor.collectGivenSetElementsOfDeclaration(): List<CallableDescriptor> =
+    unsubstitutedMemberScope.collectGivenSetElements(defaultType)
 
-fun MemberScope.extractGivenSetElements(type: KotlinType): List<CallableDescriptor> {
+fun MemberScope.collectGivenSetElements(type: KotlinType): List<CallableDescriptor> {
     val primaryConstructorGivensNames = (type.constructor.declarationDescriptor
         ?.safeAs<ClassDescriptor>()
         ?.unsubstitutedPrimaryConstructor
@@ -87,7 +87,7 @@ fun ClassDescriptor.allGivenTypes(): List<KotlinType> = buildList<KotlinType> {
         .filter { it.hasAnnotation(InjektFqNames.Given) }
 }
 
-fun CallableDescriptor.extractGivensOfCallable(): List<CallableDescriptor> {
+fun CallableDescriptor.collectGivensOfCallable(): List<CallableDescriptor> {
     val userData = getUserData(DslMarkerUtils.FunctionTypeAnnotationsKey)
     val givenParameters = getGivenParameters()
     fun ParameterDescriptor.isGiven(): Boolean {
@@ -102,14 +102,14 @@ fun CallableDescriptor.extractGivensOfCallable(): List<CallableDescriptor> {
     givens += allParameters
         .filter { it.isGiven() }
 
-    givens += extensionReceiverParameter?.type?.memberScope?.extractGivenCallables(
+    givens += extensionReceiverParameter?.type?.memberScope?.collectGivenCallables(
         extensionReceiverParameter!!.type
     ) ?: emptyList()
 
     return givens
 }
 
-fun CallableDescriptor.extractGivenSetElementsOfCallable(): List<CallableDescriptor> =
+fun CallableDescriptor.collectGivenSetElementsOfCallable(): List<CallableDescriptor> =
     allParameters
         .filter {
             it.hasAnnotation(InjektFqNames.GivenSetElement) ||
