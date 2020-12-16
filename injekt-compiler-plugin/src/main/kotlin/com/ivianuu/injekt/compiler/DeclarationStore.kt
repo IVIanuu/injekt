@@ -16,28 +16,19 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.GivenFunctionDescriptor
 import com.ivianuu.injekt.compiler.analysis.Index
 import com.ivianuu.injekt.compiler.resolution.allGivenTypes
 import com.ivianuu.injekt.compiler.resolution.getGivenConstructors
 import com.ivianuu.injekt.compiler.resolution.overrideType
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
-import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.KtConstructor
-import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.KtFunction
-import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -126,88 +117,6 @@ class DeclarationStore {
                                 ?.safeAs<ClassDescriptor>()
                         receiverClass == null || receiverClass.kind == ClassKind.OBJECT
                     }
-    }
-
-    private val allGivenInfos: Map<String, GivenInfo> by unsafeLazy {
-        /*(memberScopeForFqName(InjektFqNames.IndexPackage)
-            ?.getContributedDescriptors(DescriptorKindFilter.VALUES)
-            ?.filterIsInstance<PropertyDescriptor>()
-            ?.filter { it.hasAnnotation(InjektFqNames.GivenInfo) }
-            ?.map { givenInfoProperty ->
-                val annotation =
-                    givenInfoProperty.annotations.findAnnotation(InjektFqNames.GivenInfo)!!
-                val key = annotation.allValueArguments["key".asNameId()]!!.value as String
-                val givens =
-                    annotation.allValueArguments["givens".asNameId()]!!
-                        .let { it as ArrayValue }
-                        .value
-                        .filterIsInstance<StringValue>()
-                        .map { it.value.asNameId() }
-                GivenInfo(key, givens)
-            } ?: emptyList())
-            .associateBy { it.key }*/
-        emptyMap()
-    }
-
-    private val givenInfosByDeclaration = mutableMapOf<DeclarationDescriptor, GivenInfo>()
-    fun givenInfoFor(declaration: DeclarationDescriptor): GivenInfo {
-        return internalGivenInfoFor(declaration) ?: kotlin.run {
-            givenInfosByDeclaration.getOrPut(declaration) {
-                allGivenInfos.getOrElse(declaration.uniqueKey()) {
-                    createGivenInfoOrNull(declaration.original) ?: GivenInfo.Empty
-                }
-            }
-        }
-    }
-
-    private val internalGivenInfosByDeclaration = mutableMapOf<DeclarationDescriptor, GivenInfo?>()
-    fun internalGivenInfoFor(declaration: DeclarationDescriptor): GivenInfo? {
-        return internalGivenInfosByDeclaration.getOrPut(declaration) {
-            createGivenInfoOrNull(declaration.original)
-        }
-    }
-
-    private fun createGivenInfoOrNull(descriptor: DeclarationDescriptor): GivenInfo? {
-        if (descriptor !is CallableDescriptor) return null
-        return GivenInfo(
-            descriptor.uniqueKey(),
-            descriptor.allParameters
-                .filter {
-                    it.hasAnnotation(InjektFqNames.Given) ||
-                            it.type.hasAnnotation(InjektFqNames.Given)
-                }
-                .map {
-                    if (it !in descriptor.valueParameters)
-                        "_receiver".asNameId() else it.name
-                }
-        )
-        val declaration = (if (descriptor is GivenFunctionDescriptor)
-            descriptor.underlyingDescriptor else descriptor)
-            .findPsi()
-            ?.let { it as? KtDeclaration }
-            ?: return null
-
-        val givens: List<Name> = when (declaration) {
-            is KtConstructor<*> -> declaration.valueParameters
-                .filter { it.hasAnnotation(InjektFqNames.Given) }
-                .map { it.nameAsSafeName }
-            is KtFunction -> {
-                (if (declaration.receiverTypeReference?.hasAnnotation(InjektFqNames.Given) == true)
-                    listOf("_receiver".asNameId()) else emptyList()) +
-                        declaration.valueParameters
-                            .filter { it.hasAnnotation(InjektFqNames.Given) }
-                            .map { it.nameAsSafeName }
-            }
-            is KtProperty -> listOfNotNull(
-                if (declaration.receiverTypeReference?.hasAnnotation(InjektFqNames.Given) == true)
-                    "_receiver".asNameId()
-                else null
-            )
-            else -> return null
-        }
-
-        return if (givens.isNotEmpty()) GivenInfo(descriptor.uniqueKey(), givens)
-        else null
     }
 
     private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor>()

@@ -71,8 +71,6 @@ class InjektKtGenerationExtension(
                 files,
                 bindingTrace,
                 componentProvider)
-            GivenInfoGenerator(bindingTrace.bindingContext, declarationStore, fileManager)
-                .generate(files)
             fileManager.postGenerate()
             generatedCode = true
             return AnalysisResult.RetryWithAdditionalRoots(

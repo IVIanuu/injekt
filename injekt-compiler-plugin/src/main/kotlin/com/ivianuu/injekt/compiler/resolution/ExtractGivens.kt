@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.getGivenParameters
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -19,22 +20,15 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 fun ClassDescriptor.extractGivensOfDeclaration(
     declarationStore: DeclarationStore,
 ): List<CallableDescriptor> =
-    unsubstitutedMemberScope.extractGivenCallables(defaultType, declarationStore)
+    unsubstitutedMemberScope.extractGivenCallables(defaultType)
 
-fun MemberScope.extractGivenCallables(
-    type: KotlinType,
-    declarationStore: DeclarationStore,
-): List<CallableDescriptor> {
+fun MemberScope.extractGivenCallables(type: KotlinType): List<CallableDescriptor> {
     val primaryConstructorGivensNames = (type.constructor.declarationDescriptor
         ?.safeAs<ClassDescriptor>()
         ?.unsubstitutedPrimaryConstructor
         ?.let { primaryConstructor ->
-            val info = declarationStore.givenInfoFor(primaryConstructor)
             primaryConstructor.valueParameters
-                .filter {
-                    it.hasAnnotation(InjektFqNames.Given) ||
-                            it.name in info.givens
-                }
+                .filter { it.hasAnnotation(InjektFqNames.Given) }
                 .map { it.name }
         }
         ?: emptyList())
@@ -93,16 +87,14 @@ fun ClassDescriptor.allGivenTypes(): List<KotlinType> = buildList<KotlinType> {
         .filter { it.hasAnnotation(InjektFqNames.Given) }
 }
 
-fun CallableDescriptor.extractGivensOfCallable(
-    declarationStore: DeclarationStore,
-): List<CallableDescriptor> {
-    val info = declarationStore.givenInfoFor(this)
+fun CallableDescriptor.extractGivensOfCallable(): List<CallableDescriptor> {
     val userData = getUserData(DslMarkerUtils.FunctionTypeAnnotationsKey)
+    val givenParameters = getGivenParameters()
     fun ParameterDescriptor.isGiven(): Boolean {
         return hasAnnotation(InjektFqNames.Given) ||
                 type.hasAnnotation(InjektFqNames.Given) ||
                 userData?.hasAnnotation(InjektFqNames.Given) == true ||
-                name in info.givens
+                this in givenParameters
     }
 
     val givens = mutableListOf<CallableDescriptor>()
@@ -111,7 +103,7 @@ fun CallableDescriptor.extractGivensOfCallable(
         .filter { it.isGiven() }
 
     givens += extensionReceiverParameter?.type?.memberScope?.extractGivenCallables(
-        extensionReceiverParameter!!.type, declarationStore
+        extensionReceiverParameter!!.type
     ) ?: emptyList()
 
     return givens

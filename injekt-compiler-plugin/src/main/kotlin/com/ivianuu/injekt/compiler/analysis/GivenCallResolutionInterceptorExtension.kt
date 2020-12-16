@@ -1,7 +1,7 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.DeclarationStore
-import com.ivianuu.injekt.compiler.GivenInfo
+import com.ivianuu.injekt.compiler.getGivenParameters
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.extensions.internal.CallResolutionInterceptorExtension
@@ -36,9 +36,8 @@ class GivenCallResolutionInterceptorExtension(
     ): Collection<FunctionDescriptor> = candidates
         .map {
             declarationStore.module = it.module
-            val givenInfo = declarationStore.givenInfoFor(it)
-            if (givenInfo !== GivenInfo.Empty) {
-                it.toGivenFunctionDescriptor(givenInfo)
+            if (it.getGivenParameters().isNotEmpty()) {
+                it.toGivenFunctionDescriptor()
             } else {
                 it
             }

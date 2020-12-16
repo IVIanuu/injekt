@@ -278,10 +278,7 @@ private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<
                 request.type,
                 Int.MAX_VALUE,
                 elements,
-                elements
-                    .flatMap { element ->
-                        element.getGivenRequests(request.type, declarationStore)
-                    }
+                elements.flatMap { element -> element.getGivenRequests(request.type) }
             )
         )
     }

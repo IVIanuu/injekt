@@ -2,9 +2,11 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektErrors
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.descriptor
+import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.resolution.BlockResolutionScope
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.ClassResolutionScope
@@ -16,7 +18,6 @@ import com.ivianuu.injekt.compiler.resolution.InternalResolutionScope
 import com.ivianuu.injekt.compiler.resolution.ResolutionScope
 import com.ivianuu.injekt.compiler.resolution.resolveGiven
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -53,11 +54,9 @@ class GivenCallChecker(
         val resultingDescriptor = call.resultingDescriptor
         if (resultingDescriptor !is FunctionDescriptor) return
 
-        val givenInfo = declarationStore.givenInfoFor(resultingDescriptor)
-
         val requests = call
             .valueArguments
-            .filterKeys { it.name in givenInfo.givens }
+            .filterKeys { it.hasAnnotation(InjektFqNames.Given) }
             .filter { it.value is DefaultValueArgument }
             .map {
                 GivenRequest(
@@ -65,7 +64,6 @@ class GivenCallChecker(
                     required = !it.key.hasDefaultValueIgnoringGiven,
                     callableFqName = resultingDescriptor.fqNameSafe,
                     parameterName = it.key.name,
-                    callableKey = resultingDescriptor.uniqueKey(),
                     callContext = scope.callContext
                 )
             }

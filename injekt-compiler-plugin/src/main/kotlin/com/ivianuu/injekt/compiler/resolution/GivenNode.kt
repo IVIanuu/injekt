@@ -3,8 +3,7 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringGiven
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.uniqueKey
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
+import com.ivianuu.injekt.compiler.getGivenParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
@@ -82,7 +81,6 @@ data class ProviderGivenNode(
             required = isRequired,
             callableFqName = callableFqName,
             parameterName = "instance".asNameId(),
-            callableKey = "Provider",
             callContext = type.callContext
         )
     )
@@ -116,33 +114,19 @@ data class ProviderParameterGivenNode(
         get() = type
 }
 
-fun CallableDescriptor.toGivenNode(
-    type: TypeRef,
-    declarationStore: DeclarationStore,
-    depth: Int,
-): CallableGivenNode {
-    return CallableGivenNode(
+fun CallableDescriptor.toGivenNode(type: TypeRef, depth: Int): CallableGivenNode =
+    CallableGivenNode(
         type,
-        getGivenRequests(type, declarationStore),
+        getGivenRequests(type),
         depth,
         this
     )
-}
 
-fun CallableDescriptor.getGivenRequests(
-    type: TypeRef,
-    declarationStore: DeclarationStore,
-): List<GivenRequest> {
-    val info = declarationStore.givenInfoFor(this)
+fun CallableDescriptor.getGivenRequests(type: TypeRef): List<GivenRequest> {
     val substitutionMap = getSubstitutionMap(
         listOf(type to returnType!!.toTypeRef())
     )
-    val callableKey = uniqueKey()
-    return allParameters
-        .filter {
-            val name = if (it === extensionReceiverParameter) "_receiver".asNameId() else it.name
-            name in info.givens
-        }
+    return getGivenParameters()
         .map {
             val name = if (it === extensionReceiverParameter) "_receiver".asNameId() else it.name
             GivenRequest(
@@ -151,7 +135,6 @@ fun CallableDescriptor.getGivenRequests(
                 required = it !is ValueParameterDescriptor || !it.hasDefaultValueIgnoringGiven,
                 callableFqName = fqNameSafe,
                 parameterName = name,
-                callableKey = callableKey,
                 callContext = callContext
             )
         }
@@ -162,6 +145,5 @@ data class GivenRequest(
     val required: Boolean,
     val callableFqName: FqName,
     val parameterName: Name,
-    val callableKey: String,
     val callContext: CallContext,
 )

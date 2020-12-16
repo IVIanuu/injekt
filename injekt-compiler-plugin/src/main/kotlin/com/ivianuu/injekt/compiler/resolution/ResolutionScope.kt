@@ -35,7 +35,7 @@ class ResolutionScope(
     fun givensForType(type: TypeRef): List<GivenNode> = givensByType.getOrPut(type) {
         givens
             .filter { it.first.returnType!!.toTypeRef().isAssignableTo(type) }
-            .map { it.first.toGivenNode(type, declarationStore, it.second.depth()) }
+            .map { it.first.toGivenNode(type, it.second.depth()) }
     }
 
     private val givenSetElementsByType = mutableMapOf<TypeRef, List<CallableDescriptor>>()
@@ -136,9 +136,7 @@ fun FunctionResolutionScope(
         declarationStore = declarationStore,
         callContext = descriptor.callContext,
         parent = parent,
-        initialGivensInScope = {
-            descriptor.extractGivensOfCallable(declarationStore)
-        },
+        initialGivensInScope = { descriptor.extractGivensOfCallable() },
         initialGivenSetElementsInScope = {
             descriptor.extractGivenSetElementsOfCallable()
         }

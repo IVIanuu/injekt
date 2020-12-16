@@ -5,6 +5,7 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringGiven
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.getGivenParameters
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.CollectionGivenNode
@@ -21,7 +22,6 @@ import com.ivianuu.injekt.compiler.resolution.subtypeView
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toGivenNode
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.backend.common.ir.allParameters
@@ -80,9 +80,11 @@ class GivenCallTransformer(
             is PropertyAccessorDescriptor -> calleeDescriptor.correspondingProperty
             else -> calleeDescriptor
         }
-        val givenInfo = declarationStore.givenInfoFor(calleeDescriptor)
 
-        if (givenInfo.givens.isEmpty()) return
+        val givenParameterNames = calleeDescriptor.getGivenParameters()
+            .map { it.name }
+
+        if (givenParameterNames.isEmpty()) return
 
         if (callee.extensionReceiverParameter != null && call.extensionReceiver == null) {
             call.extensionReceiver = expressionFor(
@@ -92,7 +94,6 @@ class GivenCallTransformer(
                     required = true,
                     callableFqName = calleeDescriptor.fqNameSafe,
                     parameterName = "_receiver".asNameId(),
-                    callableKey = calleeDescriptor.uniqueKey(),
                     callContext = graph.scope.callContext
                 ),
                 call.symbol
@@ -100,7 +101,7 @@ class GivenCallTransformer(
         }
         callee
             .valueParameters
-            .filter { it.name in givenInfo.givens }
+            .filter { it.name in givenParameterNames }
             .filter { call.getValueArgument(it.index) == null }
             .map {
                 it to expressionFor(
@@ -110,7 +111,6 @@ class GivenCallTransformer(
                             ?.hasDefaultValueIgnoringGiven?.not() ?: !it.hasDefaultValue(),
                         callableFqName = calleeDescriptor.fqNameSafe,
                         parameterName = it.name,
-                        callableKey = calleeDescriptor.uniqueKey(),
                         callContext = graph.scope.callContext
                     ),
                     call.symbol
@@ -147,9 +147,6 @@ class GivenCallTransformer(
                 lambdasByProviderGiven[given] = function
                 expressionFor(given.dependencies.single(), symbol)
                     ?: DeclarationIrBuilder(pluginContext, symbol).irUnit()
-            }
-            .also {
-                println()
             }
     }
 
@@ -201,7 +198,7 @@ class GivenCallTransformer(
                         putValueArgument(
                             0,
                             callableExpression(
-                                it.toGivenNode(given.type, declarationStore, 0),
+                                it.toGivenNode(given.type, 0),
                                 symbol
                             )()
                         )
