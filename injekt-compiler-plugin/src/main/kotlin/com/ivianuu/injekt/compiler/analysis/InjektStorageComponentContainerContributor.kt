@@ -13,5 +13,6 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
         moduleDescriptor: ModuleDescriptor,
     ) {
         container.useInstance(GivenChecker())
+        container.useInstance(GivenFunChecker())
     }
 }

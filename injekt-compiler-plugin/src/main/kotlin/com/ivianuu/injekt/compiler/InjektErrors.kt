@@ -120,14 +120,19 @@ interface InjektErrors {
                 .also { MAP.put(it, "class cannot have multiple given constructors") }
 
         @JvmField
-        val GIVEN_FUN_WITHOUT_RETURN_TYPE =
+        val GIVEN_FUN_WITHOUT_EXPLICIT_RETURN_TYPE =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also { MAP.put(it, "@GivenFun annotated function must have explicit return type") }
 
         @JvmField
         val GIVEN_FUN_MUST_HAVE_UNIQUE_NAME =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "@GivenFun annotated function must have explicit return type") }
+                .also { MAP.put(it, "@GivenFun must have a unique name") }
+
+        @JvmField
+        val GIVEN_FUN_AS_MEMBER =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also { MAP.put(it, "@GivenFun must be top level") }
 
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(

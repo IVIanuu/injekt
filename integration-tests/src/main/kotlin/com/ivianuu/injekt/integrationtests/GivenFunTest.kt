@@ -400,11 +400,11 @@ class GivenFunTest {
         """
             @GivenFun fun function(@Given string: String) {
             }
-            @Given fun function() {
+            @GivenFun fun function() {
             }
         """
     ) {
-        assertCompileError()
+        assertCompileError("unique")
     }
 
     @Test
@@ -413,7 +413,17 @@ class GivenFunTest {
             @GivenFun fun function() = 0
         """
     ) {
-        assertCompileError()
+        assertCompileError("return type")
+    }
+
+    @Test
+    fun testGivenFunMemberFunction() = codegen(
+        """
+            @GivenFun fun function() {
+            }
+        """
+    ) {
+        assertCompileError("top level")
     }
 
 }
