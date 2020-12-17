@@ -17,15 +17,16 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.CacheDir
-import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.FileManager
 import com.ivianuu.injekt.compiler.SrcDir
+import com.ivianuu.injekt.compiler.generator.Generator
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
@@ -58,8 +59,20 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : PartialA
             files.clear()
             files += fileManager.preGenerate(tmpFiles)
 
-            IndexGenerator(fileManager)
-                .generate(files)
+            IndexGenerator().generate(
+                object : Generator.Context {
+                    override fun generateFile(
+                        packageFqName: FqName,
+                        fileName: String,
+                        originatingFile: KtFile,
+                        code: String,
+                    ) {
+                        fileManager.generateFile(packageFqName,
+                            fileName, originatingFile.virtualFilePath, code)
+                    }
+                },
+                files
+            )
             super.doAnalysis(project,
                 module,
                 projectContext,

@@ -17,12 +17,10 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.Index
-import com.ivianuu.injekt.compiler.resolution.allGivenTypes
-import com.ivianuu.injekt.compiler.resolution.getGivenConstructors
-import com.ivianuu.injekt.compiler.resolution.overrideType
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import com.ivianuu.injekt.compiler.resolution.CallableRef
+import com.ivianuu.injekt.compiler.resolution.getGivenDeclarationConstructors
+import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -31,7 +29,6 @@ import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class DeclarationStore(val module: ModuleDescriptor) {
 
@@ -66,48 +63,15 @@ class DeclarationStore(val module: ModuleDescriptor) {
             .flatMap { propertyDescriptorsForFqName(it.fqName) }
     }
 
-    val globalGivens: List<CallableDescriptor> by unsafeLazy {
+    val globalGivenDeclarations: List<CallableRef> by unsafeLazy {
         classIndices
-            .flatMap { it.getGivenConstructors() }
-            .flatMap { constructor ->
-                constructor.allGivenTypes()
-                    .map { constructor.overrideType(it) }
-            } +
+            .flatMap { it.getGivenDeclarationConstructors() } +
                 functionIndices
-                    .filter { it.hasAnnotationWithPropertyAndClass(InjektFqNames.Given) }
-                    .filter {
-                        val receiverClass =
-                            it.dispatchReceiverParameter?.value?.type?.constructor?.declarationDescriptor
-                                ?.safeAs<ClassDescriptor>()
-                        receiverClass == null || receiverClass.kind == ClassKind.OBJECT
-                    } +
+                    .map { it.toCallableRef() }
+                    .filter { it.givenKind != null } +
                 propertyIndices
-                    .filter { it.hasAnnotationWithPropertyAndClass(InjektFqNames.Given) }
-                    .filter {
-                        val receiverClass =
-                            it.dispatchReceiverParameter?.value?.type?.constructor?.declarationDescriptor
-                                ?.safeAs<ClassDescriptor>()
-                        receiverClass == null || receiverClass.kind == ClassKind.OBJECT
-                    }
-    }
-
-    val globalGivenSetElements by unsafeLazy {
-        functionIndices
-            .filter { it.hasAnnotation(InjektFqNames.GivenSetElement) }
-            .filter {
-                val receiverClass =
-                    it.dispatchReceiverParameter?.value?.type?.constructor?.declarationDescriptor
-                        ?.safeAs<ClassDescriptor>()
-                receiverClass == null || receiverClass.kind == ClassKind.OBJECT
-            } +
-                propertyIndices
-                    .filter { it.hasAnnotation(InjektFqNames.GivenSetElement) }
-                    .filter {
-                        val receiverClass =
-                            it.dispatchReceiverParameter?.value?.type?.constructor?.declarationDescriptor
-                                ?.safeAs<ClassDescriptor>()
-                        receiverClass == null || receiverClass.kind == ClassKind.OBJECT
-                    }
+                    .map { it.toCallableRef() }
+                    .filter { it.givenKind != null }
     }
 
     private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor>()

@@ -57,7 +57,8 @@ interface InjektErrors {
                                             }
                                         }
                                         is ResolutionResult.Failure.CallContextMismatch -> {
-                                            appendLine("${indent()} current call context is ${request.callContext} but ${candidate.callableFqName} is ${candidate.callContext}")
+                                            appendLine("${indent()} current call context is ${actualCallContext} but" +
+                                                    " ${candidate.callableFqName} is ${candidate.callContext}")
                                         }
                                         is ResolutionResult.Failure.CircularDependency -> {
                                             appendLine("${indent()}circular")

@@ -1,15 +1,20 @@
 package com.ivianuu.injekt.compiler.resolution
 
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+
 sealed class GivenGraph {
     abstract val requests: List<GivenRequest>
 
     data class Success(
         override val requests: List<GivenRequest>,
         val scope: ResolutionScope,
-        val givens: Map<GivenRequest, GivenNode>,
+        val givens: Map<TypeRef, GivenNode>,
     ) : GivenGraph()
 
     data class Error(
+        val scope: ResolutionScope,
         override val requests: List<GivenRequest>,
         val failures: Map<GivenRequest, List<ResolutionResult.Failure>>,
     ) : GivenGraph()
@@ -53,6 +58,7 @@ sealed class ResolutionResult {
 
         data class CallContextMismatch(
             override val request: GivenRequest,
+            val actualCallContext: CallContext,
             val candidate: GivenNode,
         ) : Failure() {
             override val failureOrdering: Int
@@ -98,7 +104,7 @@ fun ResolutionScope.resolveGiven(requests: List<GivenRequest>): GivenGraph {
         }
     return if (failureResults.isEmpty()) {
         successResults.toSuccessGraph(this, requests)
-    } else failureResults.toErrorGraph(requests)
+    } else failureResults.toErrorGraph(this, requests)
 }
 
 private fun ResolutionScope.resolveRequest(
@@ -116,17 +122,18 @@ private fun List<ResolutionResult.Success>.toSuccessGraph(
     scope: ResolutionScope,
     requests: List<GivenRequest>,
 ): GivenGraph.Success {
-    val givensByRequest = mutableMapOf<GivenRequest, GivenNode>()
+    val givensByType = mutableMapOf<TypeRef, GivenNode>()
     fun ResolutionResult.Success.visit() {
-        givensByRequest[request] = candidateResult.candidate
+        givensByType[request.type] = candidateResult.candidate
         candidateResult.dependencyResults
             .forEach { it.visit() }
     }
     forEach { it.visit() }
-    return GivenGraph.Success(requests, scope, givensByRequest)
+    return GivenGraph.Success(requests, scope, givensByType)
 }
 
 private fun List<ResolutionResult.Failure>.toErrorGraph(
+    scope: ResolutionScope,
     requests: List<GivenRequest>,
 ): GivenGraph.Error {
     val failuresByRequest = mutableMapOf<GivenRequest, MutableList<ResolutionResult.Failure>>()
@@ -134,12 +141,14 @@ private fun List<ResolutionResult.Failure>.toErrorGraph(
         failuresByRequest.getOrPut(request) { mutableListOf() } += this
     }
     forEach { it.visit() }
-    return GivenGraph.Error(requests, failuresByRequest)
+    return GivenGraph.Error(scope, requests, failuresByRequest)
 }
 
 class ResolutionContext(val scope: ResolutionScope) {
     private val chain = mutableSetOf<GivenNode>()
     private val resultsByCandidate = mutableMapOf<GivenNode, CandidateResolutionResult>()
+    var currentCallContext = scope.callContext
+        private set
 
     val providedGivens = mutableListOf<GivenNode>()
 
@@ -171,11 +180,14 @@ class ResolutionContext(val scope: ResolutionScope) {
             )
         }
 
+        val previousCallContext = currentCallContext
+        currentCallContext = request.callContext ?: previousCallContext
         chain += candidate
         providedGivens += candidate.providedGivens
         val result = compute()
         chain -= candidate
         providedGivens -= candidate.providedGivens
+        currentCallContext = previousCallContext
         return@getOrPut result
     }
 }
@@ -224,11 +236,11 @@ private fun ResolutionContext.resolveCandidate(
     request: GivenRequest,
     candidate: GivenNode,
 ): CandidateResolutionResult = computeForCandidate(request, candidate) {
-    if (!request.callContext.canCall(candidate.callContext)) {
+    if (!currentCallContext.canCall(candidate.callContext)) {
         return@computeForCandidate CandidateResolutionResult.Failure(
             request,
             candidate,
-            ResolutionResult.Failure.CallContextMismatch(request, candidate)
+            ResolutionResult.Failure.CallContextMismatch(request, currentCallContext, candidate)
         )
     }
 
@@ -256,8 +268,15 @@ private fun ResolutionContext.getProvidedCandidates(request: GivenRequest): List
 }
 
 private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<GivenNode> {
-    if (request.type.classifier.fqName.asString().startsWith("kotlin.Function")
-        || request.type.classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
+    if (request.forDispatchReceiver &&
+        request.type.classifier.descriptor?.safeAs<ClassDescriptor>()
+            ?.kind == ClassKind.OBJECT
+    ) return listOf(ObjectGivenNode(request.type))
+
+    if (request.type.path == null &&
+        (request.type.classifier.fqName.asString().startsWith("kotlin.Function")
+                || request.type.classifier.fqName.asString()
+            .startsWith("kotlin.coroutines.SuspendFunction"))
     ) {
         return listOf(
             ProviderGivenNode(
@@ -273,12 +292,13 @@ private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<
     if (request.type.isSubTypeOf(setType)) {
         val setElementType = request.type.subtypeView(setType.classifier)!!.typeArguments.single()
         val elements = givenSetElementsForType(setElementType)
+            .map { it.substitute(getSubstitutionMap(listOf(setElementType to it.originalType))) }
         return listOf(
-            CollectionGivenNode(
+            SetGivenNode(
                 request.type,
                 Int.MAX_VALUE,
                 elements,
-                elements.flatMap { element -> element.getGivenRequests(request.type) }
+                elements.flatMap { element -> element.getGivenRequests() }
             )
         )
     }

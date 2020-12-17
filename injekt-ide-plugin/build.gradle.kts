@@ -19,11 +19,15 @@ plugins {
     id("org.jetbrains.intellij") version "0.6.5"
 }
 
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
+
 intellij {
     version = "2019.3.4"
     pluginName = "Injekt ide plugin"
     updateSinceUntilBuild = false
-    setPlugins("org.jetbrains.kotlin:1.4.21-release-Studio4.0-1")
+    setPlugins("org.jetbrains.kotlin:1.4.21-release-Studio4.0-1", "gradle", "gradle-java", "java")
+
     localPath = "/home/ivianuu/android-studio"
 }
 

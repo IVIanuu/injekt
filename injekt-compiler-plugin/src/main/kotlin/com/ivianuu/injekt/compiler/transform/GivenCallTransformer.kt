@@ -2,22 +2,19 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
-import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringGiven
-import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.getGivenParameters
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.CollectionGivenNode
+import com.ivianuu.injekt.compiler.resolution.CallableRef
 import com.ivianuu.injekt.compiler.resolution.DefaultGivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
-import com.ivianuu.injekt.compiler.resolution.GivenRequest
+import com.ivianuu.injekt.compiler.resolution.ObjectGivenNode
 import com.ivianuu.injekt.compiler.resolution.ProviderGivenNode
 import com.ivianuu.injekt.compiler.resolution.ProviderParameterGivenNode
+import com.ivianuu.injekt.compiler.resolution.SetGivenNode
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.fullyExpandedType
 import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
 import com.ivianuu.injekt.compiler.resolution.substitute
-import com.ivianuu.injekt.compiler.resolution.subtypeView
+import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toGivenNode
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
@@ -28,10 +25,10 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
@@ -58,11 +55,8 @@ import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.hasDefaultValue
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrElementTransformerVoid() {
 
@@ -71,47 +65,28 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
     }
 
     private fun ResolutionContext.fillGivens(
+        callable: CallableRef,
         call: IrFunctionAccessExpression,
-        substitutionMap: Map<ClassifierRef, TypeRef>,
     ) {
-        val callee = call.symbol.owner
-        val calleeDescriptor = when (val calleeDescriptor = callee.descriptor) {
-            is PropertyAccessorDescriptor -> calleeDescriptor.correspondingProperty
-            else -> calleeDescriptor
-        }
-
-        val givenParameterNames = calleeDescriptor.getGivenParameters(substitutionMap)
-            .map { it.name }
-
-        if (givenParameterNames.isEmpty()) return
-
-        if (callee.extensionReceiverParameter != null && call.extensionReceiver == null) {
-            call.extensionReceiver = expressionFor(
-                GivenRequest(
-                    type = callee.descriptor.extensionReceiverParameter!!.type.toTypeRef()
-                        .substitute(substitutionMap),
-                    required = true,
-                    callableFqName = calleeDescriptor.fqNameSafe,
-                    parameterName = "_receiver".asNameId(),
-                    callContext = graph.scope.callContext
-                ),
+        if (callable.callable.dispatchReceiverParameter != null && call.dispatchReceiver == null) {
+            call.dispatchReceiver = expressionFor(
+                callable.parameterTypes[callable.callable.dispatchReceiverParameter!!]!!,
                 call.symbol
             )
         }
-        callee
+
+        if (callable.callable.extensionReceiverParameter != null && call.extensionReceiver == null) {
+            call.extensionReceiver = expressionFor(
+                callable.parameterTypes[callable.callable.extensionReceiverParameter!!]!!,
+                call.symbol
+            )
+        }
+        callable.callable
             .valueParameters
-            .filter { it.name in givenParameterNames }
             .filter { call.getValueArgument(it.index) == null }
             .map {
                 it to expressionFor(
-                    GivenRequest(
-                        type = it.descriptor.type.toTypeRef().substitute(substitutionMap),
-                        required = it.descriptor.safeAs<ValueParameterDescriptor>()
-                            ?.hasDefaultValueIgnoringGiven?.not() ?: !it.hasDefaultValue(),
-                        callableFqName = calleeDescriptor.fqNameSafe,
-                        parameterName = it.name,
-                        callContext = graph.scope.callContext
-                    ),
+                    callable.parameterTypes[it]!!,
                     call.symbol
                 )
             }
@@ -119,23 +94,32 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
     }
 
     private fun ResolutionContext.expressionFor(
-        request: GivenRequest,
+        type: TypeRef,
         symbol: IrSymbol,
     ): IrExpression? {
-        return expressionsByType.getOrPut(request.type) {
-            val given = graph.givens[request]
-                ?: error("Wtf $request\n${this.graph.givens.toList().joinToString("\n")}")
+        return expressionsByType.getOrPut(type) {
+            val given = graph.givens[type]
+                ?: error("Wtf $type\n${this.graph.givens.toList().joinToString("\n")}")
             when (given) {
                 is CallableGivenNode -> callableExpression(given, symbol)
                 is DefaultGivenNode -> null
+                is ObjectGivenNode -> objectExpression(given, symbol)
                 is ProviderGivenNode -> providerExpression(given, symbol)
                 is ProviderParameterGivenNode -> providerParameterExpression(given, symbol)
-                is CollectionGivenNode -> setExpression(given, symbol)
+                is SetGivenNode -> setExpression(given, symbol)
             }
         }?.invoke()
     }
 
     private val lambdasByProviderGiven = mutableMapOf<ProviderGivenNode, IrFunction>()
+
+    private fun ResolutionContext.objectExpression(
+        given: ObjectGivenNode,
+        symbol: IrSymbol,
+    ): () -> IrExpression = {
+        DeclarationIrBuilder(pluginContext, symbol)
+            .irGetObject(pluginContext.referenceClass(given.type.classifier.fqName)!!)
+    }
 
     private fun ResolutionContext.providerExpression(
         given: ProviderGivenNode,
@@ -144,7 +128,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         DeclarationIrBuilder(pluginContext, symbol)
             .irLambda(given.type.toIrType(pluginContext)) { function ->
                 lambdasByProviderGiven[given] = function
-                expressionFor(given.dependencies.single(), symbol)
+                expressionFor(given.dependencies.single().type, symbol)
                     ?: DeclarationIrBuilder(pluginContext, symbol).irUnit()
             }
     }
@@ -158,12 +142,11 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
     }
 
     private fun ResolutionContext.setExpression(
-        given: CollectionGivenNode,
+        given: SetGivenNode,
         symbol: IrSymbol,
     ): () -> IrExpression = expr@{
         val elementType =
             given.type.fullyExpandedType.typeArguments.single()
-                .toIrType(pluginContext)
 
         if (given.elements.isEmpty()) {
             val emptySet = pluginContext.referenceFunctions(
@@ -171,7 +154,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             ).single()
             return@expr DeclarationIrBuilder(pluginContext, symbol)
                 .irCall(emptySet)
-                .apply { putTypeArgument(0, elementType) }
+                .apply { putTypeArgument(0, elementType.toIrType(pluginContext)) }
         }
 
         DeclarationIrBuilder(pluginContext, symbol).irBlock {
@@ -187,7 +170,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
 
             val tmpSet = irTemporary(
                 irCall(mutableSetOf)
-                    .apply { putTypeArgument(0, elementType) }
+                    .apply { putTypeArgument(0, elementType.toIrType(pluginContext)) }
             )
 
             given.elements
@@ -197,7 +180,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                         putValueArgument(
                             0,
                             callableExpression(
-                                it.toGivenNode(given.type, 0),
+                                it.toGivenNode(elementType, 0),
                                 symbol
                             )()
                         )
@@ -213,19 +196,29 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         given: CallableGivenNode,
         symbol: IrSymbol,
     ): () -> IrExpression = {
-        when (given.callable) {
-            is ClassConstructorDescriptor -> classExpression(given.type, given.callable, symbol)
-            is PropertyDescriptor -> propertyExpression(given.type, given.callable, symbol)
-            is FunctionDescriptor -> functionExpression(given.type, given.callable, symbol)
-            is ReceiverParameterDescriptor -> parameterExpression(given.callable, symbol)
-            is ValueParameterDescriptor -> parameterExpression(given.callable, symbol)
-            is VariableDescriptor -> variableExpression(given.callable, symbol)
+        when (given.callable.callable) {
+            is ClassConstructorDescriptor -> classExpression(given.type,
+                given.callable,
+                given.callable.callable,
+                symbol)
+            is PropertyDescriptor -> propertyExpression(given.type,
+                given.callable,
+                given.callable.callable,
+                symbol)
+            is FunctionDescriptor -> functionExpression(given.type,
+                given.callable,
+                given.callable.callable,
+                symbol)
+            is ReceiverParameterDescriptor -> parameterExpression(given.callable.callable, symbol)
+            is ValueParameterDescriptor -> parameterExpression(given.callable.callable, symbol)
+            is VariableDescriptor -> variableExpression(given.callable.callable, symbol)
             else -> error("Unsupported callable $given")
         }
     }
 
     private fun ResolutionContext.classExpression(
         type: TypeRef,
+        callable: CallableRef,
         descriptor: ClassConstructorDescriptor,
         symbol: IrSymbol,
     ): IrExpression {
@@ -242,11 +235,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             DeclarationIrBuilder(pluginContext, symbol)
                 .irCall(constructor.symbol)
                 .apply {
-                    val substitutionMap = getSubstitutionMap(
-                        listOf(type to constructor.constructedClass.descriptor.defaultType.toTypeRef()
-                            .subtypeView(type.classifier)!!)
-                    )
-
+                    val substitutionMap = getSubstitutionMap(listOf(type to callable.originalType))
                     constructor.constructedClass.typeParameters
                         .map {
                             substitutionMap[it.descriptor.toClassifierRef()]
@@ -256,13 +245,14 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                             putTypeArgument(index, typeArgument.toIrType(pluginContext))
                         }
 
-                    fillGivens(this, substitutionMap)
+                    fillGivens(callable, this)
                 }
         }
     }
 
     private fun ResolutionContext.propertyExpression(
         type: TypeRef,
+        callable: CallableRef,
         descriptor: PropertyDescriptor,
         symbol: IrSymbol,
     ): IrExpression {
@@ -271,18 +261,6 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         return DeclarationIrBuilder(pluginContext, symbol)
             .irCall(getter.symbol)
             .apply {
-                val dispatchReceiverParameter = getter.dispatchReceiverParameter
-                if (dispatchReceiverParameter != null) {
-                    dispatchReceiver =
-                        if (dispatchReceiverParameter.type.classOrNull?.owner?.kind == ClassKind.OBJECT) {
-                            DeclarationIrBuilder(pluginContext, symbol)
-                                .irGetObject(dispatchReceiverParameter.type.classOrNull!!)
-                        } else {
-                            receiverAccessors
-                                .last { it.first == dispatchReceiverParameter.type.classOrNull?.owner }
-                                .second()
-                        }
-                }
                 val substitutionMap = getSubstitutionMap(
                     listOf(type to getter.descriptor.returnType!!.toTypeRef()),
                     getter.typeParameters.map { it.descriptor.toClassifierRef() }
@@ -297,12 +275,13 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                         putTypeArgument(index, typeArgument.toIrType(pluginContext))
                     }
 
-                fillGivens(this, substitutionMap)
+                fillGivens(callable, this)
             }
     }
 
     private fun ResolutionContext.functionExpression(
         type: TypeRef,
+        callable: CallableRef,
         descriptor: FunctionDescriptor,
         symbol: IrSymbol,
     ): IrExpression {
@@ -310,19 +289,6 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         return DeclarationIrBuilder(pluginContext, symbol)
             .irCall(function.symbol)
             .apply {
-                val dispatchReceiverParameter = function.dispatchReceiverParameter
-                if (dispatchReceiverParameter != null) {
-                    dispatchReceiver =
-                        if (dispatchReceiverParameter.type.classOrNull?.owner?.kind == ClassKind.OBJECT) {
-                            DeclarationIrBuilder(pluginContext, symbol)
-                                .irGetObject(dispatchReceiverParameter.type.classOrNull!!)
-                        } else {
-                            receiverAccessors.reversed()
-                                .first { it.first == dispatchReceiverParameter.type.classOrNull?.owner }
-                                .second()
-                        }
-                }
-
                 val substitutionMap = getSubstitutionMap(
                     listOf(type to function.descriptor.returnType!!.toTypeRef()),
                     function.typeParameters.map { it.descriptor.toClassifierRef() }
@@ -337,7 +303,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                         putTypeArgument(index, typeArgument.toIrType(pluginContext))
                     }
 
-                fillGivens(this, substitutionMap)
+                fillGivens(callable, this)
             }
     }
 
@@ -345,22 +311,27 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         descriptor: ParameterDescriptor,
         symbol: IrSymbol,
     ): IrExpression {
-        val valueParameter =
-            when (val containingDeclaration = descriptor.containingDeclaration) {
-                is ClassConstructorDescriptor -> containingDeclaration.irConstructor()
-                    .allParameters
-                    .single { it.name == descriptor.name }
-                is FunctionDescriptor -> containingDeclaration.irFunction()
-                    .let { function ->
-                        function.allParameters
-                            .filter { it != function.dispatchReceiverParameter }
-                    }
-                    .single { it.name == descriptor.name }
-                else -> error("Unexpected parent $descriptor $containingDeclaration")
-            }
-
-        return DeclarationIrBuilder(pluginContext, symbol)
-            .irGet(valueParameter)
+        return when (val containingDeclaration = descriptor.containingDeclaration) {
+            is ClassDescriptor -> receiverAccessors.last {
+                descriptor.type.constructor.declarationDescriptor == it.first.descriptor
+            }.second()
+            is ClassConstructorDescriptor -> DeclarationIrBuilder(pluginContext, symbol)
+                .irGet(
+                    containingDeclaration.irConstructor()
+                        .allParameters
+                        .single { it.name == descriptor.name }
+                )
+            is FunctionDescriptor -> DeclarationIrBuilder(pluginContext, symbol)
+                .irGet(
+                    containingDeclaration.irFunction()
+                        .let { function ->
+                            function.allParameters
+                                .filter { it != function.dispatchReceiverParameter }
+                        }
+                        .single { it.name == descriptor.name }
+                )
+            else -> error("Unexpected parent $descriptor $containingDeclaration")
+        }
     }
 
     private fun ResolutionContext.variableExpression(
@@ -471,7 +442,8 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                             )
                     )
                     ResolutionContext(givenNodes)
-                        .fillGivens(expression, substitutionMap)
+                        .fillGivens(expression.symbol.descriptor.toCallableRef()
+                            .substitute(substitutionMap), expression)
                 } catch (e: Throwable) {
                     throw RuntimeException("Wtf ${expression.dump()}", e)
                 }

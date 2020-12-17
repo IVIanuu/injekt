@@ -16,6 +16,7 @@ import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.InternalResolutionScope
 import com.ivianuu.injekt.compiler.resolution.ResolutionScope
+import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.resolveGiven
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
@@ -42,6 +43,7 @@ import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
+import org.jetbrains.kotlin.resolve.calls.callUtil.getType
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -83,7 +85,7 @@ class GivenCallChecker(
                 graph.givens.values
                     .filterIsInstance<CallableGivenNode>()
                     .forEach { given ->
-                        val lookedUpDeclaration = when (val callable = given.callable) {
+                        val lookedUpDeclaration = when (val callable = given.callable.callable) {
                             is ClassConstructorDescriptor -> callable.constructedClass
                             else -> callable
                         } as DeclarationDescriptor
@@ -91,10 +93,11 @@ class GivenCallChecker(
                             is ClassDescriptor -> parent.unsubstitutedMemberScope
                             is PackageFragmentDescriptor -> parent.getMemberScope()
                             else -> null
-                        }?.recordLookup(given.callable.name, KotlinLookupLocation(reportOn))
+                        }?.recordLookup(given.callable.callable.name,
+                            KotlinLookupLocation(reportOn))
                         bindingTrace.record(
                             InjektWritableSlices.USED_GIVEN,
-                            given.callable,
+                            given.callable.callable,
                             Unit
                         )
                     }
@@ -175,16 +178,23 @@ class GivenCallChecker(
     }
 
     override fun visitLambdaExpression(lambdaExpression: KtLambdaExpression) {
-        visitFunction(lambdaExpression.functionLiteral) {
+        val type = lambdaExpression.getType(bindingTrace.bindingContext)
+            ?.toTypeRef() ?: return
+        visitFunction(lambdaExpression.functionLiteral, type) {
             super.visitLambdaExpression(lambdaExpression)
         }
     }
 
-    private fun visitFunction(function: KtFunction, block: () -> Unit) {
+    private fun visitFunction(
+        function: KtFunction,
+        lambdaType: TypeRef? = null,
+        block: () -> Unit,
+    ) {
         inScope(FunctionResolutionScope(
             declarationStore,
             scope,
-            function.descriptor(bindingTrace.bindingContext) ?: return
+            function.descriptor(bindingTrace.bindingContext) ?: return,
+            lambdaType
         )) { block() }
     }
 

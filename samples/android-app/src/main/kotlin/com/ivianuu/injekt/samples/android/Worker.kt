@@ -22,13 +22,14 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenSetElement
+import com.ivianuu.injekt.GivenGroup
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.android.work.WorkerContext
 import com.ivianuu.injekt.android.work.worker
 
-@GivenSetElement fun testWorkerBinding() = worker { TestWorker() }
-class TestWorker(
+@GivenGroup val testWorkerBinding = worker<TestWorker>()
+
+@Given class TestWorker(
     @Given context: WorkerContext,
     @Given workerParams: WorkerParameters,
     @Given repo: Repo,

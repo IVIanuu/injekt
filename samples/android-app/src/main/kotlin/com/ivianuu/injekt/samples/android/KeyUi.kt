@@ -5,9 +5,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenTuple2
+import com.ivianuu.injekt.GivenSetElement
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.Unqualified
 import com.ivianuu.injekt.component.ApplicationScoped
-import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.Storage
 import com.ivianuu.injekt.component.memo
 import kotlinx.coroutines.CoroutineScope
@@ -19,21 +20,8 @@ import kotlin.reflect.KClass
 
 typealias KeyUiBinding = Pair<KClass<*>, @Composable () -> Unit>
 
-inline fun <reified K : Any> keyUiBinding(noinline content: @Composable () -> Unit): KeyUiBinding =
-    K::class to content
-
-typealias keyUiWithStateBinding<K, S> = (@Composable @Given GivenTuple2<Component<ApplicationScoped>, S>.() -> Unit) -> KeyUiBinding
-
-@Given inline fun <reified K : Any, S> keyUiWithStateBinding(
-    @Given c: Component<ApplicationScoped>,
-    @Given noinline stateFactory: (CoroutineScope) -> StateFlow<S>,
-): keyUiWithStateBinding<K, S> = { content ->
-    keyUiBinding<K> {
-        val coroutineScope = rememberCoroutineScope()
-        val state = remember { stateFactory(coroutineScope) }.collectAsState().value
-        content(GivenTuple2(c, state))
-    }
-}
+inline fun <reified K : Any, reified T : @Composable () -> Unit> keyUiBinding():
+        @GivenSetElement (T) -> KeyUiBinding = { K::class to it }
 
 typealias ActionChannel<A> = Channel<A>
 
@@ -49,3 +37,13 @@ typealias Actions<A> = Flow<A>
 
 @Given inline val <A> @Given ActionChannel<A>.actions: Actions<A>
     get() = consumeAsFlow()
+
+@Target(AnnotationTarget.TYPE)
+@Qualifier
+annotation class UiState
+
+@Given @Composable
+fun <T> uiState(@Given stateFactory: (CoroutineScope) -> StateFlow<@Unqualified T>): @UiState T {
+    val scope = rememberCoroutineScope()
+    return remember { stateFactory(scope) }.collectAsState().value
+}

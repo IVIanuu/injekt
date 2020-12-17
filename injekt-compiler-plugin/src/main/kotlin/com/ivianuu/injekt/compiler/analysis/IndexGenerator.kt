@@ -16,11 +16,13 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.FileManager
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.generator.Generator
 import com.ivianuu.injekt.compiler.hasAnnotation
+import org.jetbrains.kotlin.psi.KtClass
+import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -31,9 +33,10 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-class IndexGenerator(private val fileManager: FileManager) {
-    fun generate(files: List<KtFile>) {
+class IndexGenerator : Generator {
+    override fun generate(context: Generator.Context, files: List<KtFile>) {
         files.forEach { file ->
             val indices = mutableListOf<Index>()
             file.accept(object : KtTreeVisitorVoid() {
@@ -55,8 +58,14 @@ class IndexGenerator(private val fileManager: FileManager) {
                         else -> declaration
                     } as KtNamedDeclaration
 
+                    if ((owner is KtNamedFunction ||
+                                owner is KtProperty) &&
+                        owner.parent.safeAs<KtClassBody>()?.parent is KtClass
+                    ) return
+
                     if (declaration.hasAnnotation(InjektFqNames.Given) ||
-                        declaration.hasAnnotation(InjektFqNames.GivenSetElement)
+                        declaration.hasAnnotation(InjektFqNames.GivenSetElement) ||
+                        declaration.hasAnnotation(InjektFqNames.GivenGroup)
                     ) {
                         val index = Index(
                             owner.fqName!!,
@@ -78,8 +87,8 @@ class IndexGenerator(private val fileManager: FileManager) {
             val fileName = file.packageFqName.pathSegments().joinToString("_") +
                     "_${file.name.removeSuffix(".kt")}Indices.kt"
             val nameProvider = UniqueNameProvider()
-            fileManager.generateFile(
-                originatingFile = file.virtualFilePath,
+            context.generateFile(
+                originatingFile = file,
                 packageFqName = InjektFqNames.IndexPackage,
                 fileName = fileName,
                 code = buildString {

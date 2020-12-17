@@ -84,9 +84,11 @@ sealed class TypeRef {
     abstract val typeArguments: List<TypeRef>
     abstract val variance: Variance
     abstract val isComposable: Boolean
-    abstract val isGiven: Boolean
+    abstract val givenKind: GivenKind?
     abstract val isStarProjection: Boolean
     abstract val qualifiers: List<AnnotationDescriptor>
+    abstract val unqualified: Boolean
+    abstract val path: List<Any>?
 
     private val typeName by unsafeLazy { uniqueTypeName() }
 
@@ -105,6 +107,8 @@ sealed class TypeRef {
         result = 31 * result + qualifiers
             .map { it.type.toTypeRef() to it.allValueArguments }
             .hashCode()
+        result = 31 * result + path.hashCode()
+
         result
     }
 
@@ -143,6 +147,14 @@ sealed class TypeRef {
         visit(this)
         classifiers
     }
+
+    val allTypes: Set<TypeRef> by unsafeLazy {
+        buildSet<TypeRef> {
+            this += this@TypeRef
+            expandedType?.let { this += it.allTypes }
+            this += superTypes().flatMap { it.allTypes }
+        }
+    }
 }
 
 class KotlinTypeRef(
@@ -164,8 +176,8 @@ class KotlinTypeRef(
         kotlinType.hasAnnotation(InjektFqNames.Composable) &&
                 kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
     }
-    override val isGiven: Boolean
-        get() = kotlinType.hasAnnotation(InjektFqNames.Given)
+    override val givenKind: GivenKind?
+        get() = finalType.givenKind()
     override val isMarkedNullable: Boolean by unsafeLazy {
         kotlinType.isMarkedNullable
     }
@@ -174,9 +186,14 @@ class KotlinTypeRef(
             it.type.toTypeRef(it.projectionKind, it.isStarProjection)
         }
     }
+    override val unqualified: Boolean
+        get() = kotlinType.hasAnnotation(InjektFqNames.Unqualified)
     override val qualifiers: List<AnnotationDescriptor> by unsafeLazy {
-        kotlinType.getAnnotatedAnnotations(InjektFqNames.Qualifier)
+        if (!unqualified)
+            kotlinType.getAnnotatedAnnotations(InjektFqNames.Qualifier)
+        else emptyList()
     }
+    override val path: List<Any>? get() = null
 }
 
 class SimpleTypeRef(
@@ -185,9 +202,11 @@ class SimpleTypeRef(
     override val typeArguments: List<TypeRef> = emptyList(),
     override val variance: Variance = Variance.INVARIANT,
     override val isComposable: Boolean = false,
-    override val isGiven: Boolean = false,
+    override val givenKind: GivenKind? = null,
     override val isStarProjection: Boolean = false,
     override val qualifiers: List<AnnotationDescriptor> = emptyList(),
+    override val unqualified: Boolean = false,
+    override val path: List<Any>? = null,
 ) : TypeRef() {
     init {
         check(typeArguments.size == classifier.typeParameters.size) {
@@ -206,18 +225,22 @@ fun TypeRef.copy(
     typeArguments: List<TypeRef> = this.typeArguments,
     variance: Variance = this.variance,
     isComposable: Boolean = this.isComposable,
-    isGiven: Boolean = this.isGiven,
+    givenDeclarationKind: GivenKind? = this.givenKind,
     isStarProjection: Boolean = this.isStarProjection,
     qualifiers: List<AnnotationDescriptor> = this.qualifiers,
+    unqualified: Boolean = this.unqualified,
+    path: List<Any>? = this.path,
 ) = SimpleTypeRef(
     classifier,
     isMarkedNullable,
     typeArguments,
     variance,
     isComposable,
-    isGiven,
+    givenDeclarationKind,
     isStarProjection,
-    qualifiers
+    qualifiers,
+    unqualified,
+    path
 )
 
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
@@ -227,7 +250,7 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
             // we copy nullability to support T : Any? -> String
             isMarkedNullable = if (!isStarProjection) isMarkedNullable else it.isMarkedNullable,
             // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
-            qualifiers = qualifiers + it.qualifiers
+            qualifiers = if (unqualified) emptyList() else qualifiers + it.qualifiers
         )
     }
 
@@ -257,26 +280,6 @@ val STAR_PROJECTION_TYPE = SimpleTypeRef(
     classifier = ClassifierRef(StandardNames.FqNames.any.toSafe()),
     isStarProjection = true
 )
-
-fun TypeRef.replaceTypeParametersWithStars(): TypeRef {
-    if (classifier.isTypeParameter) return STAR_PROJECTION_TYPE
-    if (typeArguments.isEmpty() && expandedType == null) return this
-    return copy(typeArguments = typeArguments.map { it.replaceTypeParametersWithStars() })
-}
-
-fun TypeRef.substituteStars(baseType: TypeRef): TypeRef {
-    if (this == baseType) return this
-    if (isStarProjection && !baseType.classifier.isTypeParameter) return baseType
-    if (classifier != baseType.classifier) return this
-    if (typeArguments.isEmpty()) return this
-    return copy(
-        typeArguments = typeArguments
-            .zip(baseType.typeArguments)
-            .map { (thisTypeArgument, baseTypeArgument) ->
-                thisTypeArgument.substituteStars(baseTypeArgument)
-            }
-    )
-}
 
 fun TypeRef.render(depth: Int = 0): String {
     if (depth > 15) return ""
@@ -378,23 +381,7 @@ fun getSubstitutionMap(
         }
     return substitutionMap
 }
-fun TypeRef.getStarSubstitutionMap(baseType: TypeRef): Map<ClassifierRef, TypeRef> {
-    val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
-    fun visitType(
-        thisType: TypeRef,
-        baseType: TypeRef,
-    ) {
-        if (baseType.isStarProjection && !thisType.isStarProjection && !thisType.classifier.isTypeParameter) {
-            substitutionMap[baseType.classifier] = thisType
-        } else {
-            thisType.typeArguments.zip(baseType.typeArguments).forEach {
-                visitType(it.first, it.second)
-            }
-        }
-    }
-    visitType(this, baseType)
-    return substitutionMap
-}
+
 fun TypeRef.isAssignableTo(
     superType: TypeRef,
     substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap(),
@@ -403,6 +390,7 @@ fun TypeRef.isAssignableTo(
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return false
         if (!qualifiers.isAssignableTo(superType.qualifiers)) return false
+        if (path != superType.path) return false
         if (thisAndAllSuperTypes.any { it.isComposable } != superType.thisAndAllSuperTypes.any { it.isComposable }) return false
         if (typeArguments.zip(superType.typeArguments)
                 .any { (a, b) -> !a.isAssignableTo(b, substitutionMap) }
@@ -431,6 +419,7 @@ fun TypeRef.isAssignableTo(
     }
     return false
 }
+
 fun TypeRef.isSubTypeOf(
     superType: TypeRef,
     substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap(),
@@ -439,6 +428,7 @@ fun TypeRef.isSubTypeOf(
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return false
         if (!qualifiers.isAssignableTo(superType.qualifiers)) return false
+        if (path != superType.path) return false
         if (thisAndAllSuperTypes.any { it.isComposable } != superType.thisAndAllSuperTypes.any { it.isComposable }) return false
         if (typeArguments.zip(superType.typeArguments)
                 .any { (a, b) -> !a.isAssignableTo(b, substitutionMap) }
@@ -474,18 +464,22 @@ fun TypeRef.isSubTypeOf(
     }
     return false
 }
+
 fun List<AnnotationDescriptor>.isAssignableTo(superQualifiers: List<AnnotationDescriptor>): Boolean {
     if (size != superQualifiers.size) return false
     return zip(superQualifiers).all { (thisQualifier, superQualifier) ->
         thisQualifier.isAssignableTo(superQualifier)
     }
 }
+
 fun AnnotationDescriptor.isAssignableTo(superQualifier: AnnotationDescriptor): Boolean {
     if (!type.toTypeRef().isAssignableTo(superQualifier.type.toTypeRef())) return false
     return allValueArguments == superQualifier.allValueArguments
 }
+
 val TypeRef.fullyExpandedType: TypeRef
     get() = expandedType?.fullyExpandedType ?: this
+
 fun TypeRef.subtypeView(
     classifier: ClassifierRef,
     substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap(),

@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.DeclarationStore
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
