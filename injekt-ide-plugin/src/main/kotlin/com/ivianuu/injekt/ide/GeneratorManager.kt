@@ -6,8 +6,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiManager
 import com.intellij.util.concurrency.AppExecutorUtil
 import com.ivianuu.injekt.compiler.SrcDir
-import com.ivianuu.injekt.compiler.generator.IndexGenerator
 import com.ivianuu.injekt.compiler.generator.Generator
+import com.ivianuu.injekt.compiler.generator.GivenFunGenerator
+import com.ivianuu.injekt.compiler.generator.IndexGenerator
 import org.jetbrains.kotlin.analyzer.ModuleInfo
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.caches.resolve.KotlinCacheService
@@ -40,7 +41,7 @@ class GeneratorManager(private val project: Project, private val srcDir: SrcDir)
 
     private val psiManager = PsiManager.getInstance(project)
 
-    private val generators: List<Generator> = listOf(IndexGenerator(), TestGenerator())
+    private val generators: List<Generator> = listOf(IndexGenerator(), GivenFunGenerator())
 
     private val fileStates = mutableMapOf<String, FileState>()
 

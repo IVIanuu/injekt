@@ -1,7 +1,5 @@
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.resolution.GivenKind
-import com.ivianuu.injekt.compiler.resolution.givenKind
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
@@ -14,23 +12,24 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
 class GivenFunFunctionDescriptor(
     val invokeDescriptor: SimpleFunctionDescriptor,
     val givenFunDescriptor: FunctionDescriptor,
+    val givenInvokeDescriptor: FunctionDescriptor,
 ) : SimpleFunctionDescriptor by invokeDescriptor {
-    private val valueParameters = givenFunDescriptor.valueParameters
-        .filterNot { it.givenKind() == GivenKind.VALUE }
-        .mapIndexed { index, givenFunParameter ->
+    private val valueParameters = givenInvokeDescriptor
+        .valueParameters
+        .mapIndexed { index, givenInvokeParameter ->
             val invokeParameter = invokeDescriptor.valueParameters[index]
             object : ValueParameterDescriptorImpl(
                 this@GivenFunFunctionDescriptor,
                 null,
                 index,
                 Annotations.EMPTY,
-                givenFunParameter.name,
+                givenInvokeParameter.name,
                 invokeParameter.type,
-                givenFunParameter.declaresDefaultValue(),
+                givenInvokeParameter.declaresDefaultValue(),
                 false,
                 false,
                 null,
-                SourceElement.NO_SOURCE
+                givenInvokeParameter.source
             ) {}
         }
 
@@ -43,8 +42,11 @@ class GivenFunFunctionDescriptor(
         GivenFunFunctionDescriptor(
             invokeDescriptor
                 .substitute(substitutor) as SimpleFunctionDescriptor,
-            givenFunDescriptor
+            givenFunDescriptor,
+            givenInvokeDescriptor
         )
 
     override fun hasStableParameterNames(): Boolean = true
+
+    override fun getSource(): SourceElement = givenInvokeDescriptor.source
 }

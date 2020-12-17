@@ -1,8 +1,10 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.getGivenParameters
 import com.ivianuu.injekt.compiler.hasAnnotation
+import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
@@ -13,7 +15,6 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.calls.context.BasicCallResolutionContext
 import org.jetbrains.kotlin.resolve.calls.tower.ImplicitScopeTower
 import org.jetbrains.kotlin.resolve.calls.tower.PSICallResolver
-import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyPackageDescriptor
 import org.jetbrains.kotlin.resolve.scopes.ResolutionScope
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValueWithSmartCastInfo
 import org.jetbrains.kotlin.types.getAbbreviation
@@ -41,13 +42,20 @@ class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtensi
                 resolutionContext.scope.ownerDescriptor.name.asString() !=
                 "invoke${typeAlias.name.asString().capitalize()}"
             ) {
-                val givenFunction = (typeAlias.containingDeclaration as LazyPackageDescriptor)
-                    .getMemberScope()
+                val memberScope = typeAlias.findPackage().getMemberScope()
+                val givenFunction = memberScope
                     .getContributedFunctions(typeAlias.name, NoLookupLocation.FROM_BACKEND)
+                    .single()
+                val givenInvokeFunction = memberScope
+                    .getContributedFunctions("invoke${
+                        givenFunction.name.asString().capitalize()
+                    }".asNameId(),
+                        NoLookupLocation.FROM_BACKEND)
                     .single()
                 newCandidates += GivenFunFunctionDescriptor(
                     candidates.single() as SimpleFunctionDescriptor,
-                    givenFunction
+                    givenFunction,
+                    givenInvokeFunction
                 )
             }
         }

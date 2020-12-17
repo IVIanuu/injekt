@@ -3,6 +3,7 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
+import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
@@ -11,8 +12,6 @@ import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 class GivenFunChecker : DeclarationChecker {
     override fun check(
@@ -37,8 +36,7 @@ class GivenFunChecker : DeclarationChecker {
                     .on(declaration)
             )
         } else {
-            val functionsWithSameName = descriptor.module.getPackage(descriptor.fqNameSafe.parent())
-                .memberScope
+            val functionsWithSameName = descriptor.findPackage().getMemberScope()
                 .getContributedFunctions(descriptor.name, NoLookupLocation.FROM_BACKEND)
                 .filter { it.hasAnnotation(InjektFqNames.GivenFun) }
             if (functionsWithSameName.size > 1) {
