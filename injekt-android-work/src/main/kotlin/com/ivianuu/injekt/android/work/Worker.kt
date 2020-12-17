@@ -29,6 +29,7 @@ import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.ComponentKey
 import com.ivianuu.injekt.component.componentElement
 import com.ivianuu.injekt.component.get
+import com.ivianuu.injekt.component.getDependency
 import kotlin.reflect.KClass
 
 inline fun <reified T : ListenableWorker> worker():
@@ -50,8 +51,8 @@ private val WorkerComponentFactoryKey =
         .build()
 }
 
-/*@Given inline val @Given Component<WorkerScoped>.applicationComponent: Component<ApplicationScoped>
-    get() = getDependency(ApplicationScoped)*/
+@Given inline val @Given Component<WorkerScoped>.applicationComponent: Component<ApplicationScoped>
+    get() = getDependency(ApplicationScoped)
 
 private val WorkerContextKey = ComponentKey<WorkerContext>()
 typealias WorkerContext = Context
