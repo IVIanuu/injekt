@@ -7,6 +7,7 @@ import com.ivianuu.injekt.compiler.resolution.CallableRef
 import com.ivianuu.injekt.compiler.resolution.DefaultGivenNode
 import com.ivianuu.injekt.compiler.resolution.FunGivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
+import com.ivianuu.injekt.compiler.resolution.GivenKind
 import com.ivianuu.injekt.compiler.resolution.ObjectGivenNode
 import com.ivianuu.injekt.compiler.resolution.ProviderGivenNode
 import com.ivianuu.injekt.compiler.resolution.ProviderParameterGivenNode
@@ -14,6 +15,7 @@ import com.ivianuu.injekt.compiler.resolution.SetGivenNode
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.fullyExpandedType
 import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
+import com.ivianuu.injekt.compiler.resolution.givenKind
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
@@ -85,6 +87,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         callable.callable
             .valueParameters
             .filter { call.getValueArgument(it.index) == null }
+            .filter { it.givenKind() == GivenKind.VALUE }
             .map {
                 it to expressionFor(
                     callable.parameterTypes[it]!!,
@@ -121,17 +124,26 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
     ): () -> IrExpression = {
         DeclarationIrBuilder(pluginContext, symbol)
             .irLambda(given.type.toIrType(pluginContext)) { function ->
-                val function = (given.callable.callable as FunctionDescriptor).irFunction()
+                val givenFun = (given.callable.callable as FunctionDescriptor).irFunction()
                 val typeArguments = getSubstitutionMap(
                     listOf(given.type to given.originalType),
                     given.type.classifier.typeParameters
                 ).values
                 DeclarationIrBuilder(pluginContext, symbol)
-                    .irCall(function.symbol)
+                    .irCall(givenFun.symbol)
                     .apply {
                         typeArguments
                             .forEachIndexed { index, typeArgument ->
                                 putTypeArgument(index, typeArgument.toIrType(pluginContext))
+                            }
+
+                        givenFun
+                            .valueParameters
+                            .filterNot { it.descriptor.givenKind() == GivenKind.VALUE }
+                            .forEachIndexed { index, valueParameter ->
+                                putValueArgument(valueParameter.index,
+                                    DeclarationIrBuilder(pluginContext, symbol)
+                                        .irGet(function.valueParameters[index]))
                             }
 
                         fillGivens(given.callable, this)

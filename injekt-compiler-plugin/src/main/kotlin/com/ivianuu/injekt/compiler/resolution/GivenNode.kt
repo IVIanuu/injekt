@@ -9,7 +9,6 @@ import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 sealed class GivenNode {
     abstract val type: TypeRef
@@ -160,6 +159,10 @@ fun CallableRef.getGivenRequests(): List<GivenRequest> {
     return callable.allParameters
         .filter {
             callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
+        }
+        .filter {
+            it === callable.dispatchReceiverParameter ||
+                    it.givenKind() == GivenKind.VALUE
         }
         .map {
             val name = when {

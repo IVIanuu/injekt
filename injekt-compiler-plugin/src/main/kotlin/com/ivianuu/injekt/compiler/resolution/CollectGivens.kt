@@ -98,25 +98,11 @@ fun Annotated.givenKind(): GivenKind? = when {
 }
 
 fun CallableDescriptor.collectGivenDeclarations(): List<CallableRef> {
-    val userData = getUserData(DslMarkerUtils.FunctionTypeAnnotationsKey)
-    val givenDeclarationParameters = getGivenDeclarationParameters()
-    fun ParameterDescriptor.declarationKind(): GivenKind? =
-        givenKind() ?: type.givenKind() ?: userData?.let {
-            when {
-                userData.hasAnnotation(InjektFqNames.Given) -> GivenKind.VALUE
-                userData.hasAnnotation(InjektFqNames.GivenSetElement) -> GivenKind.SET_ELEMENT
-                userData.hasAnnotation(InjektFqNames.GivenGroup) -> GivenKind.GROUP
-                else -> null
-            }
-        } ?: givenDeclarationParameters
-            .firstOrNull { it.callable == this }
-            ?.givenKind
-
     val declarations = mutableListOf<CallableRef>()
 
     declarations += allParameters
         .mapNotNull {
-            val kind = it.declarationKind()
+            val kind = it.givenKind()
             if (kind != null) CallableRef(it, givenKind = kind) else null
         }
 
@@ -128,6 +114,22 @@ fun CallableDescriptor.collectGivenDeclarations(): List<CallableRef> {
     }
 
     return declarations
+}
+
+fun ParameterDescriptor.givenKind(): GivenKind? {
+    val userData = getUserData(DslMarkerUtils.FunctionTypeAnnotationsKey)
+    val givenDeclarationParameters = getGivenDeclarationParameters()
+
+    return (this as Annotated).givenKind() ?: type.givenKind() ?: userData?.let {
+        when {
+            userData.hasAnnotation(InjektFqNames.Given) -> GivenKind.VALUE
+            userData.hasAnnotation(InjektFqNames.GivenSetElement) -> GivenKind.SET_ELEMENT
+            userData.hasAnnotation(InjektFqNames.GivenGroup) -> GivenKind.GROUP
+            else -> null
+        }
+    } ?: givenDeclarationParameters
+        .firstOrNull { it.callable == this }
+        ?.givenKind
 }
 
 fun ClassDescriptor.getGivenDeclarationConstructors(): List<CallableRef> = constructors

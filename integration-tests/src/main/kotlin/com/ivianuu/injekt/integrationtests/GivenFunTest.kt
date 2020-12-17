@@ -6,6 +6,7 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
+import junit.framework.Assert.assertEquals
 import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
@@ -424,6 +425,17 @@ class GivenFunTest {
         """
     ) {
         assertCompileError("top level")
+    }
+
+    @Test
+    fun testCanCallGivenFunctionWithDefaultParameters() = codegen(
+        """
+            @GivenFun fun function(param: String): String = param
+
+            fun invoke(): String = given<function>()(param = "42")
+        """
+    ) {
+        assertEquals("42", invokeSingleFile())
     }
 
 }

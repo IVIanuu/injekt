@@ -123,7 +123,7 @@ fun Annotated.hasAnnotationWithPropertyAndClass(
 
 fun DeclarationDescriptor.isExternalDeclaration(): Boolean = this is DeserializedDescriptor ||
         (this is PropertyAccessorDescriptor && correspondingProperty.isExternalDeclaration()) ||
-        (this is GivenFunctionDescriptor && underlyingDescriptor.isExternalDeclaration())
+        (this is GivenFunctionDescriptor && invokeDescriptor.isExternalDeclaration())
 
 val isIde: Boolean = Project::class.java.name == "com.intellij.openapi.project.Project"
 val isCli: Boolean =

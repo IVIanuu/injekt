@@ -10,11 +10,12 @@ import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
-class InjektIrGenerationExtension() : IrGenerationExtension {
+class InjektIrGenerationExtension : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         generateSymbols(pluginContext)
         moduleFragment.transformChildrenVoid(GivenCallTransformer(pluginContext))
         moduleFragment.transformChildrenVoid(GivenOptimizationTransformer())
+        moduleFragment.transformChildrenVoid(GivenFunCallTransformer(pluginContext))
         generateSymbols(pluginContext)
         moduleFragment.patchDeclarationParents()
     }
