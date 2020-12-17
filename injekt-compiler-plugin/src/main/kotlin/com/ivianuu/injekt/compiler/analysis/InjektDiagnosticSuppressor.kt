@@ -22,7 +22,10 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
                 (diagnostic.psiElement as KtDeclaration).descriptor<ParameterDescriptor>(
                     bindingContext)
                     ?: return false
-            if (bindingContext[InjektWritableSlices.USED_GIVEN, descriptor] != null) return true
+            try {
+                if (bindingContext[InjektWritableSlices.USED_GIVEN, descriptor] != null) return true
+            } catch (e: Throwable) {
+            }
         }
 
         return false
