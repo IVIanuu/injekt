@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.analysis
+package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.UniqueNameProvider
+import com.ivianuu.injekt.compiler.analysis.Index
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.generator.Generator
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassBody

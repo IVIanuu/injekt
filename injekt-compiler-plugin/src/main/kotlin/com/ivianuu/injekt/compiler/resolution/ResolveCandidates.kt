@@ -273,6 +273,19 @@ private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<
             ?.kind == ClassKind.OBJECT
     ) return listOf(ObjectGivenNode(request.type))
 
+    if (request.type.classifier.isGivenFunAlias) {
+        return listOf(
+            FunGivenNode(
+                request.type,
+                Int.MAX_VALUE,
+                CallableRef(
+                    declarationStore.functionDescriptorForFqName(request.type.classifier.fqName)
+                        .single()
+                )
+            )
+        )
+    }
+
     if (request.type.path == null &&
         (request.type.classifier.fqName.asString().startsWith("kotlin.Function")
                 || request.type.classifier.fqName.asString()

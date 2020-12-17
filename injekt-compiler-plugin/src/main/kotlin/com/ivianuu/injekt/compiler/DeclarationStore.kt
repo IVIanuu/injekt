@@ -63,7 +63,7 @@ class DeclarationStore(val module: ModuleDescriptor) {
             .flatMap { propertyDescriptorsForFqName(it.fqName) }
     }
 
-    val globalGivenDeclarations: List<CallableRef> by unsafeLazy {
+    val globalGivenDeclarations by unsafeLazy {
         classIndices
             .flatMap { it.getGivenDeclarationConstructors() } +
                 functionIndices
@@ -87,7 +87,7 @@ class DeclarationStore(val module: ModuleDescriptor) {
         classifierDescriptorForFqName(fqName) as ClassDescriptor
 
     private val functionDescriptorsByFqName = mutableMapOf<FqName, List<FunctionDescriptor>>()
-    private fun functionDescriptorForFqName(fqName: FqName): List<FunctionDescriptor> {
+    fun functionDescriptorForFqName(fqName: FqName): List<FunctionDescriptor> {
         return functionDescriptorsByFqName.getOrPut(fqName) {
             memberScopeForFqName(fqName.parent())!!.getContributedFunctions(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND

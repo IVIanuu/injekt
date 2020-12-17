@@ -20,6 +20,8 @@ import com.ivianuu.injekt.compiler.CacheDir
 import com.ivianuu.injekt.compiler.FileManager
 import com.ivianuu.injekt.compiler.SrcDir
 import com.ivianuu.injekt.compiler.generator.Generator
+import com.ivianuu.injekt.compiler.generator.GivenFunGenerator
+import com.ivianuu.injekt.compiler.generator.IndexGenerator
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.container.ComponentProvider
@@ -59,20 +61,21 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : PartialA
             files.clear()
             files += fileManager.preGenerate(tmpFiles)
 
-            IndexGenerator().generate(
-                object : Generator.Context {
-                    override fun generateFile(
-                        packageFqName: FqName,
-                        fileName: String,
-                        originatingFile: KtFile,
-                        code: String,
-                    ) {
-                        fileManager.generateFile(packageFqName,
-                            fileName, originatingFile.virtualFilePath, code)
-                    }
-                },
-                files
-            )
+            val filesToProcess = files.toList()
+            val context = object : Generator.Context {
+                override fun generateFile(
+                    packageFqName: FqName,
+                    fileName: String,
+                    originatingFile: KtFile,
+                    code: String,
+                ) {
+                    fileManager.generateFile(packageFqName,
+                        fileName, originatingFile.virtualFilePath, code)
+                }
+            }
+            IndexGenerator().generate(context, filesToProcess)
+            GivenFunGenerator().generate(context, filesToProcess)
+
             super.doAnalysis(project,
                 module,
                 projectContext,

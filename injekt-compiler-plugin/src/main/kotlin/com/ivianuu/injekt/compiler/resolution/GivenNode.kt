@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 sealed class GivenNode {
     abstract val type: TypeRef
@@ -65,6 +66,23 @@ data class DefaultGivenNode(override val type: TypeRef) : GivenNode() {
         get() = emptyList()
     override val depth: Int
         get() = -1
+}
+
+data class FunGivenNode(
+    override val type: TypeRef,
+    override val depth: Int,
+    val callable: CallableRef,
+) : GivenNode() {
+    override val callContext: CallContext
+        get() = CallContext.DEFAULT
+    override val callableFqName: FqName
+        get() = type.classifier.fqName
+    override val dependencies: List<GivenRequest> = callable.getGivenRequests()
+        .map { it.copy(callContext = type.callContext) }
+    override val originalType: TypeRef
+        get() = type.classifier.defaultType
+    override val providedGivens: List<GivenNode>
+        get() = emptyList()
 }
 
 data class ObjectGivenNode(override val type: TypeRef) : GivenNode() {

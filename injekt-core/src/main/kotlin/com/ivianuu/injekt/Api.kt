@@ -33,6 +33,15 @@ annotation class Given
 inline fun <T> given(@Given value: T): T = value
 
 @Target(
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.LOCAL_VARIABLE,
+    AnnotationTarget.VALUE_PARAMETER,
+    AnnotationTarget.TYPE
+)
+annotation class GivenSetElement
+
+@Target(
     AnnotationTarget.CLASS,
     AnnotationTarget.CONSTRUCTOR,
     AnnotationTarget.FUNCTION,
@@ -43,14 +52,8 @@ inline fun <T> given(@Given value: T): T = value
 )
 annotation class GivenGroup
 
-@Target(
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.PROPERTY,
-    AnnotationTarget.LOCAL_VARIABLE,
-    AnnotationTarget.VALUE_PARAMETER,
-    AnnotationTarget.TYPE
-)
-annotation class GivenSetElement
+@Target(AnnotationTarget.FUNCTION)
+annotation class GivenFun
 
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Qualifier

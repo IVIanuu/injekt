@@ -24,12 +24,14 @@ object InjektFqNames {
 
     val Given = InjektPackage.child("Given".asNameId())
     val GivenGroup = InjektPackage.child("GivenGroup".asNameId())
+    val GivenFun = InjektPackage.child("GivenFun".asNameId())
     val GivenSetElement = InjektPackage.child("GivenSetElement".asNameId())
     val Qualifier = InjektPackage.child("Qualifier".asNameId())
     val Unqualified = InjektPackage.child("Unqualified".asNameId())
-    val givenFun = InjektPackage.child("given".asNameId())
+    val givenfun = InjektPackage.child("given".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
+    val GivenFunAlias = InternalPackage.child("GivenFunAlias".asNameId())
     val Index = InternalPackage.child("Index".asNameId())
 
     val IndexPackage = InternalPackage.child("index".asNameId())

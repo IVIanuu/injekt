@@ -8,7 +8,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class GivenOptimizationTransformer : IrElementTransformerVoid() {
     override fun visitCall(expression: IrCall): IrExpression {
-        return if (expression.symbol.descriptor.fqNameSafe == InjektFqNames.givenFun) {
+        return if (expression.symbol.descriptor.fqNameSafe == InjektFqNames.givenfun) {
             expression.getValueArgument(0)!!
         } else super.visitCall(expression)
     }

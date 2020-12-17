@@ -5,6 +5,7 @@ import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.CallableRef
 import com.ivianuu.injekt.compiler.resolution.DefaultGivenNode
+import com.ivianuu.injekt.compiler.resolution.FunGivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.ObjectGivenNode
 import com.ivianuu.injekt.compiler.resolution.ProviderGivenNode
@@ -103,6 +104,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             when (given) {
                 is CallableGivenNode -> callableExpression(given, symbol)
                 is DefaultGivenNode -> null
+                is FunGivenNode -> funExpression(given, symbol)
                 is ObjectGivenNode -> objectExpression(given, symbol)
                 is ProviderGivenNode -> providerExpression(given, symbol)
                 is ProviderParameterGivenNode -> providerParameterExpression(given, symbol)
@@ -112,6 +114,30 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
     }
 
     private val lambdasByProviderGiven = mutableMapOf<ProviderGivenNode, IrFunction>()
+
+    private fun ResolutionContext.funExpression(
+        given: FunGivenNode,
+        symbol: IrSymbol
+    ): () -> IrExpression = {
+        DeclarationIrBuilder(pluginContext, symbol)
+            .irLambda(given.type.toIrType(pluginContext)) { function ->
+                val function = (given.callable.callable as FunctionDescriptor).irFunction()
+                val typeArguments = getSubstitutionMap(
+                    listOf(given.type to given.originalType),
+                    given.type.classifier.typeParameters
+                ).values
+                DeclarationIrBuilder(pluginContext, symbol)
+                    .irCall(function.symbol)
+                    .apply {
+                        typeArguments
+                            .forEachIndexed { index, typeArgument ->
+                                putTypeArgument(index, typeArgument.toIrType(pluginContext))
+                            }
+
+                        fillGivens(given.callable, this)
+                    }
+            }
+    }
 
     private fun ResolutionContext.objectExpression(
         given: ObjectGivenNode,

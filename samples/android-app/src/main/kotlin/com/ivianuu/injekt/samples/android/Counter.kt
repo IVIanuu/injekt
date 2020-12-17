@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.GivenFun
 import com.ivianuu.injekt.GivenGroup
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,14 +21,7 @@ object CounterKey
 
 @GivenGroup val counterKeyUiBinding = keyUiBinding<CounterKey, CounterPage>()
 
-typealias CounterPage = @Composable () -> Unit
-
-@Given fun provideCounterPage(
-    @Given state: @Composable () -> @UiState CounterState,
-    @Given dispatch: () -> Dispatch<CounterAction>,
-): CounterPage = { CounterPage(state(), dispatch()) }
-
-@Composable private fun CounterPage(
+@GivenFun @Composable fun CounterPage(
     @Given state: @UiState CounterState,
     @Given dispatch: Dispatch<CounterAction>,
 ) {

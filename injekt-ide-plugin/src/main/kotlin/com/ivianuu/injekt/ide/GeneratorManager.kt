@@ -6,7 +6,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiManager
 import com.intellij.util.concurrency.AppExecutorUtil
 import com.ivianuu.injekt.compiler.SrcDir
-import com.ivianuu.injekt.compiler.analysis.IndexGenerator
+import com.ivianuu.injekt.compiler.generator.IndexGenerator
 import com.ivianuu.injekt.compiler.generator.Generator
 import org.jetbrains.kotlin.analyzer.ModuleInfo
 import org.jetbrains.kotlin.backend.common.serialization.findPackage

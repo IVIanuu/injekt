@@ -30,6 +30,7 @@ data class ClassifierRef(
     val isTypeParameter: Boolean = false,
     val isObject: Boolean = false,
     val isTypeAlias: Boolean = false,
+    val isGivenFunAlias: Boolean = false,
     val descriptor: ClassifierDescriptor? = null
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
@@ -75,6 +76,7 @@ fun ClassifierDescriptor.toClassifierRef(): ClassifierRef = ClassifierRef(
     isTypeParameter = this is TypeParameterDescriptor,
     isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
     isTypeAlias = this is TypeAliasDescriptor,
+    isGivenFunAlias = this is TypeAliasDescriptor && hasAnnotation(InjektFqNames.GivenFunAlias),
     descriptor = this
 )
 
