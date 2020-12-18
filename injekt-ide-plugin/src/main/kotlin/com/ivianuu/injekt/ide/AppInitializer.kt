@@ -50,95 +50,19 @@ class AppInitializer : ApplicationInitializedListener {
             Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
                 .registerExtension(InjektDiagnosticSuppressor())
 
-            /*val generatorManager = GeneratorManager(project, File("build/generated/source/injekt"))
-
-            PackageFragmentProviderExtension.registerExtension(
-                project,
-                GeneratorPackageFragmentProviderExtension(generatorManager)
-            )
-
-            fun projectOpened() {
-                val projectFiles = project.relevantFiles()
-                println("relvant files $projectFiles")
-                generatorManager.refresh(projectFiles)
-            }
-
-            runBackgroundableTask("Initialize injekt") { projectOpened() }
-
-
-            Extensions.getRootArea()
-                .getExtensionPoint(StartupActivity.POST_STARTUP_ACTIVITY)
-                .registerExtension(StartupActivity {
-                    projectOpened()
-                }, LoadingOrder.FIRST, project)
-
-            val editorQueue =
-                MergingUpdateQueue("arrow doc events", 500, true, null, project, null, Alarm.ThreadToUse.POOLED_THREAD)
-
-            /*VirtualFileManager.getInstance().addAsyncFileListener(
-                { events ->
-                    println("prepare events $events")
-
-                    val relevantFiles =
-                        events.filter { vfile -> vfile.isValid && vfile is KotlinFileType }
-                            .mapNotNull { vFile -> vFile.file }
-
-                    if (relevantFiles.isEmpty()) {
-                        return@addAsyncFileListener null
-                    }
-
-                    object : AsyncFileListener.ChangeApplier {
-                        override fun afterVfsChange() {
-                            println("after vfs change ${relevantFiles}")
-                        }
-                    }
-                },
-                project
-            )*/
-
-            EditorFactory.getInstance().eventMulticaster.addDocumentListener(object : BulkAwareDocumentListener.Simple {
-                override fun afterDocumentChange(document: Document) {
-                    println("document changed $document")
-                    editorQueue.queue(Update.create(document) {
-                        ReadAction.compute<Unit, Throwable> {
-                            FileDocumentManager.getInstance()
-                                .getFile(document)
-                                // proceed unless
-                                ?.takeUnless {
-                                    it is LightVirtualFile ||
-                                            !it.relevantFile() ||
-                                            !FileIndexFacade.getInstance(project).isInSourceContent(it)
-                                }
-                                ?.let { _ ->
-                                    PsiDocumentManager.getInstance(project)
-                                        .getPsiFile(document)
-                                        ?.safeAs<KtFile>()
-                                        ?.takeIf { it.isPhysical && !it.isCompiled }
-                                        ?.let { ktFile ->
-                                            println("transforming ${ktFile.name} after change in editor")
-                                            if (app.isWriteAccessAllowed) {
-                                                PsiDocumentManager.getInstance(project).commitDocument(document)
-                                            }
-                                            generatorManager.refresh(listOf(ktFile))
-                                        }
-                                }
-                        }
-                    })
-                }
-            }, project)*/
+            registerGivenCallCheckerRunner(project)
         }
     }
-
-    fun <A> Application.registerTopic(topic: Topic<A>, listeners: A): Unit =
-        messageBus.connect(this).subscribe(topic, listeners)
-
-    fun Application.projectOpened(opened: (Project) -> Unit): Unit =
-        registerTopic(ProjectManager.TOPIC, object : ProjectManagerListener {
-            override fun projectOpened(project: Project): Unit =
-                opened(project)
-        })
-
 }
+
+fun <A> Application.registerTopic(topic: Topic<A>, listeners: A): Unit =
+    messageBus.connect(this).subscribe(topic, listeners)
+
+fun Application.projectOpened(opened: (Project) -> Unit): Unit =
+    registerTopic(ProjectManager.TOPIC, object : ProjectManagerListener {
+        override fun projectOpened(project: Project): Unit =
+            opened(project)
+    })
 
 fun <F : PsiFile> List<VirtualFile>.files(project: Project): List<F> =
     mapNotNull { PsiManager.getInstance(project).findFile(it) as? F }

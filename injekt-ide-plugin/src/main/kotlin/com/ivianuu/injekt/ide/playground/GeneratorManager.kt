@@ -2,6 +2,7 @@ package com.ivianuu.injekt.ide
 
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiManager
 import com.intellij.util.concurrency.AppExecutorUtil
@@ -36,7 +37,7 @@ import org.jetbrains.kotlin.utils.Printer
 
 class GeneratorManager(private val project: Project, private val srcDir: SrcDir) {
 
-    private val cacheExecutor =
+    val cacheExecutor =
         AppExecutorUtil.createBoundedApplicationPoolExecutor("Injekt worker", 1)
 
     private val psiManager = PsiManager.getInstance(project)
@@ -58,12 +59,14 @@ class GeneratorManager(private val project: Project, private val srcDir: SrcDir)
         fileStates.values.flatMap { it.descriptors }
 
     fun refresh(files: List<KtFile>) {
+        return
         ReadAction.nonBlocking {
             val changedFiles = files
                 .filter {
                     val state = fileStates[it.virtualFilePath]
                     state == null || state.fileHash != it.text.hashCode()
                 }
+            changedFiles.forEach { fileStates.remove(it.virtualFilePath) }
 
             println("refresh files $files: changed $changedFiles")
 
@@ -129,18 +132,24 @@ class GeneratorManager(private val project: Project, private val srcDir: SrcDir)
                     )
                 }
 
-                println("new state $fileStates")
-
                 newDescriptors
                     .flatMap { it.second }
                     .filterIsInstance<LazyEntity>()
                     .forEach { it.forceResolveAllContents() }
 
+                println("new state $fileStates")
+
                 for ((origin, _) in newFiles) {
                     DaemonCodeAnalyzer.getInstance(project).restart(origin)
                 }
             } catch (e: Throwable) {
-                e.printStackTrace()
+                if (e is ProcessCanceledException) {
+                    cacheExecutor.submit {
+                        refresh(files)
+                    }
+                } else {
+                    e.printStackTrace()
+                }
             }
         }
             .expireWith(project)
