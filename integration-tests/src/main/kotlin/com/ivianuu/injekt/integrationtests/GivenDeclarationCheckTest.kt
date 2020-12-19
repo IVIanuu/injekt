@@ -35,16 +35,16 @@ class GivenDeclarationCheckTest {
             @Given fun bar(foo: Foo) = Bar(foo)
         """
     ) {
-        assertCompileError("Non @Given value parameter")
+        assertCompileError("Non @Given parameter")
     }
 
     @Test
-    fun testGivenWithNonGivenExtensionReceiver() = codegen(
-        """
-            @Given fun Foo.bar() = Bar(this)
+    fun testGivenLambdaWithNonGivenParameter() = codegen(
+            """
+            val lambda: @Given (Foo) -> Bar = { Bar(it) }
         """
     ) {
-        assertCompileError("@Given declaration extension receiver must be annotated with @Given")
+        assertCompileError("Non @Given parameter")
     }
 
     @Test

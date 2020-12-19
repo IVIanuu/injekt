@@ -16,8 +16,8 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         moduleFragment.transformChildrenVoid(GivenCallTransformer(pluginContext))
         moduleFragment.transformChildrenVoid(GivenOptimizationTransformer())
         moduleFragment.transformChildrenVoid(GivenFunCallTransformer(pluginContext))
-        generateSymbols(pluginContext)
         moduleFragment.patchDeclarationParents()
+        generateSymbols(pluginContext)
     }
 }
 

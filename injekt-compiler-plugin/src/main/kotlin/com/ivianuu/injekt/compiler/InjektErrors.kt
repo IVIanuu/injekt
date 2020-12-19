@@ -91,22 +91,14 @@ interface InjektErrors {
                 }
 
         @JvmField
-        val NON_GIVEN_VALUE_PARAMETER_ON_GIVEN_DECLARATION =
+        val NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION =
             DiagnosticFactory1.create<PsiElement, Name>(Severity.ERROR)
                 .also {
                     MAP.put(
                         it,
-                        "non @Given value parameter on @{0} declaration",
+                        "non @Given parameter on @{0} declaration",
                         Renderers.TO_STRING
                     )
-                }
-
-        @JvmField
-        val GIVEN_DECLARATION_WITH_NON_GIVEN_EXTENSION_RECEIVER =
-            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also {
-                    MAP.put(it,
-                        "@Given declaration extension receiver must be annotated with @Given")
                 }
 
         @JvmField

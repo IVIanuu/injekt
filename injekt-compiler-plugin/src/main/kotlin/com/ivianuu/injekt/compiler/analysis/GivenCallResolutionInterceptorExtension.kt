@@ -61,12 +61,15 @@ class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtensi
         }
 
         newCandidates += candidates
-            .filter { it.getGivenParameters().isNotEmpty() }
-            .map { it.toGivenFunctionDescriptor() }
+            .map {
+                if (it.getGivenParameters().isNotEmpty()) {
+                    it.toGivenFunctionDescriptor()
+                } else {
+                    it
+                }
+            }
 
-        if (newCandidates.isEmpty()) {
-            newCandidates += candidates
-        }
+        newCandidates += candidates
 
         return newCandidates
     }

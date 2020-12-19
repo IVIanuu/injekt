@@ -3,16 +3,17 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.ParameterDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.calls.checkers.AdditionalTypeChecker
+import org.jetbrains.kotlin.resolve.calls.context.ResolutionContext
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.types.KotlinType
 
 class GivenChecker : DeclarationChecker {
 
@@ -21,17 +22,29 @@ class GivenChecker : DeclarationChecker {
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext,
     ) {
+        if (descriptor is ValueDescriptor &&
+            (descriptor.type.hasAnnotation(InjektFqNames.Given) ||
+                    descriptor.type.hasAnnotation(InjektFqNames.GivenGroup) ||
+                    descriptor.type.hasAnnotation(InjektFqNames.GivenSetElement)) &&
+                descriptor.type.arguments.dropLast(1)
+                    .any { !it.type.hasAnnotation(InjektFqNames.Given) }) {
+            context.trace.report(
+                InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
+                    .on(
+                        declaration,
+                        when {
+                            descriptor.type.hasAnnotation(InjektFqNames.Given) -> InjektFqNames.Given.shortName()
+                            descriptor.type.hasAnnotation(InjektFqNames.GivenGroup) -> InjektFqNames.GivenGroup.shortName()
+                            descriptor.type.hasAnnotation(InjektFqNames.GivenSetElement) -> InjektFqNames.GivenSetElement.shortName()
+                            else -> error("")
+                        }
+                    )
+            )
+        }
+
         if (descriptor is SimpleFunctionDescriptor) {
-            if (descriptor.hasAnnotation(InjektFqNames.Given) &&
-                descriptor.extensionReceiverParameter != null &&
-                !descriptor.extensionReceiverParameter!!.type.hasAnnotation(InjektFqNames.Given)
-            ) {
-                context.trace.report(
-                    InjektErrors.GIVEN_DECLARATION_WITH_NON_GIVEN_EXTENSION_RECEIVER
-                        .on(declaration)
-                )
-            }
-            descriptor.valueParameters
+            descriptor.allParameters
+                .filterNot { it === descriptor.dispatchReceiverParameter }
                 .checkParameters(declaration, descriptor, context.trace)
         } else if (descriptor is ClassDescriptor) {
             val givenConstructors = descriptor.constructors
@@ -64,8 +77,16 @@ class GivenChecker : DeclarationChecker {
                 descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Given) != true
             ) {
                 context.trace.report(
-                    InjektErrors.GIVEN_DECLARATION_WITH_NON_GIVEN_EXTENSION_RECEIVER
-                        .on(declaration)
+                    InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
+                        .on(
+                            declaration,
+                            when {
+                                descriptor.hasAnnotation(InjektFqNames.Given) -> InjektFqNames.Given.shortName()
+                                descriptor.hasAnnotation(InjektFqNames.GivenGroup) -> InjektFqNames.GivenGroup.shortName()
+                                descriptor.hasAnnotation(InjektFqNames.GivenSetElement) -> InjektFqNames.GivenSetElement.shortName()
+                                else -> error("")
+                            }
+                        )
                 )
             }
         }
@@ -77,17 +98,22 @@ class GivenChecker : DeclarationChecker {
         trace: BindingTrace,
     ) {
         if (descriptor.hasAnnotation(InjektFqNames.Given) ||
+            descriptor.hasAnnotation(InjektFqNames.GivenGroup) ||
             declaration.hasAnnotation(InjektFqNames.GivenSetElement)
         ) {
             this
-                .filter { !it.hasAnnotation(InjektFqNames.Given) }
+                .filter {
+                    !it.hasAnnotation(InjektFqNames.Given) &&
+                        !it.type.hasAnnotation(InjektFqNames.Given)
+                }
                 .forEach {
                     trace.report(
-                        InjektErrors.NON_GIVEN_VALUE_PARAMETER_ON_GIVEN_DECLARATION
+                        InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
                             .on(
                                 it.findPsi() ?: declaration,
                                 when {
                                     descriptor.hasAnnotation(InjektFqNames.Given) -> InjektFqNames.Given.shortName()
+                                    descriptor.hasAnnotation(InjektFqNames.GivenGroup) -> InjektFqNames.GivenGroup.shortName()
                                     descriptor.hasAnnotation(InjektFqNames.GivenSetElement) -> InjektFqNames.GivenSetElement.shortName()
                                     else -> error("")
                                 }
