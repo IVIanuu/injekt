@@ -27,8 +27,7 @@ intellij {
     pluginName = "Injekt ide plugin"
     updateSinceUntilBuild = false
     setPlugins("org.jetbrains.kotlin:1.4.21-release-Studio4.0-1", "gradle", "gradle-java", "java")
-
-    localPath = "/home/ivianuu/android-studio"
+    //localPath = "/home/ivianuu/android-studio"
 }
 
 dependencies {

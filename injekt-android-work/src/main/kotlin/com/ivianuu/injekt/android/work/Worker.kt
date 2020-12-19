@@ -51,20 +51,20 @@ private val WorkerComponentFactoryKey =
         .build()
 }
 
-@Given inline val @Given Component<WorkerScoped>.applicationComponent: Component<ApplicationScoped>
-    get() = getDependency(ApplicationScoped)
-
 private val WorkerContextKey = ComponentKey<WorkerContext>()
-typealias WorkerContext = Context
 
+typealias WorkerContext = Context
 @Given val @Given Component<WorkerScoped>.workerContext: WorkerContext get() = this[WorkerContextKey]
 
 private val WorkerParametersKey = ComponentKey<WorkerParameters>()
+
 @Given val @Given Component<WorkerScoped>.workerParameters: WorkerParameters
     get() = this[WorkerParametersKey]
-
 typealias WorkerBinding =
         Pair<KClass<out ListenableWorker>, @Given Component<WorkerScoped>.() -> ListenableWorker>
+
+@Given inline val @Given Component<WorkerScoped>.applicationComponent: Component<ApplicationScoped>
+    get() = getDependency(ApplicationScoped)
 
 @Given class InjektWorkerFactory(
     @Given workersFactory: () -> Set<WorkerBinding>,

@@ -101,7 +101,7 @@ object Deps {
     const val koin = "org.koin:koin-core:2.1.5"
 
     object Kotlin {
-        private const val version = "1.4.255-SNAPSHOT"
+        private const val version = "1.4.20"
         const val compiler = "org.jetbrains.kotlin:kotlin-compiler:$version"
         const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
         const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"

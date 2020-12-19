@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
 
 fun registerGivenCallCheckerRunner(project: Project) {
+    return
     val existing = project.getService(KotlinCacheService::class.java)
     project.registerServiceInstance(
         KotlinCacheService::class.java,

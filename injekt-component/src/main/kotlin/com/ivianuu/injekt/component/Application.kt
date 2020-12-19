@@ -18,4 +18,5 @@ typealias App = Any
 private val ApplicationKey = ComponentKey<App>()
 
 private lateinit var _applicationComponent: Component<ApplicationScoped>
-@Given val @Given App.applicationComponent: Component<ApplicationScoped> get() = _applicationComponent
+@Given val @Given App.applicationComponent: Component<ApplicationScoped>
+    get() = _applicationComponent

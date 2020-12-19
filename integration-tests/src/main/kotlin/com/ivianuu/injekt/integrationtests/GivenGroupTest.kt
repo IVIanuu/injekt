@@ -31,7 +31,7 @@ class GivenGroupTest {
     fun testLambdaGivenGroup() = codegen(
         """
             @Given val foo = Foo()
-            @GivenGroup val barGiven: @Given (Foo) -> Bar = { Bar(it) }
+            @GivenGroup val barGiven: @Given (@Given Foo) -> Bar = { Bar(it) }
             fun invoke() = given<Bar>()
         """
     )
@@ -40,7 +40,7 @@ class GivenGroupTest {
     fun testNestedLambdaGivenGroup() = codegen(
         """
             @Given val foo = Foo()
-            @GivenGroup val barGiven: @GivenGroup (Foo) -> @Given () -> Bar = { foo ->
+            @GivenGroup val barGiven: @GivenGroup (@Given Foo) -> @Given () -> Bar = { foo ->
                 {
                     Bar(foo)
                 }
@@ -53,7 +53,7 @@ class GivenGroupTest {
     fun testLambdaGivenSetElement() = codegen(
         """
             @Given val foo = Foo()
-            @GivenGroup val fooSet: @GivenSetElement (Foo) -> Foo = { it }
+            @GivenGroup val fooSet: @GivenSetElement (@Given Foo) -> Foo = { it }
             fun invoke() = given<Set<Foo>>()
         """
     )

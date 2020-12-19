@@ -61,5 +61,15 @@
       <option name="name" value="maven6" />
       <option name="url" value="https://cache-redirector.jetbrains.com/www.jetbrains.com/intellij-repository/releases" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="MavenLocal" />
+      <option name="name" value="MavenLocal" />
+      <option name="url" value="file:/$USER_HOME$/.m2/repository" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="MavenLocal" />
+      <option name="name" value="MavenLocal" />
+      <option name="url" value="file:/$USER_HOME$/.m2/repository/" />
+    </remote-repository>
   </component>
 </project>
