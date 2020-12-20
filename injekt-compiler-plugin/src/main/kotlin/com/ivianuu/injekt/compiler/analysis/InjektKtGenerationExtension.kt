@@ -33,14 +33,12 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
 import org.jetbrains.kotlin.resolve.TopDownAnalysisMode
+import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtension
 
-class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : PartialAnalysisHandlerExtension() {
+class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : AnalysisHandlerExtension {
 
     private val fileManager = FileManager(srcDir, cacheDir)
-
-    override val analyzePartially: Boolean
-        get() = !generatedCode
 
     private var generatedCode = false
 
@@ -75,13 +73,6 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : PartialA
             }
             IndexGenerator().generate(context, filesToProcess)
             GivenFunGenerator().generate(context, filesToProcess)
-
-            super.doAnalysis(project,
-                module,
-                projectContext,
-                files,
-                bindingTrace,
-                componentProvider)
             fileManager.postGenerate()
             generatedCode = true
             return AnalysisResult.RetryWithAdditionalRoots(

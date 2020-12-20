@@ -49,6 +49,12 @@ class FileManager(
             val originatingFilePath = cacheEntries
                 .singleOrNull { it.second == file.virtualFilePath }
                 ?.first
+                ?: file.text
+                    .lines()
+                    .firstOrNull()
+                    ?.split("// injekt" + "_")
+                    ?.getOrNull(1)
+                    ?.takeIf { it.isNotEmpty() }
             if (originatingFilePath == null) {
                 finalFiles += file
                 return@forEach

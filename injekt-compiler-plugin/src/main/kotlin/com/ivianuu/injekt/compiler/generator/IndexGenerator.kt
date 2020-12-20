@@ -92,6 +92,7 @@ class IndexGenerator : Generator {
                 packageFqName = InjektFqNames.IndexPackage,
                 fileName = fileName,
                 code = buildString {
+                    appendLine("// injekt_${file.virtualFilePath}")
                     appendLine("package ${InjektFqNames.IndexPackage}")
                     appendLine("import ${InjektFqNames.Index}")
                     indices

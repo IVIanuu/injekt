@@ -22,7 +22,7 @@ class GivenChecker : DeclarationChecker {
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext,
     ) {
-        if (descriptor is ValueDescriptor &&
+        /*if (descriptor is ValueDescriptor &&
             (descriptor.type.hasAnnotation(InjektFqNames.Given) ||
                     descriptor.type.hasAnnotation(InjektFqNames.GivenGroup) ||
                     descriptor.type.hasAnnotation(InjektFqNames.GivenSetElement)) &&
@@ -40,7 +40,7 @@ class GivenChecker : DeclarationChecker {
                         }
                     )
             )
-        }
+        }*/
 
         if (descriptor is SimpleFunctionDescriptor) {
             descriptor.allParameters

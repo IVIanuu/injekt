@@ -33,7 +33,7 @@ import com.ivianuu.injekt.component.getDependency
 import kotlin.reflect.KClass
 
 inline fun <reified T : ListenableWorker> worker():
-        @GivenSetElement ((Component<WorkerScoped>) -> T) -> WorkerBinding = { T::class to it }
+        @GivenSetElement (@Given (Component<WorkerScoped>) -> T) -> WorkerBinding = { T::class to it }
 
 @Given object WorkerScoped : Component.Name
 

@@ -35,6 +35,7 @@ class GivenFunGenerator : Generator {
         val packageFqName = file.packageFqName
         val fileName = "${file.name.removeSuffix(".kt")}GivenFunAliases.kt"
         val code = buildString {
+            appendLine("// injekt_${file.virtualFilePath}")
             appendLine("package $packageFqName")
 
             val imports = file

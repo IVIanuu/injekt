@@ -4,8 +4,10 @@ import com.ivianuu.injekt.Given
 
 object ApplicationScoped : Component.Name
 
-fun App.initializeApp(@Given elements: (Component<ApplicationScoped>) -> Set<ComponentElement<ApplicationScoped>>) {
-    _applicationComponent = ComponentBuilder(ApplicationScoped, elements)
+fun App.initializeApp(
+    @Given elementsFactory: (Component<ApplicationScoped>) -> Set<ComponentElement<ApplicationScoped>>
+) {
+    _applicationComponent = ComponentBuilder(ApplicationScoped, elementsFactory)
         .element(ApplicationKey, this)
         .build()
 }
