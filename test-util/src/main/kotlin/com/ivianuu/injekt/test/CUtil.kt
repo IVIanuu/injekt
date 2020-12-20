@@ -24,6 +24,7 @@ import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
 import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.name.FqName
@@ -43,10 +44,9 @@ fun source(
             appendLine("package $packageFqName")
             appendLine()
             appendLine("import androidx.compose.runtime.*")
-            //appendLine("import com.ivianuu.injekt.common.*")
             appendLine("import com.ivianuu.injekt.*")
+            appendLine("import com.ivianuu.injekt.component.*")
             appendLine("import com.ivianuu.injekt.integrationtests.*")
-            appendLine("import com.ivianuu.injekt.merge.*")
             appendLine("import com.ivianuu.injekt.internal.*")
             appendLine("import com.ivianuu.injekt.test.*")
             appendLine("import kotlin.reflect.*")
@@ -167,16 +167,19 @@ fun <T> KotlinCompilation.Result.invokeSingleFile(vararg args: Any?): T {
 private fun KotlinCompilation.Result.getSingleClass(): KClass<*> =
     classLoader.loadClass("com.ivianuu.injekt.integrationtests.FileKt").kotlin
 
-fun KotlinCompilation.Result.assertInternalError(
-    message: String? = null,
-) {
-    assertEquals(KotlinCompilation.ExitCode.INTERNAL_ERROR, exitCode)
-    message?.let { assertTrue(messages.toLowerCase().contains(it.toLowerCase())) }
-}
-
 fun KotlinCompilation.Result.assertCompileError(
     message: String? = null,
 ) {
     assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, exitCode)
     message?.let { assertTrue(messages.toLowerCase().contains(it.toLowerCase())) }
+}
+
+fun KotlinCompilation.Result.assertMessage(
+    message: String,
+) {
+    assertTrue(message in messages)
+}
+
+fun KotlinCompilation.Result.assertNoMessage(message: String) {
+    assertFalse(message in messages)
 }

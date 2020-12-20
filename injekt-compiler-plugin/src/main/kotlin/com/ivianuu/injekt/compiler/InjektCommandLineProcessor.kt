@@ -17,8 +17,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Scoped
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
@@ -29,6 +27,8 @@ import java.io.File
 @AutoService(CommandLineProcessor::class)
 class InjektCommandLineProcessor : CommandLineProcessor {
     override val pluginId = "com.ivianuu.injekt"
+
+    // todo remove options
     override val pluginOptions = listOf(
         CliOption(
             optionName = "generateComponents",
@@ -58,41 +58,33 @@ class InjektCommandLineProcessor : CommandLineProcessor {
         configuration: CompilerConfiguration,
     ) {
         when (option.optionName) {
-            "generateComponents" -> configuration.put(GenerateComponentsKey, value.toBoolean())
-            "generateMergeComponents" -> configuration.put(GenerateMergeComponentsKey,
-                value.toBoolean())
             "srcDir" -> configuration.put(SrcDirKey, value)
             "cacheDir" -> configuration.put(CacheDirKey, value)
         }
     }
 }
 
-val GenerateComponentsKey = CompilerConfigurationKey<Boolean>("generateComponents")
-typealias GenerateComponents = Boolean
-
-@Scoped(ApplicationComponent::class)
-@Binding fun generateComponents(configuration: CompilerConfiguration): GenerateComponents =
-    configuration.getNotNull(GenerateComponentsKey)
-
-val GenerateMergeComponentsKey = CompilerConfigurationKey<Boolean>("generateMergeComponents")
-typealias GenerateMergeComponents = Boolean
-
-@Scoped(ApplicationComponent::class)
-@Binding fun generateMergeComponents(configuration: CompilerConfiguration): GenerateMergeComponents =
-    configuration.getNotNull(GenerateMergeComponentsKey)
-
 val SrcDirKey = CompilerConfigurationKey<String>("srcDir")
 typealias SrcDir = File
 
-@Scoped(ApplicationComponent::class)
-@Binding fun srcDir(configuration: CompilerConfiguration): SrcDir =
+fun srcDir(configuration: CompilerConfiguration): SrcDir =
     File(configuration.getNotNull(SrcDirKey))
         .also { it.mkdirs() }
 
 val CacheDirKey = CompilerConfigurationKey<String>("cacheDir")
 typealias CacheDir = File
 
-@Scoped(ApplicationComponent::class)
-@Binding fun cacheDir(configuration: CompilerConfiguration): CacheDir =
+fun cacheDir(configuration: CompilerConfiguration): CacheDir =
     File(configuration.getNotNull(CacheDirKey))
         .also { it.mkdirs() }
+
+val DumpDirKey = CompilerConfigurationKey<String>("dumpDir")
+typealias DumpDir = File
+
+fun dumpDir(configuration: CompilerConfiguration, srcDir: SrcDir): DumpDir {
+    val sourceSetName = srcDir.name
+    return File(configuration.getNotNull(CacheDirKey))
+        .parentFile
+        .resolve("dump/$sourceSetName")
+        .also { it.mkdirs() }
+}

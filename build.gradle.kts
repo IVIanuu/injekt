@@ -16,8 +16,6 @@
 
 import com.ivianuu.injekt.gradle.InjektExtension
 import com.ivianuu.injekt.gradle.setupForInjekt
-import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
-import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 
 buildscript {
     repositories {
@@ -36,6 +34,7 @@ buildscript {
         classpath(Deps.Injekt.gradlePlugin)
         classpath(Deps.Kotlin.gradlePlugin)
         classpath(Deps.mavenGradlePlugin)
+        classpath(Deps.shadowGradlePlugin)
         classpath(Deps.spotlessGradlePlugin)
     }
 }

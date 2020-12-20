@@ -31,7 +31,7 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev425"
+    const val version = "${Build.versionName}-dev437"
 }
 
 object Deps {
@@ -41,7 +41,7 @@ object Deps {
         const val appCompat = "androidx.appcompat:appcompat:1.1.0"
 
         object Compose {
-            const val version = "1.0.0-SNAPSHOT"
+            const val version = "1.0.0-alpha09"
             const val snapshot = "6989480"
             const val compiler = "androidx.compose.compiler:compiler:$version"
             const val material = "androidx.compose.material:material:$version"
@@ -88,11 +88,8 @@ object Deps {
     const val guice = "com.google.inject:guice:4.2.2"
 
     object Injekt {
-        const val version = "0.0.1-dev421"
-        const val core = "com.ivianuu.injekt:injekt-core:$version"
-        const val compilerPlugin = "com.ivianuu.injekt:injekt-compiler-plugin:$version"
+        const val version = "0.0.1-dev436"
         const val gradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:$version"
-        const val merge = "com.ivianuu.injekt:injekt-merge:$version"
     }
 
     const val junit = "junit:junit:4.12"
@@ -104,14 +101,17 @@ object Deps {
     const val koin = "org.koin:koin-core:2.1.5"
 
     object Kotlin {
-        private const val version = "1.4.255-SNAPSHOT"
+        private const val version = "1.4.21"
+        const val compiler = "org.jetbrains.kotlin:kotlin-compiler:$version"
         const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
         const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
         const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
-        const val stdlib = "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$version"
+        const val stdlib = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$version"
     }
 
     const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.3.1"
+
+    const val kotestAssertions = "io.kotest:kotest-assertions-core:4.3.0"
 
     const val mavenGradlePlugin =
         "com.github.dcendents:android-maven-gradle-plugin:2.1"
@@ -119,6 +119,8 @@ object Deps {
     const val processingX = "com.ivianuu.processingx:processingx:0.0.1-dev4"
 
     const val roboelectric = "org.robolectric:robolectric:4.4"
+
+    const val shadowGradlePlugin = "com.github.jengelman.gradle.plugins:shadow:5.2.0"
 
     const val spotlessGradlePlugin = "com.diffplug.spotless:spotless-plugin-gradle:3.26.1"
 

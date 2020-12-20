@@ -14,77 +14,49 @@
  * limitations under the License.
  */
 
+@file:Suppress("NOTHING_TO_INLINE")
+
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
-@Target(AnnotationTarget.CLASS)
-annotation class Component
-
-@Target(AnnotationTarget.CLASS)
-annotation class ChildComponent
-
-fun <T> component(vararg inputs: Any?): T = error("Intrinsic")
-
-@Target(AnnotationTarget.CLASS,
+@Target(
+    AnnotationTarget.CLASS,
+    AnnotationTarget.CONSTRUCTOR,
     AnnotationTarget.FUNCTION,
     AnnotationTarget.PROPERTY,
-    AnnotationTarget.TYPE)
-annotation class Module
+    AnnotationTarget.LOCAL_VARIABLE,
+    AnnotationTarget.VALUE_PARAMETER,
+    AnnotationTarget.TYPE
+)
+annotation class Given
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun <T> given(@Given value: T): T = value
 
 @Target(
     AnnotationTarget.FUNCTION,
-    AnnotationTarget.CLASS,
-    AnnotationTarget.CONSTRUCTOR,
     AnnotationTarget.PROPERTY,
+    AnnotationTarget.LOCAL_VARIABLE,
+    AnnotationTarget.VALUE_PARAMETER,
     AnnotationTarget.TYPE
 )
-annotation class Binding
+annotation class GivenSetElement
 
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.TYPE)
-annotation class MapEntries
+@Target(
+    AnnotationTarget.CLASS,
+    AnnotationTarget.CONSTRUCTOR,
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.LOCAL_VARIABLE,
+    AnnotationTarget.VALUE_PARAMETER,
+    AnnotationTarget.TYPE
+)
+annotation class GivenGroup
 
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.TYPE)
-annotation class SetElements
-
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.TYPE)
-annotation class Interceptor
+@Target(AnnotationTarget.FUNCTION)
+annotation class GivenFun
 
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Qualifier
 
-@Target(
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.CLASS,
-    AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.PROPERTY,
-    AnnotationTarget.TYPE
-)
-annotation class Scoped(val component: KClass<*> = Nothing::class)
-
-@Target(
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.CLASS,
-    AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.PROPERTY,
-    AnnotationTarget.TYPE
-)
-annotation class Bound(val component: KClass<*>)
-
-@Target(
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.CLASS,
-    AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.PROPERTY,
-    AnnotationTarget.TYPE
-)
-annotation class Eager
-
-@Target(
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.CLASS,
-    AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.PROPERTY,
-    AnnotationTarget.TYPE
-)
-annotation class Default
+@Target(AnnotationTarget.TYPE)
+annotation class Unqualified

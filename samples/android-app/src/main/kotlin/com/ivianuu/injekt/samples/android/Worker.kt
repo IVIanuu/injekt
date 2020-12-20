@@ -16,23 +16,23 @@
 
 package com.ivianuu.injekt.samples.android
 
-import android.content.Context
 import androidx.work.Configuration
 import androidx.work.CoroutineWorker
 import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.GivenGroup
 import com.ivianuu.injekt.android.ApplicationContext
+import com.ivianuu.injekt.android.work.WorkerContext
 import com.ivianuu.injekt.android.work.worker
 
-@Module val TestWorkerModule = worker<TestWorker>()
+@GivenGroup val testWorkerBinding = worker<TestWorker>()
 
-@Binding class TestWorker(
-    context: Context,
-    workerParams: WorkerParameters,
-    repo: Repo,
+@Given class TestWorker(
+    @Given context: WorkerContext,
+    @Given workerParams: WorkerParameters,
+    @Given repo: Repo,
 ) : CoroutineWorker(context, workerParams) {
     init {
         println("hello $context $workerParams $repo")
@@ -41,12 +41,10 @@ import com.ivianuu.injekt.android.work.worker
     override suspend fun doWork(): Result = Result.success()
 }
 
-typealias initializeWorkers = () -> Unit
-
-@Binding fun provideInitializeWorkers(
-    applicationContext: ApplicationContext,
-    workerFactory: WorkerFactory,
-): initializeWorkers = {
+fun initializeWorkers(
+    @Given applicationContext: ApplicationContext,
+    @Given workerFactory: WorkerFactory,
+) {
     WorkManager.initialize(
         applicationContext,
         Configuration.Builder()

@@ -17,16 +17,21 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.compiler.generator.InjektKtGenerationExtension
-import com.ivianuu.injekt.component
+import com.ivianuu.injekt.compiler.analysis.*
+import com.ivianuu.injekt.compiler.transform.InjektIrDumper
+import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
-import org.jetbrains.kotlin.com.intellij.openapi.project.Project
+import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
+import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.JVMConfigurationKeys
+import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
+import org.jetbrains.kotlin.extensions.internal.CandidateInterceptor
 import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
+import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptorExtension
+import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.io.File
 
@@ -46,28 +51,52 @@ class InjektComponentRegistrar : ComponentRegistrar {
         ).map { File(it.joinToString(File.separator)) }
         val isGenerateKaptStubs = kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
         if (!isGenerateKaptStubs) {
-            component<ApplicationComponent>(project, configuration)
-                .registerExtensions()
-            IrGenerationExtension.registerExtension(
+            AnalysisHandlerExtension.registerExtension(
                 project,
-                InjektIrIntrinsicTransformer()
+                InjektKtGenerationExtension(srcDir(configuration), cacheDir(configuration))
+            )
+            StorageComponentContainerContributor.registerExtension(
+                project,
+                InjektStorageComponentContainerContributor()
+            )
+            IrGenerationExtension.registerExtensionFirst(
+                project,
+                InjektIrGenerationExtension()
+            )
+            IrGenerationExtension.registerExtensionLast(
+                project,
+                InjektIrDumper(cacheDir(configuration),
+                    dumpDir(configuration, srcDir(configuration)))
+            )
+            CandidateInterceptor.registerExtension(
+                project,
+                GivenCallResolutionInterceptorExtension()
             )
             TypeResolutionInterceptor.registerExtension(
                 project,
                 InjektTypeResolutionInterceptor()
             )
+            @Suppress("DEPRECATION")
+            Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
+                .registerExtension(InjektDiagnosticSuppressor())
         }
     }
 }
 
-typealias registerExtensions = () -> Unit
+private fun IrGenerationExtension.Companion.registerExtensionFirst(
+    project: MockProject,
+    extension: IrGenerationExtension,
+) {
+    project.extensionArea
+        .getExtensionPoint(IrGenerationExtension.extensionPointName)
+        .registerExtension(extension, LoadingOrder.FIRST, project)
+}
 
-@Binding fun provideRegisterExtensions(
-    project: Project,
-    generationExtension: InjektKtGenerationExtension,
-): registerExtensions = {
-    AnalysisHandlerExtension.registerExtension(
-        project,
-        generationExtension
-    )
+private fun IrGenerationExtension.Companion.registerExtensionLast(
+    project: MockProject,
+    extension: IrGenerationExtension,
+) {
+    project.extensionArea
+        .getExtensionPoint(IrGenerationExtension.extensionPointName)
+        .registerExtension(extension, LoadingOrder.LAST, project)
 }

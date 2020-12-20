@@ -1,17 +1,32 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.source
 import org.junit.Test
 
 class IndexTest {
 
     @Test
-    fun testCanIndexDeclarationsWithTheSameName() = codegen(
+    fun testCanIndexDeclarationsWithTheSameNameInTheSameFile() = codegen(
         """
-            @Binding val foo get() = Foo()
+            @Given val foo get() = Foo()
             
-            @Binding fun foo() = Foo()
+            @Given fun foo() = Foo()
         """
+    )
+
+    @Test
+    fun testCanIndexDeclarationsWithTheSameNameInTheSamePackage() = codegen(
+        source(
+            """
+                    @Given val foo get() = Foo()
+                """
+        ),
+        source(
+            """
+                    @Given fun foo() = Foo()
+                """
+        )
     )
 
 }

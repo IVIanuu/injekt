@@ -1,5 +1,4 @@
-import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 /*
  * Copyright 2020 Manuel Wrage
@@ -17,26 +16,37 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  * limitations under the License.
  */
 plugins {
-    id("com.ivianuu.injekt")
     kotlin("jvm")
     kotlin("kapt")
+    id("com.github.johnrengelman.shadow")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
+//apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
 
-injekt {
-    generateComponents = true
+val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
+    configurations = listOf(project.configurations.getByName("compileOnly"))
+    relocate("org.jetbrains.kotlin.com.intellij", "com.intellij")
+    dependencies {
+        exclude(dependency("org.jetbrains.kotlin:kotlin-stdlib"))
+        exclude(dependency("org.jetbrains.kotlin:kotlin-stdlib-common"))
+        exclude(dependency("org.jetbrains:annotations"))
+
+        exclude(dependency("com.intellij:openapi"))
+        exclude(dependency("com.intellij:extensions"))
+        exclude(dependency("com.intellij:annotations"))
+    }
+}
+
+artifacts {
+    archives(shadowJar)
 }
 
 dependencies {
-    implementation(Deps.Injekt.core)
-    implementation(Deps.Injekt.merge)
-    kotlinCompilerPluginClasspath(Deps.Injekt.compilerPlugin)
     implementation(Deps.processingX)
     kapt(Deps.processingX)
-    compileOnly(Deps.Kotlin.compilerEmbeddable)
+    api(Deps.Kotlin.compilerEmbeddable)
     implementation(Deps.Kotlin.stdlib)
 }

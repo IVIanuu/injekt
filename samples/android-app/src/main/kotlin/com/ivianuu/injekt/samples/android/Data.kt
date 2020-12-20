@@ -16,35 +16,38 @@
 
 package com.ivianuu.injekt.samples.android
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Scoped
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.android.ApplicationContext
-import com.ivianuu.injekt.merge.ApplicationComponent
+import com.ivianuu.injekt.component.ApplicationScoped
+import com.ivianuu.injekt.component.Storage
+import com.ivianuu.injekt.component.memo
 import java.io.File
 
 typealias DatabaseFile = File
 
-@Scoped(ApplicationComponent::class)
-@Binding fun provideDatabaseFile(applicationContext: ApplicationContext): DatabaseFile =
-    applicationContext.cacheDir
+@Given fun databaseFile(
+    @Given context: ApplicationContext,
+    @Given storage: Storage<ApplicationScoped>,
+): DatabaseFile = storage.memo("db_file") { context.cacheDir!! }
 
-@Scoped(ApplicationComponent::class)
-@Binding class Database(private val file: DatabaseFile)
+@Given fun database(@Given file: DatabaseFile, @Given storage: Storage<ApplicationScoped>) =
+    storage.memo("db") {
+        Database()
+    }
 
-@Scoped(ApplicationComponent::class)
-@Binding class Repo(
-    private val database: Database,
-    private val api: Api,
-) {
+class Database(@Given private val file: DatabaseFile)
+
+@Given fun repo(@Given storage: Storage<ApplicationScoped>) = storage.memo("repo") {
+    Repo()
+}
+
+class Repo(@Given private val api: Api) {
     fun refresh() {
     }
 }
 
-typealias refreshRepo = () -> Unit
-
-@Binding fun provideRefreshRepo(repo: Repo): refreshRepo = {
+fun refreshRepo(@Given repo: Repo) {
     repo.refresh()
 }
 
-@Scoped(ApplicationComponent::class)
-@Binding class Api
+@Given object Api

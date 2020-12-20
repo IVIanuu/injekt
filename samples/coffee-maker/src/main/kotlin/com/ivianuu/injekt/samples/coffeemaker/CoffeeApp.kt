@@ -16,29 +16,15 @@
 
 package com.ivianuu.injekt.samples.coffeemaker
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.Scoped
-import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.component
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.given
 
 fun main() {
-    val component = component<CoffeeComponent>()
-    component.brewCoffee()
-}
-
-typealias brewCoffee = () -> Unit
-
-@Binding fun provideBrewCoffee(heater: Heater, pump: Pump): brewCoffee = {
+    val heater = given<Heater>()
     heater.on()
-    pump.pump()
+    given<Pump>().pump()
     println(" [_]P coffee! [_]P ")
     heater.off()
-}
-
-@Component abstract class CoffeeComponent {
-    abstract val brewCoffee: brewCoffee
 }
 
 interface Heater {
@@ -47,10 +33,7 @@ interface Heater {
     val isHot: Boolean
 }
 
-@Module val ElectricHeaterModule = alias<ElectricHeater, Heater>()
-
-@Scoped(CoffeeComponent::class)
-@Binding class ElectricHeater : Heater {
+@Given object ElectricHeater : @Given Heater {
     private var heating: Boolean = false
 
     override fun on() {
@@ -70,9 +53,7 @@ interface Pump {
     fun pump()
 }
 
-@Module val ThermosiphonModule = alias<Thermosiphon, Pump>()
-
-@Binding class Thermosiphon(private val heater: Heater) : Pump {
+@Given class Thermosiphon(@Given private val heater: Heater) : @Given Pump {
     override fun pump() {
         if (heater.isHot) {
             println("=> => pumping => =>")

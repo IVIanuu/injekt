@@ -22,31 +22,62 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Default
-import com.ivianuu.injekt.MapEntries
-import com.ivianuu.injekt.SetElements
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.GivenSetElement
+import com.ivianuu.injekt.component.ApplicationScoped
+import com.ivianuu.injekt.component.Component
+import com.ivianuu.injekt.component.ComponentKey
+import com.ivianuu.injekt.component.componentElement
+import com.ivianuu.injekt.component.get
+import com.ivianuu.injekt.component.getDependency
 import kotlin.reflect.KClass
 
-inline fun <reified T : ListenableWorker> worker(): @MapEntries ((Context, WorkerParameters) -> T) -> Workers =
-    { factory -> mapOf(T::class to factory) }
+inline fun <reified T : ListenableWorker> worker():
+        @GivenSetElement (@Given (Component<WorkerScoped>) -> T) -> WorkerBinding = { T::class to it }
 
-typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
+@Given object WorkerScoped : Component.Name
 
-@Default @SetElements inline fun provideDefaultWorkers(): Workers = emptyMap()
+private val WorkerComponentFactoryKey =
+    ComponentKey<(Context, WorkerParameters) -> Component<WorkerScoped>>()
 
-@Binding fun InjektWorkerFactory.provideWorkerFactory(): WorkerFactory = this
+@GivenSetElement fun workerComponentFactoryKey(
+    @Given parent: Component<ApplicationScoped>,
+    @Given builderFactory: () -> Component.Builder<WorkerScoped>,
+) = componentElement(ApplicationScoped, WorkerComponentFactoryKey) { context, params ->
+    builderFactory()
+        .dependency(parent)
+        .element(WorkerContextKey, context)
+        .element(WorkerParametersKey, params)
+        .build()
+}
 
-@Binding class InjektWorkerFactory(workersFactory: () -> Workers) : WorkerFactory() {
-    private val workers by lazy(workersFactory)
+private val WorkerContextKey = ComponentKey<WorkerContext>()
+
+typealias WorkerContext = Context
+@Given val @Given Component<WorkerScoped>.workerContext: WorkerContext get() = this[WorkerContextKey]
+
+private val WorkerParametersKey = ComponentKey<WorkerParameters>()
+
+@Given val @Given Component<WorkerScoped>.workerParameters: WorkerParameters
+    get() = this[WorkerParametersKey]
+typealias WorkerBinding =
+        Pair<KClass<out ListenableWorker>, (@Given Component<WorkerScoped>) -> ListenableWorker>
+
+@Given inline val @Given Component<WorkerScoped>.applicationComponent: Component<ApplicationScoped>
+    get() = getDependency(ApplicationScoped)
+
+@Given class InjektWorkerFactory(
+    @Given workersFactory: () -> Set<WorkerBinding>,
+    @Given private val workerComponentFactory: (Context, WorkerParameters) -> Component<WorkerScoped>,
+) : @Given WorkerFactory() {
+    private val workers by lazy { workersFactory().toMap() }
     override fun createWorker(
         appContext: Context,
         workerClassName: String,
         workerParameters: WorkerParameters,
     ): ListenableWorker? {
-        return workers[Class.forName(workerClassName).kotlin]?.invoke(
-            appContext,
-            workerParameters
-        )
+        val workerFactory = workers[Class.forName(workerClassName).kotlin] ?: return null
+        val component = workerComponentFactory(appContext, workerParameters)
+        return workerFactory(component)
     }
 }

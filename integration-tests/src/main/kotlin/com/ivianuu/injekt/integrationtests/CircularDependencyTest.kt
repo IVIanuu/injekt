@@ -1,6 +1,6 @@
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.assertInternalError
+import com.ivianuu.injekt.test.assertCompileError
 import com.ivianuu.injekt.test.codegen
 import org.junit.Test
 
@@ -9,23 +9,20 @@ class CircularDependencyTest {
     @Test
     fun testCircularDependencyFails() = codegen(
         """
-            @Binding class A(b: B)
-            @Binding class B(a: A)
-
-            @Component abstract class MyComponent {
-                abstract val b: B
-            }
+            @Given class A(@Given b: B)
+            @Given class B(@Given a: A)
+            fun invoke() = given<A>()
         """
     ) {
-        assertInternalError("circular")
+        assertCompileError("circular")
     }
 
-    @Test
+    /*@Test
     fun testProviderBreaksCircularDependency() = codegen(
         """
             @Binding class A(b: B)
             @Scoped(MyComponent::class) @Binding class B(a: () -> A)
-            
+
             @Component abstract class MyComponent {
                 abstract val b: B
             }
@@ -38,7 +35,7 @@ class CircularDependencyTest {
             @Binding class A(b: () -> B)
             @Binding class B(b: C)
             @Binding class C(b: B)
-            
+
             @Component abstract class MyComponent {
                 abstract val c: C
             }
@@ -52,7 +49,7 @@ class CircularDependencyTest {
         """
             @Binding class A(b: B)
             @Scoped(MyComponent::class) @Binding class B(a: (B) -> A)
-            
+
             @Component abstract class MyComponent {
                 abstract val b: B
             }
@@ -64,12 +61,12 @@ class CircularDependencyTest {
         """
             typealias A = () -> Unit
             @Binding fun A(b: () -> B): A = { }
-            
+
             typealias B = () -> Unit
             @Binding fun B(a: () -> A): B = { }
-            
+
             @SetElements fun set(a: A, b: B): Set<Any> = setOf(a, b)
-            
+
             @Component abstract class MyComponent {
                 abstract val set: Set<Any>
             }
@@ -81,37 +78,16 @@ class CircularDependencyTest {
         """
             typealias A = () -> Unit
             @Binding fun A(b: () -> B): A = { }
-            
-            typealias B = () -> Unit
-            @Binding fun B(a: () -> A): B = { }
-            
-            @MapEntries fun map(a: A, b: B): Map<String, Any> = mapOf("a" to a, "b" to b)
-            
-            @Component abstract class MyComponent {
-                abstract val map: Map<String, Any>
-            }
-        """
-    )
 
-    @Test
-    fun testLazyRequestInInterceptorBreaksCircularDependency() = codegen(
-        """
-            @Interceptor fun interceptor(a: A, factory: () -> B): () -> B {
-                return factory
-            }
-            
-            typealias A = () -> Unit
-            @Binding fun A(b: () -> B): A = { }
-            
             typealias B = () -> Unit
             @Binding fun B(a: () -> A): B = { }
-            
+
             @MapEntries fun map(a: A, b: B): Map<String, Any> = mapOf("a" to a, "b" to b)
-            
+
             @Component abstract class MyComponent {
                 abstract val map: Map<String, Any>
             }
         """
-    )
+    )*/
 
 }

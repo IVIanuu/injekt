@@ -3,8 +3,6 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.multiCodegen
-import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertNotSame
 import org.junit.Test
 
@@ -16,67 +14,16 @@ class QualifierTest {
             @Target(AnnotationTarget.TYPE)
             @Qualifier
             annotation class MyQualifier
-            
-            @Component abstract class FooComponent {
-                abstract val foo1: Foo
-                abstract val foo2: @MyQualifier Foo
-                @Binding protected fun _foo1(): Foo = Foo()
-                @Binding protected fun _foo2(): @MyQualifier Foo = Foo()
-            }
+
+            @Given val foo = Foo()
+            @Given val qualifiedFoo: @MyQualifier Foo = Foo()
        
             fun invoke(): Pair<Foo, Foo> {
-                val component = component<FooComponent>()
-                return component.foo1 to component.foo2
+                return given<Foo>() to given<@MyQualifier Foo>()
             }
             """
     ) {
         val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
-        assertNotSame(foo1, foo2)
-    }
-
-    @Test
-    fun testDistinctQualifierMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                    @Target(AnnotationTarget.TYPE)
-                    @Qualifier
-                    annotation class MyQualifier
-                    object Foo1Module {
-                        @Binding fun foo1(): @MyQualifier Foo = Foo()
-                    }
-            """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    object Foo2Module {
-                        @Binding fun foo2(): Foo = Foo()
-                    }
-            """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    @Component abstract class MyComponent {
-                        abstract val foo1: @MyQualifier Foo
-                        abstract val foo2: Foo
-                        
-                        @Module protected val foo1Module = Foo1Module
-                        @Module protected val foo2Module = Foo2Module
-                    }
-                    fun invoke(): Pair<Foo, Foo> {
-                        val component = component<MyComponent>()
-                        return component.foo1 to component.foo2
-                    }
-            """,
-                name = "File.kt"
-            )
-        )
-    ) {
-        val (foo1, foo2) = it.last().invokeSingleFile<Pair<Foo, Foo>>()
         assertNotSame(foo1, foo2)
     }
 
@@ -87,40 +34,11 @@ class QualifierTest {
             @Qualifier
             annotation class MyQualifier(val value: String)
             
-            @Component abstract class FooComponent {
-                abstract val foo1: @MyQualifier("1") Foo
-                abstract val foo2: @MyQualifier("2") Foo
-                @Binding protected fun _foo1(): @MyQualifier("1") Foo = Foo()
-                @Binding protected fun _foo2(): @MyQualifier("2") Foo = Foo()
-            }
+            @Given val foo1: @MyQualifier("a") Foo = Foo()
+            @Given val foo2: @MyQualifier("b") Foo = Foo()
        
             fun invoke(): Pair<Foo, Foo> {
-                val component = component<FooComponent>()
-                return component.foo1 to component.foo2
-            }
-            """
-    ) {
-        val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
-        assertNotSame(foo1, foo2)
-    }
-
-    @Test
-    fun testDistinctQualifierAnnotationWithTypeArguments() = codegen(
-        """
-            @Target(AnnotationTarget.TYPE)
-            @Qualifier
-            annotation class MyQualifier<T>
-            
-            @Component abstract class FooComponent {
-                abstract val foo1: @MyQualifier<String> Foo
-                abstract val foo2: @MyQualifier<Int> Foo
-                @Binding protected fun _foo1(): @MyQualifier<String> Foo = Foo()
-                @Binding protected fun _foo2(): @MyQualifier<Int> Foo = Foo()
-            }
-       
-            fun invoke(): Pair<Foo, Foo> {
-                val component = component<FooComponent>()
-                return component.foo1 to component.foo2
+                return given<@MyQualifier("a") Foo>() to given<@MyQualifier("b") Foo>()
             }
             """
     ) {
@@ -135,53 +53,12 @@ class QualifierTest {
             @Qualifier
             annotation class MyQualifier
             
-            @Binding class Dep<T>(val value: @MyQualifier T)
+            @Given class Dep<T>(@Given val value: @MyQualifier T)
             
-            @Binding fun qualified(): @MyQualifier String = ""
+            @Given fun qualified(): @MyQualifier String = ""
             
-            @Component abstract class FooComponent {
-                abstract val dep: Dep<String>
-            }
+            fun invoke() = given<Dep<String>>()
             """
-    )
-
-    @Test
-    fun testQualifierWithFunctionTypeParameter() = codegen(
-        """
-            @Target(AnnotationTarget.TYPE)
-            @Qualifier
-            annotation class MyQualifier<T>
-            
-            @Binding fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
-             
-            @Component abstract class FooComponent {
-                abstract val foo: @MyQualifier<String> Foo
-            }
-            """
-    )
-
-    // todo @Test
-    fun testQualifierWithFunctionTypeParameterMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                    @Target(AnnotationTarget.TYPE)
-                    @Qualifier
-                    annotation class MyQualifier<T>
-                    
-                    @Binding fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    @Component abstract class FooComponent {
-                        abstract val foo: @MyQualifier<String> Foo
-                    }
-                """
-            )
-        )
     )
 
 }

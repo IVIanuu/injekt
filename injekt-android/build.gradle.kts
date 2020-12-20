@@ -21,7 +21,7 @@ plugins {
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-lib.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8-android.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
+//apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-source-sets-android.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
 
@@ -33,7 +33,7 @@ android {
 
 dependencies {
     api(project(":injekt-core"))
-    api(project(":injekt-merge"))
+    api(project(":injekt-component"))
     kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
     api(Deps.AndroidX.appCompat)
     api(Deps.AndroidX.Lifecycle.extensions)
@@ -41,4 +41,8 @@ dependencies {
     testImplementation(Deps.AndroidX.Test.core)
     testImplementation(Deps.AndroidX.Test.junit)
     testImplementation(Deps.roboelectric)
+
+    implementation(Deps.AndroidX.Compose.runtime)
+    kotlinCompilerPluginClasspath(Deps.AndroidX.Compose.compiler)
+    implementation(Deps.AndroidX.Compose.material)
 }

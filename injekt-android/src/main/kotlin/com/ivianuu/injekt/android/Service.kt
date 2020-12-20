@@ -21,29 +21,45 @@ package com.ivianuu.injekt.android
 import android.app.Service
 import android.content.Context
 import android.content.res.Resources
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.merge.ApplicationComponent
-import com.ivianuu.injekt.merge.MergeChildComponent
-import com.ivianuu.injekt.merge.MergeInto
-import com.ivianuu.injekt.merge.mergeComponent
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.GivenSetElement
+import com.ivianuu.injekt.component.ApplicationScoped
+import com.ivianuu.injekt.component.Component
+import com.ivianuu.injekt.component.ComponentKey
+import com.ivianuu.injekt.component.componentElement
+import com.ivianuu.injekt.component.get
+import com.ivianuu.injekt.component.getDependency
 
-fun Service.createServiceComponent(): ServiceComponent =
-    application.applicationComponent
-        .mergeComponent<ServiceComponentFactoryOwner>()
-        .serviceComponentFactoryOwner(this)
+@Given object ServiceScoped : Component.Name
 
-@MergeChildComponent
-abstract class ServiceComponent(@Binding protected val service: Service)
+private val ServiceKey = ComponentKey<Service>()
+private val ServiceComponentFactoryKey = ComponentKey<(Service) -> Component<ServiceScoped>>()
+
+@GivenSetElement fun serviceComponentFactoryKey(
+    @Given parent: Component<ApplicationScoped>,
+    @Given builderFactory: () -> Component.Builder<ServiceScoped>,
+) = componentElement(ApplicationScoped, ServiceComponentFactoryKey) {
+    builderFactory()
+        .dependency(parent)
+        .element(ServiceKey, it)
+        .build()
+}
+
+fun Service.createServiceComponent(): Component<ServiceScoped> =
+    application.applicationComponent[ServiceComponentFactoryKey](this)
+
+@Given val @Given Component<ServiceScoped>.applicationComponentFromService: Component<ApplicationScoped>
+    get() = getDependency(ApplicationScoped)
 
 typealias ServiceContext = Context
 
-@Binding inline fun Service.provideServiceContext(): ServiceContext = this
+@Given inline val @Given Service.serviceContext: ServiceContext
+    get() = this
 
 typealias ServiceResources = Resources
 
-@Binding inline fun Service.provideServiceResources(): ServiceResources = resources
+@Given inline val @Given Service.serviceResources: ServiceResources
+    get() = resources
 
-@MergeInto(ApplicationComponent::class)
-interface ServiceComponentFactoryOwner {
-    val serviceComponentFactoryOwner: (Service) -> ServiceComponent
-}
+@Given val @Given Component<ServiceScoped>.applicationComponent: Component<ApplicationScoped>
+    get() = getDependency(ApplicationScoped)

@@ -1,16 +1,15 @@
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.compiler.generator.ClassifierRef
-import com.ivianuu.injekt.compiler.generator.QualifierDescriptor
-import com.ivianuu.injekt.compiler.generator.STAR_PROJECTION_TYPE
-import com.ivianuu.injekt.compiler.generator.TypeRef
-import com.ivianuu.injekt.compiler.generator.asNameId
-import com.ivianuu.injekt.compiler.generator.copy
-import com.ivianuu.injekt.compiler.generator.defaultType
-import com.ivianuu.injekt.compiler.generator.isAssignableTo
-import com.ivianuu.injekt.compiler.generator.isSubTypeOf
-import com.ivianuu.injekt.compiler.generator.toTypeRef
-import com.ivianuu.injekt.compiler.generator.typeWith
+import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.resolution.ClassifierRef
+import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
+import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.copy
+import com.ivianuu.injekt.compiler.resolution.defaultType
+import com.ivianuu.injekt.compiler.resolution.isAssignableTo
+import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.resolution.typeWith
 import com.ivianuu.injekt.test.codegen
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.builtins.StandardNames
@@ -19,12 +18,18 @@ import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.SourceElement
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
+import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.findClassifierAcrossModuleDependencies
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.constants.ConstantValue
+import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import org.junit.Test
 
@@ -117,19 +122,19 @@ class TypeRefTest {
 
     @Test
     fun testDifferentQualifiersIsNotAssignable() = withAnalysisContext {
-        stringType.qualified(qualifier1()) shouldNotBeAssignable stringType.qualified(qualifier2())
+        stringType.qualified(qualifier1()) shouldNotBeAssignable stringType.qualified(qualifier2("a"))
     }
 
     @Test
     fun testSameQualifiersWithSameArgsIsAssignable() = withAnalysisContext {
-        stringType.qualified(qualifier1(mapOf("arg".asNameId() to "a"))) shouldBeAssignable
-                stringType.qualified(qualifier1(mapOf("arg".asNameId() to "a")))
+        stringType.qualified(qualifier2("a")) shouldBeAssignable
+                stringType.qualified(qualifier2("a"))
     }
 
     @Test
     fun testSameQualifiersWithDifferentArgsIsAssignable() = withAnalysisContext {
-        stringType.qualified(qualifier1(mapOf("arg".asNameId() to "a"))) shouldNotBeAssignable
-                stringType.qualified(qualifier1(mapOf("arg".asNameId() to "b")))
+        stringType.qualified(qualifier2("a")) shouldNotBeAssignable
+                stringType.qualified(qualifier2("b"))
     }
 
     @Test
@@ -285,18 +290,20 @@ class TypeRefTest {
             FqName("kotlin.Function$parameterCount")
         )
 
-        fun qualifier1(args: Map<Name, String> = emptyMap()) =
-            qualifier(FqName("Qualifier1"), args)
+        fun qualifier1() = AnnotationDescriptorImpl(
+            module.findClassAcrossModuleDependencies(
+                ClassId.topLevel(FqName("com.ivianuu.injekt.test.Qualifier1"))
+            )!!.defaultType,
+            emptyMap(),
+            SourceElement.NO_SOURCE
+        )
 
-        fun qualifier2(args: Map<Name, String> = emptyMap()) =
-            qualifier(FqName("Qualifier2"), args)
-
-        fun qualifier(
-            fqName: FqName = FqName("Qualifier${id++}"),
-            args: Map<Name, String>,
-        ) = QualifierDescriptor(
-            ClassifierRef(fqName).defaultType,
-            args
+        fun qualifier2(value: String) = AnnotationDescriptorImpl(
+            module.findClassAcrossModuleDependencies(
+                ClassId.topLevel(FqName("com.ivianuu.injekt.test.Qualifier2"))
+            )!!.defaultType,
+            mapOf("value".asNameId() to StringValue(value)),
+            SourceElement.NO_SOURCE
         )
 
         private var id = 0
@@ -344,7 +351,7 @@ class TypeRefTest {
 
     fun TypeRef.nonNull() = copy(isMarkedNullable = false)
 
-    fun TypeRef.qualified(vararg qualifiers: QualifierDescriptor) =
+    fun TypeRef.qualified(vararg qualifiers: AnnotationDescriptor) =
         copy(qualifiers = qualifiers.toList())
 
     fun TypeRef.typeWith(vararg typeArguments: TypeRef) =

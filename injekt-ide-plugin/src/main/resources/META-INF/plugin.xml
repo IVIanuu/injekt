@@ -1,0 +1,27 @@
+<idea-plugin>
+    <id>com.ivianuu.injekt</id>
+    <name>Injekt</name>
+
+    <vendor email="ivianuu@gmail.com" url="https://github.com/IVIanuu/injekt">Injekt</vendor>
+
+    <version>1.0.0</version>
+
+    <description><![CDATA[
+    The Injekt idea plugin
+    ]]></description>
+
+    <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+         on how to target different products -->
+    <!-- uncomment to enable plugin in all products
+    <depends>com.intellij.modules.lang</depends>
+    -->
+
+    <depends>com.intellij.gradle</depends>
+    <depends>com.intellij.java</depends>
+    <depends>org.jetbrains.kotlin</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationInitializedListener implementation="com.ivianuu.injekt.ide.AppInitializer" />
+    </extensions>
+
+</idea-plugin>

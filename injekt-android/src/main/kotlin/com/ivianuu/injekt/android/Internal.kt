@@ -1,19 +1,3 @@
-/*
- * Copyright 2020 Manuel Wrage
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 @file:Suppress("UNCHECKED_CAST")
 
 package com.ivianuu.injekt.android
@@ -25,20 +9,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
+import com.ivianuu.injekt.component.Component
+import com.ivianuu.injekt.component.dispose
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 
-private val lifecycleSingletons = mutableMapOf<Lifecycle, Any>()
+private val componentsByLifecycle = mutableMapOf<Lifecycle, Component<*>>()
 
-internal fun <T : Any> Lifecycle.singleton(init: () -> T): T {
-    lifecycleSingletons[this]?.let {
-        return it as T
-    }
-    return synchronized(lifecycleSingletons) {
-        lifecycleSingletons[this]?.let { return it as T }
+internal fun <T : Component<*>> Lifecycle.component(init: () -> T): T {
+    componentsByLifecycle[this]?.let { return it as T }
+    return synchronized(componentsByLifecycle) {
+        componentsByLifecycle[this]?.let { return it as T }
         val value = init()
-        lifecycleSingletons[this] = value
+        componentsByLifecycle[this] = value
         value
     }.also {
         addObserver(object : LifecycleEventObserver {
@@ -47,9 +30,10 @@ internal fun <T : Any> Lifecycle.singleton(init: () -> T): T {
                     // schedule clean up to the next frame
                     // to allow users to access bindings in their onDestroy()
                     source.lifecycleScope.launch(NonCancellable) {
-                        synchronized(lifecycleSingletons) {
-                            lifecycleSingletons -= this@singleton
-                        }
+                        synchronized(componentsByLifecycle) {
+                            componentsByLifecycle
+                                .remove(this@component)
+                        }?.dispose()
                     }
                 }
             }
@@ -57,14 +41,19 @@ internal fun <T : Any> Lifecycle.singleton(init: () -> T): T {
     }
 }
 
-internal fun <T> ViewModelStore.singleton(init: () -> T): T {
+internal fun <T : Component<*>> ViewModelStore.component(init: () -> T): T {
     return ViewModelProvider(
         this,
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                ViewModelValueHolder(init()) as T
+                ViewModelComponentHolder(init()) as T
         }
-    )[ViewModelValueHolder::class.java].context as T
+    )[ViewModelComponentHolder::class.java].component as T
 }
 
-private class ViewModelValueHolder<T>(val context: T) : ViewModel()
+private class ViewModelComponentHolder<T : Component<*>>(val component: T) : ViewModel() {
+    override fun onCleared() {
+        super.onCleared()
+        component.dispose()
+    }
+}

@@ -20,32 +20,55 @@ import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.merge.ApplicationComponent
-import com.ivianuu.injekt.merge.MergeChildComponent
-import com.ivianuu.injekt.merge.MergeInto
-import com.ivianuu.injekt.merge.mergeComponent
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.GivenSetElement
+import com.ivianuu.injekt.component.ApplicationScoped
+import com.ivianuu.injekt.component.Component
+import com.ivianuu.injekt.component.ComponentKey
+import com.ivianuu.injekt.component.componentElement
+import com.ivianuu.injekt.component.get
+import com.ivianuu.injekt.component.getDependency
+
+@Given object ReceiverScoped : Component.Name
+
+private val ReceiverKey = ComponentKey<BroadcastReceiver>()
+private val ContextKey = ComponentKey<Context>()
+private val IntentKey = ComponentKey<Intent>()
+
+private val ReceiverComponentFactoryKey =
+    ComponentKey<(BroadcastReceiver, Context, Intent) -> Component<ReceiverScoped>>()
+
+@GivenSetElement fun receiverComponentFactory(
+    @Given parent: Component<ApplicationScoped>,
+    @Given builderFactory: () -> Component.Builder<ReceiverScoped>,
+) = componentElement(ApplicationScoped,
+    ReceiverComponentFactoryKey) { receiver, context, intent ->
+    builderFactory()
+        .dependency(parent)
+        .element(ReceiverKey, receiver)
+        .element(ContextKey, context)
+        .element(IntentKey, intent)
+        .build()
+}
 
 fun BroadcastReceiver.createReceiverComponent(
     context: Context,
     intent: Intent,
-): ReceiverComponent =
-    (context.applicationContext as Application).applicationComponent
-        .mergeComponent<ReceiverComponentFactoryOwner>()
-        .receiverComponentFactoryOwner(this, context, intent)
+): Component<ReceiverScoped> = (context.applicationContext as Application)
+    .applicationComponent[ReceiverComponentFactoryKey](this, context, intent)
 
-@MergeChildComponent
-abstract class ReceiverComponent(
-    @Binding protected val receiver: BroadcastReceiver,
-    @Binding protected val context: ReceiverContext,
-    @Binding protected val intent: ReceiverIntent,
-)
+@Given val @Given Component<ReceiverScoped>.applicationComponentFromReceiver: Component<ApplicationScoped>
+    get() = getDependency(ApplicationScoped)
 
 typealias ReceiverContext = Context
 
+@Given val @Given Component<ReceiverScoped>.receiverContext: ReceiverContext
+    get() = this[ContextKey]
+
 typealias ReceiverIntent = Intent
 
-@MergeInto(ApplicationComponent::class)
-interface ReceiverComponentFactoryOwner {
-    val receiverComponentFactoryOwner: (BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent
-}
+@Given val @Given Component<ReceiverScoped>.receiverIntent: ReceiverIntent
+    get() = this[IntentKey]
+
+@Given val @Given Component<ReceiverScoped>.applicationComponent: Component<ApplicationScoped>
+    get() = getDependency(ApplicationScoped)

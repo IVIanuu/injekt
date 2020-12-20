@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.test
 
+import com.ivianuu.injekt.Qualifier
+
 class Foo
 
 class Bar(val foo: Foo)
@@ -27,3 +29,11 @@ interface Command
 class CommandA : Command
 
 class CommandB : Command
+
+@Target(AnnotationTarget.TYPE)
+@Qualifier
+annotation class Qualifier1
+
+@Target(AnnotationTarget.TYPE)
+@Qualifier
+annotation class Qualifier2(val value: String)

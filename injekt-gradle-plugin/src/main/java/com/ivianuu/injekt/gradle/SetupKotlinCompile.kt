@@ -47,6 +47,8 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
 
     val cacheDir = project.buildDir.resolve("injekt/cache")
         .also { it.mkdirs() }
+    val dumpDir = project.buildDir.resolve("injekt/dump")
+        .also { it.mkdirs() }
 
     val extension = project.extensions.getByType(InjektExtension::class.java)
 
@@ -62,6 +64,7 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
             "${name}InjektCleanGeneratedFiles", CleanGeneratedFiles::class.java)
         cleanGeneratedFiles.isIncremental = isIncremental
         cleanGeneratedFiles.cacheDir = cacheDir
+        cleanGeneratedFiles.dumpDir = dumpDir
         cleanGeneratedFiles.generatedSrcDir = srcDir
         cleanGeneratedFiles.srcDirs = if (androidVariantData != null) {
             androidVariantData.sourceSets

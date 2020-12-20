@@ -22,54 +22,82 @@ import android.content.Context
 import android.content.res.Resources
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedDispatcherOwner
+import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.merge.MergeChildComponent
-import com.ivianuu.injekt.merge.MergeInto
-import com.ivianuu.injekt.merge.mergeComponent
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.GivenSetElement
+import com.ivianuu.injekt.component.ApplicationScoped
+import com.ivianuu.injekt.component.Component
+import com.ivianuu.injekt.component.ComponentKey
+import com.ivianuu.injekt.component.componentElement
+import com.ivianuu.injekt.component.get
+import com.ivianuu.injekt.component.getDependency
+import kotlinx.coroutines.CoroutineScope
 
-val ComponentActivity.activityComponent: ActivityComponent
-    get() = lifecycle.singleton {
-        retainedActivityComponent
-            .mergeComponent<ActivityComponentFactoryOwner>()
-            .activityComponentFactoryOwner(this)
+@Given object ActivityScoped : Component.Name
+
+@Given val @Given ComponentActivity.activityComponent: Component<ActivityScoped>
+    get() = lifecycle.component {
+        activityRetainedComponent[ActivityComponentFactoryKey](this)
     }
 
-@MergeChildComponent
-abstract class ActivityComponent(@Binding protected val activity: ComponentActivity)
+private val ActivityKey = ComponentKey<ComponentActivity>()
+private val ActivityComponentFactoryKey =
+    ComponentKey<(ComponentActivity) -> Component<ActivityScoped>>()
+
+@GivenSetElement fun activityComponentFactory(
+    @Given parent: Component<ApplicationScoped>,
+    @Given builderFactory: () -> Component.Builder<ActivityScoped>,
+) = componentElement(ActivityRetainedScoped, ActivityComponentFactoryKey) {
+    builderFactory()
+        .dependency(parent)
+        .element(ActivityKey, it)
+        .build()
+}
+
+@Given val @Given Component<ActivityScoped>.retainedComponentFromActivity: Component<ActivityRetainedScoped>
+    get() = getDependency(ActivityRetainedScoped)
+
+@Given val @Given Component<ActivityScoped>.activity: ComponentActivity
+    get() = this[ActivityKey]
 
 typealias ActivityContext = Context
 
-@Binding inline fun ComponentActivity.provideActivityContext(): ActivityContext = this
+@Given inline val @Given ComponentActivity.activityContext: ActivityContext
+    get() = this
 
 typealias ActivityResources = Resources
 
-@Binding inline fun ComponentActivity.provideActivityResources(): ActivityResources = resources
+@Given inline val @Given ComponentActivity.activityResources: ActivityResources
+    get() = resources
 
 typealias ActivityLifecycleOwner = LifecycleOwner
 
-@Binding inline fun ComponentActivity.provideActivityLifecycleOwner(): ActivityLifecycleOwner = this
+@Given inline val @Given ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
+    get() = this
 
 typealias ActivityOnBackPressedDispatcherOwner = OnBackPressedDispatcherOwner
 
-@Binding
-inline fun ComponentActivity.provideActivityOnBackPressedDispatcherOwner(): ActivityOnBackPressedDispatcherOwner =
-    this
+@Given inline val @Given ComponentActivity.activityOnBackPressedDispatcherOwner: ActivityOnBackPressedDispatcherOwner
+    get() = this
 
 typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
 
-@Binding
-inline fun ComponentActivity.provideActivitySavedStateRegistryOwner(): ActivitySavedStateRegistryOwner =
-    this
+@Given inline val @Given ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
+    get() = this
 
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
-@Binding inline fun ComponentActivity.provideActivityViewModelStoreOwner(): ActivityViewModelStoreOwner =
-    this
+@Given inline val @Given ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
+    get() = this
 
-@MergeInto(RetainedActivityComponent::class)
-interface ActivityComponentFactoryOwner {
-    val activityComponentFactoryOwner: (ComponentActivity) -> ActivityComponent
-}
+typealias ActivityCoroutineScope = LifecycleCoroutineScope
+
+@Given inline val @Given ComponentActivity.activityCoroutineScope: ActivityCoroutineScope
+    get() = lifecycleScope
+
+@Given inline val @Given ActivityCoroutineScope.activityCoroutineScope: CoroutineScope
+    get() = this

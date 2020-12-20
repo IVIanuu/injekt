@@ -16,119 +16,96 @@
 
 package com.ivianuu.injekt.compiler.generator
 
-import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.UniqueNameProvider
+import com.ivianuu.injekt.compiler.analysis.Index
+import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.hasAnnotation
+import org.jetbrains.kotlin.psi.KtClass
+import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
-import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
-import org.jetbrains.kotlin.psi.psiUtil.containingClass
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-@Binding class IndexGenerator(
-    private val declarationStore: DeclarationStore,
-    private val fileManager: FileManager,
-) : Generator {
+class IndexGenerator : Generator {
+    override fun generate(context: Generator.Context, files: List<KtFile>) {
+        files.forEach { file ->
+            val indices = mutableListOf<Index>()
+            file.accept(object : KtTreeVisitorVoid() {
+                override fun visitDeclaration(declaration: KtDeclaration) {
+                    super.visitDeclaration(declaration)
+                    if (declaration !is KtNamedFunction &&
+                        declaration !is KtClassOrObject &&
+                        declaration !is KtProperty &&
+                        declaration !is KtConstructor<*>
+                    ) return
 
-    override fun generate(files: List<KtFile>) {
-        files
-            .map { file ->
-                val indices = mutableListOf<Index>()
+                    if (declaration is KtClassOrObject && declaration.isLocal) return
+                    if (declaration is KtProperty && declaration.isLocal) return
+                    if (declaration is KtFunction && declaration.isLocal) return
 
-                file.accept(
-                    object : KtTreeVisitorVoid() {
-                        var moduleLikeScope: KtClassOrObject? = null
+                    val owner = when (declaration) {
+                        is KtConstructor<*> -> declaration.getContainingClassOrObject()
+                        is KtPropertyAccessor -> declaration.property
+                        else -> declaration
+                    } as KtNamedDeclaration
 
-                        override fun visitClassOrObject(classOrObject: KtClassOrObject) {
-                            val prevModuleLikeScope = moduleLikeScope
-                            val isModuleLikeScope =
-                                classOrObject.hasAnnotation(InjektFqNames.Module) ||
-                                        classOrObject.hasAnnotation(InjektFqNames.Component) ||
-                                        classOrObject.hasAnnotation(InjektFqNames.ChildComponent) ||
-                                        classOrObject.hasAnnotation(InjektFqNames.MergeComponent) ||
-                                        classOrObject.hasAnnotation(InjektFqNames.MergeChildComponent) ||
-                                        classOrObject !is KtObjectDeclaration
-                            moduleLikeScope = if (isModuleLikeScope) classOrObject else null
-                            super.visitClassOrObject(classOrObject)
-                            moduleLikeScope = prevModuleLikeScope
-                        }
+                    if ((owner is KtNamedFunction ||
+                                owner is KtProperty) &&
+                        owner.parent.safeAs<KtClassBody>()?.parent is KtClass
+                    ) return
 
-                        override fun visitDeclaration(declaration: KtDeclaration) {
-                            super.visitDeclaration(declaration)
-                            if (moduleLikeScope != null &&
-                                declaration != moduleLikeScope &&
-                                declaration !is KtConstructor<*> &&
-                                declaration !is KtClassOrObject
-                            ) return
-
-                            if (declaration !is KtClassOrObject &&
-                                declaration !is KtNamedFunction &&
-                                declaration !is KtConstructor<*> &&
-                                declaration !is KtProperty
-                            ) return
-
-                            val needsIndexing =
-                                declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.Binding) ||
-                                        declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.Interceptor) ||
-                                        declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.MapEntries) ||
-                                        declaration.hasAnnotationWithPropertyAndClass(InjektFqNames.SetElements) ||
-                                        declaration.hasAnnotation(InjektFqNames.MergeComponent) ||
-                                        declaration.hasAnnotation(InjektFqNames.MergeChildComponent) ||
-                                        declaration.hasAnnotation(InjektFqNames.MergeInto) ||
-                                        declaration.hasAnnotation(InjektFqNames.Module)
-                            if (!needsIndexing) return
-
-                            val owner = when (declaration) {
-                                is KtConstructor<*> -> declaration.containingClass()!!
-                                is KtPropertyAccessor -> declaration.property
-                                else -> declaration as KtNamedDeclaration
+                    if (declaration.hasAnnotation(InjektFqNames.Given) ||
+                        declaration.hasAnnotation(InjektFqNames.GivenSetElement) ||
+                        declaration.hasAnnotation(InjektFqNames.GivenGroup)
+                    ) {
+                        val index = Index(
+                            owner.fqName!!,
+                            when (owner) {
+                                is KtClassOrObject -> "class"
+                                is KtConstructor<*> -> "constructor"
+                                is KtFunction -> "function"
+                                is KtProperty -> "property"
+                                else -> error("Unexpected declaration ${declaration.text}")
                             }
+                        )
+                        indices += index
+                    }
+                }
+            })
 
-                            val index = Index(
-                                owner.fqName!!,
-                                when (owner) {
-                                    is KtClassOrObject -> "class"
-                                    is KtNamedFunction -> "function"
-                                    is KtProperty -> "property"
-                                    else -> error("Unexpected declaration ${declaration.text}")
-                                }
-                            )
-                            indices += index
+            if (indices.isEmpty()) return@forEach
+
+            val fileName = file.packageFqName.pathSegments().joinToString("_") +
+                    "_${file.name.removeSuffix(".kt")}Indices.kt"
+            val nameProvider = UniqueNameProvider()
+            context.generateFile(
+                originatingFile = file,
+                packageFqName = InjektFqNames.IndexPackage,
+                fileName = fileName,
+                code = buildString {
+                    appendLine("// injekt_${file.virtualFilePath}")
+                    appendLine("package ${InjektFqNames.IndexPackage}")
+                    appendLine("import ${InjektFqNames.Index}")
+                    indices
+                        .distinct()
+                        .forEach { index ->
+                            val indexName = nameProvider(
+                                index.fqName.pathSegments().joinToString("_") + "${file.name}_index"
+                            ).asNameId()
+                            appendLine("@Index(fqName = \"${index.fqName}\", type = \"${index.type}\")")
+                            appendLine("internal val $indexName = Unit")
                         }
-                    }
-                )
-                file to indices
-            }
-            .filter { it.second.isNotEmpty() }
-            .forEach { (file, indices) ->
-                indices.forEach { declarationStore.addInternalIndex(it) }
-                val fileName = file.packageFqName.pathSegments().joinToString("_") + "_${file.name}"
-                val nameProvider = UniqueNameProvider()
-                fileManager.generateFile(
-                    originatingFile = file,
-                    packageFqName = InjektFqNames.IndexPackage,
-                    fileName = fileName,
-                    code = buildCodeString {
-                        emitLine("@file:Suppress(\"UNCHECKED_CAST\", \"NOTHING_TO_INLINE\")")
-                        emitLine("package ${InjektFqNames.IndexPackage}")
-                        emitLine("import ${InjektFqNames.Index}")
-                        indices
-                            .distinct()
-                            .forEach { index ->
-                                val indexName = nameProvider(
-                                    index.fqName.pathSegments().joinToString("_")
-                                ).asNameId()
-                                emitLine("@Index(fqName = \"${index.fqName}\", type = \"${index.type}\")")
-                                emitLine("internal val $indexName = Unit")
-                            }
-                    }
-                )
-            }
+                }
+            )
+        }
     }
 }

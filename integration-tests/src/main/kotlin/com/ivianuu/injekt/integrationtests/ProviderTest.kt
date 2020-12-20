@@ -1,74 +1,58 @@
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.Bar
+import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
-import junit.framework.Assert.assertNull
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class ProviderTest {
 
     @Test
-    fun testProvider() = codegen(
+    fun testProviderGiven() = codegen(
         """
-            @Component abstract class ProviderComponent {
-                abstract val fooFactory: () -> Foo
-                @Binding protected fun foo() = Foo()
+            @Given val foo = Foo()
+            fun invoke(): Foo {
+                return given<() -> Foo>()()
             }
+        """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
 
+    @Test
+    fun testProviderWithArgsGiven() = codegen(
+        """
+            @Given fun bar(@Given foo: Foo) = Bar(foo)
+            fun invoke(): Bar {
+                return given<(Foo) -> Bar>()(Foo())
+            }
+        """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
+    }
+
+    @Test
+    fun testSuspendProviderGiven() = codegen(
+        """
+            @Given suspend fun foo() = Foo()
+            fun invoke(): Foo = runBlocking { given<suspend () -> Foo>()() }
+        """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testComposableProviderGiven() = codegen(
+        """
+            @Given @Composable val foo: Foo get() = Foo()
             fun invoke() {
-                component<ProviderComponent>().fooFactory()
+                given<@Composable () -> Foo>()
             }
         """
     ) {
         invokeSingleFile()
-    }
-
-    @Test
-    fun testSuspendProvider() = codegen(
-        """
-            @Component abstract class ProviderComponent {
-                abstract val fooFactory: suspend () -> Foo
-                @Binding protected suspend fun foo() = Foo()
-            }
-
-            fun invoke() {
-                runBlocking {
-                    component<ProviderComponent>().fooFactory()
-                }
-            }
-        """
-    ) {
-        invokeSingleFile()
-    }
-
-    @Test
-    fun testComposableProvider() = codegen(
-        """
-            @Component abstract class ProviderComponent {
-                abstract val fooFactory: @Composable () -> Foo
-                @Composable
-                @Binding protected fun foo() = Foo()
-            }
-
-            fun invoke() {
-                component<ProviderComponent>().fooFactory
-            }
-        """
-    ) {
-        invokeSingleFile()
-    }
-
-    @Test
-    fun testNullableProviderMissingBinding() = codegen(
-        """
-            @Component abstract class ProviderComponent {
-                abstract val fooFactory: () -> Foo?
-            }
-
-            fun invoke() = component<ProviderComponent>().fooFactory()
-        """
-    ) {
-        assertNull(invokeSingleFile())
     }
 
 }

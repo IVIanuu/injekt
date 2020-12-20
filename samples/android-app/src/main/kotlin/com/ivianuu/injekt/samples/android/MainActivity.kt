@@ -17,73 +17,48 @@
 package com.ivianuu.injekt.samples.android
 
 import android.os.Bundle
+import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.setContent
-import androidx.lifecycle.ViewModel
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.android.ActivityComponent
-import com.ivianuu.injekt.android.ActivityContext
-import com.ivianuu.injekt.android.ActivityResources
-import com.ivianuu.injekt.android.activityComponent
-import com.ivianuu.injekt.android.activityViewModel
-import com.ivianuu.injekt.merge.MergeInto
-import com.ivianuu.injekt.merge.mergeComponent
-import kotlinx.coroutines.GlobalScope
+import com.ivianuu.injekt.android.ActivityRetainedScoped
+import com.ivianuu.injekt.android.ActivityScoped
+import com.ivianuu.injekt.component.ApplicationScoped
+import com.ivianuu.injekt.component.Component
+import com.ivianuu.injekt.component.Storage
+import com.ivianuu.injekt.component.get
+import com.ivianuu.injekt.given
+import com.ivianuu.injekt.withGiven
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            with(activityComponent.mergeComponent<MainActivityComponent>()) {
-                WithMainViewModel {
-                    GlobalScope.launch {
-                        enqueueWork()
+        withGiven(this as ComponentActivity) {
+            given<Component<ApplicationScoped>>()[DummyAppElementKey]()
+
+            given<StorageCoroutineScope<Storage<ActivityScoped>>>().launch {
+                println("Activity work: start")
+                try {
+                    awaitCancellation()
+                } finally {
+                    println("Activity work: stop")
+                }
+            }
+            if (savedInstanceState == null) {
+                given<StorageCoroutineScope<Storage<ActivityRetainedScoped>>>().launch {
+                    println("Retained work: start")
+                    try {
+                        awaitCancellation()
+                    } finally {
+                        println("Retained work: stop")
                     }
                 }
             }
+            setContent {
+                val keyUis = given<Set<KeyUiBinding>>().toMap()
+                keyUis[CounterKey::class]!!.invoke()
+            }
         }
-    }
-}
-
-@MergeInto(ActivityComponent::class)
-interface MainActivityComponent {
-    val WithMainViewModel: WithMainViewModel
-    val enqueueWork: enqueueWork
-    val activityResources: ActivityResources
-}
-
-typealias WithMainViewModel = @Composable (@Composable (MainViewModel) -> Unit) -> Unit
-
-@Binding fun provideWithMainViewModel(viewModelFactory: () -> MainViewModel): WithMainViewModel = {
-    val viewModel = remember(viewModelFactory)
-    it(viewModel)
-}
-
-typealias enqueueWork = () -> Unit
-
-@Binding fun provideEnqueueWork(context: ActivityContext): enqueueWork = {
-    WorkManager.getInstance(context)
-        .enqueue(
-            OneTimeWorkRequestBuilder<TestWorker>()
-                .build()
-        )
-}
-
-@Module val MainViewModelModule = activityViewModel<MainViewModel>()
-
-@Binding class MainViewModel : ViewModel() {
-    init {
-        println("init")
-    }
-
-    override fun onCleared() {
-        println("on cleared")
-        super.onCleared()
     }
 }
