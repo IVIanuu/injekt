@@ -61,7 +61,7 @@ private val WorkerParametersKey = ComponentKey<WorkerParameters>()
 @Given val @Given Component<WorkerScoped>.workerParameters: WorkerParameters
     get() = this[WorkerParametersKey]
 typealias WorkerBinding =
-        Pair<KClass<out ListenableWorker>, @Given Component<WorkerScoped>.() -> ListenableWorker>
+        Pair<KClass<out ListenableWorker>, (@Given Component<WorkerScoped>) -> ListenableWorker>
 
 @Given inline val @Given Component<WorkerScoped>.applicationComponent: Component<ApplicationScoped>
     get() = getDependency(ApplicationScoped)
