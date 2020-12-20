@@ -4,6 +4,8 @@ import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
+import org.jetbrains.kotlin.builtins.isFunctionType
+import org.jetbrains.kotlin.builtins.isSuspendFunctionType
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -22,25 +24,7 @@ class GivenChecker : DeclarationChecker {
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext,
     ) {
-        /*if (descriptor is ValueDescriptor &&
-            (descriptor.type.hasAnnotation(InjektFqNames.Given) ||
-                    descriptor.type.hasAnnotation(InjektFqNames.GivenGroup) ||
-                    descriptor.type.hasAnnotation(InjektFqNames.GivenSetElement)) &&
-                descriptor.type.arguments.dropLast(1)
-                    .any { !it.type.hasAnnotation(InjektFqNames.Given) }) {
-            context.trace.report(
-                InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
-                    .on(
-                        declaration,
-                        when {
-                            descriptor.type.hasAnnotation(InjektFqNames.Given) -> InjektFqNames.Given.shortName()
-                            descriptor.type.hasAnnotation(InjektFqNames.GivenGroup) -> InjektFqNames.GivenGroup.shortName()
-                            descriptor.type.hasAnnotation(InjektFqNames.GivenSetElement) -> InjektFqNames.GivenSetElement.shortName()
-                            else -> error("")
-                        }
-                    )
-            )
-        }*/
+        checkType(descriptor, declaration, context.trace)
 
         if (descriptor is SimpleFunctionDescriptor) {
             descriptor.allParameters
@@ -89,6 +73,38 @@ class GivenChecker : DeclarationChecker {
                         )
                 )
             }
+        }
+    }
+
+    private fun checkType(
+        descriptor: DeclarationDescriptor,
+        declaration: KtDeclaration,
+        trace: BindingTrace
+    ) {
+        val type = when (descriptor) {
+            is CallableDescriptor -> descriptor.returnType
+            is ValueDescriptor -> descriptor.type
+            else -> return
+        } ?: return
+        if ((type.isFunctionType ||
+                    type.isSuspendFunctionType) &&
+            (type.hasAnnotation(InjektFqNames.Given) ||
+                    type.hasAnnotation(InjektFqNames.GivenGroup) ||
+                    type.hasAnnotation(InjektFqNames.GivenSetElement)) &&
+            type.arguments.dropLast(1)
+                .any { !it.type.hasAnnotation(InjektFqNames.Given) }) {
+            trace.report(
+                InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
+                    .on(
+                        declaration,
+                        when {
+                            type.hasAnnotation(InjektFqNames.Given) -> InjektFqNames.Given.shortName()
+                            type.hasAnnotation(InjektFqNames.GivenGroup) -> InjektFqNames.GivenGroup.shortName()
+                            type.hasAnnotation(InjektFqNames.GivenSetElement) -> InjektFqNames.GivenSetElement.shortName()
+                            else -> error("")
+                        }
+                    )
+            )
         }
     }
 

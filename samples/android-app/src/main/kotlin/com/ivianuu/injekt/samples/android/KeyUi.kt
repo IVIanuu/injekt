@@ -21,7 +21,7 @@ import kotlin.reflect.KClass
 typealias KeyUiBinding = Pair<KClass<*>, @Composable () -> Unit>
 
 inline fun <reified K : Any, reified T : @Composable () -> Unit> keyUiBinding():
-        @GivenSetElement (T) -> KeyUiBinding = { K::class to it }
+        @GivenSetElement (@Given T) -> KeyUiBinding = { K::class to it }
 
 typealias ActionChannel<A> = Channel<A>
 
