@@ -60,7 +60,7 @@ class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtensi
             }
         }
 
-        newCandidates += candidates
+        if (newCandidates.isEmpty()) newCandidates += candidates
             .map {
                 if (it.getGivenParameters().isNotEmpty()) {
                     it.toGivenFunctionDescriptor()
@@ -69,7 +69,7 @@ class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtensi
                 }
             }
 
-        newCandidates += candidates
+        if (newCandidates.isEmpty()) newCandidates += candidates
 
         return newCandidates
     }
