@@ -19,6 +19,7 @@ import com.ivianuu.injekt.compiler.resolution.ResolutionScope
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.resolveGiven
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import org.jetbrains.kotlin.com.intellij.psi.PsiFile
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -118,25 +119,40 @@ class GivenCallChecker(
         }
     }
 
-    private var scope = InternalResolutionScope(
-        ExternalResolutionScope(declarationStore),
-        declarationStore
-    )
+    private var scope = ExternalResolutionScope(declarationStore)
 
-    private inline fun <R> inScope(scope: ResolutionScope, block: () -> R): R {
+    override fun visitFile(file: PsiFile) {
+        inScope(
+            {
+                InternalResolutionScope(
+                    scope,
+                    declarationStore
+                )
+            }
+        ) {
+            super.visitFile(file)
+        }
+    }
+
+    private inline fun inScope(scope: () -> ResolutionScope, block: () -> Unit) {
         val prevScope = this.scope
-        this.scope = scope
-        val result = block()
-        this.scope = prevScope
-        return result
+        try {
+            this.scope = scope()
+            block()
+        } catch (e: Throwable) {
+        } finally {
+            this.scope = prevScope
+        }
     }
 
     override fun visitObjectDeclaration(declaration: KtObjectDeclaration) {
-        inScope(ClassResolutionScope(
-            declarationStore,
-            declaration.descriptor(bindingTrace.bindingContext) ?: return,
-            scope
-        )) {
+        inScope({
+            ClassResolutionScope(
+                declarationStore,
+                declaration.descriptor(bindingTrace.bindingContext) ?: return,
+                scope
+            )
+        }) {
             super.visitObjectDeclaration(declaration)
         }
     }
@@ -152,11 +168,13 @@ class GivenCallChecker(
                 )
             }
             ?: scope
-        inScope(ClassResolutionScope(
-            declarationStore,
-            descriptor,
-            parentScope
-        )) {
+        inScope({
+            ClassResolutionScope(
+                declarationStore,
+                descriptor,
+                parentScope
+            )
+        }) {
             super.visitClass(klass)
         }
         blockScope?.addIfNeeded(descriptor)
@@ -190,30 +208,42 @@ class GivenCallChecker(
         lambdaType: TypeRef? = null,
         block: () -> Unit,
     ) {
-        inScope(FunctionResolutionScope(
-            declarationStore,
-            scope,
-            function.descriptor(bindingTrace.bindingContext) ?: return,
-            lambdaType
-        )) { block() }
+        inScope({
+            FunctionResolutionScope(
+                declarationStore,
+                scope,
+                function.descriptor(bindingTrace.bindingContext) ?: return,
+                lambdaType
+            )
+        }) { block() }
     }
 
     private var blockScope: ResolutionScope? = null
     override fun visitBlockExpression(expression: KtBlockExpression) {
         val prevScope = blockScope
-        val scope = BlockResolutionScope(declarationStore, scope)
-        this.blockScope = scope
-        inScope(scope) {
-            super.visitBlockExpression(expression)
+        try {
+            inScope({
+                BlockResolutionScope(declarationStore, scope)
+                    .also { blockScope = it }
+            }) {
+                super.visitBlockExpression(expression)
+            }
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        } finally {
+            blockScope = prevScope
         }
-        blockScope = prevScope
     }
 
     override fun visitProperty(property: KtProperty) {
         super.visitProperty(property)
-        val descriptor = property.descriptor<VariableDescriptor>(bindingTrace.bindingContext)
-            ?: return
-        blockScope?.addIfNeeded(descriptor)
+        try {
+            val descriptor = property.descriptor<VariableDescriptor>(bindingTrace.bindingContext)
+                ?: return
+            blockScope?.addIfNeeded(descriptor)
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
     }
 
     override fun visitCallExpression(expression: KtCallExpression) {
