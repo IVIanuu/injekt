@@ -5,6 +5,7 @@ import com.ivianuu.injekt.test.codegen
 import org.junit.Test
 
 class CallContextTest {
+
     @Test
     fun testSuspendCannotBeRequestedFromNonSuspend() = codegen(
         """

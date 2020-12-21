@@ -2,25 +2,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
-import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
-import com.ivianuu.injekt.compiler.resolution.CallableRef
-import com.ivianuu.injekt.compiler.resolution.DefaultGivenNode
-import com.ivianuu.injekt.compiler.resolution.FunGivenNode
-import com.ivianuu.injekt.compiler.resolution.GivenGraph
-import com.ivianuu.injekt.compiler.resolution.GivenKind
-import com.ivianuu.injekt.compiler.resolution.ObjectGivenNode
-import com.ivianuu.injekt.compiler.resolution.ProviderGivenNode
-import com.ivianuu.injekt.compiler.resolution.ProviderParameterGivenNode
-import com.ivianuu.injekt.compiler.resolution.SetGivenNode
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.fullyExpandedType
-import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
-import com.ivianuu.injekt.compiler.resolution.givenKind
-import com.ivianuu.injekt.compiler.resolution.substitute
-import com.ivianuu.injekt.compiler.resolution.toCallableRef
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt.compiler.resolution.toGivenNode
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.backend.common.ir.allParameters
@@ -64,23 +46,25 @@ import org.jetbrains.kotlin.name.FqName
 class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrElementTransformerVoid() {
 
     private data class ResolutionContext(val graph: GivenGraph.Success) {
-        val expressionsByType = mutableMapOf<TypeRef, (() -> IrExpression)?>()
+        val expressionsByRequest = mutableMapOf<GivenRequest, (() -> IrExpression)?>()
     }
 
     private fun ResolutionContext.fillGivens(
         callable: CallableRef,
+        forFunExpression: Boolean,
         call: IrFunctionAccessExpression,
     ) {
+        val requests = callable.getGivenRequests(forFunExpression)
         if (callable.callable.dispatchReceiverParameter != null && call.dispatchReceiver == null) {
             call.dispatchReceiver = expressionFor(
-                callable.parameterTypes[callable.callable.dispatchReceiverParameter!!]!!,
+                requests.single { it.parameterName.asString() == "_dispatchReceiver" },
                 call.symbol
             )
         }
 
         if (callable.callable.extensionReceiverParameter != null && call.extensionReceiver == null) {
             call.extensionReceiver = expressionFor(
-                callable.parameterTypes[callable.callable.extensionReceiverParameter!!]!!,
+                requests.single { it.parameterName.asString() == "_extensionReceiver" },
                 call.symbol
             )
         }
@@ -91,9 +75,9 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                 it.givenKind() == GivenKind.VALUE ||
                         callable.parameterTypes[it]!!.givenKind == GivenKind.VALUE
             }
-            .map {
-                it to expressionFor(
-                    callable.parameterTypes[it]!!,
+            .map { parameter ->
+                parameter to expressionFor(
+                    requests.single { it.parameterName == parameter.name },
                     call.symbol
                 )
             }
@@ -101,12 +85,12 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
     }
 
     private fun ResolutionContext.expressionFor(
-        type: TypeRef,
+        request: GivenRequest,
         symbol: IrSymbol,
     ): IrExpression? {
-        return expressionsByType.getOrPut(type) {
-            val given = graph.givens[type]
-                ?: error("Wtf $type\n${this.graph.givens.toList().joinToString("\n")}")
+        return expressionsByRequest.getOrPut(request) {
+            val given = graph.givens[request]
+                ?: error("Wtf $request\n${this.graph.givens.toList().joinToString("\n")}")
             when (given) {
                 is CallableGivenNode -> callableExpression(given, symbol)
                 is DefaultGivenNode -> null
@@ -149,7 +133,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                                         .irGet(function.valueParameters[index]))
                             }
 
-                        fillGivens(given.callable, this)
+                        fillGivens(given.callable, true, this)
                     }
             }
     }
@@ -169,7 +153,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         DeclarationIrBuilder(pluginContext, symbol)
             .irLambda(given.type.toIrType(pluginContext)) { function ->
                 lambdasByProviderGiven[given] = function
-                expressionFor(given.dependencies.single().type, symbol)
+                expressionFor(given.dependencies.single(), symbol)
                     ?: DeclarationIrBuilder(pluginContext, symbol).irUnit()
             }
     }
@@ -286,7 +270,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                             putTypeArgument(index, typeArgument.toIrType(pluginContext))
                         }
 
-                    fillGivens(callable, this)
+                    fillGivens(callable, false, this)
                 }
         }
     }
@@ -316,7 +300,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                         putTypeArgument(index, typeArgument.toIrType(pluginContext))
                     }
 
-                fillGivens(callable, this)
+                fillGivens(callable, false, this)
             }
     }
 
@@ -344,7 +328,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                         putTypeArgument(index, typeArgument.toIrType(pluginContext))
                     }
 
-                fillGivens(callable, this)
+                fillGivens(callable, false, this)
             }
     }
 
@@ -484,7 +468,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                     )
                     ResolutionContext(givenNodes)
                         .fillGivens(expression.symbol.descriptor.toCallableRef()
-                            .substitute(substitutionMap), expression)
+                            .substitute(substitutionMap), false, expression)
                 } catch (e: Throwable) {
                     throw RuntimeException("Wtf ${expression.dump()}", e)
                 }

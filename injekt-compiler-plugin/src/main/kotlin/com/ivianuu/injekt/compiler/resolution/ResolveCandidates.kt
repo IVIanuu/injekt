@@ -10,7 +10,7 @@ sealed class GivenGraph {
     data class Success(
         override val requests: List<GivenRequest>,
         val scope: ResolutionScope,
-        val givens: Map<TypeRef, GivenNode>,
+        val givens: Map<GivenRequest, GivenNode>,
     ) : GivenGraph()
 
     data class Error(
@@ -122,9 +122,9 @@ private fun List<ResolutionResult.Success>.toSuccessGraph(
     scope: ResolutionScope,
     requests: List<GivenRequest>,
 ): GivenGraph.Success {
-    val givensByType = mutableMapOf<TypeRef, GivenNode>()
+    val givensByType = mutableMapOf<GivenRequest, GivenNode>()
     fun ResolutionResult.Success.visit() {
-        givensByType[request.type] = candidateResult.candidate
+        givensByType[request] = candidateResult.candidate
         candidateResult.dependencyResults
             .forEach { it.visit() }
     }
@@ -146,7 +146,6 @@ private fun List<ResolutionResult.Failure>.toErrorGraph(
 
 class ResolutionContext(val scope: ResolutionScope) {
     private val chain = mutableSetOf<GivenNode>()
-    private val resultsByCandidate = mutableMapOf<GivenNode, CandidateResolutionResult>()
     var currentCallContext = scope.callContext
         private set
 
@@ -156,13 +155,13 @@ class ResolutionContext(val scope: ResolutionScope) {
         request: GivenRequest,
         candidate: GivenNode,
         compute: () -> CandidateResolutionResult,
-    ): CandidateResolutionResult = resultsByCandidate.getOrPut(candidate) {
+    ): CandidateResolutionResult {
         chain.reversed().forEach { prev ->
             if (prev.callableFqName == candidate.callableFqName &&
                 prev.type.coveringSet == candidate.type.coveringSet &&
                 candidate.type.typeSize > prev.type.typeSize
             ) {
-                return@getOrPut CandidateResolutionResult.Failure(
+                return CandidateResolutionResult.Failure(
                     request,
                     candidate,
                     ResolutionResult.Failure.DivergentGiven(request)
@@ -173,7 +172,7 @@ class ResolutionContext(val scope: ResolutionScope) {
         if (candidate in chain) {
             val chainList = chain.toList()
             val cycleChain = chainList.subList(chainList.indexOf(candidate), chainList.size)
-            return@getOrPut CandidateResolutionResult.Failure(
+            return CandidateResolutionResult.Failure(
                 request,
                 candidate,
                 ResolutionResult.Failure.CircularDependency(request, emptyList()) // todo
@@ -188,7 +187,7 @@ class ResolutionContext(val scope: ResolutionScope) {
         chain -= candidate
         providedGivens -= candidate.providedGivens
         currentCallContext = previousCallContext
-        return@getOrPut result
+        return result
     }
 }
 
@@ -311,7 +310,7 @@ private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<
                 request.type,
                 Int.MAX_VALUE,
                 elements,
-                elements.flatMap { element -> element.getGivenRequests() }
+                elements.flatMap { element -> element.getGivenRequests(false) }
             )
         )
     }

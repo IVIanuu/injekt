@@ -76,8 +76,7 @@ data class FunGivenNode(
         get() = CallContext.DEFAULT
     override val callableFqName: FqName
         get() = type.classifier.fqName
-    override val dependencies: List<GivenRequest> = callable.getGivenRequests()
-        .map { it.copy(callContext = type.callContext) }
+    override val dependencies: List<GivenRequest> = callable.getGivenRequests(true)
     override val originalType: TypeRef
         get() = type.classifier.defaultType
     override val providedGivens: List<GivenNode>
@@ -149,20 +148,21 @@ fun CallableRef.toGivenNode(type: TypeRef, depth: Int): CallableGivenNode {
     val finalCallable = substitute(getSubstitutionMap(listOf(type to this.type)))
     return CallableGivenNode(
         type,
-        finalCallable.getGivenRequests(),
+        finalCallable.getGivenRequests(false),
         depth,
         finalCallable
     )
 }
 
-fun CallableRef.getGivenRequests(): List<GivenRequest> {
+fun CallableRef.getGivenRequests(forFunExpression: Boolean): List<GivenRequest> {
     return callable.allParameters
         .filter {
             callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
         }
         .filter {
             it === callable.dispatchReceiverParameter ||
-                    it.givenKind() == GivenKind.VALUE
+                    it.givenKind() == GivenKind.VALUE ||
+                    parameterTypes[it]!!.givenKind == GivenKind.VALUE
         }
         .map {
             val name = when {
@@ -175,7 +175,7 @@ fun CallableRef.getGivenRequests(): List<GivenRequest> {
                 required = it !is ValueParameterDescriptor || !it.hasDefaultValueIgnoringGiven,
                 callableFqName = callable.fqNameSafe,
                 parameterName = name,
-                callContext = null
+                callContext = if (forFunExpression) callContext else null
             )
         }
 }

@@ -72,7 +72,7 @@ class GivenCallChecker(
                     required = !it.key.hasDefaultValueIgnoringGiven,
                     callableFqName = resultingDescriptor.fqNameSafe,
                     parameterName = it.key.name,
-                    callContext = scope.callContext
+                    callContext = null
                 )
             }
 

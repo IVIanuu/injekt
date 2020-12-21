@@ -552,4 +552,21 @@ class GivenResolutionTest {
         val foo = Foo()
         assertSame(foo, invokeSingleFile<Any>(foo))
     }
+
+    @Test
+    fun testCanResolveGivenWhichDependsOnAssistedGivenOfTheSameType() = codegen(
+        """
+            typealias SpecialScope = Unit
+            
+            @Given fun <E> asRunnable(
+                @Given factory: (@Given SpecialScope) -> List<E>
+            ): List<E> = factory(Unit)
+            
+            @Given fun raw(@Given scope: SpecialScope): List<String> = listOf("")
+            
+            fun main() {
+                given<List<String>>()
+            } 
+        """
+    )
 }
