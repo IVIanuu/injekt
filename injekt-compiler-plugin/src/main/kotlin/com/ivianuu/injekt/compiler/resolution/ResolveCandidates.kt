@@ -114,7 +114,7 @@ private fun ResolutionScope.resolveRequest(
     request,
     (context.getProvidedCandidates(request) +
             givensForType(request.type) +
-            getFrameworkCandidates(request))
+            context.getFrameworkCandidates(request))
         .distinct()
 )
 
@@ -150,6 +150,7 @@ class ResolutionContext(val scope: ResolutionScope) {
         private set
 
     val providedGivens = mutableListOf<GivenNode>()
+    val providedGivenSetElements = mutableListOf<CallableRef>()
 
     fun computeForCandidate(
         request: GivenRequest,
@@ -183,9 +184,11 @@ class ResolutionContext(val scope: ResolutionScope) {
         currentCallContext = request.callContext ?: previousCallContext
         chain += candidate
         providedGivens += candidate.providedGivens
+        providedGivenSetElements += candidate.providedGivenSetElements
         val result = compute()
         chain -= candidate
         providedGivens -= candidate.providedGivens
+        providedGivenSetElements -= candidate.providedGivenSetElements
         currentCallContext = previousCallContext
         return result
     }
@@ -266,7 +269,7 @@ private fun ResolutionContext.getProvidedCandidates(request: GivenRequest): List
         .filter { it.type.isAssignableTo(request.type) }
 }
 
-private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<GivenNode> {
+private fun ResolutionContext.getFrameworkCandidates(request: GivenRequest): List<GivenNode> {
     if (request.forDispatchReceiver &&
         request.type.classifier.descriptor?.safeAs<ClassDescriptor>()
             ?.kind == ClassKind.OBJECT
@@ -278,7 +281,7 @@ private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<
                 request.type,
                 Int.MAX_VALUE,
                 CallableRef(
-                    declarationStore.functionDescriptorForFqName(request.type.classifier.fqName)
+                    scope.declarationStore.functionDescriptorForFqName(request.type.classifier.fqName)
                         .single()
                 )
             )
@@ -294,16 +297,18 @@ private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<
             ProviderGivenNode(
                 request.type,
                 Int.MAX_VALUE,
-                declarationStore,
+                scope.declarationStore,
                 request.required
             )
         )
     }
 
-    val setType = declarationStore.module.builtIns.set.defaultType.toTypeRef()
+    val setType = scope.declarationStore.module.builtIns.set.defaultType.toTypeRef()
     if (request.type.isSubTypeOf(setType)) {
         val setElementType = request.type.subtypeView(setType.classifier)!!.typeArguments.single()
-        val elements = givenSetElementsForType(setElementType)
+        val elements = (scope.givenSetElementsForType(setElementType) +
+                providedGivenSetElements
+                    .filter { it.type.isAssignableTo(request.type) })
             .map { it.substitute(getSubstitutionMap(listOf(setElementType to it.originalType))) }
         return listOf(
             SetGivenNode(

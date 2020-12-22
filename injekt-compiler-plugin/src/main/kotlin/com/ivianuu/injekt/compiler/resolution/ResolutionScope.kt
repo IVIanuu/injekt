@@ -21,7 +21,13 @@ class ResolutionScope(
     init {
         parent?.givens?.forEach { givens += it }
         parent?.givenSetElements?.forEach { givenSetElements += it }
-        declarations.forEach { addDeclaration(listOf(it.callable.fqNameSafe), it) }
+        declarations.forEach { declaration ->
+            declaration.collectGivens(
+                path = listOf(declaration.callable.fqNameSafe),
+                addGiven = { givens += it to this },
+                addGivenSetElement = { givenSetElements += it to this }
+            )
+        }
     }
 
     fun givensForType(type: TypeRef): List<GivenNode> = givens
@@ -36,48 +42,24 @@ class ResolutionScope(
     fun addIfNeeded(callable: CallableDescriptor) {
         callable.givenKind()
             ?.let { CallableRef(callable, givenKind = it) }
-            ?.let { addDeclaration(emptyList(), it) }
+            ?.let { ref ->
+                ref.collectGivens(
+                    path = emptyList(),
+                    addGiven = { givens += it to this },
+                    addGivenSetElement = { givenSetElements += it to this }
+                )
+            }
     }
 
     fun addIfNeeded(clazz: ClassDescriptor) {
         clazz.getGivenDeclarationConstructors()
-            .forEach { addDeclaration(emptyList(), it) }
-    }
-
-    private fun addDeclaration(path: List<Any>, declaration: CallableRef) {
-        when (declaration.givenKind) {
-            GivenKind.VALUE -> givens += declaration to this
-            GivenKind.SET_ELEMENT -> givenSetElements += declaration to this
-            GivenKind.GROUP -> {
-                val isFunction =
-                    declaration.type.allTypes.any {
-                        it.classifier.fqName.asString().startsWith("kotlin.Function")
-                                || it.classifier.fqName.asString()
-                            .startsWith("kotlin.coroutines.SuspendFunction")
-                    }
-                if (isFunction) {
-                    val nextPath = path + declaration.callable.fqNameSafe
-                    if (isFunction) {
-                        val nextCallable =
-                            declaration.copy(type = declaration.type.copy(path = nextPath))
-                        givens += nextCallable to this
-                        declaration.callable.returnType!!.memberScope
-                            .collectGivenDeclarations(nextCallable.type)
-                            .forEach { addDeclaration(path + it.callable.fqNameSafe, it) }
-                    } else {
-                        givens += declaration to this
-                        declaration.callable.returnType!!.memberScope
-                            .collectGivenDeclarations(declaration.type)
-                            .forEach { addDeclaration(path + it.callable.fqNameSafe, it) }
-                    }
-                } else {
-                    givens += declaration to this
-                    declaration.callable.returnType!!.memberScope
-                        .collectGivenDeclarations(declaration.type)
-                        .forEach { addDeclaration(path + it.callable.fqNameSafe, it) }
-                }
+            .forEach { ref ->
+                ref.collectGivens(
+                    path = emptyList(),
+                    addGiven = { givens += it to this },
+                    addGivenSetElement = { givenSetElements += it to this }
+                )
             }
-        }
     }
 
     private fun ResolutionScope.depth(): Int {

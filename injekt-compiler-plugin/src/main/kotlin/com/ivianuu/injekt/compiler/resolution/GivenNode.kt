@@ -3,9 +3,12 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringGiven
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.transform.toKotlinType
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -18,6 +21,7 @@ sealed class GivenNode {
     abstract val callContext: CallContext
     abstract val depth: Int
     abstract val providedGivens: List<GivenNode>
+    abstract val providedGivenSetElements: List<CallableRef>
 }
 
 data class CallableGivenNode(
@@ -32,6 +36,8 @@ data class CallableGivenNode(
     override val callContext: CallContext
         get() = callable.callContext
     override val providedGivens: List<GivenNode>
+        get() = emptyList()
+    override val providedGivenSetElements: List<CallableRef>
         get() = emptyList()
     override val originalType: TypeRef
         get() = callable.originalType
@@ -48,6 +54,8 @@ data class SetGivenNode(
         get() = CallContext.DEFAULT
     override val providedGivens: List<GivenNode>
         get() = emptyList()
+    override val providedGivenSetElements: List<CallableRef>
+        get() = emptyList()
     override val originalType: TypeRef
         get() = type
 }
@@ -62,6 +70,8 @@ data class DefaultGivenNode(override val type: TypeRef) : GivenNode() {
     override val originalType: TypeRef
         get() = type
     override val providedGivens: List<GivenNode>
+        get() = emptyList()
+    override val providedGivenSetElements: List<CallableRef>
         get() = emptyList()
     override val depth: Int
         get() = -1
@@ -81,6 +91,8 @@ data class FunGivenNode(
         get() = type.classifier.defaultType
     override val providedGivens: List<GivenNode>
         get() = emptyList()
+    override val providedGivenSetElements: List<CallableRef>
+        get() = emptyList()
 }
 
 data class ObjectGivenNode(override val type: TypeRef) : GivenNode() {
@@ -95,6 +107,8 @@ data class ObjectGivenNode(override val type: TypeRef) : GivenNode() {
     override val originalType: TypeRef
         get() = type
     override val providedGivens: List<GivenNode>
+        get() = emptyList()
+    override val providedGivenSetElements: List<CallableRef>
         get() = emptyList()
 }
 
@@ -114,34 +128,36 @@ data class ProviderGivenNode(
             callContext = type.callContext
         )
     )
-    override val providedGivens: List<GivenNode>
-        get() = type.typeArguments.dropLast(1)
-            .mapIndexed { index, parameterType ->
-                ProviderParameterGivenNode(parameterType, index, this)
+    override val providedGivens = mutableListOf<GivenNode>()
+    override val providedGivenSetElements = mutableListOf<CallableRef>()
+    override val callContext: CallContext
+        get() = CallContext.DEFAULT
+    override val originalType: TypeRef
+        get() = type
+    init {
+        type
+            .toKotlinType()
+            .memberScope
+            .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
+            .first()
+            .valueParameters
+            .map { ProviderParameterDescriptor(this, it) }
+            .map { CallableRef(it, givenKind = type.typeArguments[it.index].givenKind) }
+            .forEach { parameter ->
+                parameter.collectGivens(
+                    path = listOf(callableFqName, type),
+                    addGiven = {
+                        providedGivens += it.toGivenNode(it.type, depth)
+                    },
+                    addGivenSetElement = { providedGivenSetElements += it }
+                )
             }
-    override val callContext: CallContext
-        get() = CallContext.DEFAULT
-    override val originalType: TypeRef
-        get() = type
-}
+    }
 
-data class ProviderParameterGivenNode(
-    override val type: TypeRef,
-    val index: Int,
-    val provider: ProviderGivenNode,
-) : GivenNode() {
-    override val depth: Int
-        get() = -1
-    override val callableFqName: FqName
-        get() = FqName("Provider.p$index")
-    override val dependencies: List<GivenRequest>
-        get() = emptyList()
-    override val providedGivens: List<GivenNode>
-        get() = emptyList()
-    override val callContext: CallContext
-        get() = CallContext.DEFAULT
-    override val originalType: TypeRef
-        get() = type
+    class ProviderParameterDescriptor(
+        val given: ProviderGivenNode,
+        private val delegate: ValueParameterDescriptor
+    ) : ValueParameterDescriptor by delegate
 }
 
 fun CallableRef.toGivenNode(type: TypeRef, depth: Int): CallableGivenNode {

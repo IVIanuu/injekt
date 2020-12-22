@@ -97,7 +97,6 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                 is FunGivenNode -> funExpression(given, symbol)
                 is ObjectGivenNode -> objectExpression(given, symbol)
                 is ProviderGivenNode -> providerExpression(given, symbol)
-                is ProviderParameterGivenNode -> providerParameterExpression(given, symbol)
                 is SetGivenNode -> setExpression(given, symbol)
             }
         }?.invoke()
@@ -105,10 +104,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
 
     private val lambdasByProviderGiven = mutableMapOf<ProviderGivenNode, IrFunction>()
 
-    private fun ResolutionContext.funExpression(
-        given: FunGivenNode,
-        symbol: IrSymbol
-    ): () -> IrExpression = {
+    private fun ResolutionContext.funExpression(given: FunGivenNode, symbol: IrSymbol): () -> IrExpression = {
         DeclarationIrBuilder(pluginContext, symbol)
             .irLambda(given.type.toIrType(pluginContext)) { function ->
                 val givenFun = (given.callable.callable as FunctionDescriptor).irFunction()
@@ -156,14 +152,6 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                 expressionFor(given.dependencies.single(), symbol)
                     ?: DeclarationIrBuilder(pluginContext, symbol).irUnit()
             }
-    }
-
-    private fun ResolutionContext.providerParameterExpression(
-        given: ProviderParameterGivenNode,
-        symbol: IrSymbol,
-    ): () -> IrExpression = {
-        DeclarationIrBuilder(pluginContext, symbol)
-            .irGet(lambdasByProviderGiven[given.provider]!!.valueParameters[given.index])
     }
 
     private fun ResolutionContext.setExpression(
@@ -336,6 +324,11 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         descriptor: ParameterDescriptor,
         symbol: IrSymbol,
     ): IrExpression {
+        if (descriptor is ProviderGivenNode.ProviderParameterDescriptor) {
+            return DeclarationIrBuilder(pluginContext, symbol)
+                .irGet(lambdasByProviderGiven[descriptor.given]!!.valueParameters[descriptor.index])
+        }
+
         return when (val containingDeclaration = descriptor.containingDeclaration) {
             is ClassDescriptor -> receiverAccessors.last {
                 descriptor.type.constructor.declarationDescriptor == it.first.descriptor

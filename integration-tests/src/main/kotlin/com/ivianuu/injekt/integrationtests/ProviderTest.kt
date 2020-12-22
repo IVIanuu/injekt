@@ -25,13 +25,22 @@ class ProviderTest {
     fun testProviderWithArgsGiven() = codegen(
         """
             @Given fun bar(@Given foo: Foo) = Bar(foo)
-            fun invoke(): Bar {
-                return given<(Foo) -> Bar>()(Foo())
-            }
+            fun invoke() = given<(@Given Foo) -> Bar>()(Foo())
         """
     ) {
         assertTrue(invokeSingleFile() is Bar)
     }
+
+    @Test
+    fun testProviderGivenGroup() = codegen(
+        """
+            @Given fun bar(@Given foo: Foo) = Bar(foo)
+            class FooGroup(@Given val foo: Foo)
+            fun invoke(): Bar {
+                return given<(@GivenGroup FooGroup) -> Bar>()(FooGroup(Foo()))
+            }
+        """
+    )
 
     @Test
     fun testSuspendProviderGiven() = codegen(

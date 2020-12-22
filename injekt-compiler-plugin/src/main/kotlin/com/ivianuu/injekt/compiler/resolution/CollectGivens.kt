@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.resolve.calls.DslMarkerUtils
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -160,4 +161,56 @@ fun ClassDescriptor.allGivenTypes(): List<TypeRef> = buildList<TypeRef> {
     this += defaultType.constructor.supertypes
         .filter { it.hasAnnotation(InjektFqNames.Given) }
         .map { it.toTypeRef() }
+}
+
+fun CallableRef.collectGivens(
+    path: List<Any>,
+    addGiven: (CallableRef) -> Unit,
+    addGivenSetElement: (CallableRef) -> Unit
+) {
+    when (givenKind) {
+        GivenKind.VALUE -> addGiven(this)
+        GivenKind.SET_ELEMENT -> addGivenSetElement(this)
+        GivenKind.GROUP -> {
+            val isFunction = type.allTypes.any {
+                it.classifier.fqName.asString().startsWith("kotlin.Function")
+                        || it.classifier.fqName.asString()
+                    .startsWith("kotlin.coroutines.SuspendFunction")
+            }
+            if (isFunction) {
+                val nextPath = path + callable.fqNameSafe
+                if (isFunction) {
+                    val nextCallable = copy(type = type.copy(path = nextPath))
+                    addGiven(nextCallable)
+                    callable.returnType!!.memberScope
+                        .collectGivenDeclarations(nextCallable.type)
+                        .forEach {
+                            it.collectGivens(path + it.callable.fqNameSafe, addGiven, addGivenSetElement)
+                        }
+                } else {
+                    addGiven(this)
+                    callable.returnType!!.memberScope
+                        .collectGivenDeclarations(type)
+                        .forEach {
+                            it.collectGivens(
+                                path + it.callable.fqNameSafe,
+                                addGiven,
+                                addGivenSetElement
+                            )
+                        }
+                }
+            } else {
+                addGiven(this)
+                callable.returnType!!.memberScope
+                    .collectGivenDeclarations(type)
+                    .forEach {
+                        it.collectGivens(
+                            path + it.callable.fqNameSafe,
+                            addGiven,
+                            addGivenSetElement
+                        )
+                    }
+            }
+        }
+    }
 }
