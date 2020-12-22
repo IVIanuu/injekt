@@ -22,7 +22,7 @@ class ProviderTest {
     }
 
     @Test
-    fun testProviderWithArgsGiven() = codegen(
+    fun testProviderWithGivenArgs() = codegen(
         """
             @Given fun bar(@Given foo: Foo) = Bar(foo)
             fun invoke() = given<(@Given Foo) -> Bar>()(Foo())
@@ -30,6 +30,37 @@ class ProviderTest {
     ) {
         assertTrue(invokeSingleFile() is Bar)
     }
+
+    @Test fun testProviderWithGenericGivenArgs() = codegen(
+        """ 
+            typealias ComponentA = Component
+
+            fun createComponentA() = ComponentBuilder<ComponentA>()
+                .build()
+
+            typealias ComponentB = Component
+
+            @GivenSetElement fun componentBFactory(
+                @Given parent: ComponentA,
+                @Given builderFactory: () -> Component.Builder<ComponentB>
+            ) = componentElement<ComponentA, () -> ComponentB> { 
+                builderFactory()
+                    .dependency(parent)
+                    .build()
+            }
+
+            typealias ComponentC = Component
+
+            @GivenSetElement fun componentCFactory(
+                @Given parent: ComponentB,
+                @Given builderFactory: () -> Component.Builder<ComponentC>
+            ) = componentElement<ComponentB, () -> ComponentC> {
+                builderFactory()
+                    .dependency(parent)
+                    .build()
+            }
+        """
+    )
 
     @Test
     fun testProviderGivenGroup() = codegen(

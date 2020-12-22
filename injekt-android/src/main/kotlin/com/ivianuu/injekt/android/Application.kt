@@ -24,30 +24,28 @@ import android.content.res.Resources
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.component.App
-import com.ivianuu.injekt.component.ApplicationScoped
-import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.applicationComponent
+import com.ivianuu.injekt.component.*
+import com.ivianuu.injekt.component.appComponent
 
 @Suppress("unused")
-val Application.applicationComponent: Component<ApplicationScoped>
-    get() = (this as App).applicationComponent
+@Given val @Given Application.appComponent: AppComponent
+    get() = (this as App).appComponent
 
 @Given inline val @Given App.application: Application
     get() = this as Application
 
-typealias ApplicationContext = Context
+typealias AppContext = Context
 
-@Given inline val @Given Application.appContext: ApplicationContext
+@Given inline val @Given Application.appContext: AppContext
     get() = this
 
-typealias ApplicationResources = Resources
+typealias AppResources = Resources
 
-@Given inline val @Given ApplicationContext.applicationResources: ApplicationResources
+@Given inline val @Given AppContext.appResources: AppResources
     get() = resources
 
-typealias ApplicationLifecycleOwner = LifecycleOwner
+typealias AppLifecycleOwner = LifecycleOwner
 
 @Suppress("unused")
-@Given inline val @Given Application.applicationLifecycleOwner: ApplicationLifecycleOwner
+@Given inline val @Given Application.appLifecycleOwner: AppLifecycleOwner
     get() = ProcessLifecycleOwner.get()

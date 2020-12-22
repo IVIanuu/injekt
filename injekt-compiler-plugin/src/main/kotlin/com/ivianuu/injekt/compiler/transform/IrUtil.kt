@@ -4,34 +4,34 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.expandedType
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.allParameters
+import org.jetbrains.kotlin.backend.common.ir.copyTo
+import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
+import org.jetbrains.kotlin.backend.common.ir.remapTypeParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.descriptors.SourceElement
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
-import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
+import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
-import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
-import org.jetbrains.kotlin.ir.expressions.IrClassReference
-import org.jetbrains.kotlin.ir.expressions.IrConst
-import org.jetbrains.kotlin.ir.expressions.IrConstKind
-import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
-import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
-import org.jetbrains.kotlin.ir.expressions.IrSpreadElement
-import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
-import org.jetbrains.kotlin.ir.expressions.IrVararg
+import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
+import org.jetbrains.kotlin.ir.descriptors.WrappedFunctionDescriptorWithContainerSource
+import org.jetbrains.kotlin.ir.descriptors.WrappedPropertyGetterDescriptor
+import org.jetbrains.kotlin.ir.descriptors.WrappedPropertySetterDescriptor
+import org.jetbrains.kotlin.ir.descriptors.WrappedSimpleFunctionDescriptor
+import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrReturnImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
+import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrStarProjection
 import org.jetbrains.kotlin.ir.types.IrType
@@ -40,13 +40,12 @@ import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.typeOrNull
-import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
-import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.isSuspendFunction
-import org.jetbrains.kotlin.ir.util.parentAsClass
+import org.jetbrains.kotlin.ir.util.*
+import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.AnnotationValue
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
@@ -63,7 +62,9 @@ import org.jetbrains.kotlin.resolve.constants.NullValue
 import org.jetbrains.kotlin.resolve.constants.ShortValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
+import org.jetbrains.kotlin.serialization.deserialization.descriptors.DescriptorWithContainerSource
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
@@ -252,7 +253,8 @@ fun IrBuilderWithScope.irLambda(
         name = Name.special("<anonymous>")
         this.returnType = returnType
         visibility = DescriptorVisibilities.LOCAL
-        isSuspend = type.isSuspendFunction()
+        isSuspend = type.classifier.descriptor.fqNameSafe.asString()
+            .startsWith("kotlin.coroutines.SuspendFunction")
     }.apply {
         parent = scope.getLocalDeclarationParent()
         type.arguments.dropLast(1).forEachIndexed { index, typeArgument ->
@@ -277,4 +279,119 @@ fun IrBuilderWithScope.irLambda(
         function = lambda,
         origin = IrStatementOrigin.LAMBDA
     )
+}
+
+fun wrapDescriptor(descriptor: FunctionDescriptor): WrappedSimpleFunctionDescriptor {
+    return when (descriptor) {
+        is PropertyGetterDescriptor ->
+            WrappedPropertyGetterDescriptor()
+        is PropertySetterDescriptor ->
+            WrappedPropertySetterDescriptor()
+        is DescriptorWithContainerSource ->
+            WrappedFunctionDescriptorWithContainerSource()
+        else -> object : WrappedSimpleFunctionDescriptor() {
+            override fun getSource(): SourceElement = descriptor.source
+        }
+    }
+}
+
+fun IrBuilderWithScope.jvmNameAnnotation(
+    name: String,
+    pluginContext: IrPluginContext
+): IrConstructorCall {
+    val jvmName = pluginContext.referenceClass(DescriptorUtils.JVM_NAME)!!
+    return irCall(jvmName.constructors.single()).apply {
+        putValueArgument(0, irString(name))
+    }
+}
+
+fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
+    val descriptor = descriptor
+    val newDescriptor = wrapDescriptor(descriptor)
+
+    return IrFunctionImpl(
+        startOffset,
+        endOffset,
+        origin,
+        IrSimpleFunctionSymbolImpl(newDescriptor),
+        name,
+        visibility,
+        descriptor.modality,
+        returnType,
+        isInline,
+        isExternal,
+        descriptor.isTailrec,
+        isSuspend,
+        descriptor.isOperator,
+        descriptor.isInfix,
+        isExpect,
+        isFakeOverride,
+        containerSource
+    ).also { fn ->
+        newDescriptor.bind(fn)
+        if (this is IrSimpleFunction) {
+            val propertySymbol = correspondingPropertySymbol
+            if (propertySymbol != null) {
+                fn.correspondingPropertySymbol = propertySymbol
+                if (propertySymbol.owner.getter == this) {
+                    propertySymbol.owner.getter = fn
+                }
+                if (propertySymbol.owner.setter == this) {
+                    propertySymbol.owner.setter = this
+                }
+            }
+        }
+        fn.parent = parent
+        fn.typeParameters = this.typeParameters.map {
+            it.parent = fn
+            it
+        }
+
+        fn.dispatchReceiverParameter = dispatchReceiverParameter?.copyTo(fn)
+        fn.extensionReceiverParameter = extensionReceiverParameter?.copyTo(fn)
+        fn.valueParameters = valueParameters.map { p ->
+            p.copyTo(fn, name = dexSafeName(p.name))
+        }
+        fn.annotations = annotations.map { a -> a }
+        fn.metadata = metadata
+        fn.body = body?.deepCopyWithSymbols(this)
+        val parameterMapping = allParameters
+            .map { it.symbol }
+            .zip(fn.allParameters)
+            .toMap()
+        fn.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitGetValue(expression: IrGetValue): IrExpression {
+                return parameterMapping[expression.symbol]
+                    ?.let { DeclarationIrBuilder(pluginContext, fn.symbol).irGet(it) }
+                    ?: super.visitGetValue(expression)
+            }
+
+            override fun visitReturn(expression: IrReturn): IrExpression {
+                if (expression.returnTargetSymbol == symbol) {
+                    return super.visitReturn(
+                        IrReturnImpl(
+                            expression.startOffset,
+                            expression.endOffset,
+                            expression.type,
+                            fn.symbol,
+                            expression.value
+                        )
+                    )
+                }
+                return super.visitReturn(expression)
+            }
+        })
+    }
+}
+
+
+private fun dexSafeName(name: Name): Name {
+    return if (name.isSpecial && name.asString().contains(' ')) {
+        val sanitized = name
+            .asString()
+            .replace(' ', '$')
+            .replace('<', '$')
+            .replace('>', '$')
+        Name.identifier(sanitized)
+    } else name
 }

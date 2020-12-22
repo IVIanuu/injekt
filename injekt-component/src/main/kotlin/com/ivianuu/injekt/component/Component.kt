@@ -3,72 +3,80 @@
 package com.ivianuu.injekt.component
 
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.common.ForKey
+import com.ivianuu.injekt.common.Key
+import com.ivianuu.injekt.common.keyOf
 
-interface Component<N : Component.Name> {
-    val name: N
-
-    val storage: Storage<N>
+interface Component {
+    val key: Key<Component>
 
     fun <T : Any> getOrNull(key: Key<T>): T?
 
-    fun <N : Name> getDependencyOrNull(name: N): Component<N>?
+    fun <T : Any> getScopedValue(key: Int): T?
 
-    interface Name
+    fun <T : Any> setScopedValue(key: Int, value: T)
 
-    interface Key<T : Any>
+    fun <T : Any> removeScopedValue(key: Int)
 
-    interface Builder<N : Name> {
-        fun dependency(parent: Component<*>): Builder<N>
-        fun <T : Any> element(key: Key<T>, value: T): Builder<N>
-        fun build(): Component<N>
+    fun dispose()
+
+    interface Disposable {
+        fun dispose()
+    }
+
+    interface Builder<C : Component> {
+        fun <T : Component> dependency(parent: T): Builder<C>
+        fun <T : Any> element(key: Key<T>, value: T): Builder<C>
+        fun build(): C
     }
 }
 
-fun <T : Any> ComponentKey(): Component.Key<T> = DefaultKey()
-private class DefaultKey<T : Any> : Component.Key<T>
+fun <@ForKey T : Any> Component.get(): T = getOrNull(keyOf())
+    ?: error("No value for for $key in ${this.key}")
 
-operator fun <T : Any> Component<*>.get(key: Component.Key<T>): T = getOrNull(key)
-    ?: error("No value for for $key in ${this.name}")
-
-
-fun <N : Component.Name> Component<*>.getDependency(name: N): Component<N> =
-    getDependencyOrNull(name)
-        ?: error("No value for for $name in ${this.name}")
-
-fun Component<*>.dispose() {
-    storage.dispose()
+inline fun <T : Any> Component.scope(key: Int, block: () -> T): T {
+    getScopedValue<T>(key)?.let { return it }
+    synchronized(this) {
+        getScopedValue<T>(key)?.let { return it }
+        val value = block()
+        setScopedValue(key, value)
+        return value
+    }
 }
 
-@Given fun <N : Component.Name> ComponentBuilder(
-    @Given name: N,
-    @Given injectedElements: (Component<N>) -> Set<ComponentElement<N>>,
-): Component.Builder<N> = ComponentImpl.Builder(name, injectedElements)
+inline fun <T : Any> Component.scope(key: Any, block: () -> T): T =
+    scope(key.hashCode(), block)
 
-inline fun <N : Component.Name> Component(
-    @Given name: N,
-    @Given noinline injectedElements: (Component<N>) -> Set<ComponentElement<N>>,
-    block: Component.Builder<N>.() -> Unit = {},
-): Component<N> = ComponentBuilder(name, injectedElements).apply(block).build()
+inline fun <@ForKey T : Any> Component.scope(block: () -> T): T =
+    scope(keyOf<T>(), block)
 
-typealias ComponentElement<@Suppress("unused") N> = Pair<Component.Key<*>, Any>
+@Given fun <@ForKey C : Component> ComponentBuilder(
+    @Given injectedElements: (@Given C) -> Set<ComponentElement<C>>,
+): Component.Builder<C> = ComponentImpl.Builder(
+    keyOf(),
+    injectedElements as (Component) -> Set<ComponentElement<*>>
+)
 
-fun <N : Component.Name, T : Any> componentElement(
-    @Suppress("UNUSED_PARAMETER", "unused") name: N,
-    key: Component.Key<T>,
-    value: T,
-): ComponentElement<N> = key to value
+fun <C : Component, @ForKey T : Any> Component.Builder<C>.element(value: T) =
+    element(keyOf(), value)
 
-@PublishedApi internal class ComponentImpl<N : Component.Name>(
-    override val name: N,
-    private val dependencies: List<Component<*>>,
-    private val explicitElements: Map<Component.Key<*>, Any?>,
-    private val injectedElements: (Component<N>) -> Set<ComponentElement<N>>,
-) : Component<N> {
+typealias ComponentElement<@Suppress("unused") C> = Pair<Key<*>, Any>
+
+fun <@ForKey C : Component, T : Any> componentElement(value: T): ComponentElement<C> =
+    keyOf<C>() to value
+
+@PublishedApi internal class ComponentImpl(
+    override val key: Key<Component>,
+    private val dependencies: List<Component>,
+    explicitElements: Map<Key<*>, Any?>,
+    injectedElements: (@Given Component) -> Set<ComponentElement<*>>,
+) : Component {
     private val elements = explicitElements + injectedElements(this)
 
-    override val storage = Storage<N>()
+    private val scopedValues = mutableMapOf<Int, Any>()
 
-    override fun <T : Any> getOrNull(key: Component.Key<T>): T? {
+    override fun <T : Any> getOrNull(key: Key<T>): T? {
+        if (key == this.key) return this as T
         elements[key]?.let { return it as T }
 
         for (dependency in dependencies)
@@ -77,33 +85,39 @@ fun <N : Component.Name, T : Any> componentElement(
         return null
     }
 
-    override fun <N : Component.Name> getDependencyOrNull(name: N): Component<N>? {
-        for (dependency in dependencies)
-            if (dependency.name == name) return dependency as Component<N>
+    override fun <T : Any> getScopedValue(key: Int): T? = scopedValues[key] as? T
 
-        for (dependency in dependencies)
-            dependency.getDependencyOrNull(name)?.let { return it }
-
-        return null
+    override fun <T : Any> setScopedValue(key: Int, value: T) {
+        scopedValues[key] = value
     }
 
-    class Builder<N : Component.Name>(
-        private val name: N,
-        private val injectedElements: (Component<N>) -> Set<ComponentElement<N>>,
-    ) : Component.Builder<N> {
-        private val dependencies = mutableListOf<Component<*>>()
-        private val elements = mutableMapOf<Component.Key<*>, Any?>()
+    override fun <T : Any> removeScopedValue(key: Int) {
+        scopedValues -= key
+    }
 
-        override fun dependency(parent: Component<*>): Component.Builder<N> = apply {
-            dependencies += parent
-        }
+    override fun dispose() {
+        scopedValues.values
+            .filterIsInstance<Component.Disposable>()
+            .forEach { it.dispose() }
+        scopedValues.clear()
+    }
 
-        override fun <T : Any> element(key: Component.Key<T>, value: T): Component.Builder<N> =
+    class Builder<C : Component>(
+        private val key: Key<Component>,
+        private val injectedElements: (Component) -> Set<ComponentElement<*>>,
+    ) : Component.Builder<C> {
+        private val dependencies = mutableListOf<Component>()
+        private val elements = mutableMapOf<Key<*>, Any?>()
+
+        override fun <T : Component> dependency(parent: T): Component.Builder<C> =
+            apply { dependencies += parent }
+
+        override fun <T : Any> element(key: Key<T>, value: T): Component.Builder<C> =
             apply {
                 elements[key] = value
             }
 
-        override fun build(): Component<N> =
-            ComponentImpl(name, dependencies, elements, injectedElements)
+        override fun build(): C =
+            ComponentImpl(key, dependencies, elements, injectedElements) as C
     }
 }

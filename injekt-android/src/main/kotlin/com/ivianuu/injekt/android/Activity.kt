@@ -29,40 +29,32 @@ import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
-import com.ivianuu.injekt.component.ApplicationScoped
-import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.ComponentKey
-import com.ivianuu.injekt.component.componentElement
-import com.ivianuu.injekt.component.get
-import com.ivianuu.injekt.component.getDependency
+import com.ivianuu.injekt.component.*
 import kotlinx.coroutines.CoroutineScope
 
-@Given object ActivityScoped : Component.Name
+typealias ActivityComponent = Component
 
-@Given val @Given ComponentActivity.activityComponent: Component<ActivityScoped>
+@Given val @Given ComponentActivity.activityComponent: ActivityComponent
     get() = lifecycle.component {
-        activityRetainedComponent[ActivityComponentFactoryKey](this)
+        activityRetainedComponent
+            .get<(ComponentActivity) -> ActivityComponent>()(this)
     }
 
-private val ActivityKey = ComponentKey<ComponentActivity>()
-private val ActivityComponentFactoryKey =
-    ComponentKey<(ComponentActivity) -> Component<ActivityScoped>>()
-
 @GivenSetElement fun activityComponentFactory(
-    @Given parent: Component<ApplicationScoped>,
-    @Given builderFactory: () -> Component.Builder<ActivityScoped>,
-) = componentElement(ActivityRetainedScoped, ActivityComponentFactoryKey) {
+    @Given parent: ActivityRetainedComponent,
+    @Given builderFactory: () -> Component.Builder<ActivityComponent>,
+) = componentElement<ActivityRetainedComponent, (ComponentActivity) -> ActivityComponent> { activity ->
     builderFactory()
         .dependency(parent)
-        .element(ActivityKey, it)
+        .element(activity)
         .build()
 }
 
-@Given val @Given Component<ActivityScoped>.retainedComponentFromActivity: Component<ActivityRetainedScoped>
-    get() = getDependency(ActivityRetainedScoped)
+@Given val @Given ActivityComponent.retainedComponentFromActivity: ActivityRetainedComponent
+    get() = get()
 
-@Given val @Given Component<ActivityScoped>.activity: ComponentActivity
-    get() = this[ActivityKey]
+@Given val @Given ActivityComponent.activity: ComponentActivity
+    get() = get()
 
 typealias ActivityContext = Context
 

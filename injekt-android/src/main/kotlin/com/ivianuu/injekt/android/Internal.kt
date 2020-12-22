@@ -10,13 +10,12 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.lifecycleScope
 import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.dispose
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 
-private val componentsByLifecycle = mutableMapOf<Lifecycle, Component<*>>()
+private val componentsByLifecycle = mutableMapOf<Lifecycle, Component>()
 
-internal fun <T : Component<*>> Lifecycle.component(init: () -> T): T {
+internal fun <T : Component> Lifecycle.component(init: () -> T): T {
     componentsByLifecycle[this]?.let { return it as T }
     return synchronized(componentsByLifecycle) {
         componentsByLifecycle[this]?.let { return it as T }
@@ -41,7 +40,7 @@ internal fun <T : Component<*>> Lifecycle.component(init: () -> T): T {
     }
 }
 
-internal fun <T : Component<*>> ViewModelStore.component(init: () -> T): T {
+internal fun <T : Component> ViewModelStore.component(init: () -> T): T {
     return ViewModelProvider(
         this,
         object : ViewModelProvider.Factory {
@@ -51,7 +50,7 @@ internal fun <T : Component<*>> ViewModelStore.component(init: () -> T): T {
     )[ViewModelComponentHolder::class.java].component as T
 }
 
-private class ViewModelComponentHolder<T : Component<*>>(val component: T) : ViewModel() {
+private class ViewModelComponentHolder<T : Component>(val component: T) : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         component.dispose()

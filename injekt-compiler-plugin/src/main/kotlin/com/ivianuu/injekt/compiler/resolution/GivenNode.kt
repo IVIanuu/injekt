@@ -7,6 +7,7 @@ import com.ivianuu.injekt.compiler.transform.toKotlinType
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
@@ -142,7 +143,9 @@ data class ProviderGivenNode(
             .first()
             .valueParameters
             .map { ProviderParameterDescriptor(this, it) }
-            .map { CallableRef(it, givenKind = type.typeArguments[it.index].givenKind) }
+            .map {
+                CallableRef(it, givenKind = type.typeArguments[it.index].givenKind)
+            }
             .forEach { parameter ->
                 parameter.collectGivens(
                     path = listOf(callableFqName, type),

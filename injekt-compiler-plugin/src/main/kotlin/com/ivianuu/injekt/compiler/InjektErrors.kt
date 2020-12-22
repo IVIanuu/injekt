@@ -4,6 +4,7 @@ import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.render
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory1
 import org.jetbrains.kotlin.diagnostics.Errors
@@ -125,6 +126,24 @@ interface InjektErrors {
         val GIVEN_FUN_AS_MEMBER =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also { MAP.put(it, "@GivenFun must be top level") }
+
+        @JvmField
+        val NON_FOR_KEY_TYPE_PARAMETER_AS_FOR_KEY =
+            DiagnosticFactory1.create<PsiElement, TypeParameterDescriptor>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "Cannot use {0} as @ForKey type argument",
+                        object : DiagnosticParameterRenderer<TypeParameterDescriptor> {
+                            override fun render(
+                                obj: TypeParameterDescriptor,
+                                renderingContext: RenderingContext
+                            ): String {
+                                return obj.name.asString()
+                            }
+                        }
+                    )
+                }
 
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(

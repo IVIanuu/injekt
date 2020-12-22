@@ -20,14 +20,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.platform.setContent
-import com.ivianuu.injekt.android.ActivityRetainedScoped
-import com.ivianuu.injekt.android.ActivityScoped
-import com.ivianuu.injekt.component.ApplicationScoped
-import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.Storage
-import com.ivianuu.injekt.component.get
+import com.ivianuu.injekt.android.ActivityComponent
+import com.ivianuu.injekt.android.ActivityRetainedComponent
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.withGiven
+import com.ivianuu.injekt.common.withGiven
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 
@@ -35,9 +31,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         withGiven(this as ComponentActivity) {
-            given<Component<ApplicationScoped>>()[DummyAppElementKey]()
-
-            given<StorageCoroutineScope<Storage<ActivityScoped>>>().launch {
+            given<ComponentCoroutineScope<ActivityComponent>>().launch {
                 println("Activity work: start")
                 try {
                     awaitCancellation()
@@ -46,7 +40,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             if (savedInstanceState == null) {
-                given<StorageCoroutineScope<Storage<ActivityRetainedScoped>>>().launch {
+                given<ComponentCoroutineScope<ActivityRetainedComponent>>().launch {
                     println("Retained work: start")
                     try {
                         awaitCancellation()

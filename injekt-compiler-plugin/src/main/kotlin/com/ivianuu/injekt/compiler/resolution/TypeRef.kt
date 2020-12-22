@@ -179,7 +179,7 @@ class KotlinTypeRef(
                 kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
     }
     override val givenKind: GivenKind?
-        get() = finalType.givenKind()
+        get() = finalType.givenKind() ?: kotlinType.givenKind()
     override val isMarkedNullable: Boolean by unsafeLazy {
         kotlinType.isMarkedNullable
     }
@@ -227,7 +227,7 @@ fun TypeRef.copy(
     typeArguments: List<TypeRef> = this.typeArguments,
     variance: Variance = this.variance,
     isComposable: Boolean = this.isComposable,
-    givenDeclarationKind: GivenKind? = this.givenKind,
+    givenKind: GivenKind? = this.givenKind,
     isStarProjection: Boolean = this.isStarProjection,
     qualifiers: List<AnnotationDescriptor> = this.qualifiers,
     unqualified: Boolean = this.unqualified,
@@ -238,7 +238,7 @@ fun TypeRef.copy(
     typeArguments,
     variance,
     isComposable,
-    givenDeclarationKind,
+    givenKind,
     isStarProjection,
     qualifiers,
     unqualified,
@@ -252,7 +252,9 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
             // we copy nullability to support T : Any? -> String
             isMarkedNullable = if (!isStarProjection) isMarkedNullable else it.isMarkedNullable,
             // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
-            qualifiers = if (unqualified) emptyList() else qualifiers + it.qualifiers
+            qualifiers = if (unqualified) emptyList() else qualifiers + it.qualifiers,
+            // we copy given kind to support @Given C -> @Given String
+            givenKind = givenKind
         )
     }
 

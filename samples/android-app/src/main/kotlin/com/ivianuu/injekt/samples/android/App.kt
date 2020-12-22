@@ -17,15 +17,14 @@
 package com.ivianuu.injekt.samples.android
 
 import android.app.Application
-import com.ivianuu.injekt.component.applicationComponent
+import com.ivianuu.injekt.common.withGiven
 import com.ivianuu.injekt.component.initializeApp
-import com.ivianuu.injekt.withGiven
 
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
         initializeApp()
-        withGiven(applicationComponent) {
+        withGiven(this as Application) {
             initializeWorkers()
         }
     }

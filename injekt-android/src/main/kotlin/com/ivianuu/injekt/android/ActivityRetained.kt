@@ -3,29 +3,24 @@ package com.ivianuu.injekt.android
 import androidx.activity.ComponentActivity
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
-import com.ivianuu.injekt.component.ApplicationScoped
+import com.ivianuu.injekt.component.AppComponent
 import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.ComponentKey
 import com.ivianuu.injekt.component.componentElement
 import com.ivianuu.injekt.component.get
-import com.ivianuu.injekt.component.getDependency
 
-@Given object ActivityRetainedScoped : Component.Name
+typealias ActivityRetainedComponent = Component
 
-@Given val @Given ComponentActivity.activityRetainedComponent: Component<ActivityRetainedScoped>
+@Given val @Given ComponentActivity.activityRetainedComponent: ActivityRetainedComponent
     get() = viewModelStore.component {
-        application.applicationComponent[ActivityRetainedComponentFactoryKey]()
+        application.appComponent.get<() -> ActivityRetainedComponent>()()
     }
 
-private val ActivityRetainedComponentFactoryKey =
-    ComponentKey<() -> Component<ActivityRetainedScoped>>()
-
 @GivenSetElement fun activityRetainedComponentFactory(
-    @Given parent: Component<ApplicationScoped>,
-    @Given builderFactory: () -> Component.Builder<ActivityRetainedScoped>,
-) = componentElement(ApplicationScoped, ActivityRetainedComponentFactoryKey) {
+    @Given parent: AppComponent,
+    @Given builderFactory: () -> Component.Builder<ActivityRetainedComponent>,
+) = componentElement<AppComponent, () -> ActivityRetainedComponent> {
     builderFactory().dependency(parent).build()
 }
 
-@Given val @Given Component<ActivityRetainedScoped>.applicationComponentFromRetained: Component<ApplicationScoped>
-    get() = getDependency(ApplicationScoped)
+@Given val @Given ActivityRetainedComponent.appComponentFromRetained: AppComponent
+    get() = get()

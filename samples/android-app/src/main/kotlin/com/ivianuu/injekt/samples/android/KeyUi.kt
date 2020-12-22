@@ -8,15 +8,16 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Unqualified
-import com.ivianuu.injekt.component.ApplicationScoped
-import com.ivianuu.injekt.component.Storage
-import com.ivianuu.injekt.component.memo
+import com.ivianuu.injekt.common.ForKey
+import com.ivianuu.injekt.component.AppComponent
+import com.ivianuu.injekt.component.scope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlin.reflect.KClass
+import kotlin.reflect.typeOf
 
 typealias KeyUiBinding = Pair<KClass<*>, @Composable () -> Unit>
 
@@ -25,8 +26,8 @@ inline fun <reified K : Any, reified T : @Composable () -> Unit> keyUiBinding():
 
 typealias ActionChannel<A> = Channel<A>
 
-@Given fun <A> ActionChannel(@Given storage: Storage<ApplicationScoped>): ActionChannel<A> =
-    storage.memo("action_channel") { Channel() }
+@Given fun <@ForKey A> ActionChannel(@Given component: AppComponent): ActionChannel<A> =
+    component.scope { Channel() }
 
 typealias Dispatch<A> = (A) -> Unit
 

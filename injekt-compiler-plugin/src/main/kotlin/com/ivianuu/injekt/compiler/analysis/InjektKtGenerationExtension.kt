@@ -108,8 +108,11 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : Analysis
                 )
             } catch (e: Throwable) {
             }
-            val checker = GivenCallChecker(bindingTrace, module)
-            files.forEach { it.accept(checker) }
+            try {
+                val checker = GivenCallChecker(bindingTrace, module)
+                files.forEach { it.accept(checker) }
+            } catch (e: Throwable) {
+            }
         }
         return null
     }

@@ -27,9 +27,10 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         generateSymbols(pluginContext)
-        moduleFragment.transformChildrenVoid(GivenCallTransformer(pluginContext))
-        moduleFragment.transformChildrenVoid(GivenOptimizationTransformer())
-        moduleFragment.transformChildrenVoid(GivenFunCallTransformer(pluginContext))
+        moduleFragment.transform(GivenCallTransformer(pluginContext), null)
+        moduleFragment.transform(GivenOptimizationTransformer(), null)
+        moduleFragment.transform(GivenFunCallTransformer(pluginContext), null)
+        moduleFragment.transform(KeyTypeParameterTransformer(pluginContext), null)
         moduleFragment.patchDeclarationParents()
         generateSymbols(pluginContext)
     }

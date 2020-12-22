@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.samples.android
 
+import android.content.Context
 import androidx.work.Configuration
 import androidx.work.CoroutineWorker
 import androidx.work.WorkManager
@@ -23,7 +24,7 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenGroup
-import com.ivianuu.injekt.android.ApplicationContext
+import com.ivianuu.injekt.android.AppContext
 import com.ivianuu.injekt.android.work.WorkerContext
 import com.ivianuu.injekt.android.work.worker
 
@@ -42,11 +43,11 @@ import com.ivianuu.injekt.android.work.worker
 }
 
 fun initializeWorkers(
-    @Given applicationContext: ApplicationContext,
+    @Given appContext: AppContext,
     @Given workerFactory: WorkerFactory,
 ) {
     WorkManager.initialize(
-        applicationContext,
+        appContext,
         Configuration.Builder()
             .setWorkerFactory(workerFactory).build()
     )

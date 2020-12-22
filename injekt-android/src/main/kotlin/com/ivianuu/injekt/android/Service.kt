@@ -23,33 +23,25 @@ import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
-import com.ivianuu.injekt.component.ApplicationScoped
-import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.ComponentKey
-import com.ivianuu.injekt.component.componentElement
-import com.ivianuu.injekt.component.get
-import com.ivianuu.injekt.component.getDependency
+import com.ivianuu.injekt.component.*
 
-@Given object ServiceScoped : Component.Name
+typealias ServiceComponent = Component
 
-private val ServiceKey = ComponentKey<Service>()
-private val ServiceComponentFactoryKey = ComponentKey<(Service) -> Component<ServiceScoped>>()
-
-@GivenSetElement fun serviceComponentFactoryKey(
-    @Given parent: Component<ApplicationScoped>,
-    @Given builderFactory: () -> Component.Builder<ServiceScoped>,
-) = componentElement(ApplicationScoped, ServiceComponentFactoryKey) {
+@GivenSetElement fun serviceComponentFactory(
+    @Given parent: AppComponent,
+    @Given builderFactory: () -> Component.Builder<ServiceComponent>,
+) = componentElement<AppComponent, (Service) -> ServiceComponent> { service ->
     builderFactory()
         .dependency(parent)
-        .element(ServiceKey, it)
+        .element(service)
         .build()
 }
 
-fun Service.createServiceComponent(): Component<ServiceScoped> =
-    application.applicationComponent[ServiceComponentFactoryKey](this)
+fun Service.createServiceComponent(): AppComponent =
+    application.appComponent.get<(Service) -> ServiceComponent>()(this)
 
-@Given val @Given Component<ServiceScoped>.applicationComponentFromService: Component<ApplicationScoped>
-    get() = getDependency(ApplicationScoped)
+@Given val @Given ServiceComponent.appComponentFromService: AppComponent
+    get() = get()
 
 typealias ServiceContext = Context
 
@@ -60,6 +52,3 @@ typealias ServiceResources = Resources
 
 @Given inline val @Given Service.serviceResources: ServiceResources
     get() = resources
-
-@Given val @Given Component<ServiceScoped>.applicationComponent: Component<ApplicationScoped>
-    get() = getDependency(ApplicationScoped)

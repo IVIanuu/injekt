@@ -22,53 +22,43 @@ import android.content.Context
 import android.content.Intent
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
-import com.ivianuu.injekt.component.ApplicationScoped
-import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.ComponentKey
-import com.ivianuu.injekt.component.componentElement
-import com.ivianuu.injekt.component.get
-import com.ivianuu.injekt.component.getDependency
+import com.ivianuu.injekt.component.*
 
-@Given object ReceiverScoped : Component.Name
-
-private val ReceiverKey = ComponentKey<BroadcastReceiver>()
-private val ContextKey = ComponentKey<Context>()
-private val IntentKey = ComponentKey<Intent>()
-
-private val ReceiverComponentFactoryKey =
-    ComponentKey<(BroadcastReceiver, Context, Intent) -> Component<ReceiverScoped>>()
+typealias ReceiverComponent = Component
 
 @GivenSetElement fun receiverComponentFactory(
-    @Given parent: Component<ApplicationScoped>,
-    @Given builderFactory: () -> Component.Builder<ReceiverScoped>,
-) = componentElement(ApplicationScoped,
-    ReceiverComponentFactoryKey) { receiver, context, intent ->
+    @Given parent: AppComponent,
+    @Given builderFactory: () -> Component.Builder<ReceiverComponent>,
+) = componentElement<AppComponent, (BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent> {
+        receiver, context, intent ->
     builderFactory()
         .dependency(parent)
-        .element(ReceiverKey, receiver)
-        .element(ContextKey, context)
-        .element(IntentKey, intent)
+        .element(receiver)
+        .element(context)
+        .element(intent)
         .build()
 }
 
 fun BroadcastReceiver.createReceiverComponent(
     context: Context,
     intent: Intent,
-): Component<ReceiverScoped> = (context.applicationContext as Application)
-    .applicationComponent[ReceiverComponentFactoryKey](this, context, intent)
+): ReceiverComponent = (context.applicationContext as Application)
+    .appComponent
+    .get<(BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent>()
+    .invoke(this, context, intent)
 
-@Given val @Given Component<ReceiverScoped>.applicationComponentFromReceiver: Component<ApplicationScoped>
-    get() = getDependency(ApplicationScoped)
+@Given val @Given ReceiverComponent.appComponentFromReceiver: AppComponent
+    get() = get()
 
 typealias ReceiverContext = Context
 
-@Given val @Given Component<ReceiverScoped>.receiverContext: ReceiverContext
-    get() = this[ContextKey]
+@Given val @Given ReceiverComponent.receiverContext: ReceiverContext
+    get() = get()
 
 typealias ReceiverIntent = Intent
 
-@Given val @Given Component<ReceiverScoped>.receiverIntent: ReceiverIntent
-    get() = this[IntentKey]
+@Given val @Given ReceiverComponent.receiverIntent: ReceiverIntent
+    get() = get()
 
-@Given val @Given Component<ReceiverScoped>.applicationComponent: Component<ApplicationScoped>
-    get() = getDependency(ApplicationScoped)
+@Given val @Given ReceiverComponent.appComponent: AppComponent
+    get() = get()

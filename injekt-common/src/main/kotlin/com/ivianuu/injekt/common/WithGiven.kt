@@ -1,4 +1,6 @@
-package com.ivianuu.injekt
+package com.ivianuu.injekt.common
+
+import com.ivianuu.injekt.Given
 
 inline fun <A, R> withGiven(a: A, block: @Given A.() -> R) = block(a)
 
