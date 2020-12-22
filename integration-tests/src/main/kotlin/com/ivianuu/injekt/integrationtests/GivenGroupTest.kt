@@ -1,6 +1,9 @@
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
+import junit.framework.Assert.assertSame
 import org.junit.Test
 
 class GivenGroupTest {
@@ -26,6 +29,18 @@ class GivenGroupTest {
             fun invoke() = given<Bar>()
         """
     )
+
+    @Test
+    fun testGivenGroupLambdaParameter() = codegen(
+        """
+            class Ctx(@Given val foo: Foo)
+            val factory: (@GivenGroup Ctx) -> Foo = { given() }
+            fun invoke(foo: Foo) = factory(Ctx(foo))
+        """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
+    }
 
     @Test
     fun testLambdaGivenGroup() = codegen(
