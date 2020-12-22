@@ -51,6 +51,9 @@ private val WorkerComponentFactoryKey =
         .build()
 }
 
+@Given fun workerComponentFactory(@Given parent: Component<ApplicationScoped>) =
+    parent[WorkerComponentFactoryKey]
+
 private val WorkerContextKey = ComponentKey<WorkerContext>()
 
 typealias WorkerContext = Context
