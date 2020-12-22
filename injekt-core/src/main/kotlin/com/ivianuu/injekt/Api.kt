@@ -29,8 +29,6 @@ package com.ivianuu.injekt
 )
 annotation class Given
 
-annotation class With<T>
-
 @Suppress("NOTHING_TO_INLINE")
 inline fun <T> given(@Given value: T): T = value
 
