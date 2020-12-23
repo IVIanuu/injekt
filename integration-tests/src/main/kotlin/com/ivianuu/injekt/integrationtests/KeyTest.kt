@@ -26,6 +26,21 @@ class KeyTest {
     }
 
     @Test
+    fun testForKeyTypeParameterInInterface() = codegen(
+        """
+            interface KeyFactory {
+                fun <@ForKey T> listKeyOf(): Key<List<T>>
+                companion object : KeyFactory {
+                    override fun <@ForKey T> listKeyOf() = keyOf<List<T>>()
+                }
+            }
+            fun invoke() = KeyFactory.listKeyOf<String>() 
+        """
+    ) {
+        assertEquals("kotlin.collections.List<kotlin.String>", invokeSingleFile())
+    }
+
+    @Test
     fun testForKeyTypeParameterMulti() = multiCodegen(
         listOf(
             source(
