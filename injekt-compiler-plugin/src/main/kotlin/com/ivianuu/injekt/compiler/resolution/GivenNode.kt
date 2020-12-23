@@ -150,7 +150,7 @@ data class ProviderGivenNode(
                 parameter.collectGivens(
                     path = listOf(callableFqName, type),
                     addGiven = {
-                        providedGivens += it.toGivenNode(it.type, depth)
+                        providedGivens += it.toGivenNode(it.type, -1)
                     },
                     addGivenSetElement = { providedGivenSetElements += it }
                 )

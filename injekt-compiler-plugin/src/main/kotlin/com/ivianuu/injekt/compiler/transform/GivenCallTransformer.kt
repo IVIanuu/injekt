@@ -72,8 +72,9 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             .valueParameters
             .filter { call.getValueArgument(it.index) == null }
             .filter {
-                it.givenKind() == GivenKind.VALUE ||
+                val r = it.givenKind() == GivenKind.VALUE ||
                         callable.parameterTypes[it]!!.givenKind == GivenKind.VALUE
+                r
             }
             .map { parameter ->
                 parameter to expressionFor(

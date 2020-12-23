@@ -291,7 +291,10 @@ private fun ResolutionContext.getFrameworkCandidates(request: GivenRequest): Lis
     if (request.type.path == null &&
         (request.type.classifier.fqName.asString().startsWith("kotlin.Function")
                 || request.type.classifier.fqName.asString()
-            .startsWith("kotlin.coroutines.SuspendFunction"))
+            .startsWith("kotlin.coroutines.SuspendFunction")) &&
+                request.type.typeArguments.dropLast(1).all {
+                    it.givenKind != null
+                }
     ) {
         return listOf(
             ProviderGivenNode(

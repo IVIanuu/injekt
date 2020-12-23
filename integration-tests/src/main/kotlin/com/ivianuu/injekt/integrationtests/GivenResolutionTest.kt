@@ -370,7 +370,7 @@ class GivenResolutionTest {
     fun testPrefersProviderArgument() = codegen(
         """
             @Given fun foo() = Foo()
-            fun invoke(foo: Foo) = given<(Foo) -> Foo>()(foo)
+            fun invoke(foo: Foo) = given<(@Given Foo) -> Foo>()(foo)
         """
     ) {
         val foo = Foo()
@@ -381,7 +381,7 @@ class GivenResolutionTest {
     fun testPrefersInnerProviderArgumentOverOuterProviderArgument() = codegen(
         """
             @Given fun foo() = Foo()
-            fun invoke(foo: Foo) = given<(Foo) -> (Foo) -> Foo>()(Foo())(foo)
+            fun invoke(foo: Foo) = given<(@Given Foo) -> (@Given Foo) -> Foo>()(Foo())(foo)
         """
     ) {
         val foo = Foo()

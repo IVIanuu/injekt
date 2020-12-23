@@ -254,7 +254,8 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
             // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
             qualifiers = if (unqualified) emptyList() else qualifiers + it.qualifiers,
             // we copy given kind to support @Given C -> @Given String
-            givenKind = givenKind
+            // fallback to substitution given kind
+            givenKind = givenKind ?: it.givenKind
         )
     }
 
