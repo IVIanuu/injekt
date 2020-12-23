@@ -90,6 +90,3 @@ typealias ActivityCoroutineScope = LifecycleCoroutineScope
 
 @Given inline val @Given ComponentActivity.activityCoroutineScope: ActivityCoroutineScope
     get() = lifecycleScope
-
-@Given inline val @Given ActivityCoroutineScope.activityCoroutineScope: CoroutineScope
-    get() = this
