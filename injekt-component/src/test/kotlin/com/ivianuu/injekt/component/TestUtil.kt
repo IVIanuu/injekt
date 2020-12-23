@@ -1,5 +1,5 @@
 package com.ivianuu.injekt.component
 
-object TestComponent1 : Component.Name
-object TestComponent2 : Component.Name
-object TestComponent3 : Component.Name
+typealias TestComponent1 = Component
+typealias TestComponent2 = Component
+typealias TestComponent3 = Component

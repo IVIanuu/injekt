@@ -12,68 +12,72 @@ class ComponentTest {
 
     @Test
     fun testReturnsExistingValue() {
-        val component = Component(TestComponent1) { element("value") }
+        val component = ComponentBuilder<TestComponent1>()
+            .element("value")
+            .build()
         component.get<String>() shouldBe "value"
     }
 
     @Test
     fun testReturnsNullForNotExistingValue() {
-        val component = Component(TestComponent1)
+        val component = ComponentBuilder<TestComponent1>().build()
         component.getOrNull(keyOf<String>()) shouldBe null
     }
 
     @Test
     fun testReturnsFromDependency() {
-        val component = Component(TestComponent2) {
-            dependency(
-                Component(TestComponent1) {
-                    element("value")
-                }
+        val component = ComponentBuilder<TestComponent2>()
+            .dependency(
+                ComponentBuilder<TestComponent1>()
+                    .element("value")
+                    .build()
             )
-        }
+            .build()
         component.get<String>() shouldBe "value"
     }
 
     @Test fun testGetDependencyReturnsDependency() {
-        val dependency = Component(TestComponent1)
-        val dependent = Component(TestComponent2) { dependency(dependency) }
-        dependent.getDependencyOrNull(TestComponent1) shouldBeSameInstanceAs dependency
+        val dependency = ComponentBuilder<TestComponent1>().build()
+        val dependent = ComponentBuilder<TestComponent2>()
+            .dependency(dependency)
+            .build()
+        dependent.get<TestComponent1>() shouldBeSameInstanceAs dependency
     }
 
     @Test fun testGetDependencyReturnsNullIfNotExists() {
-        val dependent = Component(TestComponent1)
-        dependent.getDependencyOrNull(TestComponent1) shouldBe null
+        val dependent = ComponentBuilder<TestComponent2>().build()
+        dependent.getOrNull(keyOf<TestComponent1>()) shouldBe null
     }
 
     @Test
     fun testOverridesDependency() {
-        val component = Component(TestComponent2) {
-            dependency(
-                Component(TestComponent1) {
-                    element("dependency")
-                }
+        val component = ComponentBuilder<TestComponent2>()
+            .dependency(
+                ComponentBuilder<TestComponent1>()
+                    .element("dependency")
+                    .build()
             )
-            element("child")
-        }
+            .element("child")
+            .build()
         component.get<String>() shouldBe "child"
     }
 
     @Test
     fun testInjectedElement() {
-        @GivenSetElement val injected = componentElement(TestComponent1, "value")
-        val component = ComponentBuilder(TestComponent1).build()
+        @GivenSetElement val injected = componentElement<TestComponent1, String>("value")
+        val component = ComponentBuilder<TestComponent1>().build()
         component.get<String>() shouldBe "value"
     }
 
     @Test fun testGetSet() {
-        val component = Component(TestComponent1)
+        val component = ComponentBuilder<TestComponent1>().build()
         component.getScopedValue<String>(0) shouldBe null
         component.setScopedValue(0, "value")
         component.getScopedValue<String>(0) shouldBe "value"
     }
 
     @Test fun testScope() {
-        val component = Component(TestComponent1)
+        val component = ComponentBuilder<TestComponent1>().build()
         var calls = 0
         component.scope(0) { calls++ }
         component.scope(0) { calls++ }
@@ -82,7 +86,7 @@ class ComponentTest {
     }
 
     @Test fun testDispose() {
-        val component = Component(TestComponent1)
+        val component = ComponentBuilder<TestComponent1>().build()
         var disposed = false
         component.setScopedValue(
             0,

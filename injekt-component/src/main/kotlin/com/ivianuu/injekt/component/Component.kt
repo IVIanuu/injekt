@@ -31,8 +31,11 @@ interface Component {
     }
 }
 
-fun <@ForKey T : Any> Component.get(): T = getOrNull(keyOf())
-    ?: error("No value for for $key in ${this.key}")
+fun <@ForKey T : Any> Component.get(): T {
+    val key = keyOf<T>()
+    return getOrNull(key)
+        ?: error("No value for for $key in ${this.key}")
+}
 
 inline fun <T : Any> Component.scope(key: Int, block: () -> T): T {
     getScopedValue<T>(key)?.let { return it }
@@ -51,9 +54,9 @@ inline fun <@ForKey T : Any> Component.scope(block: () -> T): T =
     scope(keyOf<T>(), block)
 
 @Given fun <@ForKey C : Component> ComponentBuilder(
-    @Given injectedElements: (@Given C) -> Set<ComponentElement<C>>,
+    @Given injectedElements: (@Given C) -> Set<ComponentElement<C>> = { emptySet() },
 ): Component.Builder<C> = ComponentImpl.Builder(
-    keyOf(),
+    keyOf<C>(),
     injectedElements as (Component) -> Set<ComponentElement<*>>
 )
 
@@ -62,8 +65,8 @@ fun <C : Component, @ForKey T : Any> Component.Builder<C>.element(value: T) =
 
 typealias ComponentElement<@Suppress("unused") C> = Pair<Key<*>, Any>
 
-fun <@ForKey C : Component, T : Any> componentElement(value: T): ComponentElement<C> =
-    keyOf<C>() to value
+fun <C : Component, @ForKey T : Any> componentElement(value: T): ComponentElement<C> =
+    keyOf<T>() to value
 
 @PublishedApi internal class ComponentImpl(
     override val key: Key<Component>,
@@ -74,6 +77,10 @@ fun <@ForKey C : Component, T : Any> componentElement(value: T): ComponentElemen
     private val elements = explicitElements + injectedElements(this)
 
     private val scopedValues = mutableMapOf<Int, Any>()
+
+    init {
+        println()
+    }
 
     override fun <T : Any> getOrNull(key: Key<T>): T? {
         if (key == this.key) return this as T
