@@ -76,4 +76,38 @@ class GivenDeclarationCheckTest {
         assertMessage("Parameter 'foo' is never used")
     }
 
+    @Test
+    fun testCanDeclareGivenParametersWithAnUnderscore() = codegen(
+            """ 
+            fun usesFoo(@Given foo: Foo, @Given bar: Bar) {
+            }
+
+            fun callsUsesFoo(@Given _: Foo, @Given _: Bar) {
+            }
+
+            fun invoke(@Given _: Foo, @Given _: Bar) = callsUsesFoo()
+        """
+        )
+
+    @Test
+    fun testCanSpecifyNamedArgumentForAnonymousGivenParameter() = codegen(
+        """
+            fun callsUsesFoo(other: String = "", @Given _: Foo) {
+            }
+
+            fun invoke() = callsUsesFoo(foo = Foo())
+        """
+    )
+
+    @Test
+    fun testCanSpecifyNamedArgumentForAnonymousGivenParameterWithTypeAlias() = codegen(
+        """
+            typealias AliasedFoo = Foo
+            fun callsUsesFoo(other: String = "", @Given _: AliasedFoo) {
+            }
+
+            fun invoke() = callsUsesFoo(aliasedFoo = Foo())
+        """
+    )
+
 }

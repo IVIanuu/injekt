@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
+import org.jetbrains.kotlin.cfg.index
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -347,7 +348,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                             function.allParameters
                                 .filter { it != function.dispatchReceiverParameter }
                         }
-                        .single { it.name == descriptor.name }
+                        .single { it.index == descriptor.index() }
                 )
             else -> error("Unexpected parent $descriptor $containingDeclaration")
         }

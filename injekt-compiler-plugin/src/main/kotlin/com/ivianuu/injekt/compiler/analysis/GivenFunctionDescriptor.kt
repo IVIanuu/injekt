@@ -1,7 +1,9 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
@@ -23,7 +25,8 @@ class GivenValueParameterDescriptor(
     null,
     underlyingDescriptor.index,
     underlyingDescriptor.annotations,
-    underlyingDescriptor.name,
+    if (underlyingDescriptor.name.isSpecial) underlyingDescriptor.type.toTypeRef()
+        .classifier.fqName.shortName().asString().decapitalize().asNameId() else underlyingDescriptor.name,
     underlyingDescriptor.type,
     underlyingDescriptor.hasAnnotation(InjektFqNames.Given) ||
             underlyingDescriptor.type.hasAnnotation(InjektFqNames.Given) ||
