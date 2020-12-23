@@ -78,10 +78,6 @@ fun <C : Component, @ForKey T : Any> componentElement(value: T): ComponentElemen
 
     private val scopedValues = mutableMapOf<Int, Any>()
 
-    init {
-        println()
-    }
-
     override fun <T : Any> getOrNull(key: Key<T>): T? {
         if (key == this.key) return this as T
         elements[key]?.let { return it as T }
