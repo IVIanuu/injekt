@@ -21,7 +21,7 @@ class GivenFunTest {
         """
     )
 
-    @Test
+    //@Test
     fun testGivenFunWithExtension() = codegen(
         """
             @GivenFun fun String.function() {
@@ -78,7 +78,7 @@ class GivenFunTest {
         )
     )
 
-    @Test
+    //@Test
     fun testAssistedGivenFun() = codegen(
         """
             @GivenFun fun function(string: String, @FunApi assisted: Int) {
@@ -90,7 +90,7 @@ class GivenFunTest {
         """
     )
 
-    @Test
+    //@Test
     fun testAssistedGivenFunMulti() = multiCodegen(
         listOf(
             source(
@@ -111,7 +111,7 @@ class GivenFunTest {
         )
     )
 
-    @Test
+    //@Test
     fun testAssistedExtensionGivenFun() = codegen(
         """
             @GivenFun fun @receiver:FunApi String.function(string: String) {
@@ -123,7 +123,7 @@ class GivenFunTest {
         """
     )
 
-    @Test
+    //@Test
     fun testAssistedExtensionSuspendGivenFun() = codegen(
         """
             @GivenFun
@@ -134,7 +134,7 @@ class GivenFunTest {
         """
     )
 
-    @Test
+    //@Test
     fun testSuspendGivenFun() = codegen(
         """
             @GivenFun
@@ -158,7 +158,7 @@ class GivenFunTest {
         """
     )
 
-    @Test
+    //@Test
     fun testSuspendGivenFunMulti() = multiCodegen(
         listOf(
             source(
@@ -217,7 +217,7 @@ class GivenFunTest {
         """
     )
 
-    @Test
+    //@Test
     fun testSuspendGivenFunWithSuspendDependency() = codegen(
         """
             @GivenFun
@@ -232,7 +232,7 @@ class GivenFunTest {
         """
     )
 
-    @Test
+    //@Test
     fun testGivenFunDependencyGetsCreatedOnInvocation() = codegen(
         """
             @GivenFun fun function(foo: Foo) {
@@ -253,7 +253,7 @@ class GivenFunTest {
         invokeSingleFile()
     }
 
-    @Test
+    //@Test
     fun testGivenFunWithNonExplicitAssistedParameters() = codegen(
         """
             @GivenFun fun function(foo: Foo) {
@@ -300,7 +300,7 @@ class GivenFunTest {
         """
     )
 
-    @Test
+    //@Test
     fun testGivenFunWithDependencyDefaultValue() = codegen(
         """
             @GivenFun fun function(string: String = "", @FunApi assisted: String) {
@@ -417,7 +417,7 @@ class GivenFunTest {
         assertCompileError("return type")
     }
 
-    @Test
+    //@Test
     fun testGivenFunMemberFunction() = codegen(
         """
             @GivenFun fun function() {
