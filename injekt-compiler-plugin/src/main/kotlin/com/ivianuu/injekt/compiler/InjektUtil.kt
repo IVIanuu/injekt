@@ -35,6 +35,10 @@ import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
+import org.jetbrains.kotlin.ir.interpreter.hasAnnotation
+import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.js.translate.utils.refineType
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -151,5 +155,11 @@ fun Annotated.hasAnnotation(fqName: FqName): Boolean =
 fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescriptor> =
     annotations.filter {
         val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
+        inner.hasAnnotation(annotation)
+    }
+
+fun IrType.getAnnotatedAnnotations(annotation: FqName): List<IrConstructorCall> =
+    annotations.filter {
+        val inner = it.type.classOrNull!!.owner
         inner.hasAnnotation(annotation)
     }

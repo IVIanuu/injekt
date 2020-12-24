@@ -1,8 +1,6 @@
 package com.ivianuu.injekt.common
 
-inline class Key<out T>(val value: String) {
-    override fun toString(): String = value
-}
+data class Key<out T>(val value: String)
 
 fun <@ForKey T> keyOf(): Key<T> = error("Intrinsic")
 

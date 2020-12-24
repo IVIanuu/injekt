@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrOverridableDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
@@ -55,14 +56,14 @@ class KeyTypeParameterTransformer(
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
 
-        if (function.typeParameters.none { it.hasAnnotation(InjektFqNames.ForKey) })
+        if (function.descriptor.typeParameters.none { it.hasAnnotation(InjektFqNames.ForKey) })
             return function
 
         val transformedFunction = function.copyWithKeyParams()
         transformedFunctions[function] = transformedFunction
 
         val transformedKeyParams = transformedFunction.typeParameters
-            .filter { it.hasAnnotation(InjektFqNames.ForKey) }
+            .filter { it.descriptor.hasAnnotation(InjektFqNames.ForKey) }
             .associateWith {
                 transformedFunction.addValueParameter(
                     "_${it.name}Key",
@@ -71,7 +72,7 @@ class KeyTypeParameterTransformer(
             }
 
         val keyParams = transformedKeyParams + function.typeParameters
-            .filter { it.hasAnnotation(InjektFqNames.ForKey) }
+            .filter { it.descriptor.hasAnnotation(InjektFqNames.ForKey) }
             .associateWith { typeParameter ->
                 transformedKeyParams.entries
                     .single { it.key.name == typeParameter.name }
@@ -113,6 +114,7 @@ class KeyTypeParameterTransformer(
                     .constructors
                     .single()
             ).apply {
+                putTypeArgument(0, typeArgument)
                 putValueArgument(
                     0,
                     typeArgument.keyStringExpression(expression.symbol, typeParameterKeyExpressions)
@@ -120,7 +122,7 @@ class KeyTypeParameterTransformer(
             }
         }
         val callee = expression.symbol.owner
-        if (callee.typeParameters.none { it.hasAnnotation(InjektFqNames.ForKey) }) return expression
+        if (callee.descriptor.typeParameters.none { it.hasAnnotation(InjektFqNames.ForKey) }) return expression
         val transformedCallee = transformFunctionIfNeeded(callee)
         if (expression.symbol == transformedCallee.symbol) return expression
         return IrCallImpl(
@@ -137,7 +139,7 @@ class KeyTypeParameterTransformer(
             var currentIndex = expression.valueArgumentsCount
             (0 until typeArgumentsCount)
                 .map { transformedCallee.typeParameters[it] to getTypeArgument(it)!! }
-                .filter { it.first.hasAnnotation(InjektFqNames.ForKey) }
+                .filter { it.first.descriptor.hasAnnotation(InjektFqNames.ForKey) }
                 .forEach { (_, typeArgument) ->
                     putValueArgument(
                         currentIndex++,
@@ -162,8 +164,14 @@ class KeyTypeParameterTransformer(
             val typeAnnotations = listOfNotNull(
                 if (hasAnnotation(InjektFqNames.Given)) "@Given" else null,
                 if (hasAnnotation(InjektFqNames.Composable)) "@Composable" else null,
-                *toKotlinType().getAnnotatedAnnotations(InjektFqNames.Qualifier)
-                    .map { it.type.toTypeRef().render() + it.allValueArguments.hashCode().toString() }
+                *getAnnotatedAnnotations(InjektFqNames.Qualifier)
+                    .map { it.type.classifierOrFail.descriptor.fqNameSafe.asString() +
+                            (0 until it.valueArgumentsCount)
+                                .map { i -> it.getValueArgument(i) as IrConst<*> }
+                                .map { it.value }
+                                .hashCode()
+                                .toString()
+                    }
                     .toTypedArray()
             )
             if (typeAnnotations.isNotEmpty()) {
