@@ -31,7 +31,7 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev438"
+    const val version = "${Build.versionName}-dev439"
 }
 
 object Deps {
@@ -89,7 +89,7 @@ object Deps {
     const val guice = "com.google.inject:guice:4.2.2"
 
     object Injekt {
-        const val version = "0.0.1-dev438"
+        const val version = "0.0.1-dev439"
         const val gradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:$version"
     }
 
