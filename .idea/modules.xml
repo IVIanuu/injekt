@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/injekt.iml" filepath="$PROJECT_DIR$/.idea/injekt.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt.buildSrc.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt.buildSrc.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-android/injekt.injekt-android.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-android/injekt.injekt-android.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-android-work/injekt.injekt-android-work.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-android-work/injekt.injekt-android-work.iml" />
