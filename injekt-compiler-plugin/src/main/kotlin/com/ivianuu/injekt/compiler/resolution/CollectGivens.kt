@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getGivenDeclarationParameters
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
@@ -20,8 +21,24 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 data class CallableRef(
     val callable: CallableDescriptor,
-    val type: TypeRef = callable.returnType!!.toTypeRef(),
-    val originalType: TypeRef = callable.returnType!!.toTypeRef(),
+    val type: TypeRef = callable.returnType!!.toTypeRef().let {
+        it.copy(
+            qualifiers = ((callable as? ClassConstructorDescriptor)
+                ?.takeIf { it.isPrimary }
+                ?.constructedClass
+                ?.getAnnotatedAnnotations(InjektFqNames.Qualifier)
+                ?: callable.getAnnotatedAnnotations(InjektFqNames.Qualifier)) + it.qualifiers
+        )
+    },
+    val originalType: TypeRef = callable.returnType!!.toTypeRef().let {
+        it.copy(
+            qualifiers = ((callable as? ClassConstructorDescriptor)
+                ?.takeIf { it.isPrimary }
+                ?.constructedClass
+                ?.getAnnotatedAnnotations(InjektFqNames.Qualifier)
+                ?: callable.getAnnotatedAnnotations(InjektFqNames.Qualifier)) + it.qualifiers
+        )
+    },
     val parameterTypes: Map<ParameterDescriptor, TypeRef> = callable.allParameters
         .map { it to it.type.toTypeRef() }
         .toMap(),
@@ -148,7 +165,11 @@ fun ClassDescriptor.getGivenDeclarationConstructors(): List<CallableRef> = const
     .flatMap { declaration ->
         if (declaration.givenKind == GivenKind.VALUE) {
             allGivenTypes().map { type ->
-                declaration.copy(type = type)
+                declaration.copy(
+                    type = type.copy(
+                        qualifiers = declaration.type.qualifiers + type.qualifiers
+                    )
+                )
             }
         } else {
             listOf(declaration)

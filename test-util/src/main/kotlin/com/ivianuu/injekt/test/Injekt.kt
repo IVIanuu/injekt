@@ -30,10 +30,6 @@ class CommandA : Command
 
 class CommandB : Command
 
-@Target(AnnotationTarget.TYPE)
-@Qualifier
-annotation class Qualifier1
+@Qualifier annotation class Qualifier1
 
-@Target(AnnotationTarget.TYPE)
-@Qualifier
-annotation class Qualifier2(val value: String)
+@Qualifier annotation class Qualifier2(val value: String)

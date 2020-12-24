@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.common.Key
 import com.ivianuu.injekt.test.*
 import junit.framework.Assert.assertEquals
 import org.junit.Test
@@ -12,7 +13,8 @@ class KeyTest {
            fun invoke() = keyOf<String>() 
         """
     ) {
-        assertEquals("kotlin.String", invokeSingleFile())
+        assertEquals("kotlin.String",
+            invokeSingleFile<Key<String>>().value)
     }
 
     @Test
@@ -22,7 +24,8 @@ class KeyTest {
             fun invoke() = listKeyOf<String>() 
         """
     ) {
-        assertEquals("kotlin.collections.List<kotlin.String>", invokeSingleFile())
+        assertEquals("kotlin.collections.List<kotlin.String>",
+            invokeSingleFile<Key<List<String>>>().value)
     }
 
     @Test
@@ -37,7 +40,8 @@ class KeyTest {
             fun invoke() = KeyFactory.listKeyOf<String>() 
         """
     ) {
-        assertEquals("kotlin.collections.List<kotlin.String>", invokeSingleFile())
+        assertEquals("kotlin.collections.List<kotlin.String>",
+            invokeSingleFile<Key<List<String>>>().value)
     }
 
     @Test
@@ -58,7 +62,9 @@ class KeyTest {
             )
         )
     ) {
-        assertEquals("kotlin.collections.List<kotlin.String>", it.last().invokeSingleFile())
+        assertEquals("kotlin.collections.List<kotlin.String>",
+            it.last().invokeSingleFile<Key<List<String>>>().value
+        )
     }
 
     @Test

@@ -187,6 +187,8 @@ fun CallableRef.getGivenRequests(forFunExpression: Boolean): List<GivenRequest> 
             val name = when {
                 it === callable.dispatchReceiverParameter -> "_dispatchReceiver".asNameId()
                 it === callable.extensionReceiverParameter -> "_extensionReceiver".asNameId()
+                it.name.isSpecial -> it.type.constructor.declarationDescriptor!!.name
+                    .asString().decapitalize().asNameId()
                 else -> it.name
             }
             GivenRequest(

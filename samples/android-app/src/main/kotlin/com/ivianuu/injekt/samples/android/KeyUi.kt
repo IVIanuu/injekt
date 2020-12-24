@@ -39,9 +39,7 @@ typealias Actions<A> = Flow<A>
 @Given inline val <A> @Given ActionChannel<A>.actions: Actions<A>
     get() = consumeAsFlow()
 
-@Target(AnnotationTarget.TYPE)
-@Qualifier
-annotation class UiState
+@Qualifier annotation class UiState
 
 @Given @Composable
 fun <T> uiState(@Given stateFactory: (@Given CoroutineScope) -> StateFlow<@Unqualified T>): @UiState T {

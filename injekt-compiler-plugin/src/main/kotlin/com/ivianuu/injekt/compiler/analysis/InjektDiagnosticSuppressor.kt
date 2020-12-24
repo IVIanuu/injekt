@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class InjektDiagnosticSuppressor : DiagnosticSuppressor {
 
@@ -18,6 +19,13 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
 
     override fun isSuppressed(diagnostic: Diagnostic, bindingContext: BindingContext?): Boolean {
         if (bindingContext == null) return false
+
+        if (diagnostic.factory == Errors.WRONG_ANNOTATION_TARGET) {
+            val annotationDescriptor = bindingContext[BindingContext.ANNOTATION, diagnostic.psiElement.cast()]
+            if (annotationDescriptor?.type?.constructor?.declarationDescriptor
+                    ?.hasAnnotation(InjektFqNames.Qualifier) == true)
+                        return true
+        }
 
         if (diagnostic.factory == Errors.UNDERSCORE_IS_RESERVED) {
             val descriptor = try {

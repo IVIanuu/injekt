@@ -3,6 +3,8 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertNotSame
 import org.junit.Test
 
@@ -11,15 +13,11 @@ class QualifierTest {
     @Test
     fun testDistinctQualifier() = codegen(
         """
-            @Target(AnnotationTarget.TYPE)
-            @Qualifier
-            annotation class MyQualifier
-
             @Given val foo = Foo()
-            @Given val qualifiedFoo: @MyQualifier Foo = Foo()
+            @Given val qualifiedFoo: @Qualifier1 Foo = Foo()
        
             fun invoke(): Pair<Foo, Foo> {
-                return given<Foo>() to given<@MyQualifier Foo>()
+                return given<Foo>() to given<@Qualifier1 Foo>()
             }
             """
     ) {
@@ -30,15 +28,11 @@ class QualifierTest {
     @Test
     fun testDistinctQualifierAnnotationWithArguments() = codegen(
         """
-            @Target(AnnotationTarget.TYPE)
-            @Qualifier
-            annotation class MyQualifier(val value: String)
-            
-            @Given val foo1: @MyQualifier("a") Foo = Foo()
-            @Given val foo2: @MyQualifier("b") Foo = Foo()
+            @Given val foo1: @Qualifier2("a") Foo = Foo()
+            @Given val foo2: @Qualifier2("b") Foo = Foo()
        
             fun invoke(): Pair<Foo, Foo> {
-                return given<@MyQualifier("a") Foo>() to given<@MyQualifier("b") Foo>()
+                return given<@Qualifier2("a") Foo>() to given<@Qualifier2("b") Foo>()
             }
             """
     ) {
@@ -49,15 +43,45 @@ class QualifierTest {
     @Test
     fun testTypeParameterWithQualifierUpperBound() = codegen(
         """
-            @Target(AnnotationTarget.TYPE)
-            @Qualifier
-            annotation class MyQualifier
+            @Given class Dep<T>(@Given val value: @Qualifier1 T)
             
-            @Given class Dep<T>(@Given val value: @MyQualifier T)
-            
-            @Given fun qualified(): @MyQualifier String = ""
+            @Given fun qualified(): @Qualifier1 String = ""
             
             fun invoke() = given<Dep<String>>()
+            """
+    )
+
+    @Test
+    fun testQualifiedClass() = codegen(
+        """ 
+            @Given @Qualifier1 class Dep
+            fun invoke() = given<@Qualifier1 Dep>()
+            """
+    )
+
+    @Test
+    fun testQualifiedClassMulti() = multiCodegen(
+        listOf(
+            source(
+                """ 
+                    @Given @Qualifier1 class Dep
+            """
+            )
+        ),
+        listOf(
+            source(
+                """ 
+                    fun invoke() = given<@Qualifier1 Dep>()
+            """
+            )
+        )
+    )
+
+    @Test
+    fun testQualifiedFunction() = codegen(
+        """ 
+            @Given @Qualifier1 fun foo() = Foo()
+            fun invoke() = given<@Qualifier1 Foo>()
             """
     )
 

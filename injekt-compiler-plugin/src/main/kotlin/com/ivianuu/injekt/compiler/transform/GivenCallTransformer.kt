@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
@@ -73,13 +74,18 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             .valueParameters
             .filter { call.getValueArgument(it.index) == null }
             .filter {
-                val r = it.givenKind() == GivenKind.VALUE ||
+                it.givenKind() == GivenKind.VALUE ||
                         callable.parameterTypes[it]!!.givenKind == GivenKind.VALUE
-                r
             }
             .map { parameter ->
+                val parameterName = if (parameter.name.isSpecial)
+                    parameter.type.constructor.declarationDescriptor!!.name
+                        .asString().decapitalize().asNameId()
+                else parameter.name
                 parameter to expressionFor(
-                    requests.single { it.parameterName == parameter.name },
+                    requests.single {
+                        it.parameterName == parameterName
+                    },
                     call.symbol
                 )
             }
