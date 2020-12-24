@@ -33,22 +33,11 @@ class ResolutionScope(
 
     fun givensForType(type: TypeRef): List<GivenNode> = givens
         .filter { it.first.type.isAssignableTo(type) }
-        .map { it.first.toGivenNode(type, it.second.depth()) }
+        .map { it.first.toGivenNode(type, it.second) }
 
     fun givenSetElementsForType(type: TypeRef): List<CallableRef> = givenSetElements
         .filter { it.first.type.isAssignableTo(type) }
-        .sortedBy { it.second.depth() }
         .map { it.first }
-
-    private fun ResolutionScope.depth(): Int {
-        var scope: ResolutionScope = this@ResolutionScope
-        var depth = 0
-        while (scope != this) {
-            depth++
-            scope = scope.parent!!
-        }
-        return depth
-    }
 
     override fun toString(): String = "ResolutionScope($name)"
 }

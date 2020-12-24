@@ -96,7 +96,7 @@ sealed class ResolutionResult {
 fun ResolutionScope.resolveGiven(requests: List<GivenRequest>): GivenGraph {
     val context = ResolutionContext(this)
     val (successResults, failureResults) = requests
-        .map { resolveRequest(context, it) }
+        .map { context.resolveRequest(it) }
         .let {
             it
                 .filterIsInstance<ResolutionResult.Success>() to
@@ -107,16 +107,11 @@ fun ResolutionScope.resolveGiven(requests: List<GivenRequest>): GivenGraph {
     } else failureResults.toErrorGraph(this, requests)
 }
 
-private fun ResolutionScope.resolveRequest(
-    context: ResolutionContext,
-    request: GivenRequest,
-): ResolutionResult = context.resolveInScope(
-    request,
-    (context.getProvidedCandidates(request) +
-            givensForType(request.type) +
-            context.getFrameworkCandidates(request))
-        .distinct()
-)
+private fun ResolutionContext.resolveRequest(request: GivenRequest): ResolutionResult =
+    resolveInScope(
+        request,
+        (scope.givensForType(request.type) + getFrameworkCandidates(request)).distinct()
+    )
 
 private fun List<ResolutionResult.Success>.toSuccessGraph(
     scope: ResolutionScope,
@@ -144,13 +139,12 @@ private fun List<ResolutionResult.Failure>.toErrorGraph(
     return GivenGraph.Error(scope, requests, failuresByRequest)
 }
 
-class ResolutionContext(val scope: ResolutionScope) {
-    private val chain = mutableSetOf<GivenNode>()
-    var currentCallContext = scope.callContext
-        private set
+class ResolutionContext(
+    val scope: ResolutionScope,
+    val chain: MutableSet<GivenNode> = mutableSetOf()
+) {
 
-    val providedGivens = mutableListOf<GivenNode>()
-    val providedGivenSetElements = mutableListOf<CallableRef>()
+    fun subContext(scope: ResolutionScope) = ResolutionContext(scope, chain)
 
     fun computeForCandidate(
         request: GivenRequest,
@@ -179,17 +173,9 @@ class ResolutionContext(val scope: ResolutionScope) {
                 ResolutionResult.Failure.CircularDependency(request, emptyList()) // todo
             )
         }
-
-        val previousCallContext = currentCallContext
-        currentCallContext = request.callContext ?: previousCallContext
         chain += candidate
-        providedGivens += candidate.providedGivens
-        providedGivenSetElements += candidate.providedGivenSetElements
         val result = compute()
         chain -= candidate
-        providedGivens -= candidate.providedGivens
-        providedGivenSetElements -= candidate.providedGivenSetElements
-        currentCallContext = previousCallContext
         return result
     }
 }
@@ -201,7 +187,7 @@ private fun ResolutionContext.resolveInScope(
     if (candidates.isEmpty()) {
         return if (request.required) ResolutionResult.Failure.NoCandidates(request)
         else ResolutionResult.Success(request, CandidateResolutionResult.Success(
-            request, DefaultGivenNode(request.type), emptyList()
+            request, DefaultGivenNode(request.type, scope), emptyList()
         ))
     }
     if (candidates.size == 1) {
@@ -223,7 +209,7 @@ private fun ResolutionContext.resolveInScope(
 
     return if (successResults.isNotEmpty()) {
         successResults
-            .disambiguate()
+            .disambiguate(scope)
             .let { finalResults ->
                 finalResults.singleOrNull()?.let {
                     ResolutionResult.Success(request, it)
@@ -238,17 +224,19 @@ private fun ResolutionContext.resolveCandidate(
     request: GivenRequest,
     candidate: GivenNode,
 ): CandidateResolutionResult = computeForCandidate(request, candidate) {
-    if (!currentCallContext.canCall(candidate.callContext)) {
+    if (!scope.callContext.canCall(candidate.callContext)) {
         return@computeForCandidate CandidateResolutionResult.Failure(
             request,
             candidate,
-            ResolutionResult.Failure.CallContextMismatch(request, currentCallContext, candidate)
+            ResolutionResult.Failure.CallContextMismatch(request, scope.callContext, candidate)
         )
     }
 
     val successDependencyResults = mutableListOf<ResolutionResult.Success>()
+    val dependencyContext = candidate.dependencyScope
+        ?.let { subContext(it) } ?: this
     for (dependency in candidate.dependencies) {
-        when (val result = scope.resolveRequest(this, dependency)) {
+        when (val result = dependencyContext.resolveRequest(dependency)) {
             is ResolutionResult.Success -> successDependencyResults += result
             is ResolutionResult.Failure -> return@computeForCandidate CandidateResolutionResult.Failure(
                 dependency,
@@ -256,30 +244,24 @@ private fun ResolutionContext.resolveCandidate(
                 result)
         }
     }
-    return@computeForCandidate CandidateResolutionResult.Success(request,
+    return@computeForCandidate CandidateResolutionResult.Success(
+        request,
         candidate,
-        successDependencyResults)
-}
-
-private fun ResolutionContext.getProvidedCandidates(request: GivenRequest): List<GivenNode> {
-    return providedGivens
-        .reversed()
-        .distinctBy { it.type }
-        .reversed()
-        .filter { it.type.isAssignableTo(request.type) }
+        successDependencyResults
+    )
 }
 
 private fun ResolutionContext.getFrameworkCandidates(request: GivenRequest): List<GivenNode> {
     if (request.forDispatchReceiver &&
         request.type.classifier.descriptor?.safeAs<ClassDescriptor>()
             ?.kind == ClassKind.OBJECT
-    ) return listOf(ObjectGivenNode(request.type))
+    ) return listOf(ObjectGivenNode(request.type, scope))
 
     if (request.type.classifier.isGivenFunAlias) {
         return listOf(
             FunGivenNode(
                 request.type,
-                Int.MAX_VALUE,
+                scope,
                 CallableRef(
                     scope.declarationStore.functionDescriptorForFqName(request.type.classifier.fqName)
                         .single()
@@ -299,7 +281,7 @@ private fun ResolutionContext.getFrameworkCandidates(request: GivenRequest): Lis
         return listOf(
             ProviderGivenNode(
                 request.type,
-                Int.MAX_VALUE,
+                scope,
                 scope.declarationStore,
                 request.required
             )
@@ -309,14 +291,12 @@ private fun ResolutionContext.getFrameworkCandidates(request: GivenRequest): Lis
     val setType = scope.declarationStore.module.builtIns.set.defaultType.toTypeRef()
     if (request.type.isSubTypeOf(setType)) {
         val setElementType = request.type.subtypeView(setType.classifier)!!.typeArguments.single()
-        val elements = (scope.givenSetElementsForType(setElementType) +
-                providedGivenSetElements
-                    .filter { it.type.isAssignableTo(request.type) })
+        val elements = scope.givenSetElementsForType(setElementType)
             .map { it.substitute(getSubstitutionMap(listOf(setElementType to it.originalType))) }
         return listOf(
             SetGivenNode(
                 request.type,
-                Int.MAX_VALUE,
+                scope,
                 elements,
                 elements.flatMap { element -> element.getGivenRequests(false) }
             )
@@ -326,7 +306,25 @@ private fun ResolutionContext.getFrameworkCandidates(request: GivenRequest): Lis
     return emptyList()
 }
 
-private fun compareCandidate(
+private fun GivenNode.depth(scope: ResolutionScope): Int {
+    var currentScope: ResolutionScope? = scope
+    var depth = 0
+    while (currentScope != null && currentScope != ownerScope) {
+        depth++
+        currentScope = currentScope.parent
+    }
+    if (currentScope == null) {
+        currentScope = ownerScope
+        depth = 0
+        while (currentScope != null && currentScope != scope) {
+            depth--
+            currentScope = currentScope.parent
+        }
+    }
+    return depth
+}
+
+private fun ResolutionScope.compareCandidate(
     a: CandidateResolutionResult.Success?,
     b: CandidateResolutionResult.Success?,
 ): Int {
@@ -336,8 +334,10 @@ private fun compareCandidate(
     a!!
     b!!
 
-    if (a.candidate.depth < b.candidate.depth) return -1
-    if (b.candidate.depth < a.candidate.depth) return 1
+    val depthA = a.candidate.depth(this)
+    val depthB = b.candidate.depth(this)
+    if (depthA < depthB) return -1
+    if (depthB < depthA) return 1
 
     if (a.dependencyResults.size < b.dependencyResults.size) return -1
     if (b.dependencyResults.size < a.dependencyResults.size) return 1
@@ -386,11 +386,13 @@ private fun compareType(a: TypeRef, b: TypeRef): Int {
     }
 }
 
-private fun List<CandidateResolutionResult.Success>.disambiguate(): List<CandidateResolutionResult.Success> {
+private fun List<CandidateResolutionResult.Success>.disambiguate(
+    scope: ResolutionScope
+): List<CandidateResolutionResult.Success> {
     if (size <= 1) return this
     val results = mutableListOf<CandidateResolutionResult.Success>()
     forEach { result ->
-        when (compareCandidate(results.lastOrNull(), result)) {
+        when (scope.compareCandidate(results.lastOrNull(), result)) {
             1 -> {
                 results.clear()
                 results += result

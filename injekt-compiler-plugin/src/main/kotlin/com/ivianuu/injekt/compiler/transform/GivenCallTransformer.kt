@@ -201,7 +201,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                         putValueArgument(
                             0,
                             callableExpression(
-                                it.toGivenNode(elementType, 0),
+                                it.toGivenNode(elementType, graph.scope),
                                 symbol
                             )()
                         )
@@ -211,7 +211,6 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             +irGet(tmpSet)
         }
     }
-
 
     private fun ResolutionContext.callableExpression(
         given: CallableGivenNode,
