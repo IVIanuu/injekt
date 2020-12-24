@@ -128,9 +128,10 @@ sealed class TypeRef {
         var typeSize = 0
         val seen = mutableSetOf<TypeRef>()
         fun visit(type: TypeRef) {
+            typeSize++
             if (type in seen) return
             seen += type
-            typeSize++
+            type.qualifiers.forEach { visit(it.type.toTypeRef()) }
             type.typeArguments.forEach { visit(it) }
         }
         visit(this)
@@ -144,6 +145,7 @@ sealed class TypeRef {
             if (type in seen) return
             seen += type
             classifiers += type.classifier
+            type.qualifiers.forEach { visit(it.type.toTypeRef()) }
             type.typeArguments.forEach { visit(it) }
         }
         visit(this)
