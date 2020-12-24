@@ -22,6 +22,7 @@ sealed class GivenNode {
     abstract val callContext: CallContext
     abstract val ownerScope: ResolutionScope
     abstract val dependencyScope: ResolutionScope?
+    abstract val isFrameworkGiven: Boolean
 }
 
 data class CallableGivenNode(
@@ -39,6 +40,8 @@ data class CallableGivenNode(
         get() = null
     override val originalType: TypeRef
         get() = callable.originalType
+    override val isFrameworkGiven: Boolean
+        get() = false
 }
 
 data class SetGivenNode(
@@ -54,6 +57,8 @@ data class SetGivenNode(
         get() = null
     override val originalType: TypeRef
         get() = type
+    override val isFrameworkGiven: Boolean
+        get() = true
 }
 
 data class DefaultGivenNode(
@@ -70,6 +75,8 @@ data class DefaultGivenNode(
         get() = type
     override val dependencyScope: ResolutionScope?
         get() = null
+    override val isFrameworkGiven: Boolean
+        get() = true
 }
 
 data class FunGivenNode(
@@ -86,6 +93,8 @@ data class FunGivenNode(
         get() = type.classifier.defaultType
     override val dependencyScope: ResolutionScope?
         get() = null
+    override val isFrameworkGiven: Boolean
+        get() = true
 }
 
 data class ObjectGivenNode(
@@ -102,13 +111,15 @@ data class ObjectGivenNode(
         get() = type
     override val dependencyScope: ResolutionScope?
         get() = null
+    override val isFrameworkGiven: Boolean
+        get() = false
 }
 
 data class ProviderGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope,
     val declarationStore: DeclarationStore,
-    val isRequired: Boolean,
+    val isRequired: Boolean
 ) : GivenNode() {
     override val callableFqName: FqName = FqName("Provider")
     override val dependencies: List<GivenRequest> = listOf(
@@ -142,6 +153,8 @@ data class ProviderGivenNode(
         get() = CallContext.DEFAULT
     override val originalType: TypeRef
         get() = type
+    override val isFrameworkGiven: Boolean
+        get() = true
 
     class ProviderParameterDescriptor(
         val given: ProviderGivenNode,

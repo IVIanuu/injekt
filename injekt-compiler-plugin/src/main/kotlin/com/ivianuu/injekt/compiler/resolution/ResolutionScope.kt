@@ -19,6 +19,10 @@ class ResolutionScope(
     private val givens = mutableListOf<Pair<CallableRef, ResolutionScope>>()
     private val givenSetElements = mutableListOf<Pair<CallableRef, ResolutionScope>>()
 
+    val chain: MutableSet<GivenNode> = parent?.chain ?: mutableSetOf()
+    val resultsByRequest = mutableMapOf<GivenRequest, ResolutionResult>()
+    val resultsByCandidate = mutableMapOf<GivenNode, CandidateResolutionResult>()
+
     init {
         parent?.givens?.forEach { givens += it }
         parent?.givenSetElements?.forEach { givenSetElements += it }
