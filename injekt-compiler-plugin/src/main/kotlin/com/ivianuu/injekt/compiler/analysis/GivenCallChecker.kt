@@ -7,7 +7,6 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.resolution.BlockResolutionScope
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.ClassResolutionScope
 import com.ivianuu.injekt.compiler.resolution.ExternalResolutionScope
@@ -15,6 +14,7 @@ import com.ivianuu.injekt.compiler.resolution.FunctionResolutionScope
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.InternalResolutionScope
+import com.ivianuu.injekt.compiler.resolution.LocalDeclarationResolutionScope
 import com.ivianuu.injekt.compiler.resolution.ResolutionScope
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.resolveGiven
@@ -177,7 +177,11 @@ class GivenCallChecker(
         }) {
             super.visitClass(klass)
         }
-        blockScope?.addIfNeeded(descriptor)
+        if (klass.isLocal) scope = LocalDeclarationResolutionScope(
+            declarationStore,
+            scope,
+            descriptor
+        )
     }
 
     override fun visitPrimaryConstructor(constructor: KtPrimaryConstructor) {
@@ -190,9 +194,15 @@ class GivenCallChecker(
 
     override fun visitNamedFunction(function: KtNamedFunction) {
         visitFunction(function) { super.visitNamedFunction(function) }
-        val descriptor =
-            function.descriptor<FunctionDescriptor>(bindingTrace.bindingContext) ?: return
-        blockScope?.addIfNeeded(descriptor)
+        if (function.isLocal) {
+            val descriptor =
+                function.descriptor<FunctionDescriptor>(bindingTrace.bindingContext) ?: return
+            scope = LocalDeclarationResolutionScope(
+                declarationStore,
+                scope,
+                descriptor
+            )
+        }
     }
 
     override fun visitLambdaExpression(lambdaExpression: KtLambdaExpression) {
@@ -218,31 +228,26 @@ class GivenCallChecker(
         }) { block() }
     }
 
-    private var blockScope: ResolutionScope? = null
     override fun visitBlockExpression(expression: KtBlockExpression) {
-        val prevScope = blockScope
-        try {
-            inScope({
-                BlockResolutionScope(declarationStore, scope)
-                    .also { blockScope = it }
-            }) {
-                super.visitBlockExpression(expression)
-            }
-        } catch (e: Throwable) {
-            e.printStackTrace()
-        } finally {
-            blockScope = prevScope
-        }
+        // capture the current scope here because
+        // the scope might chage because of local declarations
+        val current = scope
+        inScope({ current }) { super.visitBlockExpression(expression) }
     }
 
     override fun visitProperty(property: KtProperty) {
         super.visitProperty(property)
-        try {
-            val descriptor = property.descriptor<VariableDescriptor>(bindingTrace.bindingContext)
-                ?: return
-            blockScope?.addIfNeeded(descriptor)
-        } catch (e: Throwable) {
-            e.printStackTrace()
+        if (property.isLocal) {
+            val descriptor = try {
+                property.descriptor<VariableDescriptor>(bindingTrace.bindingContext)
+            } catch (e: Throwable) {
+                null
+            } ?: return
+            scope = LocalDeclarationResolutionScope(
+                declarationStore,
+                scope,
+                descriptor
+            )
         }
     }
 

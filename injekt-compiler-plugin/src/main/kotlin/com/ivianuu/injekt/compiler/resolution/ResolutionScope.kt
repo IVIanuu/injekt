@@ -4,6 +4,7 @@ import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -38,29 +39,6 @@ class ResolutionScope(
         .filter { it.first.type.isAssignableTo(type) }
         .sortedBy { it.second.depth() }
         .map { it.first }
-
-    fun addIfNeeded(callable: CallableDescriptor) {
-        callable.givenKind()
-            ?.let { CallableRef(callable, givenKind = it) }
-            ?.let { ref ->
-                ref.collectGivens(
-                    path = emptyList(),
-                    addGiven = { givens += it to this },
-                    addGivenSetElement = { givenSetElements += it to this }
-                )
-            }
-    }
-
-    fun addIfNeeded(clazz: ClassDescriptor) {
-        clazz.getGivenDeclarationConstructors()
-            .forEach { ref ->
-                ref.collectGivens(
-                    path = emptyList(),
-                    addGiven = { givens += it to this },
-                    addGivenSetElement = { givenSetElements += it to this }
-                )
-            }
-    }
 
     private fun ResolutionScope.depth(): Int {
         var scope: ResolutionScope = this@ResolutionScope
@@ -124,13 +102,23 @@ fun FunctionResolutionScope(
     declarations = descriptor.collectGivenDeclarations()
 )
 
-fun BlockResolutionScope(
+fun LocalDeclarationResolutionScope(
     declarationStore: DeclarationStore,
     parent: ResolutionScope,
-): ResolutionScope = ResolutionScope(
-    name = "BLOCK",
-    declarationStore = declarationStore,
-    callContext = parent.callContext,
-    parent = parent,
-    declarations = emptyList()
-)
+    declaration: DeclarationDescriptor
+): ResolutionScope {
+    val declarations: List<CallableRef> = when (declaration) {
+        is ClassDescriptor -> declaration.getGivenDeclarationConstructors()
+        is CallableDescriptor -> declaration
+            .givenKind()
+            ?.let { listOf(CallableRef(declaration, givenKind = it)) }
+        else -> null
+    } ?: return parent
+    return ResolutionScope(
+        name = "LOCAL",
+        declarationStore = declarationStore,
+        callContext = parent.callContext,
+        parent = parent,
+        declarations = declarations
+    )
+}
