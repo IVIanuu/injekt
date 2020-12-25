@@ -1,21 +1,12 @@
 package com.ivianuu.injekt.compiler.resolution
 
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
-
 sealed class GivenGraph {
-    abstract val requests: List<GivenRequest>
-
     data class Success(
-        override val requests: List<GivenRequest>,
         val scope: ResolutionScope,
         val givens: Map<GivenRequest, GivenNode>,
     ) : GivenGraph()
 
     data class Error(
-        val scope: ResolutionScope,
-        override val requests: List<GivenRequest>,
         val failures: Map<GivenRequest, List<ResolutionResult.Failure>>,
     ) : GivenGraph()
 }
@@ -102,8 +93,8 @@ fun ResolutionScope.resolveGiven(requests: List<GivenRequest>): GivenGraph {
                     it.filterIsInstance<ResolutionResult.Failure>()
         }
     return if (failureResults.isEmpty()) {
-        successResults.toSuccessGraph(this, requests)
-    } else failureResults.toErrorGraph(this, requests)
+        successResults.toSuccessGraph(this)
+    } else failureResults.toErrorGraph(requests)
 }
 
 private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult {
@@ -116,10 +107,7 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
     return result
 }
 
-private fun List<ResolutionResult.Success>.toSuccessGraph(
-    scope: ResolutionScope,
-    requests: List<GivenRequest>,
-): GivenGraph.Success {
+private fun List<ResolutionResult.Success>.toSuccessGraph(scope: ResolutionScope): GivenGraph.Success {
     val givensByType = mutableMapOf<GivenRequest, GivenNode>()
     fun ResolutionResult.Success.visit() {
         givensByType[request] = candidateResult.candidate
@@ -127,11 +115,10 @@ private fun List<ResolutionResult.Success>.toSuccessGraph(
             .forEach { it.visit() }
     }
     forEach { it.visit() }
-    return GivenGraph.Success(requests, scope, givensByType)
+    return GivenGraph.Success(scope, givensByType)
 }
 
 private fun List<ResolutionResult.Failure>.toErrorGraph(
-    scope: ResolutionScope,
     requests: List<GivenRequest>,
 ): GivenGraph.Error {
     val failuresByRequest = mutableMapOf<GivenRequest, MutableList<ResolutionResult.Failure>>()
@@ -139,7 +126,7 @@ private fun List<ResolutionResult.Failure>.toErrorGraph(
         failuresByRequest.getOrPut(request) { mutableListOf() } += this
     }
     forEach { it.visit() }
-    return GivenGraph.Error(scope, requests, failuresByRequest)
+    return GivenGraph.Error(failuresByRequest)
 }
 
 private fun ResolutionScope.computeForCandidate(
