@@ -63,12 +63,12 @@ class ProviderTest {
     )
 
     @Test
-    fun testProviderGivenGroup() = codegen(
+    fun testProviderModule() = codegen(
         """
             @Given fun bar(@Given foo: Foo) = Bar(foo)
             class FooGroup(@Given val foo: Foo)
             fun invoke(): Bar {
-                return given<(@GivenGroup FooGroup) -> Bar>()(FooGroup(Foo()))
+                return given<(@Module FooGroup) -> Bar>()(FooGroup(Foo()))
             }
         """
     )

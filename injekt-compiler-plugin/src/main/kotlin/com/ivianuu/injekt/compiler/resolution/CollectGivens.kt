@@ -110,7 +110,7 @@ fun MemberScope.collectContributions(type: TypeRef): List<CallableRef> {
 fun Annotated.contributionKind(): ContributionKind? = when {
     hasAnnotation(InjektFqNames.Given) -> ContributionKind.VALUE
     hasAnnotation(InjektFqNames.GivenSetElement) -> ContributionKind.SET_ELEMENT
-    hasAnnotation(InjektFqNames.GivenGroup) -> ContributionKind.GROUP
+    hasAnnotation(InjektFqNames.Module) -> ContributionKind.GROUP
     hasAnnotation(InjektFqNames.Interceptor) -> ContributionKind.INTERCEPTOR
     this is ClassConstructorDescriptor -> constructedClass.contributionKind()
     else -> null
@@ -143,7 +143,7 @@ fun ParameterDescriptor.contributionKind(): ContributionKind? {
         when {
             userData.hasAnnotation(InjektFqNames.Given) -> ContributionKind.VALUE
             userData.hasAnnotation(InjektFqNames.GivenSetElement) -> ContributionKind.SET_ELEMENT
-            userData.hasAnnotation(InjektFqNames.GivenGroup) -> ContributionKind.GROUP
+            userData.hasAnnotation(InjektFqNames.Module) -> ContributionKind.GROUP
             userData.hasAnnotation(InjektFqNames.Interceptor) -> ContributionKind.INTERCEPTOR
             else -> null
         }

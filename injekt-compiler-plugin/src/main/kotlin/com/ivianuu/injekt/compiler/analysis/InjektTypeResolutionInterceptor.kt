@@ -53,7 +53,7 @@ class InjektTypeResolutionInterceptor : TypeResolutionInterceptorExtension {
         private val ANNOTATIONS = listOf(
             InjektFqNames.Given,
             InjektFqNames.GivenSetElement,
-            InjektFqNames.GivenGroup,
+            InjektFqNames.Module,
             InjektFqNames.Interceptor
         )
     }

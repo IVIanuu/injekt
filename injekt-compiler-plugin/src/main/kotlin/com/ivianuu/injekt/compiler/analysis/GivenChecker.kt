@@ -66,7 +66,7 @@ class GivenChecker : DeclarationChecker {
                             declaration,
                             when {
                                 descriptor.hasAnnotation(InjektFqNames.Given) -> InjektFqNames.Given.shortName()
-                                descriptor.hasAnnotation(InjektFqNames.GivenGroup) -> InjektFqNames.GivenGroup.shortName()
+                                descriptor.hasAnnotation(InjektFqNames.Module) -> InjektFqNames.Module.shortName()
                                 descriptor.hasAnnotation(InjektFqNames.GivenSetElement) -> InjektFqNames.GivenSetElement.shortName()
                                 else -> error("")
                             }
@@ -89,7 +89,7 @@ class GivenChecker : DeclarationChecker {
         if ((type.isFunctionType ||
                     type.isSuspendFunctionType) &&
             (type.hasAnnotation(InjektFqNames.Given) ||
-                    type.hasAnnotation(InjektFqNames.GivenGroup) ||
+                    type.hasAnnotation(InjektFqNames.Module) ||
                     type.hasAnnotation(InjektFqNames.GivenSetElement)) &&
             type.arguments.dropLast(1)
                 .any { !it.type.hasAnnotation(InjektFqNames.Given) }) {
@@ -99,7 +99,7 @@ class GivenChecker : DeclarationChecker {
                         declaration,
                         when {
                             type.hasAnnotation(InjektFqNames.Given) -> InjektFqNames.Given.shortName()
-                            type.hasAnnotation(InjektFqNames.GivenGroup) -> InjektFqNames.GivenGroup.shortName()
+                            type.hasAnnotation(InjektFqNames.Module) -> InjektFqNames.Module.shortName()
                             type.hasAnnotation(InjektFqNames.GivenSetElement) -> InjektFqNames.GivenSetElement.shortName()
                             else -> error("")
                         }
@@ -114,7 +114,7 @@ class GivenChecker : DeclarationChecker {
         trace: BindingTrace,
     ) {
         if (descriptor.hasAnnotation(InjektFqNames.Given) ||
-            descriptor.hasAnnotation(InjektFqNames.GivenGroup) ||
+            descriptor.hasAnnotation(InjektFqNames.Module) ||
             declaration.hasAnnotation(InjektFqNames.GivenSetElement)
         ) {
             this
@@ -129,7 +129,7 @@ class GivenChecker : DeclarationChecker {
                                 it.findPsi() ?: declaration,
                                 when {
                                     descriptor.hasAnnotation(InjektFqNames.Given) -> InjektFqNames.Given.shortName()
-                                    descriptor.hasAnnotation(InjektFqNames.GivenGroup) -> InjektFqNames.GivenGroup.shortName()
+                                    descriptor.hasAnnotation(InjektFqNames.Module) -> InjektFqNames.Module.shortName()
                                     descriptor.hasAnnotation(InjektFqNames.GivenSetElement) -> InjektFqNames.GivenSetElement.shortName()
                                     else -> error("")
                                 }

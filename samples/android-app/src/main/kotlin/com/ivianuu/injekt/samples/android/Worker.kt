@@ -23,12 +23,12 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenGroup
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.android.AppContext
 import com.ivianuu.injekt.android.work.WorkerContext
 import com.ivianuu.injekt.android.work.worker
 
-@GivenGroup val testWorkerBinding = worker<TestWorker>()
+@Module val testWorkerBinding = worker<TestWorker>()
 
 @Given class TestWorker(
     @Given context: WorkerContext,

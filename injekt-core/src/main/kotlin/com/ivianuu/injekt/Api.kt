@@ -50,7 +50,7 @@ annotation class GivenSetElement
     AnnotationTarget.VALUE_PARAMETER,
     AnnotationTarget.TYPE
 )
-annotation class GivenGroup
+annotation class Module
 
 @Target(
     AnnotationTarget.FUNCTION,

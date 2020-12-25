@@ -6,13 +6,13 @@ import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertSame
 import org.junit.Test
 
-class GivenGroupTest {
+class ModuleTest {
 
     @Test
-    fun testClassGivenGroup() = codegen(
+    fun testClassModule() = codegen(
         """
             @Given val foo = Foo()
-            @GivenGroup class BarGroup(@Given private val foo: Foo) {
+            @Module class BarModule(@Given private val foo: Foo) {
                 @Given val bar get() = Bar(foo)
             }
             fun invoke() = given<Bar>()
@@ -20,10 +20,10 @@ class GivenGroupTest {
     )
 
     @Test
-    fun testObjectGivenGroup() = codegen(
+    fun testObjectModule() = codegen(
         """
             @Given val foo = Foo()
-            @GivenGroup object BarGroup {
+            @Module object BarModule {
                 @Given fun bar(@Given foo: Foo) = Bar(foo)
             }
             fun invoke() = given<Bar>()

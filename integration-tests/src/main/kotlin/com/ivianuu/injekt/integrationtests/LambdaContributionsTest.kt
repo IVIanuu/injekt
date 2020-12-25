@@ -10,10 +10,10 @@ import org.junit.Test
 class LambdaContributionsTest {
 
     @Test
-    fun testGivenGroupLambdaParameter() = codegen(
+    fun testModuleLambdaParameter() = codegen(
         """
             class Ctx(@Given val foo: Foo)
-            val factory: (@GivenGroup Ctx) -> Foo = { given() }
+            val factory: (@Module Ctx) -> Foo = { given() }
             fun invoke(foo: Foo) = factory(Ctx(foo))
         """
     ) {
@@ -22,19 +22,19 @@ class LambdaContributionsTest {
     }
 
     @Test
-    fun testLambdaGivenGroup() = codegen(
+    fun testLambdaModule() = codegen(
         """
             @Given val foo = Foo()
-            @GivenGroup val barGiven: @Given (@Given Foo) -> Bar = { Bar(it) }
+            @Module val barGiven: @Given (@Given Foo) -> Bar = { Bar(it) }
             fun invoke() = given<Bar>()
         """
     )
 
     @Test
-    fun testNestedLambdaGivenGroup() = codegen(
+    fun testNestedLambdaModule() = codegen(
         """
             @Given val foo = Foo()
-            @GivenGroup val barGiven: @GivenGroup (@Given Foo) -> @Given () -> Bar = { foo ->
+            @Module val barGiven: @Module (@Given Foo) -> @Given () -> Bar = { foo ->
                 {
                     Bar(foo)
                 }
@@ -47,7 +47,7 @@ class LambdaContributionsTest {
     fun testLambdaGivenSetElement() = codegen(
         """
             @Given val foo = Foo()
-            @GivenGroup val fooSet: @GivenSetElement (@Given Foo) -> Foo = { it }
+            @Module val fooSet: @GivenSetElement (@Given Foo) -> Foo = { it }
             fun invoke() = given<Set<Foo>>()
         """
     )
@@ -58,7 +58,7 @@ class LambdaContributionsTest {
             var called = false
             fun <T> interceptorFactory(): @Interceptor (() -> T) -> T = { called = true; it() }
            
-            @GivenGroup val fooInterceptorModule = interceptorFactory<Foo>()
+            @Module val fooInterceptorModule = interceptorFactory<Foo>()
             @Given fun foo() = Foo()
             
             fun invoke(): Boolean {
