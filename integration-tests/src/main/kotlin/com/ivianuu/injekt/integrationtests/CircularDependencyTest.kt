@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.test.assertCompileError
 import com.ivianuu.injekt.test.codegen
 import org.junit.Test
@@ -12,6 +13,16 @@ class CircularDependencyTest {
             @Given class A(@Given b: B)
             @Given class B(@Given a: A)
             fun invoke() = given<A>()
+        """
+    ) {
+        assertCompileError("circular")
+    }
+
+    @Test
+    fun testSelfDependencyFails() = codegen(
+        """
+            @Given fun <T> anyFromStream(@Given t: T): T = t
+            fun invoke() = given<String>()
         """
     ) {
         assertCompileError("circular")
