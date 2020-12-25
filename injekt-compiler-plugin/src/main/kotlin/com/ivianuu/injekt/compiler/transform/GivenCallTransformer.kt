@@ -120,31 +120,33 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         val providerType = given.callContext
             .providerType(pluginContext.moduleDescriptor)
             .typeWith(listOf(given.type))
-        return given.interceptors.fold(unintercepted) { acc: () -> IrExpression, interceptor: InterceptorNode ->
-            {
-                callableExpression(
-                    interceptor.callable
-                        .toGivenNode(interceptor.callable.type, graph.scope),
-                    symbol
-                ).apply {
-                    this as IrFunctionAccessExpression
-                    interceptor.callable.callable.valueParameters
-                        .single { interceptor.callable.parameterTypes[it] == providerType }
-                        .index
-                        .let { factoryIndex ->
-                            putValueArgument(
-                                factoryIndex,
-                                DeclarationIrBuilder(
-                                    pluginContext,
-                                    symbol
-                                ).irLambda(providerType.toIrType(pluginContext)) {
-                                    acc()
-                                }
-                            )
-                        }
+        return given.interceptors
+            .reversed()
+            .fold(unintercepted) { acc: () -> IrExpression, interceptor: InterceptorNode ->
+                {
+                    callableExpression(
+                        interceptor.callable
+                            .toGivenNode(interceptor.callable.type, graph.scope),
+                        symbol
+                    ).apply {
+                        this as IrFunctionAccessExpression
+                        interceptor.callable.callable.valueParameters
+                            .single { interceptor.callable.parameterTypes[it] == providerType }
+                            .index
+                            .let { factoryIndex ->
+                                putValueArgument(
+                                    factoryIndex,
+                                    DeclarationIrBuilder(
+                                        pluginContext,
+                                        symbol
+                                    ).irLambda(providerType.toIrType(pluginContext)) {
+                                        acc()
+                                    }
+                                )
+                            }
+                    }
                 }
             }
-        }
     }
 
     private val lambdasByProviderGiven = mutableMapOf<ProviderGivenNode, IrFunction>()

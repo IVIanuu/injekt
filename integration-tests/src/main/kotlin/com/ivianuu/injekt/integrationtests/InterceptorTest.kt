@@ -61,12 +61,31 @@ class InterceptorTest {
         assertCompileError("@Interceptor declaration must have one parameter")
     }
 
-    // todo test order
+    @Test fun testInterceptorOrder() = codegen(
+        """
+            val calls = mutableListOf<String>()
 
-    // todo test no factory parameter
+            @Interceptor fun interceptA(factory: () -> Foo): Foo {
+                calls += "a"
+                return factory()
+            }
 
-    // todo test missing interceptor dependency
+            @Interceptor fun interceptB(factory: () -> Foo): Foo {
+                calls += "b"
+                return factory()
+            }
 
-    // todo test suspend interceptor
-    // todo test composable interceptor
+            @Given fun foo() = Foo()
+
+            fun invoke(): List<String> {
+                given<Foo>()
+                return calls
+            }
+        """
+    ) {
+        assertEquals(
+            listOf("a", "b"),
+            invokeSingleFile()
+        )
+    }
 }

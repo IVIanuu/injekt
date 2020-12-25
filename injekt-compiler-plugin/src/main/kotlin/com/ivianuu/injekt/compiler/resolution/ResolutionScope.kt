@@ -46,6 +46,7 @@ class ResolutionScope(
         .map { it.substitute(getSubstitutionMap(listOf(type to it.type))) }
 
     fun interceptorsForType(type: TypeRef): List<InterceptorNode> = interceptors
+        .filter { callContext.canCall(it.callContext) }
         .filter { it.type.isAssignableTo(type) }
         .map { it.substitute(getSubstitutionMap(listOf(type to it.type))) }
         .map {
