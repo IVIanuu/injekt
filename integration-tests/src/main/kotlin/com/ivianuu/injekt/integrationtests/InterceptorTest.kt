@@ -61,6 +61,22 @@ class InterceptorTest {
         assertCompileError("@Interceptor declaration must have one parameter")
     }
 
+    @Test fun testNonGivenValueParameterOnInterceptor() = codegen(
+        """
+            @Interceptor fun bar(foo: Foo, factory: () -> Bar) = factory()
+        """
+    ) {
+        assertCompileError("Non @Given parameter")
+    }
+
+    @Test fun testNonGivenValueParameterOnInterceptorLambda() = codegen(
+        """
+            val barInterceptor: @Interceptor (Foo, () -> Bar) -> Bar = { _, it -> it() }
+        """
+    ) {
+        assertCompileError("Non @Given parameter")
+    }
+
     @Test fun testInterceptorOrder() = codegen(
         """
             val calls = mutableListOf<String>()

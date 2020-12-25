@@ -35,6 +35,7 @@ class ResolutionScope(
                 addInterceptor = { interceptors += it }
             )
         }
+        parent?.interceptors?.forEach { interceptors += it }
     }
 
     fun givensForType(type: TypeRef): List<GivenNode> = givens

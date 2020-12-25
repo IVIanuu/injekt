@@ -6,6 +6,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
+import com.ivianuu.injekt.Interceptor
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Unqualified
 import com.ivianuu.injekt.common.ForKey
@@ -19,6 +20,10 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlin.reflect.KClass
 import kotlin.reflect.typeOf
 
+@Qualifier annotation class AppScoped
+@Interceptor fun <@ForKey T : Any> interceptAppScoped(component: AppComponent, factory: () -> T): T =
+    component.scope(factory)
+
 typealias KeyUiBinding = Pair<KClass<*>, @Composable () -> Unit>
 
 inline fun <reified K : Any, reified T : @Composable () -> Unit> keyUiBinding():
@@ -26,6 +31,7 @@ inline fun <reified K : Any, reified T : @Composable () -> Unit> keyUiBinding():
 
 typealias ActionChannel<A> = Channel<A>
 
+@AppScoped
 @Given fun <@ForKey A> ActionChannel(@Given component: AppComponent): ActionChannel<A> =
     component.scope { Channel() }
 

@@ -4,6 +4,7 @@ import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.resolution.callContext
+import com.ivianuu.injekt.compiler.resolution.contributionKind
 import com.ivianuu.injekt.compiler.resolution.providerType
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.resolution.typeWith
@@ -26,6 +27,7 @@ class InterceptorChecker : DeclarationChecker {
             (descriptor !is ValueDescriptor ||
                     !descriptor.type.hasAnnotation(InjektFqNames.Interceptor)))
                         return
+
         if (descriptor is FunctionDescriptor) {
             val providerType = descriptor.callContext.providerType(descriptor.module)
                 .typeWith(listOf(descriptor.returnType!!.toTypeRef()))
@@ -38,6 +40,16 @@ class InterceptorChecker : DeclarationChecker {
                         .on(declaration)
                 )
             }
+            descriptor
+                .valueParameters
+                .filter { it != factoryParameter }
+                .filter { it.contributionKind() == null }
+                .forEach {
+                    context.trace.report(
+                        InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
+                            .on(declaration, InjektFqNames.Interceptor.shortName())
+                    )
+                }
         } else if (descriptor is ValueDescriptor) {
             val providerType = descriptor.type.toTypeRef()
                 .callContext
@@ -47,6 +59,7 @@ class InterceptorChecker : DeclarationChecker {
                 .type
                 .toTypeRef()
                 .typeArguments
+                .dropLast(1)
                 .singleOrNull { it == providerType }
             if (factoryParameter == null) {
                 context.trace.report(
@@ -54,6 +67,19 @@ class InterceptorChecker : DeclarationChecker {
                         .on(declaration)
                 )
             }
+            descriptor
+                .type
+                .toTypeRef()
+                .typeArguments
+                .dropLast(1)
+                .filter { it != factoryParameter }
+                .filter { it.contributionKind == null }
+                .forEach {
+                    context.trace.report(
+                        InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
+                            .on(declaration, InjektFqNames.Interceptor.shortName())
+                    )
+                }
         }
     }
 }

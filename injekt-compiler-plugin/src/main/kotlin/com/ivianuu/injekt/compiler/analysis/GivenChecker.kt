@@ -3,6 +3,8 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.resolution.contributionKind
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.builtins.isSuspendFunctionType
@@ -58,7 +60,7 @@ class GivenChecker : DeclarationChecker {
         } else if (descriptor is PropertyDescriptor) {
             if (descriptor.hasAnnotation(InjektFqNames.Given) &&
                 descriptor.extensionReceiverParameter != null &&
-                descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Given) != true
+                descriptor.extensionReceiverParameter?.type?.contributionKind() == null
             ) {
                 context.trace.report(
                     InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
@@ -92,7 +94,7 @@ class GivenChecker : DeclarationChecker {
                     type.hasAnnotation(InjektFqNames.Module) ||
                     type.hasAnnotation(InjektFqNames.GivenSetElement)) &&
             type.arguments.dropLast(1)
-                .any { !it.type.hasAnnotation(InjektFqNames.Given) }) {
+                .all { it.type.contributionKind() == null }) {
             trace.report(
                 InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
                     .on(
@@ -119,8 +121,8 @@ class GivenChecker : DeclarationChecker {
         ) {
             this
                 .filter {
-                    !it.hasAnnotation(InjektFqNames.Given) &&
-                        !it.type.hasAnnotation(InjektFqNames.Given)
+                    it.contributionKind() == null &&
+                            it.type.contributionKind() == null
                 }
                 .forEach {
                     trace.report(
