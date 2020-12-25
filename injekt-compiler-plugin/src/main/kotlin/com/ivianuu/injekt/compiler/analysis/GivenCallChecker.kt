@@ -72,8 +72,7 @@ class GivenCallChecker(
                     type = it.key.type.toTypeRef(),
                     required = !it.key.hasDefaultValueIgnoringGiven,
                     callableFqName = resultingDescriptor.fqNameSafe,
-                    parameterName = it.key.name,
-                    callContext = null
+                    parameterName = it.key.name
                 )
             }
 

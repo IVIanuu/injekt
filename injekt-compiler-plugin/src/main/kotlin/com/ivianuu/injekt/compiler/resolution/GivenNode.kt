@@ -95,8 +95,13 @@ data class FunGivenNode(
     override val dependencies: List<GivenRequest> = callable.getGivenRequests(true)
     override val originalType: TypeRef
         get() = type.classifier.defaultType
-    override val dependencyScope: ResolutionScope?
-        get() = null
+    override val dependencyScope = ResolutionScope(
+        "Fun",
+        parent = ownerScope,
+        declarationStore = ownerScope.declarationStore,
+        callContext = callable.callContext,
+        contributions = emptyList()
+    )
     override val isFrameworkGiven: Boolean
         get() = true
 }
@@ -134,8 +139,7 @@ data class ProviderGivenNode(
             type = type.typeArguments.last(),
             required = isRequired,
             callableFqName = callableFqName,
-            parameterName = "instance".asNameId(),
-            callContext = type.callContext
+            parameterName = "instance".asNameId()
         )
     )
 
@@ -206,8 +210,7 @@ fun CallableRef.getGivenRequests(forFunExpression: Boolean): List<GivenRequest> 
                 type = parameterTypes[it]!!,
                 required = it !is ValueParameterDescriptor || !it.hasDefaultValueIgnoringGiven,
                 callableFqName = callable.fqNameSafe,
-                parameterName = name,
-                callContext = if (forFunExpression) callContext else null
+                parameterName = name
             )
         }
 }
@@ -216,8 +219,7 @@ data class GivenRequest(
     val type: TypeRef,
     val required: Boolean,
     val callableFqName: FqName,
-    val parameterName: Name,
-    val callContext: CallContext?,
+    val parameterName: Name
 ) {
     val forDispatchReceiver: Boolean
         get() = parameterName.asString() == "_dispatchReceiver"
