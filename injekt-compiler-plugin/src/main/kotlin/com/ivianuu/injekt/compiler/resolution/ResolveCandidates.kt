@@ -110,7 +110,7 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
     resultsByRequest[request]?.let { return it }
     val result = resolveCandidates(
         request,
-        (givensForType(request.type) + getFrameworkCandidates(request)).distinct()
+        (givensForType(request.type) + frameworkGivensForType(request)).distinct()
     )
     resultsByRequest[request] = result
     return result
@@ -258,59 +258,6 @@ private fun ResolutionScope.resolveCandidate(
         candidate,
         successDependencyResults
     )
-}
-
-private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<GivenNode> {
-    if (request.forDispatchReceiver &&
-        request.type.classifier.descriptor?.safeAs<ClassDescriptor>()
-            ?.kind == ClassKind.OBJECT
-    ) return listOf(ObjectGivenNode(request.type, this))
-
-    if (request.type.classifier.isGivenFunAlias) return listOf(
-        FunGivenNode(
-            request.type,
-            this,
-            interceptorsForType(request.type),
-            CallableRef(
-                declarationStore.functionDescriptorForFqName(request.type.classifier.fqName)
-                    .single()
-            )
-        )
-    )
-
-    if (request.type.path == null &&
-        (request.type.classifier.fqName.asString().startsWith("kotlin.Function")
-                || request.type.classifier.fqName.asString()
-            .startsWith("kotlin.coroutines.SuspendFunction")) &&
-                request.type.typeArguments.dropLast(1).all {
-                    it.contributionKind != null
-                }
-    ) return listOf(
-        ProviderGivenNode(
-            request.type,
-            this,
-            interceptorsForType(request.type),
-            declarationStore,
-            request.required
-        )
-    )
-
-    val setType = declarationStore.module.builtIns.set.defaultType.toTypeRef()
-    if (request.type.isSubTypeOf(setType)) {
-        val setElementType = request.type.subtypeView(setType.classifier)!!.typeArguments.single()
-        val elements = givenSetElementsForType(setElementType)
-        return listOf(
-            SetGivenNode(
-                request.type,
-                this,
-                interceptorsForType(request.type),
-                elements,
-                elements.flatMap { element -> element.getGivenRequests(false) }
-            )
-        )
-    }
-
-    return emptyList()
 }
 
 private fun GivenNode.depth(scope: ResolutionScope): Int {
