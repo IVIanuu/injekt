@@ -74,8 +74,8 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             .valueParameters
             .filter { call.getValueArgument(it.index) == null }
             .filter {
-                it.givenKind() == GivenKind.VALUE ||
-                        callable.parameterTypes[it]!!.givenKind == GivenKind.VALUE
+                it.contributionKind() == ContributionKind.VALUE ||
+                        callable.parameterTypes[it]!!.contributionKind == ContributionKind.VALUE
             }
             .map { parameter ->
                 val parameterName = if (parameter.name.isSpecial)
@@ -99,21 +99,58 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         return expressionsByRequest.getOrPut(request) {
             val given = graph.givens[request]
                 ?: error("Wtf $request\n${this.graph.givens.toList().joinToString("\n")}")
-            when (given) {
-                is CallableGivenNode -> callableExpression(given, symbol)
+            val expression: (() -> IrExpression)? = when (given) {
+                is CallableGivenNode -> ({ callableExpression(given, symbol) })
                 is DefaultGivenNode -> null
-                is FunGivenNode -> funExpression(given, symbol)
-                is ObjectGivenNode -> objectExpression(given, symbol)
-                is ProviderGivenNode -> providerExpression(given, symbol)
-                is SetGivenNode -> setExpression(given, symbol)
+                is FunGivenNode -> ({ funExpression(given, symbol) })
+                is ObjectGivenNode -> ({ objectExpression(given, symbol) })
+                is ProviderGivenNode -> ({ providerExpression(given, symbol) })
+                is SetGivenNode -> ({ setExpression(given, symbol) })
             }
+            expression?.let { intercepted(it, given, symbol) }
         }?.invoke()
+    }
+
+    private fun ResolutionContext.intercepted(
+        unintercepted: () -> IrExpression,
+        given: GivenNode,
+        symbol: IrSymbol
+    ): () -> IrExpression {
+        if (given.interceptors.isEmpty()) return unintercepted
+        val providerType = given.callContext
+            .providerType(pluginContext.moduleDescriptor)
+            .typeWith(listOf(given.type))
+        return given.interceptors.fold(unintercepted) { acc: () -> IrExpression, interceptor: InterceptorNode ->
+            {
+                callableExpression(
+                    interceptor.callable
+                        .toGivenNode(interceptor.callable.type, graph.scope),
+                    symbol
+                ).apply {
+                    this as IrFunctionAccessExpression
+                    interceptor.callable.callable.valueParameters
+                        .single { interceptor.callable.parameterTypes[it] == providerType }
+                        .index
+                        .let { factoryIndex ->
+                            putValueArgument(
+                                factoryIndex,
+                                DeclarationIrBuilder(
+                                    pluginContext,
+                                    symbol
+                                ).irLambda(providerType.toIrType(pluginContext)) {
+                                    acc()
+                                }
+                            )
+                        }
+                }
+            }
+        }
     }
 
     private val lambdasByProviderGiven = mutableMapOf<ProviderGivenNode, IrFunction>()
 
-    private fun ResolutionContext.funExpression(given: FunGivenNode, symbol: IrSymbol): () -> IrExpression = {
-        DeclarationIrBuilder(pluginContext, symbol)
+    private fun ResolutionContext.funExpression(given: FunGivenNode, symbol: IrSymbol): IrExpression {
+        return DeclarationIrBuilder(pluginContext, symbol)
             .irLambda(given.type.toIrType(pluginContext)) { function ->
                 val givenFun = (given.callable.callable as FunctionDescriptor).irFunction()
                 val typeArguments = getSubstitutionMap(
@@ -130,7 +167,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
 
                         givenFun
                             .valueParameters
-                            .filterNot { it.descriptor.givenKind() == GivenKind.VALUE }
+                            .filterNot { it.descriptor.contributionKind() == ContributionKind.VALUE }
                             .forEachIndexed { index, valueParameter ->
                                 putValueArgument(valueParameter.index,
                                     DeclarationIrBuilder(pluginContext, symbol)
@@ -145,16 +182,16 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
     private fun ResolutionContext.objectExpression(
         given: ObjectGivenNode,
         symbol: IrSymbol,
-    ): () -> IrExpression = {
-        DeclarationIrBuilder(pluginContext, symbol)
+    ): IrExpression {
+        return DeclarationIrBuilder(pluginContext, symbol)
             .irGetObject(pluginContext.referenceClass(given.type.classifier.fqName)!!)
     }
 
     private fun ResolutionContext.providerExpression(
         given: ProviderGivenNode,
         symbol: IrSymbol,
-    ): () -> IrExpression = {
-        DeclarationIrBuilder(pluginContext, symbol)
+    ): IrExpression {
+        return DeclarationIrBuilder(pluginContext, symbol)
             .irLambda(given.type.toIrType(pluginContext)) { function ->
                 lambdasByProviderGiven[given] = function
                 expressionFor(given.dependencies.single(), symbol)
@@ -165,7 +202,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
     private fun ResolutionContext.setExpression(
         given: SetGivenNode,
         symbol: IrSymbol,
-    ): () -> IrExpression = expr@{
+    ): IrExpression {
         val elementType =
             given.type.fullyExpandedType.typeArguments.single()
 
@@ -173,12 +210,12 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             val emptySet = pluginContext.referenceFunctions(
                 FqName("kotlin.collections.emptySet")
             ).single()
-            return@expr DeclarationIrBuilder(pluginContext, symbol)
+            return DeclarationIrBuilder(pluginContext, symbol)
                 .irCall(emptySet)
                 .apply { putTypeArgument(0, elementType.toIrType(pluginContext)) }
         }
 
-        DeclarationIrBuilder(pluginContext, symbol).irBlock {
+        return DeclarationIrBuilder(pluginContext, symbol).irBlock {
             val mutableSetOf = pluginContext.referenceFunctions(
                 FqName("kotlin.collections.mutableSetOf")
             ).single { it.owner.valueParameters.isEmpty() }
@@ -203,7 +240,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                             callableExpression(
                                 it.toGivenNode(elementType, graph.scope),
                                 symbol
-                            )()
+                            )
                         )
                     }
                 }
@@ -215,8 +252,8 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
     private fun ResolutionContext.callableExpression(
         given: CallableGivenNode,
         symbol: IrSymbol,
-    ): () -> IrExpression = {
-        when (given.callable.callable) {
+    ): IrExpression {
+        return when (given.callable.callable) {
             is ClassConstructorDescriptor -> classExpression(given.type,
                 given.callable,
                 given.callable.callable,

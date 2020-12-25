@@ -19,9 +19,9 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.analysis.GivenFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.CallableRef
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.GivenKind
+import com.ivianuu.injekt.compiler.resolution.ContributionKind
 import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.givenKind
+import com.ivianuu.injekt.compiler.resolution.contributionKind
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
@@ -92,17 +92,17 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
 
 fun CallableDescriptor.getGivenParameters(substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()): List<ParameterDescriptor> =
     getGivenDeclarationParameters(substitutionMap)
-        .filter { it.givenKind == GivenKind.VALUE }
+        .filter { it.contributionKind == ContributionKind.VALUE }
         .map { it.callable as ParameterDescriptor }
 
 fun CallableDescriptor.getGivenDeclarationParameters(substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()): List<CallableRef> =
     allParameters
         .mapNotNull {
-            val kind = it.givenKind() ?: if (substitutionMap.isNotEmpty()) {
+            val kind = it.contributionKind() ?: if (substitutionMap.isNotEmpty()) {
                 it.type.toTypeRef().substitute(substitutionMap)
-                    .givenKind
-            } else it.type.givenKind()
-            if (kind != null) CallableRef(it, givenKind = kind)
+                    .contributionKind
+            } else it.type.contributionKind()
+            if (kind != null) CallableRef(it, contributionKind = kind)
             else null
         }
 

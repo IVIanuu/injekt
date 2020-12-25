@@ -5,9 +5,7 @@ import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringGiven
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.transform.toKotlinType
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
@@ -23,12 +21,14 @@ sealed class GivenNode {
     abstract val ownerScope: ResolutionScope
     abstract val dependencyScope: ResolutionScope?
     abstract val isFrameworkGiven: Boolean
+    abstract val interceptors: List<InterceptorNode>
 }
 
 data class CallableGivenNode(
     override val type: TypeRef,
     override val dependencies: List<GivenRequest>,
     override val ownerScope: ResolutionScope,
+    override val interceptors: List<InterceptorNode>,
     val callable: CallableRef,
 ) : GivenNode() {
     override val callableFqName: FqName = if (callable.callable is ClassConstructorDescriptor)
@@ -47,6 +47,7 @@ data class CallableGivenNode(
 data class SetGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope,
+    override val interceptors: List<InterceptorNode>,
     val elements: List<CallableRef>,
     override val dependencies: List<GivenRequest>,
 ) : GivenNode() {
@@ -77,11 +78,14 @@ data class DefaultGivenNode(
         get() = null
     override val isFrameworkGiven: Boolean
         get() = true
+    override val interceptors: List<InterceptorNode>
+        get() = emptyList()
 }
 
 data class FunGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope,
+    override val interceptors: List<InterceptorNode>,
     val callable: CallableRef,
 ) : GivenNode() {
     override val callContext: CallContext
@@ -113,11 +117,14 @@ data class ObjectGivenNode(
         get() = null
     override val isFrameworkGiven: Boolean
         get() = false
+    override val interceptors: List<InterceptorNode>
+        get() = emptyList()
 }
 
 data class ProviderGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope,
+    override val interceptors: List<InterceptorNode>,
     val declarationStore: DeclarationStore,
     val isRequired: Boolean
 ) : GivenNode() {
@@ -145,7 +152,7 @@ data class ProviderGivenNode(
             .valueParameters
             .map { ProviderParameterDescriptor(this, it) }
             .map {
-                CallableRef(it, givenKind = type.typeArguments[it.index].givenKind)
+                CallableRef(it, contributionKind = type.typeArguments[it.index].contributionKind)
             }
     )
 
@@ -168,6 +175,7 @@ fun CallableRef.toGivenNode(type: TypeRef, ownerScope: ResolutionScope): Callabl
         type,
         finalCallable.getGivenRequests(false),
         ownerScope,
+        ownerScope.interceptorsForType(type),
         finalCallable
     )
 }
@@ -179,8 +187,8 @@ fun CallableRef.getGivenRequests(forFunExpression: Boolean): List<GivenRequest> 
         }
         .filter {
             it === callable.dispatchReceiverParameter ||
-                    it.givenKind() == GivenKind.VALUE ||
-                    parameterTypes[it]!!.givenKind == GivenKind.VALUE
+                    it.contributionKind() == ContributionKind.VALUE ||
+                    parameterTypes[it]!!.contributionKind == ContributionKind.VALUE
         }
         .map {
             val name = when {
@@ -210,3 +218,8 @@ data class GivenRequest(
     val forDispatchReceiver: Boolean
         get() = parameterName.asString() == "_dispatchReceiver"
 }
+
+data class InterceptorNode(
+    val callable: CallableRef,
+    val dependencies: List<GivenRequest>
+)

@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.Index
-import com.ivianuu.injekt.compiler.resolution.CallableRef
 import com.ivianuu.injekt.compiler.resolution.getGivenDeclarationConstructors
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -68,10 +67,10 @@ class DeclarationStore(val module: ModuleDescriptor) {
             .flatMap { it.getGivenDeclarationConstructors() } +
                 functionIndices
                     .map { it.toCallableRef() }
-                    .filter { it.givenKind != null } +
+                    .filter { it.contributionKind != null } +
                 propertyIndices
                     .map { it.toCallableRef() }
-                    .filter { it.givenKind != null }
+                    .filter { it.contributionKind != null }
     }
 
     private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor>()

@@ -42,7 +42,7 @@ data class CallableRef(
     val parameterTypes: Map<ParameterDescriptor, TypeRef> = callable.allParameters
         .map { it to it.type.toTypeRef() }
         .toMap(),
-    val givenKind: GivenKind? = callable.givenKind(),
+    val contributionKind: ContributionKind? = callable.contributionKind(),
     val callContext: CallContext = callable.callContext,
 )
 
@@ -53,27 +53,27 @@ fun CallableRef.substitute(substitutionMap: Map<ClassifierRef, TypeRef>): Callab
     )
 }
 
-enum class GivenKind {
-    VALUE, SET_ELEMENT, GROUP
+enum class ContributionKind {
+    VALUE, SET_ELEMENT, GROUP, INTERCEPTOR
 }
 
 fun CallableDescriptor.toCallableRef() = CallableRef(this)
 
-fun MemberScope.collectGivenDeclarations(type: TypeRef): List<CallableRef> {
+fun MemberScope.collectContributions(type: TypeRef): List<CallableRef> {
     // special case to support @Given () -> Foo etc
     if ((type.classifier.fqName.asString().startsWith("kotlin.Function")
                 || type.classifier.fqName.asString()
             .startsWith("kotlin.coroutines.SuspendFunction"))
     ) {
-        val givenKind = type.givenKind
-        if (givenKind != null) {
+        val contributionKind = type.contributionKind
+        if (contributionKind != null) {
             return listOf(
                 getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
                     .first()
                     .toCallableRef()
                     .let { callable ->
                         callable.copy(
-                            givenKind = givenKind,
+                            contributionKind = contributionKind,
                             parameterTypes = callable.parameterTypes.toMutableMap()
                                 .also { it[callable.callable.dispatchReceiverParameter!!] = type }
                         )
@@ -87,7 +87,7 @@ fun MemberScope.collectGivenDeclarations(type: TypeRef): List<CallableRef> {
         ?.unsubstitutedPrimaryConstructor
         ?.valueParameters
         ?.mapNotNull {
-            val kind = it.givenKind()
+            val kind = it.contributionKind()
             if (kind != null) it.name to kind else null
         }
         ?.toMap()
@@ -96,37 +96,38 @@ fun MemberScope.collectGivenDeclarations(type: TypeRef): List<CallableRef> {
         .flatMap { callable ->
             when (callable) {
                 is ClassDescriptor -> callable.getGivenDeclarationConstructors()
-                is PropertyDescriptor -> (callable.givenKind()
+                is PropertyDescriptor -> (callable.contributionKind()
                     ?: primaryConstructorKinds[callable.name])
-                    ?.let { kind -> listOf(CallableRef(callable, givenKind = kind)) } ?: emptyList()
-                is FunctionDescriptor -> callable.givenKind()?.let { kind ->
-                    listOf(CallableRef(callable, givenKind = kind))
+                    ?.let { kind -> listOf(CallableRef(callable, contributionKind = kind)) } ?: emptyList()
+                is FunctionDescriptor -> callable.contributionKind()?.let { kind ->
+                    listOf(CallableRef(callable, contributionKind = kind))
                 } ?: emptyList()
                 else -> emptyList()
             }
         }
 }
 
-fun Annotated.givenKind(): GivenKind? = when {
-    hasAnnotation(InjektFqNames.Given) -> GivenKind.VALUE
-    hasAnnotation(InjektFqNames.GivenSetElement) -> GivenKind.SET_ELEMENT
-    hasAnnotation(InjektFqNames.GivenGroup) -> GivenKind.GROUP
-    this is ClassConstructorDescriptor -> constructedClass.givenKind()
+fun Annotated.contributionKind(): ContributionKind? = when {
+    hasAnnotation(InjektFqNames.Given) -> ContributionKind.VALUE
+    hasAnnotation(InjektFqNames.GivenSetElement) -> ContributionKind.SET_ELEMENT
+    hasAnnotation(InjektFqNames.GivenGroup) -> ContributionKind.GROUP
+    hasAnnotation(InjektFqNames.Interceptor) -> ContributionKind.INTERCEPTOR
+    this is ClassConstructorDescriptor -> constructedClass.contributionKind()
     else -> null
 }
 
-fun CallableDescriptor.collectGivenDeclarations(): List<CallableRef> {
+fun CallableDescriptor.collectContributions(): List<CallableRef> {
     val declarations = mutableListOf<CallableRef>()
 
     declarations += allParameters
         .mapNotNull {
-            val kind = it.givenKind()
-            if (kind != null) CallableRef(it, givenKind = kind) else null
+            val kind = it.contributionKind()
+            if (kind != null) CallableRef(it, contributionKind = kind) else null
         }
 
     extensionReceiverParameter?.let { receiver ->
-        declarations += CallableRef(receiver, givenKind = GivenKind.VALUE)
-        declarations += receiver.type.memberScope.collectGivenDeclarations(
+        declarations += CallableRef(receiver, contributionKind = ContributionKind.VALUE)
+        declarations += receiver.type.memberScope.collectContributions(
             extensionReceiverParameter!!.type.toTypeRef()
         )
     }
@@ -134,36 +135,37 @@ fun CallableDescriptor.collectGivenDeclarations(): List<CallableRef> {
     return declarations
 }
 
-fun ParameterDescriptor.givenKind(): GivenKind? {
+fun ParameterDescriptor.contributionKind(): ContributionKind? {
     val userData = getUserData(DslMarkerUtils.FunctionTypeAnnotationsKey)
     val givenDeclarationParameters = getGivenDeclarationParameters()
 
-    return (this as Annotated).givenKind() ?: type.givenKind() ?: userData?.let {
+    return (this as Annotated).contributionKind() ?: type.contributionKind() ?: userData?.let {
         when {
-            userData.hasAnnotation(InjektFqNames.Given) -> GivenKind.VALUE
-            userData.hasAnnotation(InjektFqNames.GivenSetElement) -> GivenKind.SET_ELEMENT
-            userData.hasAnnotation(InjektFqNames.GivenGroup) -> GivenKind.GROUP
+            userData.hasAnnotation(InjektFqNames.Given) -> ContributionKind.VALUE
+            userData.hasAnnotation(InjektFqNames.GivenSetElement) -> ContributionKind.SET_ELEMENT
+            userData.hasAnnotation(InjektFqNames.GivenGroup) -> ContributionKind.GROUP
+            userData.hasAnnotation(InjektFqNames.Interceptor) -> ContributionKind.INTERCEPTOR
             else -> null
         }
     } ?: givenDeclarationParameters
         .firstOrNull { it.callable == this }
-        ?.givenKind
+        ?.contributionKind
 }
 
 fun ClassDescriptor.getGivenDeclarationConstructors(): List<CallableRef> = constructors
     .mapNotNull { constructor ->
         if (constructor.isPrimary) {
-            (constructor.givenKind() ?: givenKind())?.let { kind ->
-                CallableRef(constructor, givenKind = kind)
+            (constructor.contributionKind() ?: contributionKind())?.let { kind ->
+                CallableRef(constructor, contributionKind = kind)
             }
         } else {
-            constructor.givenKind()?.let { kind ->
-                CallableRef(constructor, givenKind = kind)
+            constructor.contributionKind()?.let { kind ->
+                CallableRef(constructor, contributionKind = kind)
             }
         }
     }
     .flatMap { declaration ->
-        if (declaration.givenKind == GivenKind.VALUE) {
+        if (declaration.contributionKind == ContributionKind.VALUE) {
             allGivenTypes().map { type ->
                 declaration.copy(
                     type = type.copy(
@@ -187,12 +189,14 @@ fun ClassDescriptor.allGivenTypes(): List<TypeRef> = buildList<TypeRef> {
 fun CallableRef.collectGivens(
     path: List<Any>,
     addGiven: (CallableRef) -> Unit,
-    addGivenSetElement: (CallableRef) -> Unit
+    addGivenSetElement: (CallableRef) -> Unit,
+    addInterceptor: (CallableRef) -> Unit
 ) {
-    when (givenKind) {
-        GivenKind.VALUE -> addGiven(this)
-        GivenKind.SET_ELEMENT -> addGivenSetElement(this)
-        GivenKind.GROUP -> {
+    when (contributionKind) {
+        ContributionKind.VALUE -> addGiven(this)
+        ContributionKind.SET_ELEMENT -> addGivenSetElement(this)
+        ContributionKind.INTERCEPTOR -> addInterceptor(this)
+        ContributionKind.GROUP -> {
             val isFunction = type.allTypes.any {
                 it.classifier.fqName.asString().startsWith("kotlin.Function")
                         || it.classifier.fqName.asString()
@@ -204,31 +208,38 @@ fun CallableRef.collectGivens(
                     val nextCallable = copy(type = type.copy(path = nextPath))
                     addGiven(nextCallable)
                     callable.returnType!!.memberScope
-                        .collectGivenDeclarations(nextCallable.type)
-                        .forEach {
-                            it.collectGivens(path + it.callable.fqNameSafe, addGiven, addGivenSetElement)
-                        }
-                } else {
-                    addGiven(this)
-                    callable.returnType!!.memberScope
-                        .collectGivenDeclarations(type)
+                        .collectContributions(nextCallable.type)
                         .forEach {
                             it.collectGivens(
                                 path + it.callable.fqNameSafe,
                                 addGiven,
-                                addGivenSetElement
+                                addGivenSetElement,
+                                addInterceptor
+                            )
+                        }
+                } else {
+                    addGiven(this)
+                    callable.returnType!!.memberScope
+                        .collectContributions(type)
+                        .forEach {
+                            it.collectGivens(
+                                path + it.callable.fqNameSafe,
+                                addGiven,
+                                addGivenSetElement,
+                                addInterceptor
                             )
                         }
                 }
             } else {
                 addGiven(this)
                 callable.returnType!!.memberScope
-                    .collectGivenDeclarations(type)
+                    .collectContributions(type)
                     .forEach {
                         it.collectGivens(
                             path + it.callable.fqNameSafe,
                             addGiven,
-                            addGivenSetElement
+                            addGivenSetElement,
+                            addInterceptor
                         )
                     }
             }

@@ -86,7 +86,7 @@ sealed class TypeRef {
     abstract val typeArguments: List<TypeRef>
     abstract val variance: Variance
     abstract val isComposable: Boolean
-    abstract val givenKind: GivenKind?
+    abstract val contributionKind: ContributionKind?
     abstract val isStarProjection: Boolean
     abstract val qualifiers: List<AnnotationDescriptor>
     abstract val unqualified: Boolean
@@ -180,8 +180,8 @@ class KotlinTypeRef(
         kotlinType.hasAnnotation(InjektFqNames.Composable) &&
                 kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
     }
-    override val givenKind: GivenKind?
-        get() = finalType.givenKind() ?: kotlinType.givenKind()
+    override val contributionKind: ContributionKind?
+        get() = finalType.contributionKind() ?: kotlinType.contributionKind()
     override val isMarkedNullable: Boolean by unsafeLazy {
         kotlinType.isMarkedNullable
     }
@@ -206,7 +206,7 @@ class SimpleTypeRef(
     override val typeArguments: List<TypeRef> = emptyList(),
     override val variance: Variance = Variance.INVARIANT,
     override val isComposable: Boolean = false,
-    override val givenKind: GivenKind? = null,
+    override val contributionKind: ContributionKind? = null,
     override val isStarProjection: Boolean = false,
     override val qualifiers: List<AnnotationDescriptor> = emptyList(),
     override val unqualified: Boolean = false,
@@ -229,7 +229,7 @@ fun TypeRef.copy(
     typeArguments: List<TypeRef> = this.typeArguments,
     variance: Variance = this.variance,
     isComposable: Boolean = this.isComposable,
-    givenKind: GivenKind? = this.givenKind,
+    contributionKind: ContributionKind? = this.contributionKind,
     isStarProjection: Boolean = this.isStarProjection,
     qualifiers: List<AnnotationDescriptor> = this.qualifiers,
     unqualified: Boolean = this.unqualified,
@@ -240,7 +240,7 @@ fun TypeRef.copy(
     typeArguments,
     variance,
     isComposable,
-    givenKind,
+    contributionKind,
     isStarProjection,
     qualifiers,
     unqualified,
@@ -257,7 +257,7 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
             qualifiers = if (unqualified) emptyList() else qualifiers + it.qualifiers,
             // we copy given kind to support @Given C -> @Given String
             // fallback to substitution given kind
-            givenKind = givenKind ?: it.givenKind
+            contributionKind = contributionKind ?: it.contributionKind
         )
     }
 

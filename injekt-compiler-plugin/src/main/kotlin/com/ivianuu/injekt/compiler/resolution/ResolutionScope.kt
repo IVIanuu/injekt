@@ -17,7 +17,8 @@ class ResolutionScope(
     declarations: List<CallableRef>,
 ) {
     private val givens = mutableListOf<Pair<CallableRef, ResolutionScope>>()
-    private val givenSetElements = mutableListOf<Pair<CallableRef, ResolutionScope>>()
+    private val givenSetElements = mutableListOf<CallableRef>()
+    private val interceptors = mutableListOf<CallableRef>()
 
     val chain: MutableSet<GivenNode> = parent?.chain ?: mutableSetOf()
     val resultsByRequest = mutableMapOf<GivenRequest, ResolutionResult>()
@@ -30,7 +31,8 @@ class ResolutionScope(
             declaration.collectGivens(
                 path = listOf(declaration.callable.fqNameSafe),
                 addGiven = { givens += it to this },
-                addGivenSetElement = { givenSetElements += it to this }
+                addGivenSetElement = { givenSetElements += it },
+                addInterceptor = { interceptors += it }
             )
         }
     }
@@ -40,8 +42,18 @@ class ResolutionScope(
         .map { it.first.toGivenNode(type, it.second) }
 
     fun givenSetElementsForType(type: TypeRef): List<CallableRef> = givenSetElements
-        .filter { it.first.type.isAssignableTo(type) }
-        .map { it.first }
+        .filter { it.type.isAssignableTo(type) }
+        .map { it.substitute(getSubstitutionMap(listOf(type to it.type))) }
+
+    fun interceptorsForType(type: TypeRef): List<InterceptorNode> = interceptors
+        .filter { it.type.isAssignableTo(type) }
+        .map { it.substitute(getSubstitutionMap(listOf(type to it.type))) }
+        .map {
+            InterceptorNode(
+                it,
+                it.getGivenRequests(false)
+            )
+        }
 
     override fun toString(): String = "ResolutionScope($name)"
 }
@@ -78,8 +90,8 @@ fun ClassResolutionScope(
     callContext = CallContext.DEFAULT,
     parent = parent,
     declarations = descriptor.unsubstitutedMemberScope
-        .collectGivenDeclarations(descriptor.defaultType.toTypeRef()) +
-            CallableRef(descriptor.thisAsReceiverParameter, givenKind = GivenKind.VALUE)
+        .collectContributions(descriptor.defaultType.toTypeRef()) +
+            CallableRef(descriptor.thisAsReceiverParameter, contributionKind = ContributionKind.VALUE)
 )
 
 fun FunctionResolutionScope(
@@ -92,7 +104,7 @@ fun FunctionResolutionScope(
     declarationStore = declarationStore,
     callContext = lambdaType?.callContext ?: descriptor.callContext,
     parent = parent,
-    declarations = descriptor.collectGivenDeclarations()
+    declarations = descriptor.collectContributions()
 )
 
 fun LocalDeclarationResolutionScope(
@@ -103,8 +115,8 @@ fun LocalDeclarationResolutionScope(
     val declarations: List<CallableRef> = when (declaration) {
         is ClassDescriptor -> declaration.getGivenDeclarationConstructors()
         is CallableDescriptor -> declaration
-            .givenKind()
-            ?.let { listOf(CallableRef(declaration, givenKind = it)) }
+            .contributionKind()
+            ?.let { listOf(CallableRef(declaration, contributionKind = it)) }
         else -> null
     } ?: return parent
     return ResolutionScope(

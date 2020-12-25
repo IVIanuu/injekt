@@ -237,7 +237,20 @@ private fun ResolutionScope.resolveCandidate(
             is ResolutionResult.Failure -> return@computeForCandidate CandidateResolutionResult.Failure(
                 dependency,
                 candidate,
-                result)
+                result
+            )
+        }
+    }
+    for (interceptor in candidate.interceptors) {
+        for (dependency in interceptor.dependencies) {
+            when (val result = resolveRequest(dependency)) {
+                is ResolutionResult.Success -> successDependencyResults += result
+                is ResolutionResult.Failure -> return@computeForCandidate CandidateResolutionResult.Failure(
+                    dependency,
+                    candidate,
+                    result
+                )
+            }
         }
     }
     return@computeForCandidate CandidateResolutionResult.Success(
@@ -257,6 +270,7 @@ private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<
         FunGivenNode(
             request.type,
             this,
+            interceptorsForType(request.type),
             CallableRef(
                 declarationStore.functionDescriptorForFqName(request.type.classifier.fqName)
                     .single()
@@ -269,12 +283,13 @@ private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<
                 || request.type.classifier.fqName.asString()
             .startsWith("kotlin.coroutines.SuspendFunction")) &&
                 request.type.typeArguments.dropLast(1).all {
-                    it.givenKind != null
+                    it.contributionKind != null
                 }
     ) return listOf(
         ProviderGivenNode(
             request.type,
             this,
+            interceptorsForType(request.type),
             declarationStore,
             request.required
         )
@@ -284,11 +299,11 @@ private fun ResolutionScope.getFrameworkCandidates(request: GivenRequest): List<
     if (request.type.isSubTypeOf(setType)) {
         val setElementType = request.type.subtypeView(setType.classifier)!!.typeArguments.single()
         val elements = givenSetElementsForType(setElementType)
-            .map { it.substitute(getSubstitutionMap(listOf(setElementType to it.originalType))) }
         return listOf(
             SetGivenNode(
                 request.type,
                 this,
+                interceptorsForType(request.type),
                 elements,
                 elements.flatMap { element -> element.getGivenRequests(false) }
             )

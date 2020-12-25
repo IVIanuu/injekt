@@ -52,6 +52,15 @@ annotation class GivenSetElement
 )
 annotation class GivenGroup
 
+@Target(
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.LOCAL_VARIABLE,
+    AnnotationTarget.VALUE_PARAMETER,
+    AnnotationTarget.TYPE
+)
+annotation class Interceptor
+
 @Target(AnnotationTarget.FUNCTION)
 annotation class GivenFun
 
