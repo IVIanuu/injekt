@@ -54,7 +54,7 @@ fun CallableRef.substitute(substitutionMap: Map<ClassifierRef, TypeRef>): Callab
 }
 
 enum class ContributionKind {
-    VALUE, SET_ELEMENT, GROUP, INTERCEPTOR
+    VALUE, SET_ELEMENT, MODULE, INTERCEPTOR
 }
 
 fun CallableDescriptor.toCallableRef() = CallableRef(this)
@@ -110,7 +110,7 @@ fun MemberScope.collectContributions(type: TypeRef): List<CallableRef> {
 fun Annotated.contributionKind(): ContributionKind? = when {
     hasAnnotation(InjektFqNames.Given) -> ContributionKind.VALUE
     hasAnnotation(InjektFqNames.GivenSetElement) -> ContributionKind.SET_ELEMENT
-    hasAnnotation(InjektFqNames.Module) -> ContributionKind.GROUP
+    hasAnnotation(InjektFqNames.Module) -> ContributionKind.MODULE
     hasAnnotation(InjektFqNames.Interceptor) -> ContributionKind.INTERCEPTOR
     this is ClassConstructorDescriptor -> constructedClass.contributionKind()
     else -> null
@@ -122,7 +122,12 @@ fun CallableDescriptor.collectContributions(): List<CallableRef> {
     declarations += allParameters
         .mapNotNull {
             val kind = it.contributionKind()
-            if (kind != null) CallableRef(it, contributionKind = kind) else null
+            when {
+                kind == ContributionKind.INTERCEPTOR ->
+                    CallableRef(it, contributionKind = ContributionKind.MODULE)
+                kind != null -> CallableRef(it, contributionKind = kind)
+                else -> null
+            }
         }
 
     extensionReceiverParameter?.let { receiver ->
@@ -143,7 +148,7 @@ fun ParameterDescriptor.contributionKind(): ContributionKind? {
         when {
             userData.hasAnnotation(InjektFqNames.Given) -> ContributionKind.VALUE
             userData.hasAnnotation(InjektFqNames.GivenSetElement) -> ContributionKind.SET_ELEMENT
-            userData.hasAnnotation(InjektFqNames.Module) -> ContributionKind.GROUP
+            userData.hasAnnotation(InjektFqNames.Module) -> ContributionKind.MODULE
             userData.hasAnnotation(InjektFqNames.Interceptor) -> ContributionKind.INTERCEPTOR
             else -> null
         }
@@ -186,7 +191,7 @@ fun ClassDescriptor.allGivenTypes(): List<TypeRef> = buildList<TypeRef> {
         .map { it.toTypeRef() }
 }
 
-fun CallableRef.collectGivens(
+fun CallableRef.collectContributions(
     path: List<Any>,
     addGiven: (CallableRef) -> Unit,
     addGivenSetElement: (CallableRef) -> Unit,
@@ -196,7 +201,7 @@ fun CallableRef.collectGivens(
         ContributionKind.VALUE -> addGiven(this)
         ContributionKind.SET_ELEMENT -> addGivenSetElement(this)
         ContributionKind.INTERCEPTOR -> addInterceptor(this)
-        ContributionKind.GROUP -> {
+        ContributionKind.MODULE -> {
             val isFunction = type.allTypes.any {
                 it.classifier.fqName.asString().startsWith("kotlin.Function")
                         || it.classifier.fqName.asString()
@@ -210,7 +215,7 @@ fun CallableRef.collectGivens(
                     callable.returnType!!.memberScope
                         .collectContributions(nextCallable.type)
                         .forEach {
-                            it.collectGivens(
+                            it.collectContributions(
                                 path + it.callable.fqNameSafe,
                                 addGiven,
                                 addGivenSetElement,
@@ -222,7 +227,7 @@ fun CallableRef.collectGivens(
                     callable.returnType!!.memberScope
                         .collectContributions(type)
                         .forEach {
-                            it.collectGivens(
+                            it.collectContributions(
                                 path + it.callable.fqNameSafe,
                                 addGiven,
                                 addGivenSetElement,
@@ -235,7 +240,7 @@ fun CallableRef.collectGivens(
                 callable.returnType!!.memberScope
                     .collectContributions(type)
                     .forEach {
-                        it.collectGivens(
+                        it.collectContributions(
                             path + it.callable.fqNameSafe,
                             addGiven,
                             addGivenSetElement,

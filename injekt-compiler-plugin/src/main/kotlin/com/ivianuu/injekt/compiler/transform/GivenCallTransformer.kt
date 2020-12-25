@@ -126,7 +126,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                 {
                     callableExpression(
                         interceptor.callable
-                            .toGivenNode(interceptor.callable.type, graph.scope),
+                            .toGivenNode(interceptor.callable.type, graph.scope, graph.scope),
                         symbol
                     ).apply {
                         this as IrFunctionAccessExpression
@@ -240,7 +240,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                         putValueArgument(
                             0,
                             callableExpression(
-                                it.toGivenNode(elementType, graph.scope),
+                                it.toGivenNode(elementType, graph.scope, graph.scope),
                                 symbol
                             )
                         )

@@ -88,4 +88,26 @@ class InterceptorTest {
             invokeSingleFile()
         )
     }
+
+    @Test fun testInterceptorLambdaParameter() = codegen(
+        """
+            var callCount = 0
+            inline fun <R> withFooInterceptor(
+                block: (@Interceptor (() -> Foo) -> Foo) -> R
+            ): R = block {
+                callCount = callCount + 1
+                it()
+            }
+
+            @Given fun foo() = Foo()
+            @Given fun bar(@Given foo: Foo) = Bar(foo)
+
+            fun invoke(): Int = withFooInterceptor { 
+                given<Bar>()
+                callCount
+            }
+        """
+    ) {
+        assertEquals(1, invokeSingleFile())
+    }
 }

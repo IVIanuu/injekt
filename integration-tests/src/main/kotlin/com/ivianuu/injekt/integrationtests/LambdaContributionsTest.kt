@@ -4,6 +4,7 @@ import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert
+import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -18,7 +19,7 @@ class LambdaContributionsTest {
         """
     ) {
         val foo = Foo()
-        Assert.assertSame(foo, invokeSingleFile(foo))
+        assertSame(foo, invokeSingleFile(foo))
     }
 
     @Test

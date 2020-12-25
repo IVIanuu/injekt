@@ -14,7 +14,7 @@ class ResolutionScope(
     val parent: ResolutionScope?,
     val declarationStore: DeclarationStore,
     val callContext: CallContext,
-    declarations: List<CallableRef>,
+    contributions: List<CallableRef>,
 ) {
     private val givens = mutableListOf<Pair<CallableRef, ResolutionScope>>()
     private val givenSetElements = mutableListOf<CallableRef>()
@@ -27,8 +27,8 @@ class ResolutionScope(
     init {
         parent?.givens?.forEach { givens += it }
         parent?.givenSetElements?.forEach { givenSetElements += it }
-        declarations.forEach { declaration ->
-            declaration.collectGivens(
+        contributions.forEach { declaration ->
+            declaration.collectContributions(
                 path = listOf(declaration.callable.fqNameSafe),
                 addGiven = { givens += it to this },
                 addGivenSetElement = { givenSetElements += it },
@@ -39,22 +39,22 @@ class ResolutionScope(
 
     fun givensForType(type: TypeRef): List<GivenNode> = givens
         .filter { it.first.type.isAssignableTo(type) }
-        .map { it.first.toGivenNode(type, it.second) }
+        .map { it.first.toGivenNode(type, it.second, this) }
 
     fun givenSetElementsForType(type: TypeRef): List<CallableRef> = givenSetElements
         .filter { it.type.isAssignableTo(type) }
         .map { it.substitute(getSubstitutionMap(listOf(type to it.type))) }
 
     fun interceptorsForType(type: TypeRef): List<InterceptorNode> = interceptors
-        .filter { callContext.canCall(it.callContext) }
-        .filter { it.type.isAssignableTo(type) }
-        .map { it.substitute(getSubstitutionMap(listOf(type to it.type))) }
-        .map {
-            InterceptorNode(
-                it,
-                it.getGivenRequests(false)
-            )
-        }
+            .filter { callContext.canCall(it.callContext) }
+            .filter { it.type.isAssignableTo(type) }
+            .map { it.substitute(getSubstitutionMap(listOf(type to it.type))) }
+            .map {
+                InterceptorNode(
+                    it,
+                    it.getGivenRequests(false)
+                )
+            }
 
     override fun toString(): String = "ResolutionScope($name)"
 }
@@ -64,7 +64,7 @@ fun ExternalResolutionScope(declarationStore: DeclarationStore): ResolutionScope
     declarationStore = declarationStore,
     callContext = CallContext.DEFAULT,
     parent = null,
-    declarations = declarationStore.globalGivenDeclarations
+    contributions = declarationStore.globalGivenDeclarations
         .filter { it.callable.isExternalDeclaration() }
         .filter { it.callable.visibility == DescriptorVisibilities.PUBLIC }
 )
@@ -77,7 +77,7 @@ fun InternalResolutionScope(
     declarationStore = declarationStore,
     callContext = CallContext.DEFAULT,
     parent = parent,
-    declarations = declarationStore.globalGivenDeclarations
+    contributions = declarationStore.globalGivenDeclarations
         .filterNot { it.callable.isExternalDeclaration() }
 )
 
@@ -90,7 +90,7 @@ fun ClassResolutionScope(
     declarationStore = declarationStore,
     callContext = CallContext.DEFAULT,
     parent = parent,
-    declarations = descriptor.unsubstitutedMemberScope
+    contributions = descriptor.unsubstitutedMemberScope
         .collectContributions(descriptor.defaultType.toTypeRef()) +
             CallableRef(descriptor.thisAsReceiverParameter, contributionKind = ContributionKind.VALUE)
 )
@@ -105,7 +105,7 @@ fun FunctionResolutionScope(
     declarationStore = declarationStore,
     callContext = lambdaType?.callContext ?: descriptor.callContext,
     parent = parent,
-    declarations = descriptor.collectContributions()
+    contributions = descriptor.collectContributions()
 )
 
 fun LocalDeclarationResolutionScope(
@@ -125,6 +125,6 @@ fun LocalDeclarationResolutionScope(
         declarationStore = declarationStore,
         callContext = parent.callContext,
         parent = parent,
-        declarations = declarations
+        contributions = declarations
     )
 }

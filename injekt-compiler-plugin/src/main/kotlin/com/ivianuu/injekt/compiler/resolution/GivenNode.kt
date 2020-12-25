@@ -144,7 +144,7 @@ data class ProviderGivenNode(
         parent = ownerScope,
         declarationStore = declarationStore,
         callContext = type.callContext,
-        declarations = type
+        contributions = type
             .toKotlinType()
             .memberScope
             .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
@@ -169,13 +169,17 @@ data class ProviderGivenNode(
     ) : ValueParameterDescriptor by delegate
 }
 
-fun CallableRef.toGivenNode(type: TypeRef, ownerScope: ResolutionScope): CallableGivenNode {
+fun CallableRef.toGivenNode(
+    type: TypeRef,
+    ownerScope: ResolutionScope,
+    requestingScope: ResolutionScope
+): CallableGivenNode {
     val finalCallable = substitute(getSubstitutionMap(listOf(type to this.type)))
     return CallableGivenNode(
         type,
         finalCallable.getGivenRequests(false),
         ownerScope,
-        ownerScope.interceptorsForType(type),
+        requestingScope.interceptorsForType(type),
         finalCallable
     )
 }
