@@ -26,7 +26,6 @@ class ResolutionScope(
     private val givenSetElements = mutableListOf<CallableRef>()
     private val interceptors = mutableListOf<CallableRef>()
 
-    private val frameworkGivensByType = mutableMapOf<GivenRequest, List<GivenNode>>()
     private val givenNodesByType = mutableMapOf<TypeRef, List<GivenNode>>()
     private val givenSetElementsByType = mutableMapOf<TypeRef, List<CallableRef>>()
     private val interceptorsByType = mutableMapOf<TypeRef, List<InterceptorNode>>()
@@ -46,9 +45,53 @@ class ResolutionScope(
     }
 
     fun givensForType(type: TypeRef): List<GivenNode> = givenNodesByType.getOrPut(type) {
-        givens
-            .filter { it.first.type.isAssignableTo(type) }
-            .map { it.first.toGivenNode(type, it.second, this) }
+        buildList<GivenNode> {
+            this += givens
+                .filter { it.first.type.isAssignableTo(type) }
+                .map { it.first.toGivenNode(type, it.second, this@ResolutionScope) }
+
+            if (type.classifier.descriptor?.safeAs<ClassDescriptor>()
+                    ?.kind == ClassKind.OBJECT)
+                        this += ObjectGivenNode(type, this@ResolutionScope)
+
+            if (type.classifier.isGivenFunAlias) this += FunGivenNode(
+                type,
+                this@ResolutionScope,
+                interceptorsForType(type),
+                CallableRef(
+                    declarationStore.functionDescriptorForFqName(type.classifier.fqName)
+                        .single()
+                )
+            )
+
+            if (type.path == null &&
+                type.qualifiers.isEmpty() &&
+                (type.classifier.fqName.asString().startsWith("kotlin.Function")
+                        || type.classifier.fqName.asString()
+                    .startsWith("kotlin.coroutines.SuspendFunction")) &&
+                type.typeArguments.dropLast(1).all {
+                    it.contributionKind != null
+                }
+            ) this += ProviderGivenNode(
+                type,
+                this@ResolutionScope,
+                interceptorsForType(type),
+                declarationStore
+            )
+
+            val setType = declarationStore.module.builtIns.set.defaultType.toTypeRef()
+            if (type.isSubTypeOf(setType)) {
+                val setElementType = type.subtypeView(setType.classifier)!!.typeArguments.single()
+                val elements = givenSetElementsForType(setElementType)
+                this += SetGivenNode(
+                    type,
+                    this@ResolutionScope,
+                    interceptorsForType(type),
+                    elements,
+                    elements.flatMap { element -> element.getGivenRequests(false) }
+                )
+            }
+        }.distinct()
     }
 
     fun givenSetElementsForType(type: TypeRef): List<CallableRef> = givenSetElementsByType.getOrPut(type) {
@@ -74,62 +117,6 @@ class ResolutionScope(
                 )
             }
     }
-
-    fun frameworkGivensForType(request: GivenRequest): List<GivenNode> =
-        frameworkGivensByType.getOrPut(request) {
-            if (request.forDispatchReceiver &&
-                request.type.classifier.descriptor?.safeAs<ClassDescriptor>()
-                    ?.kind == ClassKind.OBJECT
-            ) return@getOrPut listOf(ObjectGivenNode(request.type, this))
-
-            if (request.type.classifier.isGivenFunAlias) return@getOrPut listOf(
-                FunGivenNode(
-                    request.type,
-                    this,
-                    interceptorsForType(request.type),
-                    CallableRef(
-                        declarationStore.functionDescriptorForFqName(request.type.classifier.fqName)
-                            .single()
-                    )
-                )
-            )
-
-            if (request.type.path == null &&
-                request.type.qualifiers.isEmpty() &&
-                (request.type.classifier.fqName.asString().startsWith("kotlin.Function")
-                        || request.type.classifier.fqName.asString()
-                    .startsWith("kotlin.coroutines.SuspendFunction")) &&
-                request.type.typeArguments.dropLast(1).all {
-                    it.contributionKind != null
-                }
-            ) return@getOrPut listOf(
-                ProviderGivenNode(
-                    request.type,
-                    this,
-                    interceptorsForType(request.type),
-                    declarationStore,
-                    request.required
-                )
-            )
-
-            val setType = declarationStore.module.builtIns.set.defaultType.toTypeRef()
-            if (request.type.isSubTypeOf(setType)) {
-                val setElementType = request.type.subtypeView(setType.classifier)!!.typeArguments.single()
-                val elements = givenSetElementsForType(setElementType)
-                return@getOrPut listOf(
-                    SetGivenNode(
-                        request.type,
-                        this,
-                        interceptorsForType(request.type),
-                        elements,
-                        elements.flatMap { element -> element.getGivenRequests(false) }
-                    )
-                )
-            }
-
-            return@getOrPut emptyList()
-        }
-
 
     override fun toString(): String = "ResolutionScope($name)"
 }

@@ -110,7 +110,7 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
     resultsByRequest[request]?.let { return it }
     val result = resolveCandidates(
         request,
-        (givensForType(request.type) + frameworkGivensForType(request)).distinct()
+        givensForType(request.type)
     )
     resultsByRequest[request] = result
     return result

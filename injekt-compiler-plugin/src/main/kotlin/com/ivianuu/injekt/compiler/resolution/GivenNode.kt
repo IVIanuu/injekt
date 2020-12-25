@@ -130,14 +130,13 @@ data class ProviderGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope,
     override val interceptors: List<InterceptorNode>,
-    val declarationStore: DeclarationStore,
-    val isRequired: Boolean
+    val declarationStore: DeclarationStore
 ) : GivenNode() {
     override val callableFqName: FqName = FqName("Provider")
     override val dependencies: List<GivenRequest> = listOf(
         GivenRequest(
             type = type.typeArguments.last(),
-            required = isRequired,
+            required = true,
             callableFqName = callableFqName,
             parameterName = "instance".asNameId()
         )
@@ -220,10 +219,7 @@ data class GivenRequest(
     val required: Boolean,
     val callableFqName: FqName,
     val parameterName: Name
-) {
-    val forDispatchReceiver: Boolean
-        get() = parameterName.asString() == "_dispatchReceiver"
-}
+)
 
 data class InterceptorNode(
     val callable: CallableRef,
