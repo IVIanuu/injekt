@@ -94,7 +94,7 @@ fun ResolutionScope.resolveGiven(requests: List<GivenRequest>): GivenGraph {
         }
     return if (failureResults.isEmpty()) {
         successResults.toSuccessGraph(this)
-    } else failureResults.toErrorGraph(requests)
+    } else failureResults.toErrorGraph()
 }
 
 private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult {
@@ -118,9 +118,7 @@ private fun List<ResolutionResult.Success>.toSuccessGraph(scope: ResolutionScope
     return GivenGraph.Success(scope, givensByType)
 }
 
-private fun List<ResolutionResult.Failure>.toErrorGraph(
-    requests: List<GivenRequest>,
-): GivenGraph.Error {
+private fun List<ResolutionResult.Failure>.toErrorGraph(): GivenGraph.Error {
     val failuresByRequest = mutableMapOf<GivenRequest, MutableList<ResolutionResult.Failure>>()
     fun ResolutionResult.Failure.visit() {
         failuresByRequest.getOrPut(request) { mutableListOf() } += this
