@@ -110,4 +110,30 @@ class InterceptorTest {
     ) {
         assertEquals(1, invokeSingleFile())
     }
+
+    @Test fun testInterceptorInModule() = codegen(
+        """
+            var callCount = 0
+
+            class MyModule {
+                @Interceptor fun <T> intercept(factory: () -> T): T {
+                    callCount += 1
+                    return factory()
+                }
+            }
+
+            inline fun <R> withModule(
+                block: (@Module MyModule) -> R
+            ): R = block(MyModule())
+
+            @Given fun foo() = Foo()
+
+            fun invoke(): Int = withModule { 
+                given<Foo>()
+                callCount 
+            }
+        """
+    ) {
+        assertEquals(1, invokeSingleFile())
+    }
 }

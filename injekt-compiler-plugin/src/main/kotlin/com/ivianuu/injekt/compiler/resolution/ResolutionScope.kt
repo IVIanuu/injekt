@@ -46,15 +46,20 @@ class ResolutionScope(
         .map { it.substitute(getSubstitutionMap(listOf(type to it.type))) }
 
     fun interceptorsForType(type: TypeRef): List<InterceptorNode> = interceptors
-            .filter { callContext.canCall(it.callContext) }
-            .filter { it.type.isAssignableTo(type) }
-            .map { it.substitute(getSubstitutionMap(listOf(type to it.type))) }
-            .map {
-                InterceptorNode(
-                    it,
-                    it.getGivenRequests(false)
-                )
-            }
+        .filter { callContext.canCall(it.callContext) }
+        .filter { it.type.isAssignableTo(type) }
+        .map { it.substitute(getSubstitutionMap(listOf(type to it.type))) }
+        .filter { interceptor ->
+            interceptor.parameterTypes
+                .values
+                .none { it == type }
+        }
+        .map {
+            InterceptorNode(
+                it,
+                it.getGivenRequests(false)
+            )
+        }
 
     override fun toString(): String = "ResolutionScope($name)"
 }

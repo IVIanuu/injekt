@@ -3,6 +3,7 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
+import junit.framework.Assert
 import junit.framework.Assert.assertSame
 import org.junit.Test
 
@@ -30,4 +31,22 @@ class ModuleTest {
         """
     )
 
+    @Test fun testModuleLambdaParameter() = codegen(
+        """
+            class MyModule {
+                @Given val foo = Foo()
+            }
+
+            @Given fun foo() = Foo()
+            @Given fun bar(@Given foo: Foo) = Bar(foo)
+
+            inline fun <R> withModule(
+                block: (@Module MyModule) -> R
+            ): R = block(MyModule())
+
+            fun invoke() = withModule { 
+                given<Bar>()
+            }
+        """
+    )
 }
