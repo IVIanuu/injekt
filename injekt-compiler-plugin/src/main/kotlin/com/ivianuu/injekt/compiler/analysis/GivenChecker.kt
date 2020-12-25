@@ -65,7 +65,7 @@ class GivenChecker : DeclarationChecker {
                 context.trace.report(
                     InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
                         .on(
-                            declaration,
+                            descriptor.extensionReceiverParameter?.findPsi() ?: declaration,
                             when {
                                 descriptor.hasAnnotation(InjektFqNames.Given) -> InjektFqNames.Given.shortName()
                                 descriptor.hasAnnotation(InjektFqNames.Module) -> InjektFqNames.Module.shortName()

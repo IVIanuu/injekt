@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ValueDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
@@ -47,7 +48,10 @@ class InterceptorChecker : DeclarationChecker {
                 .forEach {
                     context.trace.report(
                         InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
-                            .on(declaration, InjektFqNames.Interceptor.shortName())
+                            .on(
+                                it.findPsi() ?: declaration,
+                                InjektFqNames.Interceptor.shortName()
+                            )
                     )
                 }
         } else if (descriptor is ValueDescriptor) {
