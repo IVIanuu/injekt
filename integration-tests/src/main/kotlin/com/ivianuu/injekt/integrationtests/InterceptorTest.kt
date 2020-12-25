@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.assertCompileError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
@@ -34,7 +35,7 @@ class InterceptorTest {
     @Test
     fun testInterceptorWithDependencies() = codegen(
         """
-            @Interceptor fun barInterceptor(@Given foo: Foo, factory: () -> Bar): Bar =
+            @Interceptor fun intercept(@Given foo: Foo, factory: () -> Bar): Bar =
                 factory()
 
             @Given fun foo() = Foo()
@@ -43,6 +44,22 @@ class InterceptorTest {
             fun invoke() = given<Bar>()
         """
     )
+
+    @Test fun testInterceptorWithoutFactoryParameter() = codegen(
+        """
+            @Interceptor fun intercept() = Unit
+        """
+    ) {
+        assertCompileError("@Interceptor declaration must have one parameter")
+    }
+
+    @Test fun testInterceptorLambdaWithoutFactoryParameter() = codegen(
+        """
+            val intercept: @Interceptor () -> Unit = {}
+        """
+    ) {
+        assertCompileError("@Interceptor declaration must have one parameter")
+    }
 
     // todo test order
 

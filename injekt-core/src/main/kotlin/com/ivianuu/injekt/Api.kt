@@ -54,7 +54,6 @@ annotation class GivenGroup
 
 @Target(
     AnnotationTarget.FUNCTION,
-    AnnotationTarget.PROPERTY,
     AnnotationTarget.LOCAL_VARIABLE,
     AnnotationTarget.VALUE_PARAMETER,
     AnnotationTarget.TYPE

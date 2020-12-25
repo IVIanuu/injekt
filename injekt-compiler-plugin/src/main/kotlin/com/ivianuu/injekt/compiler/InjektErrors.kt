@@ -145,6 +145,17 @@ interface InjektErrors {
                     )
                 }
 
+        @JvmField
+        val INTERCEPTOR_WITHOUT_FACTORY_PARAMETER =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "@Interceptor declaration must have one parameter which matches the return type." +
+                                "E.g. intercept(factory: () -> Foo): Foo"
+                    )
+                }
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,
