@@ -380,9 +380,7 @@ private fun compareType(a: TypeRef, b: TypeRef): Int {
     if (a.typeArguments.size < b.typeArguments.size) return -1
     if (b.typeArguments.size < a.typeArguments.size) return 1
 
-    check(a.classifier == b.classifier) {
-        "Wtf ${a.render()} ${b.render()}"
-    }
+    if (a.classifier != b.classifier) return 0
 
     var diff = 0
     for (i in a.typeArguments.indices) {
