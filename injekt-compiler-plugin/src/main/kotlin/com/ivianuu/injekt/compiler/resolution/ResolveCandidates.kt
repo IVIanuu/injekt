@@ -102,7 +102,7 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
     val result = resolveCandidates(
         request,
         givensForType(request.type)
-    )
+    ).fallbackToDefaultIfNeeded(this)
     resultsByRequest[request] = result
     return result
 }
@@ -166,12 +166,8 @@ private fun ResolutionScope.resolveCandidates(
     request: GivenRequest,
     candidates: List<GivenNode>,
 ): ResolutionResult {
-    if (candidates.isEmpty()) {
-        return if (request.required) ResolutionResult.Failure.NoCandidates(request)
-        else ResolutionResult.Success(request, CandidateResolutionResult.Success(
-            request, DefaultGivenNode(request.type, this), emptyList()
-        ))
-    }
+    if (candidates.isEmpty()) return ResolutionResult.Failure.NoCandidates(request)
+
     if (candidates.size == 1) {
         val candidate = candidates.single()
         return when (val candidateResult = resolveCandidate(request, candidate)) {
@@ -182,24 +178,53 @@ private fun ResolutionScope.resolveCandidates(
         }
     }
 
-    val (successResults, failureResults) = candidates
-        .map { resolveCandidate(request, it) }
-        .let {
-            it.filterIsInstance<CandidateResolutionResult.Success>() to
-                    it.filterIsInstance<CandidateResolutionResult.Failure>()
+    val successes = mutableListOf<CandidateResolutionResult.Success>()
+    var failure: CandidateResolutionResult.Failure? = null
+    val remaining = candidates
+        .sortedWith { a, b -> compareCandidate(a, b) }
+        .toMutableList()
+    while (remaining.isNotEmpty()) {
+        val candidate = remaining.removeAt(0)
+        if (compareCandidate(successes.firstOrNull()?.candidate, candidate) < 0) {
+            // we cannot get a better result
+            break
         }
 
-    return if (successResults.isNotEmpty()) {
-        successResults
-            .disambiguate(this)
-            .let { finalResults ->
-                finalResults.singleOrNull()?.let {
-                    ResolutionResult.Success(request, it)
-                } ?: ResolutionResult.Failure.CandidateAmbiguity(request, finalResults)
+        when (val candidateResult = resolveCandidate(request, candidate)) {
+            is CandidateResolutionResult.Success -> {
+                val firstSuccessResult = successes.firstOrNull()
+                when (compareResult(candidateResult, firstSuccessResult)) {
+                    -1 -> {
+                        successes.clear()
+                        successes += candidateResult
+                    }
+                    0 -> successes += candidateResult
+                }
             }
-    } else {
-        ResolutionResult.Failure.CandidateFailures(request, failureResults.first())
+            is CandidateResolutionResult.Failure -> {
+                if (compareResult(candidateResult, failure) < 0)
+                    failure = candidateResult
+            }
+        }
     }
+
+    return if (successes.isNotEmpty()) {
+        successes.singleOrNull()?.let {
+            ResolutionResult.Success(request, it)
+        } ?: ResolutionResult.Failure.CandidateAmbiguity(request, successes)
+    } else {
+        ResolutionResult.Failure.CandidateFailures(request, failure!!)
+    }
+}
+
+private fun ResolutionResult.fallbackToDefaultIfNeeded(
+    scope: ResolutionScope
+): ResolutionResult = when (this) {
+    is ResolutionResult.Success -> this
+    is ResolutionResult.Failure -> if (request.required) this
+    else ResolutionResult.Success(request, CandidateResolutionResult.Success(
+        request, DefaultGivenNode(request.type, scope), emptyList()
+    ))
 }
 
 private fun ResolutionScope.resolveCandidate(
@@ -263,9 +288,9 @@ private fun GivenNode.depth(scope: ResolutionScope): Int {
     return depth
 }
 
-private fun ResolutionScope.compareCandidate(
-    a: CandidateResolutionResult.Success?,
-    b: CandidateResolutionResult.Success?,
+private fun ResolutionScope.compareResult(
+    a: CandidateResolutionResult?,
+    b: CandidateResolutionResult?,
 ): Int {
     if (a != null && b == null) return -1
     if (b != null && a == null) return 1
@@ -273,33 +298,65 @@ private fun ResolutionScope.compareCandidate(
     a!!
     b!!
 
-    if (!a.candidate.isFrameworkGiven &&
-        b.candidate.isFrameworkGiven) return -1
-    if (!b.candidate.isFrameworkGiven &&
-        a.candidate.isFrameworkGiven) return 1
+    if (a is CandidateResolutionResult.Success &&
+            b !is CandidateResolutionResult.Success) return -1
+    if (b is CandidateResolutionResult.Success &&
+        a !is CandidateResolutionResult.Success) return 1
 
-    val depthA = a.candidate.depth(this)
-    val depthB = b.candidate.depth(this)
+    if (a is CandidateResolutionResult.Success &&
+            b is CandidateResolutionResult.Success) {
+        var diff = compareCandidate(a.candidate, b.candidate)
+        if (diff < 0) return -1
+        else if (diff > 0) return 1
+
+        diff = 0
+
+        if (a.dependencyResults.size < b.dependencyResults.size) return -1
+        if (b.dependencyResults.size < a.dependencyResults.size) return 1
+
+        for (aDependency in a.dependencyResults) {
+            for (bDependency in b.dependencyResults) {
+                diff += compareResult(aDependency.candidateResult, bDependency.candidateResult)
+            }
+        }
+        return when {
+            diff < 0 -> -1
+            diff > 0 -> 1
+            else -> 0
+        }
+    } else if (a is CandidateResolutionResult.Failure &&
+            b is CandidateResolutionResult.Failure) {
+        return a.failure.failureOrdering.compareTo(b.failure.failureOrdering)
+    } else {
+        throw AssertionError()
+    }
+}
+
+private fun ResolutionScope.compareCandidate(
+    a: GivenNode?,
+    b: GivenNode?,
+): Int {
+    if (a != null && b == null) return -1
+    if (b != null && a == null) return 1
+    if (a == null && b == null) return 0
+    a!!
+    b!!
+
+    if (!a.isFrameworkGiven &&
+        b.isFrameworkGiven) return -1
+    if (!b.isFrameworkGiven &&
+        a.isFrameworkGiven) return 1
+
+    val depthA = a.depth(this)
+    val depthB = b.depth(this)
     if (depthA < depthB) return -1
     if (depthB < depthA) return 1
 
-    if (a.dependencyResults.size < b.dependencyResults.size) return -1
-    if (b.dependencyResults.size < a.dependencyResults.size) return 1
-
-    var diff = compareType(a.candidate.originalType, b.candidate.originalType)
+    val diff = compareType(a.originalType, b.originalType)
     if (diff < 0) return -1
     if (diff > 0) return 1
 
-    for (aDependency in a.dependencyResults) {
-        for (bDependency in b.dependencyResults) {
-            diff += compareCandidate(aDependency.candidateResult, bDependency.candidateResult)
-        }
-    }
-    return when {
-        diff < 0 -> -1
-        diff > 0 -> 1
-        else -> 0
-    }
+    return 0
 }
 
 private fun compareType(a: TypeRef, b: TypeRef): Int {
@@ -326,21 +383,4 @@ private fun compareType(a: TypeRef, b: TypeRef): Int {
         diff > 0 -> 1
         else -> 0
     }
-}
-
-private fun List<CandidateResolutionResult.Success>.disambiguate(
-    scope: ResolutionScope
-): List<CandidateResolutionResult.Success> {
-    if (size <= 1) return this
-    val results = mutableListOf<CandidateResolutionResult.Success>()
-    forEach { result ->
-        when (scope.compareCandidate(results.lastOrNull(), result)) {
-            1 -> {
-                results.clear()
-                results += result
-            }
-            0 -> results += result
-        }
-    }
-    return results
 }
