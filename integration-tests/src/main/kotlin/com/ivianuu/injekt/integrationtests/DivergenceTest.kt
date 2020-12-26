@@ -19,15 +19,15 @@ class DivergenceTest {
     @Test
     fun testUnresolvableDivergence() = codegen(
         """
-                interface Wrapper<T> {
-                    val value: T
-                }
+            interface Wrapper<T> {
+                val value: T
+            }
 
-                @Given fun <T> unwrapped(@Given wrapped: Wrapper<T>): T = wrapped.value
+            @Given fun <T> unwrapped(@Given wrapped: Wrapper<T>): T = wrapped.value
 
-                fun lol() {
-                    given<Foo>()
-                }
+            fun lol() {
+                given<Foo>()
+            }
         """
     ) {
         assertCompileError("divergent")
@@ -36,10 +36,21 @@ class DivergenceTest {
     @Test
     fun testUnresolvableDivergenceWithQualifiers() = codegen(
         """
-                @Given fun <T> unwrapped(@Given qualified: @Qualifier1 T): T = qualified
-                fun lol() {
-                    given<Foo>()
-                }
+            @Given fun <T> unwrapped(@Given qualified: @Qualifier1 T): T = qualified
+            fun lol() {
+                given<Foo>()
+            }
+        """
+    ) {
+        assertCompileError("divergent")
+    }
+
+    @Test
+    fun testUnresolvableDivergenceWithProvidersAndQualifiers() = codegen(
+        """
+            @Given fun <T> any1(@Given t: () -> @Qualifier1 T): T = t()
+            @Given fun <T> any2(@Given t: () -> @Qualifier2("a") T): T = t()
+            fun invoke() = given<String>()
         """
     ) {
         assertCompileError("divergent")
@@ -48,30 +59,30 @@ class DivergenceTest {
     @Test
     fun testResolvableDivergence() = codegen(
         """
-                interface Wrapper<T> {
-                    val value: T
-                }
+            interface Wrapper<T> {
+                val value: T
+            }
 
-                @Given fun <T> unwrapped(@Given wrapped: Wrapper<T>): T = wrapped.value
+            @Given fun <T> unwrapped(@Given wrapped: Wrapper<T>): T = wrapped.value
 
-                @Given fun fooWrapper(): Wrapper<Wrapper<Foo>> = error("")
+            @Given fun fooWrapper(): Wrapper<Wrapper<Foo>> = error("")
 
-                fun lol() {
-                    given<Foo>()
-                }
+            fun lol() {
+                given<Foo>()
+            }
         """
     )
 
     @Test
     fun testResolvableDivergenceWithQualifiers() = codegen(
         """
-                @Given fun <T> unwrapped(@Given qualified: @Qualifier1 T): T = qualified
+            @Given fun <T> unwrapped(@Given qualified: @Qualifier1 T): T = qualified
 
-                @Given fun qualifiedFoo(): @Qualifier1 Foo = error("")
+            @Given fun qualifiedFoo(): @Qualifier1 Foo = error("")
 
-                fun lol() {
-                    given<Foo>()
-                }
+            fun lol() {
+                given<Foo>()
+            }
         """
     )
 
