@@ -61,9 +61,6 @@ interface InjektErrors {
                                             appendLine("${indent()} current call context is ${actualCallContext} but" +
                                                     " ${candidate.callableFqName} is ${candidate.callContext}")
                                         }
-                                        is ResolutionResult.Failure.CircularDependency -> {
-                                            appendLine("${indent()}circular")
-                                        }
                                         is ResolutionResult.Failure.DivergentGiven -> {
                                             appendLine("${indent()}divergent given $request")
                                         }

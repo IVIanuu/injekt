@@ -86,4 +86,25 @@ class DivergenceTest {
         """
     )
 
+    @Test
+    fun testCircularDependencyFails() = codegen(
+        """
+            @Given class A(@Given b: B)
+            @Given class B(@Given a: A)
+            fun invoke() = given<A>()
+        """
+    ) {
+        assertCompileError("divergent")
+    }
+
+    @Test
+    fun testSelfDependencyFails() = codegen(
+        """
+            @Given fun <T> anyFromStream(@Given t: T): T = t
+            fun invoke() = given<String>()
+        """
+    ) {
+        assertCompileError("divergent")
+    }
+
 }

@@ -56,14 +56,9 @@ sealed class ResolutionResult {
                 get() = 1
         }
 
-        data class DivergentGiven(override val request: GivenRequest) : Failure() {
-            override val failureOrdering: Int
-                get() = 1
-        }
-
-        data class CircularDependency(
+        data class DivergentGiven(
             override val request: GivenRequest,
-            val chain: List<GivenRequest>,
+            val chain: List<GivenRequest>
         ) : Failure() {
             override val failureOrdering: Int
                 get() = 1
@@ -136,25 +131,17 @@ private fun ResolutionScope.computeForCandidate(
     chain.reversed().forEach { prev ->
         if (prev.callableFqName == candidate.callableFqName &&
             prev.type.coveringSet == candidate.type.coveringSet &&
-            candidate.type.typeSize > prev.type.typeSize
+            (prev.type.typeSize < candidate.type.typeSize ||
+                    prev.type == candidate.type)
         ) {
             return CandidateResolutionResult.Failure(
                 request,
                 candidate,
-                ResolutionResult.Failure.DivergentGiven(request)
+                ResolutionResult.Failure.DivergentGiven(request, emptyList()) // todo
             )
         }
     }
 
-    if (candidate in chain) {
-        val chainList = chain.toList()
-        val cycleChain = chainList.subList(chainList.indexOf(candidate), chainList.size)
-        return CandidateResolutionResult.Failure(
-            request,
-            candidate,
-            ResolutionResult.Failure.CircularDependency(request, emptyList()) // todo
-        )
-    }
     chain += candidate
     val result = compute()
     resultsByCandidate[candidate] = result
