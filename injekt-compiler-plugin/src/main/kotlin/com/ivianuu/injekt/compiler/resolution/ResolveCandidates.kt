@@ -332,29 +332,28 @@ private fun ResolutionScope.compareResult(
     }
 }
 
-private fun ResolutionScope.compareCandidate(
-    a: GivenNode?,
-    b: GivenNode?,
-): Int {
+private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int {
     if (a != null && b == null) return -1
     if (b != null && a == null) return 1
     if (a == null && b == null) return 0
     a!!
     b!!
 
-    if (!a.isFrameworkGiven &&
-        b.isFrameworkGiven) return -1
-    if (!b.isFrameworkGiven &&
-        a.isFrameworkGiven) return 1
-
-    val depthA = a.depth(this)
-    val depthB = b.depth(this)
-    if (depthA < depthB) return -1
-    if (depthB < depthA) return 1
+    if (!a.isFrameworkGiven && !b.isFrameworkGiven) {
+        val depthA = a.depth(this)
+        val depthB = b.depth(this)
+        if (depthA < depthB) return -1
+        if (depthB < depthA) return 1
+    }
 
     val diff = compareType(a.originalType, b.originalType)
     if (diff < 0) return -1
     if (diff > 0) return 1
+
+    if (!a.isFrameworkGiven &&
+        b.isFrameworkGiven) return -1
+    if (!b.isFrameworkGiven &&
+        a.isFrameworkGiven) return 1
 
     return 0
 }
