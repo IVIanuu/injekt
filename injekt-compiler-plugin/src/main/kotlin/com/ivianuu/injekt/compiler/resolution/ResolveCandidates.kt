@@ -364,6 +364,9 @@ private fun compareType(a: TypeRef, b: TypeRef): Int {
     if (!a.classifier.isTypeAlias && b.classifier.isTypeAlias) return -1
     if (a.classifier.isTypeAlias && !b.classifier.isTypeAlias) return 1
 
+    if (!a.isStarProjection && b.isStarProjection) return -1
+    if (a.isStarProjection && !b.isStarProjection) return 1
+
     if (a.typeArguments.size < b.typeArguments.size) return -1
     if (b.typeArguments.size < a.typeArguments.size) return 1
 
