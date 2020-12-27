@@ -410,6 +410,7 @@ fun TypeRef.isAssignableTo(
             isSubTypeOf(upperBound, substitutionMap)
         }
         if (!superTypesAssignable) return false
+        if (superType.unqualified && qualifiers.isNotEmpty()) return false
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(superType.qualifiers)
         ) return false
@@ -419,6 +420,7 @@ fun TypeRef.isAssignableTo(
             superType.isSubTypeOf(upperBound, substitutionMap)
         }
         if (!superTypesAssignable) return false
+        if (unqualified && superType.qualifiers.isNotEmpty()) return false
         if (qualifiers.isNotEmpty() &&
             !superType.qualifiers.isAssignableTo(qualifiers)
         ) return false
@@ -434,6 +436,7 @@ fun TypeRef.isSubTypeOf(
     if (isStarProjection) return true
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return false
+        if (unqualified && superType.qualifiers.isNotEmpty()) return false
         if (!qualifiers.isAssignableTo(superType.qualifiers)) return false
         if (path != superType.path) return false
         if (thisAndAllSuperTypes.any { it.isComposable } != superType.thisAndAllSuperTypes.any { it.isComposable }) return false
@@ -448,6 +451,7 @@ fun TypeRef.isSubTypeOf(
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(superType.qualifiers)
         ) return false
+        if (superType.unqualified && qualifiers.isNotEmpty()) return false
         return true
     }
     val subTypeView = subtypeView(superType.classifier, substitutionMap)

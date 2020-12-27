@@ -214,6 +214,13 @@ class TypeRefTest {
                     listType.typeWith(typeParameter(anyNType.qualified(qualifier1())))
         }
 
+    @Test
+    fun testQualifiedIsNotAssignableToUnqualifiedAnnotated() =
+        withAnalysisContext {
+            stringType.qualified(qualifier1()) shouldNotBeAssignable
+                    stringType.copy(unqualified = true)
+        }
+
     private infix fun TypeRef.shouldBeAssignable(other: TypeRef) {
         if (!isAssignableTo(other)) {
             throw AssertionError("'$this' is not assignable '$other'")
