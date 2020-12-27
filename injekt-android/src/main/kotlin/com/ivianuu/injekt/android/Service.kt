@@ -37,7 +37,7 @@ typealias ServiceComponent = Component
         .build()
 }
 
-fun Service.createServiceComponent(): AppComponent =
+fun Service.createServiceComponent(): ServiceComponent =
     application.appComponent.get<(Service) -> ServiceComponent>()(this)
 
 @Given val @Given ServiceComponent.appComponentFromService: AppComponent
