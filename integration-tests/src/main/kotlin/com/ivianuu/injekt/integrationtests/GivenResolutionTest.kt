@@ -569,4 +569,16 @@ class GivenResolutionTest {
             } 
         """
     )
+
+    @Test
+    fun testCanResolveStarProjectedType() = codegen(
+        """
+            @Given fun foos() = Foo() to Foo()
+            
+            @Qualifier annotation class First
+            @Given fun <A> first(@Given pair: Pair<@Unqualified A, *>): @First A = pair.first
+
+            fun invoke() = given<@First Foo>()
+        """
+    )
 }
