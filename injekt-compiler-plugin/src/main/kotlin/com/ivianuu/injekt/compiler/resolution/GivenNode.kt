@@ -20,6 +20,7 @@ sealed class GivenNode {
     abstract val callContext: CallContext
     abstract val ownerScope: ResolutionScope
     abstract val dependencyScope: ResolutionScope?
+    abstract val lazyDependencies: Boolean
     abstract val isFrameworkGiven: Boolean
     abstract val interceptors: List<InterceptorNode>
 }
@@ -38,6 +39,8 @@ data class CallableGivenNode(
         get() = callable.callContext
     override val dependencyScope: ResolutionScope?
         get() = null
+    override val lazyDependencies: Boolean
+        get() = false
     override val originalType: TypeRef
         get() = callable.originalType
     override val isFrameworkGiven: Boolean
@@ -56,6 +59,8 @@ data class SetGivenNode(
         get() = CallContext.DEFAULT
     override val dependencyScope: ResolutionScope?
         get() = null
+    override val lazyDependencies: Boolean
+        get() = false
     override val originalType: TypeRef
         get() = type
     override val isFrameworkGiven: Boolean
@@ -76,6 +81,8 @@ data class DefaultGivenNode(
         get() = type
     override val dependencyScope: ResolutionScope?
         get() = null
+    override val lazyDependencies: Boolean
+        get() = false
     override val isFrameworkGiven: Boolean
         get() = true
     override val interceptors: List<InterceptorNode>
@@ -102,6 +109,8 @@ data class FunGivenNode(
         callContext = callable.callContext,
         contributions = emptyList()
     )
+    override val lazyDependencies: Boolean
+        get() = true
     override val isFrameworkGiven: Boolean
         get() = true
 }
@@ -120,6 +129,8 @@ data class ObjectGivenNode(
         get() = type
     override val dependencyScope: ResolutionScope?
         get() = null
+    override val lazyDependencies: Boolean
+        get() = false
     override val isFrameworkGiven: Boolean
         get() = false
     override val interceptors: List<InterceptorNode>
@@ -158,6 +169,9 @@ data class ProviderGivenNode(
                 CallableRef(it, contributionKind = type.typeArguments[it.index].contributionKind)
             }
     )
+
+    override val lazyDependencies: Boolean
+        get() = true
 
     override val callContext: CallContext
         get() = CallContext.DEFAULT

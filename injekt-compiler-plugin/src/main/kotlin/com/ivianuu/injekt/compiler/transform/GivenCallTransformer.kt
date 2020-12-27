@@ -25,12 +25,16 @@ import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irNull
+import org.jetbrains.kotlin.ir.builders.irSet
 import org.jetbrains.kotlin.ir.builders.irTemporary
+import org.jetbrains.kotlin.ir.builders.irTemporaryVar
 import org.jetbrains.kotlin.ir.builders.irUnit
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrVariable
+import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.symbols.IrBindableSymbol
@@ -48,7 +52,7 @@ import org.jetbrains.kotlin.name.FqName
 class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrElementTransformerVoid() {
 
     private data class ResolutionContext(val graph: GivenGraph.Success) {
-        val expressionsByRequest = mutableMapOf<GivenRequest, (() -> IrExpression)?>()
+        val initializingExpressions = mutableMapOf<GivenNode, GivenExpression?>()
     }
 
     private fun ResolutionContext.fillGivens(
@@ -92,59 +96,97 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             .forEach { call.putValueArgument(it.first.index, it.second) }
     }
 
+    private inner class GivenExpression(
+        private val given: GivenNode,
+        private val symbol: IrSymbol
+    ) {
+        private var block: IrBlock? = null
+        private var tmpVariable: IrVariable? = null
+        private var finalExpression: IrExpression? = null
+
+        private var initializing = false
+
+        fun ResolutionContext.get(): IrExpression? {
+            if (initializing) {
+                if (block == null) {
+                    block = DeclarationIrBuilder(pluginContext, symbol)
+                        .irBlock { tmpVariable = irTemporaryVar(irNull()) } as IrBlock
+                }
+                return DeclarationIrBuilder(pluginContext, symbol)
+                    .irGet(tmpVariable!!)
+            }
+
+            finalExpression?.let { return it }
+
+            initializing = true
+
+            val rawExpression = when (given) {
+                is CallableGivenNode -> callableExpression(given, symbol)
+                is DefaultGivenNode -> null
+                is FunGivenNode -> funExpression(given, symbol)
+                is ObjectGivenNode -> objectExpression(given, symbol)
+                is ProviderGivenNode -> providerExpression(given, symbol)
+                is SetGivenNode -> setExpression(given, symbol)
+            }?.let { intercepted(it, given, symbol) }
+
+            initializing = false
+
+            finalExpression = if (block == null) rawExpression else {
+                with(DeclarationIrBuilder(pluginContext, symbol)) {
+                    block!!.statements += irSet(tmpVariable!!.symbol, rawExpression!!)
+                    block!!.statements += irGet(tmpVariable!!)
+                }
+                block!!
+            }
+
+            return finalExpression
+        }
+    }
+
     private fun ResolutionContext.expressionFor(
         request: GivenRequest,
         symbol: IrSymbol,
     ): IrExpression? {
-        return expressionsByRequest.getOrPut(request) {
-            val given = graph.givens[request]
-                ?: error("Wtf $request\n${this.graph.givens.toList().joinToString("\n")}")
-            val expression: (() -> IrExpression)? = when (given) {
-                is CallableGivenNode -> ({ callableExpression(given, symbol) })
-                is DefaultGivenNode -> null
-                is FunGivenNode -> ({ funExpression(given, symbol) })
-                is ObjectGivenNode -> ({ objectExpression(given, symbol) })
-                is ProviderGivenNode -> ({ providerExpression(given, symbol) })
-                is SetGivenNode -> ({ setExpression(given, symbol) })
-            }
-            expression?.let { intercepted(it, given, symbol) }
-        }?.invoke()
+        val given = graph.givens[request]
+            ?: error("Wtf $request\n${this.graph.givens.toList().joinToString("\n")}")
+        initializingExpressions[given]?.run { return get() }
+        val expression = GivenExpression(given, symbol)
+        initializingExpressions[given] = expression
+        val irExpression = expression.run { get() }
+        initializingExpressions -= given
+        return irExpression
     }
 
     private fun ResolutionContext.intercepted(
-        unintercepted: () -> IrExpression,
+        unintercepted: IrExpression,
         given: GivenNode,
         symbol: IrSymbol
-    ): () -> IrExpression {
+    ): IrExpression {
         if (given.interceptors.isEmpty()) return unintercepted
         val providerType = given.callContext
             .providerType(pluginContext.moduleDescriptor)
             .typeWith(listOf(given.type))
         return given.interceptors
             .reversed()
-            .fold(unintercepted) { acc: () -> IrExpression, interceptor: InterceptorNode ->
-                {
-                    callableExpression(
-                        interceptor.callable
-                            .toGivenNode(interceptor.callable.type, graph.scope, graph.scope),
-                        symbol
-                    ).apply {
-                        this as IrFunctionAccessExpression
-                        interceptor.callable.callable.valueParameters
-                            .single { interceptor.callable.parameterTypes[it] == providerType }
-                            .index
-                            .let { factoryIndex ->
-                                putValueArgument(
-                                    factoryIndex,
-                                    DeclarationIrBuilder(
-                                        pluginContext,
-                                        symbol
-                                    ).irLambda(providerType.toIrType(pluginContext)) {
-                                        acc()
-                                    }
-                                )
-                            }
-                    }
+            .fold(unintercepted) { acc: IrExpression, interceptor: InterceptorNode ->
+                callableExpression(
+                    interceptor.callable
+                        .toGivenNode(interceptor.callable.type, graph.scope, graph.scope),
+                    symbol
+                ).apply {
+                    this as IrFunctionAccessExpression
+                    interceptor.callable.callable.valueParameters
+                        .single { interceptor.callable.parameterTypes[it] == providerType }
+                        .index
+                        .let { factoryIndex ->
+                            putValueArgument(
+                                factoryIndex,
+                                DeclarationIrBuilder(
+                                    pluginContext,
+                                    symbol
+                                ).irLambda(providerType.toIrType(pluginContext)) { acc }
+                            )
+                        }
                 }
             }
     }

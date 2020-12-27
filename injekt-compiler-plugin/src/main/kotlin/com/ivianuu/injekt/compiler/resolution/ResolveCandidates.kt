@@ -128,11 +128,14 @@ private fun ResolutionScope.computeForCandidate(
     compute: () -> CandidateResolutionResult,
 ): CandidateResolutionResult {
     resultsByCandidate[candidate]?.let { return it }
+    val subChain = mutableSetOf(candidate)
     chain.reversed().forEach { prev ->
+        subChain += prev
         if (prev.callableFqName == candidate.callableFqName &&
             prev.type.coveringSet == candidate.type.coveringSet &&
             (prev.type.typeSize < candidate.type.typeSize ||
-                    prev.type == candidate.type)
+                    (prev.type == candidate.type &&
+                            subChain.none { it.lazyDependencies }))
         ) {
             return CandidateResolutionResult.Failure(
                 request,
@@ -140,6 +143,14 @@ private fun ResolutionScope.computeForCandidate(
                 ResolutionResult.Failure.DivergentGiven(request, emptyList()) // todo
             )
         }
+    }
+
+    if (candidate in chain) {
+        return CandidateResolutionResult.Success(
+            request,
+            candidate,
+            emptyList()
+        )
     }
 
     chain += candidate

@@ -2,6 +2,7 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.assertCompileError
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import org.junit.Test
 
 class DivergenceTest {
@@ -106,5 +107,43 @@ class DivergenceTest {
     ) {
         assertCompileError("divergent")
     }
+
+    @Test
+   fun testProviderBreaksCircularDependency() = codegen(
+       """
+            @Given class A(@Given b: B)
+            @Given class B(@Given a: () -> A)
+            fun invoke() = given<B>()
+       """
+   ) {
+       invokeSingleFile()
+    }
+
+   @Test
+   fun testIrrelevantProviderInChainDoesNotBreakCircularDependency() = codegen(
+       """
+            @Given class A(@Given b: () -> B)
+            @Given class B(@Given b: C)
+            @Given class C(@Given b: B)
+            fun invoke() = given<C>()
+       """
+   ) {
+       assertCompileError("divergent")
+   }
+
+   @Test
+   fun testLazyRequestInSetBreaksCircularDependency() = codegen(
+       """
+            typealias A = () -> Unit
+            @Given fun a(@Given b: () -> B): A = {}
+            @GivenSetElement fun aIntoSet(@Given a: A): () -> Unit = a
+            typealias B = () -> Unit
+            @Given fun b(@Given a: () -> A): B = {}
+            @GivenSetElement fun bIntoSet(@Given b: B): () -> Unit = b
+            fun invoke() = given<Set<() -> Unit>>()
+       """
+   ) {
+       invokeSingleFile()
+   }
 
 }
