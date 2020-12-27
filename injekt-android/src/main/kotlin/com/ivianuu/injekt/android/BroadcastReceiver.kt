@@ -22,9 +22,18 @@ import android.content.Context
 import android.content.Intent
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.Unqualified
+import com.ivianuu.injekt.common.ForKey
 import com.ivianuu.injekt.component.*
 
 typealias ReceiverComponent = Component
+
+@Qualifier annotation class ReceiverScoped
+@Given inline fun <@ForKey T : Any> receiverScoped(
+    @Given component: ReceiverComponent,
+    @Given factory: () -> @ReceiverScoped T
+): @Unqualified T = component.scope(factory)
 
 @GivenSetElement fun receiverComponentFactory(
     @Given parent: AppComponent,

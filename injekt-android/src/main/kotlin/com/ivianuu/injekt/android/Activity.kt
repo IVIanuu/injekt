@@ -29,10 +29,19 @@ import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.Unqualified
+import com.ivianuu.injekt.common.ForKey
 import com.ivianuu.injekt.component.*
 import kotlinx.coroutines.CoroutineScope
 
 typealias ActivityComponent = Component
+
+@Qualifier annotation class ActivityScoped
+@Given inline fun <@ForKey T : Any> activityScoped(
+    @Given component: ActivityComponent,
+    @Given factory: () -> @ActivityScoped T
+): @Unqualified T = component.scope(factory)
 
 @Given val @Given ComponentActivity.activityComponent: ActivityComponent
     get() = lifecycle.component {

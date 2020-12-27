@@ -11,6 +11,7 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Unqualified
 import com.ivianuu.injekt.common.ForKey
 import com.ivianuu.injekt.component.AppComponent
+import com.ivianuu.injekt.component.AppScoped
 import com.ivianuu.injekt.component.scope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
@@ -27,8 +28,7 @@ inline fun <reified K : Any, reified T : @Composable () -> Unit> keyUiBinding():
 
 typealias ActionChannel<A> = Channel<A>
 
-@Given fun <@ForKey A> ActionChannel(@Given component: AppComponent): ActionChannel<A> =
-    component.scope { Channel() }
+@AppScoped @Given fun <@ForKey A> ActionChannel(): ActionChannel<A> = Channel()
 
 typealias Dispatch<A> = (A) -> Unit
 

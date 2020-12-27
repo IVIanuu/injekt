@@ -19,6 +19,7 @@ package com.ivianuu.injekt.samples.android
 import android.app.Application
 import com.ivianuu.injekt.common.withGiven
 import com.ivianuu.injekt.component.initializeApp
+import com.ivianuu.injekt.given
 
 class App : Application() {
     override fun onCreate() {
@@ -26,6 +27,7 @@ class App : Application() {
         initializeApp()
         withGiven(this as Application) {
             initializeWorkers()
+            given<Database>()
         }
     }
 }
