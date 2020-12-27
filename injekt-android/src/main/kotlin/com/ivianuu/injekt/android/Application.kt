@@ -24,7 +24,8 @@ import android.content.res.Resources
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.component.*
+import com.ivianuu.injekt.component.App
+import com.ivianuu.injekt.component.AppComponent
 import com.ivianuu.injekt.component.appComponent
 
 @Suppress("unused")

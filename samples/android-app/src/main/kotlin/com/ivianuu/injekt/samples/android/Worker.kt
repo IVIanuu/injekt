@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.samples.android
 
-import android.content.Context
 import androidx.work.Configuration
 import androidx.work.CoroutineWorker
 import androidx.work.WorkManager

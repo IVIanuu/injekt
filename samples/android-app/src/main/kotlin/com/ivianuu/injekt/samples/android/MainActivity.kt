@@ -22,8 +22,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.platform.setContent
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityRetainedComponent
-import com.ivianuu.injekt.given
 import com.ivianuu.injekt.common.withGiven
+import com.ivianuu.injekt.given
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 

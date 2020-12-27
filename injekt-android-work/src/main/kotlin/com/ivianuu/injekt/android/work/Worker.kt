@@ -24,7 +24,11 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
-import com.ivianuu.injekt.component.*
+import com.ivianuu.injekt.component.AppComponent
+import com.ivianuu.injekt.component.Component
+import com.ivianuu.injekt.component.componentElement
+import com.ivianuu.injekt.component.element
+import com.ivianuu.injekt.component.get
 import kotlin.reflect.KClass
 
 inline fun <reified T : ListenableWorker> worker():

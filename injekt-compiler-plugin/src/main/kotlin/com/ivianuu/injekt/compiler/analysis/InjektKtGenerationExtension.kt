@@ -34,7 +34,6 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
 import org.jetbrains.kotlin.resolve.TopDownAnalysisMode
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
-import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtension
 
 class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : AnalysisHandlerExtension {
 

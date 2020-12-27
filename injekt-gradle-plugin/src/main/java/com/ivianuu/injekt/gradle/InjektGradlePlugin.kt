@@ -18,10 +18,6 @@ package com.ivianuu.injekt.gradle
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.tasks.SourceSetContainer
-import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
-import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 open class InjektGradlePlugin : Plugin<Project> {
     override fun apply(project: Project) {

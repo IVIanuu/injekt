@@ -32,8 +32,11 @@ import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Unqualified
 import com.ivianuu.injekt.common.ForKey
-import com.ivianuu.injekt.component.*
-import kotlinx.coroutines.CoroutineScope
+import com.ivianuu.injekt.component.Component
+import com.ivianuu.injekt.component.componentElement
+import com.ivianuu.injekt.component.element
+import com.ivianuu.injekt.component.get
+import com.ivianuu.injekt.component.scope
 
 typealias ActivityComponent = Component
 

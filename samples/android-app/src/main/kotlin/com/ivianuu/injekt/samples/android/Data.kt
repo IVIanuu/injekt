@@ -18,9 +18,7 @@ package com.ivianuu.injekt.samples.android
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.android.AppContext
-import com.ivianuu.injekt.component.AppComponent
 import com.ivianuu.injekt.component.AppScoped
-import com.ivianuu.injekt.component.scope
 import java.io.File
 
 typealias DatabaseFile = File
