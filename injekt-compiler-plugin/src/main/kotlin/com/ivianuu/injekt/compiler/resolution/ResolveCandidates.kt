@@ -325,9 +325,6 @@ private fun ResolutionScope.compareResult(
 
         diff = 0
 
-        if (a.dependencyResults.size < b.dependencyResults.size) return -1
-        if (b.dependencyResults.size < a.dependencyResults.size) return 1
-
         for (aDependency in a.dependencyResults) {
             for (bDependency in b.dependencyResults) {
                 diff += compareResult(aDependency.candidateResult, bDependency.candidateResult)
@@ -369,6 +366,9 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
 
     if (!a.isFrameworkGiven && b.isFrameworkGiven) return -1
     if (!b.isFrameworkGiven && a.isFrameworkGiven) return 1
+
+    if (a.dependencies.size < b.dependencies.size) return -1
+    if (b.dependencies.size < a.dependencies.size) return 1
 
     return 0
 }
