@@ -123,7 +123,7 @@ data class FunGivenNode(
         parent = ownerScope,
         declarationStore = ownerScope.declarationStore,
         callContext = callable.callContext,
-        contributions = emptyList()
+        contributions = { emptyList() }
     )
     override val lazyDependencies: Boolean
         get() = true
@@ -174,16 +174,18 @@ data class ProviderGivenNode(
         parent = ownerScope,
         declarationStore = declarationStore,
         callContext = type.callContext,
-        contributions = type
-            .toKotlinType()
-            .memberScope
-            .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
-            .first()
-            .valueParameters
-            .map { ProviderParameterDescriptor(this, it) }
-            .map {
-                CallableRef(it, contributionKind = type.typeArguments[it.index].contributionKind)
-            }
+        contributions = {
+            type
+                .toKotlinType()
+                .memberScope
+                .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
+                .first()
+                .valueParameters
+                .map { ProviderParameterDescriptor(this, it) }
+                .map {
+                    CallableRef(it, contributionKind = type.typeArguments[it.index].contributionKind)
+                }
+        }
     )
 
     override val lazyDependencies: Boolean
