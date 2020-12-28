@@ -136,4 +136,38 @@ class QualifierTest {
         assertTrue(it.last().invokeSingleFile() is Foo)
     }
 
+    @Test
+    fun testQualifierWithGenericTypeArguments() = codegen(
+        """
+            @Qualifier annotation class MyQualifier<T>
+            @Given fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
+       
+            fun invoke() = given<@MyQualifier<String> Foo>()
+            """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testQualifierWithGenericTypeArgumentsMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Qualifier annotation class MyQualifier<T>
+                    @Given fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke() = given<@MyQualifier<String> Foo>()
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        assertTrue(it.last().invokeSingleFile() is Foo)
+    }
+
 }
