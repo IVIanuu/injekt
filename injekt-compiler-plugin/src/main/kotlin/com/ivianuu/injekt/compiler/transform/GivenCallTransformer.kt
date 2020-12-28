@@ -322,10 +322,11 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                 given.callable,
                 given.callable.callable,
                 symbol)
-            is FunctionDescriptor -> functionExpression(given.type,
+            is FunctionDescriptor -> functionExpression(
                 given.callable,
                 given.callable.callable,
-                symbol)
+                symbol
+            )
             is ReceiverParameterDescriptor -> parameterExpression(given.callable.callable, symbol)
             is ValueParameterDescriptor -> parameterExpression(given.callable.callable, symbol)
             is VariableDescriptor -> variableExpression(given.callable.callable, symbol)
@@ -392,7 +393,6 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
     }
 
     private fun ResolutionContext.functionExpression(
-        type: TypeRef,
         callable: CallableRef,
         descriptor: FunctionDescriptor,
         symbol: IrSymbol,

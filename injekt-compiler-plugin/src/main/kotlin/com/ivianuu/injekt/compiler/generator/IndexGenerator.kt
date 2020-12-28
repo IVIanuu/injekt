@@ -66,7 +66,8 @@ class IndexGenerator : Generator {
                     if (declaration.hasAnnotation(InjektFqNames.Given) ||
                         declaration.hasAnnotation(InjektFqNames.GivenSetElement) ||
                         declaration.hasAnnotation(InjektFqNames.Module) ||
-                        declaration.hasAnnotation(InjektFqNames.Interceptor)
+                        declaration.hasAnnotation(InjektFqNames.Interceptor) ||
+                        declaration.hasAnnotation(InjektFqNames.GivenFun)
                     ) {
                         val index = Index(
                             owner.fqName!!,

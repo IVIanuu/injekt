@@ -17,6 +17,8 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -71,7 +73,15 @@ class ResolutionScope(
         collectMacroContributions(
             givens
                 .filterNot { it.first.isFromMacro }
-                .map { it.first }
+                .map { it.first.type } +
+                    declarationStore.givenFuns
+                        .map { (givenFun, givenFunType) ->
+                            givenFunType.defaultType
+                                .copy(
+                                    qualifiers = givenFun.callable
+                                        .getAnnotatedAnnotations(InjektFqNames.Qualifier)
+                                )
+                        }
         )
     }
 
@@ -152,7 +162,7 @@ class ResolutionScope(
             }
     }
 
-    private fun collectMacroContributions(initialContributions: List<CallableRef>) {
+    private fun collectMacroContributions(initialContributions: List<TypeRef>) {
         if (macros.isEmpty() || initialContributions.isEmpty()) return
 
         val allContributions = mutableListOf<CallableRef>()
@@ -166,9 +176,9 @@ class ResolutionScope(
                 for (macro in macros) {
                     val macroType = macro.callable.typeParameters.first()
                         .defaultType.toTypeRef()
-                    if (!contribution.type.isSubTypeOf(macroType)) continue
+                    if (!contribution.isSubTypeOf(macroType)) continue
                     val substitutionMap = getSubstitutionMap(
-                        listOf(contribution.type to macroType),
+                        listOf(contribution to macroType),
                         macro.callable.typeParameters.map { it.toClassifierRef() }
                     )
                     val result = macro.substitute(substitutionMap)
@@ -184,6 +194,7 @@ class ResolutionScope(
             allContributions += newContributions
             contributionsToProcess = newContributions
                 .filter { it.contributionKind == ContributionKind.VALUE }
+                .map { it.type }
         }
 
         allContributions.forEach { contribution ->

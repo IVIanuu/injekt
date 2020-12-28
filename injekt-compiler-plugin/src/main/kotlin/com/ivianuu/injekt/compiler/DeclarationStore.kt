@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.analysis.Index
 import com.ivianuu.injekt.compiler.resolution.getContributionConstructors
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
+import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -26,6 +27,7 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 
@@ -71,6 +73,15 @@ class DeclarationStore(val module: ModuleDescriptor) {
                 propertyIndices
                     .map { it.toCallableRef() }
                     .filter { it.contributionKind != null }
+    }
+
+    val givenFuns by unsafeLazy {
+        functionIndices
+            .filter { it.hasAnnotation(InjektFqNames.GivenFun) }
+            .map {
+                it.toCallableRef() to classifierDescriptorForFqName(it.fqNameSafe)
+                    .toClassifierRef()
+            }
     }
 
     private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor>()

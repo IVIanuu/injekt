@@ -16,6 +16,9 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import androidx.compose.runtime.key
+import com.ivianuu.injekt.common.keyOf
+import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.assertCompileError
 import com.ivianuu.injekt.test.codegen
@@ -74,6 +77,25 @@ class MacroTest {
 
             fun invoke() = given<Key<Bar>>()
         """
-    )
+    ) {
+        assertEquals(keyOf<Bar>(), invokeSingleFile())
+    }
+
+    @Test
+    fun testMacroWithGivenFun() = codegen(
+        """
+            @Qualifier annotation class Trigger
+            @Macro @Given fun <T : @Trigger FooFactory> macroImpl(@Given instance: T): FooFactory = 
+                instance
+            
+            typealias FooFactory = () -> Foo
+
+            @Trigger @GivenFun fun fooFactoryImpl(): Foo = Foo()
+            
+            fun invoke() = given<FooFactory>()()
+        """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
 
 }
