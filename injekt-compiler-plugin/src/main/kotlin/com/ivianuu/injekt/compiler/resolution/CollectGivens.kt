@@ -19,8 +19,9 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.getGivenDeclarationParameters
+import com.ivianuu.injekt.compiler.getContributionParameters
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.sun.org.apache.xpath.internal.operations.Bool
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
@@ -59,10 +60,13 @@ data class CallableRef(
         .map { it to it.type.toTypeRef() }
         .toMap(),
     val contributionKind: ContributionKind? = callable.contributionKind(),
+    val isMacro: Boolean = callable.hasAnnotation(InjektFqNames.Macro),
+    val isFromMacro: Boolean = false,
     val callContext: CallContext = callable.callContext,
 )
 
 fun CallableRef.substitute(substitutionMap: Map<ClassifierRef, TypeRef>): CallableRef {
+    if (substitutionMap.isEmpty()) return this
     return copy(
         type = type.substitute(substitutionMap),
         parameterTypes = parameterTypes.mapValues { it.value.substitute(substitutionMap) }
@@ -111,7 +115,7 @@ fun MemberScope.collectContributions(type: TypeRef): List<CallableRef> {
     return getContributedDescriptors()
         .flatMap { callable ->
             when (callable) {
-                is ClassDescriptor -> callable.getGivenDeclarationConstructors()
+                is ClassDescriptor -> callable.getContributionConstructors()
                 is PropertyDescriptor -> (callable.contributionKind()
                     ?: primaryConstructorKinds[callable.name])
                     ?.let { kind -> listOf(CallableRef(callable, contributionKind = kind)) } ?: emptyList()
@@ -158,7 +162,7 @@ fun CallableDescriptor.collectContributions(): List<CallableRef> {
 
 fun ParameterDescriptor.contributionKind(): ContributionKind? {
     val userData = getUserData(DslMarkerUtils.FunctionTypeAnnotationsKey)
-    val givenDeclarationParameters = getGivenDeclarationParameters()
+    val contributionParameters = getContributionParameters()
 
     return (this as Annotated).contributionKind() ?: type.contributionKind() ?: userData?.let {
         when {
@@ -168,12 +172,12 @@ fun ParameterDescriptor.contributionKind(): ContributionKind? {
             userData.hasAnnotation(InjektFqNames.Interceptor) -> ContributionKind.INTERCEPTOR
             else -> null
         }
-    } ?: givenDeclarationParameters
+    } ?: contributionParameters
         .firstOrNull { it.callable == this }
         ?.contributionKind
 }
 
-fun ClassDescriptor.getGivenDeclarationConstructors(): List<CallableRef> = constructors
+fun ClassDescriptor.getContributionConstructors(): List<CallableRef> = constructors
     .mapNotNull { constructor ->
         if (constructor.isPrimary) {
             (constructor.contributionKind() ?: contributionKind())?.let { kind ->
@@ -211,8 +215,13 @@ fun CallableRef.collectContributions(
     path: List<Any>,
     addGiven: (CallableRef) -> Unit,
     addGivenSetElement: (CallableRef) -> Unit,
-    addInterceptor: (CallableRef) -> Unit
+    addInterceptor: (CallableRef) -> Unit,
+    addMacro: (CallableRef) -> Unit
 ) {
+    if (isMacro) {
+        addMacro(this)
+        return
+    }
     when (contributionKind) {
         ContributionKind.VALUE -> addGiven(this)
         ContributionKind.SET_ELEMENT -> addGivenSetElement(this)
@@ -235,7 +244,8 @@ fun CallableRef.collectContributions(
                                 path + it.callable.fqNameSafe,
                                 addGiven,
                                 addGivenSetElement,
-                                addInterceptor
+                                addInterceptor,
+                                addMacro
                             )
                         }
                 } else {
@@ -247,7 +257,8 @@ fun CallableRef.collectContributions(
                                 path + it.callable.fqNameSafe,
                                 addGiven,
                                 addGivenSetElement,
-                                addInterceptor
+                                addInterceptor,
+                                addMacro
                             )
                         }
                 }
@@ -260,7 +271,8 @@ fun CallableRef.collectContributions(
                             path + it.callable.fqNameSafe,
                             addGiven,
                             addGivenSetElement,
-                            addInterceptor
+                            addInterceptor,
+                            addMacro
                         )
                     }
             }

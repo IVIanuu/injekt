@@ -169,6 +169,16 @@ interface InjektErrors {
                     )
                 }
 
+        @JvmField
+        val MACRO_WITHOUT_TYPE_PARAMETER =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "@Interceptor declaration must have at least one type parameter"
+                    )
+                }
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,

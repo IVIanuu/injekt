@@ -41,29 +41,47 @@ class ResolutionScope(
     private val givens = mutableListOf<Pair<CallableRef, ResolutionScope>>()
     private val givenSetElements = mutableListOf<CallableRef>()
     private val interceptors = mutableListOf<CallableRef>()
+    private val macros = mutableListOf<CallableRef>()
 
     private val givenNodesByType = mutableMapOf<TypeRef, List<GivenNode>>()
     private val givenSetElementsByType = mutableMapOf<TypeRef, List<CallableRef>>()
     private val interceptorsByType = mutableMapOf<TypeRef, List<InterceptorNode>>()
 
     init {
-        parent?.givens?.forEach { givens += it }
-        parent?.givenSetElements?.forEach { givenSetElements += it }
-        contributions.forEach { declaration ->
-            declaration.collectContributions(
-                path = listOf(declaration.callable.fqNameSafe),
+        parent?.givens
+            ?.filterNot { it.first.isFromMacro }
+            ?.forEach { givens += it }
+        parent?.givenSetElements
+            ?.filterNot { it.isFromMacro }
+            ?.forEach { givenSetElements += it }
+        parent?.macros?.forEach { macros += it }
+        contributions.forEach { contribution ->
+            contribution.collectContributions(
+                path = listOf(contribution.callable.fqNameSafe),
                 addGiven = { givens += it to this },
                 addGivenSetElement = { givenSetElements += it },
-                addInterceptor = { interceptors += it }
+                addInterceptor = { interceptors += it },
+                addMacro = { macros += it }
             )
         }
-        parent?.interceptors?.forEach { interceptors += it }
+        parent?.interceptors
+            ?.filterNot { it.isFromMacro }
+            ?.forEach { interceptors += it }
+
+        collectMacroContributions(
+            givens
+                .filterNot { it.first.isFromMacro }
+                .map { it.first }
+        )
     }
 
     fun givensForType(type: TypeRef): List<GivenNode> = givenNodesByType.getOrPut(type) {
         buildList<GivenNode> {
             this += givens
-                .filter { it.first.type.isAssignableTo(type) }
+                .filter {
+                    val r = it.first.type.isAssignableTo(type)
+                    r
+                }
                 .map { it.first.toGivenNode(type, it.second, this@ResolutionScope) }
 
             if (type.classifier.descriptor?.safeAs<ClassDescriptor>()
@@ -134,6 +152,47 @@ class ResolutionScope(
             }
     }
 
+    private fun collectMacroContributions(initialContributions: List<CallableRef>) {
+        if (macros.isEmpty() || initialContributions.isEmpty()) return
+
+        val allContributions = mutableListOf<CallableRef>()
+
+        var contributionsToProcess = initialContributions
+
+        while (contributionsToProcess.isNotEmpty()) {
+            val newContributions = mutableListOf<CallableRef>()
+
+            for (contribution in contributionsToProcess) {
+                for (macro in macros) {
+                    val macroType = macro.callable.typeParameters.first()
+                        .defaultType.toTypeRef()
+                    if (!contribution.type.isSubTypeOf(macroType)) continue
+                    val substitutionMap = getSubstitutionMap(
+                        listOf(contribution.type to macroType),
+                        macro.callable.typeParameters.map { it.toClassifierRef() }
+                    )
+                    val result = macro.substitute(substitutionMap)
+                        .copy(isMacro = false, isFromMacro = true)
+                    newContributions += result
+                }
+            }
+
+            allContributions += newContributions
+            contributionsToProcess = newContributions
+                .filter { it.contributionKind == ContributionKind.VALUE }
+        }
+
+        allContributions.forEach { contribution ->
+            contribution.collectContributions(
+                path = listOf(contribution.callable.fqNameSafe),
+                addGiven = { givens += it to this },
+                addGivenSetElement = { givenSetElements += it },
+                addInterceptor = { interceptors += it },
+                addMacro = { macros += it }
+            )
+        }
+    }
+
     override fun toString(): String = "ResolutionScope($name)"
 }
 
@@ -142,7 +201,7 @@ fun ExternalResolutionScope(declarationStore: DeclarationStore): ResolutionScope
     declarationStore = declarationStore,
     callContext = CallContext.DEFAULT,
     parent = null,
-    contributions = declarationStore.globalGivenDeclarations
+    contributions = declarationStore.globalContributions
         .filter { it.callable.isExternalDeclaration() }
         .filter { it.callable.visibility == DescriptorVisibilities.PUBLIC }
 )
@@ -155,7 +214,7 @@ fun InternalResolutionScope(
     declarationStore = declarationStore,
     callContext = CallContext.DEFAULT,
     parent = parent,
-    contributions = declarationStore.globalGivenDeclarations
+    contributions = declarationStore.globalContributions
         .filterNot { it.callable.isExternalDeclaration() }
 )
 
@@ -192,7 +251,7 @@ fun LocalDeclarationResolutionScope(
     declaration: DeclarationDescriptor
 ): ResolutionScope {
     val declarations: List<CallableRef> = when (declaration) {
-        is ClassDescriptor -> declaration.getGivenDeclarationConstructors()
+        is ClassDescriptor -> declaration.getContributionConstructors()
         is CallableDescriptor -> declaration
             .contributionKind()
             ?.let { listOf(CallableRef(declaration, contributionKind = it)) }

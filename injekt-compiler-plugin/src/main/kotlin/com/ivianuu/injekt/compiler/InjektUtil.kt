@@ -91,11 +91,11 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
 }
 
 fun CallableDescriptor.getGivenParameters(substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()): List<ParameterDescriptor> =
-    getGivenDeclarationParameters(substitutionMap)
+    getContributionParameters(substitutionMap)
         .filter { it.contributionKind == ContributionKind.VALUE }
         .map { it.callable as ParameterDescriptor }
 
-fun CallableDescriptor.getGivenDeclarationParameters(substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()): List<CallableRef> =
+fun CallableDescriptor.getContributionParameters(substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()): List<CallableRef> =
     allParameters
         .mapNotNull {
             val kind = it.contributionKind() ?: if (substitutionMap.isNotEmpty()) {

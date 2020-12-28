@@ -29,9 +29,11 @@ import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
+import com.ivianuu.injekt.Macro
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Unqualified
 import com.ivianuu.injekt.common.ForKey
+import com.ivianuu.injekt.component.AppScoped
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.componentElement
 import com.ivianuu.injekt.component.element
@@ -41,10 +43,10 @@ import com.ivianuu.injekt.component.scope
 typealias ActivityComponent = Component
 
 @Qualifier annotation class ActivityScoped
-@Given inline fun <@ForKey T : Any> activityScoped(
+@Macro @Given inline fun <@ForKey T : @ActivityScoped S, S : Any> activityScoped(
     @Given component: ActivityComponent,
-    @Given factory: () -> @ActivityScoped T
-): @Unqualified T = component.scope(factory)
+    @Given factory: () -> T
+): S = component.scope(factory)
 
 @Given val @Given ComponentActivity.activityComponent: ActivityComponent
     get() = lifecycle.component {

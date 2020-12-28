@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.Index
-import com.ivianuu.injekt.compiler.resolution.getGivenDeclarationConstructors
+import com.ivianuu.injekt.compiler.resolution.getContributionConstructors
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
@@ -62,9 +62,9 @@ class DeclarationStore(val module: ModuleDescriptor) {
             .flatMap { propertyDescriptorsForFqName(it.fqName) }
     }
 
-    val globalGivenDeclarations by unsafeLazy {
+    val globalContributions by unsafeLazy {
         classIndices
-            .flatMap { it.getGivenDeclarationConstructors() } +
+            .flatMap { it.getContributionConstructors() } +
                 functionIndices
                     .map { it.toCallableRef() }
                     .filter { it.contributionKind != null } +

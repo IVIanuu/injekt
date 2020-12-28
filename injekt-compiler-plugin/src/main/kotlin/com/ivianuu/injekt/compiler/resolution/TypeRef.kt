@@ -380,9 +380,15 @@ fun getSubstitutionMap(
         if (baseType.classifier.isTypeParameter) {
             substitutionMap[baseType.classifier] = thisType
             baseType.superTypes()
-                .map { it.fullyExpandedType }
                 .map { thisType.subtypeView(it.classifier, substitutionMap) to it }
                 .forEach { (thisBaseTypeView, baseSuperType) ->
+                    if (baseSuperType.classifier.isTypeParameter) {
+                        visitType((thisBaseTypeView ?: thisType)
+                            .copy(qualifiers = emptyList()), baseSuperType)
+                    } else {
+                        visitType(thisBaseTypeView ?: thisType, baseSuperType)
+                    }
+
                     thisBaseTypeView?.typeArguments?.zip(baseSuperType.typeArguments)
                         ?.forEach { visitType(it.first, it.second) }
                 }
@@ -485,6 +491,10 @@ fun TypeRef.isSubTypeOf(
     } else if (superType.classifier.isTypeParameter ||
         superType.classifier.isTypeAlias
     ) {
+        if (superType.qualifiers.isNotEmpty() &&
+            !qualifiers.isAssignableTo(superType.qualifiers)
+        ) return false
+        if (superType.unqualified && qualifiers.isNotEmpty()) return false
         return superType.superTypes(substitutionMap).all { upperBound ->
             isSubTypeOf(upperBound, substitutionMap)
         }
