@@ -17,8 +17,10 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.prepare
 import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.builtins.StandardNames
@@ -26,16 +28,24 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.constants.ArrayValue
+import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.types.getAbbreviation
 import org.jetbrains.kotlin.types.isError
+import org.jetbrains.kotlin.types.replace
+import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
 
 data class ClassifierRef(
@@ -87,7 +97,9 @@ fun ClassifierDescriptor.toClassifierRef(): ClassifierRef = ClassifierRef(
     fqName = original.fqNameSafe,
     typeParameters = (original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
         ?.map { it.toClassifierRef() } ?: emptyList(),
-    superTypes = typeConstructor.supertypes.map { it.toTypeRef() },
+    superTypes = typeConstructor.supertypes.map {
+        it.toTypeRef().applyTypeParameterFixIfNeeded(this)
+    },
     expandedType = (original as? TypeAliasDescriptor)?.expandedType?.toTypeRef()?.fullyExpandedType,
     isTypeParameter = this is TypeParameterDescriptor,
     isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
@@ -95,6 +107,40 @@ fun ClassifierDescriptor.toClassifierRef(): ClassifierRef = ClassifierRef(
     isGivenFunAlias = this is TypeAliasDescriptor && hasAnnotation(InjektFqNames.GivenFunAlias),
     descriptor = this
 )
+
+private fun TypeRef.applyTypeParameterFixIfNeeded(
+    descriptor: ClassifierDescriptor
+): TypeRef {
+    if (descriptor !is TypeParameterDescriptor) return this
+    if (!descriptor.isExternalDeclaration()) return this
+    val parent = descriptor.containingDeclaration as? FunctionDescriptor ?: return this
+    val fix = parent.annotations.findAnnotation(InjektFqNames.TypeParameterFix)
+        ?: return this
+    val name = fix.allValueArguments["typeParameter".asNameId()]!!.value as String
+    if (name != descriptor.name.asString()) return this
+    val qualifierType = fix.allValueArguments["qualifier".asNameId()]
+        .let { it as KClassValue }
+        .getArgumentType(descriptor.module)
+        .replace(
+            newArguments = fix.allValueArguments["qualifierTypeParameters".asNameId()]!!
+                .let { it as ArrayValue }
+                .value
+                .map { it.value as String }
+                .map { typeParameterName ->
+                    parent.typeParameters
+                        .single { it.name.asString() == typeParameterName }
+                        .defaultType
+                        .asTypeProjection()
+                }
+        )
+    return copy(
+        qualifiers = qualifiers + AnnotationDescriptorImpl(
+            qualifierType,
+            emptyMap(),
+            SourceElement.NO_SOURCE
+        )
+    )
+}
 
 sealed class TypeRef {
     abstract val classifier: ClassifierRef

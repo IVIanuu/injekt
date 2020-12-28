@@ -18,6 +18,8 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 @Target(
     AnnotationTarget.CLASS,
     AnnotationTarget.CONSTRUCTOR,
@@ -71,3 +73,10 @@ annotation class Qualifier
 
 @Target(AnnotationTarget.TYPE)
 annotation class Unqualified
+
+@Target(AnnotationTarget.FUNCTION)
+annotation class TypeParameterFix(
+    val typeParameter: String,
+    val qualifier: KClass<*>,
+    val qualifierTypeParameters: Array<String>
+)

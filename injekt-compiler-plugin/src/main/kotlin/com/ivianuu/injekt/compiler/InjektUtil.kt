@@ -46,6 +46,7 @@ import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedTypeParameterDescriptor
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
@@ -121,7 +122,8 @@ fun KotlinType.prepare(): KotlinType {
 
 fun DeclarationDescriptor.isExternalDeclaration(): Boolean = this is DeserializedDescriptor ||
         (this is PropertyAccessorDescriptor && correspondingProperty.isExternalDeclaration()) ||
-        (this is GivenFunctionDescriptor && invokeDescriptor.isExternalDeclaration())
+        (this is GivenFunctionDescriptor && invokeDescriptor.isExternalDeclaration()) ||
+        this is DeserializedTypeParameterDescriptor
 
 val isIde: Boolean = Project::class.java.name == "com.intellij.openapi.project.Project"
 val isCli: Boolean =

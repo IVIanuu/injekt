@@ -88,6 +88,7 @@ class MacroTest {
             source(
                 """
                     @Qualifier annotation class Trigger<S>
+                    @TypeParameterFix("T", Trigger::class, ["S"])
                     @Macro @Given fun <@ForKey T : @Trigger<S> Any?, @ForKey S> macroImpl() = 
                         keyOf<S>()
                 """
@@ -98,7 +99,8 @@ class MacroTest {
                 """
                     @Trigger<Bar> @Given fun foo() = Foo()
                     fun invoke() = given<Key<Bar>>().value
-                """
+                """,
+                name = "File.kt"
             )
         )
     ) {
