@@ -35,9 +35,9 @@ import kotlinx.coroutines.flow.stateIn
 
 object CounterKey
 
-@Module val counterKeyUiBinding = keyUiBinding<CounterKey, CounterPage>()
-
-@GivenFun @Composable fun CounterPage(
+@KeyUiBinding<CounterKey>
+@GivenFun @Composable
+fun CounterPage(
     @Given state: @UiState CounterState,
     @Given dispatch: Dispatch<CounterAction>,
 ) {

@@ -24,6 +24,8 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
+import com.ivianuu.injekt.Macro
+import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.component.AppComponent
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.componentElement
@@ -31,8 +33,10 @@ import com.ivianuu.injekt.component.element
 import com.ivianuu.injekt.component.get
 import kotlin.reflect.KClass
 
-inline fun <reified T : ListenableWorker> worker():
-        @GivenSetElement (@Given (@Given WorkerComponent) -> T) -> WorkerBinding = { T::class to it }
+@Qualifier annotation class WorkerBinding
+@Macro @GivenSetElement inline fun <reified T : @WorkerBinding ListenableWorker> workerBinding(
+    @Given noinline provider: (@Given WorkerComponent) -> T
+): WorkerElement = T::class to provider
 
 typealias WorkerComponent = Component
 
@@ -54,7 +58,7 @@ typealias WorkerContext = Context
 
 @Given val @Given WorkerComponent.workerParameters: WorkerParameters get() = get()
 
-typealias WorkerBinding =
+typealias WorkerElement =
         Pair<KClass<out ListenableWorker>, (@Given WorkerComponent) -> ListenableWorker>
 
 @Given inline val @Given WorkerComponent.appComponent: AppComponent
@@ -64,7 +68,7 @@ typealias WorkerBinding =
             (WorkerContext, WorkerParameters) -> WorkerComponent get() = get()
 
 @Given class InjektWorkerFactory(
-    @Given workersFactory: () -> Set<WorkerBinding>,
+    @Given workersFactory: () -> Set<WorkerElement>,
     @Given private val workerComponentFactory: (WorkerContext, WorkerParameters) -> WorkerComponent,
 ) : @Given WorkerFactory() {
     private val workers by lazy { workersFactory().toMap() }

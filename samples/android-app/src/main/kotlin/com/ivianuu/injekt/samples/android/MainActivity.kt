@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             setContent {
-                val keyUis = given<Set<KeyUiBinding>>().toMap()
+                val keyUis = given<Set<KeyUiElement>>().toMap()
                 keyUis[CounterKey::class]!!.invoke()
             }
         }

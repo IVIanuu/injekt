@@ -21,8 +21,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenSetElement
-import com.ivianuu.injekt.Macro
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Unqualified
 import com.ivianuu.injekt.common.ForKey
@@ -32,13 +30,25 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
-import kotlin.reflect.KClass
 
-typealias KeyUiElement = Pair<KClass<*>, @Composable () -> Unit>
+typealias ActionChannel<A> = Channel<A>
 
-@Qualifier annotation class KeyUiBinding<K : Any>
+@AppScoped @Given fun <@ForKey A> ActionChannel(): ActionChannel<A> = Channel()
 
-@Macro @GivenSetElement inline fun <
-        reified T : @KeyUiBinding<K> @Composable () -> Unit,
-        reified K : Any> keyUiBinding(@Given instance: T): KeyUiElement =
-    K::class to instance
+typealias Dispatch<A> = (A) -> Unit
+
+@Given val <A> @Given ActionChannel<A>.dispatch: Dispatch<A>
+    get() = { action: A -> offer(action) }
+
+typealias Actions<A> = Flow<A>
+
+@Given inline val <A> @Given ActionChannel<A>.actions: Actions<A>
+    get() = consumeAsFlow()
+
+@Qualifier annotation class UiState
+
+@Given @Composable
+fun <T> uiState(@Given stateFactory: (@Given CoroutineScope) -> StateFlow<@Unqualified T>): @UiState T {
+    val scope = rememberCoroutineScope()
+    return remember { stateFactory(scope) }.collectAsState().value
+}
