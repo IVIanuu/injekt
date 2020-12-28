@@ -119,12 +119,6 @@ fun KotlinType.prepare(): KotlinType {
     return tmp
 }
 
-fun Annotated.hasAnnotationWithPropertyAndClass(
-    fqName: FqName,
-): Boolean = hasAnnotation(fqName) ||
-        (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotation(fqName)) ||
-        (this is ConstructorDescriptor && constructedClass.hasAnnotation(fqName))
-
 fun DeclarationDescriptor.isExternalDeclaration(): Boolean = this is DeserializedDescriptor ||
         (this is PropertyAccessorDescriptor && correspondingProperty.isExternalDeclaration()) ||
         (this is GivenFunctionDescriptor && invokeDescriptor.isExternalDeclaration())
