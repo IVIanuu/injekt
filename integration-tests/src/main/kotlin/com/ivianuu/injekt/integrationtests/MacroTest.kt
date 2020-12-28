@@ -16,13 +16,14 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import androidx.compose.runtime.key
 import com.ivianuu.injekt.common.keyOf
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.assertCompileError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -79,6 +80,29 @@ class MacroTest {
         """
     ) {
         assertEquals(keyOf<Bar>(), invokeSingleFile())
+    }
+
+    @Test
+    fun testMacroWithQualifierWithTypeParameterMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Qualifier annotation class Trigger<S>
+                    @Macro @Given fun <@ForKey T : @Trigger<S> Any?, @ForKey T, @ForKey S> macroImpl() = 
+                        keyOf<S>()
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Trigger<Bar> @Given fun foo() = Foo()
+                    fun invoke() = given<Key<Bar>>()
+                """
+            )
+        )
+    ) {
+        assertEquals(keyOf<Bar>(), it.last().invokeSingleFile())
     }
 
     @Test
