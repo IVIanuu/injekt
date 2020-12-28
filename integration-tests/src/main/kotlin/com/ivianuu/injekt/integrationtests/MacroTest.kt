@@ -76,10 +76,10 @@ class MacroTest {
 
             @Trigger<Bar> @Given fun foo() = Foo()
 
-            fun invoke() = given<Key<Bar>>()
+            fun invoke() = given<Key<Bar>>().value
         """
     ) {
-        assertEquals(keyOf<Bar>(), invokeSingleFile())
+        assertEquals("com.ivianuu.injekt.test.Bar", invokeSingleFile())
     }
 
     @Test
@@ -88,7 +88,7 @@ class MacroTest {
             source(
                 """
                     @Qualifier annotation class Trigger<S>
-                    @Macro @Given fun <@ForKey T : @Trigger<S> Any?, @ForKey T, @ForKey S> macroImpl() = 
+                    @Macro @Given fun <@ForKey T : @Trigger<S> Any?, @ForKey S> macroImpl() = 
                         keyOf<S>()
                 """
             )
@@ -97,12 +97,12 @@ class MacroTest {
             source(
                 """
                     @Trigger<Bar> @Given fun foo() = Foo()
-                    fun invoke() = given<Key<Bar>>()
+                    fun invoke() = given<Key<Bar>>().value
                 """
             )
         )
     ) {
-        assertEquals(keyOf<Bar>(), it.last().invokeSingleFile())
+        assertEquals("com.ivianuu.injekt.test.Bar", it.last().invokeSingleFile())
     }
 
     @Test
