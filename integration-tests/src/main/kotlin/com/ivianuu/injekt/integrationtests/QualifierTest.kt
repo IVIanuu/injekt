@@ -22,6 +22,7 @@ import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertNotSame
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class QualifierTest {
@@ -100,5 +101,39 @@ class QualifierTest {
             fun invoke() = given<@Qualifier1 Foo>()
             """
     )
+
+    @Test
+    fun testQualifierWithTypeArguments() = codegen(
+        """
+            @Qualifier annotation class MyQualifier<T>
+            @Given val qualifiedFoo: @MyQualifier<String> Foo = Foo()
+       
+            fun invoke() = given<@MyQualifier<String> Foo>()
+            """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testQualifierWithTypeArgumentsMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Qualifier annotation class MyQualifier<T>
+                    @Given val qualifiedFoo: @MyQualifier<String> Foo = Foo()
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke() = given<@MyQualifier<String> Foo>()
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        assertTrue(it.last().invokeSingleFile() is Foo)
+    }
 
 }

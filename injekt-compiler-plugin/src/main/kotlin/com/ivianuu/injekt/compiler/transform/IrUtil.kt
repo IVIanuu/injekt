@@ -83,6 +83,7 @@ import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.replace
+import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.types.withAbbreviation
 
 fun TypeRef.toIrType(pluginContext: IrPluginContext): IrType =
@@ -208,15 +209,13 @@ fun makeKotlinType(
         }
 }
 
-fun IrConstructorCall.toAnnotationDescriptor(): AnnotationDescriptor {
-    return AnnotationDescriptorImpl(
-        symbol.owner.parentAsClass.defaultType.toKotlinType(),
-        symbol.owner.valueParameters.map { it.name to getValueArgument(it.index) }
-            .filter { it.second != null }
-            .associate { it.first to it.second!!.toConstantValue() },
-        /*TODO*/ SourceElement.NO_SOURCE
-    )
-}
+fun IrConstructorCall.toAnnotationDescriptor() = AnnotationDescriptorImpl(
+    type.toKotlinType(),
+    symbol.owner.valueParameters.map { it.name to getValueArgument(it.index) }
+        .filter { it.second != null }
+        .associate { it.first to it.second!!.toConstantValue() },
+    SourceElement.NO_SOURCE
+)
 
 fun IrElement.toConstantValue(): ConstantValue<*> {
     return when (this) {
