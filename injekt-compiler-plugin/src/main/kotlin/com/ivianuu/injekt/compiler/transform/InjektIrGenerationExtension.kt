@@ -35,13 +35,11 @@ import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        generateSymbols(pluginContext)
         moduleFragment.transform(GivenCallTransformer(pluginContext), null)
         moduleFragment.transform(GivenOptimizationTransformer(), null)
         moduleFragment.transform(GivenFunCallTransformer(pluginContext), null)
         moduleFragment.transform(KeyTypeParameterTransformer(pluginContext), null)
         moduleFragment.patchDeclarationParents()
-        generateSymbols(pluginContext)
     }
 
     override fun resolveSymbol(
@@ -75,42 +73,4 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         }
     }
 
-}
-
-val SymbolTable.allUnbound: List<IrSymbol>
-    get() {
-        val r = mutableListOf<IrSymbol>()
-        r.addAll(unboundClasses)
-        r.addAll(unboundConstructors)
-        r.addAll(unboundEnumEntries)
-        r.addAll(unboundFields)
-        r.addAll(unboundSimpleFunctions)
-        r.addAll(unboundProperties)
-        r.addAll(unboundTypeParameters)
-        r.addAll(unboundTypeAliases)
-        return r
-    }
-
-@OptIn(ObsoleteDescriptorBasedAPI::class)
-@Suppress("UNUSED_PARAMETER", "DEPRECATION")
-fun generateSymbols(pluginContext: IrPluginContext) {
-    lateinit var unbound: List<IrSymbol>
-    val visited = mutableSetOf<IrSymbol>()
-    do {
-        unbound = (pluginContext.symbolTable as SymbolTable).allUnbound
-
-        for (symbol in unbound) {
-            println("lol $symbol ${symbol.descriptor}")
-            if (visited.contains(symbol)) {
-                continue
-            }
-            // Symbol could get bound as a side effect of deserializing other symbols.
-            if (!symbol.isBound) {
-                (pluginContext as IrPluginContextImpl).linker.getDeclaration(symbol)
-            }
-            if (!symbol.isBound) {
-                visited.add(symbol)
-            }
-        }
-    } while ((unbound - visited).isNotEmpty())
 }
