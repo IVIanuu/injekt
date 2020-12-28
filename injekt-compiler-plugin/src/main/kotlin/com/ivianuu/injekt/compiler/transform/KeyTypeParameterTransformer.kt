@@ -74,21 +74,13 @@ class KeyTypeParameterTransformer(
         val transformedFunction = function.copyWithKeyParams()
         transformedFunctions[function] = transformedFunction
 
-        val transformedKeyParams = transformedFunction.typeParameters
+        val keyParams = transformedFunction.typeParameters
             .filter { it.descriptor.hasAnnotation(InjektFqNames.ForKey) }
             .associateWith {
                 transformedFunction.addValueParameter(
                     "_${it.name}Key",
                     pluginContext.irBuiltIns.stringType
                 )
-            }
-
-        val keyParams = transformedKeyParams + function.typeParameters
-            .filter { it.descriptor.hasAnnotation(InjektFqNames.ForKey) }
-            .associateWith { typeParameter ->
-                transformedKeyParams.entries
-                    .single { it.key.name == typeParameter.name }
-                    .value
             }
 
         transformedFunction.transformCallsWithForKey(
@@ -175,6 +167,9 @@ class KeyTypeParameterTransformer(
 
             val typeAnnotations = listOfNotNull(
                 if (hasAnnotation(InjektFqNames.Given)) "@Given" else null,
+                if (hasAnnotation(InjektFqNames.GivenSetElement)) "@GivenSetElement" else null,
+                if (hasAnnotation(InjektFqNames.Module)) "@Module" else null,
+                if (hasAnnotation(InjektFqNames.Interceptor)) "@Interceptor" else null,
                 if (hasAnnotation(InjektFqNames.Composable)) "@Composable" else null,
                 *getAnnotatedAnnotations(InjektFqNames.Qualifier)
                     .map { it.type.classifierOrFail.descriptor.fqNameSafe.asString() +

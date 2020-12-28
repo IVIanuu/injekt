@@ -63,4 +63,17 @@ class MacroTest {
         assertCompileError("type parameter")
     }
 
+    @Test
+    fun testMacroWithQualifierWithTypeParameter() = codegen(
+        """
+            @Qualifier annotation class Trigger<S>
+            @Macro @Given fun <@ForKey T : @Trigger<S> Any?, @ForKey S> macroImpl() = 
+                keyOf<S>()
+
+            @Trigger<Bar> @Given fun foo() = Foo()
+
+            fun invoke() = given<Key<Bar>>()
+        """
+    )
+
 }

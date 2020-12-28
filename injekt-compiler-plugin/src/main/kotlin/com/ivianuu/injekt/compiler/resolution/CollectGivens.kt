@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.resolve.calls.DslMarkerUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
@@ -59,6 +60,9 @@ data class CallableRef(
     val parameterTypes: Map<ParameterDescriptor, TypeRef> = callable.allParameters
         .map { it to it.type.toTypeRef() }
         .toMap(),
+    val typeArguments: Map<ClassifierRef, TypeRef> = callable.typeParameters
+        .map { it.toClassifierRef() to it.defaultType.toTypeRef() }
+        .toMap(),
     val contributionKind: ContributionKind? = callable.contributionKind(),
     val isMacro: Boolean = callable.hasAnnotation(InjektFqNames.Macro),
     val isFromMacro: Boolean = false,
@@ -69,7 +73,9 @@ fun CallableRef.substitute(substitutionMap: Map<ClassifierRef, TypeRef>): Callab
     if (substitutionMap.isEmpty()) return this
     return copy(
         type = type.substitute(substitutionMap),
-        parameterTypes = parameterTypes.mapValues { it.value.substitute(substitutionMap) }
+        parameterTypes = parameterTypes.mapValues { it.value.substitute(substitutionMap) },
+        typeArguments = typeArguments
+            .mapValues { it.value.substitute(substitutionMap) }
     )
 }
 

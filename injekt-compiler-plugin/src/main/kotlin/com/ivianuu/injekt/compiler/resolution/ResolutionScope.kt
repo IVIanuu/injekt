@@ -172,7 +172,11 @@ class ResolutionScope(
                         macro.callable.typeParameters.map { it.toClassifierRef() }
                     )
                     val result = macro.substitute(substitutionMap)
-                        .copy(isMacro = false, isFromMacro = true)
+                        .copy(
+                            isMacro = false,
+                            isFromMacro = true,
+                            typeArguments = substitutionMap
+                        )
                     newContributions += result
                 }
             }

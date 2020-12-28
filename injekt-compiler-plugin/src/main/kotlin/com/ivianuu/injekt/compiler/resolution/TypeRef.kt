@@ -391,6 +391,12 @@ fun getSubstitutionMap(
 
                     thisBaseTypeView?.typeArguments?.zip(baseSuperType.typeArguments)
                         ?.forEach { visitType(it.first, it.second) }
+
+                    if (thisType.qualifiers.isAssignableTo(baseSuperType.qualifiers)) {
+                        thisType.qualifiers.zip(baseSuperType.qualifiers)
+                            .map { it.first.type.toTypeRef() to it.second.type.toTypeRef() }
+                            .forEach { visitType(it.first, it.second) }
+                    }
                 }
         } else {
             thisType.typeArguments.zip(baseType.typeArguments)

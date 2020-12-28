@@ -378,14 +378,9 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         return DeclarationIrBuilder(pluginContext, symbol)
             .irCall(getter.symbol)
             .apply {
-                val substitutionMap = getSubstitutionMap(
-                    listOf(type to getter.descriptor.returnType!!.toTypeRef()),
-                    getter.typeParameters.map { it.descriptor.toClassifierRef() }
-                )
-
                 getter.typeParameters
                     .map {
-                        substitutionMap[it.descriptor.toClassifierRef()]
+                        callable.typeArguments[it.descriptor.toClassifierRef()]
                             ?: error("No substitution found for ${it.dump()}")
                     }
                     .forEachIndexed { index, typeArgument ->
@@ -406,14 +401,9 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         return DeclarationIrBuilder(pluginContext, symbol)
             .irCall(function.symbol)
             .apply {
-                val substitutionMap = getSubstitutionMap(
-                    listOf(type to function.descriptor.returnType!!.toTypeRef()),
-                    function.typeParameters.map { it.descriptor.toClassifierRef() }
-                )
-
                 function.typeParameters
                     .map {
-                        substitutionMap[it.descriptor.toClassifierRef()]
+                        callable.typeArguments[it.descriptor.toClassifierRef()]
                             ?: error("No substitution found for ${it.dump()}")
                     }
                     .forEachIndexed { index, typeArgument ->
