@@ -88,10 +88,7 @@ class ResolutionScope(
     fun givensForType(type: TypeRef): List<GivenNode> = givenNodesByType.getOrPut(type) {
         buildList<GivenNode> {
             this += givens
-                .filter {
-                    val r = it.first.type.isAssignableTo(type)
-                    r
-                }
+                .filter { it.first.type.isAssignableTo(type) }
                 .map { it.first.toGivenNode(type, it.second, this@ResolutionScope) }
 
             if (type.classifier.descriptor?.safeAs<ClassDescriptor>()
