@@ -167,12 +167,15 @@ class ResolutionScope(
 
         val allContributions = mutableListOf<CallableRef>()
 
+        val processedContributions = mutableSetOf<TypeRef>()
         var contributionsToProcess = initialContributions
 
         while (contributionsToProcess.isNotEmpty()) {
             val newContributions = mutableListOf<CallableRef>()
 
             for (contribution in contributionsToProcess) {
+                if (contribution in processedContributions) continue
+                processedContributions += contribution
                 for (macro in macros) {
                     val macroType = macro.callable.typeParameters.first()
                         .defaultType.toTypeRef()
