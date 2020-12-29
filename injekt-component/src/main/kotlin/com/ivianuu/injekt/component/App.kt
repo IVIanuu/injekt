@@ -17,20 +17,8 @@
 package com.ivianuu.injekt.component
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Macro
-import com.ivianuu.injekt.TypeParameterFix
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.common.ForKey
 
 typealias AppComponent = Component
-
-@Qualifier annotation class Scoped<C : Component>
-
-@TypeParameterFix("T", Scoped::class, ["C"])
-@Macro @Given inline fun <@ForKey T : @Scoped<C> S, @ForKey S : Any, @ForKey C : Component> scopedImpl(
-    @Given component: C,
-    @Given factory: () -> T
-): S = component.scope(factory)
 
 fun App.initializeApp(
     @Given elementsFactory: (@Given AppComponent) -> Set<ComponentElement<AppComponent>>

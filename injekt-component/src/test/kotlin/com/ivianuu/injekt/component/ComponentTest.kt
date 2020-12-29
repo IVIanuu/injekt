@@ -85,37 +85,4 @@ class ComponentTest {
         component.get<String>() shouldBe "value"
     }
 
-    @Test fun testGetSet() {
-        val component = ComponentBuilder<TestComponent1>().build()
-        component.getScopedValue<String>(0) shouldBe null
-        component.setScopedValue(0, "value")
-        component.getScopedValue<String>(0) shouldBe "value"
-    }
-
-    @Test fun testScope() {
-        val component = ComponentBuilder<TestComponent1>().build()
-        var calls = 0
-        component.scope(0) { calls++ }
-        component.scope(0) { calls++ }
-        component.scope(1) { calls++ }
-        calls shouldBe 2
-    }
-
-    @Test fun testDispose() {
-        val component = ComponentBuilder<TestComponent1>().build()
-        var disposed = false
-        component.setScopedValue(
-            0,
-            object : Component.Disposable {
-                override fun dispose() {
-                    disposed = true
-                }
-            }
-        )
-
-        disposed.shouldBeFalse()
-        component.dispose()
-        disposed.shouldBeTrue()
-    }
-
 }
