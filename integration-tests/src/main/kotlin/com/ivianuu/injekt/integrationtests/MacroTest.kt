@@ -125,6 +125,24 @@ class MacroTest {
     }
 
     @Test
+    fun testMacroChain() = codegen(
+        """
+            @Qualifier annotation class Trigger
+
+            @Macro @FooTrigger @Given fun <T : @Trigger Any?> triggerImpl() = 0
+
+            @Qualifier annotation class FooTrigger
+            @Macro @Given fun <T : @FooTrigger Any?> fooTriggerImpl() = Foo()
+
+            @Trigger @Given fun dummy() = 0L
+            
+            fun invoke() = given<Foo>()
+        """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
     fun testScoped() = multiCodegen(
         listOf(
             source(
