@@ -80,13 +80,19 @@ class ResolutionScope(
         collectMacroContributions(
             givens
                 .filterNot { it.first.isFromMacro }
-                .map { it.first.type } +
+                .map { (callable, scope) ->
+                    val typeWithPath = callable.type
+                        .copy(path = listOf(callable.callable.fqNameSafe))
+                    givens += callable.copy(type = typeWithPath) to scope
+                    typeWithPath
+                } +
                     declarationStore.givenFuns
                         .map { (givenFun, givenFunType) ->
                             givenFunType.defaultType
                                 .copy(
                                     qualifiers = givenFun.callable
-                                        .getAnnotatedAnnotations(InjektFqNames.Qualifier)
+                                        .getAnnotatedAnnotations(InjektFqNames.Qualifier),
+                                    path = listOf(givenFun.callable)
                                 )
                         }
         )
@@ -184,7 +190,7 @@ class ResolutionScope(
         var contributionsToProcess = initialContributions
 
         while (contributionsToProcess.isNotEmpty()) {
-            val newContributions = mutableListOf<CallableRef>()
+            val nextContributions = mutableListOf<TypeRef>()
 
             for (contribution in contributionsToProcess) {
                 if (contribution in processedContributions) continue
@@ -192,25 +198,40 @@ class ResolutionScope(
                 for (macro in macros) {
                     val macroType = macro.callable.typeParameters.first()
                         .defaultType.toTypeRef()
-                    if (!contribution.isSubTypeOf(macroType)) continue
-                    val substitutionMap = getSubstitutionMap(
+                    if (!contribution.copy(path = null).isSubTypeOf(macroType)) continue
+                    val inputsSubstitutionMap = getSubstitutionMap(
                         listOf(contribution to macroType),
                         macro.callable.typeParameters.map { it.toClassifierRef() }
                     )
-                    val result = macro.substitute(substitutionMap)
+                    val outputsSubstitutionMap = getSubstitutionMap(
+                        listOf(contribution.copy(path = null) to macroType),
+                        macro.callable.typeParameters.map { it.toClassifierRef() }
+                    )
+                    val newContribution = macro.substituteInputs(inputsSubstitutionMap)
                         .copy(
                             isMacro = false,
                             isFromMacro = true,
-                            typeArguments = substitutionMap
+                            typeArguments = inputsSubstitutionMap,
+                            type = macro.type.substitute(outputsSubstitutionMap)
                         )
-                    newContributions += result
+
+                    allContributions += newContribution
+                    nextContributions += if (newContribution.contributionKind == ContributionKind.VALUE) {
+                        val newContributionWithPath = newContribution.copy(
+                            type = newContribution.type.copy(
+                                path = contribution.path!! + newContribution.callable
+                                    .fqNameSafe
+                            )
+                        )
+                        allContributions += newContributionWithPath
+                        newContributionWithPath.type
+                    } else {
+                        newContribution.type
+                    }
                 }
             }
 
-            allContributions += newContributions
-            contributionsToProcess = newContributions
-                .filter { it.contributionKind == ContributionKind.VALUE }
-                .map { it.type }
+            contributionsToProcess = nextContributions
         }
 
         allContributions.forEach { contribution ->

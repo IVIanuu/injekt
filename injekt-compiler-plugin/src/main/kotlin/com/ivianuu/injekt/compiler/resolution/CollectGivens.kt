@@ -77,6 +77,15 @@ fun CallableRef.substitute(substitutionMap: Map<ClassifierRef, TypeRef>): Callab
     )
 }
 
+fun CallableRef.substituteInputs(substitutionMap: Map<ClassifierRef, TypeRef>): CallableRef {
+    if (substitutionMap.isEmpty()) return this
+    return copy(
+        parameterTypes = parameterTypes.mapValues { it.value.substitute(substitutionMap) },
+        typeArguments = typeArguments
+            .mapValues { it.value.substitute(substitutionMap) }
+    )
+}
+
 enum class ContributionKind {
     VALUE, SET_ELEMENT, MODULE, INTERCEPTOR
 }

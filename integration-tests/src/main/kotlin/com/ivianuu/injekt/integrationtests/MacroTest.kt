@@ -143,6 +143,21 @@ class MacroTest {
     }
 
     @Test
+    fun testMultipleMacroTargetsOfTheSameType() = codegen(
+        """
+            @Qualifier annotation class Trigger
+            @Macro @GivenSetElement fun <T : @Trigger String> triggerImpl(@Given instance: T): String = instance
+
+            @Trigger @Given fun a() = "a"
+            @Trigger @Given fun b() = "b"            
+
+            fun invoke() = given<Set<String>>()
+        """
+    ) {
+        assertEquals(setOf("a", "b"), invokeSingleFile())
+    }
+
+    @Test
     fun testScoped() = multiCodegen(
         listOf(
             source(
