@@ -23,24 +23,13 @@ import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
-import com.ivianuu.injekt.Macro
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.Unqualified
-import com.ivianuu.injekt.common.ForKey
 import com.ivianuu.injekt.component.AppComponent
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.componentElement
 import com.ivianuu.injekt.component.element
 import com.ivianuu.injekt.component.get
-import com.ivianuu.injekt.component.scope
 
 typealias ServiceComponent = Component
-
-@Qualifier annotation class ServiceScoped
-@Macro @Given inline fun <@ForKey T : @ServiceScoped S, S : Any> serviceScoped(
-    @Given component: ServiceComponent,
-    @Given factory: () -> T
-): S = component.scope(factory)
 
 @GivenSetElement fun serviceComponentFactory(
     @Given parent: AppComponent,

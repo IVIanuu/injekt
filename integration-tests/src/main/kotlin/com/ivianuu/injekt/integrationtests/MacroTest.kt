@@ -124,4 +124,30 @@ class MacroTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
+    @Test
+    fun testScoped() = multiCodegen(
+        listOf(
+            source(
+                """
+                    typealias ActivityComponent = Component
+                    @Given fun activityComponent(): ActivityComponent = 
+                        ComponentBuilder<ActivityComponent>().build()
+                    @Given fun appComponent(): AppComponent = 
+                        ComponentBuilder<AppComponent>().build()
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Scoped<AppComponent> @Given fun foo() = Foo()
+                    fun invoke() = given<Foo>()
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        assertTrue(it.last().invokeSingleFile() is Foo)
+    }
+
 }

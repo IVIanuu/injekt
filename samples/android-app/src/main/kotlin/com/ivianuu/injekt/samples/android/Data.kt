@@ -18,17 +18,20 @@ package com.ivianuu.injekt.samples.android
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.android.AppContext
-import com.ivianuu.injekt.component.AppScoped
+import com.ivianuu.injekt.component.AppComponent
+import com.ivianuu.injekt.component.Scoped
 import java.io.File
 
 typealias DatabaseFile = File
 
-@AppScoped @Given fun databaseFile(@Given context: AppContext): DatabaseFile =
-    context.cacheDir!!
+@Scoped<AppComponent> @Given
+fun databaseFile(@Given context: AppContext): DatabaseFile = context.cacheDir!!
 
-@AppScoped @Given class Database(@Given private val file: DatabaseFile)
+@Scoped<AppComponent> @Given
+class Database(@Given private val file: DatabaseFile)
 
-@AppScoped @Given class Repo(@Given private val api: Api) {
+@Scoped<AppComponent> @Given
+class Repo(@Given private val api: Api) {
     fun refresh() {
     }
 }

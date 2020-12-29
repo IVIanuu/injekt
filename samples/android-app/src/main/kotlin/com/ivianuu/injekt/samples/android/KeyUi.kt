@@ -17,28 +17,19 @@
 package com.ivianuu.injekt.samples.android
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.Macro
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.Unqualified
-import com.ivianuu.injekt.common.ForKey
-import com.ivianuu.injekt.component.AppScoped
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.consumeAsFlow
+import com.ivianuu.injekt.TypeParameterFix
 import kotlin.reflect.KClass
 
 typealias KeyUiElement = Pair<KClass<*>, @Composable () -> Unit>
 
 @Qualifier annotation class KeyUiBinding<K : Any>
 
+@TypeParameterFix("T", KeyUiBinding::class, ["K"])
 @Macro @GivenSetElement inline fun <
         reified T : @KeyUiBinding<K> @Composable () -> Unit,
-        reified K : Any> keyUiBinding(@Given instance: T): KeyUiElement =
-    K::class to instance
+        reified K : Any
+        > keyUiBinding(@Given instance: T): KeyUiElement = K::class to instance

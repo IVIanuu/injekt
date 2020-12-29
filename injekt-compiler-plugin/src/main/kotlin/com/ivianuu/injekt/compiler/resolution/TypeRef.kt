@@ -134,10 +134,12 @@ private fun TypeRef.applyTypeParameterFixIfNeeded(
                 }
         )
     return copy(
-        qualifiers = qualifiers + AnnotationDescriptorImpl(
-            qualifierType,
-            emptyMap(),
-            SourceElement.NO_SOURCE
+        qualifiers = listOf(
+            AnnotationDescriptorImpl(
+                qualifierType,
+                emptyMap(),
+                SourceElement.NO_SOURCE
+            )
         )
     )
 }
@@ -420,17 +422,27 @@ fun getSubstitutionMap(
         thisType: TypeRef,
         baseType: TypeRef,
     ) {
-        if (thisType in visitedTypes && baseType in visitedTypes) return
+        if (thisType in visitedTypes && baseType in visitedTypes) {
+            return
+        }
         visitedTypes += thisType
         visitedTypes += baseType
         if (baseType.classifier.isTypeParameter) {
-            substitutionMap[baseType.classifier] = thisType
+            if (baseType.classifier !in substitutionMap) {
+                substitutionMap[baseType.classifier] = thisType
+            }
             baseType.superTypes()
                 .map { thisType.subtypeView(it.classifier, substitutionMap) to it }
                 .forEach { (thisBaseTypeView, baseSuperType) ->
                     if (baseSuperType.classifier.isTypeParameter) {
-                        visitType((thisBaseTypeView ?: thisType)
+                        val thisTypeToUse = thisBaseTypeView ?: thisType
+                        visitType(thisTypeToUse
                             .copy(qualifiers = emptyList()), baseSuperType)
+                        if (thisTypeToUse.qualifiers.isAssignableTo(baseSuperType.qualifiers)) {
+                            thisTypeToUse.qualifiers.zip(baseSuperType.qualifiers)
+                                .map { it.first.type.toTypeRef() to it.second.type.toTypeRef() }
+                                .forEach { visitType(it.first, it.second) }
+                        }
                     } else {
                         visitType(thisBaseTypeView ?: thisType, baseSuperType)
                     }

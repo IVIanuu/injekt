@@ -24,7 +24,8 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Unqualified
 import com.ivianuu.injekt.common.ForKey
-import com.ivianuu.injekt.component.AppScoped
+import com.ivianuu.injekt.component.AppComponent
+import com.ivianuu.injekt.component.Scoped
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -33,7 +34,7 @@ import kotlinx.coroutines.flow.consumeAsFlow
 
 typealias ActionChannel<A> = Channel<A>
 
-@AppScoped @Given fun <@ForKey A> ActionChannel(): ActionChannel<A> = Channel()
+@Scoped<AppComponent> @Given fun <@ForKey A> ActionChannel(): ActionChannel<A> = Channel()
 
 typealias Dispatch<A> = (A) -> Unit
 
