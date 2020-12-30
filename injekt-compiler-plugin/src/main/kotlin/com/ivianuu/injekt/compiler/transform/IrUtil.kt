@@ -24,7 +24,6 @@ import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.ir.IrElement
@@ -83,7 +82,6 @@ import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.replace
-import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.types.withAbbreviation
 
 fun TypeRef.toIrType(pluginContext: IrPluginContext): IrType =
@@ -95,7 +93,7 @@ fun TypeRef.toKotlinType(): SimpleType {
             .withAbbreviation(toAbbreviation())
     } else {
         classifier.descriptor!!.defaultType
-            .replace(newArguments = typeArguments.map {
+            .replace(newArguments = arguments.map {
                 TypeProjectionImpl(
                     it.variance,
                     it.toKotlinType()
@@ -125,7 +123,7 @@ fun TypeRef.toKotlinType(): SimpleType {
 fun TypeRef.toAbbreviation(): SimpleType {
     val defaultType = classifier.descriptor!!.defaultType
     return defaultType
-        .replace(newArguments = typeArguments.map {
+        .replace(newArguments = arguments.map {
             TypeProjectionImpl(
                 it.variance,
                 it.toKotlinType()

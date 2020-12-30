@@ -17,8 +17,10 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.CacheDir
+import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.FileManager
 import com.ivianuu.injekt.compiler.SrcDir
+import com.ivianuu.injekt.compiler.generator.CallableInfoGenerator
 import com.ivianuu.injekt.compiler.generator.Generator
 import com.ivianuu.injekt.compiler.generator.GivenFunGenerator
 import com.ivianuu.injekt.compiler.generator.IndexGenerator
@@ -72,6 +74,17 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : Analysis
             }
             IndexGenerator().generate(context, filesToProcess)
             GivenFunGenerator().generate(context, filesToProcess)
+            try {
+                lazyTopDownAnalyzer.analyzeDeclarations(
+                    TopDownAnalysisMode.TopLevelDeclarations,
+                    files
+                )
+            } catch (e: Throwable) {
+            }
+            CallableInfoGenerator(
+                bindingTrace.bindingContext,
+                DeclarationStore(module)
+            ).generate(context, filesToProcess)
             fileManager.postGenerate()
             generatedCode = true
             return AnalysisResult.RetryWithAdditionalRoots(

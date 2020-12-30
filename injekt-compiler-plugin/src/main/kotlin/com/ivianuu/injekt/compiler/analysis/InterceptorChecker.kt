@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -31,9 +32,10 @@ import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
-class InterceptorChecker : DeclarationChecker {
+class InterceptorChecker(
+    private val declarationStore: DeclarationStore
+) : DeclarationChecker {
     override fun check(
         declaration: KtDeclaration,
         descriptor: DeclarationDescriptor,
@@ -45,11 +47,11 @@ class InterceptorChecker : DeclarationChecker {
                         return
 
         if (descriptor is FunctionDescriptor) {
-            val providerType = descriptor.callContext.providerType(descriptor.module)
-                .typeWith(listOf(descriptor.returnType!!.toTypeRef()))
+            val providerType = descriptor.callContext.providerType(declarationStore)
+                .typeWith(listOf(descriptor.returnType!!.toTypeRef(declarationStore)))
             val factoryParameter = descriptor
                 .valueParameters
-                .singleOrNull { it.type.toTypeRef() == providerType }
+                .singleOrNull { it.type.toTypeRef(declarationStore) == providerType }
             if (factoryParameter == null) {
                 context.trace.report(
                     InjektErrors.INTERCEPTOR_WITHOUT_FACTORY_PARAMETER
@@ -59,7 +61,7 @@ class InterceptorChecker : DeclarationChecker {
             descriptor
                 .valueParameters
                 .filter { it != factoryParameter }
-                .filter { it.contributionKind() == null }
+                .filter { it.contributionKind(declarationStore) == null }
                 .forEach {
                     context.trace.report(
                         InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
@@ -70,14 +72,15 @@ class InterceptorChecker : DeclarationChecker {
                     )
                 }
         } else if (descriptor is ValueDescriptor) {
-            val providerType = descriptor.type.toTypeRef()
+            val providerType = descriptor.type.toTypeRef(declarationStore)
                 .callContext
-                .providerType(descriptor.module)
-                .typeWith(listOf(descriptor.type.arguments.last().type.toTypeRef()))
+                .providerType(declarationStore)
+                .typeWith(listOf(descriptor.type.arguments.last()
+                    .type.toTypeRef(declarationStore)))
             val factoryParameter = descriptor
                 .type
-                .toTypeRef()
-                .typeArguments
+                .toTypeRef(declarationStore)
+                .arguments
                 .dropLast(1)
                 .singleOrNull { it == providerType }
             if (factoryParameter == null) {
@@ -88,8 +91,8 @@ class InterceptorChecker : DeclarationChecker {
             }
             descriptor
                 .type
-                .toTypeRef()
-                .typeArguments
+                .toTypeRef(declarationStore)
+                .arguments
                 .dropLast(1)
                 .filter { it != factoryParameter }
                 .filter { it.contributionKind == null }

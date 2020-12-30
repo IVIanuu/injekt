@@ -115,7 +115,8 @@ data class FunGivenNode(
         get() = CallContext.DEFAULT
     override val callableFqName: FqName
         get() = type.classifier.fqName
-    override val dependencies: List<GivenRequest> = callable.getGivenRequests(true)
+    override val dependencies: List<GivenRequest> =
+        callable.getGivenRequests(ownerScope.declarationStore)
     override val originalType: TypeRef
         get() = type.classifier.defaultType
     override val dependencyScope = ResolutionScope(
@@ -162,7 +163,7 @@ data class ProviderGivenNode(
     override val callableFqName: FqName = FqName("Provider")
     override val dependencies: List<GivenRequest> = listOf(
         GivenRequest(
-            type = type.typeArguments.last(),
+            type = type.arguments.last(),
             required = true,
             callableFqName = callableFqName,
             parameterName = "instance".asNameId()
@@ -182,8 +183,12 @@ data class ProviderGivenNode(
                 .first()
                 .valueParameters
                 .map { ProviderParameterDescriptor(this, it) }
-                .map {
-                    CallableRef(it, contributionKind = type.typeArguments[it.index].contributionKind)
+                .map { parameter ->
+                    parameter
+                        .toCallableRef(declarationStore = declarationStore)
+                        .copy(
+                            contributionKind = type.arguments[parameter.index].contributionKind
+                        )
                 }
         }
     )
@@ -212,21 +217,21 @@ fun CallableRef.toGivenNode(
     val finalCallable = substitute(getSubstitutionMap(listOf(type to this.type)))
     return CallableGivenNode(
         type,
-        finalCallable.getGivenRequests(false),
+        finalCallable.getGivenRequests(ownerScope.declarationStore),
         ownerScope,
         requestingScope.interceptorsForType(type),
         finalCallable
     )
 }
 
-fun CallableRef.getGivenRequests(forFunExpression: Boolean): List<GivenRequest> {
+fun CallableRef.getGivenRequests(declarationStore: DeclarationStore): List<GivenRequest> {
     return callable.allParameters
         .filter {
             callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
         }
         .filter {
             it === callable.dispatchReceiverParameter ||
-                    it.contributionKind() == ContributionKind.VALUE ||
+                    it.contributionKind(declarationStore) == ContributionKind.VALUE ||
                     parameterTypes[it]!!.contributionKind == ContributionKind.VALUE
         }
         .map {

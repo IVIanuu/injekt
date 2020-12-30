@@ -30,7 +30,8 @@ import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.componentElement
+import com.ivianuu.injekt.component.ComponentElement
+import com.ivianuu.injekt.component.ComponentElementBinding
 import com.ivianuu.injekt.component.element
 import com.ivianuu.injekt.component.get
 
@@ -42,13 +43,15 @@ typealias ActivityComponent = Component
             .get<(ComponentActivity) -> ActivityComponent>()(this)
     }
 
-@GivenSetElement fun activityComponentFactory(
+@ComponentElementBinding<ActivityRetainedComponent>
+@Given
+fun activityComponentFactory(
     @Given parent: ActivityRetainedComponent,
     @Given builderFactory: () -> Component.Builder<ActivityComponent>,
-) = componentElement<ActivityRetainedComponent, (ComponentActivity) -> ActivityComponent> { activity ->
+): (ComponentActivity) -> ActivityComponent = { activity ->
     builderFactory()
         .dependency(parent)
-        .element(activity)
+        .element { activity }
         .build()
 }
 

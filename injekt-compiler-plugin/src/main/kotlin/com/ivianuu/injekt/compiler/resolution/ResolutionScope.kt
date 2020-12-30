@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.isExternalDeclaration
+import com.ivianuu.injekt.compiler.toAnnotationRef
 import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -62,6 +63,7 @@ class ResolutionScope(
         parent?.macros?.forEach { macros += it }
         contributions().forEach { contribution ->
             contribution.collectContributions(
+                declarationStore = declarationStore,
                 path = listOf(contribution.callable.fqNameSafe),
                 addGiven = { givens += it to this },
                 addGivenSetElement = { givenSetElements += it },
@@ -74,6 +76,9 @@ class ResolutionScope(
             ?.forEach { interceptors += it }
         Unit
     }
+
+    private val setType = declarationStore.module.builtIns.set.defaultType
+        .toTypeRef(declarationStore)
 
     private val initializeMacros by unsafeLazy {
         initialize
@@ -91,7 +96,8 @@ class ResolutionScope(
                             givenFunType.defaultType
                                 .copy(
                                     qualifiers = givenFun.callable
-                                        .getAnnotatedAnnotations(InjektFqNames.Qualifier),
+                                        .getAnnotatedAnnotations(InjektFqNames.Qualifier)
+                                        .map { it.toAnnotationRef(declarationStore) },
                                     path = listOf(givenFun.callable)
                                 )
                         }
@@ -114,10 +120,9 @@ class ResolutionScope(
                     type,
                     this@ResolutionScope,
                     interceptorsForType(type),
-                    CallableRef(
-                        declarationStore.functionDescriptorForFqName(type.classifier.fqName)
-                            .single()
-                    )
+                    declarationStore.functionDescriptorForFqName(type.classifier.fqName)
+                        .single()
+                        .toCallableRef(declarationStore)
                 )
 
                 if (type.path == null &&
@@ -125,7 +130,7 @@ class ResolutionScope(
                     (type.classifier.fqName.asString().startsWith("kotlin.Function")
                             || type.classifier.fqName.asString()
                         .startsWith("kotlin.coroutines.SuspendFunction")) &&
-                    type.typeArguments.dropLast(1).all {
+                    type.arguments.dropLast(1).all {
                         it.contributionKind != null
                     }
                 ) this += ProviderGivenNode(
@@ -135,16 +140,18 @@ class ResolutionScope(
                     declarationStore
                 )
 
-                val setType = declarationStore.module.builtIns.set.defaultType.toTypeRef()
+
                 if (type.isSubTypeOf(setType)) {
-                    val setElementType = type.subtypeView(setType.classifier)!!.typeArguments.single()
+                    val setElementType = type.subtypeView(setType.classifier)!!.arguments.single()
                     val elements = givenSetElementsForType(setElementType)
                     this += SetGivenNode(
                         type,
                         this@ResolutionScope,
                         interceptorsForType(type),
                         elements,
-                        elements.flatMap { element -> element.getGivenRequests(false) }
+                        elements.flatMap { element ->
+                            element.getGivenRequests(declarationStore)
+                        }
                     )
                 }
             }.distinct()
@@ -175,7 +182,7 @@ class ResolutionScope(
                 .map {
                     InterceptorNode(
                         it,
-                        it.getGivenRequests(false)
+                        it.getGivenRequests(declarationStore)
                     )
                 }
         }
@@ -197,15 +204,15 @@ class ResolutionScope(
                 processedContributions += contribution
                 for (macro in macros) {
                     val macroType = macro.callable.typeParameters.first()
-                        .defaultType.toTypeRef()
+                        .defaultType.toTypeRef(declarationStore)
                     if (!contribution.copy(path = null).isSubTypeOf(macroType)) continue
                     val inputsSubstitutionMap = getSubstitutionMap(
                         listOf(contribution to macroType),
-                        macro.callable.typeParameters.map { it.toClassifierRef() }
+                        macro.typeParameters
                     )
                     val outputsSubstitutionMap = getSubstitutionMap(
                         listOf(contribution.copy(path = null) to macroType),
-                        macro.callable.typeParameters.map { it.toClassifierRef() }
+                        macro.typeParameters
                     )
                     val newContribution = macro.substituteInputs(inputsSubstitutionMap)
                         .copy(
@@ -236,6 +243,7 @@ class ResolutionScope(
 
         allContributions.forEach { contribution ->
             contribution.collectContributions(
+                declarationStore = declarationStore,
                 path = listOf(contribution.callable.fqNameSafe),
                 addGiven = { givens += it to this },
                 addGivenSetElement = { givenSetElements += it },
@@ -285,8 +293,11 @@ fun ClassResolutionScope(
     parent = parent,
     contributions = {
         descriptor.unsubstitutedMemberScope
-            .collectContributions(descriptor.defaultType.toTypeRef()) +
-                CallableRef(descriptor.thisAsReceiverParameter, contributionKind = ContributionKind.VALUE)
+            .collectContributions(
+                declarationStore,
+                descriptor.defaultType.toTypeRef(declarationStore)
+            ) + descriptor.thisAsReceiverParameter.toCallableRef(declarationStore)
+            .copy(contributionKind = ContributionKind.VALUE)
     }
 )
 
@@ -300,7 +311,7 @@ fun FunctionResolutionScope(
     declarationStore = declarationStore,
     callContext = lambdaType?.callContext ?: descriptor.callContext,
     parent = parent,
-    contributions = { descriptor.collectContributions() }
+    contributions = { descriptor.collectContributions(declarationStore) }
 )
 
 fun LocalDeclarationResolutionScope(
@@ -309,10 +320,15 @@ fun LocalDeclarationResolutionScope(
     declaration: DeclarationDescriptor
 ): ResolutionScope {
     val declarations: List<CallableRef> = when (declaration) {
-        is ClassDescriptor -> declaration.getContributionConstructors()
+        is ClassDescriptor -> declaration.getContributionConstructors(declarationStore)
         is CallableDescriptor -> declaration
-            .contributionKind()
-            ?.let { listOf(CallableRef(declaration, contributionKind = it)) }
+            .contributionKind(declarationStore)
+            ?.let {
+                listOf(
+                    declaration.toCallableRef(declarationStore)
+                        .copy(contributionKind = it)
+                )
+            }
         else -> null
     } ?: return parent
     return ResolutionScope(

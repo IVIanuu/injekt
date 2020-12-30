@@ -65,4 +65,9 @@ dependencies {
     kapt(Deps.processingX)
     api(Deps.Kotlin.compilerEmbeddable)
     implementation(Deps.Kotlin.stdlib)
+    implementation(Deps.Moshi.moshi)
+    implementation(Deps.Moshi.adapters)
+    kapt(Deps.Moshi.codegen)
+    implementation(Deps.Moshi.sealedRuntime)
+    kapt(Deps.Moshi.sealedCodegen)
 }

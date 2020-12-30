@@ -17,21 +17,31 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.Index
+import com.ivianuu.injekt.compiler.resolution.ClassifierRef
+import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.getContributionConstructors
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
+import com.squareup.moshi.Moshi
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import java.util.Base64
 
-class DeclarationStore(val module: ModuleDescriptor) {
+@Suppress("NewApi") class DeclarationStore(val module: ModuleDescriptor) {
 
     private val allIndices by unsafeLazy {
         (memberScopeForFqName(InjektFqNames.IndexPackage)
@@ -66,12 +76,12 @@ class DeclarationStore(val module: ModuleDescriptor) {
 
     val globalContributions by unsafeLazy {
         classIndices
-            .flatMap { it.getContributionConstructors() } +
+            .flatMap { it.getContributionConstructors(this) } +
                 functionIndices
-                    .map { it.toCallableRef() }
+                    .map { it.toCallableRef(this) }
                     .filter { it.contributionKind != null } +
                 propertyIndices
-                    .map { it.toCallableRef() }
+                    .map { it.toCallableRef(this) }
                     .filter { it.contributionKind != null }
     }
 
@@ -79,17 +89,82 @@ class DeclarationStore(val module: ModuleDescriptor) {
         functionIndices
             .filter { it.hasAnnotation(InjektFqNames.GivenFun) }
             .map {
-                it.toCallableRef() to classifierDescriptorForFqName(it.fqNameSafe)
-                    .toClassifierRef()
+                it.toCallableRef(this) to classifierDescriptorForFqName(it.fqNameSafe)
+                    .toClassifierRef(this)
             }
     }
 
+    val moshi = Moshi.Builder().build()
+
+    private val allCallableInfos: Map<String, Lazy<PersistedCallableInfo>> by unsafeLazy {
+        (memberScopeForFqName(InjektFqNames.IndexPackage)
+            ?.getContributedDescriptors(DescriptorKindFilter.VALUES)
+            ?.filterIsInstance<PropertyDescriptor>()
+            ?.filter { it.hasAnnotation(InjektFqNames.CallableInfo) }
+            ?.map { callableInfoProperty ->
+                val annotation =
+                    callableInfoProperty.annotations.findAnnotation(InjektFqNames.CallableInfo)!!
+                val key = annotation.allValueArguments["key".asNameId()]!!.value as String
+                key to unsafeLazy {
+                    val value = Base64.getDecoder()
+                        .decode(annotation.allValueArguments["value".asNameId()]!!.value as String)
+                        .decodeToString()
+                    moshi.adapter(PersistedCallableInfo::class.java).fromJson(value)!!
+                }
+            } ?: emptyList())
+            .toMap()
+    }
+
+    private val callableInfosByDeclaration = mutableMapOf<DeclarationDescriptor, PersistedCallableInfo?>()
+    fun callableInfoFor(declaration: DeclarationDescriptor): PersistedCallableInfo? {
+        return internalCallableInfoFor(declaration) ?: kotlin.run {
+            callableInfosByDeclaration.getOrPut(declaration) {
+                allCallableInfos[declaration.uniqueKey(this)]
+                    ?.let { return@getOrPut it.value }
+            }
+        }
+    }
+
+    private val internalCallableInfosByDeclaration = mutableMapOf<DeclarationDescriptor, PersistedCallableInfo?>()
+    fun internalCallableInfoFor(declaration: DeclarationDescriptor): PersistedCallableInfo? {
+        if (declaration.isExternalDeclaration()) return null
+        return internalCallableInfosByDeclaration.getOrPut(declaration) {
+            createCallableInfoOrNull(declaration.original)
+        }
+    }
+
+    private fun createCallableInfoOrNull(descriptor: DeclarationDescriptor): PersistedCallableInfo? {
+        if (descriptor !is CallableDescriptor) return null
+        return descriptor.toCallableRef(this, false)
+            .toPersistedCallableInfo(this)
+    }
+
     private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor>()
-    private fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor {
+    fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor {
         return classifierDescriptorByFqName.getOrPut(fqName) {
             memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
             ) ?: error("Could not get for $fqName")
+        }
+    }
+
+    private val classifierDescriptorByKey = mutableMapOf<String, ClassifierDescriptor>()
+    fun classifierDescriptorForKey(key: String): ClassifierDescriptor {
+        return classifierDescriptorByKey.getOrPut(key) {
+            val fqName = FqName(key.split(":")[1])
+            memberScopeForFqName(fqName.parent())?.getContributedClassifier(
+                fqName.shortName(), NoLookupLocation.FROM_BACKEND
+            )?.takeIf { it.uniqueKey(this) == key }
+                ?: functionDescriptorForFqName(fqName.parent())
+                    .flatMap { it.typeParameters }
+                    .singleOrNull {
+                        it.uniqueKey(this@DeclarationStore) == key
+                    }
+                ?: classifierDescriptorForFqName(fqName.parent())
+                    .safeAs<ClassifierDescriptorWithTypeParameters>()
+                    ?.declaredTypeParameters
+                    ?.single { it.uniqueKey(this@DeclarationStore) == key }
+                ?: error("Could not get for $fqName")
         }
     }
 

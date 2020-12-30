@@ -59,7 +59,6 @@ import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeOrNull
-import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -73,10 +72,9 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
 
     private fun ResolutionContext.fillGivens(
         callable: CallableRef,
-        forFunExpression: Boolean,
         call: IrFunctionAccessExpression,
     ) {
-        val requests = callable.getGivenRequests(forFunExpression)
+        val requests = callable.getGivenRequests(graph.scope.declarationStore)
         if (callable.callable.dispatchReceiverParameter != null && call.dispatchReceiver == null) {
             call.dispatchReceiver = expressionFor(
                 requests.single { it.parameterName.asString() == "_dispatchReceiver" },
@@ -94,7 +92,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             .valueParameters
             .filter { call.getValueArgument(it.index) == null }
             .filter {
-                it.contributionKind() == ContributionKind.VALUE ||
+                it.contributionKind(graph.scope.declarationStore) == ContributionKind.VALUE ||
                         callable.parameterTypes[it]!!.contributionKind == ContributionKind.VALUE
             }
             .map { parameter ->
@@ -180,7 +178,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
     ): IrExpression {
         if (given.interceptors.isEmpty()) return unintercepted
         val providerType = given.callContext
-            .providerType(pluginContext.moduleDescriptor)
+            .providerType(graph.scope.declarationStore)
             .typeWith(listOf(given.type))
         return given.interceptors
             .reversed()
@@ -227,14 +225,14 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
 
                         givenFun
                             .valueParameters
-                            .filterNot { it.descriptor.contributionKind() == ContributionKind.VALUE }
+                            .filterNot { it.descriptor.contributionKind(graph.scope.declarationStore) == ContributionKind.VALUE }
                             .forEachIndexed { index, valueParameter ->
                                 putValueArgument(valueParameter.index,
                                     DeclarationIrBuilder(pluginContext, symbol)
                                         .irGet(function.valueParameters[index]))
                             }
 
-                        fillGivens(given.callable, true, this)
+                        fillGivens(given.callable, this)
                     }
             }
     }
@@ -264,7 +262,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         symbol: IrSymbol,
     ): IrExpression {
         val elementType =
-            given.type.fullyExpandedType.typeArguments.single()
+            given.type.fullyExpandedType.arguments.single()
 
         if (given.elements.isEmpty()) {
             val emptySet = pluginContext.referenceFunctions(
@@ -354,16 +352,16 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                 .irCall(constructor.symbol)
                 .apply {
                     val substitutionMap = getSubstitutionMap(listOf(type to callable.originalType))
-                    constructor.constructedClass.typeParameters
+                    callable.typeParameters
                         .map {
-                            substitutionMap[it.descriptor.toClassifierRef()]
-                                ?: error("No substitution found for ${it.dump()}")
+                            substitutionMap[it]
+                                ?: error("No substitution found for $it")
                         }
                         .forEachIndexed { index, typeArgument ->
                             putTypeArgument(index, typeArgument.toIrType(pluginContext))
                         }
 
-                    fillGivens(callable, false, this)
+                    fillGivens(callable, this)
                 }
         }
     }
@@ -379,16 +377,16 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         return DeclarationIrBuilder(pluginContext, symbol)
             .irCall(getter.symbol)
             .apply {
-                getter.typeParameters
+                callable.typeParameters
                     .map {
-                        callable.typeArguments[it.descriptor.toClassifierRef()]
-                            ?: error("No substitution found for ${it.dump()}")
+                        callable.typeArguments[it]
+                            ?: error("No substitution found for $it")
                     }
                     .forEachIndexed { index, typeArgument ->
                         putTypeArgument(index, typeArgument.toIrType(pluginContext))
                     }
 
-                fillGivens(callable, false, this)
+                fillGivens(callable, this)
             }
     }
 
@@ -401,16 +399,16 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         return DeclarationIrBuilder(pluginContext, symbol)
             .irCall(function.symbol)
             .apply {
-                function.typeParameters
+                callable.typeParameters
                     .map {
-                        callable.typeArguments[it.descriptor.toClassifierRef()]
-                            ?: error("No substitution found for ${it.dump()}")
+                        callable.typeArguments[it]
+                            ?: error("No substitution found for $it")
                     }
                     .forEachIndexed { index, typeArgument ->
                         putTypeArgument(index, typeArgument.toIrType(pluginContext))
                     }
 
-                fillGivens(callable, false, this)
+                fillGivens(callable, this)
             }
     }
 
@@ -525,7 +523,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
 
     override fun visitFunctionAccess(expression: IrFunctionAccessExpression) =
         super.visitFunctionAccess(expression.apply {
-            val givenNodes = pluginContext.bindingContext[
+            val graph = pluginContext.bindingContext[
                     InjektWritableSlices.GIVEN_GRAPH,
                     SourcePosition(
                         fileStack.last().fileEntry.name,
@@ -533,29 +531,29 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                         expression.endOffset
                     )
             ]
-            if (givenNodes != null) {
+            if (graph != null) {
                 try {
                     val substitutionMap = getSubstitutionMap(
                         (0 until expression.typeArgumentsCount)
-                            .map { getTypeArgument(it)!!.toKotlinType().toTypeRef() }
+                            .map { getTypeArgument(it)!!.toKotlinType().toTypeRef(graph.scope.declarationStore) }
                             .zip(
                                 expression.symbol.descriptor.typeParameters
-                                    .map { it.defaultType.toTypeRef() }
+                                    .map { it.defaultType.toTypeRef(graph.scope.declarationStore) }
                             )
                     ) + getSubstitutionMap(
                         ((dispatchReceiver?.type as? IrSimpleType)?.arguments
-                            ?.map { it.typeOrNull!!.toKotlinType().toTypeRef() }
+                            ?.map { it.typeOrNull!!.toKotlinType().toTypeRef(graph.scope.declarationStore) }
                             ?: emptyList())
                             .zip(
                                 dispatchReceiver?.type?.classOrNull?.owner?.let {
                                     it.typeParameters
-                                        .map { it.defaultType.toKotlinType().toTypeRef() }
+                                        .map { it.defaultType.toKotlinType().toTypeRef(graph.scope.declarationStore) }
                                 } ?: emptyList()
                             )
                     )
-                    ResolutionContext(givenNodes)
-                        .fillGivens(expression.symbol.descriptor.toCallableRef()
-                            .substitute(substitutionMap), false, expression)
+                    ResolutionContext(graph)
+                        .fillGivens(expression.symbol.descriptor.toCallableRef(graph.scope.declarationStore)
+                            .substitute(substitutionMap), expression)
                 } catch (e: Throwable) {
                     throw RuntimeException("Wtf ${expression.dump()}", e)
                 }

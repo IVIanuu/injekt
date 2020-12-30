@@ -31,7 +31,7 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev442"
+    const val version = "${Build.versionName}-dev444"
 }
 
 object Deps {
@@ -116,6 +116,16 @@ object Deps {
 
     const val mavenGradlePlugin =
         "com.github.dcendents:android-maven-gradle-plugin:2.1"
+
+    object Moshi {
+        private const val version = "1.9.2"
+        const val adapters = "com.squareup.moshi:moshi-adapters:$version"
+        const val moshi = "com.squareup.moshi:moshi:$version"
+        const val codegen = "com.squareup.moshi:moshi-kotlin-codegen:$version"
+        private const val sealedVersion = "0.7.0"
+        const val sealedRuntime = "dev.zacsweers.moshix:moshi-sealed-runtime:$sealedVersion"
+        const val sealedCodegen = "dev.zacsweers.moshix:moshi-sealed-codegen:$sealedVersion"
+    }
 
     const val processingX = "com.ivianuu.processingx:processingx:0.0.1-dev4"
 

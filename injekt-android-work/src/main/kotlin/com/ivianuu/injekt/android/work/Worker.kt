@@ -28,7 +28,7 @@ import com.ivianuu.injekt.Macro
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.component.AppComponent
 import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.componentElement
+import com.ivianuu.injekt.component.ComponentElementBinding
 import com.ivianuu.injekt.component.element
 import com.ivianuu.injekt.component.get
 import kotlin.reflect.KClass
@@ -40,15 +40,17 @@ import kotlin.reflect.KClass
 
 typealias WorkerComponent = Component
 
-@GivenSetElement fun workerComponentFactory(
+@ComponentElementBinding<AppComponent>
+@Given
+fun workerComponentFactory(
     @Given parent: AppComponent,
     @Given builderFactory: () -> Component.Builder<WorkerComponent>,
-) = componentElement<AppComponent, (WorkerContext, WorkerParameters) -> WorkerComponent> {
+): (WorkerContext, WorkerParameters) -> WorkerComponent = {
         context, params ->
     builderFactory()
         .dependency(parent)
-        .element(context)
-        .element(params)
+        .element { context }
+        .element { params }
         .build()
 }
 

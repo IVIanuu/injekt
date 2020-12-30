@@ -23,7 +23,9 @@ import com.ivianuu.injekt.compiler.resolution.ContributionKind
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.contributionKind
 import com.ivianuu.injekt.compiler.resolution.substitute
+import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.resolution.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -31,8 +33,14 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DeserializedDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
+import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
@@ -46,6 +54,7 @@ import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedTypeParameterDescriptor
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.IntersectionTypeConstructor
@@ -91,19 +100,26 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
     return null
 }
 
-fun CallableDescriptor.getGivenParameters(substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()): List<ParameterDescriptor> =
-    getContributionParameters(substitutionMap)
+fun CallableDescriptor.getGivenParameters(
+    declarationStore: DeclarationStore,
+    substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
+): List<ParameterDescriptor> =
+    getContributionParameters(declarationStore, substitutionMap)
         .filter { it.contributionKind == ContributionKind.VALUE }
         .map { it.callable as ParameterDescriptor }
 
-fun CallableDescriptor.getContributionParameters(substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()): List<CallableRef> =
+fun CallableDescriptor.getContributionParameters(
+    declarationStore: DeclarationStore,
+    substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
+): List<CallableRef> =
     allParameters
-        .mapNotNull {
-            val kind = it.contributionKind() ?: if (substitutionMap.isNotEmpty()) {
-                it.type.toTypeRef().substitute(substitutionMap)
+        .mapNotNull { parameter ->
+            val kind = parameter.contributionKind(declarationStore) ?: if (substitutionMap.isNotEmpty()) {
+                parameter.type.toTypeRef(declarationStore).substitute(substitutionMap)
                     .contributionKind
-            } else it.type.contributionKind()
-            if (kind != null) CallableRef(it, contributionKind = kind)
+            } else parameter.type.contributionKind(declarationStore)
+            if (kind != null) parameter.toCallableRef(declarationStore)
+                .copy(contributionKind = kind)
             else null
         }
 
@@ -159,3 +175,38 @@ fun IrType.getAnnotatedAnnotations(annotation: FqName): List<IrConstructorCall> 
         val inner = it.type.classOrNull!!.owner
         inner.hasAnnotation(annotation)
     }
+
+fun DeclarationDescriptor.uniqueKey(declarationStore: DeclarationStore): String {
+    val original = this.original
+    return when (original) {
+        is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
+            original.valueParameters
+                .joinToString(",") {
+                    it.type.toTypeRef(declarationStore).uniqueTypeName() 
+                }
+        }"
+        is ClassDescriptor -> "class:$fqNameSafe"
+        is FunctionDescriptor -> "function:$fqNameSafe:${
+            listOfNotNull(
+                original.dispatchReceiverParameter, original.extensionReceiverParameter)
+                .plus(original.valueParameters)
+                .joinToString(",") { 
+                    it.type.toTypeRef(declarationStore).uniqueTypeName()
+                }
+        }"
+        is PropertyDescriptor -> "property:$fqNameSafe:${
+            listOfNotNull(
+                original.dispatchReceiverParameter, original.extensionReceiverParameter)
+                .joinToString(",") { 
+                    it.type.toTypeRef(declarationStore).uniqueTypeName()
+                }
+        }"
+        is TypeAliasDescriptor -> "typealias:$fqNameSafe"
+        is TypeParameterDescriptor ->
+            "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey(declarationStore)}"
+        is ParameterDescriptor -> ""
+        is ValueParameterDescriptor -> ""
+        is VariableDescriptor -> ""
+        else -> error("Unexpected declaration $this")
+    }
+}

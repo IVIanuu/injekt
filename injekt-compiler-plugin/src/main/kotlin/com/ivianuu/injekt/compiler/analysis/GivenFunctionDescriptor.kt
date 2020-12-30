@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -36,12 +37,13 @@ interface GivenFunctionDescriptor : FunctionDescriptor {
 class GivenValueParameterDescriptor(
     parent: GivenFunctionDescriptor,
     val underlyingDescriptor: ValueParameterDescriptor,
+    val declarationStore: DeclarationStore
 ) : ValueParameterDescriptorImpl(
     parent,
     null,
     underlyingDescriptor.index,
     underlyingDescriptor.annotations,
-    if (underlyingDescriptor.name.isSpecial) underlyingDescriptor.type.toTypeRef()
+    if (underlyingDescriptor.name.isSpecial) underlyingDescriptor.type.toTypeRef(declarationStore)
         .classifier.fqName.shortName().asString().decapitalize().asNameId() else underlyingDescriptor.name,
     underlyingDescriptor.type,
     underlyingDescriptor.hasAnnotation(InjektFqNames.Given) ||
@@ -59,40 +61,48 @@ val ValueParameterDescriptor.hasDefaultValueIgnoringGiven: Boolean
 
 abstract class AbstractGivenFunctionDescriptor(
     override val invokeDescriptor: FunctionDescriptor,
+    val declarationStore: DeclarationStore
 ) : GivenFunctionDescriptor {
     private val valueParameters = invokeDescriptor
         .valueParameters
         .mapTo(mutableListOf()) { valueParameter ->
-            GivenValueParameterDescriptor(this, valueParameter)
+            GivenValueParameterDescriptor(this, valueParameter, declarationStore)
         }
 
     override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
         valueParameters.cast()
 }
 
-fun FunctionDescriptor.toGivenFunctionDescriptor() = when (this) {
+fun FunctionDescriptor.toGivenFunctionDescriptor(
+    declarationStore: DeclarationStore
+) = when (this) {
     is GivenFunctionDescriptor -> this
-    is ClassConstructorDescriptor -> GivenConstructorDescriptorImpl(this)
-    is SimpleFunctionDescriptor -> GivenSimpleFunctionDescriptorImpl(this)
-    else -> GivenFunctionDescriptorImpl(this)
+    is ClassConstructorDescriptor -> GivenConstructorDescriptorImpl(this, declarationStore)
+    is SimpleFunctionDescriptor -> GivenSimpleFunctionDescriptorImpl(this, declarationStore)
+    else -> GivenFunctionDescriptorImpl(this, declarationStore)
 }
 
-class GivenConstructorDescriptorImpl(underlyingDescriptor: ClassConstructorDescriptor) :
-    AbstractGivenFunctionDescriptor(underlyingDescriptor),
+class GivenConstructorDescriptorImpl(
+    underlyingDescriptor: ClassConstructorDescriptor,
+    declarationStore: DeclarationStore
+) : AbstractGivenFunctionDescriptor(underlyingDescriptor, declarationStore),
     ClassConstructorDescriptor by underlyingDescriptor {
     override fun substitute(substitutor: TypeSubstitutor): ClassConstructorDescriptor =
         GivenConstructorDescriptorImpl(invokeDescriptor
-            .substitute(substitutor) as ClassConstructorDescriptor)
+            .substitute(substitutor) as ClassConstructorDescriptor, declarationStore)
 
     override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
         super.getValueParameters()
 }
 
-class GivenFunctionDescriptorImpl(underlyingDescriptor: FunctionDescriptor) :
-    AbstractGivenFunctionDescriptor(underlyingDescriptor),
+class GivenFunctionDescriptorImpl(
+    underlyingDescriptor: FunctionDescriptor,
+    declarationStore: DeclarationStore
+) : AbstractGivenFunctionDescriptor(underlyingDescriptor, declarationStore),
     FunctionDescriptor by underlyingDescriptor {
     override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =
-        GivenFunctionDescriptorImpl(invokeDescriptor.substitute(substitutor) as FunctionDescriptor)
+        GivenFunctionDescriptorImpl(
+            invokeDescriptor.substitute(substitutor) as FunctionDescriptor, declarationStore)
 
     override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
         super.getValueParameters()
@@ -100,11 +110,12 @@ class GivenFunctionDescriptorImpl(underlyingDescriptor: FunctionDescriptor) :
 
 class GivenSimpleFunctionDescriptorImpl(
     underlyingDescriptor: SimpleFunctionDescriptor,
-) : AbstractGivenFunctionDescriptor(underlyingDescriptor),
+    declarationStore: DeclarationStore,
+) : AbstractGivenFunctionDescriptor(underlyingDescriptor, declarationStore),
     SimpleFunctionDescriptor by underlyingDescriptor {
     override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =
         GivenSimpleFunctionDescriptorImpl(invokeDescriptor
-            .substitute(substitutor) as SimpleFunctionDescriptor)
+            .substitute(substitutor) as SimpleFunctionDescriptor, declarationStore)
 
     override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
         super.getValueParameters()

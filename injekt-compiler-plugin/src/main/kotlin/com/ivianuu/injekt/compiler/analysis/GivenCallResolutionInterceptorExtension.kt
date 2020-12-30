@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.getGivenParameters
@@ -31,6 +32,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.calls.context.BasicCallResolutionContext
 import org.jetbrains.kotlin.resolve.calls.tower.ImplicitScopeTower
 import org.jetbrains.kotlin.resolve.calls.tower.PSICallResolver
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.scopes.ResolutionScope
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValueWithSmartCastInfo
 import org.jetbrains.kotlin.types.getAbbreviation
@@ -38,6 +40,7 @@ import org.jetbrains.kotlin.types.getAbbreviation
 @Suppress("INVISIBLE_REFERENCE", "EXPERIMENTAL_IS_NOT_ENABLED")
 @OptIn(org.jetbrains.kotlin.extensions.internal.InternalNonStableExtensionPoints::class)
 class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtension {
+    private var declarationStore: DeclarationStore? = null
     override fun interceptFunctionCandidates(
         candidates: Collection<FunctionDescriptor>,
         scopeTower: ImplicitScopeTower,
@@ -78,8 +81,11 @@ class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtensi
 
         if (newCandidates.isEmpty()) newCandidates += candidates
             .map {
-                if (it.getGivenParameters().isNotEmpty()) {
-                    it.toGivenFunctionDescriptor()
+                if (declarationStore?.module != it.module) {
+                    declarationStore = DeclarationStore(it.module)
+                }
+                if (it.getGivenParameters(declarationStore!!).isNotEmpty()) {
+                    it.toGivenFunctionDescriptor(declarationStore!!)
                 } else {
                     it
                 }

@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.resolution.render
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -103,9 +104,9 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.isAnnotationConstructor
 import org.jetbrains.kotlin.utils.Printer
 import java.util.Locale
 
-fun IrElement.dumpSrc(): String {
+fun IrElement.dumpSrc(declarationStore: DeclarationStore): String {
     val sb = StringBuilder()
-    accept(IrSourcePrinterVisitor(sb), null)
+    accept(IrSourcePrinterVisitor(sb, declarationStore), null)
     return sb
         .toString()
         // replace tabs at beginning of line with white space
@@ -123,6 +124,7 @@ fun IrElement.dumpSrc(): String {
 
 private class IrSourcePrinterVisitor(
     out: Appendable,
+    private val declarationStore: DeclarationStore
 ) : IrElementVisitorVoid {
     private val printer = Printer(out, "%tab%")
 
@@ -1141,7 +1143,7 @@ private class IrSourcePrinterVisitor(
     }
 
     private fun IrType.renderSrc() = try {
-        toKotlinType().toTypeRef().render()
+        toKotlinType().toTypeRef(declarationStore).render()
     } catch (e: Throwable) {
         "<ERROR TYPE>"
     }

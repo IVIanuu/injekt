@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.compiler.DeclarationStore
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -28,10 +29,11 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
         platform: TargetPlatform,
         moduleDescriptor: ModuleDescriptor,
     ) {
-        container.useInstance(GivenChecker())
+        val declarationStore = DeclarationStore(moduleDescriptor)
+        container.useInstance(GivenChecker(declarationStore))
         container.useInstance(GivenFunChecker())
         container.useInstance(KeyChecker())
-        container.useInstance(InterceptorChecker())
+        container.useInstance(InterceptorChecker(declarationStore))
         container.useInstance(MacroChecker())
     }
 }
