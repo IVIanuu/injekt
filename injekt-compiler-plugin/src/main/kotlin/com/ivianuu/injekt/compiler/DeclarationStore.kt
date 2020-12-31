@@ -18,7 +18,13 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.Index
 import com.ivianuu.injekt.compiler.resolution.CallableRef
+import com.ivianuu.injekt.compiler.resolution.ClassifierRef
+import com.ivianuu.injekt.compiler.resolution.KotlinTypeRef
+import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.copy
+import com.ivianuu.injekt.compiler.resolution.expandedType
 import com.ivianuu.injekt.compiler.resolution.getContributionConstructors
+import com.ivianuu.injekt.compiler.resolution.render
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.squareup.moshi.Moshi
@@ -31,9 +37,11 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
+import org.jetbrains.kotlin.types.ErrorType
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.Base64
 
@@ -91,6 +99,40 @@ class DeclarationStore(val module: ModuleDescriptor) {
             }
     }
 
+    private val generatedClassifiersByFqName = mutableMapOf<FqName, ClassifierRef>()
+    fun addGeneratedClassifier(classifier: ClassifierRef) {
+        generatedClassifiersByFqName[classifier.fqName] = classifier
+    }
+    fun generatedClassifierFor(fqName: FqName): ClassifierRef? =
+        generatedClassifiersByFqName[fqName]
+
+    fun fixType(type: TypeRef, file: KtFile?): TypeRef {
+        if (type is KotlinTypeRef) {
+            val kotlinType = type.kotlinType
+            if (kotlinType is ErrorType) {
+                file ?: error("Cannot fix types without file context ${type.render()}")
+                val simpleName = kotlinType.presentableName.substringBefore("<").asNameId()
+                val imports = file.importDirectives
+                val fqName = imports
+                    .mapNotNull { it.importPath }
+                    .singleOrNull { it.fqName.shortName() == simpleName }
+                    ?.fqName
+                    ?: file.packageFqName.child(simpleName)
+                val generatedClassifier = generatedClassifierFor(fqName)
+                if (generatedClassifier != null) {
+                    return type.copy(
+                        classifier = generatedClassifier,
+                        arguments = type.arguments.map { fixType(it, file) }
+                    )
+                } else {
+                    error("Cannot resolve $type in ${file.virtualFilePath} guessed name '$fqName' " +
+                            "Do not use function aliases with '*' imports and import them explicitly")
+                }
+            }
+        }
+        return type.copy(arguments = type.arguments.map { fixType(it, file) })
+    }
+
     val moshi = Moshi.Builder().build()
 
     private val allCallableInfos: Map<String, Lazy<PersistedCallableInfo>> by unsafeLazy {
@@ -113,14 +155,6 @@ class DeclarationStore(val module: ModuleDescriptor) {
     }
 
     private val callableInfosByDeclaration = mutableMapOf<CallableDescriptor, PersistedCallableInfo?>()
-    fun callableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? {
-        return internalCallableInfoFor(callable) ?: kotlin.run {
-            callableInfosByDeclaration.getOrPut(callable) {
-                allCallableInfos[callable.uniqueKey(this)]
-                    ?.let { return@getOrPut it.value }
-            }
-        }
-    }
 
     fun callableInfoFor(callable: CallableRef): PersistedCallableInfo? {
         return internalCallableInfoFor(callable) ?: kotlin.run {

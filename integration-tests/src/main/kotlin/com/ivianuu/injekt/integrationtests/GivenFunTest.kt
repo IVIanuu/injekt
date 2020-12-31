@@ -454,4 +454,26 @@ class GivenFunTest {
         assertEquals("42", invokeSingleFile())
     }
 
+    @Test
+    fun testGivenFunWhichReferencesOtherGivenFun() = codegen(
+        """
+            @GivenFun fun a(@Given b: b) {
+            }
+            @GivenFun fun b() {
+            }
+
+            fun invoke() = given<a>()
+        """
+    )
+
+    @Test
+    fun testGivenFunSelfReference() = codegen(
+        """
+            @GivenFun fun a(@Given a: a) {
+            }
+
+            fun invoke() = given<a>()
+        """
+    )
+
 }

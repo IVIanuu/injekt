@@ -60,7 +60,7 @@ typealias ComponentElement<@Suppress("unused") C> = Pair<Key<*>, () -> Any?>
 @Qualifier annotation class ComponentElementBinding<C : Component>
 
 @Macro @GivenSetElement
-fun <@ForKey T : @ComponentElementBinding<C> S, @ForKey S, @ForKey C : Component>
+fun <T : @ComponentElementBinding<C> S, @ForKey S, @ForKey C : Component>
         componentElementBindingImpl(@Given factory: () -> T): ComponentElement<C> =
     keyOf<S>() to factory as () -> Any?
 

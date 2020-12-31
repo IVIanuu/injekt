@@ -78,10 +78,12 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DescriptorWithContainerSource
+import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.replace
+import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
 import org.jetbrains.kotlin.types.withAbbreviation
 
 fun TypeRef.toIrType(pluginContext: IrPluginContext): IrType =
@@ -99,23 +101,7 @@ fun TypeRef.toKotlinType(): SimpleType {
                     it.toKotlinType()
                 )
             })
-            .replaceAnnotations(
-                if (isComposable) {
-                    Annotations.create(
-                        listOf(
-                            AnnotationDescriptorImpl(
-                                classifier.descriptor!!.module.findClassAcrossModuleDependencies(
-                                    ClassId.topLevel(InjektFqNames.Composable)
-                                )!!.defaultType,
-                                emptyMap(),
-                                SourceElement.NO_SOURCE
-                            )
-                        )
-                    )
-                } else {
-                    Annotations.EMPTY
-                }
-            )
+            .makeComposableAsSpecified(isComposable)
             .makeNullableAsSpecified(isMarkedNullable)
     }
 }
@@ -129,24 +115,33 @@ fun TypeRef.toAbbreviation(): SimpleType {
                 it.toKotlinType()
             )
         })
-        .replaceAnnotations(
-            if (isComposable) {
-                Annotations.create(
-                    listOf(
-                        AnnotationDescriptorImpl(
-                            classifier.descriptor!!.module.findClassAcrossModuleDependencies(
+
+        .makeNullableAsSpecified(isMarkedNullable)
+}
+
+private fun SimpleType.makeComposableAsSpecified(isComposable: Boolean): SimpleType {
+    return replaceAnnotations(
+        if (isComposable) {
+            Annotations.create(
+                listOf(
+                    AnnotationDescriptorImpl(
+                        constructor.declarationDescriptor!!.module
+                            .findClassAcrossModuleDependencies(
                                 ClassId.topLevel(InjektFqNames.Composable)
-                            )!!.defaultType,
-                            emptyMap(),
-                            SourceElement.NO_SOURCE
-                        )
+                        )!!.defaultType,
+                        emptyMap(),
+                        SourceElement.NO_SOURCE
                     )
                 )
-            } else {
-                Annotations.EMPTY
-            }
-        )
-        .makeNullableAsSpecified(isMarkedNullable)
+            )
+        } else {
+            Annotations.create(
+                annotations.filter {
+                    it.type.constructor.declarationDescriptor?.fqNameSafe != InjektFqNames.Composable
+                }
+            )
+        }
+    )
 }
 
 fun IrType.toKotlinType(): SimpleType {
