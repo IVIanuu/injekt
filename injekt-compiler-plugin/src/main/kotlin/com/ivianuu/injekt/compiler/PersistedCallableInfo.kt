@@ -64,7 +64,9 @@ fun CallableRef.apply(
     return if (info == null || !callable.isExternalDeclaration()) this
     else copy(
         type = info.type.toTypeRef(declarationStore),
-        typeParameters = info.typeParameters.map { it.toClassifierRef(declarationStore) },
+        typeParameters = info.typeParameters.map {
+            it.toClassifierRef(declarationStore)
+         },
         parameterTypes = info.parameterTypes
             .mapKeys { (name) ->
                 when (name) {

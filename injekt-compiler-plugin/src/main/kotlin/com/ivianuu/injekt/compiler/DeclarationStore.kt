@@ -17,31 +17,28 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.Index
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.CallableRef
 import com.ivianuu.injekt.compiler.resolution.getContributionConstructors
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.squareup.moshi.Moshi
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.Base64
 
-@Suppress("NewApi") class DeclarationStore(val module: ModuleDescriptor) {
+@Suppress("NewApi")
+class DeclarationStore(val module: ModuleDescriptor) {
 
     private val allIndices by unsafeLazy {
         (memberScopeForFqName(InjektFqNames.IndexPackage)
@@ -115,28 +112,39 @@ import java.util.Base64
             .toMap()
     }
 
-    private val callableInfosByDeclaration = mutableMapOf<DeclarationDescriptor, PersistedCallableInfo?>()
-    fun callableInfoFor(declaration: DeclarationDescriptor): PersistedCallableInfo? {
-        return internalCallableInfoFor(declaration) ?: kotlin.run {
-            callableInfosByDeclaration.getOrPut(declaration) {
-                allCallableInfos[declaration.uniqueKey(this)]
+    private val callableInfosByDeclaration = mutableMapOf<CallableDescriptor, PersistedCallableInfo?>()
+    fun callableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? {
+        return internalCallableInfoFor(callable) ?: kotlin.run {
+            callableInfosByDeclaration.getOrPut(callable) {
+                allCallableInfos[callable.uniqueKey(this)]
                     ?.let { return@getOrPut it.value }
             }
         }
     }
 
-    private val internalCallableInfosByDeclaration = mutableMapOf<DeclarationDescriptor, PersistedCallableInfo?>()
-    fun internalCallableInfoFor(declaration: DeclarationDescriptor): PersistedCallableInfo? {
-        if (declaration.isExternalDeclaration()) return null
-        return internalCallableInfosByDeclaration.getOrPut(declaration) {
-            createCallableInfoOrNull(declaration.original)
+    fun callableInfoFor(callable: CallableRef): PersistedCallableInfo? {
+        return internalCallableInfoFor(callable) ?: kotlin.run {
+            callableInfosByDeclaration.getOrPut(callable.callable.original) {
+                allCallableInfos[callable.callable.uniqueKey(this)]
+                    ?.let { return@getOrPut it.value }
+            }
         }
     }
 
-    private fun createCallableInfoOrNull(descriptor: DeclarationDescriptor): PersistedCallableInfo? {
-        if (descriptor !is CallableDescriptor) return null
-        return descriptor.toCallableRef(this, false)
-            .toPersistedCallableInfo(this)
+    private val internalCallableInfosByDeclaration = mutableMapOf<CallableDescriptor, PersistedCallableInfo?>()
+    fun internalCallableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? {
+        if (callable.isExternalDeclaration()) return null
+        return internalCallableInfosByDeclaration.getOrPut(callable.original) {
+            callable.toCallableRef(this, false)
+                .toPersistedCallableInfo(this)
+        }
+    }
+
+    fun internalCallableInfoFor(callable: CallableRef): PersistedCallableInfo? {
+        if (callable.callable.isExternalDeclaration()) return null
+        return internalCallableInfosByDeclaration.getOrPut(callable.callable.original) {
+            callable.toPersistedCallableInfo(this)
+        }
     }
 
     private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor>()

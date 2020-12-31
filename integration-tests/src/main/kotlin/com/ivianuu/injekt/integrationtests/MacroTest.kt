@@ -82,7 +82,7 @@ class MacroTest {
         assertEquals("com.ivianuu.injekt.test.Bar", invokeSingleFile())
     }
 
-    @Test
+    @Test(timeout = 20000)
     fun testMacroWithQualifierWithTypeParameterMulti() = multiCodegen(
         listOf(
             source(
@@ -169,10 +169,12 @@ class MacroTest {
             source(
                 """
                     typealias ActivityComponent = Component
-                    @Given fun activityComponent(): ActivityComponent = 
-                        ComponentBuilder<ActivityComponent>().build()
-                    @Given fun appComponent(): AppComponent = 
-                        ComponentBuilder<AppComponent>().build()
+                    @Given fun activityComponent(
+                        @Given builder: Component.Builder<ActivityComponent>
+                    ): ActivityComponent = builder.build()
+                    @Given fun appComponent(
+                        @Given builder: Component.Builder<AppComponent>
+                    ): AppComponent = builder.build()
                 """
             )
         ),

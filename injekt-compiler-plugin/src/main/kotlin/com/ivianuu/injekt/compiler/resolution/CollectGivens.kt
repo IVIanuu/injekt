@@ -58,7 +58,8 @@ fun CallableRef.substitute(substitutionMap: Map<ClassifierRef, TypeRef>): Callab
     if (substitutionMap.isEmpty()) return this
     return copy(
         type = type.substitute(substitutionMap),
-        parameterTypes = parameterTypes.mapValues { it.value.substitute(substitutionMap) },
+        parameterTypes = parameterTypes
+            .mapValues { it.value.substitute(substitutionMap) },
         typeArguments = typeArguments
             .mapValues { it.value.substitute(substitutionMap) }
     )
@@ -111,7 +112,7 @@ fun CallableDescriptor.toCallableRef(
     ).let {
         if (applyCallableInfo) it.apply(
             declarationStore,
-            declarationStore.callableInfoFor(this)
+            declarationStore.callableInfoFor(it)
         ) else it
     }
 }

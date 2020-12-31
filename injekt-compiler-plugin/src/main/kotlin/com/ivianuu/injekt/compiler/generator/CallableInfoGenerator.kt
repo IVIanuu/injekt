@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.PersistedCallableInfo
 import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.descriptor
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
@@ -59,7 +60,10 @@ class CallableInfoGenerator(
                     val descriptor = declaration.descriptor<DeclarationDescriptor>(bindingContext)
                         ?: error("Wtf $declaration ${declaration.text}")
 
-                    val callableInfo = declarationStore.internalCallableInfoFor(descriptor)
+                    if (descriptor !is CallableDescriptor) return
+
+                    val callableInfo = declarationStore.internalCallableInfoFor(
+                        descriptor)
                     if (callableInfo !== null) {
                         infos += callableInfo
                     }

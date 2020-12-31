@@ -203,8 +203,7 @@ class ResolutionScope(
                 if (contribution in processedContributions) continue
                 processedContributions += contribution
                 for (macro in macros) {
-                    val macroType = macro.callable.typeParameters.first()
-                        .defaultType.toTypeRef(declarationStore)
+                    val macroType = macro.typeParameters.first().defaultType
                     if (!contribution.copy(path = null).isSubTypeOf(macroType)) continue
                     val inputsSubstitutionMap = getSubstitutionMap(
                         listOf(contribution to macroType),
