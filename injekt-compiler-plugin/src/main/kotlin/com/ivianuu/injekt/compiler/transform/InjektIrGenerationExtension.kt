@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.analysis.GivenFunFunctionDescriptor
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -27,10 +28,18 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
+import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
+import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
+import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
+import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
@@ -40,6 +49,20 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         moduleFragment.transform(GivenFunCallTransformer(pluginContext), null)
         moduleFragment.transform(KeyTypeParameterTransformer(pluginContext), null)
         moduleFragment.patchDeclarationParents()
+        moduleFragment.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
+                for (i in 0 until expression.typeArgumentsCount) {
+                    try {
+                        if (expression.getTypeArgument(i)?.isReified == true) {
+                            break
+                        }
+                    } catch (e: Throwable) {
+                        error("Wtf ${expression.dumpSrc(DeclarationStore(pluginContext.moduleDescriptor))}")
+                    }
+                }
+                return super.visitFunctionAccess(expression)
+            }
+        })
     }
 
     override fun resolveSymbol(
@@ -73,4 +96,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         }
     }
 
+    private val IrType.isReified: Boolean
+        get() = classifierOrNull?.safeAs<IrTypeParameterSymbol>()?.owner?.isReified == true
 }

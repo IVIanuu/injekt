@@ -82,13 +82,12 @@ class MacroTest {
         assertEquals("com.ivianuu.injekt.test.Bar", invokeSingleFile())
     }
 
-    @Test
+    @Test(timeout = 20000)
     fun testMacroWithQualifierWithTypeParameterMulti() = multiCodegen(
         listOf(
             source(
                 """
                     @Qualifier annotation class Trigger<S>
-                    @TypeParameterFix("T", Trigger::class, ["S"])
                     @Macro @Given fun <@ForKey T : @Trigger<S> Any?, @ForKey S> macroImpl() = 
                         keyOf<S>()
                 """
@@ -98,7 +97,14 @@ class MacroTest {
             source(
                 """
                     @Trigger<Bar> @Given fun foo() = Foo()
-                    fun invoke() = given<Key<Bar>>().value
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun <T> givenKeyOf(@Given value: () -> Key<T>) = value()
+                    fun invoke() = givenKeyOf<Bar>().value
                 """,
                 name = "File.kt"
             )
@@ -163,10 +169,12 @@ class MacroTest {
             source(
                 """
                     typealias ActivityComponent = Component
-                    @Given fun activityComponent(): ActivityComponent = 
-                        ComponentBuilder<ActivityComponent>().build()
-                    @Given fun appComponent(): AppComponent = 
-                        ComponentBuilder<AppComponent>().build()
+                    @Given fun activityComponent(
+                        @Given builder: Component.Builder<ActivityComponent>
+                    ): ActivityComponent = builder.build()
+                    @Given fun appComponent(
+                        @Given builder: Component.Builder<AppComponent>
+                    ): AppComponent = builder.build()
                 """
             )
         ),

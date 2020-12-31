@@ -17,12 +17,14 @@
 package com.ivianuu.injekt.samples.android
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.platform.setContent
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityRetainedComponent
-import com.ivianuu.injekt.common.withGiven
+import com.ivianuu.injekt.android.activityComponent
+import com.ivianuu.injekt.component.ComponentElementBinding
+import com.ivianuu.injekt.component.get
 import com.ivianuu.injekt.given
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
@@ -30,29 +32,34 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        withGiven(this as ComponentActivity) {
-            given<ComponentCoroutineScope<ActivityComponent>>().launch {
-                println("Activity work: start")
+        val component = activityComponent.get<MainActivityComponent>()
+        component.activityScope.launch {
+            println("Activity work: start")
+            try {
+                awaitCancellation()
+            } finally {
+                println("Activity work: stop")
+            }
+        }
+        if (savedInstanceState == null) {
+            component.retainedActivityScope.launch {
+                println("Retained work: start")
                 try {
                     awaitCancellation()
                 } finally {
-                    println("Activity work: stop")
+                    println("Retained work: stop")
                 }
-            }
-            if (savedInstanceState == null) {
-                given<ComponentCoroutineScope<ActivityRetainedComponent>>().launch {
-                    println("Retained work: start")
-                    try {
-                        awaitCancellation()
-                    } finally {
-                        println("Retained work: stop")
-                    }
-                }
-            }
-            setContent {
-                val keyUis = given<Set<KeyUiElement>>().toMap()
-                keyUis[CounterKey::class]!!.invoke()
             }
         }
+        setContent { component.homeUi() }
     }
+}
+
+@ComponentElementBinding<ActivityComponent>
+@Given class MainActivityComponent(
+    @Given val activityScope: ComponentCoroutineScope<ActivityComponent>,
+    @Given val retainedActivityScope: ComponentCoroutineScope<ActivityRetainedComponent>,
+    @Given keyUis: Set<KeyUiElement>
+) {
+    val homeUi = keyUis.toMap()[CounterKey::class]!!
 }

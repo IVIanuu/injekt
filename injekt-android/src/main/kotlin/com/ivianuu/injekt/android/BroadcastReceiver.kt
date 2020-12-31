@@ -24,22 +24,24 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.component.AppComponent
 import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.componentElement
+import com.ivianuu.injekt.component.ComponentElementBinding
 import com.ivianuu.injekt.component.element
 import com.ivianuu.injekt.component.get
 
 typealias ReceiverComponent = Component
 
-@GivenSetElement fun receiverComponentFactory(
+@ComponentElementBinding<AppComponent>
+@Given
+fun receiverComponentFactory(
     @Given parent: AppComponent,
     @Given builderFactory: () -> Component.Builder<ReceiverComponent>,
-) = componentElement<AppComponent, (BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent> {
+): (BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent = {
         receiver, context, intent ->
     builderFactory()
         .dependency(parent)
-        .element(receiver)
-        .element(context)
-        .element(intent)
+        .element { receiver }
+        .element { context }
+        .element { intent }
         .build()
 }
 

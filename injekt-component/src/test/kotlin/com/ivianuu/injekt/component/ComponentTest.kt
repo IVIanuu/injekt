@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.component
 
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.common.keyOf
 import io.kotest.matchers.booleans.shouldBeFalse
@@ -29,7 +30,7 @@ class ComponentTest {
     @Test
     fun testReturnsExistingValue() {
         val component = ComponentBuilder<TestComponent1>()
-            .element("value")
+            .element { "value" }
             .build()
         component.get<String>() shouldBe "value"
     }
@@ -45,7 +46,7 @@ class ComponentTest {
         val component = ComponentBuilder<TestComponent2>()
             .dependency(
                 ComponentBuilder<TestComponent1>()
-                    .element("value")
+                    .element { "value" }
                     .build()
             )
             .build()
@@ -70,17 +71,17 @@ class ComponentTest {
         val component = ComponentBuilder<TestComponent2>()
             .dependency(
                 ComponentBuilder<TestComponent1>()
-                    .element("dependency")
+                    .element { "dependency" }
                     .build()
             )
-            .element("child")
+            .element { "child" }
             .build()
         component.get<String>() shouldBe "child"
     }
 
     @Test
     fun testInjectedElement() {
-        @GivenSetElement val injected = componentElement<TestComponent1, String>("value")
+        @Given val injected: @ComponentElementBinding<TestComponent1> String = "value"
         val component = ComponentBuilder<TestComponent1>().build()
         component.get<String>() shouldBe "value"
     }

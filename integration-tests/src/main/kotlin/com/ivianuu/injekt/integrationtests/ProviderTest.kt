@@ -20,6 +20,8 @@ import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -56,10 +58,12 @@ class ProviderTest {
 
             typealias ComponentB = Component
 
-            @GivenSetElement fun componentBFactory(
+            @ComponentElementBinding<ComponentA>
+            @Given
+            fun componentBFactory(
                 @Given parent: ComponentA,
                 @Given builderFactory: () -> Component.Builder<ComponentB>
-            ) = componentElement<ComponentA, () -> ComponentB> { 
+            ): () -> ComponentB = { 
                 builderFactory()
                     .dependency(parent)
                     .build()
@@ -67,15 +71,74 @@ class ProviderTest {
 
             typealias ComponentC = Component
 
-            @GivenSetElement fun componentCFactory(
+            @ComponentElementBinding<ComponentB>
+            @Given 
+            fun componentCFactory(
                 @Given parent: ComponentB,
                 @Given builderFactory: () -> Component.Builder<ComponentC>
-            ) = componentElement<ComponentB, () -> ComponentC> {
+            ): () -> ComponentC = {
                 builderFactory()
                     .dependency(parent)
                     .build()
             }
-        """
+
+            @ComponentElementBinding<ComponentC>
+            @Given class MyComponent(
+                @Given val a: ComponentA,
+                @Given val b: ComponentB,
+                @Given val c: ComponentC
+            )
+            """
+    )
+
+    @Test fun testProviderWithGenericGivenArgsMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    typealias ComponentA = Component
+        
+                    typealias ComponentB = Component
+        
+                    @ComponentElementBinding<ComponentA>
+                    @Given
+                    fun componentBFactory(
+                        @Given parent: ComponentA,
+                        @Given builderFactory: () -> Component.Builder<ComponentB>
+                    ): () -> ComponentB = { 
+                        builderFactory()
+                            .dependency(parent)
+                            .build()
+                    }
+        
+                    typealias ComponentC = Component
+        
+                    @ComponentElementBinding<ComponentB>
+                    @Given 
+                    fun componentCFactory(
+                        @Given parent: ComponentB,
+                        @Given builderFactory: () -> Component.Builder<ComponentC>
+                    ): () -> ComponentC = {
+                        builderFactory()
+                            .dependency(parent)
+                            .build()
+                    }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun createComponentA() = ComponentBuilder<ComponentA>().build()
+
+                    @ComponentElementBinding<ComponentC>
+                    @Given class MyComponent(
+                        @Given val a: ComponentA,
+                        @Given val b: ComponentB,
+                        @Given val c: ComponentC
+                    )
+                """
+            )
+        )
     )
 
     @Test

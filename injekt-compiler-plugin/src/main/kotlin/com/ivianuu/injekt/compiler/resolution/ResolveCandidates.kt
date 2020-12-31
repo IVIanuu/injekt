@@ -388,15 +388,15 @@ private fun compareType(a: TypeRef, b: TypeRef): Int {
     if (!a.isStarProjection && b.isStarProjection) return -1
     if (a.isStarProjection && !b.isStarProjection) return 1
 
-    if (a.typeArguments.size < b.typeArguments.size) return -1
-    if (b.typeArguments.size < a.typeArguments.size) return 1
+    if (a.arguments.size < b.arguments.size) return -1
+    if (b.arguments.size < a.arguments.size) return 1
 
     if (a.classifier != b.classifier) return 0
 
     var diff = 0
-    for (i in a.typeArguments.indices) {
-        val aTypeArgument = a.typeArguments[i]
-        val bTypeArgument = b.typeArguments[i]
+    for (i in a.arguments.indices) {
+        val aTypeArgument = a.arguments[i]
+        val bTypeArgument = b.arguments[i]
         diff += compareType(aTypeArgument, bTypeArgument)
     }
 

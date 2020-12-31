@@ -34,6 +34,7 @@ object InjektFqNames {
     val givenfun = InjektPackage.child("given".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
+    val CallableInfo = InternalPackage.child("CallableInfo".asNameId())
     val GivenFunAlias = InternalPackage.child("GivenFunAlias".asNameId())
     val Index = InternalPackage.child("Index".asNameId())
 

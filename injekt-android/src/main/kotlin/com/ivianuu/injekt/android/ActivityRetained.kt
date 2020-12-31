@@ -21,7 +21,7 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.component.AppComponent
 import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.componentElement
+import com.ivianuu.injekt.component.ComponentElementBinding
 import com.ivianuu.injekt.component.get
 
 typealias ActivityRetainedComponent = Component
@@ -31,12 +31,12 @@ typealias ActivityRetainedComponent = Component
         application.appComponent.get<() -> ActivityRetainedComponent>()()
     }
 
-@GivenSetElement fun activityRetainedComponentFactory(
+@ComponentElementBinding<AppComponent>
+@Given
+fun activityRetainedComponentFactory(
     @Given parent: AppComponent,
     @Given builderFactory: () -> Component.Builder<ActivityRetainedComponent>,
-) = componentElement<AppComponent, () -> ActivityRetainedComponent> {
-    builderFactory().dependency(parent).build()
-}
+): () -> ActivityRetainedComponent = { builderFactory().dependency(parent).build() }
 
 @Given val @Given ActivityRetainedComponent.appComponentFromRetained: AppComponent
     get() = get()

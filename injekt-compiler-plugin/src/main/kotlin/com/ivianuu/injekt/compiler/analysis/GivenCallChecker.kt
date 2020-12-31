@@ -85,7 +85,7 @@ class GivenCallChecker(
             .filter { it.value is DefaultValueArgument }
             .map {
                 GivenRequest(
-                    type = it.key.type.toTypeRef(),
+                    type = it.key.type.toTypeRef(declarationStore),
                     required = !it.key.hasDefaultValueIgnoringGiven,
                     callableFqName = resultingDescriptor.fqNameSafe,
                     parameterName = it.key.name
@@ -222,7 +222,7 @@ class GivenCallChecker(
 
     override fun visitLambdaExpression(lambdaExpression: KtLambdaExpression) {
         val type = lambdaExpression.getType(bindingTrace.bindingContext)
-            ?.toTypeRef() ?: return
+            ?.toTypeRef(declarationStore) ?: return
         visitFunction(lambdaExpression.functionLiteral, type) {
             super.visitLambdaExpression(lambdaExpression)
         }

@@ -42,15 +42,7 @@ class IndexGenerator : Generator {
             file.accept(object : KtTreeVisitorVoid() {
                 override fun visitDeclaration(declaration: KtDeclaration) {
                     super.visitDeclaration(declaration)
-                    if (declaration !is KtNamedFunction &&
-                        declaration !is KtClassOrObject &&
-                        declaration !is KtProperty &&
-                        declaration !is KtConstructor<*>
-                    ) return
-
-                    if (declaration is KtClassOrObject && declaration.isLocal) return
-                    if (declaration is KtProperty && declaration.isLocal) return
-                    if (declaration is KtFunction && declaration.isLocal) return
+                    if (!declaration.shouldBeIndexed()) return
 
                     val owner = when (declaration) {
                         is KtConstructor<*> -> declaration.getContainingClassOrObject()
@@ -58,29 +50,17 @@ class IndexGenerator : Generator {
                         else -> declaration
                     } as KtNamedDeclaration
 
-                    if ((owner is KtNamedFunction ||
-                                owner is KtProperty) &&
-                        owner.parent.safeAs<KtClassBody>()?.parent is KtClass
-                    ) return
-
-                    if (declaration.hasAnnotation(InjektFqNames.Given) ||
-                        declaration.hasAnnotation(InjektFqNames.GivenSetElement) ||
-                        declaration.hasAnnotation(InjektFqNames.Module) ||
-                        declaration.hasAnnotation(InjektFqNames.Interceptor) ||
-                        declaration.hasAnnotation(InjektFqNames.GivenFun)
-                    ) {
-                        val index = Index(
-                            owner.fqName!!,
-                            when (owner) {
-                                is KtClassOrObject -> "class"
-                                is KtConstructor<*> -> "constructor"
-                                is KtFunction -> "function"
-                                is KtProperty -> "property"
-                                else -> error("Unexpected declaration ${declaration.text}")
-                            }
-                        )
-                        indices += index
-                    }
+                    val index = Index(
+                        owner.fqName!!,
+                        when (owner) {
+                            is KtClassOrObject -> "class"
+                            is KtConstructor<*> -> "constructor"
+                            is KtFunction -> "function"
+                            is KtProperty -> "property"
+                            else -> error("Unexpected declaration ${declaration.text}")
+                        }
+                    )
+                    indices += index
                 }
             })
 

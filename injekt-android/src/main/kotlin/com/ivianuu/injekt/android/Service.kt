@@ -25,19 +25,21 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.component.AppComponent
 import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.componentElement
+import com.ivianuu.injekt.component.ComponentElementBinding
 import com.ivianuu.injekt.component.element
 import com.ivianuu.injekt.component.get
 
 typealias ServiceComponent = Component
 
-@GivenSetElement fun serviceComponentFactory(
+@ComponentElementBinding<AppComponent>
+@Given
+fun serviceComponentFactory(
     @Given parent: AppComponent,
     @Given builderFactory: () -> Component.Builder<ServiceComponent>,
-) = componentElement<AppComponent, (Service) -> ServiceComponent> { service ->
+): (Service) -> ServiceComponent = { service ->
     builderFactory()
         .dependency(parent)
-        .element(service)
+        .element { service }
         .build()
 }
 

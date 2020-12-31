@@ -17,20 +17,35 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.Index
+import com.ivianuu.injekt.compiler.resolution.CallableRef
+import com.ivianuu.injekt.compiler.resolution.ClassifierRef
+import com.ivianuu.injekt.compiler.resolution.KotlinTypeRef
+import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.copy
+import com.ivianuu.injekt.compiler.resolution.expandedType
 import com.ivianuu.injekt.compiler.resolution.getContributionConstructors
+import com.ivianuu.injekt.compiler.resolution.render
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
+import com.squareup.moshi.Moshi
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
+import org.jetbrains.kotlin.types.ErrorType
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import java.util.Base64
 
+@Suppress("NewApi")
 class DeclarationStore(val module: ModuleDescriptor) {
 
     private val allIndices by unsafeLazy {
@@ -66,12 +81,12 @@ class DeclarationStore(val module: ModuleDescriptor) {
 
     val globalContributions by unsafeLazy {
         classIndices
-            .flatMap { it.getContributionConstructors() } +
+            .flatMap { it.getContributionConstructors(this) } +
                 functionIndices
-                    .map { it.toCallableRef() }
+                    .map { it.toCallableRef(this) }
                     .filter { it.contributionKind != null } +
                 propertyIndices
-                    .map { it.toCallableRef() }
+                    .map { it.toCallableRef(this) }
                     .filter { it.contributionKind != null }
     }
 
@@ -79,17 +94,119 @@ class DeclarationStore(val module: ModuleDescriptor) {
         functionIndices
             .filter { it.hasAnnotation(InjektFqNames.GivenFun) }
             .map {
-                it.toCallableRef() to classifierDescriptorForFqName(it.fqNameSafe)
-                    .toClassifierRef()
+                it.toCallableRef(this) to classifierDescriptorForFqName(it.fqNameSafe)
+                    .toClassifierRef(this)
             }
     }
 
+    private val generatedClassifiersByFqName = mutableMapOf<FqName, ClassifierRef>()
+    fun addGeneratedClassifier(classifier: ClassifierRef) {
+        generatedClassifiersByFqName[classifier.fqName] = classifier
+    }
+    fun generatedClassifierFor(fqName: FqName): ClassifierRef? =
+        generatedClassifiersByFqName[fqName]
+
+    fun fixType(type: TypeRef, file: KtFile?): TypeRef {
+        if (type is KotlinTypeRef) {
+            val kotlinType = type.kotlinType
+            if (kotlinType is ErrorType) {
+                file ?: error("Cannot fix types without file context ${type.render()}")
+                val simpleName = kotlinType.presentableName.substringBefore("<").asNameId()
+                val imports = file.importDirectives
+                val fqName = imports
+                    .mapNotNull { it.importPath }
+                    .singleOrNull { it.fqName.shortName() == simpleName }
+                    ?.fqName
+                    ?: file.packageFqName.child(simpleName)
+                val generatedClassifier = generatedClassifierFor(fqName)
+                if (generatedClassifier != null) {
+                    return type.copy(
+                        classifier = generatedClassifier,
+                        arguments = type.arguments.map { fixType(it, file) }
+                    )
+                } else {
+                    error("Cannot resolve $type in ${file.virtualFilePath} guessed name '$fqName' " +
+                            "Do not use function aliases with '*' imports and import them explicitly")
+                }
+            }
+        }
+        return type.copy(arguments = type.arguments.map { fixType(it, file) })
+    }
+
+    val moshi = Moshi.Builder().build()
+
+    private val allCallableInfos: Map<String, Lazy<PersistedCallableInfo>> by unsafeLazy {
+        (memberScopeForFqName(InjektFqNames.IndexPackage)
+            ?.getContributedDescriptors(DescriptorKindFilter.VALUES)
+            ?.filterIsInstance<PropertyDescriptor>()
+            ?.filter { it.hasAnnotation(InjektFqNames.CallableInfo) }
+            ?.map { callableInfoProperty ->
+                val annotation =
+                    callableInfoProperty.annotations.findAnnotation(InjektFqNames.CallableInfo)!!
+                val key = annotation.allValueArguments["key".asNameId()]!!.value as String
+                key to unsafeLazy {
+                    val value = Base64.getDecoder()
+                        .decode(annotation.allValueArguments["value".asNameId()]!!.value as String)
+                        .decodeToString()
+                    moshi.adapter(PersistedCallableInfo::class.java).fromJson(value)!!
+                }
+            } ?: emptyList())
+            .toMap()
+    }
+
+    private val callableInfosByDeclaration = mutableMapOf<CallableDescriptor, PersistedCallableInfo?>()
+
+    fun callableInfoFor(callable: CallableRef): PersistedCallableInfo? {
+        return internalCallableInfoFor(callable) ?: kotlin.run {
+            callableInfosByDeclaration.getOrPut(callable.callable.original) {
+                allCallableInfos[callable.callable.uniqueKey(this)]
+                    ?.let { return@getOrPut it.value }
+            }
+        }
+    }
+
+    private val internalCallableInfosByDeclaration = mutableMapOf<CallableDescriptor, PersistedCallableInfo?>()
+    fun internalCallableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? {
+        if (callable.isExternalDeclaration()) return null
+        return internalCallableInfosByDeclaration.getOrPut(callable.original) {
+            callable.toCallableRef(this, false)
+                .toPersistedCallableInfo(this)
+        }
+    }
+
+    fun internalCallableInfoFor(callable: CallableRef): PersistedCallableInfo? {
+        if (callable.callable.isExternalDeclaration()) return null
+        return internalCallableInfosByDeclaration.getOrPut(callable.callable.original) {
+            callable.toPersistedCallableInfo(this)
+        }
+    }
+
     private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor>()
-    private fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor {
+    fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor {
         return classifierDescriptorByFqName.getOrPut(fqName) {
             memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
             ) ?: error("Could not get for $fqName")
+        }
+    }
+
+    private val classifierDescriptorByKey = mutableMapOf<String, ClassifierDescriptor>()
+    fun classifierDescriptorForKey(key: String): ClassifierDescriptor {
+        return classifierDescriptorByKey.getOrPut(key) {
+            val fqName = FqName(key.split(":")[1])
+            memberScopeForFqName(fqName.parent())?.getContributedClassifier(
+                fqName.shortName(), NoLookupLocation.FROM_BACKEND
+            )?.takeIf { it.uniqueKey(this) == key }
+                ?: functionDescriptorForFqName(fqName.parent())
+                    .flatMap { it.typeParameters }
+                    .singleOrNull {
+                        it.uniqueKey(this@DeclarationStore) == key
+                    }
+                ?: classifierDescriptorForFqName(fqName.parent())
+                    .safeAs<ClassifierDescriptorWithTypeParameters>()
+                    ?.declaredTypeParameters
+                    ?.single { it.uniqueKey(this@DeclarationStore) == key }
+                ?: error("Could not get for $fqName")
         }
     }
 

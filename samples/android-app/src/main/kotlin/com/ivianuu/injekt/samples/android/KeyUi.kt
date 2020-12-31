@@ -21,14 +21,12 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.Macro
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.TypeParameterFix
 import kotlin.reflect.KClass
 
 typealias KeyUiElement = Pair<KClass<*>, @Composable () -> Unit>
 
 @Qualifier annotation class KeyUiBinding<K : Any>
 
-@TypeParameterFix("T", KeyUiBinding::class, ["K"])
 @Macro @GivenSetElement inline fun <
         reified T : @KeyUiBinding<K> @Composable () -> Unit,
         reified K : Any

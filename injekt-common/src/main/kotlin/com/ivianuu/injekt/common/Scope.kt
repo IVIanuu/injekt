@@ -19,7 +19,6 @@ package com.ivianuu.injekt.common
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Macro
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.TypeParameterFix
 
 interface Scope {
     operator fun <T : Any> get(key: Int): T?
@@ -34,7 +33,6 @@ interface Scope {
 fun Scope(): Scope = ScopeImpl()
 
 @Qualifier annotation class Scoped<S : Scope>
-@TypeParameterFix("T", Scoped::class, ["U"])
 @Macro @Given inline fun <@ForKey T : @Scoped<U> S, @ForKey S : Any, @ForKey U : Scope> scopedImpl(
     @Given scope: U,
     @Given factory: () -> T

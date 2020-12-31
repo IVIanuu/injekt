@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -36,7 +37,7 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
-class GivenChecker : DeclarationChecker {
+class GivenChecker(private val declarationStore: DeclarationStore) : DeclarationChecker {
 
     override fun check(
         declaration: KtDeclaration,
@@ -77,7 +78,9 @@ class GivenChecker : DeclarationChecker {
         } else if (descriptor is PropertyDescriptor) {
             if (descriptor.hasAnnotation(InjektFqNames.Given) &&
                 descriptor.extensionReceiverParameter != null &&
-                descriptor.extensionReceiverParameter?.type?.contributionKind() == null
+                descriptor.extensionReceiverParameter?.type?.contributionKind(
+                    declarationStore
+                ) == null
             ) {
                 context.trace.report(
                     InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
@@ -111,7 +114,7 @@ class GivenChecker : DeclarationChecker {
                     type.hasAnnotation(InjektFqNames.Module) ||
                     type.hasAnnotation(InjektFqNames.GivenSetElement)) &&
             type.arguments.dropLast(1)
-                .all { it.type.contributionKind() == null }) {
+                .all { it.type.contributionKind(declarationStore) == null }) {
             trace.report(
                 InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
                     .on(
@@ -138,8 +141,8 @@ class GivenChecker : DeclarationChecker {
         ) {
             this
                 .filter {
-                    it.contributionKind() == null &&
-                            it.type.contributionKind() == null
+                    it.contributionKind(declarationStore) == null &&
+                            it.type.contributionKind(declarationStore) == null
                 }
                 .forEach {
                     trace.report(

@@ -16,11 +16,14 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.apply
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getContributionParameters
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.toAnnotationRef
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
@@ -28,8 +31,11 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.calls.DslMarkerUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
@@ -37,41 +43,23 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 data class CallableRef(
     val callable: CallableDescriptor,
-    val type: TypeRef = callable.returnType!!.toTypeRef().let {
-        it.copy(
-            qualifiers = ((callable as? ClassConstructorDescriptor)
-                ?.takeIf { it.isPrimary }
-                ?.constructedClass
-                ?.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-                ?: callable.getAnnotatedAnnotations(InjektFqNames.Qualifier)) + it.qualifiers
-        )
-    },
-    val originalType: TypeRef = callable.returnType!!.toTypeRef().let {
-        it.copy(
-            qualifiers = ((callable as? ClassConstructorDescriptor)
-                ?.takeIf { it.isPrimary }
-                ?.constructedClass
-                ?.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-                ?: callable.getAnnotatedAnnotations(InjektFqNames.Qualifier)) + it.qualifiers
-        )
-    },
-    val parameterTypes: Map<ParameterDescriptor, TypeRef> = callable.allParameters
-        .map { it to it.type.toTypeRef() }
-        .toMap(),
-    val typeArguments: Map<ClassifierRef, TypeRef> = callable.typeParameters
-        .map { it.toClassifierRef() to it.defaultType.toTypeRef() }
-        .toMap(),
-    val contributionKind: ContributionKind? = callable.contributionKind(),
-    val isMacro: Boolean = callable.hasAnnotation(InjektFqNames.Macro),
-    val isFromMacro: Boolean = false,
-    val callContext: CallContext = callable.callContext,
+    val type: TypeRef,
+    val originalType: TypeRef,
+    val typeParameters: List<ClassifierRef>,
+    val parameterTypes: Map<ParameterDescriptor, TypeRef>,
+    val typeArguments: Map<ClassifierRef, TypeRef>,
+    val contributionKind: ContributionKind?,
+    val isMacro: Boolean,
+    val isFromMacro: Boolean,
+    val callContext: CallContext
 )
 
 fun CallableRef.substitute(substitutionMap: Map<ClassifierRef, TypeRef>): CallableRef {
     if (substitutionMap.isEmpty()) return this
     return copy(
         type = type.substitute(substitutionMap),
-        parameterTypes = parameterTypes.mapValues { it.value.substitute(substitutionMap) },
+        parameterTypes = parameterTypes
+            .mapValues { it.value.substitute(substitutionMap) },
         typeArguments = typeArguments
             .mapValues { it.value.substitute(substitutionMap) }
     )
@@ -90,9 +78,49 @@ enum class ContributionKind {
     VALUE, SET_ELEMENT, MODULE, INTERCEPTOR
 }
 
-fun CallableDescriptor.toCallableRef() = CallableRef(this)
+fun CallableDescriptor.toCallableRef(
+    declarationStore: DeclarationStore,
+    applyCallableInfo: Boolean = true
+): CallableRef {
+    val type = returnType!!.toTypeRef(declarationStore).let {
+        it.copy(
+            qualifiers = ((this as? ClassConstructorDescriptor)
+                ?.takeIf { it.isPrimary }
+                ?.constructedClass
+                ?.getAnnotatedAnnotations(InjektFqNames.Qualifier)
+                ?: getAnnotatedAnnotations(InjektFqNames.Qualifier))
+                .map { it.toAnnotationRef(declarationStore) } + it.qualifiers
+        )
+    }
+    val typeParameters = typeParameters
+        .map { it.toClassifierRef(declarationStore) }
+    return CallableRef(
+        callable = this,
+        type = type,
+        originalType = type,
+        typeParameters = typeParameters,
+        parameterTypes = allParameters
+            .map { it to it.type.toTypeRef(declarationStore) }
+            .toMap(),
+        typeArguments = typeParameters
+            .map { it to it.defaultType }
+            .toMap(),
+        contributionKind = contributionKind(declarationStore),
+        isMacro = hasAnnotation(InjektFqNames.Macro),
+        isFromMacro = false,
+        callContext = callContext
+    ).let {
+        if (applyCallableInfo) it.apply(
+            declarationStore,
+            declarationStore.callableInfoFor(it)
+        ) else it
+    }
+}
 
-fun MemberScope.collectContributions(type: TypeRef): List<CallableRef> {
+fun MemberScope.collectContributions(
+    declarationStore: DeclarationStore,
+    type: TypeRef
+): List<CallableRef> {
     // special case to support @Given () -> Foo etc
     if ((type.classifier.fqName.asString().startsWith("kotlin.Function")
                 || type.classifier.fqName.asString()
@@ -103,7 +131,7 @@ fun MemberScope.collectContributions(type: TypeRef): List<CallableRef> {
             return listOf(
                 getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
                     .first()
-                    .toCallableRef()
+                    .toCallableRef(declarationStore)
                     .let { callable ->
                         callable.copy(
                             contributionKind = contributionKind,
@@ -120,7 +148,7 @@ fun MemberScope.collectContributions(type: TypeRef): List<CallableRef> {
         ?.unsubstitutedPrimaryConstructor
         ?.valueParameters
         ?.mapNotNull {
-            val kind = it.contributionKind()
+            val kind = it.contributionKind(declarationStore)
             if (kind != null) it.name to kind else null
         }
         ?.toMap()
@@ -128,56 +156,72 @@ fun MemberScope.collectContributions(type: TypeRef): List<CallableRef> {
     return getContributedDescriptors()
         .flatMap { callable ->
             when (callable) {
-                is ClassDescriptor -> callable.getContributionConstructors()
-                is PropertyDescriptor -> (callable.contributionKind()
+                is ClassDescriptor -> callable.getContributionConstructors(declarationStore)
+                is PropertyDescriptor -> (callable.contributionKind(declarationStore)
                     ?: primaryConstructorKinds[callable.name])
-                    ?.let { kind -> listOf(CallableRef(callable, contributionKind = kind)) } ?: emptyList()
-                is FunctionDescriptor -> callable.contributionKind()?.let { kind ->
-                    listOf(CallableRef(callable, contributionKind = kind))
+                    ?.let { kind ->
+                        listOf(
+                            callable.toCallableRef(declarationStore)
+                                .copy(contributionKind = kind)
+                        )
+                    } ?: emptyList()
+                is FunctionDescriptor -> callable.contributionKind(declarationStore)?.let { kind ->
+                    listOf(
+                        callable.toCallableRef(declarationStore)
+                            .copy(contributionKind = kind)
+                    )
                 } ?: emptyList()
                 else -> emptyList()
             }
         }
 }
 
-fun Annotated.contributionKind(): ContributionKind? = when {
+fun Annotated.contributionKind(declarationStore: DeclarationStore): ContributionKind? = when {
     hasAnnotation(InjektFqNames.Given) -> ContributionKind.VALUE
     hasAnnotation(InjektFqNames.GivenSetElement) -> ContributionKind.SET_ELEMENT
     hasAnnotation(InjektFqNames.Module) -> ContributionKind.MODULE
     hasAnnotation(InjektFqNames.Interceptor) -> ContributionKind.INTERCEPTOR
-    this is ClassConstructorDescriptor -> constructedClass.contributionKind()
+    this is ClassConstructorDescriptor -> constructedClass.contributionKind(declarationStore)
     else -> null
 }
 
-fun CallableDescriptor.collectContributions(): List<CallableRef> {
+fun CallableDescriptor.collectContributions(
+    declarationStore: DeclarationStore
+): List<CallableRef> {
     val declarations = mutableListOf<CallableRef>()
 
     declarations += allParameters
-        .mapNotNull {
-            val kind = it.contributionKind()
+        .mapNotNull { parameter ->
+            val kind = parameter.contributionKind(declarationStore)
             when {
                 kind == ContributionKind.INTERCEPTOR ->
-                    CallableRef(it, contributionKind = ContributionKind.MODULE)
-                kind != null -> CallableRef(it, contributionKind = kind)
+                    parameter.toCallableRef(declarationStore)
+                        .copy(contributionKind = ContributionKind.MODULE)
+                kind != null ->  parameter.toCallableRef(declarationStore)
+                    .copy(contributionKind = kind)
                 else -> null
             }
         }
 
     extensionReceiverParameter?.let { receiver ->
-        declarations += CallableRef(receiver, contributionKind = ContributionKind.VALUE)
+        declarations += receiver.toCallableRef(declarationStore)
+            .copy(contributionKind = ContributionKind.VALUE)
         declarations += receiver.type.memberScope.collectContributions(
-            extensionReceiverParameter!!.type.toTypeRef()
+            declarationStore,
+            extensionReceiverParameter!!.type.toTypeRef(declarationStore)
         )
     }
 
     return declarations
 }
 
-fun ParameterDescriptor.contributionKind(): ContributionKind? {
+fun ParameterDescriptor.contributionKind(declarationStore: DeclarationStore): ContributionKind? {
     val userData = getUserData(DslMarkerUtils.FunctionTypeAnnotationsKey)
-    val contributionParameters = getContributionParameters()
+    val contributionParameters = getContributionParameters(declarationStore)
 
-    return (this as Annotated).contributionKind() ?: type.contributionKind() ?: userData?.let {
+    return (this as Annotated).contributionKind(declarationStore)
+        ?: type.contributionKind(declarationStore)
+        ?: userData?.let {
         when {
             userData.hasAnnotation(InjektFqNames.Given) -> ContributionKind.VALUE
             userData.hasAnnotation(InjektFqNames.GivenSetElement) -> ContributionKind.SET_ELEMENT
@@ -190,21 +234,26 @@ fun ParameterDescriptor.contributionKind(): ContributionKind? {
         ?.contributionKind
 }
 
-fun ClassDescriptor.getContributionConstructors(): List<CallableRef> = constructors
+fun ClassDescriptor.getContributionConstructors(
+    declarationStore: DeclarationStore
+): List<CallableRef> = constructors
     .mapNotNull { constructor ->
         if (constructor.isPrimary) {
-            (constructor.contributionKind() ?: contributionKind())?.let { kind ->
-                CallableRef(constructor, contributionKind = kind)
+            (constructor.contributionKind(declarationStore)
+                ?: contributionKind(declarationStore))?.let { kind ->
+                constructor.toCallableRef(declarationStore)
+                    .copy(contributionKind = kind)
             }
         } else {
-            constructor.contributionKind()?.let { kind ->
-                CallableRef(constructor, contributionKind = kind)
+            constructor.contributionKind(declarationStore)?.let { kind ->
+                constructor.toCallableRef(declarationStore)
+                    .copy(contributionKind = kind)
             }
         }
     }
     .flatMap { declaration ->
         if (declaration.contributionKind == ContributionKind.VALUE) {
-            allGivenTypes().map { type ->
+            allGivenTypes(declarationStore).map { type ->
                 declaration.copy(
                     type = type.copy(
                         qualifiers = declaration.type.qualifiers + type.qualifiers
@@ -217,14 +266,15 @@ fun ClassDescriptor.getContributionConstructors(): List<CallableRef> = construct
     }
 
 
-fun ClassDescriptor.allGivenTypes(): List<TypeRef> = buildList<TypeRef> {
-    this += defaultType.toTypeRef()
+fun ClassDescriptor.allGivenTypes(declarationStore: DeclarationStore): List<TypeRef> = buildList<TypeRef> {
+    this += defaultType.toTypeRef(declarationStore)
     this += defaultType.constructor.supertypes
         .filter { it.hasAnnotation(InjektFqNames.Given) }
-        .map { it.toTypeRef() }
+        .map { it.toTypeRef(declarationStore) }
 }
 
 fun CallableRef.collectContributions(
+    declarationStore: DeclarationStore,
     path: List<Any>,
     addGiven: (CallableRef) -> Unit,
     addGivenSetElement: (CallableRef) -> Unit,
@@ -251,9 +301,10 @@ fun CallableRef.collectContributions(
                     val nextCallable = copy(type = type.copy(path = nextPath))
                     addGiven(nextCallable)
                     callable.returnType!!.memberScope
-                        .collectContributions(nextCallable.type)
+                        .collectContributions(declarationStore, nextCallable.type)
                         .forEach {
                             it.collectContributions(
+                                declarationStore,
                                 path + it.callable.fqNameSafe,
                                 addGiven,
                                 addGivenSetElement,
@@ -264,9 +315,10 @@ fun CallableRef.collectContributions(
                 } else {
                     addGiven(this)
                     callable.returnType!!.memberScope
-                        .collectContributions(type)
+                        .collectContributions(declarationStore, type)
                         .forEach {
                             it.collectContributions(
+                                declarationStore,
                                 path + it.callable.fqNameSafe,
                                 addGiven,
                                 addGivenSetElement,
@@ -278,9 +330,10 @@ fun CallableRef.collectContributions(
             } else {
                 addGiven(this)
                 callable.returnType!!.memberScope
-                    .collectContributions(type)
+                    .collectContributions(declarationStore, type)
                     .forEach {
                         it.collectContributions(
+                            declarationStore,
                             path + it.callable.fqNameSafe,
                             addGiven,
                             addGivenSetElement,

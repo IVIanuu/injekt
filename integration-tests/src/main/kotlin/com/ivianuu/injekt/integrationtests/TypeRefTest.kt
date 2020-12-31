@@ -16,6 +16,9 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.compiler.AnnotationRef
+import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.StringValue
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
@@ -34,16 +37,11 @@ import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.SourceElement
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.findClassifierAcrossModuleDependencies
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import org.junit.Test
 
@@ -296,6 +294,8 @@ class TypeRefTest {
 
     class AnalysisContext(val module: ModuleDescriptor) {
 
+        private val declarationStore = DeclarationStore(module)
+
         val anyType = typeFor(StandardNames.FqNames.any.toSafe())
         val anyNType = anyType.copy(isMarkedNullable = true)
         val intType = typeFor(StandardNames.FqNames._int.toSafe())
@@ -311,20 +311,14 @@ class TypeRefTest {
             FqName("kotlin.Function$parameterCount")
         )
 
-        fun qualifier1() = AnnotationDescriptorImpl(
-            module.findClassAcrossModuleDependencies(
-                ClassId.topLevel(FqName("com.ivianuu.injekt.test.Qualifier1"))
-            )!!.defaultType,
-            emptyMap(),
-            SourceElement.NO_SOURCE
+        fun qualifier1() = AnnotationRef(
+            typeFor(FqName("com.ivianuu.injekt.test.Qualifier1")),
+            emptyMap()
         )
 
-        fun qualifier2(value: String) = AnnotationDescriptorImpl(
-            module.findClassAcrossModuleDependencies(
-                ClassId.topLevel(FqName("com.ivianuu.injekt.test.Qualifier2"))
-            )!!.defaultType,
-            mapOf("value".asNameId() to StringValue(value)),
-            SourceElement.NO_SOURCE
+        fun qualifier2(value: String) = AnnotationRef(
+            typeFor(FqName("com.ivianuu.injekt.test.Qualifier2")),
+            mapOf("value".asNameId() to StringValue(value, stringType))
         )
 
         private var id = 0
@@ -364,7 +358,7 @@ class TypeRefTest {
 
         fun typeFor(fqName: FqName) = module.findClassifierAcrossModuleDependencies(
             ClassId.topLevel(fqName)
-        )!!.defaultType.toTypeRef()
+        )!!.defaultType.toTypeRef(declarationStore)
 
     }
 
@@ -372,10 +366,10 @@ class TypeRefTest {
 
     fun TypeRef.nonNull() = copy(isMarkedNullable = false)
 
-    fun TypeRef.qualified(vararg qualifiers: AnnotationDescriptor) =
+    fun TypeRef.qualified(vararg qualifiers: AnnotationRef) =
         copy(qualifiers = qualifiers.toList())
 
     fun TypeRef.typeWith(vararg typeArguments: TypeRef) =
-        copy(typeArguments = typeArguments.toList())
+        copy(arguments = typeArguments.toList())
 
 }
