@@ -49,20 +49,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         moduleFragment.transform(GivenFunCallTransformer(pluginContext), null)
         moduleFragment.transform(KeyTypeParameterTransformer(pluginContext), null)
         moduleFragment.patchDeclarationParents()
-        moduleFragment.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
-                for (i in 0 until expression.typeArgumentsCount) {
-                    try {
-                        if (expression.getTypeArgument(i)?.isReified == true) {
-                            break
-                        }
-                    } catch (e: Throwable) {
-                        error("Wtf ${expression.dumpSrc(DeclarationStore(pluginContext.moduleDescriptor))}")
-                    }
-                }
-                return super.visitFunctionAccess(expression)
-            }
-        })
     }
 
     override fun resolveSymbol(
@@ -96,6 +82,4 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         }
     }
 
-    private val IrType.isReified: Boolean
-        get() = classifierOrNull?.safeAs<IrTypeParameterSymbol>()?.owner?.isReified == true
 }

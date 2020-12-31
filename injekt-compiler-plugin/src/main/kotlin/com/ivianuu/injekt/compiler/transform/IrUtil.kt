@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.expandedType
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -52,6 +53,7 @@ import org.jetbrains.kotlin.ir.types.IrTypeAbbreviation
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classifierOrFail
+import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -88,6 +90,12 @@ import org.jetbrains.kotlin.types.withAbbreviation
 
 fun TypeRef.toIrType(pluginContext: IrPluginContext): IrType =
     pluginContext.typeTranslator.translateType(toKotlinType())
+        .also {
+            it.classifierOrNull?.let {
+                (pluginContext as IrPluginContextImpl)
+                    .linker.getDeclaration(it)
+            }
+        }
 
 fun TypeRef.toKotlinType(): SimpleType {
     return if (classifier.isTypeAlias) {
