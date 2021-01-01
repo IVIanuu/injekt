@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -96,7 +97,7 @@ fun CallableDescriptor.toCallableRef(
         type = type,
         originalType = type,
         typeParameters = typeParameters,
-        parameterTypes = allParameters
+        parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)
             .map { it to it.type.toTypeRef(declarationStore) }
             .toMap(),
         typeArguments = typeParameters
