@@ -175,7 +175,7 @@ interface InjektErrors {
                 .also {
                     MAP.put(
                         it,
-                        "@Interceptor declaration must have at least one type parameter"
+                        "@Macro declaration must have at least one type parameter"
                     )
                 }
 
