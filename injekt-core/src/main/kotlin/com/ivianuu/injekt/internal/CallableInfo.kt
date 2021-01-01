@@ -16,4 +16,4 @@
 
 package com.ivianuu.injekt.internal
 
-annotation class CallableInfo(val key: String, val value: String)
+annotation class CallableInfo(val value: String)

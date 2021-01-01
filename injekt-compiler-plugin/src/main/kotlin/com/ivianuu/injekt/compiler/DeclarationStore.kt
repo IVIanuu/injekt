@@ -42,6 +42,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.types.ErrorType
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.Base64
 
@@ -99,87 +100,28 @@ class DeclarationStore(val module: ModuleDescriptor) {
             }
     }
 
-    private val generatedClassifiersByFqName = mutableMapOf<FqName, ClassifierRef>()
-    fun addGeneratedClassifier(classifier: ClassifierRef) {
-        generatedClassifiersByFqName[classifier.fqName] = classifier
-    }
-    fun generatedClassifierFor(fqName: FqName): ClassifierRef? =
-        generatedClassifiersByFqName[fqName]
-
-    fun fixType(type: TypeRef, file: KtFile?): TypeRef {
-        if (type is KotlinTypeRef) {
-            val kotlinType = type.kotlinType
-            if (kotlinType is ErrorType) {
-                file ?: error("Cannot fix types without file context ${type.render()}")
-                val simpleName = kotlinType.presentableName.substringBefore("<").asNameId()
-                val imports = file.importDirectives
-                val fqName = imports
-                    .mapNotNull { it.importPath }
-                    .singleOrNull { it.fqName.shortName() == simpleName }
-                    ?.fqName
-                    ?: file.packageFqName.child(simpleName)
-                val generatedClassifier = generatedClassifierFor(fqName)
-                if (generatedClassifier != null) {
-                    return type.copy(
-                        classifier = generatedClassifier,
-                        arguments = type.arguments.map { fixType(it, file) }
-                    )
-                } else {
-                    error("Cannot resolve $type in ${file.virtualFilePath} guessed name '$fqName' " +
-                            "Do not use function aliases with '*' imports and import them explicitly")
-                }
-            }
-        }
-        return type.copy(arguments = type.arguments.map { fixType(it, file) })
-    }
-
     val moshi = Moshi.Builder().build()
 
-    private val allCallableInfos: Map<String, Lazy<PersistedCallableInfo>> by unsafeLazy {
-        (memberScopeForFqName(InjektFqNames.IndexPackage)
-            ?.getContributedDescriptors(DescriptorKindFilter.VALUES)
-            ?.filterIsInstance<PropertyDescriptor>()
-            ?.filter { it.hasAnnotation(InjektFqNames.CallableInfo) }
-            ?.map { callableInfoProperty ->
-                val annotation =
-                    callableInfoProperty.annotations.findAnnotation(InjektFqNames.CallableInfo)!!
-                val key = annotation.allValueArguments["key".asNameId()]!!.value as String
-                key to unsafeLazy {
-                    val value = Base64.getDecoder()
-                        .decode(annotation.allValueArguments["value".asNameId()]!!.value as String)
+    private val callableInfosByDeclaration = mutableMapOf<Any, PersistedCallableInfo?>()
+    fun callableInfoFor(callable: CallableRef): PersistedCallableInfo? =
+        callableInfosByDeclaration.getOrPut(callable.callable.original) {
+            callable.callable
+                .annotations
+                .findAnnotation(InjektFqNames.CallableInfo)
+                ?.allValueArguments
+                ?.get("value".asNameId())
+                ?.value
+                ?.cast<String>()
+                ?.let { encoded ->
+                    val json = Base64.getDecoder()
+                        .decode(encoded)
                         .decodeToString()
-                    moshi.adapter(PersistedCallableInfo::class.java).fromJson(value)!!
+                    moshi.adapter(PersistedCallableInfo::class.java).fromJson(json)!!
                 }
-            } ?: emptyList())
-            .toMap()
-    }
-
-    private val callableInfosByDeclaration = mutableMapOf<CallableDescriptor, PersistedCallableInfo?>()
-
-    fun callableInfoFor(callable: CallableRef): PersistedCallableInfo? {
-        return internalCallableInfoFor(callable) ?: kotlin.run {
-            callableInfosByDeclaration.getOrPut(callable.callable.original) {
-                allCallableInfos[callable.callable.uniqueKey(this)]
-                    ?.let { return@getOrPut it.value }
-            }
+                ?: callable.toPersistedCallableInfo(this@DeclarationStore)
         }
-    }
-
-    private val internalCallableInfosByDeclaration = mutableMapOf<CallableDescriptor, PersistedCallableInfo?>()
-    fun internalCallableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? {
-        if (callable.isExternalDeclaration()) return null
-        return internalCallableInfosByDeclaration.getOrPut(callable.original) {
-            callable.toCallableRef(this, false)
-                .toPersistedCallableInfo(this)
-        }
-    }
-
-    fun internalCallableInfoFor(callable: CallableRef): PersistedCallableInfo? {
-        if (callable.callable.isExternalDeclaration()) return null
-        return internalCallableInfosByDeclaration.getOrPut(callable.callable.original) {
-            callable.toPersistedCallableInfo(this)
-        }
-    }
+    fun callableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? =
+        callableInfoFor(callable.toCallableRef(this))
 
     private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor>()
     fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor {

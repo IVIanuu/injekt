@@ -31,17 +31,13 @@ import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.types.getAbbreviation
-import org.jetbrains.kotlin.types.isError
 import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 data class ClassifierRef(
     val fqName: FqName,
@@ -86,17 +82,8 @@ fun TypeRef.superTypes(substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
 fun KotlinType.toTypeRef(
     declarationStore: DeclarationStore,
     variance: Variance = Variance.INVARIANT,
-    isStarProjection: Boolean = false,
-    fixType: Boolean = true
-): TypeRef {
-    val unfixed = KotlinTypeRef(this, variance, isStarProjection, declarationStore)
-    return if (fixType) {
-        val file = constructor.declarationDescriptor
-            ?.findPsi()?.safeAs<KtElement>()?.containingKtFile
-        if (file != null) declarationStore.fixType(unfixed, file)
-        else unfixed
-    } else unfixed
-}
+    isStarProjection: Boolean = false
+): TypeRef = KotlinTypeRef(this, variance, isStarProjection, declarationStore)
 
 fun ClassifierDescriptor.toClassifierRef(
     declarationStore: DeclarationStore
@@ -104,9 +91,9 @@ fun ClassifierDescriptor.toClassifierRef(
     fqName = original.fqNameSafe,
     typeParameters = (original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
         ?.map { it.toClassifierRef(declarationStore) } ?: emptyList(),
-    superTypes = typeConstructor.supertypes.map { it.toTypeRef(declarationStore, fixType = false) },
+    superTypes = typeConstructor.supertypes.map { it.toTypeRef(declarationStore) },
     expandedType = (original as? TypeAliasDescriptor)?.expandedType
-        ?.toTypeRef(declarationStore, fixType = false)?.fullyExpandedType,
+        ?.toTypeRef(declarationStore)?.fullyExpandedType,
     isTypeParameter = this is TypeParameterDescriptor,
     isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
     isTypeAlias = this is TypeAliasDescriptor,

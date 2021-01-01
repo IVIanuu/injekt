@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.CacheDir
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.FileManager
 import com.ivianuu.injekt.compiler.SrcDir
-import com.ivianuu.injekt.compiler.generator.CallableInfoGenerator
 import com.ivianuu.injekt.compiler.generator.Generator
 import com.ivianuu.injekt.compiler.generator.GivenFunGenerator
 import com.ivianuu.injekt.compiler.generator.IndexGenerator
@@ -72,21 +71,10 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : Analysis
                         fileName, originatingFile.virtualFilePath, code)
                 }
             }
-            try {
-                lazyTopDownAnalyzer.analyzeDeclarations(
-                    TopDownAnalysisMode.TopLevelDeclarations,
-                    files
-                )
-            } catch (e: Throwable) {
-            }
             IndexGenerator().generate(context, filesToProcess)
             val declarationStore = DeclarationStore(module)
-            GivenFunGenerator(bindingTrace.bindingContext, declarationStore)
+            GivenFunGenerator()
                 .generate(context, filesToProcess)
-            CallableInfoGenerator(
-                bindingTrace.bindingContext,
-                declarationStore
-            ).generate(context, filesToProcess)
             fileManager.postGenerate()
             generatedCode = true
             return AnalysisResult.RetryWithAdditionalRoots(

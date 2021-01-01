@@ -44,6 +44,10 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+        moduleFragment.transform(CallableInfoTransformer(
+            DeclarationStore(pluginContext.moduleDescriptor),
+            pluginContext
+        ), null)
         moduleFragment.transform(GivenCallTransformer(pluginContext), null)
         moduleFragment.transform(GivenOptimizationTransformer(), null)
         moduleFragment.transform(GivenFunCallTransformer(pluginContext), null)

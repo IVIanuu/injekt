@@ -16,32 +16,21 @@
 
 package com.ivianuu.injekt.compiler.generator
 
-import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.namedDeclarationRecursiveVisitor
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifier
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class GivenFunGenerator(
-    private val bindingContext: BindingContext,
-    private val declarationStore: DeclarationStore
-) : Generator {
+class GivenFunGenerator : Generator {
 
     override fun generate(context: Generator.Context, files: List<KtFile>) {
-        val givenFuns = mutableListOf<KtCallableDeclaration>()
         files.forEach { file ->
+            val givenFuns = mutableListOf<KtCallableDeclaration>()
             file.accept(
                 namedDeclarationRecursiveVisitor { declaration ->
                     if (declaration.hasAnnotation(InjektFqNames.GivenFun)) {
@@ -49,29 +38,9 @@ class GivenFunGenerator(
                     }
                 }
             )
+            if (givenFuns.isNotEmpty())
+                generate(file, givenFuns, context)
         }
-
-        givenFuns
-            .map { it.descriptor<FunctionDescriptor>(bindingContext)!! }
-            .forEach { givenFun ->
-                declarationStore.addGeneratedClassifier(
-                    ClassifierRef(
-                        fqName = givenFun.fqNameSafe,
-                        typeParameters = givenFun.typeParameters.map {
-                            ClassifierRef(
-                                fqName = it.fqNameSafe,
-                                isTypeParameter = true
-                            )
-                        }
-                    )
-                )
-            }
-
-        givenFuns
-            .groupBy { it.containingKtFile }
-            .forEach { (file, givenFunsForFile) ->
-                generate(file, givenFunsForFile, context)
-            }
     }
 
     private fun generate(
@@ -122,22 +91,6 @@ class GivenFunGenerator(
                 // we show a user to the error
                 return
             }
-
-        /*val expandedFunType = (if (isSuspend) {
-            descriptor.module.builtIns.getSuspendFunction(funApiValueParameters.size)
-                .defaultType
-        } else {
-            descriptor.module.builtIns.getFunction(funApiValueParameters.size)
-                .defaultType
-        }).let { typeTranslator.toTypeRef(it, descriptor) }
-            .typeWith(funApiValueParameters.map {
-                typeTranslator.toTypeRef(it.type, descriptor)
-            } + typeTranslator.toTypeRef(descriptor.returnType!!, descriptor))
-            .copy(isComposable = isComposable)
-            .copy(isExtensionFunction = funApiValueParameters.any {
-                it == descriptor.extensionReceiverParameter
-            })
-        declarationStore.generatedClassifierFor(descriptor.fqNameSafe)!!.superTypes += expandedFunType*/
 
         if (declaration.visibilityModifier()?.text == "internal") {
             append("internal ")
