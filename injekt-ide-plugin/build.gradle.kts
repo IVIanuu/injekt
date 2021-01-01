@@ -26,11 +26,14 @@ intellij {
     version = "2019.3.4"
     pluginName = "Injekt ide plugin"
     updateSinceUntilBuild = false
-    setPlugins("org.jetbrains.kotlin:1.4.21-release-Studio4.0-1", "gradle", "gradle-java", "java")
-    //localPath = "/home/ivianuu/android-studio"
+    setPlugins("org.jetbrains.kotlin:1.4.21-release-Studio4.1-1", "gradle", "gradle-java", "java")
+    localPath = "/home/manu/android-studio"
 }
 
 dependencies {
     compile(project(":injekt-compiler-plugin", "shadow"))
+    compile(Deps.Moshi.moshi)
+    compile(Deps.Moshi.adapters)
+    compile(Deps.Moshi.sealedRuntime)
 }
 
