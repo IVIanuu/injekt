@@ -26,6 +26,7 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.Macro
 import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.component.AppComponent
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.ComponentElementBinding
@@ -45,8 +46,7 @@ typealias WorkerComponent = Component
 fun workerComponentFactory(
     @Given parent: AppComponent,
     @Given builderFactory: () -> Component.Builder<WorkerComponent>,
-): (WorkerContext, WorkerParameters) -> WorkerComponent = {
-        context, params ->
+): (WorkerContext, WorkerParameters) -> WorkerComponent = { context, params ->
     builderFactory()
         .dependency(parent)
         .element { context }

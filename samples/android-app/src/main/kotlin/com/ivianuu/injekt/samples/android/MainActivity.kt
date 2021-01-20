@@ -56,7 +56,8 @@ class MainActivity : AppCompatActivity() {
 }
 
 @ComponentElementBinding<ActivityComponent>
-@Given class MainActivityComponent(
+@Given
+class MainActivityComponent(
     @Given val activityScope: ComponentCoroutineScope<ActivityComponent>,
     @Given val retainedActivityScope: ComponentCoroutineScope<ActivityRetainedComponent>,
     @Given keyUis: Set<KeyUiElement>

@@ -17,15 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.GivenFunctionDescriptor
-import com.ivianuu.injekt.compiler.resolution.CallableRef
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.ContributionKind
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.contributionKind
-import com.ivianuu.injekt.compiler.resolution.substitute
-import com.ivianuu.injekt.compiler.resolution.toCallableRef
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.ivianuu.injekt.compiler.resolution.uniqueTypeName
+import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -182,7 +174,10 @@ fun DeclarationDescriptor.uniqueKey(declarationStore: DeclarationStore): String 
         is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
             original.valueParameters
                 .joinToString(",") {
-                    it.type.toTypeRef(declarationStore).uniqueTypeName() 
+                    it.type
+                        .toTypeRef(declarationStore)
+                        .fullyExpandedType
+                        .uniqueTypeName()
                 }
         }"
         is ClassDescriptor -> "class:$fqNameSafe"
@@ -191,14 +186,20 @@ fun DeclarationDescriptor.uniqueKey(declarationStore: DeclarationStore): String 
                 original.dispatchReceiverParameter, original.extensionReceiverParameter)
                 .plus(original.valueParameters)
                 .joinToString(",") { 
-                    it.type.toTypeRef(declarationStore).uniqueTypeName()
+                    it.type
+                        .toTypeRef(declarationStore)
+                        .fullyExpandedType
+                        .uniqueTypeName()
                 }
         }"
         is PropertyDescriptor -> "property:$fqNameSafe:${
             listOfNotNull(
                 original.dispatchReceiverParameter, original.extensionReceiverParameter)
                 .joinToString(",") { 
-                    it.type.toTypeRef(declarationStore).uniqueTypeName()
+                    it.type
+                        .toTypeRef(declarationStore)
+                        .fullyExpandedType
+                        .uniqueTypeName()
                 }
         }"
         is TypeAliasDescriptor -> "typealias:$fqNameSafe"

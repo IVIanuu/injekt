@@ -86,4 +86,13 @@ class ComponentTest {
         component.get<String>() shouldBe "value"
     }
 
+    @Test
+    fun testElementBinding()  {
+        @ComponentElementBinding<TestComponent1>
+        @Given
+        fun something(@Given component: TestComponent1) = component to component
+        val component = ComponentBuilder<TestComponent1>().build()
+        component.get<Pair<TestComponent1, TestComponent1>>().first shouldBeSameInstanceAs component
+    }
+
 }

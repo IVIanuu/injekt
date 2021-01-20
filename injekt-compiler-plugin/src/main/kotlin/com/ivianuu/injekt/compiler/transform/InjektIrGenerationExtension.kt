@@ -20,31 +20,20 @@ import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.analysis.GivenFunFunctionDescriptor
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
-import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.TranslationPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
-import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
-import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
-import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.classifierOrNull
-import org.jetbrains.kotlin.ir.util.SymbolTable
-import org.jetbrains.kotlin.ir.util.patchDeclarationParents
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import org.jetbrains.kotlin.ir.util.*
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        moduleFragment.transform(CallableInfoTransformer(
+        moduleFragment.transform(InfoTransformer(
             DeclarationStore(pluginContext.moduleDescriptor),
             pluginContext
         ), null)

@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenFun
+import com.ivianuu.injekt.samples.android.CounterAction.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -35,7 +36,8 @@ import kotlinx.coroutines.flow.stateIn
 object CounterKey
 
 @KeyUiBinding<CounterKey>
-@GivenFun @Composable
+@GivenFun
+@Composable
 fun CounterPage(
     @Given state: @UiState CounterState,
     @Given dispatch: Dispatch<CounterAction>,
@@ -46,10 +48,10 @@ fun CounterPage(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text("Count ${state.count}")
-        Button(onClick = { dispatch(CounterAction.Inc) }) {
+        Button(onClick = { dispatch(Inc) }) {
             Text("Inc")
         }
-        Button(onClick = { dispatch(CounterAction.Dec) }) {
+        Button(onClick = { dispatch(Dec) }) {
             Text("Dec")
         }
     }
@@ -70,8 +72,8 @@ sealed class CounterAction {
         .scan(CounterState(0)) { currentState, action ->
             currentState.copy(
                 count = when (action) {
-                    CounterAction.Inc -> currentState.count.inc()
-                    CounterAction.Dec -> currentState.count.dec()
+                    Inc -> currentState.count.inc()
+                    Dec -> currentState.count.dec()
                 }
             )
         }

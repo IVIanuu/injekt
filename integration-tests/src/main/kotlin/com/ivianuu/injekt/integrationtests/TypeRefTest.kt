@@ -233,6 +233,32 @@ class TypeRefTest {
                     stringType.copy(unqualified = true)
         }
 
+    @Test
+    fun testQualifiedTypeAliasIsSubTypeOfTypeParameterWithSameQualifiers() = withAnalysisContext {
+        typeAlias(
+            function(0)
+                .copy(isComposable = true)
+                .qualified(qualifier1())
+        ) shouldBeSubTypeOf typeParameter(
+            function(0)
+                .copy(isComposable = true)
+                .qualified(qualifier1())
+        )
+    }
+
+    @Test
+    fun testQualifiedTypeAliasIsNotSubTypeOfTypeParameterWithOtherQualifiers() = withAnalysisContext {
+        typeAlias(
+            function(0)
+                .copy(isComposable = true)
+                .qualified(qualifier1())
+        ) shouldNotBeSubTypeOf typeParameter(
+                function(0)
+                    .copy(isComposable = true)
+                    .qualified(qualifier2(""))
+            )
+    }
+
     private infix fun TypeRef.shouldBeAssignable(other: TypeRef) {
         if (!isAssignableTo(other)) {
             throw AssertionError("'$this' is not assignable '$other'")

@@ -19,21 +19,45 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.PersistedCallableInfo
+import com.ivianuu.injekt.compiler.PersistedClassifierInfo
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import java.util.Base64
 
-class CallableInfoTransformer(
+class InfoTransformer(
     private val declarationStore: DeclarationStore,
     private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
+
+    @Suppress("NewApi")
+    override fun visitClass(declaration: IrClass): IrStatement {
+        if (declaration.hasAnnotation(InjektFqNames.Given)) {
+            declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
+                .run {
+                    irCall(
+                        pluginContext.referenceClass(InjektFqNames.ClassifierInfo)!!
+                            .constructors
+                            .single()
+                    ).apply {
+                        val info = declarationStore.classifierInfoFor(declaration.descriptor)
+                        val value = Base64.getEncoder()
+                            .encode(declarationStore.moshi.adapter(PersistedClassifierInfo::class.java)
+                                .toJson(info).toByteArray())
+                            .decodeToString()
+                        putValueArgument(0, irString(value))
+                    }
+                }
+        }
+        return super.visitClass(declaration)
+    }
 
     @Suppress("NewApi")
     override fun visitFunction(declaration: IrFunction): IrStatement {
@@ -54,10 +78,7 @@ class CallableInfoTransformer(
                             .encode(declarationStore.moshi.adapter(PersistedCallableInfo::class.java)
                                 .toJson(info).toByteArray())
                             .decodeToString()
-                        putValueArgument(
-                            0,
-                            irString(value)
-                        )
+                        putValueArgument(0, irString(value))
                     }
                 }
         }

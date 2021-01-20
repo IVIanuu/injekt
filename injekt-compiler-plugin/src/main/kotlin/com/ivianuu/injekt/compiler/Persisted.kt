@@ -30,17 +30,16 @@ import com.squareup.moshi.JsonClass
 import dev.zacsweers.moshix.sealed.annotations.TypeLabel
 import org.jetbrains.kotlin.descriptors.impl.LazyClassReceiverParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.Variance
 
 @JsonClass(generateAdapter = true) data class PersistedCallableInfo(
-    val key: String,
     val type: PersistedTypeRef,
     val typeParameters: List<PersistedClassifierRef>,
     val parameterTypes: Map<String, PersistedTypeRef>
 )
 
 fun CallableRef.toPersistedCallableInfo(declarationStore: DeclarationStore) = PersistedCallableInfo(
-    key = callable.uniqueKey(declarationStore),
     type = type.toPersistedTypeRef(declarationStore),
     typeParameters = typeParameters.map { it.toPersistedClassifierRef(declarationStore) },
     parameterTypes = parameterTypes
@@ -76,6 +75,16 @@ fun CallableRef.apply(
             .mapValues { it.value.toTypeRef(declarationStore) }
     )
 }
+
+@JsonClass(generateAdapter = true) data class PersistedClassifierInfo(
+    val fqName: String,
+    val qualifiers: List<PersistedAnnotationRef>
+)
+
+fun ClassifierRef.toPersistedClassifierInfo(declarationStore: DeclarationStore) = PersistedClassifierInfo(
+    fqName = descriptor!!.fqNameSafe.asString(),
+    qualifiers = qualifiers.map { it.toPersistedAnnotationRef(declarationStore) }
+)
 
 @JsonClass(generateAdapter = true) data class PersistedTypeRef(
     val classifierKey: String,
@@ -120,7 +129,8 @@ fun PersistedTypeRef.toTypeRef(declarationStore: DeclarationStore): TypeRef {
 @JsonClass(generateAdapter = true) data class PersistedClassifierRef(
     val key: String,
     val superTypes: List<PersistedTypeRef>,
-    val expandedType: PersistedTypeRef?
+    val expandedType: PersistedTypeRef?,
+    val qualifiers: List<PersistedAnnotationRef>
 )
 
 fun ClassifierRef.toPersistedClassifierRef(
@@ -128,7 +138,8 @@ fun ClassifierRef.toPersistedClassifierRef(
 ) = PersistedClassifierRef(
     key = descriptor!!.uniqueKey(declarationStore),
     superTypes = superTypes.map { it.toPersistedTypeRef(declarationStore) },
-    expandedType = expandedType?.toPersistedTypeRef(declarationStore)
+    expandedType = expandedType?.toPersistedTypeRef(declarationStore),
+    qualifiers = qualifiers.map { it.toPersistedAnnotationRef(declarationStore) }
 )
 
 fun PersistedClassifierRef.toClassifierRef(declarationStore: DeclarationStore): ClassifierRef {
@@ -136,9 +147,19 @@ fun PersistedClassifierRef.toClassifierRef(declarationStore: DeclarationStore): 
         .toClassifierRef(declarationStore)
         .copy(
             superTypes = superTypes.map { it.toTypeRef(declarationStore) },
-            expandedType = expandedType?.toTypeRef(declarationStore)
+            expandedType = expandedType?.toTypeRef(declarationStore),
+            qualifiers = qualifiers.map { it.toAnnotationRef(declarationStore) }
         )
 }
+
+fun ClassifierRef.apply(
+    declarationStore: DeclarationStore,
+    info: PersistedClassifierInfo?
+): ClassifierRef {
+    return if (info == null || !descriptor!!.isExternalDeclaration()) this
+    else copy(qualifiers = info.qualifiers.map { it.toAnnotationRef(declarationStore) })
+}
+
 
 @JsonClass(generateAdapter = true) data class PersistedAnnotationRef(
     val type: PersistedTypeRef,

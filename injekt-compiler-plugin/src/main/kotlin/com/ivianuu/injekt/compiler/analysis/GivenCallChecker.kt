@@ -154,7 +154,6 @@ class GivenCallChecker(
         try {
             this.scope = scope()
             block()
-        } catch (e: Throwable) {
         } finally {
             this.scope = prevScope
         }
@@ -245,7 +244,7 @@ class GivenCallChecker(
 
     override fun visitBlockExpression(expression: KtBlockExpression) {
         // capture the current scope here because
-        // the scope might chage because of local declarations
+        // the scope might change because of local declarations
         val current = scope
         inScope({ current }) { super.visitBlockExpression(expression) }
     }
@@ -268,12 +267,8 @@ class GivenCallChecker(
 
     override fun visitCallExpression(expression: KtCallExpression) {
         super.visitCallExpression(expression)
-        try {
-            scope.check(expression.getResolvedCall(bindingTrace.bindingContext) ?: return,
-                expression)
-        } catch (e: Throwable) {
-            e.printStackTrace()
-        }
+        scope.check(expression.getResolvedCall(bindingTrace.bindingContext) ?: return,
+            expression)
     }
 
 }

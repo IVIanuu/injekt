@@ -16,14 +16,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.DeclarationStore
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.apply
-import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.getContributionParameters
-import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.toAnnotationRef
+import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
@@ -80,14 +73,11 @@ fun CallableDescriptor.toCallableRef(
     declarationStore: DeclarationStore,
     applyCallableInfo: Boolean = true
 ): CallableRef {
+    val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
+        .map { it.toAnnotationRef(declarationStore) }
     val type = returnType!!.toTypeRef(declarationStore).let {
         it.copy(
-            qualifiers = ((this as? ClassConstructorDescriptor)
-                ?.takeIf { it.isPrimary }
-                ?.constructedClass
-                ?.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-                ?: getAnnotatedAnnotations(InjektFqNames.Qualifier))
-                .map { it.toAnnotationRef(declarationStore) } + it.qualifiers
+            qualifiers = qualifiers + it.qualifiers
         )
     }
     val typeParameters = typeParameters
@@ -252,11 +242,7 @@ fun ClassDescriptor.getContributionConstructors(
     .flatMap { declaration ->
         if (declaration.contributionKind == ContributionKind.VALUE) {
             allGivenTypes(declarationStore).map { type ->
-                declaration.copy(
-                    type = type.copy(
-                        qualifiers = declaration.type.qualifiers + type.qualifiers
-                    )
-                )
+                declaration.copy(type = type)
             }
         } else {
             listOf(declaration)
@@ -265,7 +251,7 @@ fun ClassDescriptor.getContributionConstructors(
 
 
 fun ClassDescriptor.allGivenTypes(declarationStore: DeclarationStore): List<TypeRef> = buildList<TypeRef> {
-    this += defaultType.toTypeRef(declarationStore)
+    this += toClassifierRef(declarationStore).defaultType
     this += defaultType.constructor.supertypes
         .filter { it.hasAnnotation(InjektFqNames.Given) }
         .map { it.toTypeRef(declarationStore) }

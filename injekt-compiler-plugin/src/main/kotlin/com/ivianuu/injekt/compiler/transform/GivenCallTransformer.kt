@@ -261,8 +261,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         given: SetGivenNode,
         symbol: IrSymbol,
     ): IrExpression {
-        val elementType =
-            given.type.fullyExpandedType.arguments.single()
+        val elementType = given.type.fullyExpandedType.arguments.single()
 
         if (given.elements.isEmpty()) {
             val emptySet = pluginContext.referenceFunctions(
@@ -538,7 +537,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                             .map { getTypeArgument(it)!!.toKotlinType().toTypeRef(graph.scope.declarationStore) }
                             .zip(
                                 expression.symbol.descriptor.typeParameters
-                                    .map { it.defaultType.toTypeRef(graph.scope.declarationStore) }
+                                    .map { it.toClassifierRef(graph.scope.declarationStore).defaultType }
                             )
                     ) + getSubstitutionMap(
                         ((dispatchReceiver?.type as? IrSimpleType)?.arguments

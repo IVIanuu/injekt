@@ -72,7 +72,6 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : Analysis
                 }
             }
             IndexGenerator().generate(context, filesToProcess)
-            val declarationStore = DeclarationStore(module)
             GivenFunGenerator()
                 .generate(context, filesToProcess)
             fileManager.postGenerate()
@@ -110,11 +109,8 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : Analysis
                 )
             } catch (e: Throwable) {
             }
-            try {
-                val checker = GivenCallChecker(bindingTrace, module)
-                files.forEach { it.accept(checker) }
-            } catch (e: Throwable) {
-            }
+            val checker = GivenCallChecker(bindingTrace, module)
+            files.forEach { it.accept(checker) }
         }
         return null
     }

@@ -102,7 +102,7 @@ fun TypeRef.toKotlinType(): SimpleType {
         expandedType!!.toKotlinType()
             .withAbbreviation(toAbbreviation())
     } else {
-        classifier.descriptor!!.defaultType
+        classifier.descriptor!!.original.defaultType
             .replace(newArguments = arguments.map {
                 TypeProjectionImpl(
                     it.variance,

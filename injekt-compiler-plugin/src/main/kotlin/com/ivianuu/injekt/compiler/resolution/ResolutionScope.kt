@@ -16,12 +16,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.DeclarationStore
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.isExternalDeclaration
-import com.ivianuu.injekt.compiler.toAnnotationRef
-import com.ivianuu.injekt.compiler.unsafeLazy
+import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -94,12 +89,7 @@ class ResolutionScope(
                     declarationStore.givenFuns
                         .map { (givenFun, givenFunType) ->
                             givenFunType.defaultType
-                                .copy(
-                                    qualifiers = givenFun.callable
-                                        .getAnnotatedAnnotations(InjektFqNames.Qualifier)
-                                        .map { it.toAnnotationRef(declarationStore) },
-                                    path = listOf(givenFun.callable)
-                                )
+                                .copy(path = listOf(givenFun.callable))
                         }
         )
     }
@@ -121,7 +111,10 @@ class ResolutionScope(
                     this@ResolutionScope,
                     interceptorsForType(type),
                     declarationStore.functionDescriptorForFqName(type.classifier.fqName)
-                        .single()
+                        .filter { it.hasAnnotation(InjektFqNames.GivenFun) }
+                        .let {
+                            it.singleOrNull() ?: error("Wtf ${it.joinToString("\n")}")
+                        }
                         .toCallableRef(declarationStore)
                 )
 
@@ -164,6 +157,17 @@ class ResolutionScope(
             givenSetElements
                 .filter { it.type.isAssignableTo(type) }
                 .map { it.substitute(getSubstitutionMap(listOf(type to it.type))) }
+                .onEach { element ->
+                    element.typeArguments.values.forEach { type ->
+                        type.qualifiers.forEach { q ->
+                            q.type.arguments.forEach { arg ->
+                                if (arg.classifier.isTypeParameter) {
+                                    error("Wtf $arg $q $element $type")
+                                }
+                            }
+                        }
+                    }
+                }
         }
     }
 
@@ -204,7 +208,9 @@ class ResolutionScope(
                 processedContributions += contribution
                 for (macro in macros) {
                     val macroType = macro.typeParameters.first().defaultType
+
                     if (!contribution.copy(path = null).isSubTypeOf(macroType)) continue
+                    if (macro.callable.fqNameSafe in contribution.path!!) continue
                     val inputsSubstitutionMap = getSubstitutionMap(
                         listOf(contribution to macroType),
                         macro.typeParameters
@@ -222,17 +228,14 @@ class ResolutionScope(
                         )
 
                     allContributions += newContribution
-                    nextContributions += if (newContribution.contributionKind == ContributionKind.VALUE) {
+                    if (newContribution.contributionKind == ContributionKind.VALUE) {
                         val newContributionWithPath = newContribution.copy(
                             type = newContribution.type.copy(
-                                path = contribution.path!! + newContribution.callable
-                                    .fqNameSafe
+                                path = contribution.path!! + newContribution.callable.fqNameSafe
                             )
                         )
                         allContributions += newContributionWithPath
-                        newContributionWithPath.type
-                    } else {
-                        newContribution.type
+                        nextContributions += newContributionWithPath.type
                     }
                 }
             }
@@ -294,7 +297,7 @@ fun ClassResolutionScope(
         descriptor.unsubstitutedMemberScope
             .collectContributions(
                 declarationStore,
-                descriptor.defaultType.toTypeRef(declarationStore)
+                descriptor.toClassifierRef(declarationStore).defaultType
             ) + descriptor.thisAsReceiverParameter.toCallableRef(declarationStore)
             .copy(contributionKind = ContributionKind.VALUE)
     }

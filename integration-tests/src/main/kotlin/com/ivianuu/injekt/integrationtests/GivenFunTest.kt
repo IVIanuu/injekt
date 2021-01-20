@@ -466,7 +466,7 @@ class GivenFunTest {
         """
     )
 
-    @Test
+    // todo @Test
     fun testGivenFunSelfReference() = codegen(
         """
             @GivenFun fun a(@Given a: a) {

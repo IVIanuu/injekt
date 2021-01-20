@@ -71,7 +71,7 @@ class MacroTest {
     fun testMacroWithQualifierWithTypeParameter() = codegen(
         """
             @Qualifier annotation class Trigger<S>
-            @Macro @Given fun <@ForKey T : @Trigger<S> Any?, @ForKey S> macroImpl() = 
+            @Macro @Given fun <@ForKey T : @Trigger<S> q , @ForKey S> macroImpl() = 
                 keyOf<S>()
 
             @Trigger<Bar> @Given fun foo() = Foo()
@@ -82,7 +82,7 @@ class MacroTest {
         assertEquals("com.ivianuu.injekt.test.Bar", invokeSingleFile())
     }
 
-    @Test(timeout = 20000)
+    @Test
     fun testMacroWithQualifierWithTypeParameterMulti() = multiCodegen(
         listOf(
             source(
@@ -117,7 +117,7 @@ class MacroTest {
     fun testMacroWithGivenFun() = codegen(
         """
             @Qualifier annotation class Trigger
-            @Macro @Given fun <T : @Trigger FooFactory> macroImpl(@Given instance: T): FooFactory = 
+            @Macro @Given fun <T : @Trigger () -> Foo> macroImpl(@Given instance: T): FooFactory = 
                 instance
             
             typealias FooFactory = () -> Foo
@@ -128,6 +128,20 @@ class MacroTest {
         """
     ) {
         assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testMacroClass() = codegen(
+        """
+            @Qualifier annotation class Trigger
+            @Macro @Given fun <T : @Trigger S, S> macroImpl(@Given instance: T): S = instance
+
+            @Trigger @Given class NotAny
+
+            fun invoke() = given<NotAny>()
+        """
+    ) {
+        invokeSingleFile()
     }
 
     @Test

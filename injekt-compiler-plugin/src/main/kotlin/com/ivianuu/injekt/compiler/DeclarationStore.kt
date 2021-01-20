@@ -17,16 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.Index
-import com.ivianuu.injekt.compiler.resolution.CallableRef
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.KotlinTypeRef
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.copy
-import com.ivianuu.injekt.compiler.resolution.expandedType
-import com.ivianuu.injekt.compiler.resolution.getContributionConstructors
-import com.ivianuu.injekt.compiler.resolution.render
-import com.ivianuu.injekt.compiler.resolution.toCallableRef
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
+import com.ivianuu.injekt.compiler.resolution.*
 import com.squareup.moshi.Moshi
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -37,11 +28,9 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
-import org.jetbrains.kotlin.types.ErrorType
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.Base64
@@ -123,12 +112,33 @@ class DeclarationStore(val module: ModuleDescriptor) {
     fun callableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? =
         callableInfoFor(callable.toCallableRef(this))
 
+    private val classifierInfosByDeclaration = mutableMapOf<Any, PersistedClassifierInfo?>()
+    fun classifierInfoFor(classifier: ClassifierRef): PersistedClassifierInfo? =
+        classifierInfosByDeclaration.getOrPut(classifier.descriptor!!.original) {
+            classifier.descriptor
+                .annotations
+                .findAnnotation(InjektFqNames.ClassifierInfo)
+                ?.allValueArguments
+                ?.get("value".asNameId())
+                ?.value
+                ?.cast<String>()
+                ?.let { encoded ->
+                    val json = Base64.getDecoder()
+                        .decode(encoded)
+                        .decodeToString()
+                    moshi.adapter(PersistedClassifierInfo::class.java).fromJson(json)!!
+                }
+                ?: classifier.toPersistedClassifierInfo(this@DeclarationStore)
+        }
+    fun classifierInfoFor(classifier: ClassifierDescriptor): PersistedClassifierInfo? =
+        classifierInfoFor(classifier.toClassifierRef(this))
+
     private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor>()
     fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor {
         return classifierDescriptorByFqName.getOrPut(fqName) {
             memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
-            ) ?: error("Could not get for $fqName")
+            ) ?: error("Could not get for '$fqName'")
         }
     }
 
@@ -144,11 +154,16 @@ class DeclarationStore(val module: ModuleDescriptor) {
                     .singleOrNull {
                         it.uniqueKey(this@DeclarationStore) == key
                     }
+                ?: propertyDescriptorsForFqName(fqName.parent())
+                    .flatMap { it.typeParameters }
+                    .singleOrNull {
+                        it.uniqueKey(this@DeclarationStore) == key
+                    }
                 ?: classifierDescriptorForFqName(fqName.parent())
                     .safeAs<ClassifierDescriptorWithTypeParameters>()
                     ?.declaredTypeParameters
-                    ?.single { it.uniqueKey(this@DeclarationStore) == key }
-                ?: error("Could not get for $fqName")
+                    ?.singleOrNull { it.uniqueKey(this@DeclarationStore) == key }
+                ?: error("Could not get for $fqName $key")
         }
     }
 
