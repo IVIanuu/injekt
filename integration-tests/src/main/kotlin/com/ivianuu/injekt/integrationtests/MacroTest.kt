@@ -71,7 +71,7 @@ class MacroTest {
     fun testMacroWithQualifierWithTypeParameter() = codegen(
         """
             @Qualifier annotation class Trigger<S>
-            @Macro @Given fun <@ForKey T : @Trigger<S> q , @ForKey S> macroImpl() = 
+            @Macro @Given fun <@ForKey T : @Trigger<S> Any?, @ForKey S> macroImpl() = 
                 keyOf<S>()
 
             @Trigger<Bar> @Given fun foo() = Foo()
