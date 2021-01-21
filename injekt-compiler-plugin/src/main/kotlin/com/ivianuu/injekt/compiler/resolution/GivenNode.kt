@@ -124,7 +124,7 @@ data class FunGivenNode(
         parent = ownerScope,
         declarationStore = ownerScope.declarationStore,
         callContext = callable.callContext,
-        contributions = { emptyList() }
+        produceContributions = { emptyList() }
     )
     override val lazyDependencies: Boolean
         get() = true
@@ -175,7 +175,7 @@ data class ProviderGivenNode(
         parent = ownerScope,
         declarationStore = declarationStore,
         callContext = type.callContext,
-        contributions = {
+        produceContributions = {
             type
                 .toKotlinType()
                 .memberScope

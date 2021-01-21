@@ -31,7 +31,7 @@ class ResolutionScope(
     val parent: ResolutionScope?,
     val declarationStore: DeclarationStore,
     val callContext: CallContext,
-    contributions: () -> List<CallableRef>,
+    produceContributions: () -> List<CallableRef>,
 ) {
     val chain: MutableSet<GivenNode> = parent?.chain ?: mutableSetOf()
     val resultsByRequest = mutableMapOf<GivenRequest, ResolutionResult>()
@@ -46,17 +46,13 @@ class ResolutionScope(
     private val givenSetElementsByType = mutableMapOf<TypeRef, List<CallableRef>>()
     private val interceptorsByType = mutableMapOf<TypeRef, List<InterceptorNode>>()
 
+    private var generatesMacros = false
+
     private val initialize: Unit by unsafeLazy {
         parent?.initialize
+        parent?.initializeMacros
 
-        parent?.givens
-            ?.filterNot { it.first.isFromMacro }
-            ?.forEach { givens += it }
-        parent?.givenSetElements
-            ?.filterNot { it.isFromMacro }
-            ?.forEach { givenSetElements += it }
-        parent?.macros?.forEach { macros += it }
-        contributions().forEach { contribution ->
+        produceContributions().forEach { contribution ->
             contribution.collectContributions(
                 declarationStore = declarationStore,
                 path = listOf(contribution.callable.fqNameSafe),
@@ -66,9 +62,23 @@ class ResolutionScope(
                 addMacro = { macros += it }
             )
         }
+
+        parent?.macros?.forEach { macros.add(0, it) }
+
+        generatesMacros = macros.isNotEmpty() &&
+                (givens.isNotEmpty() ||
+                        (name == "INTERNAL" && declarationStore.givenFuns.isNotEmpty()))
+
+        parent?.givens
+            ?.filter { !it.first.isFromMacro || !generatesMacros }
+            ?.forEach { givens.add(0, it) }
+        parent?.givenSetElements
+            ?.filter { !it.isFromMacro || !generatesMacros }
+            ?.forEach { givenSetElements.add(0, it) }
         parent?.interceptors
-            ?.filterNot { it.isFromMacro }
+            ?.filter { !it.isFromMacro || !generatesMacros }
             ?.forEach { interceptors += it }
+
         Unit
     }
 
@@ -77,20 +87,20 @@ class ResolutionScope(
 
     private val initializeMacros by unsafeLazy {
         initialize
+        if (!generatesMacros) return@unsafeLazy
         collectMacroContributions(
-            givens
+            (givens
                 .filterNot { it.first.isFromMacro }
                 .map { (callable, scope) ->
                     val typeWithPath = callable.type
                         .copy(path = listOf(callable.callable.fqNameSafe))
                     givens += callable.copy(type = typeWithPath) to scope
                     typeWithPath
-                } +
-                    declarationStore.givenFuns
-                        .map { (givenFun, givenFunType) ->
-                            givenFunType.defaultType
-                                .copy(path = listOf(givenFun.callable))
-                        }
+                } + declarationStore.givenFuns
+                .map { (givenFun, givenFunType) ->
+                    givenFunType.defaultType
+                        .copy(path = listOf(givenFun.callable))
+                }).toSet()
         )
     }
 
@@ -192,16 +202,14 @@ class ResolutionScope(
         }
     }
 
-    private fun collectMacroContributions(initialContributions: List<TypeRef>) {
-        if (macros.isEmpty() || initialContributions.isEmpty()) return
-
+    private fun collectMacroContributions(initialContributions: Set<TypeRef>) {
         val allContributions = mutableListOf<CallableRef>()
 
         val processedContributions = mutableSetOf<TypeRef>()
         var contributionsToProcess = initialContributions
 
         while (contributionsToProcess.isNotEmpty()) {
-            val nextContributions = mutableListOf<TypeRef>()
+            val nextContributions = mutableSetOf<TypeRef>()
 
             for (contribution in contributionsToProcess) {
                 if (contribution in processedContributions) continue
@@ -263,7 +271,7 @@ fun ExternalResolutionScope(declarationStore: DeclarationStore): ResolutionScope
     declarationStore = declarationStore,
     callContext = CallContext.DEFAULT,
     parent = null,
-    contributions = {
+    produceContributions = {
         declarationStore.globalContributions
             .filter { it.callable.isExternalDeclaration() }
             .filter { it.callable.visibility == DescriptorVisibilities.PUBLIC }
@@ -278,7 +286,7 @@ fun InternalResolutionScope(
     declarationStore = declarationStore,
     callContext = CallContext.DEFAULT,
     parent = parent,
-    contributions = {
+    produceContributions = {
         declarationStore.globalContributions
             .filterNot { it.callable.isExternalDeclaration() }
     }
@@ -293,7 +301,7 @@ fun ClassResolutionScope(
     declarationStore = declarationStore,
     callContext = CallContext.DEFAULT,
     parent = parent,
-    contributions = {
+    produceContributions = {
         descriptor.unsubstitutedMemberScope
             .collectContributions(
                 declarationStore,
@@ -313,7 +321,7 @@ fun FunctionResolutionScope(
     declarationStore = declarationStore,
     callContext = lambdaType?.callContext ?: descriptor.callContext,
     parent = parent,
-    contributions = { descriptor.collectContributions(declarationStore) }
+    produceContributions = { descriptor.collectContributions(declarationStore) }
 )
 
 fun LocalDeclarationResolutionScope(
@@ -338,6 +346,6 @@ fun LocalDeclarationResolutionScope(
         declarationStore = declarationStore,
         callContext = parent.callContext,
         parent = parent,
-        contributions = { declarations }
+        produceContributions = { declarations }
     )
 }
