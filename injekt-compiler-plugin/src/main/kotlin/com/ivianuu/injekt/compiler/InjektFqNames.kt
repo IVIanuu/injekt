@@ -23,11 +23,11 @@ object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
 
     val Given = InjektPackage.child("Given".asNameId())
-    val Module = InjektPackage.child("Module".asNameId())
     val GivenFun = InjektPackage.child("GivenFun".asNameId())
     val GivenSetElement = InjektPackage.child("GivenSetElement".asNameId())
     val Interceptor = InjektPackage.child("Interceptor".asNameId())
     val Macro = InjektPackage.child("Macro".asNameId())
+    val Module = InjektPackage.child("Module".asNameId())
     val Qualifier = InjektPackage.child("Qualifier".asNameId())
     val Unqualified = InjektPackage.child("Unqualified".asNameId())
     val givenfun = InjektPackage.child("given".asNameId())

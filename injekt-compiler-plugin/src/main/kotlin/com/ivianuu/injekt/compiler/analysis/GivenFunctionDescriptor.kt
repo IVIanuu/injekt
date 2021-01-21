@@ -20,6 +20,8 @@ import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.resolution.ContributionKind
+import com.ivianuu.injekt.compiler.resolution.contributionKind
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -46,8 +48,7 @@ class GivenValueParameterDescriptor(
     if (underlyingDescriptor.name.isSpecial) underlyingDescriptor.type.toTypeRef(declarationStore)
         .classifier.fqName.shortName().asString().decapitalize().asNameId() else underlyingDescriptor.name,
     underlyingDescriptor.type,
-    underlyingDescriptor.hasAnnotation(InjektFqNames.Given) ||
-            underlyingDescriptor.type.hasAnnotation(InjektFqNames.Given) ||
+    underlyingDescriptor.contributionKind(declarationStore) == ContributionKind.VALUE ||
             underlyingDescriptor.declaresDefaultValue(),
     underlyingDescriptor.isCrossinline,
     underlyingDescriptor.isNoinline,

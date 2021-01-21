@@ -204,12 +204,9 @@ fun CallableDescriptor.collectContributions(
 }
 
 fun ParameterDescriptor.contributionKind(declarationStore: DeclarationStore): ContributionKind? {
-    val userData = getUserData(DslMarkerUtils.FunctionTypeAnnotationsKey)
-    val contributionParameters = getContributionParameters(declarationStore)
-
     return (this as Annotated).contributionKind(declarationStore)
         ?: type.contributionKind(declarationStore)
-        ?: userData?.let {
+        ?: getUserData(DslMarkerUtils.FunctionTypeAnnotationsKey)?.let { userData ->
         when {
             userData.hasAnnotation(InjektFqNames.Given) -> ContributionKind.VALUE
             userData.hasAnnotation(InjektFqNames.GivenSetElement) -> ContributionKind.SET_ELEMENT
@@ -217,7 +214,7 @@ fun ParameterDescriptor.contributionKind(declarationStore: DeclarationStore): Co
             userData.hasAnnotation(InjektFqNames.Interceptor) -> ContributionKind.INTERCEPTOR
             else -> null
         }
-    } ?: contributionParameters
+    } ?: getContributionParameters(declarationStore)
         .firstOrNull { it.callable == this }
         ?.contributionKind
 }

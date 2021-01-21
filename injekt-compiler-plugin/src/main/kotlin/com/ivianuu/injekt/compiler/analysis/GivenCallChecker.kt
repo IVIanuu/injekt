@@ -23,18 +23,7 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
-import com.ivianuu.injekt.compiler.resolution.ClassResolutionScope
-import com.ivianuu.injekt.compiler.resolution.ExternalResolutionScope
-import com.ivianuu.injekt.compiler.resolution.FunctionResolutionScope
-import com.ivianuu.injekt.compiler.resolution.GivenGraph
-import com.ivianuu.injekt.compiler.resolution.GivenRequest
-import com.ivianuu.injekt.compiler.resolution.InternalResolutionScope
-import com.ivianuu.injekt.compiler.resolution.LocalDeclarationResolutionScope
-import com.ivianuu.injekt.compiler.resolution.ResolutionScope
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.resolveGiven
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.psi.PsiFile
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -78,10 +67,7 @@ class GivenCallChecker(
 
         val requests = call
             .valueArguments
-            .filterKeys {
-                it.hasAnnotation(InjektFqNames.Given) ||
-                        it.type.hasAnnotation(InjektFqNames.Given)
-            }
+            .filterKeys { it.contributionKind(declarationStore) == ContributionKind.VALUE }
             .filter { it.value is DefaultValueArgument }
             .map {
                 GivenRequest(
