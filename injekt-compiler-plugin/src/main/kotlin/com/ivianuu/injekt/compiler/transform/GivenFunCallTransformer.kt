@@ -40,7 +40,7 @@ class GivenFunCallTransformer(private val pluginContext: IrPluginContext) :
                         descriptor.givenFunDescriptor.name.asString().capitalize()
                     }".asNameId())
                     .toSafe()
-            ).single()
+            ).first()
             return DeclarationIrBuilder(pluginContext, result.symbol)
                 .irCall(givenFunInvoke)
                 .apply {

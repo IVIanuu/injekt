@@ -16,10 +16,8 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.DeclarationStore
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.PersistedCallableInfo
-import com.ivianuu.injekt.compiler.PersistedClassifierInfo
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.IrStatement
@@ -73,7 +71,8 @@ class InfoTransformer(
                             .constructors
                             .single()
                     ).apply {
-                        val info = declarationStore.callableInfoFor(declaration.descriptor)
+                        val info = declaration.descriptor.toCallableRef(declarationStore)
+                            .toPersistedCallableInfo(declarationStore)
                         val value = Base64.getEncoder()
                             .encode(declarationStore.moshi.adapter(PersistedCallableInfo::class.java)
                                 .toJson(info).toByteArray())

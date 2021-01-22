@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.calls.context.BasicCallResolutionContext
 import org.jetbrains.kotlin.resolve.calls.tower.ImplicitScopeTower
 import org.jetbrains.kotlin.resolve.calls.tower.PSICallResolver
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.scopes.ResolutionScope
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValueWithSmartCastInfo
@@ -61,7 +62,8 @@ class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtensi
                 resolutionContext.scope.ownerDescriptor.name.asString() !=
                 "invoke${typeAlias.name.asString().capitalize()}"
             ) {
-                val memberScope = typeAlias.findPackage().getMemberScope()
+                val memberScope = typeAlias.module.getPackage(typeAlias.containingDeclaration.fqNameSafe)
+                    .memberScope
                 val givenFunction = memberScope
                     .getContributedFunctions(typeAlias.name, NoLookupLocation.FROM_BACKEND)
                     .single()

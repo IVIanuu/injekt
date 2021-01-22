@@ -24,13 +24,16 @@ import java.io.File
 
 typealias DatabaseFile = File
 
-@Scoped<AppComponent> @Given
+@Scoped<AppComponent>
+@Given
 fun databaseFile(@Given context: AppContext): DatabaseFile = context.cacheDir!!
 
-@Scoped<AppComponent> @Given
+@Scoped<AppComponent>
+@Given
 class Database(@Given private val file: DatabaseFile)
 
-@Scoped<AppComponent> @Given
+@Scoped<AppComponent>
+@Given
 class Repo(@Given private val api: Api) {
     fun refresh() {
     }

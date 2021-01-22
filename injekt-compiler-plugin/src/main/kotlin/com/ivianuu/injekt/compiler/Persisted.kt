@@ -28,15 +28,19 @@ import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.resolution.typeWith
 import com.squareup.moshi.JsonClass
 import dev.zacsweers.moshix.sealed.annotations.TypeLabel
+import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.impl.LazyClassReceiverParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.Variance
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 @JsonClass(generateAdapter = true) data class PersistedCallableInfo(
     val type: PersistedTypeRef,
     val typeParameters: List<PersistedClassifierRef>,
-    val parameterTypes: Map<String, PersistedTypeRef>
+    val parameterTypes: Map<String, PersistedTypeRef>,
+    val parameterContributionKinds: Map<String, ContributionKind?>
 )
 
 fun CallableRef.toPersistedCallableInfo(declarationStore: DeclarationStore) = PersistedCallableInfo(
@@ -50,7 +54,15 @@ fun CallableRef.toPersistedCallableInfo(declarationStore: DeclarationStore) = Pe
                 else -> parameter.name.asString()
             }
         }
-        .mapValues { it.value.toPersistedTypeRef(declarationStore) }
+        .mapValues { it.value.toPersistedTypeRef(declarationStore) },
+    parameterContributionKinds = parameterContributionKinds
+        .mapKeys { (parameter) ->
+            when (parameter) {
+                callable.dispatchReceiverParameter -> "_dispatchReceiver"
+                callable.extensionReceiverParameter -> "_extensionReceiver"
+                else -> parameter.name.asString()
+            }
+        }
 )
 
 fun CallableRef.apply(
@@ -72,7 +84,16 @@ fun CallableRef.apply(
                         ?: error("Wtf $name")
                 }
             }
-            .mapValues { it.value.toTypeRef(declarationStore) }
+            .mapValues { it.value.toTypeRef(declarationStore) },
+        parameterContributionKinds = info.parameterContributionKinds
+            .mapKeys { (name) ->
+                when (name) {
+                    "_dispatchReceiver" -> callable.dispatchReceiverParameter!!
+                    "_extensionReceiver" -> callable.extensionReceiverParameter!!
+                    else -> callable.valueParameters.singleOrNull { it.name.asString() == name }
+                        ?: error("Wtf $name")
+                }
+            }
     )
 }
 
@@ -136,7 +157,15 @@ fun PersistedTypeRef.toTypeRef(declarationStore: DeclarationStore): TypeRef {
 fun ClassifierRef.toPersistedClassifierRef(
     declarationStore: DeclarationStore
 ) = PersistedClassifierRef(
-    key = descriptor!!.uniqueKey(declarationStore),
+    key = if (descriptor is TypeParameterDescriptor) {
+        descriptor.containingDeclaration
+            .safeAs<ClassConstructorDescriptor>()
+            ?.constructedClass
+            ?.declaredTypeParameters
+            ?.single { it.name == descriptor.name }
+            ?.uniqueKey(declarationStore)
+            ?: descriptor.uniqueKey(declarationStore)
+     } else descriptor!!.uniqueKey(declarationStore),
     superTypes = superTypes.map { it.toPersistedTypeRef(declarationStore) },
     expandedType = expandedType?.toPersistedTypeRef(declarationStore),
     qualifiers = qualifiers.map { it.toPersistedAnnotationRef(declarationStore) }

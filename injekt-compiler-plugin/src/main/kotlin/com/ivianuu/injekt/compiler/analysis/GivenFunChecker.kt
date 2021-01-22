@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 class GivenFunChecker : DeclarationChecker {
     override fun check(
@@ -52,7 +53,8 @@ class GivenFunChecker : DeclarationChecker {
                     .on(declaration)
             )
         } else {
-            val functionsWithSameName = descriptor.findPackage().getMemberScope()
+            val functionsWithSameName = descriptor.module.getPackage(descriptor.findPackage().fqName)
+                .memberScope
                 .getContributedFunctions(descriptor.name, NoLookupLocation.FROM_BACKEND)
                 .filter { it.hasAnnotation(InjektFqNames.GivenFun) }
             if (functionsWithSameName.size > 1) {

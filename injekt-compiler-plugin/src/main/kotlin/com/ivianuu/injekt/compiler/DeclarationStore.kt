@@ -92,9 +92,9 @@ class DeclarationStore(val module: ModuleDescriptor) {
     val moshi = Moshi.Builder().build()
 
     private val callableInfosByDeclaration = mutableMapOf<Any, PersistedCallableInfo?>()
-    fun callableInfoFor(callable: CallableRef): PersistedCallableInfo? =
-        callableInfosByDeclaration.getOrPut(callable.callable.original) {
-            callable.callable
+    fun callableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? =
+        callableInfosByDeclaration.getOrPut(callable.original) {
+            callable
                 .annotations
                 .findAnnotation(InjektFqNames.CallableInfo)
                 ?.allValueArguments
@@ -105,12 +105,10 @@ class DeclarationStore(val module: ModuleDescriptor) {
                     val json = Base64.getDecoder()
                         .decode(encoded)
                         .decodeToString()
-                    moshi.adapter(PersistedCallableInfo::class.java).fromJson(json)!!
+                    val info = moshi.adapter(PersistedCallableInfo::class.java).fromJson(json)!!
+                    info
                 }
-                ?: callable.toPersistedCallableInfo(this@DeclarationStore)
         }
-    fun callableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? =
-        callableInfoFor(callable.toCallableRef(this))
 
     private val classifierInfosByDeclaration = mutableMapOf<Any, PersistedClassifierInfo?>()
     fun classifierInfoFor(classifier: ClassifierRef): PersistedClassifierInfo? =
@@ -146,23 +144,23 @@ class DeclarationStore(val module: ModuleDescriptor) {
     fun classifierDescriptorForKey(key: String): ClassifierDescriptor {
         return classifierDescriptorByKey.getOrPut(key) {
             val fqName = FqName(key.split(":")[1])
-            memberScopeForFqName(fqName.parent())?.getContributedClassifier(
+            return@getOrPut memberScopeForFqName(fqName.parent())?.getContributedClassifier(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
             )?.takeIf { it.uniqueKey(this) == key }
                 ?: functionDescriptorForFqName(fqName.parent())
                     .flatMap { it.typeParameters }
-                    .singleOrNull {
+                    .firstOrNull {
                         it.uniqueKey(this@DeclarationStore) == key
                     }
                 ?: propertyDescriptorsForFqName(fqName.parent())
                     .flatMap { it.typeParameters }
-                    .singleOrNull {
+                    .firstOrNull {
                         it.uniqueKey(this@DeclarationStore) == key
                     }
                 ?: classifierDescriptorForFqName(fqName.parent())
                     .safeAs<ClassifierDescriptorWithTypeParameters>()
                     ?.declaredTypeParameters
-                    ?.singleOrNull { it.uniqueKey(this@DeclarationStore) == key }
+                    ?.firstOrNull { it.uniqueKey(this@DeclarationStore) == key }
                 ?: error("Could not get for $fqName $key")
         }
     }

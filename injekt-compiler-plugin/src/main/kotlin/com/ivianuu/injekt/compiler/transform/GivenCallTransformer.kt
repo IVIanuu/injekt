@@ -93,7 +93,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             .filter { call.getValueArgument(it.index) == null }
             .filter {
                 it.contributionKind(graph.scope.declarationStore) == ContributionKind.VALUE ||
-                        callable.parameterTypes[it]!!.contributionKind == ContributionKind.VALUE
+                        callable.parameterTypes[it.original]!!.contributionKind == ContributionKind.VALUE
             }
             .map { parameter ->
                 val parameterName = if (parameter.name.isSpecial)
@@ -190,7 +190,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                 ).apply {
                     this as IrFunctionAccessExpression
                     interceptor.callable.callable.valueParameters
-                        .single { interceptor.callable.parameterTypes[it] == providerType }
+                        .single { interceptor.callable.parameterTypes[it.original] == providerType }
                         .index
                         .let { factoryIndex ->
                             putValueArgument(
@@ -417,7 +417,8 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
     ): IrExpression {
         if (descriptor is ProviderGivenNode.ProviderParameterDescriptor) {
             return DeclarationIrBuilder(pluginContext, symbol)
-                .irGet(lambdasByProviderGiven[descriptor.given]!!.valueParameters[descriptor.index])
+                .irGet(lambdasByProviderGiven[descriptor.given]?.valueParameters?.get(descriptor.index)
+                    ?: error("Wtf"))
         }
 
         return when (val containingDeclaration = descriptor.containingDeclaration) {

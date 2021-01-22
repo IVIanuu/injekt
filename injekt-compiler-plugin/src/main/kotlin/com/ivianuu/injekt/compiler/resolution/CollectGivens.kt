@@ -18,13 +18,7 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ParameterDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.resolve.calls.DslMarkerUtils
@@ -38,6 +32,7 @@ data class CallableRef(
     val originalType: TypeRef,
     val typeParameters: List<ClassifierRef>,
     val parameterTypes: Map<ParameterDescriptor, TypeRef>,
+    val parameterContributionKinds: Map<ParameterDescriptor, ContributionKind?>,
     val typeArguments: Map<ClassifierRef, TypeRef>,
     val contributionKind: ContributionKind?,
     val isMacro: Boolean,
@@ -76,9 +71,7 @@ fun CallableDescriptor.toCallableRef(
     val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
         .map { it.toAnnotationRef(declarationStore) }
     val type = returnType!!.toTypeRef(declarationStore).let {
-        it.copy(
-            qualifiers = qualifiers + it.qualifiers
-        )
+        it.copy(qualifiers = qualifiers + it.qualifiers)
     }
     val typeParameters = typeParameters
         .map { it.toClassifierRef(declarationStore) }
@@ -88,7 +81,10 @@ fun CallableDescriptor.toCallableRef(
         originalType = type,
         typeParameters = typeParameters,
         parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-            .map { it to it.type.toTypeRef(declarationStore) }
+            .map { it.original to it.type.toTypeRef(declarationStore) }
+            .toMap(),
+        parameterContributionKinds = (if (this is ConstructorDescriptor) valueParameters else allParameters)
+            .map { it.original to it.contributionKind(declarationStore) }
             .toMap(),
         typeArguments = typeParameters
             .map { it to it.defaultType }
@@ -100,7 +96,7 @@ fun CallableDescriptor.toCallableRef(
     ).let {
         if (applyCallableInfo) it.apply(
             declarationStore,
-            declarationStore.callableInfoFor(it)
+            declarationStore.callableInfoFor(it.callable)
         ) else it
     }
 }
@@ -124,7 +120,7 @@ fun MemberScope.collectContributions(
                         callable.copy(
                             contributionKind = contributionKind,
                             parameterTypes = callable.parameterTypes.toMutableMap()
-                                .also { it[callable.callable.dispatchReceiverParameter!!] = type }
+                                .also { it[callable.callable.dispatchReceiverParameter!!.original] = type }
                         )
                     }
             )
@@ -217,6 +213,10 @@ fun ParameterDescriptor.contributionKind(declarationStore: DeclarationStore): Co
     } ?: getContributionParameters(declarationStore)
         .firstOrNull { it.callable == this }
         ?.contributionKind
+        ?: containingDeclaration.safeAs<FunctionDescriptor>()
+            ?.takeIf { it.isExternalDeclaration() }
+            ?.let { declarationStore.callableInfoFor(it) }
+            ?.let { it.parameterContributionKinds[name.asString()] }
 }
 
 fun ClassDescriptor.getContributionConstructors(

@@ -225,9 +225,9 @@ class KotlinTypeRef(
         kotlinType.isMarkedNullable
     }
     override val arguments: List<TypeRef> by unsafeLazy {
-        finalType.arguments.map {
-            it.type.toTypeRef(declarationStore, it.projectionKind, it.isStarProjection)
-        }
+        finalType.arguments
+            .take(classifier.typeParameters.size)
+            .map { it.type.toTypeRef(declarationStore, it.projectionKind, it.isStarProjection) }
     }
     override val unqualified: Boolean
         get() = kotlinType.hasAnnotation(InjektFqNames.Unqualified)

@@ -232,7 +232,7 @@ fun CallableRef.getGivenRequests(declarationStore: DeclarationStore): List<Given
         .filter {
             it === callable.dispatchReceiverParameter ||
                     it.contributionKind(declarationStore) == ContributionKind.VALUE ||
-                    parameterTypes[it]!!.contributionKind == ContributionKind.VALUE
+                    parameterTypes[it.original]!!.contributionKind == ContributionKind.VALUE
         }
         .map {
             val name = when {
@@ -243,7 +243,7 @@ fun CallableRef.getGivenRequests(declarationStore: DeclarationStore): List<Given
                 else -> it.name
             }
             GivenRequest(
-                type = parameterTypes[it]!!,
+                type = parameterTypes[it.original]!!,
                 required = it !is ValueParameterDescriptor || !it.hasDefaultValueIgnoringGiven,
                 callableFqName = callable.fqNameSafe,
                 parameterName = name

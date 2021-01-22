@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
@@ -84,6 +85,18 @@ class LambdaContributionsTest {
         """
     ) {
         assertTrue(invokeSingleFile<Boolean>())
+    }
+
+    @Test
+    fun testScopedLambdaGiven() = codegen(
+        """
+            @Module val givens: @Given (@Given Foo) -> @Scoped<AppComponent> Bar = { Bar(it) } 
+            @Given val foo = Foo()
+            @Given val appComponent = ComponentBuilder<AppComponent>().build()
+            fun invoke() = given<Bar>()
+        """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
     }
 
 }
