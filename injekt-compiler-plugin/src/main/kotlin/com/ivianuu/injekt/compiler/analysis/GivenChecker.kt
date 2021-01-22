@@ -112,9 +112,10 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
                     type.isSuspendFunctionType) &&
             (type.hasAnnotation(InjektFqNames.Given) ||
                     type.hasAnnotation(InjektFqNames.Module) ||
-                    type.hasAnnotation(InjektFqNames.GivenSetElement)) &&
-            type.arguments.dropLast(1)
-                .all { it.type.contributionKind(declarationStore) == null }) {
+                    type.hasAnnotation(InjektFqNames.GivenSetElement) ||
+                    type.hasAnnotation(InjektFqNames.Interceptor)) &&
+            type.arguments.dropLast(if (type.hasAnnotation(InjektFqNames.Interceptor)) 2 else 1)
+                .any { it.type.contributionKind(declarationStore) == null }) {
             trace.report(
                 InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
                     .on(
@@ -123,6 +124,7 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
                             type.hasAnnotation(InjektFqNames.Given) -> InjektFqNames.Given.shortName()
                             type.hasAnnotation(InjektFqNames.Module) -> InjektFqNames.Module.shortName()
                             type.hasAnnotation(InjektFqNames.GivenSetElement) -> InjektFqNames.GivenSetElement.shortName()
+                            type.hasAnnotation(InjektFqNames.Interceptor) -> InjektFqNames.Interceptor.shortName()
                             else -> error("")
                         }
                     )

@@ -47,22 +47,8 @@ fun CallableRef.toPersistedCallableInfo(declarationStore: DeclarationStore) = Pe
     type = type.toPersistedTypeRef(declarationStore),
     typeParameters = typeParameters.map { it.toPersistedClassifierRef(declarationStore) },
     parameterTypes = parameterTypes
-        .mapKeys { (parameter) ->
-            when (parameter) {
-                callable.dispatchReceiverParameter -> "_dispatchReceiver"
-                callable.extensionReceiverParameter -> "_extensionReceiver"
-                else -> parameter.name.asString()
-            }
-        }
         .mapValues { it.value.toPersistedTypeRef(declarationStore) },
     parameterContributionKinds = parameterContributionKinds
-        .mapKeys { (parameter) ->
-            when (parameter) {
-                callable.dispatchReceiverParameter -> "_dispatchReceiver"
-                callable.extensionReceiverParameter -> "_extensionReceiver"
-                else -> parameter.name.asString()
-            }
-        }
 )
 
 fun CallableRef.apply(
@@ -76,24 +62,8 @@ fun CallableRef.apply(
             it.toClassifierRef(declarationStore)
          },
         parameterTypes = info.parameterTypes
-            .mapKeys { (name) ->
-                when (name) {
-                    "_dispatchReceiver" -> callable.dispatchReceiverParameter!!
-                    "_extensionReceiver" -> callable.extensionReceiverParameter!!
-                    else -> callable.valueParameters.singleOrNull { it.name.asString() == name }
-                        ?: error("Wtf $name")
-                }
-            }
             .mapValues { it.value.toTypeRef(declarationStore) },
         parameterContributionKinds = info.parameterContributionKinds
-            .mapKeys { (name) ->
-                when (name) {
-                    "_dispatchReceiver" -> callable.dispatchReceiverParameter!!
-                    "_extensionReceiver" -> callable.extensionReceiverParameter!!
-                    else -> callable.valueParameters.singleOrNull { it.name.asString() == name }
-                        ?: error("Wtf $name")
-                }
-            }
     )
 }
 

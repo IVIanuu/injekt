@@ -20,19 +20,7 @@ import com.ivianuu.injekt.compiler.analysis.GivenFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.DeserializedDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ParameterDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
-import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
-import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
@@ -209,5 +197,20 @@ fun DeclarationDescriptor.uniqueKey(declarationStore: DeclarationStore): String 
         is ValueParameterDescriptor -> ""
         is VariableDescriptor -> ""
         else -> error("Unexpected declaration $this")
+    }
+}
+
+fun ParameterDescriptor.injektName(): String {
+    val callable = containingDeclaration as? CallableDescriptor
+    return when {
+        original == callable?.dispatchReceiverParameter?.original ||
+                (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor)-> "_dispatchReceiver"
+        original == callable?.extensionReceiverParameter?.original -> "_extensionReceiver"
+        else -> {
+            if (name.isSpecial)
+                type.constructor.declarationDescriptor!!.name
+                    .asString().decapitalize()
+            else name.asString()
+        }
     }
 }

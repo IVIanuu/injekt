@@ -114,6 +114,37 @@ class MacroTest {
     }
 
     @Test
+    fun testMacroWithQualifierWithTypeParameterMulti2() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Qualifier annotation class Trigger<S>
+                    @Macro @Given fun <@ForKey T : @Trigger<S> Any?, @ForKey S> macroImpl() = 
+                        keyOf<S>()
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Module val fooModule: @Given () -> @Trigger<Bar> Foo = { Foo() }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun <T> givenKeyOf(@Given value: () -> Key<T>) = value()
+                    fun invoke() = givenKeyOf<Bar>().value
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        assertEquals("com.ivianuu.injekt.test.Bar", it.last().invokeSingleFile())
+    }
+
+    @Test
     fun testMacroWithGivenFun() = codegen(
         """
             @Qualifier annotation class Trigger

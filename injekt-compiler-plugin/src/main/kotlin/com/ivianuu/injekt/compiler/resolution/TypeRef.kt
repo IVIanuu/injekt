@@ -388,10 +388,7 @@ fun TypeRef.uniqueTypeName(depth: Int = 0): String {
     }
 }
 
-fun getSubstitutionMap(
-    pairs: List<Pair<TypeRef, TypeRef>>,
-    typeParameters: List<ClassifierRef> = emptyList(),
-): Map<ClassifierRef, TypeRef> {
+fun getSubstitutionMap(pairs: List<Pair<TypeRef, TypeRef>>): Map<ClassifierRef, TypeRef> {
     val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
     val visitedTypes = mutableSetOf<TypeRef>()
     fun visitType(
@@ -445,12 +442,6 @@ fun getSubstitutionMap(
         substitutionMap.forEach { visitType(it.value, it.key.defaultType) }
         lastSubstitutionMap = substitutionMap.toMap()
     }
-    typeParameters
-        .filter { it !in substitutionMap }
-        .forEach { typeParameter ->
-            error("Couldn't resolve type parameter $typeParameter")
-            //substitutionMap[typeParameter] = typeParameter.defaultType.substitute(substitutionMap)
-        }
     return substitutionMap
 }
 

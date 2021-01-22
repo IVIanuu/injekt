@@ -31,8 +31,8 @@ data class CallableRef(
     val type: TypeRef,
     val originalType: TypeRef,
     val typeParameters: List<ClassifierRef>,
-    val parameterTypes: Map<ParameterDescriptor, TypeRef>,
-    val parameterContributionKinds: Map<ParameterDescriptor, ContributionKind?>,
+    val parameterTypes: Map<String, TypeRef>,
+    val parameterContributionKinds: Map<String, ContributionKind?>,
     val typeArguments: Map<ClassifierRef, TypeRef>,
     val contributionKind: ContributionKind?,
     val isMacro: Boolean,
@@ -81,10 +81,10 @@ fun CallableDescriptor.toCallableRef(
         originalType = type,
         typeParameters = typeParameters,
         parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-            .map { it.original to it.type.toTypeRef(declarationStore) }
+            .map { it.injektName() to it.type.toTypeRef(declarationStore) }
             .toMap(),
         parameterContributionKinds = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-            .map { it.original to it.contributionKind(declarationStore) }
+            .map { it.injektName() to it.contributionKind(declarationStore) }
             .toMap(),
         typeArguments = typeParameters
             .map { it to it.defaultType }
@@ -94,7 +94,7 @@ fun CallableDescriptor.toCallableRef(
         isFromMacro = false,
         callContext = callContext
     ).let {
-        if (applyCallableInfo) it.apply(
+        if (applyCallableInfo && original.isExternalDeclaration()) it.apply(
             declarationStore,
             declarationStore.callableInfoFor(it.callable)
         ) else it
@@ -118,9 +118,10 @@ fun MemberScope.collectContributions(
                     .toCallableRef(declarationStore)
                     .let { callable ->
                         callable.copy(
+                            type = type.arguments.last(),
                             contributionKind = contributionKind,
                             parameterTypes = callable.parameterTypes.toMutableMap()
-                                .also { it[callable.callable.dispatchReceiverParameter!!.original] = type }
+                                .also { it[callable.callable.dispatchReceiverParameter!!.injektName()] = type }
                         )
                     }
             )

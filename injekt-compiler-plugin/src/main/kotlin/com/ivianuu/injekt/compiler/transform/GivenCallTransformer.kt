@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
@@ -93,17 +94,12 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             .filter { call.getValueArgument(it.index) == null }
             .filter {
                 it.contributionKind(graph.scope.declarationStore) == ContributionKind.VALUE ||
-                        callable.parameterTypes[it.original]!!.contributionKind == ContributionKind.VALUE
+                        callable.parameterTypes[it.injektName()]!!.contributionKind == ContributionKind.VALUE
             }
             .map { parameter ->
-                val parameterName = if (parameter.name.isSpecial)
-                    parameter.type.constructor.declarationDescriptor!!.name
-                        .asString().decapitalize().asNameId()
-                else parameter.name
+                val parameterName = parameter.injektName()
                 parameter to expressionFor(
-                    requests.single {
-                        it.parameterName == parameterName
-                    },
+                    requests.single { it.parameterName.asString() == parameterName },
                     call.symbol
                 )
             }
@@ -161,8 +157,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         request: GivenRequest,
         symbol: IrSymbol,
     ): IrExpression? {
-        val given = graph.givens[request]
-            ?: error("Wtf $request\n${this.graph.givens.toList().joinToString("\n")}")
+        val given = graph.givens[request]!!
         initializingExpressions[given]?.run { return get() }
         val expression = GivenExpression(given, symbol)
         initializingExpressions[given] = expression
@@ -190,7 +185,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                 ).apply {
                     this as IrFunctionAccessExpression
                     interceptor.callable.callable.valueParameters
-                        .single { interceptor.callable.parameterTypes[it.original] == providerType }
+                        .single { interceptor.callable.parameterTypes[it.injektName()] == providerType }
                         .index
                         .let { factoryIndex ->
                             putValueArgument(
@@ -212,8 +207,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             .irLambda(given.type.toIrType(pluginContext)) { function ->
                 val givenFun = (given.callable.callable as FunctionDescriptor).irFunction()
                 val typeArguments = getSubstitutionMap(
-                    listOf(given.type to given.originalType),
-                    given.type.classifier.typeParameters
+                    listOf(given.type to given.originalType)
                 ).values
                 DeclarationIrBuilder(pluginContext, symbol)
                     .irCall(givenFun.symbol)
@@ -417,8 +411,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
     ): IrExpression {
         if (descriptor is ProviderGivenNode.ProviderParameterDescriptor) {
             return DeclarationIrBuilder(pluginContext, symbol)
-                .irGet(lambdasByProviderGiven[descriptor.given]?.valueParameters?.get(descriptor.index)
-                    ?: error("Wtf"))
+                .irGet(lambdasByProviderGiven[descriptor.given]!!.valueParameters.get(descriptor.index))
         }
 
         return when (val containingDeclaration = descriptor.containingDeclaration) {

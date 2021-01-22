@@ -121,10 +121,7 @@ class ResolutionScope(
                     this@ResolutionScope,
                     interceptorsForType(type),
                     declarationStore.functionDescriptorForFqName(type.classifier.fqName)
-                        .filter { it.hasAnnotation(InjektFqNames.GivenFun) }
-                        .let {
-                            it.singleOrNull() ?: error("Wtf ${it.joinToString("\n")}")
-                        }
+                        .single { it.hasAnnotation(InjektFqNames.GivenFun) }
                         .toCallableRef(declarationStore)
                 )
 
@@ -167,17 +164,6 @@ class ResolutionScope(
             givenSetElements
                 .filter { it.type.isAssignableTo(type) }
                 .map { it.substitute(getSubstitutionMap(listOf(type to it.type))) }
-                .onEach { element ->
-                    element.typeArguments.values.forEach { type ->
-                        type.qualifiers.forEach { q ->
-                            q.type.arguments.forEach { arg ->
-                                if (arg.classifier.isTypeParameter) {
-                                    error("Wtf $arg $q $element $type")
-                                }
-                            }
-                        }
-                    }
-                }
         }
     }
 
@@ -220,12 +206,10 @@ class ResolutionScope(
                     if (!contribution.copy(path = null).isSubTypeOf(macroType)) continue
                     if (macro.callable.fqNameSafe in contribution.path!!) continue
                     val inputsSubstitutionMap = getSubstitutionMap(
-                        listOf(contribution to macroType),
-                        macro.typeParameters
+                        listOf(contribution to macroType)
                     )
                     val outputsSubstitutionMap = getSubstitutionMap(
-                        listOf(contribution.copy(path = null) to macroType),
-                        macro.typeParameters
+                        listOf(contribution.copy(path = null) to macroType)
                     )
                     val newContribution = macro.substituteInputs(inputsSubstitutionMap)
                         .copy(

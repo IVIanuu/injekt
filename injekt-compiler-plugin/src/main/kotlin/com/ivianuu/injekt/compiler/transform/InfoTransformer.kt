@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -82,6 +83,32 @@ class InfoTransformer(
                 }
         }
         return super.visitFunction(declaration)
+    }
+
+    @Suppress("NewApi")
+    override fun visitProperty(declaration: IrProperty): IrStatement {
+        if (declaration.hasAnnotation(InjektFqNames.Given) ||
+            declaration.hasAnnotation(InjektFqNames.GivenSetElement) ||
+            declaration.hasAnnotation(InjektFqNames.Module) ||
+            declaration.hasAnnotation(InjektFqNames.Interceptor)) {
+            declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
+                .run {
+                    irCall(
+                        pluginContext.referenceClass(InjektFqNames.CallableInfo)!!
+                            .constructors
+                            .single()
+                    ).apply {
+                        val info = declaration.descriptor.toCallableRef(declarationStore)
+                            .toPersistedCallableInfo(declarationStore)
+                        val value = Base64.getEncoder()
+                            .encode(declarationStore.moshi.adapter(PersistedCallableInfo::class.java)
+                                .toJson(info).toByteArray())
+                            .decodeToString()
+                        putValueArgument(0, irString(value))
+                    }
+                }
+        }
+        return super.visitProperty(declaration)
     }
 
 }

@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringGiven
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.transform.toKotlinType
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
@@ -232,21 +233,15 @@ fun CallableRef.getGivenRequests(declarationStore: DeclarationStore): List<Given
         .filter {
             it === callable.dispatchReceiverParameter ||
                     it.contributionKind(declarationStore) == ContributionKind.VALUE ||
-                    parameterTypes[it.original]!!.contributionKind == ContributionKind.VALUE
+                    parameterTypes[it.injektName()]!!.contributionKind == ContributionKind.VALUE
         }
         .map {
-            val name = when {
-                it === callable.dispatchReceiverParameter -> "_dispatchReceiver".asNameId()
-                it === callable.extensionReceiverParameter -> "_extensionReceiver".asNameId()
-                it.name.isSpecial -> it.type.constructor.declarationDescriptor!!.name
-                    .asString().decapitalize().asNameId()
-                else -> it.name
-            }
+            val name = it.injektName()
             GivenRequest(
-                type = parameterTypes[it.original]!!,
+                type = parameterTypes[name]!!,
                 required = it !is ValueParameterDescriptor || !it.hasDefaultValueIgnoringGiven,
                 callableFqName = callable.fqNameSafe,
-                parameterName = name
+                parameterName = name.asNameId()
             )
         }
 }
