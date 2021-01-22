@@ -277,41 +277,23 @@ fun CallableRef.collectContributions(
                         || it.classifier.fqName.asString()
                     .startsWith("kotlin.coroutines.SuspendFunction")
             }
-            if (isFunction) {
-                val nextPath = path + callable.fqNameSafe
-                val nextCallable = copy(type = type.copy(path = nextPath))
-                addGiven(nextCallable)
-                callable
-                    .returnType!!
-                    .memberScope
-                    .collectContributions(declarationStore, nextCallable.type)
-                    .forEach {
-                        it.collectContributions(
-                            declarationStore,
-                            path + it.callable.fqNameSafe,
-                            addGiven,
-                            addGivenSetElement,
-                            addInterceptor,
-                            addMacro
-                        )
-                    }
-            } else {
-                addGiven(this)
-                callable
-                    .returnType!!
-                    .memberScope
-                    .collectContributions(declarationStore, type)
-                    .forEach {
-                        it.collectContributions(
-                            declarationStore,
-                            path + it.callable.fqNameSafe,
-                            addGiven,
-                            addGivenSetElement,
-                            addInterceptor,
-                            addMacro
-                        )
-                    }
-            }
+            val nextPath = if (isFunction) path + callable.fqNameSafe else path
+            val nextCallable = if (isFunction) copy(type = type.copy(path = nextPath)) else this
+            addGiven(nextCallable)
+            callable
+                .returnType!!
+                .memberScope
+                .collectContributions(declarationStore, nextCallable.type)
+                .forEach {
+                    it.collectContributions(
+                        declarationStore,
+                        path + it.callable.fqNameSafe,
+                        addGiven,
+                        addGivenSetElement,
+                        addInterceptor,
+                        addMacro
+                    )
+                }
         }
     }
 }
