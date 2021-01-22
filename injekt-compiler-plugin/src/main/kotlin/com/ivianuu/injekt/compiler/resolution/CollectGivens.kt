@@ -279,39 +279,27 @@ fun CallableRef.collectContributions(
             }
             if (isFunction) {
                 val nextPath = path + callable.fqNameSafe
-                if (isFunction) {
-                    val nextCallable = copy(type = type.copy(path = nextPath))
-                    addGiven(nextCallable)
-                    callable.returnType!!.memberScope
-                        .collectContributions(declarationStore, nextCallable.type)
-                        .forEach {
-                            it.collectContributions(
-                                declarationStore,
-                                path + it.callable.fqNameSafe,
-                                addGiven,
-                                addGivenSetElement,
-                                addInterceptor,
-                                addMacro
-                            )
-                        }
-                } else {
-                    addGiven(this)
-                    callable.returnType!!.memberScope
-                        .collectContributions(declarationStore, type)
-                        .forEach {
-                            it.collectContributions(
-                                declarationStore,
-                                path + it.callable.fqNameSafe,
-                                addGiven,
-                                addGivenSetElement,
-                                addInterceptor,
-                                addMacro
-                            )
-                        }
-                }
+                val nextCallable = copy(type = type.copy(path = nextPath))
+                addGiven(nextCallable)
+                callable
+                    .returnType!!
+                    .memberScope
+                    .collectContributions(declarationStore, nextCallable.type)
+                    .forEach {
+                        it.collectContributions(
+                            declarationStore,
+                            path + it.callable.fqNameSafe,
+                            addGiven,
+                            addGivenSetElement,
+                            addInterceptor,
+                            addMacro
+                        )
+                    }
             } else {
                 addGiven(this)
-                callable.returnType!!.memberScope
+                callable
+                    .returnType!!
+                    .memberScope
                     .collectContributions(declarationStore, type)
                     .forEach {
                         it.collectContributions(

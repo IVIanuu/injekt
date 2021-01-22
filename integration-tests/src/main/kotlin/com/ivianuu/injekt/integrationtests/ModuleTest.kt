@@ -17,6 +17,8 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import org.junit.Test
 
 class ModuleTest {
@@ -61,4 +63,64 @@ class ModuleTest {
             }
         """
     )
+
+    @Test
+    fun testGenericModule() = codegen(
+        """
+            class MyModule<T>(private val instance: T) {
+                @Given fun provide() = instance to instance
+            }
+            @Module val fooModule = MyModule(Foo())
+            @Module val stringModule = MyModule("__")
+            fun invoke() = given<Pair<Foo, Foo>>()
+        """
+    )
+
+    @Test
+    fun testGenericModuleMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    class MyModule<T>(private val instance: T) {
+                        @Given fun provide() = instance to instance
+                    }
+
+                    @Module val fooModule = MyModule(Foo())
+                    @Module val stringModule = MyModule("__")
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                   fun invoke() = given<Pair<Foo, Foo>>() 
+                """
+            )
+        )
+    )
+
+    @Test
+    fun testGenericModuleQualifiedMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Qualifier annotation class MyQualifier<T>
+                    class MyModule<T>(private val instance: T) {
+                        @Given fun provide(): @MyQualifier<Int> Pair<T, T> = instance to instance
+                    }
+
+                    @Module val fooModule = MyModule(Foo())
+                    @Module val stringModule = MyModule("__")
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                   fun invoke() = given<@MyQualifier<Int> Pair<Foo, Foo>>() 
+                """
+            )
+        )
+    )
+
 }
