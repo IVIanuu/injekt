@@ -175,7 +175,7 @@ class QualifierTest {
         """
             @Qualifier annotation class UiState
 
-            @Given fun <T : @UiState S, S> uiState(@Given instance: T): S = instance
+            @Given fun <T> uiState(@Given instance: @UiState T): T = instance
 
             @UiState @Given val foo = Foo()
 

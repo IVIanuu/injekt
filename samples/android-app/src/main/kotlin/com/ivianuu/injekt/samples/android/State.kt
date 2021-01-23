@@ -48,7 +48,7 @@ typealias Actions<A> = Flow<A>
 @Qualifier annotation class UiState
 
 @Given @Composable
-fun <T : @UiState S, S> uiState(@Given stateFactory: (@Given CoroutineScope) -> StateFlow<S>): @UiState T {
+fun <T> uiState(@Given stateFactory: (@Given CoroutineScope) -> StateFlow<T>): @UiState T {
     val scope = rememberCoroutineScope()
     return remember { stateFactory(scope) }.collectAsState().value as T
 }

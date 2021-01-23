@@ -20,16 +20,10 @@ import com.ivianuu.injekt.compiler.AnnotationRef
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.StringValue
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.copy
-import com.ivianuu.injekt.compiler.resolution.defaultType
-import com.ivianuu.injekt.compiler.resolution.isAssignableTo
-import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.ivianuu.injekt.compiler.resolution.typeWith
+import com.ivianuu.injekt.compiler.resolution.*
 import com.ivianuu.injekt.test.codegen
+import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertTrue
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -250,6 +244,29 @@ class TypeRefTest {
                     .copy(isComposable = true)
                     .qualified(qualifier2(""))
             )
+    }
+
+    @Test
+    fun testGetSubstitutionMap() = withAnalysisContext {
+        val superType = typeParameter()
+        val map = getSubstitutionMap(listOf(stringType to superType))
+        assertEquals(stringType, map[superType.classifier])
+    }
+
+    @Test
+    fun testGetSubstitutionMapWithNestedGenerics() = withAnalysisContext {
+        val superType = typeParameter()
+        val map = getSubstitutionMap(listOf(listType.typeWith(stringType) to listType.typeWith(superType)))
+        assertEquals(stringType, map[superType.classifier])
+    }
+
+    @Test
+    fun testGetSubstitutionMapWithQualifiers() = withAnalysisContext {
+        val unqualifiedSuperType = typeParameter()
+        val qualifiedSuperType = unqualifiedSuperType.qualified(qualifier1())
+        val substitutionType = stringType.qualified(qualifier1())
+        val map = getSubstitutionMap(listOf(substitutionType to qualifiedSuperType))
+        assertEquals(stringType, map[unqualifiedSuperType.classifier])
     }
 
     private infix fun TypeRef.shouldBeAssignable(other: TypeRef) {
