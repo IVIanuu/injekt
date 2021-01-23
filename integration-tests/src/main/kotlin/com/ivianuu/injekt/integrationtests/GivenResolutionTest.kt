@@ -592,7 +592,7 @@ class GivenResolutionTest {
             @Given fun foos() = Foo() to Foo()
             
             @Qualifier annotation class First
-            @Given fun <A> first(@Given pair: Pair<@Unqualified A, *>): @First A = pair.first
+            @Given fun <A : @First B, B> first(@Given pair: Pair<B, *>): A = pair.first as A
 
             fun invoke() = given<@First Foo>()
         """

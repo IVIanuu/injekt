@@ -22,7 +22,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.Unqualified
 import com.ivianuu.injekt.common.ForKey
 import com.ivianuu.injekt.common.Scoped
 import com.ivianuu.injekt.component.AppComponent
@@ -49,7 +48,7 @@ typealias Actions<A> = Flow<A>
 @Qualifier annotation class UiState
 
 @Given @Composable
-fun <T> uiState(@Given stateFactory: (@Given CoroutineScope) -> StateFlow<@Unqualified T>): @UiState T {
+fun <T : @UiState S, S> uiState(@Given stateFactory: (@Given CoroutineScope) -> StateFlow<T>): @UiState T {
     val scope = rememberCoroutineScope()
     return remember { stateFactory(scope) }.collectAsState().value
 }

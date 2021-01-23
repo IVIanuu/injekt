@@ -170,4 +170,19 @@ class QualifierTest {
         assertTrue(it.last().invokeSingleFile() is Foo)
     }
 
+    @Test
+    fun testUiState() = codegen(
+        """
+            @Qualifier annotation class UiState
+
+            @Given fun <T : @UiState S, S> uiState(@Given instance: T): S = instance
+
+            @UiState @Given val foo = Foo()
+
+            fun invoke() = given<Foo>()
+            """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
 }

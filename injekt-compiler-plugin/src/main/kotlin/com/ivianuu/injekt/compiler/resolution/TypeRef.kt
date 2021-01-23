@@ -130,7 +130,6 @@ sealed class TypeRef {
     abstract val contributionKind: ContributionKind?
     abstract val isStarProjection: Boolean
     abstract val qualifiers: List<AnnotationRef>
-    abstract val unqualified: Boolean
     abstract val path: List<Any>?
 
     private val typeName by unsafeLazy { uniqueTypeName() }
@@ -229,13 +228,9 @@ class KotlinTypeRef(
             .take(classifier.typeParameters.size)
             .map { it.type.toTypeRef(declarationStore, it.projectionKind, it.isStarProjection) }
     }
-    override val unqualified: Boolean
-        get() = kotlinType.hasAnnotation(InjektFqNames.Unqualified)
     override val qualifiers: List<AnnotationRef> by unsafeLazy {
-        if (!unqualified)
-            kotlinType.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-                .map { it.toAnnotationRef(declarationStore) }
-        else emptyList()
+        kotlinType.getAnnotatedAnnotations(InjektFqNames.Qualifier)
+            .map { it.toAnnotationRef(declarationStore) }
     }
     override val path: List<Any>? get() = null
 }
@@ -249,7 +244,6 @@ class SimpleTypeRef(
     override val contributionKind: ContributionKind? = null,
     override val isStarProjection: Boolean = false,
     override val qualifiers: List<AnnotationRef> = emptyList(),
-    override val unqualified: Boolean = false,
     override val path: List<Any>? = null,
 ) : TypeRef() {
     init {
@@ -272,7 +266,6 @@ fun TypeRef.copy(
     contributionKind: ContributionKind? = this.contributionKind,
     isStarProjection: Boolean = this.isStarProjection,
     qualifiers: List<AnnotationRef> = this.qualifiers,
-    unqualified: Boolean = this.unqualified,
     path: List<Any>? = this.path,
 ) = SimpleTypeRef(
     classifier,
@@ -283,7 +276,6 @@ fun TypeRef.copy(
     contributionKind,
     isStarProjection,
     qualifiers,
-    unqualified,
     path
 )
 
@@ -294,11 +286,10 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
             // we copy nullability to support T : Any? -> String
             isMarkedNullable = if (!isStarProjection) isMarkedNullable else it.isMarkedNullable,
             // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
-            qualifiers = if (unqualified) emptyList() else qualifiers + it.qualifiers,
+            qualifiers = qualifiers + it.qualifiers,
             // we copy given kind to support @Given C -> @Given String
             // fallback to substitution given kind
-            contributionKind = contributionKind ?: it.contributionKind,
-            unqualified = unqualified
+            contributionKind = contributionKind ?: it.contributionKind
         )
     }
 
@@ -467,7 +458,6 @@ fun TypeRef.isAssignableTo(
             isSubTypeOf(upperBound, substitutionMap)
         }
         if (!superTypesAssignable) return false
-        if (superType.unqualified && qualifiers.isNotEmpty()) return false
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(superType.qualifiers)
         ) return false
@@ -477,7 +467,6 @@ fun TypeRef.isAssignableTo(
             superType.isSubTypeOf(upperBound, substitutionMap)
         }
         if (!superTypesAssignable) return false
-        if (unqualified && superType.qualifiers.isNotEmpty()) return false
         if (qualifiers.isNotEmpty() &&
             !superType.qualifiers.isAssignableTo(qualifiers)
         ) return false
@@ -493,7 +482,6 @@ fun TypeRef.isSubTypeOf(
     if (isStarProjection) return true
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return false
-        if (unqualified && superType.qualifiers.isNotEmpty()) return false
         if (!qualifiers.isAssignableTo(superType.qualifiers)) return false
         if (path != superType.path) return false
         if (thisAndAllSuperTypes.any { it.isComposable } != superType.thisAndAllSuperTypes.any { it.isComposable }) return false
@@ -508,7 +496,6 @@ fun TypeRef.isSubTypeOf(
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(superType.qualifiers)
         ) return false
-        if (superType.unqualified && qualifiers.isNotEmpty()) return false
         return true
     }
     val subTypeView = subtypeView(superType.classifier, substitutionMap)
@@ -517,7 +504,6 @@ fun TypeRef.isSubTypeOf(
             (superType.qualifiers.isEmpty() || subTypeView.qualifiers.isAssignableTo(superType.qualifiers))
         ) return true
         if (subTypeView.isMarkedNullable && !superType.isMarkedNullable) return false
-        if (subTypeView.unqualified && superType.qualifiers.isNotEmpty()) return false
         if (!subTypeView.qualifiers.isAssignableTo(superType.qualifiers)) return false
         if (subTypeView.path != superType.path) return false
         if (thisAndAllSuperTypes.any { it.isComposable } != superType.thisAndAllSuperTypes.any { it.isComposable }) return false
@@ -533,7 +519,6 @@ fun TypeRef.isSubTypeOf(
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(superType.qualifiers)
         ) return false
-        if (superType.unqualified && qualifiers.isNotEmpty()) return false
         if (path != superType.path) return false
         if (thisAndAllSuperTypes.any { it.isComposable } != superType.thisAndAllSuperTypes.any { it.isComposable }) return false
         return superType.superTypes(substitutionMap).all { upperBound ->
@@ -544,10 +529,8 @@ fun TypeRef.isSubTypeOf(
 }
 
 fun List<AnnotationRef>.isAssignableTo(superQualifiers: List<AnnotationRef>): Boolean {
-    val finalQualifiers = distinctBy { it.type.classifier.fqName }
-    val finalSuperQualifiers = superQualifiers.distinctBy { it.type.classifier.fqName }
-    if (finalQualifiers.size != finalSuperQualifiers.size) return false
-    return finalQualifiers.zip(finalSuperQualifiers).all { (thisQualifier, superQualifier) ->
+    if (size != superQualifiers.size) return false
+    return zip(superQualifiers).all { (thisQualifier, superQualifier) ->
         thisQualifier.isAssignableTo(superQualifier)
     }
 }

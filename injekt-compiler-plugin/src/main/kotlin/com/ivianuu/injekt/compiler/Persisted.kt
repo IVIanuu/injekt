@@ -78,7 +78,6 @@ fun ClassifierRef.toPersistedClassifierInfo(declarationStore: DeclarationStore) 
 @JsonClass(generateAdapter = true) data class PersistedTypeRef(
     val classifierKey: String,
     val qualifiers: List<PersistedAnnotationRef>,
-    val unqualified: Boolean,
     val arguments: List<PersistedTypeRef>,
     val isStarProjection: Boolean,
     val isMarkedNullable: Boolean,
@@ -90,7 +89,6 @@ fun ClassifierRef.toPersistedClassifierInfo(declarationStore: DeclarationStore) 
 fun TypeRef.toPersistedTypeRef(declarationStore: DeclarationStore): PersistedTypeRef = PersistedTypeRef(
     classifierKey = classifier.descriptor?.uniqueKey(declarationStore) ?: "",
     qualifiers = qualifiers.map { it.toPersistedAnnotationRef(declarationStore) },
-    unqualified = unqualified,
     arguments = arguments.map { it.toPersistedTypeRef(declarationStore) },
     isStarProjection = isStarProjection,
     isMarkedNullable = isMarkedNullable,
@@ -106,7 +104,6 @@ fun PersistedTypeRef.toTypeRef(declarationStore: DeclarationStore): TypeRef {
     return classifier.defaultType
         .copy(
             qualifiers = qualifiers.map { it.toAnnotationRef(declarationStore) },
-            unqualified = unqualified,
             arguments = arguments.map { it.toTypeRef(declarationStore) },
             isMarkedNullable = isMarkedNullable,
             isComposable = isComposable,

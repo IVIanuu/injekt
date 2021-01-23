@@ -227,13 +227,6 @@ class TypeRefTest {
         }
 
     @Test
-    fun testQualifiedIsNotAssignableToUnqualifiedAnnotated() =
-        withAnalysisContext {
-            stringType.qualified(qualifier1()) shouldNotBeAssignable
-                    stringType.copy(unqualified = true)
-        }
-
-    @Test
     fun testQualifiedTypeAliasIsSubTypeOfTypeParameterWithSameQualifiers() = withAnalysisContext {
         typeAlias(
             function(0)
