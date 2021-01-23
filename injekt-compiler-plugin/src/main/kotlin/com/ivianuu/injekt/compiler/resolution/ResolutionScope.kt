@@ -123,6 +123,7 @@ class ResolutionScope(
                     declarationStore.functionDescriptorForFqName(type.classifier.fqName)
                         .single { it.hasAnnotation(InjektFqNames.GivenFun) }
                         .toCallableRef(declarationStore)
+                        .substitute(getSubstitutionMap(listOf(type to type.classifier.defaultType)))
                 )
 
                 if (type.path == null &&
