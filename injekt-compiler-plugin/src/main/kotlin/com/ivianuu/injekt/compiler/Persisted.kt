@@ -16,16 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.CallableRef
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.ContributionKind
-import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.copy
-import com.ivianuu.injekt.compiler.resolution.defaultType
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.ivianuu.injekt.compiler.resolution.typeWith
+import com.ivianuu.injekt.compiler.resolution.*
 import com.squareup.moshi.JsonClass
 import dev.zacsweers.moshix.sealed.annotations.TypeLabel
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
@@ -56,15 +47,22 @@ fun CallableRef.apply(
     info: PersistedCallableInfo?
 ): CallableRef {
     return if (info == null || !callable.isExternalDeclaration()) this
-    else copy(
-        type = info.type.toTypeRef(declarationStore),
-        typeParameters = info.typeParameters.map {
-            it.toClassifierRef(declarationStore)
-         },
-        parameterTypes = info.parameterTypes
-            .mapValues { it.value.toTypeRef(declarationStore) },
-        parameterContributionKinds = info.parameterContributionKinds
-    )
+    else {
+        val original = callable.original.toCallableRef(declarationStore, false)
+        val substitutionMap = getSubstitutionMap(
+            listOf(type to original.type) +
+                    parameterTypes.values.zip(original.parameterTypes.values)
+        )
+        copy(
+            type = info.type.toTypeRef(declarationStore),
+            typeParameters = info.typeParameters.map {
+                it.toClassifierRef(declarationStore)
+            },
+            parameterTypes = info.parameterTypes
+                .mapValues { it.value.toTypeRef(declarationStore) },
+            parameterContributionKinds = info.parameterContributionKinds
+        ).substitute(substitutionMap)
+    }
 }
 
 @JsonClass(generateAdapter = true) data class PersistedClassifierInfo(

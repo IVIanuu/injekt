@@ -297,7 +297,8 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
             qualifiers = if (unqualified) emptyList() else qualifiers + it.qualifiers,
             // we copy given kind to support @Given C -> @Given String
             // fallback to substitution given kind
-            contributionKind = contributionKind ?: it.contributionKind
+            contributionKind = contributionKind ?: it.contributionKind,
+            unqualified = unqualified
         )
     }
 
@@ -543,8 +544,10 @@ fun TypeRef.isSubTypeOf(
 }
 
 fun List<AnnotationRef>.isAssignableTo(superQualifiers: List<AnnotationRef>): Boolean {
-    if (size != superQualifiers.size) return false
-    return zip(superQualifiers).all { (thisQualifier, superQualifier) ->
+    val finalQualifiers = distinctBy { it.type.classifier.fqName }
+    val finalSuperQualifiers = superQualifiers.distinctBy { it.type.classifier.fqName }
+    if (finalQualifiers.size != finalSuperQualifiers.size) return false
+    return finalQualifiers.zip(finalSuperQualifiers).all { (thisQualifier, superQualifier) ->
         thisQualifier.isAssignableTo(superQualifier)
     }
 }
