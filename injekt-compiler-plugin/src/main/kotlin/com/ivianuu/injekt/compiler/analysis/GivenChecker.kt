@@ -24,13 +24,7 @@ import com.ivianuu.injekt.compiler.resolution.contributionKind
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.builtins.isSuspendFunctionType
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.ParameterDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ValueDescriptor
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -49,6 +43,9 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
         if (descriptor is SimpleFunctionDescriptor) {
             descriptor.allParameters
                 .filterNot { it === descriptor.dispatchReceiverParameter }
+                .checkParameters(declaration, descriptor, context.trace)
+        } else if (descriptor is ConstructorDescriptor) {
+            descriptor.valueParameters
                 .checkParameters(declaration, descriptor, context.trace)
         } else if (descriptor is ClassDescriptor) {
             val givenConstructors = descriptor.constructors
@@ -139,7 +136,11 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
     ) {
         if (descriptor.hasAnnotation(InjektFqNames.Given) ||
             descriptor.hasAnnotation(InjektFqNames.Module) ||
-            declaration.hasAnnotation(InjektFqNames.GivenSetElement)
+            declaration.hasAnnotation(InjektFqNames.GivenSetElement) ||
+            (descriptor is ConstructorDescriptor && (
+                    descriptor.constructedClass.hasAnnotation(InjektFqNames.Given) ||
+                            descriptor.hasAnnotation(InjektFqNames.Module) ||
+                            declaration.hasAnnotation(InjektFqNames.GivenSetElement)))
         ) {
             this
                 .filter {
