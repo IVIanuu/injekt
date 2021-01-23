@@ -37,7 +37,7 @@ class GivenFunTest {
         """
     )
 
-    //@Test
+    @Test
     fun testGivenFunWithExtension() = codegen(
         """
             @GivenFun fun String.function() {

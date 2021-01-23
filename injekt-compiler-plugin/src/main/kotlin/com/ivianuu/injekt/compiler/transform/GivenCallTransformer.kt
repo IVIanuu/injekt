@@ -78,14 +78,16 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         val requests = callable.getGivenRequests(graph.scope.declarationStore)
         if (callable.callable.dispatchReceiverParameter != null && call.dispatchReceiver == null) {
             call.dispatchReceiver = expressionFor(
-                requests.single { it.parameterName.asString() == "_dispatchReceiver" },
+                requests.singleOrNull { it.parameterName.asString() == "_dispatchReceiver" }
+                    ?: error("Wtf ${requests.joinToString("\n")}"),
                 call.symbol
             )
         }
 
         if (callable.callable.extensionReceiverParameter != null && call.extensionReceiver == null) {
             call.extensionReceiver = expressionFor(
-                requests.single { it.parameterName.asString() == "_extensionReceiver" },
+                requests.singleOrNull { it.parameterName.asString() == "_extensionReceiver" }
+                    ?: error("Wtf ${requests.joinToString("\n")}"),
                 call.symbol
             )
         }
@@ -99,7 +101,8 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             .map { parameter ->
                 val parameterName = parameter.injektName()
                 parameter to expressionFor(
-                    requests.single { it.parameterName.asString() == parameterName },
+                    requests.singleOrNull { it.parameterName.asString() == parameterName }
+                        ?: error("Wtf $parameterName -> ${requests.joinToString("\n")}"),
                     call.symbol
                 )
             }
@@ -218,12 +221,16 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                             }
 
                         givenFun
-                            .valueParameters
+                            .allParameters
                             .filterNot { it.descriptor.contributionKind(graph.scope.declarationStore) == ContributionKind.VALUE }
                             .forEachIndexed { index, valueParameter ->
-                                putValueArgument(valueParameter.index,
-                                    DeclarationIrBuilder(pluginContext, symbol)
-                                        .irGet(function.valueParameters[index]))
+                                val arg = DeclarationIrBuilder(pluginContext, symbol)
+                                    .irGet(function.valueParameters[index])
+                                if (valueParameter == givenFun.extensionReceiverParameter) {
+                                    extensionReceiver = arg
+                                } else {
+                                    putValueArgument(valueParameter.index, arg)
+                                }
                             }
 
                         fillGivens(given.callable, this)
