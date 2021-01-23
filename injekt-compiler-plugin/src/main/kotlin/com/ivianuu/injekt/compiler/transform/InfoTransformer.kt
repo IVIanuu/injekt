@@ -24,10 +24,13 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
+import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import java.util.Base64
 
@@ -64,22 +67,34 @@ class InfoTransformer(
             declaration.hasAnnotation(InjektFqNames.GivenSetElement) ||
             declaration.hasAnnotation(InjektFqNames.Module) ||
             declaration.hasAnnotation(InjektFqNames.Interceptor) ||
-            declaration.hasAnnotation(InjektFqNames.GivenFun)) {
-            declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
-                .run {
-                    irCall(
-                        pluginContext.referenceClass(InjektFqNames.CallableInfo)!!
-                            .constructors
-                            .single()
-                    ).apply {
-                        val info = declaration.descriptor.toCallableRef(declarationStore)
-                            .toPersistedCallableInfo(declarationStore)
-                        val value = Base64.getEncoder()
-                            .encode(declarationStore.moshi.adapter(PersistedCallableInfo::class.java)
-                                .toJson(info).toByteArray())
-                            .decodeToString()
-                        putValueArgument(0, irString(value))
+            declaration.hasAnnotation(InjektFqNames.GivenFun) || (
+                    declaration is IrConstructor &&
+                            (declaration.constructedClass.hasAnnotation(InjektFqNames.Given) ||
+                                    declaration.constructedClass.hasAnnotation(InjektFqNames.GivenSetElement) ||
+                                    declaration.constructedClass.hasAnnotation(InjektFqNames.Module) ||
+                                    declaration.constructedClass.hasAnnotation(InjektFqNames.Interceptor)))) {
+                val annotation = DeclarationIrBuilder(pluginContext, declaration.symbol)
+                    .run {
+                        irCall(
+                            pluginContext.referenceClass(InjektFqNames.CallableInfo)!!
+                                .constructors
+                                .single()
+                        ).apply {
+                            val info = declaration.descriptor.toCallableRef(declarationStore)
+                                .toPersistedCallableInfo(declarationStore)
+                            val value = Base64.getEncoder()
+                                .encode(declarationStore.moshi.adapter(PersistedCallableInfo::class.java)
+                                    .toJson(info).toByteArray())
+                                .decodeToString()
+                            putValueArgument(0, irString(value))
+                        }
                     }
+
+                if (declaration is IrConstructor &&
+                        declaration.constructedClass.primaryConstructor == declaration) {
+                    declaration.constructedClass.annotations += annotation
+                } else {
+                    declaration.annotations += annotation
                 }
         }
         return super.visitFunction(declaration)

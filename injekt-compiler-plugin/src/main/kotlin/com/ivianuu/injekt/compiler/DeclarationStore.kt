@@ -19,13 +19,7 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.analysis.Index
 import com.ivianuu.injekt.compiler.resolution.*
 import com.squareup.moshi.Moshi
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
-import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -94,8 +88,13 @@ class DeclarationStore(val module: ModuleDescriptor) {
     private val callableInfosByDeclaration = mutableMapOf<Any, PersistedCallableInfo?>()
     fun callableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? =
         callableInfosByDeclaration.getOrPut(callable.original) {
-            callable
-                .annotations
+            val annotations = if (callable is ConstructorDescriptor &&
+                    callable.constructedClass.unsubstitutedPrimaryConstructor?.original == callable.original) {
+                callable.constructedClass.annotations
+            } else {
+                callable.annotations
+            }
+            annotations
                 .findAnnotation(InjektFqNames.CallableInfo)
                 ?.allValueArguments
                 ?.get("value".asNameId())
