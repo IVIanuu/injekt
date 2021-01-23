@@ -16,9 +16,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.assertCompileError
-import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.*
 import org.junit.Test
 
 class DivergenceTest {
@@ -71,6 +69,27 @@ class DivergenceTest {
         """
     ) {
         assertCompileError("divergent")
+    }
+
+    @Test
+    fun testUnresolvableDivergenceWithProvidersAndQualifiersMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Given fun <T> any1(@Given t: () -> @Qualifier1 T): T = t()
+                    @Given fun <T> any2(@Given t: () -> @Qualifier2("a") T): T = t()
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                   fun invoke() = given<String>() 
+                """
+            )
+        )
+    ) {
+        it.last().assertCompileError("divergent")
     }
 
     @Test
