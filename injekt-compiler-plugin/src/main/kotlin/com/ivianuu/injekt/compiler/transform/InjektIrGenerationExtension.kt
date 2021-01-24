@@ -20,15 +20,27 @@ import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.analysis.GivenFunFunctionDescriptor
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ParameterDescriptor
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.TranslationPluginContext
-import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.builders.declarations.buildFun
+import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
+import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
+import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
+import org.jetbrains.kotlin.ir.symbols.impl.IrTypeParameterSymbolImpl
+import org.jetbrains.kotlin.ir.symbols.impl.IrValueParameterSymbolImpl
 import org.jetbrains.kotlin.ir.util.*
+import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.resolve.descriptorUtil.propertyIfAccessor
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
@@ -47,32 +59,45 @@ class InjektIrGenerationExtension : IrGenerationExtension {
     override fun resolveSymbol(
         symbol: IrSymbol,
         context: TranslationPluginContext
-    ): IrDeclaration? {
-        if (symbol.descriptor is GivenFunFunctionDescriptor) {
-            return IrFunctionImpl(
-                UNDEFINED_OFFSET,
-                UNDEFINED_OFFSET,
-                IrDeclarationOrigin.DEFINED,
-                symbol as IrSimpleFunctionSymbol,
-                symbol.descriptor.name,
-                symbol.descriptor.visibility,
-                symbol.descriptor.modality,
-                context.typeTranslator.translateType(symbol.descriptor.returnType!!),
-                false,
-                false,
-                false,
-                symbol.descriptor.isSuspend,
-                false,
-                false,
-                false,
-                false
-            ).apply {
-                (context.symbolTable as SymbolTable)
-                    .declareSimpleFunction(symbol.descriptor) { this }
-            }
-        } else {
-            return null
+    ): IrDeclaration? = if (symbol.descriptor is GivenFunFunctionDescriptor) {
+        symbol as IrSimpleFunctionSymbol
+        context.declareFunctionStub(symbol.descriptor).also { func ->
+            symbol.bind(func)
+            (context.symbolTable as SymbolTable)
+                .declareSimpleFunction(symbol.descriptor) { func }
         }
-    }
+    } else super.resolveSymbol(symbol, context)
 
 }
+
+private fun TranslationPluginContext.declareTypeParameterStub(typeParameterDescriptor: TypeParameterDescriptor): IrTypeParameter {
+    val symbol = IrTypeParameterSymbolImpl(typeParameterDescriptor)
+    return irFactory.createTypeParameter(
+        UNDEFINED_OFFSET, UNDEFINED_OFFSET, IrDeclarationOrigin.DEFINED, symbol, typeParameterDescriptor.name,
+        typeParameterDescriptor.index, typeParameterDescriptor.isReified, typeParameterDescriptor.variance
+    )
+}
+
+private fun TranslationPluginContext.declareParameterStub(parameterDescriptor: ParameterDescriptor): IrValueParameter {
+    val symbol = IrValueParameterSymbolImpl(parameterDescriptor)
+    val type = typeTranslator.translateType(parameterDescriptor.type)
+    val varargElementType = parameterDescriptor.varargElementType?.let { typeTranslator.translateType(it) }
+    return irFactory.createValueParameter(
+        UNDEFINED_OFFSET, UNDEFINED_OFFSET, IrDeclarationOrigin.DEFINED, symbol, parameterDescriptor.name,
+        parameterDescriptor.indexOrMinusOne, type, varargElementType, parameterDescriptor.isCrossinline,
+        parameterDescriptor.isNoinline, isHidden = false, isAssignable = false
+    )
+}
+
+private fun TranslationPluginContext.declareFunctionStub(descriptor: FunctionDescriptor): IrSimpleFunction =
+    irFactory.buildFun {
+        name = descriptor.name
+        visibility = descriptor.visibility
+        returnType = typeTranslator.translateType(descriptor.returnType!!)
+        modality = descriptor.modality
+    }.also {
+        it.typeParameters = descriptor.propertyIfAccessor.typeParameters.map(this::declareTypeParameterStub)
+        it.dispatchReceiverParameter = descriptor.dispatchReceiverParameter?.let(this::declareParameterStub)
+        it.extensionReceiverParameter = descriptor.extensionReceiverParameter?.let(this::declareParameterStub)
+        it.valueParameters = descriptor.valueParameters.map(this::declareParameterStub)
+    }

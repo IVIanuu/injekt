@@ -47,7 +47,6 @@ allprojects {
         google()
         jcenter()
         maven("https://oss.sonatype.org/content/repositories/snapshots")
-        maven("https://androidx.dev/snapshots/builds/${Deps.AndroidX.Compose.snapshot}/artifacts/repository")
         maven("https://plugins.gradle.org/m2")
     }
 

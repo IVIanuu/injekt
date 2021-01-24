@@ -444,7 +444,7 @@ class GivenFunTest {
     }
 
     @Test
-    fun testCanCallGivenFunctionWithDefaultParameters() = codegen(
+    fun testCanCallGivenFunctionWithNamedArguments() = codegen(
         """
             @GivenFun fun function(param: String): String = param
 

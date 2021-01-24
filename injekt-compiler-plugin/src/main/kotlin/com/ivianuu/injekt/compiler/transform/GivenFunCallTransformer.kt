@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameUnsafe
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -40,7 +41,15 @@ class GivenFunCallTransformer(private val pluginContext: IrPluginContext) :
             }".asNameId()
             if (allScopes.any {
                     it.irElement.safeAs<IrDeclaration>()?.descriptor?.name == invokeFunctionName
-            }) return result
+            }) {
+                return DeclarationIrBuilder(pluginContext, result.symbol)
+                    .irCall(pluginContext.symbolTable.referenceFunction(descriptor.invokeDescriptor))
+                    .apply {
+                        dispatchReceiver = result.dispatchReceiver
+                        (0 until valueArgumentsCount)
+                            .forEach { putValueArgument(it, result.getValueArgument(it)) }
+                    }
+            }
             val givenFunInvoke = pluginContext.referenceFunctions(
                 descriptor.givenFunDescriptor
                     .fqNameUnsafe

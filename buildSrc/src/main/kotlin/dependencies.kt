@@ -42,7 +42,6 @@ object Deps {
 
         object Compose {
             const val version = "1.0.0-alpha09"
-            const val snapshot = "6989480"
             const val compiler = "androidx.compose.compiler:compiler:$version"
             const val material = "androidx.compose.material:material:$version"
             const val runtime = "androidx.compose.runtime:runtime:$version"
