@@ -173,7 +173,7 @@ class GivenFunGenerator : Generator {
             append(" ")
         }
         appendLine("{")
-        append("    return invoke(")
+        append("    val result = invoke(")
         if (nonGivenReceiverType != null) {
             append("_receiver")
             if (nonGivenValueParameters.isNotEmpty()) append(", ")
@@ -184,6 +184,7 @@ class GivenFunGenerator : Generator {
 
         }
         appendLine(")")
+        appendLine("    return result")
         appendLine("}")
     }
 }

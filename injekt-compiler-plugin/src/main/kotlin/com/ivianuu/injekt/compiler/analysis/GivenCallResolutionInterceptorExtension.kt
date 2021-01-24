@@ -66,15 +66,15 @@ class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtensi
                     .memberScope
                 val givenFunction = memberScope
                     .getContributedFunctions(typeAlias.name, NoLookupLocation.FROM_BACKEND)
-                    .single()
+                    .first { it.hasAnnotation(InjektFqNames.GivenFun) }
                 val givenInvokeFunction = memberScope
                     .getContributedFunctions("invoke${
                         givenFunction.name.asString().capitalize()
                     }".asNameId(),
                         NoLookupLocation.FROM_BACKEND)
-                    .single()
+                    .first()
                 newCandidates += GivenFunFunctionDescriptor(
-                    candidates.single() as SimpleFunctionDescriptor,
+                    candidates.first() as SimpleFunctionDescriptor,
                     givenFunction,
                     givenInvokeFunction
                 )
