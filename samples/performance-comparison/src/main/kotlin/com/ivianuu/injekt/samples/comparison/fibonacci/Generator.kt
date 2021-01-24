@@ -25,18 +25,16 @@ fun main() {
                 if (index == 1 || index == 2) {
                     appendLine(
                         """
-                        class Fib$index @Inject constructor()
-                        @Given fun fib$index() = Fib$index()
+                        @Given class Fib$index @Inject constructor()
                         """
                     )
                 } else {
                     appendLine(
                         """
-                        class Fib$index @Inject constructor(
-                            val fibM1: Fib${index - 1},
-                            val fibM2: Fib${index - 2}
+                        @Given class Fib$index @Inject constructor(
+                            @Given val fibM1: Fib${index - 1},
+                            @Given val fibM2: Fib${index - 2}
                         )                    
-                        @Given fun fib$index() = Fib$index(given(), given())
                         """
                     )
                 }
