@@ -269,6 +269,35 @@ class TypeRefTest {
         assertEquals(stringType, map[unqualifiedSuperType.classifier])
     }
 
+    @Test
+    fun testGetSubstitutionMapWithGenericQualifierArguments() = withAnalysisContext {
+        val typeParameter1 = typeParameter()
+        val typeParameter2 = typeParameter()
+        val qualifier = ClassifierRef(
+            FqName("MyQualifier"),
+            typeParameters = listOf(
+                ClassifierRef(
+                    fqName = FqName("MyQualifier.T")
+                )
+            )
+        )
+        val superType = typeParameter1.qualified(
+            AnnotationRef(
+                qualifier.defaultType.typeWith(typeParameter2),
+                emptyMap()
+            )
+        )
+        val substitutionType = stringType.qualified(
+            AnnotationRef(
+                qualifier.defaultType.typeWith(intType),
+                emptyMap()
+            )
+        )
+        val map = getSubstitutionMap(listOf(substitutionType to superType))
+        assertEquals(stringType, map[typeParameter1.classifier])
+        assertEquals(intType, map[typeParameter2.classifier])
+    }
+
     private infix fun TypeRef.shouldBeAssignable(other: TypeRef) {
         if (!isAssignableTo(other)) {
             throw AssertionError("'$this' is not assignable '$other'")

@@ -418,7 +418,8 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
     ): IrExpression {
         if (descriptor is ProviderGivenNode.ProviderParameterDescriptor) {
             return DeclarationIrBuilder(pluginContext, symbol)
-                .irGet(lambdasByProviderGiven[descriptor.given]!!.valueParameters.get(descriptor.index))
+                .irGet(lambdasByProviderGiven[descriptor.given]?.valueParameters?.get(descriptor.index)
+                    ?: error("Wtf ${descriptor.given} -> $lambdasByProviderGiven"))
         }
 
         return when (val containingDeclaration = descriptor.containingDeclaration) {

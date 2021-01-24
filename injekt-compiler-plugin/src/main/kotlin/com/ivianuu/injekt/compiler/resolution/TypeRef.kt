@@ -399,8 +399,14 @@ fun getSubstitutionMap(pairs: List<Pair<TypeRef, TypeRef>>): Map<ClassifierRef, 
         }
 
         if (thisType.qualifiers.isNotEmpty() &&
-            thisType.qualifiers == baseType.qualifiers) {
+            thisType.qualifiers.size == baseType.qualifiers.size &&
+            thisType.qualifiers.zip(baseType.qualifiers).all { (a, b) ->
+                a.type.classifier == b.type.classifier &&
+                        a.arguments == b.arguments
+            }) {
             visitType(thisType.copy(qualifiers = emptyList()), baseType.copy(qualifiers = emptyList()))
+            thisType.qualifiers.zip(baseType.qualifiers)
+                .forEach { visitType(it.first.type, it.second.type) }
             return
         }
 
