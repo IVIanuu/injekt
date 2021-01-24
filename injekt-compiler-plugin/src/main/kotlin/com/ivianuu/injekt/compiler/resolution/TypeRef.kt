@@ -88,8 +88,13 @@ fun ClassifierDescriptor.toClassifierRef(
     val isGivenFunAlias = this is TypeAliasDescriptor && hasAnnotation(InjektFqNames.GivenFunAlias)
     val superTypeQualifiers = if (isGivenFunAlias) declarationStore.functionDescriptorForFqName(fqNameSafe)
         .single { it.hasAnnotation(InjektFqNames.GivenFun) }
-        .toCallableRef(declarationStore)
-        .qualifiers
+        .let { function ->
+            declarationStore.callableInfoFor(function)
+                ?.qualifiers
+                ?.map { it.toAnnotationRef(declarationStore) }
+                ?: function.getAnnotatedAnnotations(InjektFqNames.Qualifier)
+                    .map { it.toAnnotationRef(declarationStore) }
+        }
     else emptyList()
     fun TypeRef.maybeWithSuperTypeQualifiers(): TypeRef {
         return if (superTypeQualifiers.isEmpty()) this

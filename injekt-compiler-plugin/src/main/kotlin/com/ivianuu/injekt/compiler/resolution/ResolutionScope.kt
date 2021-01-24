@@ -67,6 +67,8 @@ class ResolutionScope(
 
         generatesMacros = macros.isNotEmpty() &&
                 (givens.isNotEmpty() ||
+                        givenSetElements.isNotEmpty() ||
+                        interceptors.isNotEmpty() ||
                         (name == "INTERNAL" && declarationStore.givenFuns.isNotEmpty()))
 
         parent?.givens
