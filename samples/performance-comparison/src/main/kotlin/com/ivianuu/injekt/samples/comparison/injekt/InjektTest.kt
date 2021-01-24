@@ -18,7 +18,7 @@ package com.ivianuu.injekt.samples.comparison.injekt
 
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.samples.comparison.base.InjectionTest
-import com.ivianuu.injekt.samples.comparison.fibonacci.Fib8
+import com.ivianuu.injekt.samples.comparison.fibonacci.*
 
 object InjektTest : InjectionTest {
     override val name = "Injekt"

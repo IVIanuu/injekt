@@ -210,6 +210,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             .irLambda(given.type.toIrType(pluginContext)) { function ->
                 val givenFun = (given.callable.callable as FunctionDescriptor).irFunction()
                 val typeArguments = getSubstitutionMap(
+                    graph.scope.declarationStore,
                     listOf(given.type to given.originalType)
                 ).values
                 DeclarationIrBuilder(pluginContext, symbol)
@@ -351,7 +352,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             DeclarationIrBuilder(pluginContext, symbol)
                 .irCall(constructor.symbol)
                 .apply {
-                    val substitutionMap = getSubstitutionMap(listOf(type to callable.originalType))
+                    val substitutionMap = getSubstitutionMap(graph.scope.declarationStore, listOf(type to callable.originalType))
                     callable.typeParameters
                         .map {
                             substitutionMap[it]
@@ -535,6 +536,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             if (graph != null) {
                 try {
                     val substitutionMap = getSubstitutionMap(
+                        graph.scope.declarationStore,
                         (0 until expression.typeArgumentsCount)
                             .map { getTypeArgument(it)!!.toKotlinType().toTypeRef(graph.scope.declarationStore) }
                             .zip(
@@ -542,6 +544,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                                     .map { it.toClassifierRef(graph.scope.declarationStore).defaultType }
                             )
                     ) + getSubstitutionMap(
+                        graph.scope.declarationStore,
                         ((dispatchReceiver?.type as? IrSimpleType)?.arguments
                             ?.map { it.typeOrNull!!.toKotlinType().toTypeRef(graph.scope.declarationStore) }
                             ?: emptyList())

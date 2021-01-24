@@ -52,6 +52,7 @@ fun CallableRef.apply(
     else {
         val original = callable.original.toCallableRef(declarationStore, false)
         val substitutionMap = getSubstitutionMap(
+            declarationStore,
             listOf(type to original.type) +
                     parameterTypes.values.zip(original.parameterTypes.values)
         )

@@ -121,6 +121,7 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
 private fun List<ResolutionResult.Success>.toSuccessGraph(scope: ResolutionScope): GivenGraph.Success {
     val givensByType = mutableMapOf<GivenRequest, GivenNode>()
     fun ResolutionResult.Success.visit() {
+        if (request in givensByType) return
         givensByType[request] = candidateResult.candidate
         candidateResult.dependencyResults
             .forEach { it.visit() }

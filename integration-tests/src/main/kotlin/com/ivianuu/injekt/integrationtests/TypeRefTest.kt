@@ -249,14 +249,14 @@ class TypeRefTest {
     @Test
     fun testGetSubstitutionMap() = withAnalysisContext {
         val superType = typeParameter()
-        val map = getSubstitutionMap(listOf(stringType to superType))
+        val map = getSubstitutionMap(declarationStore, listOf(stringType to superType))
         assertEquals(stringType, map[superType.classifier])
     }
 
     @Test
     fun testGetSubstitutionMapWithNestedGenerics() = withAnalysisContext {
         val superType = typeParameter()
-        val map = getSubstitutionMap(listOf(listType.typeWith(stringType) to listType.typeWith(superType)))
+        val map = getSubstitutionMap(declarationStore, listOf(listType.typeWith(stringType) to listType.typeWith(superType)))
         assertEquals(stringType, map[superType.classifier])
     }
 
@@ -265,7 +265,7 @@ class TypeRefTest {
         val unqualifiedSuperType = typeParameter()
         val qualifiedSuperType = unqualifiedSuperType.qualified(qualifier1())
         val substitutionType = stringType.qualified(qualifier1())
-        val map = getSubstitutionMap(listOf(substitutionType to qualifiedSuperType))
+        val map = getSubstitutionMap(declarationStore, listOf(substitutionType to qualifiedSuperType))
         assertEquals(stringType, map[unqualifiedSuperType.classifier])
     }
 
@@ -293,33 +293,9 @@ class TypeRefTest {
                 emptyMap()
             )
         )
-        val map = getSubstitutionMap(listOf(substitutionType to superType))
+        val map = getSubstitutionMap(declarationStore, listOf(substitutionType to superType))
         assertEquals(stringType, map[typeParameter1.classifier])
         assertEquals(intType, map[typeParameter2.classifier])
-    }
-
-    private infix fun TypeRef.shouldBeAssignable(other: TypeRef) {
-        if (!isAssignableTo(other)) {
-            throw AssertionError("'$this' is not assignable '$other'")
-        }
-    }
-
-    private infix fun TypeRef.shouldNotBeAssignable(other: TypeRef) {
-        if (isAssignableTo(other)) {
-            throw AssertionError("'$this' is assignable '$other'")
-        }
-    }
-
-    private infix fun TypeRef.shouldBeSubTypeOf(other: TypeRef) {
-        if (!isSubTypeOf(other)) {
-            throw AssertionError("'$this' is not sub type of '$other'")
-        }
-    }
-
-    private infix fun TypeRef.shouldNotBeSubTypeOf(other: TypeRef) {
-        if (isSubTypeOf(other)) {
-            throw AssertionError("'$this' is sub type of '$other'")
-        }
     }
 
     // todo type parameter multuple upper bounds
@@ -359,7 +335,7 @@ class TypeRefTest {
 
     class AnalysisContext(val module: ModuleDescriptor) {
 
-        private val declarationStore = DeclarationStore(module)
+        val declarationStore = DeclarationStore(module)
 
         val anyType = typeFor(StandardNames.FqNames.any.toSafe())
         val anyNType = anyType.copy(isMarkedNullable = true)
@@ -425,6 +401,29 @@ class TypeRefTest {
             ClassId.topLevel(fqName)
         )!!.defaultType.toTypeRef(declarationStore)
 
+        infix fun TypeRef.shouldBeAssignable(other: TypeRef) {
+            if (!isAssignableTo(declarationStore, other)) {
+                throw AssertionError("'$this' is not assignable '$other'")
+            }
+        }
+
+        infix fun TypeRef.shouldNotBeAssignable(other: TypeRef) {
+            if (isAssignableTo(declarationStore, other)) {
+                throw AssertionError("'$this' is assignable '$other'")
+            }
+        }
+
+        infix fun TypeRef.shouldBeSubTypeOf(other: TypeRef) {
+            if (!isSubTypeOf(declarationStore, other)) {
+                throw AssertionError("'$this' is not sub type of '$other'")
+            }
+        }
+
+        infix fun TypeRef.shouldNotBeSubTypeOf(other: TypeRef) {
+            if (isSubTypeOf(declarationStore, other)) {
+                throw AssertionError("'$this' is sub type of '$other'")
+            }
+        }
     }
 
     fun TypeRef.nullable() = copy(isMarkedNullable = true)

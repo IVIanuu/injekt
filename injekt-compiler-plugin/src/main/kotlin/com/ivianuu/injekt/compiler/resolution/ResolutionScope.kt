@@ -111,7 +111,7 @@ class ResolutionScope(
         return givenNodesByType.getOrPut(type) {
             buildList<GivenNode> {
                 this += givens
-                    .filter { it.first.type.isAssignableTo(type) }
+                    .filter { it.first.type.isAssignableTo(declarationStore, type) }
                     .map { it.first.toGivenNode(type, it.second, this@ResolutionScope) }
 
                 if (type.classifier.descriptor?.safeAs<ClassDescriptor>()
@@ -125,7 +125,7 @@ class ResolutionScope(
                     declarationStore.functionDescriptorForFqName(type.classifier.fqName)
                         .single { it.hasAnnotation(InjektFqNames.GivenFun) }
                         .toCallableRef(declarationStore)
-                        .substitute(getSubstitutionMap(listOf(type to type.classifier.defaultType)))
+                        .substitute(getSubstitutionMap(declarationStore, listOf(type to type.classifier.defaultType)))
                 )
 
                 if (type.path == null &&
@@ -144,7 +144,7 @@ class ResolutionScope(
                 )
 
 
-                if (type.isSubTypeOf(setType)) {
+                if (type.isSubTypeOf(declarationStore, setType)) {
                     val setElementType = type.subtypeView(setType.classifier)!!.arguments.single()
                     val elements = givenSetElementsForType(setElementType)
                     this += SetGivenNode(
@@ -165,8 +165,8 @@ class ResolutionScope(
         initializeMacros
         return givenSetElementsByType.getOrPut(type) {
             givenSetElements
-                .filter { it.type.isAssignableTo(type) }
-                .map { it.substitute(getSubstitutionMap(listOf(type to it.type))) }
+                .filter { it.type.isAssignableTo(declarationStore, type) }
+                .map { it.substitute(getSubstitutionMap(declarationStore, listOf(type to it.type))) }
         }
     }
 
@@ -175,8 +175,8 @@ class ResolutionScope(
         return interceptorsByType.getOrPut(type) {
             interceptors
                 .filter { callContext.canCall(it.callContext) }
-                .filter { it.type.isAssignableTo(type) }
-                .map { it.substitute(getSubstitutionMap(listOf(type to it.type))) }
+                .filter { it.type.isAssignableTo(declarationStore, type) }
+                .map { it.substitute(getSubstitutionMap(declarationStore, listOf(type to it.type))) }
                 .filter { interceptor ->
                     interceptor.parameterTypes
                         .values
@@ -206,12 +206,14 @@ class ResolutionScope(
                 for (macro in macros) {
                     val macroType = macro.typeParameters.first().defaultType
 
-                    if (!contribution.copy(path = null).isSubTypeOf(macroType)) continue
+                    if (!contribution.copy(path = null).isSubTypeOf(declarationStore, macroType)) continue
                     if (macro.callable.fqNameSafe in contribution.path!!) continue
                     val inputsSubstitutionMap = getSubstitutionMap(
+                        declarationStore,
                         listOf(contribution to macroType)
                     )
                     val outputsSubstitutionMap = getSubstitutionMap(
+                        declarationStore,
                         listOf(contribution.copy(path = null) to macroType)
                     )
                     val newContribution = macro.substituteInputs(inputsSubstitutionMap)

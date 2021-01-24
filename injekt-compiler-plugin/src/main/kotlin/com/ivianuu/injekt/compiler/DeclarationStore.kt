@@ -85,6 +85,9 @@ class DeclarationStore(val module: ModuleDescriptor) {
 
     val moshi = Moshi.Builder().build()
 
+    val cache = mutableMapOf<Int, Any?>()
+    inline fun <R : Any> memoize(key: Int, block: () -> R): R = cache.getOrPut(key, block) as R
+
     private val callableInfosByDeclaration = mutableMapOf<Any, PersistedCallableInfo?>()
     fun callableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? =
         callableInfosByDeclaration.getOrPut(callable.original) {
