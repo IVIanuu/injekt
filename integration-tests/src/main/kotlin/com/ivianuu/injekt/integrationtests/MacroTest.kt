@@ -147,18 +147,45 @@ class MacroTest {
     @Test
     fun testMacroWithGivenFun() = codegen(
         """
-            @Qualifier annotation class Trigger
-            @Macro @Given fun <T : @Trigger () -> Foo> macroImpl(@Given instance: T): FooFactory = 
+            @Qualifier annotation class Trigger<T>
+            @Macro @Given fun <T : @Trigger<K> () -> Foo, K> macroImpl(@Given instance: T): FooFactory<K> = 
                 instance
             
-            typealias FooFactory = () -> Foo
+            typealias FooFactory<T> = () -> Foo
 
-            @Trigger @GivenFun fun fooFactoryImpl(): Foo = Foo()
+            @Trigger<String> @GivenFun fun fooFactoryImpl(): Foo = Foo()
             
-            fun invoke() = given<FooFactory>()()
+            fun invoke() = given<FooFactory<String>>()()
         """
     ) {
         assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testMacroWithGivenFunMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Qualifier annotation class Trigger<T>
+                    @Macro @Given fun <T : @Trigger<K> () -> Foo, K> macroImpl(@Given instance: T): FooFactory<K> = 
+                        instance
+                    
+                    typealias FooFactory<K> = () -> Foo
+        
+                    @Trigger<String> @GivenFun fun fooFactoryImpl(): Foo = Foo()
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke() = given<FooFactory<String>>()()
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        assertTrue(it.last().invokeSingleFile() is Foo)
     }
 
     @Test

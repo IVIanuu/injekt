@@ -31,7 +31,8 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
     val type: PersistedTypeRef,
     val typeParameters: List<PersistedClassifierRef>,
     val parameterTypes: Map<String, PersistedTypeRef>,
-    val parameterContributionKinds: Map<String, ContributionKind?>
+    val parameterContributionKinds: Map<String, ContributionKind?>,
+    val qualifiers: List<PersistedAnnotationRef>
 )
 
 fun CallableRef.toPersistedCallableInfo(declarationStore: DeclarationStore) = PersistedCallableInfo(
@@ -39,7 +40,8 @@ fun CallableRef.toPersistedCallableInfo(declarationStore: DeclarationStore) = Pe
     typeParameters = typeParameters.map { it.toPersistedClassifierRef(declarationStore) },
     parameterTypes = parameterTypes
         .mapValues { it.value.toPersistedTypeRef(declarationStore) },
-    parameterContributionKinds = parameterContributionKinds
+    parameterContributionKinds = parameterContributionKinds,
+    qualifiers = qualifiers.map { it.toPersistedAnnotationRef(declarationStore) }
 )
 
 fun CallableRef.apply(
@@ -60,7 +62,8 @@ fun CallableRef.apply(
             },
             parameterTypes = info.parameterTypes
                 .mapValues { it.value.toTypeRef(declarationStore) },
-            parameterContributionKinds = info.parameterContributionKinds
+            parameterContributionKinds = info.parameterContributionKinds,
+            qualifiers = info.qualifiers.map { it.toAnnotationRef(declarationStore) }
         ).substitute(substitutionMap)
     }
 }

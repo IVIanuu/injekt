@@ -466,6 +466,37 @@ class GivenFunTest {
         """
     )
 
+    @Test
+    fun testQualifiedGivenFun() = codegen(
+        """
+            @Qualifier1 @GivenFun fun function() {
+            
+            }
+
+            fun invoke() = given<@Qualifier1 function>()
+        """
+    )
+
+    @Test
+    fun testQualifiedGivenFunMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Qualifier1 @GivenFun fun function() {
+            
+                    }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke() = given<@Qualifier1 function>()
+                """
+            )
+        )
+    )
+
     // todo @Test
     fun testGivenFunSelfReference() = codegen(
         """

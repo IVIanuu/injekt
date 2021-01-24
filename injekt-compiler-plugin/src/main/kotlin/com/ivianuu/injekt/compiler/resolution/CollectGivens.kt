@@ -33,6 +33,7 @@ data class CallableRef(
     val typeParameters: List<ClassifierRef>,
     val parameterTypes: Map<String, TypeRef>,
     val parameterContributionKinds: Map<String, ContributionKind?>,
+    val qualifiers: List<AnnotationRef>,
     val typeArguments: Map<ClassifierRef, TypeRef>,
     val contributionKind: ContributionKind?,
     val isMacro: Boolean,
@@ -86,6 +87,7 @@ fun CallableDescriptor.toCallableRef(
         parameterContributionKinds = (if (this is ConstructorDescriptor) valueParameters else allParameters)
             .map { it.injektName() to it.contributionKind(declarationStore) }
             .toMap(),
+        qualifiers = qualifiers,
         typeArguments = typeParameters
             .map { it to it.defaultType }
             .toMap(),
