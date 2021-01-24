@@ -31,7 +31,7 @@ class ResolutionScope(
     val parent: ResolutionScope?,
     val declarationStore: DeclarationStore,
     val callContext: CallContext,
-    produceContributions: () -> List<CallableRef>,
+    produceContributions: () -> List<CallableRef>
 ) {
     val chain: MutableSet<GivenNode> = parent?.chain ?: mutableSetOf()
     val resultsByRequest = mutableMapOf<GivenRequest, ResolutionResult>()
@@ -46,68 +46,57 @@ class ResolutionScope(
     private val givenSetElementsByType = mutableMapOf<TypeRef, List<CallableRef>>()
     private val interceptorsByType = mutableMapOf<TypeRef, List<InterceptorNode>>()
 
-    private var generatesMacros = false
+    private val processedContributions = mutableSetOf<Pair<CallableRef, TypeRef>>()
 
     private val initialize: Unit by unsafeLazy {
         parent?.initialize
-        parent?.initializeMacros
+
+        parent?.processedContributions?.let { processedContributions += it }
+        parent?.givens?.forEach { givens += it }
+        parent?.givenSetElements?.forEach { givenSetElements += it }
+        parent?.interceptors?.forEach { interceptors += it }
+        parent?.macros?.forEach { macros += it }
 
         produceContributions().forEach { contribution ->
             contribution.collectContributions(
                 declarationStore = declarationStore,
                 path = listOf(contribution.callable.fqNameSafe),
-                addGiven = { givens += it to this },
+                addGiven = { callable ->
+                    givens += callable to this
+                    val typeWithPath = callable.type
+                        .copy(path = listOf(callable.callable.fqNameSafe))
+                    givens += callable.copy(type = typeWithPath) to this
+                },
                 addGivenSetElement = { givenSetElements += it },
                 addInterceptor = { interceptors += it },
                 addMacro = { macros += it }
             )
         }
 
-        parent?.macros?.forEach { macros.add(0, it) }
+        declarationStore.givenFuns
+            .map { (givenFun, givenFunType) ->
+                givenFunType.defaultType
+                    .copy(path = listOf(givenFun.callable))
+            }
+            .forEach { runMacros(it) }
 
-        generatesMacros = macros.isNotEmpty() &&
-                (givens.isNotEmpty() ||
-                        givenSetElements.isNotEmpty() ||
-                        interceptors.isNotEmpty() ||
-                        (name == "INTERNAL" && declarationStore.givenFuns.isNotEmpty()))
+        givens
+            .filter { it.first.type.path != null }
+            .forEach { runMacros(it.first.type) }
 
-        parent?.givens
-            ?.filter { !it.first.isFromMacro || !generatesMacros }
-            ?.forEach { givens.add(0, it) }
-        parent?.givenSetElements
-            ?.filter { !it.isFromMacro || !generatesMacros }
-            ?.forEach { givenSetElements.add(0, it) }
-        parent?.interceptors
-            ?.filter { !it.isFromMacro || !generatesMacros }
-            ?.forEach { interceptors += it }
-
-        Unit
+        declarationStore.givenFuns
+            .map { (givenFun, givenFunType) ->
+                givenFunType.defaultType
+                    .copy(path = listOf(givenFun.callable))
+            }
+            .forEach { runMacros(it) }
     }
 
     private val setType = declarationStore.module.builtIns.set.defaultType
         .toTypeRef(declarationStore)
 
-    private val initializeMacros by unsafeLazy {
-        initialize
-        if (!generatesMacros) return@unsafeLazy
-        collectMacroContributions(
-            (givens
-                .filterNot { it.first.isFromMacro }
-                .map { (callable, scope) ->
-                    val typeWithPath = callable.type
-                        .copy(path = listOf(callable.callable.fqNameSafe))
-                    givens += callable.copy(type = typeWithPath) to scope
-                    typeWithPath
-                } + declarationStore.givenFuns
-                .map { (givenFun, givenFunType) ->
-                    givenFunType.defaultType
-                        .copy(path = listOf(givenFun.callable))
-                }).toSet()
-        )
-    }
-
     fun givensForType(type: TypeRef): List<GivenNode> {
-        initializeMacros
+        initialize
         return givenNodesByType.getOrPut(type) {
             buildList<GivenNode> {
                 this += givens
@@ -162,7 +151,7 @@ class ResolutionScope(
     }
 
     fun givenSetElementsForType(type: TypeRef): List<CallableRef> {
-        initializeMacros
+        initialize
         return givenSetElementsByType.getOrPut(type) {
             givenSetElements
                 .filter { it.type.isAssignableTo(declarationStore, type) }
@@ -171,7 +160,7 @@ class ResolutionScope(
     }
 
     fun interceptorsForType(type: TypeRef): List<InterceptorNode> {
-        initializeMacros
+        initialize
         return interceptorsByType.getOrPut(type) {
             interceptors
                 .filter { callContext.canCall(it.callContext) }
@@ -191,68 +180,62 @@ class ResolutionScope(
         }
     }
 
-    private fun collectMacroContributions(initialContributions: Set<TypeRef>) {
-        val allContributions = mutableListOf<CallableRef>()
+    private fun runMacros(contribution: TypeRef) {
+        for (macro in macros) {
+            val key = macro to contribution
+            if (key in processedContributions) continue
+            processedContributions += key
 
-        val processedContributions = mutableSetOf<TypeRef>()
-        var contributionsToProcess = initialContributions
+            val macroType = macro.typeParameters.first().defaultType
+            if (!contribution.copy(path = null).isSubTypeOf(declarationStore, macroType)) continue
+            if (macro.callable.fqNameSafe in contribution.path!!) continue
 
-        while (contributionsToProcess.isNotEmpty()) {
-            val nextContributions = mutableSetOf<TypeRef>()
+            val inputsSubstitutionMap = getSubstitutionMap(
+                declarationStore,
+                listOf(contribution to macroType)
+            )
+            val outputsSubstitutionMap = getSubstitutionMap(
+                declarationStore,
+                listOf(contribution.copy(path = null) to macroType)
+            )
+            val newContribution = macro.substituteInputs(inputsSubstitutionMap)
+                .copy(
+                    isMacro = false,
+                    isFromMacro = true,
+                    typeArguments = inputsSubstitutionMap,
+                    type = macro.type.substitute(outputsSubstitutionMap)
+                )
 
-            for (contribution in contributionsToProcess) {
-                if (contribution in processedContributions) continue
-                processedContributions += contribution
-                for (macro in macros) {
-                    val macroType = macro.typeParameters.first().defaultType
-
-                    if (!contribution.copy(path = null).isSubTypeOf(declarationStore, macroType)) continue
-                    if (macro.callable.fqNameSafe in contribution.path!!) continue
-                    val inputsSubstitutionMap = getSubstitutionMap(
-                        declarationStore,
-                        listOf(contribution to macroType)
-                    )
-                    val outputsSubstitutionMap = getSubstitutionMap(
-                        declarationStore,
-                        listOf(contribution.copy(path = null) to macroType)
-                    )
-                    val newContribution = macro.substituteInputs(inputsSubstitutionMap)
-                        .copy(
-                            isMacro = false,
-                            isFromMacro = true,
-                            typeArguments = inputsSubstitutionMap,
-                            type = macro.type.substitute(outputsSubstitutionMap)
-                        )
-
-                    allContributions += newContribution
-                    if (newContribution.contributionKind == ContributionKind.VALUE) {
-                        val newContributionWithPath = newContribution.copy(
-                            type = newContribution.type.copy(
-                                path = contribution.path!! + newContribution.callable.fqNameSafe
-                            )
-                        )
-                        allContributions += newContributionWithPath
-                        nextContributions += newContributionWithPath.type
-                    }
-                }
-            }
-
-            contributionsToProcess = nextContributions
-        }
-
-        allContributions.forEach { contribution ->
-            contribution.collectContributions(
+            newContribution.collectContributions(
                 declarationStore = declarationStore,
-                path = listOf(contribution.callable.fqNameSafe),
+                path = listOf(newContribution.callable.fqNameSafe),
                 addGiven = { givens += it to this },
                 addGivenSetElement = { givenSetElements += it },
                 addInterceptor = { interceptors += it },
                 addMacro = { macros += it }
             )
+
+            if (newContribution.contributionKind == ContributionKind.VALUE) {
+                val newContributionWithPath = newContribution.copy(
+                    type = newContribution.type.copy(
+                        path = contribution.path!! + newContribution.callable.fqNameSafe
+                    )
+                )
+                newContributionWithPath.collectContributions(
+                    declarationStore = declarationStore,
+                    path = listOf(newContributionWithPath.callable.fqNameSafe),
+                    addGiven = { givens += it to this },
+                    addGivenSetElement = { givenSetElements += it },
+                    addInterceptor = { interceptors += it },
+                    addMacro = { macros += it }
+                )
+                runMacros(newContributionWithPath.type)
+            }
         }
     }
 
     override fun toString(): String = "ResolutionScope($name)"
+
 }
 
 fun ExternalResolutionScope(declarationStore: DeclarationStore): ResolutionScope = ResolutionScope(

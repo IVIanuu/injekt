@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
-import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
