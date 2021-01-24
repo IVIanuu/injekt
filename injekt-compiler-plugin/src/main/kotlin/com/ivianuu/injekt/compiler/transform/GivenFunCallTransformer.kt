@@ -18,27 +18,34 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.analysis.GivenFunFunctionDescriptor
 import com.ivianuu.injekt.compiler.asNameId
+import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameUnsafe
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class GivenFunCallTransformer(private val pluginContext: IrPluginContext) :
-    IrElementTransformerVoid() {
+    IrElementTransformerVoidWithContext() {
     override fun visitCall(expression: IrCall): IrExpression {
         val result = super.visitCall(expression) as IrCall
         val descriptor = expression.symbol.descriptor
         if (descriptor is GivenFunFunctionDescriptor) {
+            val invokeFunctionName = "invoke${
+                descriptor.givenFunDescriptor.name.asString().capitalize()
+            }".asNameId()
+            if (allScopes.any {
+                    it.irElement.safeAs<IrDeclaration>()?.descriptor?.name == invokeFunctionName
+            }) return result
             val givenFunInvoke = pluginContext.referenceFunctions(
                 descriptor.givenFunDescriptor
                     .fqNameUnsafe
                     .parent()
-                    .child("invoke${
-                        descriptor.givenFunDescriptor.name.asString().capitalize()
-                    }".asNameId())
+                    .child(invokeFunctionName)
                     .toSafe()
             ).first()
             return DeclarationIrBuilder(pluginContext, result.symbol)
