@@ -43,7 +43,7 @@ class GivenFunCallTransformer(private val pluginContext: IrPluginContext) :
                     it.irElement.safeAs<IrDeclaration>()?.descriptor?.name == invokeFunctionName
             }) {
                 return DeclarationIrBuilder(pluginContext, result.symbol)
-                    .irCall(pluginContext.symbolTable.referenceFunction(descriptor.invokeDescriptor))
+                    .irCall(pluginContext.symbolTable.referenceFunction(descriptor.invokeDescriptor.original))
                     .apply {
                         dispatchReceiver = result.dispatchReceiver
                         (0 until valueArgumentsCount)
