@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
+import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 fun KtDeclaration.shouldBeIndexed(): Boolean {
@@ -51,6 +52,12 @@ fun KtDeclaration.shouldBeIndexed(): Boolean {
                 owner is KtProperty) &&
         owner.parent.safeAs<KtClassBody>()?.parent is KtClass
     ) return false
+
+    if ((owner is KtProperty || owner is KtNamedFunction) &&
+        getParentOfType<KtClassOrObject>(false)?.let {
+            it is KtClass || it.hasAnnotation(InjektFqNames.Module)
+        } == true)
+        return false
 
     return hasAnnotation(InjektFqNames.Given) ||
             hasAnnotation(InjektFqNames.GivenSetElement) ||
