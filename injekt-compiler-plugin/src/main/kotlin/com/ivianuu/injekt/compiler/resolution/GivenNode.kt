@@ -40,6 +40,7 @@ sealed class GivenNode {
     abstract val lazyDependencies: Boolean
     abstract val isFrameworkGiven: Boolean
     abstract val interceptors: List<InterceptorNode>
+    abstract val cache: Boolean
 }
 
 data class CallableGivenNode(
@@ -62,6 +63,8 @@ data class CallableGivenNode(
         get() = callable.originalType
     override val isFrameworkGiven: Boolean
         get() = false
+    override val cache: Boolean
+        get() = false
 }
 
 data class SetGivenNode(
@@ -82,6 +85,8 @@ data class SetGivenNode(
         get() = type
     override val isFrameworkGiven: Boolean
         get() = true
+    override val cache: Boolean
+        get() = false
 }
 
 data class DefaultGivenNode(
@@ -104,6 +109,8 @@ data class DefaultGivenNode(
         get() = true
     override val interceptors: List<InterceptorNode>
         get() = emptyList()
+    override val cache: Boolean
+        get() = false
 }
 
 data class FunGivenNode(
@@ -131,6 +138,8 @@ data class FunGivenNode(
         get() = true
     override val isFrameworkGiven: Boolean
         get() = true
+    override val cache: Boolean
+        get() = true
 }
 
 data class ObjectGivenNode(
@@ -153,6 +162,8 @@ data class ObjectGivenNode(
         get() = false
     override val interceptors: List<InterceptorNode>
         get() = emptyList()
+    override val cache: Boolean
+        get() = false
 }
 
 data class ProviderGivenNode(
@@ -208,6 +219,9 @@ data class ProviderGivenNode(
         val given: ProviderGivenNode,
         private val delegate: ValueParameterDescriptor
     ) : ValueParameterDescriptor by delegate
+
+    override val cache: Boolean
+        get() = true
 }
 
 fun CallableRef.toGivenNode(

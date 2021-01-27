@@ -22,6 +22,7 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
+import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -172,6 +173,18 @@ class ProviderTest {
         """
     ) {
         invokeSingleFile()
+    }
+
+    @Test
+    fun testReusesProviderPerCall() = codegen(
+        """
+            @Given val foo = Foo()
+            @Given fun <T> pair(@Given a: T, @Given b: T): Pair<T, T> = a to b
+            fun invoke() = given<Pair<() -> Foo, () -> Foo>>()
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Any, Any>>()
+        assertSame(a, b)
     }
 
 }
