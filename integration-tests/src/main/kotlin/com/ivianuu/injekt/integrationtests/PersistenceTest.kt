@@ -103,7 +103,8 @@ class PersistenceTest {
             source(
                 """
                    fun invoke() = given<String>() 
-                """
+                """,
+                name = "File.kt"
             )
         )
     ) {
