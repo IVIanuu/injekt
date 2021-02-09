@@ -392,6 +392,7 @@ fun getSubstitutionMap(
     fun visitType(
         thisType: TypeRef,
         baseType: TypeRef,
+        fromInput: Boolean
     ) {
         if (thisType == baseType) return
 
@@ -402,7 +403,7 @@ fun getSubstitutionMap(
         visitedTypes += baseType
         if (!baseType.classifier.isTypeParameter) {
             thisType.arguments.zip(baseType.arguments)
-                .forEach { visitType(it.first, it.second) }
+                .forEach { visitType(it.first, it.second, false) }
             return
         }
 
@@ -412,13 +413,13 @@ fun getSubstitutionMap(
                 a.type.classifier == b.type.classifier &&
                         a.arguments == b.arguments
             }) {
-            visitType(thisType.copy(qualifiers = emptyList()), baseType.copy(qualifiers = emptyList()))
+            visitType(thisType.copy(qualifiers = emptyList()), baseType.copy(qualifiers = emptyList()), false)
             thisType.qualifiers.zip(baseType.qualifiers)
-                .forEach { visitType(it.first.type, it.second.type) }
+                .forEach { visitType(it.first.type, it.second.type, false) }
             return
         }
 
-        if (baseType.classifier !in substitutionMap) {
+        if (baseType.classifier !in substitutionMap || fromInput) {
             substitutionMap[baseType.classifier] = thisType
         }
         baseType.superTypes()
@@ -427,30 +428,30 @@ fun getSubstitutionMap(
                 if (baseSuperType.classifier.isTypeParameter) {
                     val thisTypeToUse = thisBaseTypeView ?: thisType
                     visitType(thisTypeToUse
-                        .copy(qualifiers = emptyList()), baseSuperType)
+                        .copy(qualifiers = emptyList()), baseSuperType, false)
                     if (thisTypeToUse.qualifiers.isAssignableTo(declarationStore, baseSuperType.qualifiers)) {
                         thisTypeToUse.qualifiers.zip(baseSuperType.qualifiers)
-                            .forEach { visitType(it.first.type, it.second.type) }
+                            .forEach { visitType(it.first.type, it.second.type, false) }
                     }
                 } else {
-                    visitType(thisBaseTypeView ?: thisType, baseSuperType)
+                    visitType(thisBaseTypeView ?: thisType, baseSuperType, false)
                 }
 
                 thisBaseTypeView?.arguments?.zip(baseSuperType.arguments)
-                    ?.forEach { visitType(it.first, it.second) }
+                    ?.forEach { visitType(it.first, it.second, false) }
 
                 if (thisType.qualifiers.isAssignableTo(declarationStore, baseSuperType.qualifiers)) {
                     thisType.qualifiers.zip(baseSuperType.qualifiers)
-                        .forEach { visitType(it.first.type, it.second.type) }
+                        .forEach { visitType(it.first.type, it.second.type, false) }
                 }
                 if (thisBaseTypeView?.qualifiers?.isAssignableTo(declarationStore, baseSuperType.qualifiers) == true) {
                     thisBaseTypeView.qualifiers.zip(baseSuperType.qualifiers)
-                        .forEach { visitType(it.first.type, it.second.type) }
+                        .forEach { visitType(it.first.type, it.second.type, false) }
                 }
             }
     }
-    pairs.forEach { visitType(it.first, it.second) }
-    substitutionMap.forEach { visitType(it.value, it.key.defaultType) }
+    pairs.forEach { visitType(it.first, it.second, true) }
+    substitutionMap.forEach { visitType(it.value, it.key.defaultType, false) }
     return substitutionMap
 }
 

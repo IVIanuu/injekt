@@ -298,6 +298,21 @@ class TypeRefTest {
         assertEquals(intType, map[typeParameter2.classifier])
     }
 
+    @Test
+    fun testGetSubstitutionMapPrefersInput() = withAnalysisContext {
+        val typeParameter1 = typeParameter()
+        val typeParameter2 = typeParameter(typeParameter1)
+        val map = getSubstitutionMap(
+            declarationStore,
+            listOf(
+                listType.typeWith(stringType) to listType.typeWith(typeParameter2),
+                charSequenceType to typeParameter1
+            )
+        )
+        assertEquals(charSequenceType, map[typeParameter1.classifier])
+        assertEquals(stringType, map[typeParameter2.classifier])
+    }
+
     // todo type parameter multuple upper bounds
 
     private fun withAnalysisContext(
@@ -341,6 +356,7 @@ class TypeRefTest {
         val anyNType = anyType.copy(isMarkedNullable = true)
         val intType = typeFor(StandardNames.FqNames._int.toSafe())
         val stringType = typeFor(StandardNames.FqNames.string.toSafe())
+        val charSequenceType = typeFor(StandardNames.FqNames.charSequence.toSafe())
         val listType = typeFor(StandardNames.FqNames.list)
         val starProjectedType = STAR_PROJECTION_TYPE
 
