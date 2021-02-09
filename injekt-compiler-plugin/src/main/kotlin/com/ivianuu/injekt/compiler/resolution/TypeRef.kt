@@ -393,6 +393,8 @@ fun getSubstitutionMap(
         thisType: TypeRef,
         baseType: TypeRef,
     ) {
+        if (thisType == baseType) return
+
         if (thisType in visitedTypes && baseType in visitedTypes) {
             return
         }
