@@ -16,8 +16,11 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
+import junit.framework.Assert.assertEquals
 import org.junit.Test
 
 class PersistenceTest {
@@ -63,5 +66,48 @@ class PersistenceTest {
             )
         )
     )
+
+    @Test
+    fun testModuleDispatchReceiverTypeInference() = codegen(
+        """
+            class MyModule<T : S, S> {
+                @Given fun provide(@Given value: S): T = value as T
+            }
+
+            @Module val module = MyModule<String, CharSequence>()
+
+            @Given val value: CharSequence = "42"
+
+            fun invoke() = given<String>()
+        """
+    ) {
+        assertEquals("42", invokeSingleFile())
+    }
+
+    @Test
+    fun testModuleDispatchReceiverTypeInferenceMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    class MyModule<T : S, S> {
+                        @Given fun provide(@Given value: S): T = value as T
+                    }
+        
+                    @Module val module = MyModule<String, CharSequence>()
+        
+                    @Given val value: CharSequence = "42" 
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                   fun invoke() = given<String>() 
+                """
+            )
+        )
+    ) {
+        assertEquals("42", it.last().invokeSingleFile())
+    }
 
 }

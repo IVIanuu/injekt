@@ -389,11 +389,7 @@ fun getSubstitutionMap(
 ): Map<ClassifierRef, TypeRef> {
     val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
     val visitedTypes = mutableSetOf<TypeRef>()
-    fun visitType(
-        thisType: TypeRef,
-        baseType: TypeRef,
-        fromInput: Boolean
-    ) {
+    fun visitType(thisType: TypeRef, baseType: TypeRef) {
         if (thisType == baseType) return
 
         if (thisType in visitedTypes && baseType in visitedTypes) {
@@ -403,7 +399,7 @@ fun getSubstitutionMap(
         visitedTypes += baseType
         if (!baseType.classifier.isTypeParameter) {
             thisType.arguments.zip(baseType.arguments)
-                .forEach { visitType(it.first, it.second, false) }
+                .forEach { visitType(it.first, it.second) }
             return
         }
 
@@ -413,45 +409,49 @@ fun getSubstitutionMap(
                 a.type.classifier == b.type.classifier &&
                         a.arguments == b.arguments
             }) {
-            visitType(thisType.copy(qualifiers = emptyList()), baseType.copy(qualifiers = emptyList()), false)
+            visitType(thisType.copy(qualifiers = emptyList()), baseType.copy(qualifiers = emptyList()))
             thisType.qualifiers.zip(baseType.qualifiers)
-                .forEach { visitType(it.first.type, it.second.type, false) }
+                .forEach { visitType(it.first.type, it.second.type) }
             return
         }
 
-        if (baseType.classifier !in substitutionMap || fromInput) {
+        if (baseType.classifier !in substitutionMap) {
             substitutionMap[baseType.classifier] = thisType
         }
-        baseType.superTypes()
+    }
+    pairs.forEach { visitType(it.first, it.second) }
+
+    substitutionMap.forEach { (baseClassifier, thisType) ->
+        baseClassifier.defaultType.superTypes()
             .map { thisType.subtypeView(it.classifier, substitutionMap) to it }
             .forEach { (thisBaseTypeView, baseSuperType) ->
                 if (baseSuperType.classifier.isTypeParameter) {
                     val thisTypeToUse = thisBaseTypeView ?: thisType
                     visitType(thisTypeToUse
-                        .copy(qualifiers = emptyList()), baseSuperType, false)
+                        .copy(qualifiers = emptyList()), baseSuperType)
                     if (thisTypeToUse.qualifiers.isAssignableTo(declarationStore, baseSuperType.qualifiers)) {
                         thisTypeToUse.qualifiers.zip(baseSuperType.qualifiers)
-                            .forEach { visitType(it.first.type, it.second.type, false) }
+                            .forEach { visitType(it.first.type, it.second.type) }
                     }
                 } else {
-                    visitType(thisBaseTypeView ?: thisType, baseSuperType, false)
+                    visitType(thisBaseTypeView ?: thisType, baseSuperType)
                 }
 
                 thisBaseTypeView?.arguments?.zip(baseSuperType.arguments)
-                    ?.forEach { visitType(it.first, it.second, false) }
+                    ?.forEach { visitType(it.first, it.second) }
 
                 if (thisType.qualifiers.isAssignableTo(declarationStore, baseSuperType.qualifiers)) {
                     thisType.qualifiers.zip(baseSuperType.qualifiers)
-                        .forEach { visitType(it.first.type, it.second.type, false) }
+                        .forEach { visitType(it.first.type, it.second.type) }
                 }
                 if (thisBaseTypeView?.qualifiers?.isAssignableTo(declarationStore, baseSuperType.qualifiers) == true) {
                     thisBaseTypeView.qualifiers.zip(baseSuperType.qualifiers)
-                        .forEach { visitType(it.first.type, it.second.type, false) }
+                        .forEach { visitType(it.first.type, it.second.type) }
                 }
             }
     }
-    pairs.forEach { visitType(it.first, it.second, true) }
-    substitutionMap.forEach { visitType(it.value, it.key.defaultType, false) }
+
+    substitutionMap.forEach { visitType(it.value, it.key.defaultType) }
     return substitutionMap
 }
 
