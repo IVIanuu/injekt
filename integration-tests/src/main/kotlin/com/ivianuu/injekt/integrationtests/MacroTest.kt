@@ -263,4 +263,19 @@ class MacroTest {
         assertTrue(it.last().invokeSingleFile() is Foo)
     }
 
+    @Test
+    fun testMultipleMacrosWithSameType() = codegen(
+        """
+            @Qualifier annotation class Trigger
+            @Macro @GivenSetElement fun <T : @Trigger String> macroImpl(@Given instance: T): String = instance
+
+            @Trigger @Given fun a() = "a"
+            @Trigger @Given fun b() = "b"
+
+            fun invoke() = given<Set<String>>()
+        """
+    ) {
+        assertEquals(setOf("a", "b"), invokeSingleFile())
+    }
+
 }
