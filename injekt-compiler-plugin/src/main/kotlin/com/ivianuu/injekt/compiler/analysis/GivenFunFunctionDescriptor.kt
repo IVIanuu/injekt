@@ -16,12 +16,10 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
-import org.jetbrains.kotlin.descriptors.SourceElement
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.TypeSubstitutor
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
@@ -49,6 +47,29 @@ class GivenFunFunctionDescriptor(
             ) {}
         }
 
+    override fun getContainingDeclaration(): DeclarationDescriptor =
+        givenInvokeDescriptor.containingDeclaration
+
+    override fun copy(
+        p0: DeclarationDescriptor?,
+        p1: Modality?,
+        p2: DescriptorVisibility?,
+        p3: CallableMemberDescriptor.Kind?,
+        p4: Boolean
+    ): SimpleFunctionDescriptor {
+        TODO()
+    }
+
+    override fun newCopyBuilder(): FunctionDescriptor.CopyBuilder<out SimpleFunctionDescriptor> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <V : Any?> getUserData(p0: CallableDescriptor.UserDataKey<V>?): V? = null
+
+    override fun getInitialSignatureDescriptor(): FunctionDescriptor? = null
+
+    override fun getName(): Name = givenInvokeDescriptor.name
+
     override fun getOriginal(): SimpleFunctionDescriptor = this
 
     override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
@@ -65,4 +86,11 @@ class GivenFunFunctionDescriptor(
     override fun hasStableParameterNames(): Boolean = true
 
     override fun getSource(): SourceElement = givenInvokeDescriptor.source
+
+    override fun <R : Any?, D : Any?> accept(p0: DeclarationDescriptorVisitor<R, D>, p1: D): R =
+        p0.visitFunctionDescriptor(this, p1)
+
+    override fun acceptVoid(p0: DeclarationDescriptorVisitor<Void, Void>) {
+        p0.visitFunctionDescriptor(this, null)
+    }
 }

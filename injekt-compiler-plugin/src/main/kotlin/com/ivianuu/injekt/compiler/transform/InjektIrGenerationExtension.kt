@@ -66,7 +66,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             (context.symbolTable as SymbolTable)
                 .declareSimpleFunction(symbol.descriptor) { func }
         }
-    } else super.resolveSymbol(symbol, context)
+        } else super.resolveSymbol(symbol, context)
 
 }
 

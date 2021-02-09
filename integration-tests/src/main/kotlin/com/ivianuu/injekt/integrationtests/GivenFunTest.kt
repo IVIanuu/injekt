@@ -507,4 +507,19 @@ class GivenFunTest {
         """
     )
 
+    @Test
+    fun testMultipleGivenFunInvokes() = codegen(
+        """
+            @GivenFun fun string(): String = ""
+            @GivenFun fun int(): Int = 0
+
+            fun invoke() {
+                given<string>()()
+                given<int>()()
+            }
+        """
+    ) {
+        invokeSingleFile()
+    }
+
 }
