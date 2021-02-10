@@ -24,9 +24,17 @@ import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtTypeParameter
+import org.jetbrains.kotlin.psi.KtTypeParameterList
+import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
+import org.jetbrains.kotlin.psi.psiUtil.parameterIndex
+import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstanceOrNull
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class InjektDiagnosticSuppressor : DiagnosticSuppressor {
 
@@ -35,6 +43,13 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
 
     override fun isSuppressed(diagnostic: Diagnostic, bindingContext: BindingContext?): Boolean {
         if (bindingContext == null) return false
+
+        if (diagnostic.factory == Errors.FINAL_UPPER_BOUND) {
+            val typeParameter = diagnostic.psiElement.parent as? KtTypeParameter
+            if (typeParameter?.parents?.firstIsInstanceOrNull<KtNamedFunction>()?.hasAnnotation(InjektFqNames.Macro) == true &&
+                    typeParameter.parent.safeAs<KtTypeParameterList>()
+                        ?.children?.getOrNull(0) == typeParameter) return true
+        }
 
         if (diagnostic.factory == Errors.WRONG_ANNOTATION_TARGET) {
             val annotationDescriptor = bindingContext[BindingContext.ANNOTATION, diagnostic.psiElement.cast()]

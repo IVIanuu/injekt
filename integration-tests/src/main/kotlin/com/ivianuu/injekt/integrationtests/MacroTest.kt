@@ -16,16 +16,8 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.common.keyOf
-import com.ivianuu.injekt.test.Bar
-import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.assertCompileError
-import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.multiCodegen
-import com.ivianuu.injekt.test.source
-import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertTrue
+import com.ivianuu.injekt.test.*
+import junit.framework.Assert.*
 import org.junit.Test
 
 class MacroTest {
@@ -276,6 +268,28 @@ class MacroTest {
         """
     ) {
         assertEquals(setOf("a", "b"), invokeSingleFile())
+    }
+
+    @Test
+    fun testMacroTypeParameterNotMarkedAsUnused() = codegen(
+        """
+            @Qualifier annotation class Trigger
+            @Macro @GivenSetElement fun <T : @Trigger String> macroImpl(): String = ""
+        """
+    ) {
+        assertNoMessage("Type parameter \"T\" is never used")
+    }
+
+    @Test
+    fun testNoFinalTypeWarningOnMacroTypeParameter() = codegen(
+        """
+            @Qualifier annotation class Trigger
+            @Macro @GivenSetElement fun <T : @Trigger String> macroImpl(): String = ""
+        """
+    ) {
+        assertFalse(
+            "'String' is a final type, and thus a value of the type parameter is predetermined" in messages
+        )
     }
 
 }
