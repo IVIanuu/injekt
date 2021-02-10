@@ -584,4 +584,22 @@ class GivenResolutionTest {
             fun invoke() = given<@First Foo>()
         """
     )
+
+    @Test
+    fun testCannotResolveObjectWithoutGiven() = codegen(
+        """
+            object MyObject
+            fun invoke() = given<MyObject>()
+        """
+    ) {
+        assertCompileError("no given argument")
+    }
+
+    @Test
+    fun testCanResolveObjectWithGiven() = codegen(
+        """
+            @Given object MyObject
+            fun invoke() = given<MyObject>()
+        """
+    )
 }

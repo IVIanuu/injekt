@@ -136,7 +136,6 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                 is CallableGivenNode -> callableExpression(given, symbol)
                 is DefaultGivenNode -> null
                 is FunGivenNode -> funExpression(given, symbol)
-                is ObjectGivenNode -> objectExpression(given, symbol)
                 is ProviderGivenNode -> providerExpression(given, symbol)
                 is SetGivenNode -> setExpression(given, symbol)
             }?.let { intercepted(it, given, symbol) }
@@ -239,11 +238,11 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
     }
 
     private fun ResolutionContext.objectExpression(
-        given: ObjectGivenNode,
+        type: TypeRef,
         symbol: IrSymbol,
     ): IrExpression {
         return DeclarationIrBuilder(pluginContext, symbol)
-            .irGetObject(pluginContext.referenceClass(given.type.classifier.fqName)!!)
+            .irGetObject(pluginContext.referenceClass(type.classifier.fqName)!!)
     }
 
     private fun ResolutionContext.providerExpression(
@@ -325,7 +324,8 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                 given.callable.callable,
                 symbol
             )
-            is ReceiverParameterDescriptor -> parameterExpression(given.callable.callable, symbol)
+            is ReceiverParameterDescriptor -> if (given.type.classifier.isObject) objectExpression(given.type, symbol)
+            else parameterExpression(given.callable.callable, symbol)
             is ValueParameterDescriptor -> parameterExpression(given.callable.callable, symbol)
             is VariableDescriptor -> variableExpression(given.callable.callable, symbol)
             else -> error("Unsupported callable $given")

@@ -351,9 +351,6 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     a!!
     b!!
 
-    if (a is ObjectGivenNode && b !is ObjectGivenNode) return -1
-    if (b is ObjectGivenNode && a !is ObjectGivenNode) return 1
-
     if (!a.isFrameworkGiven && !b.isFrameworkGiven) {
         val depthA = a.depth(this)
         val depthB = b.depth(this)

@@ -103,9 +103,9 @@ class ResolutionScope(
                     .filter { it.first.type.isAssignableTo(declarationStore, type) }
                     .map { it.first.toGivenNode(type, it.second, this@ResolutionScope) }
 
-                if (type.classifier.descriptor?.safeAs<ClassDescriptor>()
+                /*if (type.classifier.descriptor?.safeAs<ClassDescriptor>()
                         ?.kind == ClassKind.OBJECT)
-                    this += ObjectGivenNode(type, this@ResolutionScope)
+                    this += ObjectGivenNode(type, this@ResolutionScope)*/
 
                 if (type.classifier.isGivenFunAlias) this += FunGivenNode(
                     type,
