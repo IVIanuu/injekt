@@ -136,19 +136,8 @@ class GivenDeclarationTest {
     ) {
         assertTrue(invokeSingleFile<Any>(Foo()) is Bar)
     }
-
     @Test
-    fun testExplicitGivenValueParameter() = codegen(
-        """
-            fun invoke(@Given foo: Foo) = given<Foo>()
-        """
-    ) {
-        val foo = Foo()
-        assertSame(foo, invokeSingleFile<Any>(foo))
-    }
-
-    @Test
-    fun testImplicitGivenValueParameter() = codegen(
+    fun testGivenValueParameter() = codegen(
         """
             fun invoke(@Given foo: Foo) = given<Foo>()
         """
