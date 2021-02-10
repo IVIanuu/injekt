@@ -35,6 +35,7 @@ import com.ivianuu.injekt.component.get
 import kotlin.reflect.KClass
 
 @Qualifier annotation class WorkerBinding
+
 @Macro @GivenSetElement inline fun <reified T : @WorkerBinding S, S : ListenableWorker> workerBinding(
     @Given noinline provider: (@Given WorkerComponent) -> T
 ): WorkerElement = T::class to provider

@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
+import org.jetbrains.kotlin.psi.psiUtil.isTopLevelKtOrJavaMember
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 fun KtDeclaration.shouldBeIndexed(): Boolean {
@@ -39,25 +40,9 @@ fun KtDeclaration.shouldBeIndexed(): Boolean {
     ) return false
 
     if (this is KtClassOrObject && isLocal) return false
-    if (this is KtProperty && isLocal) return false
-    if (this is KtFunction && isLocal) return false
-
-    val owner = when (this) {
-        is KtConstructor<*> -> getContainingClassOrObject()
-        is KtPropertyAccessor -> property
-        else -> this
-    } as KtNamedDeclaration
-
-    if ((owner is KtNamedFunction ||
-                owner is KtProperty) &&
-        owner.parent.safeAs<KtClassBody>()?.parent is KtClass
-    ) return false
-
-    if ((owner is KtProperty || owner is KtNamedFunction) &&
-        getParentOfType<KtClassOrObject>(false)?.let {
-            it is KtClass || it.hasAnnotation(InjektFqNames.Module)
-        } == true)
-        return false
+    if (this is KtProperty && !isTopLevel) return false
+    if (this !is KtConstructor<*> &&
+        this is KtFunction && !isTopLevelKtOrJavaMember()) return false
 
     return hasAnnotation(InjektFqNames.Given) ||
             hasAnnotation(InjektFqNames.GivenSetElement) ||

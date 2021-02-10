@@ -92,19 +92,6 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testResolvesObjectGiven() = codegen(
-        """
-            object MyObject {
-                @Given val foo = Foo()
-            }
-
-            fun invoke() = given<Foo>()
-        """
-    ) {
-        assertTrue(invokeSingleFile() is Foo)
-    }
-
-    @Test
     fun testPrefersObjectGivenOverInternalGiven() = codegen(
         """
             @Given lateinit var internalFoo: Foo
