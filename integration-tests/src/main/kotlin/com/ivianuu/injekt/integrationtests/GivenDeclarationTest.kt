@@ -16,10 +16,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.Bar
-import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.*
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
@@ -313,5 +310,14 @@ class GivenDeclarationTest {
             @Composable fun invoke() { given<Foo>() }
         """
     )
+
+    @Test
+    fun testMultipleContributionAnnotationsFails() = codegen(
+        """
+            @Given @GivenSetElement fun foo() = Foo()
+        """
+    ) {
+        assertCompileError("Declaration may be only annotated with one contribution annotation")
+    }
 
 }

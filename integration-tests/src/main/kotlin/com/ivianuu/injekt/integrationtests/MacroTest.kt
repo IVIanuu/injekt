@@ -271,6 +271,16 @@ class MacroTest {
     }
 
     @Test
+    fun testMacroWithoutContributionsFails() = codegen(
+        """
+            @Qualifier annotation class Trigger
+            @Macro fun <T : @Trigger String> macroImpl(): String = ""
+        """
+    ) {
+        assertCompileError("@Macro declaration must have 1 contribution annotation")
+    }
+
+    @Test
     fun testMacroTypeParameterNotMarkedAsUnused() = codegen(
         """
             @Qualifier annotation class Trigger

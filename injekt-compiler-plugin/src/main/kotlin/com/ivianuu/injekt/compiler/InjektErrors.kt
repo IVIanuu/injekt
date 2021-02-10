@@ -126,6 +126,11 @@ interface InjektErrors {
                 .also { MAP.put(it, "class cannot have multiple given constructors") }
 
         @JvmField
+        val DECLARATION_WITH_MULTIPLE_CONTRIBUTIONS =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also { MAP.put(it, "Declaration may be only annotated with one contribution annotation") }
+
+        @JvmField
         val GIVEN_FUN_WITHOUT_EXPLICIT_RETURN_TYPE =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also { MAP.put(it, "@GivenFun annotated function must have explicit return type") }
@@ -176,6 +181,16 @@ interface InjektErrors {
                     MAP.put(
                         it,
                         "@Macro declaration must have at least one type parameter"
+                    )
+                }
+
+        @JvmField
+        val MACRO_WITHOUT_CONTRIBUTION =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "@Macro declaration must have 1 contribution annotation"
                     )
                 }
 

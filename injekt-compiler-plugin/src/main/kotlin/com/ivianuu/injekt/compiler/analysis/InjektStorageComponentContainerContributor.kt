@@ -34,6 +34,6 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
         container.useInstance(GivenFunChecker())
         container.useInstance(KeyChecker())
         container.useInstance(InterceptorChecker(declarationStore))
-        container.useInstance(MacroChecker())
+        container.useInstance(MacroChecker(declarationStore))
     }
 }

@@ -41,13 +41,16 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
         checkType(descriptor, declaration, context.trace)
 
         if (descriptor is SimpleFunctionDescriptor) {
+            checkMultipleContributions(descriptor, declaration, context.trace)
             descriptor.allParameters
                 .filterNot { it === descriptor.dispatchReceiverParameter }
                 .checkParameters(declaration, descriptor, context.trace)
         } else if (descriptor is ConstructorDescriptor) {
+            checkMultipleContributions(descriptor, declaration, context.trace)
             descriptor.valueParameters
                 .checkParameters(declaration, descriptor, context.trace)
         } else if (descriptor is ClassDescriptor) {
+            checkMultipleContributions(descriptor, declaration, context.trace)
             val givenConstructors = descriptor.constructors
                 .filter { it.hasAnnotation(InjektFqNames.Given) }
 
@@ -79,6 +82,7 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
                     declarationStore
                 ) == null
             ) {
+                checkMultipleContributions(descriptor, declaration, context.trace)
                 context.trace.report(
                     InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
                         .on(
@@ -92,6 +96,26 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
                         )
                 )
             }
+        } else if (descriptor is VariableDescriptor) {
+            checkMultipleContributions(descriptor, declaration, context.trace)
+        }
+    }
+
+    private fun checkMultipleContributions(
+        descriptor: DeclarationDescriptor,
+        declaration: KtDeclaration,
+        trace: BindingTrace
+    ) {
+        if (descriptor.annotations.count {
+                it.fqName == InjektFqNames.Given ||
+                        it.fqName == InjektFqNames.GivenSetElement ||
+                        it.fqName == InjektFqNames.Module ||
+                        it.fqName == InjektFqNames.Interceptor
+            } > 1) {
+            trace.report(
+                InjektErrors.DECLARATION_WITH_MULTIPLE_CONTRIBUTIONS
+                    .on(declaration)
+            )
         }
     }
 

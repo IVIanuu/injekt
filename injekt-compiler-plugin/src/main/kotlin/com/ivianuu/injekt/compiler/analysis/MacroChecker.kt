@@ -16,16 +16,18 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.resolution.contributionKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
-class MacroChecker : DeclarationChecker {
+class MacroChecker(private val declarationStore: DeclarationStore) : DeclarationChecker {
     override fun check(
         declaration: KtDeclaration,
         descriptor: DeclarationDescriptor,
@@ -36,6 +38,12 @@ class MacroChecker : DeclarationChecker {
         if (descriptor.typeParameters.isEmpty()) {
             context.trace.report(
                 InjektErrors.MACRO_WITHOUT_TYPE_PARAMETER
+                    .on(declaration)
+            )
+        }
+        if (descriptor.contributionKind(declarationStore) == null) {
+            context.trace.report(
+                InjektErrors.MACRO_WITHOUT_CONTRIBUTION
                     .on(declaration)
             )
         }
