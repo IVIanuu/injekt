@@ -27,11 +27,6 @@ inline fun <reified VM : ViewModel> activityViewModel(
     @Given noinline factory: () -> VM,
 ): VM = viewModel<ActivityViewModelStoreOwner, VM>()
 
-/*inline fun <reified VM : ViewModel> fragmentViewModel(
-    owner: FragmentViewModelStoreOwner = given,
-    noinline factory: () -> VM = given
-) = viewModel<FragmentViewModelStoreOwner, VM>()*/
-
 inline fun <O : ViewModelStoreOwner, reified VM : ViewModel> viewModel(
     @Given owner: O,
     @Given noinline factory: () -> VM,
