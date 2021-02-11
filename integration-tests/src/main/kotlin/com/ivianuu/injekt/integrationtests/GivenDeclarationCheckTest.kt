@@ -46,9 +46,18 @@ class GivenDeclarationCheckTest {
     }
 
     @Test
-    fun testNonGivenValueParameterOnGivenDeclaration() = codegen(
+    fun testNonGivenValueParameterOnGivenFunction() = codegen(
         """
             @Given fun bar(foo: Foo) = Bar(foo)
+        """
+    ) {
+        assertCompileError("Non @Given parameter")
+    }
+
+    @Test
+    fun testNonGivenValueParameterOnGivenClass() = codegen(
+        """
+            @Given class MyBar(foo: Foo)
         """
     ) {
         assertCompileError("Non @Given parameter")

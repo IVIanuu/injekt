@@ -48,7 +48,8 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
         } else if (descriptor is ConstructorDescriptor) {
             checkMultipleContributions(descriptor, declaration, context.trace)
             descriptor.valueParameters
-                .checkParameters(declaration, descriptor, context.trace)
+                .checkParameters(declaration, if (descriptor.constructedClass.contributionKind(declarationStore) != null)
+                    descriptor.constructedClass else descriptor, context.trace)
         } else if (descriptor is ClassDescriptor) {
             checkMultipleContributions(descriptor, declaration, context.trace)
             val givenConstructors = descriptor.constructors
@@ -161,10 +162,12 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
         if (descriptor.hasAnnotation(InjektFqNames.Given) ||
             descriptor.hasAnnotation(InjektFqNames.Module) ||
             declaration.hasAnnotation(InjektFqNames.GivenSetElement) ||
+            declaration.hasAnnotation(InjektFqNames.Interceptor) ||
             (descriptor is ConstructorDescriptor && (
                     descriptor.constructedClass.hasAnnotation(InjektFqNames.Given) ||
-                            descriptor.hasAnnotation(InjektFqNames.Module) ||
-                            declaration.hasAnnotation(InjektFqNames.GivenSetElement)))
+                            descriptor.constructedClass.hasAnnotation(InjektFqNames.Module) ||
+                            descriptor.constructedClass.hasAnnotation(InjektFqNames.GivenSetElement) ||
+                            descriptor.constructedClass.hasAnnotation(InjektFqNames.Interceptor)))
         ) {
             this
                 .filter {
@@ -180,6 +183,7 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
                                     descriptor.hasAnnotation(InjektFqNames.Given) -> InjektFqNames.Given.shortName()
                                     descriptor.hasAnnotation(InjektFqNames.Module) -> InjektFqNames.Module.shortName()
                                     descriptor.hasAnnotation(InjektFqNames.GivenSetElement) -> InjektFqNames.GivenSetElement.shortName()
+                                    descriptor.hasAnnotation(InjektFqNames.Interceptor) -> InjektFqNames.Interceptor.shortName()
                                     else -> error("")
                                 }
                             )
