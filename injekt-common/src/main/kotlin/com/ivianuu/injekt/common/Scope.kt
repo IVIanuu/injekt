@@ -33,7 +33,10 @@ interface Scope {
 fun Scope(): Scope = ScopeImpl()
 
 @Qualifier annotation class Scoped<S : Scope>
-@Macro @Given inline fun <@ForKey T : @Scoped<U> S, @ForKey S : Any, @ForKey U : Scope> scopedImpl(
+
+@Macro
+@Given
+inline fun <@ForKey T : @Scoped<U> S, @ForKey S : Any, @ForKey U : Scope> scopedImpl(
     @Given scope: U,
     @Given factory: () -> T
 ): S = scope(factory)

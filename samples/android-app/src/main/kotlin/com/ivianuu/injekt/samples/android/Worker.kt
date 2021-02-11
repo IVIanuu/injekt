@@ -26,7 +26,9 @@ import com.ivianuu.injekt.android.AppContext
 import com.ivianuu.injekt.android.work.WorkerBinding
 import com.ivianuu.injekt.android.work.WorkerContext
 
-@Given @WorkerBinding class TestWorker(
+@WorkerBinding
+@Given
+class TestWorker(
     @Given context: WorkerContext,
     @Given workerParams: WorkerParameters,
     @Given repo: Repo,

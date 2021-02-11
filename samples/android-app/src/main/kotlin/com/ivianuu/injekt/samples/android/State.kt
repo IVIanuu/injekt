@@ -33,21 +33,26 @@ import kotlinx.coroutines.flow.consumeAsFlow
 
 typealias ActionChannel<A> = Channel<A>
 
-@Scoped<AppComponent> @Given fun <@ForKey A> ActionChannel(): ActionChannel<A> = Channel()
+@Scoped<AppComponent>
+@Given
+fun <@ForKey A> ActionChannel(): ActionChannel<A> = Channel()
 
 typealias Dispatch<A> = (A) -> Unit
 
-@Given val <A> @Given ActionChannel<A>.dispatch: Dispatch<A>
+@Given
+val <A> @Given ActionChannel<A>.dispatch: Dispatch<A>
     get() = { action: A -> offer(action) }
 
 typealias Actions<A> = Flow<A>
 
-@Given inline val <A> @Given ActionChannel<A>.actions: Actions<A>
+@Given
+inline val <A> @Given ActionChannel<A>.actions: Actions<A>
     get() = consumeAsFlow()
 
 @Qualifier annotation class UiState
 
-@Given @Composable
+@Given
+@Composable
 fun <T> uiState(@Given stateFactory: (@Given CoroutineScope) -> StateFlow<T>): @UiState T {
     val scope = rememberCoroutineScope()
     return remember { stateFactory(scope) }.collectAsState().value as T

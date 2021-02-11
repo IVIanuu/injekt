@@ -162,12 +162,10 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
         if (descriptor.hasAnnotation(InjektFqNames.Given) ||
             descriptor.hasAnnotation(InjektFqNames.Module) ||
             declaration.hasAnnotation(InjektFqNames.GivenSetElement) ||
-            declaration.hasAnnotation(InjektFqNames.Interceptor) ||
             (descriptor is ConstructorDescriptor && (
                     descriptor.constructedClass.hasAnnotation(InjektFqNames.Given) ||
                             descriptor.constructedClass.hasAnnotation(InjektFqNames.Module) ||
-                            descriptor.constructedClass.hasAnnotation(InjektFqNames.GivenSetElement) ||
-                            descriptor.constructedClass.hasAnnotation(InjektFqNames.Interceptor)))
+                            descriptor.constructedClass.hasAnnotation(InjektFqNames.GivenSetElement)))
         ) {
             this
                 .filter {

@@ -77,7 +77,7 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : Analysis
             fileManager.postGenerate()
             generatedCode = true
             return AnalysisResult.RetryWithAdditionalRoots(
-                bindingTrace.bindingContext, module, emptyList(), fileManager.newFiles, true
+                bindingTrace.bindingContext, module, emptyList(), fileManager.newFiles, addToEnvironment = true
             )
         }
 

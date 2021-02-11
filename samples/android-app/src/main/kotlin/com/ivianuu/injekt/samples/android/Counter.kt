@@ -64,7 +64,8 @@ sealed class CounterAction {
     object Dec : CounterAction()
 }
 
-@Given fun counterState(
+@Given
+fun counterState(
     @Given actions: Actions<CounterAction>,
     @Given scope: CoroutineScope,
 ): StateFlow<CounterState> {

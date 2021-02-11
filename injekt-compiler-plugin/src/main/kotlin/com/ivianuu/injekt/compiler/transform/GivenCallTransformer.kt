@@ -44,7 +44,6 @@ import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irSet
 import org.jetbrains.kotlin.ir.builders.irTemporary
-import org.jetbrains.kotlin.ir.builders.irTemporaryVar
 import org.jetbrains.kotlin.ir.builders.irUnit
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
@@ -122,7 +121,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             if (initializing) {
                 if (block == null) {
                     block = DeclarationIrBuilder(pluginContext, symbol)
-                        .irBlock { tmpVariable = irTemporaryVar(irNull()) } as IrBlock
+                        .irBlock { tmpVariable = irTemporary(irNull(), isMutable = true) } as IrBlock
                 }
                 return DeclarationIrBuilder(pluginContext, symbol)
                     .irGet(tmpVariable!!)

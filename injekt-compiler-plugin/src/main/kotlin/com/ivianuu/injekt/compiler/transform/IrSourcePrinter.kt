@@ -23,21 +23,8 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.ir.IrElement
-import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
-import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrConstructor
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
-import org.jetbrains.kotlin.ir.declarations.IrField
-import org.jetbrains.kotlin.ir.declarations.IrFile
-import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrLocalDelegatedProperty
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.IrProperty
-import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.declarations.IrTypeAlias
-import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
-import org.jetbrains.kotlin.ir.declarations.IrValueParameter
-import org.jetbrains.kotlin.ir.declarations.IrVariable
+import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.descriptors.WrappedDeclarationDescriptor
 import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrBranch
@@ -85,6 +72,7 @@ import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.expressions.IrWhen
 import org.jetbrains.kotlin.ir.expressions.IrWhileLoop
 import org.jetbrains.kotlin.ir.expressions.impl.IrIfThenElseImpl
+import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.symbols.IrValueParameterSymbol
 import org.jetbrains.kotlin.ir.symbols.IrVariableSymbol
 import org.jetbrains.kotlin.ir.types.IrType
@@ -102,6 +90,8 @@ import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.isAnnotationConstructor
 import org.jetbrains.kotlin.utils.Printer
+import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.Locale
 
 fun IrElement.dumpSrc(declarationStore: DeclarationStore): String {
@@ -758,6 +748,8 @@ private class IrSourcePrinterVisitor(
     }
 
     override fun visitGetValue(expression: IrGetValue) {
+        // tmp workaround caused by jetpack compose
+        expression.symbol.bindOwnerIfNeeded()
         if (expression.symbol.descriptor.dispatchReceiverParameter != null ||
             expression.symbol is IrValueParameterSymbol ||
             expression.symbol is IrVariableSymbol
@@ -780,6 +772,8 @@ private class IrSourcePrinterVisitor(
     }
 
     override fun visitSetValue(expression: IrSetValue) {
+        // tmp workaround caused by jetpack compose
+        expression.symbol.bindOwnerIfNeeded()
         if (expression.symbol.descriptor.dispatchReceiverParameter != null) {
             print(expression.symbol.descriptor.name)
         } else {
@@ -1236,4 +1230,10 @@ private inline fun <T> StringBuilder.appendListWith(
         isFirst = false
     }
     append(postfix)
+}
+
+private fun IrSymbol.bindOwnerIfNeeded() {
+    descriptor.safeAs<WrappedDeclarationDescriptor<IrDeclaration>>()
+        ?.takeIf { !it.isBound() }
+        ?.bind(owner.cast())
 }
