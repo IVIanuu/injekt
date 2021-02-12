@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.ide
+package com.ivianuu.injekt.ide.playground
 
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.application.ReadAction
@@ -29,12 +29,7 @@ import com.ivianuu.injekt.compiler.generator.IndexGenerator
 import org.jetbrains.kotlin.analyzer.ModuleInfo
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.caches.resolve.KotlinCacheService
-import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.PackageFragmentProvider
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.PackageFragmentDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.incremental.components.LookupTracker
@@ -75,7 +70,6 @@ class GeneratorManager(private val project: Project, private val srcDir: SrcDir)
         fileStates.values.flatMap { it.descriptors }
 
     fun refresh(files: List<KtFile>) {
-        return
         ReadAction.nonBlocking {
             val changedFiles = files
                 .filter {
@@ -195,65 +189,84 @@ class GeneratorPackageFragmentProviderExtension(
         trace: BindingTrace,
         moduleInfo: ModuleInfo?,
         lookupTracker: LookupTracker,
-    ): PackageFragmentProvider? {
-        return packageFragmentProvider(module, manager)
-    }
+    ): PackageFragmentProvider = packageFragmentProvider(module, manager)
 }
-
 
 private fun packageFragmentProvider(
     module: ModuleDescriptor,
     manager: GeneratorManager,
 ): PackageFragmentProvider = object : PackageFragmentProvider {
-    override fun getPackageFragments(fqName: FqName) = listOf(
-        object : PackageFragmentDescriptorImpl(module, fqName) {
-            override fun getMemberScope() = object : MemberScope {
-                override fun getClassifierNames(): Set<Name> =
-                    manager.descriptors().filterIsInstance<ClassifierDescriptor>().map { it.name }
-                        .toSet()
+    private val packageFragments = mutableMapOf<FqName, List<PackageFragmentDescriptor>>()
 
-                override fun getContributedClassifier(
-                    name: Name,
-                    location: LookupLocation,
-                ): ClassifierDescriptor? =
-                    manager.descriptors().filterIsInstance<ClassifierDescriptor>()
-                        .firstOrNull { it.name == name }
-
-                override fun getContributedDescriptors(
-                    kindFilter: DescriptorKindFilter,
-                    nameFilter: (Name) -> Boolean,
-                ): Collection<DeclarationDescriptor> =
-                    manager.descriptors().filter { it.name == name }
-
-                override fun getContributedFunctions(
-                    name: Name,
-                    location: LookupLocation,
-                ): Collection<SimpleFunctionDescriptor> =
-                    manager.descriptors().filterIsInstance<SimpleFunctionDescriptor>()
-
-                override fun getContributedVariables(
-                    name: Name,
-                    location: LookupLocation,
-                ): Collection<PropertyDescriptor> =
-                    manager.descriptors().filterIsInstance<PropertyDescriptor>()
-
-                override fun getFunctionNames(): Set<Name> =
-                    manager.descriptors().filterIsInstance<SimpleFunctionDescriptor>()
-                        .map { it.name }.toSet()
-
-                override fun getVariableNames(): Set<Name> =
-                    manager.descriptors().filterIsInstance<PropertyDescriptor>().map { it.name }
-                        .toSet()
-
-                override fun printScopeStructure(p: Printer) {
-                }
-            }
-        }
-    )
+    @Suppress("OverridingDeprecatedMember")
+    override fun getPackageFragments(fqName: FqName) = packageFragments.getOrPut(fqName) {
+        listOf(packageFragment(fqName))
+    }
 
     override fun getSubPackagesOf(
         fqName: FqName,
         nameFilter: (Name) -> Boolean,
-    ): Collection<FqName> = manager.descriptors().map { it.findPackage().fqName }
+    ): Collection<FqName> = manager.descriptors()
+        .map { it.findPackage().fqName }
         .filter { it.parent() == fqName }
+
+    private fun packageFragment(fqName: FqName) = object : PackageFragmentDescriptorImpl(module, fqName) {
+        private val _memberScope = object : MemberScope {
+            override fun getClassifierNames(): Set<Name> =
+                manager.descriptors()
+                    .filterIsInstance<ClassifierDescriptor>()
+                    .filter { it.findPackage().fqName == fqName }
+                    .map { it.name }
+                    .toSet()
+
+            override fun getContributedClassifier(
+                name: Name,
+                location: LookupLocation,
+            ): ClassifierDescriptor? =
+                manager.descriptors()
+                    .filterIsInstance<ClassifierDescriptor>()
+                    .firstOrNull { it.name == name && it.findPackage().fqName == fqName }
+
+            override fun getContributedDescriptors(
+                kindFilter: DescriptorKindFilter,
+                nameFilter: (Name) -> Boolean,
+            ): Collection<DeclarationDescriptor> =
+                manager.descriptors()
+                    .filter { it.findPackage().fqName == fqName }
+
+            override fun getContributedFunctions(
+                name: Name,
+                location: LookupLocation,
+            ): Collection<SimpleFunctionDescriptor> =
+                manager.descriptors()
+                    .filterIsInstance<SimpleFunctionDescriptor>()
+                    .filter { it.name == name && it.findPackage().fqName == fqName }
+
+            override fun getContributedVariables(
+                name: Name,
+                location: LookupLocation,
+            ): Collection<PropertyDescriptor> =
+                manager.descriptors()
+                    .filterIsInstance<PropertyDescriptor>()
+                    .filter { it.name == name && it.findPackage().fqName == fqName }
+
+            override fun getFunctionNames(): Set<Name> =
+                manager.descriptors()
+                    .filterIsInstance<SimpleFunctionDescriptor>()
+                    .filter { it.findPackage().fqName == fqName }
+                    .map { it.name }
+                    .toSet()
+
+            override fun getVariableNames(): Set<Name> =
+                manager.descriptors()
+                    .filterIsInstance<PropertyDescriptor>()
+                    .filter { it.findPackage().fqName == fqName }
+                    .map { it.name }
+                    .toSet()
+
+            override fun printScopeStructure(p: Printer) {
+            }
+        }
+        override fun getMemberScope() = _memberScope
+    }
 }

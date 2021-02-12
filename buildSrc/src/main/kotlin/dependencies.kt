@@ -68,7 +68,7 @@ object Deps {
         "gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.1.8"
 
     object Coroutines {
-        private const val version = "1.4.0"
+        private const val version = "1.4.2"
         const val android = "org.jetbrains.kotlinx:kotlinx-coroutines-android:$version"
         const val core = "org.jetbrains.kotlinx:kotlinx-coroutines-core:$version"
         const val test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:$version"

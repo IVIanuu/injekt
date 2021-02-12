@@ -32,6 +32,7 @@ import com.ivianuu.injekt.compiler.analysis.GivenCallResolutionInterceptorExtens
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
 import com.ivianuu.injekt.compiler.analysis.InjektTypeResolutionInterceptor
+import com.ivianuu.injekt.ide.playground.registerGeneratorRunner
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.extensions.internal.CandidateInterceptor
@@ -43,6 +44,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
 
+@Suppress("UnstableApiUsage")
 class AppInitializer : ApplicationInitializedListener {
     override fun componentsInitialized() {
         val app = ApplicationManager.getApplication()
@@ -66,12 +68,13 @@ class AppInitializer : ApplicationInitializedListener {
             Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
                 .registerExtension(InjektDiagnosticSuppressor())
 
+            registerGeneratorRunner(project)
             registerGivenCallCheckerRunner(project)
         }
     }
 }
 
-fun <A> Application.registerTopic(topic: Topic<A>, listeners: A): Unit =
+fun <A : Any> Application.registerTopic(topic: Topic<A>, listeners: A): Unit =
     messageBus.connect(this).subscribe(topic, listeners)
 
 fun Application.projectOpened(opened: (Project) -> Unit): Unit =
@@ -80,6 +83,7 @@ fun Application.projectOpened(opened: (Project) -> Unit): Unit =
             opened(project)
     })
 
+@Suppress("UNCHECKED_CAST")
 fun <F : PsiFile> List<VirtualFile>.files(project: Project): List<F> =
     mapNotNull { PsiManager.getInstance(project).findFile(it) as? F }
 
