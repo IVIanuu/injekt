@@ -106,33 +106,6 @@ data class DefaultGivenNode(
         get() = emptyList()
 }
 
-data class FunGivenNode(
-    override val type: TypeRef,
-    override val ownerScope: ResolutionScope,
-    override val interceptors: List<InterceptorNode>,
-    val callable: CallableRef,
-) : GivenNode() {
-    override val callContext: CallContext
-        get() = CallContext.DEFAULT
-    override val callableFqName: FqName
-        get() = type.classifier.fqName
-    override val dependencies: List<GivenRequest> =
-        callable.getGivenRequests(ownerScope.declarationStore)
-    override val originalType: TypeRef
-        get() = type.classifier.defaultType
-    override val dependencyScope = ResolutionScope(
-        "Fun",
-        parent = ownerScope,
-        declarationStore = ownerScope.declarationStore,
-        callContext = callable.callContext,
-        produceContributions = { emptyList() }
-    )
-    override val lazyDependencies: Boolean
-        get() = true
-    override val isFrameworkGiven: Boolean
-        get() = true
-}
-
 data class ProviderGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope,

@@ -35,7 +35,7 @@ typealias ActionChannel<A> = Channel<A>
 
 @Scoped<AppComponent>
 @Given
-fun <A> ActionChannel(): ActionChannel<A> = Channel()
+fun <A> actionChannel(): ActionChannel<A> = Channel()
 
 typealias Dispatch<A> = (A) -> Unit
 

@@ -23,7 +23,6 @@ object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
 
     val Given = InjektPackage.child("Given".asNameId())
-    val GivenFun = InjektPackage.child("GivenFun".asNameId())
     val GivenSetElement = InjektPackage.child("GivenSetElement".asNameId())
     val Interceptor = InjektPackage.child("Interceptor".asNameId())
     val Macro = InjektPackage.child("Macro".asNameId())
@@ -34,7 +33,6 @@ object InjektFqNames {
     val InternalPackage = InjektPackage.child("internal".asNameId())
     val CallableInfo = InternalPackage.child("CallableInfo".asNameId())
     val ClassifierInfo = InternalPackage.child("ClassifierInfo".asNameId())
-    val GivenFunAlias = InternalPackage.child("GivenFunAlias".asNameId())
     val Index = InternalPackage.child("Index".asNameId())
 
     val IndexPackage = InternalPackage.child("index".asNameId())

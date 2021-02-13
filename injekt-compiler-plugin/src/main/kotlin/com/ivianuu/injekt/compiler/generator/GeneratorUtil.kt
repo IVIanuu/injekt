@@ -18,19 +18,13 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
-import org.jetbrains.kotlin.psi.KtClass
-import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFunction
-import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.psi.KtPropertyAccessor
-import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
 import org.jetbrains.kotlin.psi.psiUtil.isTopLevelKtOrJavaMember
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 fun KtDeclaration.shouldBeIndexed(): Boolean {
     if (this !is KtNamedFunction &&
@@ -47,6 +41,5 @@ fun KtDeclaration.shouldBeIndexed(): Boolean {
     return hasAnnotation(InjektFqNames.Given) ||
             hasAnnotation(InjektFqNames.GivenSetElement) ||
             hasAnnotation(InjektFqNames.Module) ||
-            hasAnnotation(InjektFqNames.Interceptor) ||
-            hasAnnotation(InjektFqNames.GivenFun)
+            hasAnnotation(InjektFqNames.Interceptor)
 }

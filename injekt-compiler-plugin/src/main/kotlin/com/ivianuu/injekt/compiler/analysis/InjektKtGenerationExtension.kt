@@ -17,11 +17,9 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.CacheDir
-import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.FileManager
 import com.ivianuu.injekt.compiler.SrcDir
 import com.ivianuu.injekt.compiler.generator.Generator
-import com.ivianuu.injekt.compiler.generator.GivenFunGenerator
 import com.ivianuu.injekt.compiler.generator.IndexGenerator
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -72,8 +70,6 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : Analysis
                 }
             }
             IndexGenerator().generate(context, filesToProcess)
-            GivenFunGenerator()
-                .generate(context, filesToProcess)
             fileManager.postGenerate()
             generatedCode = true
             return AnalysisResult.RetryWithAdditionalRoots(

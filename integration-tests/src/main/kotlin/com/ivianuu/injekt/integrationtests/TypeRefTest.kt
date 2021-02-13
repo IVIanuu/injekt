@@ -16,14 +16,13 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.compiler.AnnotationRef
+import com.ivianuu.injekt.compiler.resolution.AnnotationRef
 import com.ivianuu.injekt.compiler.DeclarationStore
-import com.ivianuu.injekt.compiler.StringValue
+import com.ivianuu.injekt.compiler.resolution.StringValue
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.resolution.*
 import com.ivianuu.injekt.test.codegen
 import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertTrue
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.com.intellij.mock.MockProject

@@ -5,7 +5,7 @@ Injekt is highly experimental and the api is unstable.
 
 Minimal example:
 ```kotlin
-// Declare givens.
+// declare givens
 @Given val foo = Foo()
 @Given fun bar(@Given foo: Foo) = Bar(foo)
 
@@ -22,10 +22,7 @@ TODO
 # Declare dependencies
 TODO
 
-# Given set elements
-TODO
-
-# GivenFuns
+# Sets
 TODO
 
 # Macros

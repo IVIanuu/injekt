@@ -31,7 +31,6 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
     ) {
         val declarationStore = DeclarationStore(moduleDescriptor)
         container.useInstance(GivenChecker(declarationStore))
-        container.useInstance(GivenFunChecker())
         container.useInstance(KeyChecker())
         container.useInstance(InterceptorChecker(declarationStore))
         container.useInstance(MacroChecker(declarationStore))

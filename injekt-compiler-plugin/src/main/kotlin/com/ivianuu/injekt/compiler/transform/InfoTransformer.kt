@@ -16,8 +16,12 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.PersistedCallableInfo
+import com.ivianuu.injekt.compiler.PersistedClassifierInfo
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
+import com.ivianuu.injekt.compiler.toPersistedCallableInfo
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.IrStatement
@@ -66,8 +70,7 @@ class InfoTransformer(
         if (declaration.hasAnnotation(InjektFqNames.Given) ||
             declaration.hasAnnotation(InjektFqNames.GivenSetElement) ||
             declaration.hasAnnotation(InjektFqNames.Module) ||
-            declaration.hasAnnotation(InjektFqNames.Interceptor) ||
-            declaration.hasAnnotation(InjektFqNames.GivenFun) || (
+            declaration.hasAnnotation(InjektFqNames.Interceptor) || (
                     declaration is IrConstructor &&
                             (declaration.constructedClass.hasAnnotation(InjektFqNames.Given) ||
                                     declaration.constructedClass.hasAnnotation(InjektFqNames.GivenSetElement) ||

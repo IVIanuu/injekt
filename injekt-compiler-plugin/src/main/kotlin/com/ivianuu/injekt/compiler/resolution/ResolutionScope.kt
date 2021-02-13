@@ -19,12 +19,10 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class ResolutionScope(
     val name: String,
@@ -73,23 +71,9 @@ class ResolutionScope(
             )
         }
 
-        declarationStore.givenFuns
-            .map { (givenFun, givenFunType) ->
-                givenFunType.defaultType
-                    .copy(path = listOf(givenFun.callable))
-            }
-            .forEach { runMacros(it) }
-
         givens
             .filter { it.first.type.path != null }
             .forEach { runMacros(it.first.type) }
-
-        declarationStore.givenFuns
-            .map { (givenFun, givenFunType) ->
-                givenFunType.defaultType
-                    .copy(path = listOf(givenFun.callable))
-            }
-            .forEach { runMacros(it) }
     }
 
     private val setType = declarationStore.module.builtIns.set.defaultType
@@ -102,20 +86,6 @@ class ResolutionScope(
                 this += givens
                     .filter { it.first.type.isAssignableTo(declarationStore, type) }
                     .map { it.first.toGivenNode(type, it.second, this@ResolutionScope) }
-
-                /*if (type.classifier.descriptor?.safeAs<ClassDescriptor>()
-                        ?.kind == ClassKind.OBJECT)
-                    this += ObjectGivenNode(type, this@ResolutionScope)*/
-
-                if (type.classifier.isGivenFunAlias) this += FunGivenNode(
-                    type,
-                    this@ResolutionScope,
-                    interceptorsForType(type),
-                    declarationStore.functionDescriptorForFqName(type.classifier.fqName)
-                        .single { it.hasAnnotation(InjektFqNames.GivenFun) }
-                        .toCallableRef(declarationStore)
-                        .substitute(getSubstitutionMap(declarationStore, listOf(type to type.classifier.defaultType)))
-                )
 
                 if (type.path == null &&
                     type.qualifiers.isEmpty() &&

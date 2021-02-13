@@ -25,7 +25,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenFun
 import com.ivianuu.injekt.samples.android.CounterAction.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
@@ -36,12 +35,12 @@ import kotlinx.coroutines.flow.stateIn
 object CounterKey
 
 @KeyUiBinding<CounterKey>
-@GivenFun
-@Composable
-fun CounterPage(
-    @Given state: @UiState CounterState,
-    @Given dispatch: Dispatch<CounterAction>,
-) {
+@Given
+fun counterKeyUi(
+    @Given stateProvider: @Composable () -> @UiState CounterState,
+    @Given dispatch: Dispatch<CounterAction>
+): @Composable () -> Unit = {
+    val state = stateProvider()
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,

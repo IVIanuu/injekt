@@ -22,7 +22,6 @@ import com.squareup.moshi.Moshi
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -74,16 +73,7 @@ class DeclarationStore(val module: ModuleDescriptor) {
                     .filter { it.contributionKind != null }
     }
 
-    val givenFuns by unsafeLazy {
-        functionIndices
-            .filter { it.hasAnnotation(InjektFqNames.GivenFun) }
-            .map {
-                it.toCallableRef(this) to classifierDescriptorForFqName(it.fqNameSafe)
-                    .toClassifierRef(this)
-            }
-    }
-
-    val moshi = Moshi.Builder().build()
+    val moshi = Moshi.Builder().build()!!
 
     val cache = mutableMapOf<Int, Any?>()
     inline fun <R : Any> memoize(key: Int, block: () -> R): R = cache.getOrPut(key, block) as R
