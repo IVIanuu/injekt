@@ -17,9 +17,7 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.DeclarationStore
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.resolution.ContributionKind
 import com.ivianuu.injekt.compiler.resolution.contributionKind
 import com.ivianuu.injekt.compiler.resolution.toTypeRef

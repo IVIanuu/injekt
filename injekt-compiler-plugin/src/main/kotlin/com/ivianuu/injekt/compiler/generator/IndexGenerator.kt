@@ -20,20 +20,15 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.analysis.Index
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.hasAnnotation
-import org.jetbrains.kotlin.psi.KtClass
-import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
-import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class IndexGenerator : Generator {
     override fun generate(context: Generator.Context, files: List<KtFile>) {

@@ -134,7 +134,6 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             val rawExpression = when (given) {
                 is CallableGivenNode -> callableExpression(given, symbol)
                 is DefaultGivenNode -> null
-                is FunGivenNode -> funExpression(given, symbol)
                 is ProviderGivenNode -> providerExpression(given, symbol)
                 is SetGivenNode -> setExpression(given, symbol)
             }?.let { intercepted(it, given, symbol) }
@@ -201,40 +200,6 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
     }
 
     private val lambdasByProviderGiven = mutableMapOf<ProviderGivenNode, IrFunction>()
-
-    private fun ResolutionContext.funExpression(given: FunGivenNode, symbol: IrSymbol): IrExpression {
-        return DeclarationIrBuilder(pluginContext, symbol)
-            .irLambda(given.type.toIrType(pluginContext)) { function ->
-                val givenFun = (given.callable.callable as FunctionDescriptor).irFunction()
-                val typeArguments = getSubstitutionMap(
-                    graph.scope.declarationStore,
-                    listOf(given.type to given.originalType)
-                ).values
-                DeclarationIrBuilder(pluginContext, symbol)
-                    .irCall(givenFun.symbol)
-                    .apply {
-                        typeArguments
-                            .forEachIndexed { index, typeArgument ->
-                                putTypeArgument(index, typeArgument.toIrType(pluginContext))
-                            }
-
-                        givenFun
-                            .allParameters
-                            .filterNot { it.descriptor.contributionKind(graph.scope.declarationStore) == ContributionKind.VALUE }
-                            .forEachIndexed { index, valueParameter ->
-                                val arg = DeclarationIrBuilder(pluginContext, symbol)
-                                    .irGet(function.valueParameters[index])
-                                if (valueParameter == givenFun.extensionReceiverParameter) {
-                                    extensionReceiver = arg
-                                } else {
-                                    putValueArgument(valueParameter.index, arg)
-                                }
-                            }
-
-                        fillGivens(given.callable, this)
-                    }
-            }
-    }
 
     private fun ResolutionContext.objectExpression(
         type: TypeRef,

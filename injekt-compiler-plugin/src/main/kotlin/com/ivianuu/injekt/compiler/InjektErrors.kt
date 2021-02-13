@@ -67,32 +67,17 @@ interface InjektErrors {
         @JvmField
         val GIVEN_CLASS_WITH_GIVEN_CONSTRUCTOR =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "class cannot be given and have a given constructor") }
+                .also { MAP.put(it, "class cannot be marked with @Given if it has a @Given marked constructor") }
 
         @JvmField
         val CLASS_WITH_MULTIPLE_GIVEN_CONSTRUCTORS =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "class cannot have multiple given constructors") }
+                .also { MAP.put(it, "class cannot have multiple @Given marked constructors") }
 
         @JvmField
         val DECLARATION_WITH_MULTIPLE_CONTRIBUTIONS =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "Declaration may be only annotated with one contribution annotation") }
-
-        @JvmField
-        val GIVEN_FUN_WITHOUT_EXPLICIT_RETURN_TYPE =
-            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "@GivenFun annotated function must have explicit return type") }
-
-        @JvmField
-        val GIVEN_FUN_MUST_HAVE_UNIQUE_NAME =
-            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "@GivenFun must have a unique name") }
-
-        @JvmField
-        val GIVEN_FUN_AS_MEMBER =
-            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "@GivenFun must be top level") }
+                .also { MAP.put(it, "declaration may be only annotated with one contribution annotation") }
 
         @JvmField
         val NON_FOR_KEY_TYPE_PARAMETER_AS_FOR_KEY =
@@ -100,7 +85,7 @@ interface InjektErrors {
                 .also {
                     MAP.put(
                         it,
-                        "Cannot use {0} as @ForKey type argument",
+                        "cannot use {0} as @ForKey type argument",
                         object : DiagnosticParameterRenderer<TypeParameterDescriptor> {
                             override fun render(
                                 obj: TypeParameterDescriptor,

@@ -14,13 +14,9 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.defaultType
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.transform.toKotlinType
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor

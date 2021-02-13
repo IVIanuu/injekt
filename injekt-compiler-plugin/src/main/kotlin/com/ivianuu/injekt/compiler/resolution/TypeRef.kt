@@ -31,7 +31,6 @@ import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.types.getAbbreviation
 import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
-import kotlin.apply
 
 data class ClassifierRef(
     val fqName: FqName,
@@ -41,7 +40,6 @@ data class ClassifierRef(
     val isTypeParameter: Boolean = false,
     val isObject: Boolean = false,
     val isTypeAlias: Boolean = false,
-    val isGivenFunAlias: Boolean = false,
     val descriptor: ClassifierDescriptor? = null,
     val qualifiers: List<AnnotationRef> = emptyList()
 ) {
@@ -85,24 +83,8 @@ fun ClassifierDescriptor.toClassifierRef(
     declarationStore: DeclarationStore,
     applyClassifierInfo: Boolean = true
 ): ClassifierRef {
-    val isGivenFunAlias = this is TypeAliasDescriptor && hasAnnotation(InjektFqNames.GivenFunAlias)
-    val superTypeQualifiers = if (isGivenFunAlias) declarationStore.functionDescriptorForFqName(fqNameSafe)
-        .single { it.hasAnnotation(InjektFqNames.GivenFun) }
-        .let { function ->
-            declarationStore.callableInfoFor(function)
-                ?.qualifiers
-                ?.map { it.toAnnotationRef(declarationStore) }
-                ?: function.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-                    .map { it.toAnnotationRef(declarationStore) }
-        }
-    else emptyList()
-    fun TypeRef.maybeWithSuperTypeQualifiers(): TypeRef {
-        return if (superTypeQualifiers.isEmpty()) this
-        else copy(qualifiers = qualifiers + superTypeQualifiers)
-    }
     val expandedType = (original as? TypeAliasDescriptor)?.expandedType
         ?.toTypeRef(declarationStore)?.fullyExpandedType
-        ?.maybeWithSuperTypeQualifiers()
     val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
         .map { it.toAnnotationRef(declarationStore) }
     return ClassifierRef(
@@ -110,12 +92,11 @@ fun ClassifierDescriptor.toClassifierRef(
         typeParameters = (original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
             ?.map { it.toClassifierRef(declarationStore) } ?: emptyList(),
         superTypes = if (expandedType != null) listOf(expandedType) else typeConstructor.supertypes
-            .map { it.toTypeRef(declarationStore).maybeWithSuperTypeQualifiers() },
+            .map { it.toTypeRef(declarationStore) },
         expandedType = expandedType,
         isTypeParameter = this is TypeParameterDescriptor,
         isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
         isTypeAlias = this is TypeAliasDescriptor,
-        isGivenFunAlias = isGivenFunAlias,
         descriptor = this,
         qualifiers = qualifiers
     ).let {

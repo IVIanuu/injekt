@@ -63,8 +63,5 @@ annotation class Interceptor
 @Target(AnnotationTarget.FUNCTION)
 annotation class Macro
 
-@Target(AnnotationTarget.FUNCTION)
-annotation class GivenFun
-
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Qualifier
