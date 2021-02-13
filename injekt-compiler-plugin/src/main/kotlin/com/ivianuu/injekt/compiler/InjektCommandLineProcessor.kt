@@ -30,26 +30,10 @@ class InjektCommandLineProcessor : CommandLineProcessor {
 
     // todo remove options
     override val pluginOptions = listOf(
-        CliOption(
-            optionName = "generateComponents",
-            valueDescription = "generateComponents",
-            description = "generateComponents"
-        ),
-        CliOption(
-            optionName = "generateMergeComponents",
-            valueDescription = "generateMergeComponents",
-            description = "generateMergeComponents"
-        ),
-        CliOption(
-            optionName = "srcDir",
-            valueDescription = "srcDir",
-            description = "srcDir"
-        ),
-        CliOption(
-            optionName = "cacheDir",
-            valueDescription = "cacheDir",
-            description = "cacheDir"
-        )
+        GenerateComponentsOption,
+        GenerateMergeComponentsOption,
+        SrcDirOption,
+        CacheDirOption
     )
 
     override fun processOption(
@@ -58,11 +42,32 @@ class InjektCommandLineProcessor : CommandLineProcessor {
         configuration: CompilerConfiguration,
     ) {
         when (option.optionName) {
-            "srcDir" -> configuration.put(SrcDirKey, value)
-            "cacheDir" -> configuration.put(CacheDirKey, value)
+            SrcDirOption.optionName -> configuration.put(SrcDirKey, value)
+            CacheDirOption.optionName -> configuration.put(CacheDirKey, value)
         }
     }
 }
+
+val GenerateComponentsOption = CliOption(
+    optionName = "generateComponents",
+    valueDescription = "generateComponents",
+    description = "generateComponents"
+)
+val GenerateMergeComponentsOption = CliOption(
+    optionName = "generateMergeComponents",
+    valueDescription = "generateMergeComponents",
+    description = "generateMergeComponents"
+)
+val SrcDirOption = CliOption(
+    optionName = "srcDir",
+    valueDescription = "srcDir",
+    description = "srcDir"
+)
+val CacheDirOption = CliOption(
+    optionName = "cacheDir",
+    valueDescription = "cacheDir",
+    description = "cacheDir"
+)
 
 val SrcDirKey = CompilerConfigurationKey<String>("srcDir")
 typealias SrcDir = File
