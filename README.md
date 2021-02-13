@@ -5,13 +5,14 @@ Injekt is highly experimental and the api is unstable.
 
 Minimal example:
 ```kotlin
-// Declares a given value.
+// Declare givens.
 @Given val foo = Foo()
+@Given fun bar(@Given foo: Foo) = Bar(foo)
 
 fun main() {
-    // retrieve a Foo instance
-    val foo = given<Foo>()
-    println("Got $foo")
+    // retrieve instance
+    val bar = given<Bar>()
+    println("Got $bar")
 }
 ```
 
