@@ -48,58 +48,7 @@ interface InjektErrors {
                             override fun render(
                                 obj: GivenGraph.Error,
                                 renderingContext: RenderingContext,
-                            ): String = buildString {
-                                var indent = 0
-                                fun withIndent(block: () -> Unit) {
-                                    indent++
-                                    block()
-                                    indent--
-                                }
-
-                                fun indent() = buildString {
-                                    repeat(indent) { append("    ") }
-                                }
-
-                                fun ResolutionResult.Failure.print() {
-                                    val any: Any = when (this) {
-                                        is ResolutionResult.Failure.CandidateAmbiguity -> {
-                                            appendLine("${indent()}ambiguous given arguments of type ${request.type.render()} " +
-                                                    "for parameter ${request.parameterName} of function ${request.callableFqName}:")
-                                            withIndent {
-                                                candidateResults
-                                                    .map { it.candidate }
-                                                    .forEach { candidate ->
-                                                        appendLine("${indent()}${candidate.callableFqName}")
-                                                    }
-                                            }
-                                        }
-                                        is ResolutionResult.Failure.CallContextMismatch -> {
-                                            appendLine("${indent()} current call context is ${actualCallContext} but" +
-                                                    " ${candidate.callableFqName} is ${candidate.callContext}")
-                                        }
-                                        is ResolutionResult.Failure.DivergentGiven -> {
-                                            appendLine("${indent()}divergent given $request")
-                                        }
-                                        is ResolutionResult.Failure.CandidateFailures -> {
-                                            appendLine("${indent()}given candidate of type ${request.type.render()} " +
-                                                    "for parameter ${request.parameterName} of function ${request.callableFqName} has failures:")
-                                            withIndent {
-                                                candidateFailure
-                                                    .failure.print()
-                                            }
-                                        }
-                                        is ResolutionResult.Failure.NoCandidates -> {
-                                            appendLine("${indent()}no given argument found of type " +
-                                                    "${request.type.render()} for parameter ${request.parameterName} of function ${request.callableFqName}")
-                                        }
-                                    }
-                                }
-
-                                obj
-                                    .failures
-                                    .flatMap { it.value }
-                                    .forEach { it.print() }
-                            }
+                            ): String = obj.render()
                         }
                     )
                 }
@@ -206,4 +155,56 @@ interface InjektErrors {
         }
 
     }
+}
+
+private fun GivenGraph.Error.render(): String = buildString {
+    var indent = 0
+    fun withIndent(block: () -> Unit) {
+        indent++
+        block()
+        indent--
+    }
+
+    fun indent() = buildString {
+        repeat(indent) { append("    ") }
+    }
+
+    fun ResolutionResult.Failure.print() {
+        when (this) {
+            is ResolutionResult.Failure.CandidateAmbiguity -> {
+                appendLine("${indent()}ambiguous given arguments of type ${request.type.render()} " +
+                        "for parameter ${request.parameterName} of function ${request.callableFqName}:")
+                withIndent {
+                    candidateResults
+                        .map { it.candidate }
+                        .forEach { candidate ->
+                            appendLine("${indent()}${candidate.callableFqName}")
+                        }
+                }
+            }
+            is ResolutionResult.Failure.CallContextMismatch -> {
+                appendLine("${indent()} current call context is $actualCallContext but" +
+                        " ${candidate.callableFqName} is ${candidate.callContext}")
+            }
+            is ResolutionResult.Failure.DivergentGiven -> {
+                appendLine("${indent()}divergent given $request")
+            }
+            is ResolutionResult.Failure.CandidateFailures -> {
+                appendLine("${indent()}given candidate of type ${request.type.render()} " +
+                        "for parameter ${request.parameterName} of function ${request.callableFqName} has failures:")
+                withIndent {
+                    candidateFailure
+                        .failure.print()
+                }
+            }
+            is ResolutionResult.Failure.NoCandidates -> {
+                appendLine("${indent()}no given argument found of type " +
+                        "${request.type.render()} for parameter ${request.parameterName} of function ${request.callableFqName}")
+            }
+        }
+    }
+
+    failures
+        .flatMap { it.value }
+        .forEach { it.print() }
 }
