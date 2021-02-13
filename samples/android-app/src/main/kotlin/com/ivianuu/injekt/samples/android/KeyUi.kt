@@ -27,7 +27,7 @@ typealias KeyUiElement = Pair<KClass<*>, @Composable () -> Unit>
 
 @Qualifier annotation class KeyUiBinding<K : Any>
 
-@Macro @GivenSetElement inline fun <
-        reified T : @KeyUiBinding<K> @Composable () -> Unit,
-        reified K : Any
-        > keyUiBinding(@Given instance: T): KeyUiElement = K::class to instance
+@Macro
+@GivenSetElement
+inline fun <reified T : @KeyUiBinding<K> @Composable () -> Unit, reified K : Any>
+        keyUiBinding(@Given instance: T): KeyUiElement = K::class to instance
