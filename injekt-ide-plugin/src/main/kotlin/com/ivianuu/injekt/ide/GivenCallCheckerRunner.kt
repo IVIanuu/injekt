@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.ide
 
+import com.intellij.openapi.application.Application
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.registerServiceInstance
@@ -30,7 +31,7 @@ import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
 
-fun registerGivenCallCheckerRunner(project: Project) {
+fun Application.registerGivenCallCheckerRunner(project: Project) {
     return
     val existing = project.getService(KotlinCacheService::class.java)
     project.registerServiceInstance(

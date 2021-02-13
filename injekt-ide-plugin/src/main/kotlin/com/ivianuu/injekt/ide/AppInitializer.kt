@@ -68,8 +68,8 @@ class AppInitializer : ApplicationInitializedListener {
             Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
                 .registerExtension(InjektDiagnosticSuppressor())
 
-            registerGeneratorRunner(project)
-            registerGivenCallCheckerRunner(project)
+            app.registerGeneratorRunner(project)
+            app.registerGivenCallCheckerRunner(project)
         }
     }
 }
@@ -99,9 +99,3 @@ fun Project.relevantFiles(): List<KtFile> =
     ktFiles()
         .filter { it.relevantFile() && it.isInLocalFileSystem }
         .files(this)
-
-fun KtFile.resolve(
-    facade: ResolutionFacade,
-    resolveMode: BodyResolveMode = BodyResolveMode.PARTIAL,
-): Pair<KtFile, List<DeclarationDescriptor>> =
-    this to declarations.map { facade.resolveToDescriptor(it, resolveMode) }

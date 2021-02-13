@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.ide.playground
 
+import com.intellij.openapi.application.Application
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.EditorFactory
@@ -27,6 +28,7 @@ import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.FileIndexFacade
 import com.intellij.openapi.startup.StartupActivity
+import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.testFramework.LightVirtualFile
 import com.intellij.util.Alarm
@@ -39,14 +41,9 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.PackageFragmentProviderExtens
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.io.File
 
-fun registerGeneratorRunner(project: Project) {
+fun Application.registerGeneratorRunner(project: Project) {
     return
-    val generatorManager = GeneratorManager(project, File("build/injekt/ide/stubs"))
-
-    PackageFragmentProviderExtension.registerExtension(
-        project,
-        GeneratorPackageFragmentProviderExtension(generatorManager)
-    )
+    val generatorManager = GeneratorManager(this, project)
 
     fun projectOpened() {
         ReadAction.nonBlocking {
@@ -65,7 +62,7 @@ fun registerGeneratorRunner(project: Project) {
         }, LoadingOrder.FIRST, project)
 
     val editorQueue =
-        MergingUpdateQueue("injekt doc events", 500, true,
+        MergingUpdateQueue("injekt doc events", 1000, true,
             null, project, null, Alarm.ThreadToUse.POOLED_THREAD)
 
     /*VirtualFileManager.getInstance().addAsyncFileListener(
