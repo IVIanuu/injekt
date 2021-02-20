@@ -280,7 +280,9 @@ fun IrBuilderWithScope.irLambda(
         }
         this.body =
             DeclarationIrBuilder(context, symbol).run {
-                irExprBody(body(this, this@apply))
+                irBlockBody {
+                    +irReturn(body(this, this@apply))
+                }
             }
     }
 

@@ -49,7 +49,8 @@ class ProviderTest {
         assertTrue(invokeSingleFile() is Bar)
     }
 
-    @Test fun testProviderWithGenericGivenArgs() = codegen(
+    @Test
+    fun testProviderWithGenericGivenArgs() = codegen(
         """ 
             typealias ComponentA = Component
 
@@ -166,12 +167,10 @@ class ProviderTest {
     fun testComposableProviderGiven() = codegen(
         """
             @Given @Composable val foo: Foo get() = Foo()
-            fun invoke() {
-                given<@Composable () -> Foo>()
-            }
+            fun invoke() = given<@Composable () -> Foo>()
         """
     ) {
         invokeSingleFile()
     }
-
+    
 }
