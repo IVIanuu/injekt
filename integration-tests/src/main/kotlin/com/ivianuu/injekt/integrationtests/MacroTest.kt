@@ -258,4 +258,23 @@ class MacroTest {
         )
     }
 
+    @Test
+    fun testCanResolveTypeBasedOnMacroType() = codegen(
+        """
+            @Qualifier annotation class Trigger
+            @Macro @Given fun <T : @Trigger S, S> macroImpl(
+                @Given pair: Pair<S, S>
+            ): Int = 0
+
+            @Trigger
+            @Given
+            val string = ""
+
+            @Given
+            fun stringPair() = "a" to "b"
+
+            fun invoke() = given<Int>()
+        """
+    )
+
 }

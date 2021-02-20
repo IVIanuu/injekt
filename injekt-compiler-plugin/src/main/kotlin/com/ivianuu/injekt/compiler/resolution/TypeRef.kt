@@ -409,7 +409,7 @@ fun getSubstitutionMap(
                 if (baseSuperType.classifier.isTypeParameter) {
                     val thisTypeToUse = thisBaseTypeView ?: thisType
                     visitType(thisTypeToUse
-                        .copy(qualifiers = emptyList()), baseSuperType)
+                        .copy(qualifiers = emptyList(), path = null), baseSuperType)
                     if (thisTypeToUse.qualifiers.isAssignableTo(declarationStore, baseSuperType.qualifiers)) {
                         thisTypeToUse.qualifiers.zip(baseSuperType.qualifiers)
                             .forEach { visitType(it.first.type, it.second.type) }
