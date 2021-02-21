@@ -17,19 +17,24 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.index.CliIndexStoreFactory
+import com.ivianuu.injekt.compiler.index.IndexStore
+import com.ivianuu.injekt.compiler.index.IndexStoreFactory
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.platform.TargetPlatform
 
-class InjektStorageComponentContainerContributor : StorageComponentContainerContributor {
+class InjektStorageComponentContainerContributor(
+    private val indexStoreFactory: IndexStoreFactory
+) : StorageComponentContainerContributor {
     override fun registerModuleComponents(
         container: StorageComponentContainer,
         platform: TargetPlatform,
         moduleDescriptor: ModuleDescriptor,
     ) {
-        val declarationStore = DeclarationStore(moduleDescriptor)
+        val declarationStore = DeclarationStore(indexStoreFactory(moduleDescriptor), moduleDescriptor)
         container.useInstance(GivenChecker(declarationStore))
         container.useInstance(TypeKeyChecker())
         container.useInstance(InterceptorChecker(declarationStore))

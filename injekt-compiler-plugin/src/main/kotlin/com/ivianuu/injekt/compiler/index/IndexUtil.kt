@@ -14,19 +14,53 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.generator
+package com.ivianuu.injekt.compiler.index
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.analysis.Index
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFunction
+import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtPropertyAccessor
+import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.psiUtil.isTopLevelKtOrJavaMember
 
-fun KtDeclaration.shouldBeIndexed(): Boolean {
+fun KtElement.collectIndices(): List<Index> {
+    val indices = mutableListOf<Index>()
+    accept(object : KtTreeVisitorVoid() {
+        override fun visitDeclaration(declaration: KtDeclaration) {
+            super.visitDeclaration(declaration)
+            if (!declaration.shouldBeIndexed()) return
+
+            val owner = when (declaration) {
+                is KtConstructor<*> -> declaration.getContainingClassOrObject()
+                is KtPropertyAccessor -> declaration.property
+                else -> declaration
+            } as KtNamedDeclaration
+
+            val index = Index(
+                owner.fqName!!,
+                when (owner) {
+                    is KtClassOrObject -> "class"
+                    is KtConstructor<*> -> "constructor"
+                    is KtFunction -> "function"
+                    is KtProperty -> "property"
+                    else -> error("Unexpected declaration ${declaration.text}")
+                }
+            )
+            indices += index
+        }
+    })
+    return indices
+}
+
+private fun KtDeclaration.shouldBeIndexed(): Boolean {
     if (this !is KtNamedFunction &&
         this !is KtClassOrObject &&
         this !is KtProperty &&

@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.resolution.AnnotationRef
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.resolution.StringValue
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.index.CliIndexStore
 import com.ivianuu.injekt.compiler.resolution.*
 import com.ivianuu.injekt.test.codegen
 import junit.framework.Assert.assertEquals
@@ -349,7 +350,7 @@ class TypeRefTest {
 
     class AnalysisContext(val module: ModuleDescriptor) {
 
-        val declarationStore = DeclarationStore(module)
+        val declarationStore = DeclarationStore(CliIndexStore(module), module)
 
         val anyType = typeFor(StandardNames.FqNames.any.toSafe())
         val anyNType = anyType.copy(isMarkedNullable = true)

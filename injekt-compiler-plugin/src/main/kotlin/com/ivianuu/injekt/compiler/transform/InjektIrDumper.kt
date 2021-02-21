@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.CacheDir
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.DumpDir
 import com.ivianuu.injekt.compiler.FileManager
+import com.ivianuu.injekt.compiler.index.CliIndexStore
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -37,7 +38,7 @@ class InjektIrDumper(
                 it.fqName,
                 file.name.removeSuffix(".kt"),
                 file.absolutePath,
-                it.dumpSrc(DeclarationStore(pluginContext.moduleDescriptor))
+                it.dumpSrc(DeclarationStore(CliIndexStore(pluginContext.moduleDescriptor), pluginContext.moduleDescriptor))
             )
         }
         fileManager.postGenerate()

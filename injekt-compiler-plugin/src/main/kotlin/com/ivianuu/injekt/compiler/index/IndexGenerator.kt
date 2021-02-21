@@ -14,58 +14,27 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.generator
+package com.ivianuu.injekt.compiler.index
 
+import com.ivianuu.injekt.compiler.FileManager
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.UniqueNameProvider
-import com.ivianuu.injekt.compiler.analysis.Index
 import com.ivianuu.injekt.compiler.asNameId
-import org.jetbrains.kotlin.psi.KtClassOrObject
-import org.jetbrains.kotlin.psi.KtConstructor
-import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtFunction
-import org.jetbrains.kotlin.psi.KtNamedDeclaration
-import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.psi.KtPropertyAccessor
-import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 
-class IndexGenerator : Generator {
-    override fun generate(context: Generator.Context, files: List<KtFile>) {
+class IndexGenerator(private val fileManager: FileManager) {
+
+    fun generate(files: List<KtFile>) {
         files.forEach { file ->
-            val indices = mutableListOf<Index>()
-            file.accept(object : KtTreeVisitorVoid() {
-                override fun visitDeclaration(declaration: KtDeclaration) {
-                    super.visitDeclaration(declaration)
-                    if (!declaration.shouldBeIndexed()) return
-
-                    val owner = when (declaration) {
-                        is KtConstructor<*> -> declaration.getContainingClassOrObject()
-                        is KtPropertyAccessor -> declaration.property
-                        else -> declaration
-                    } as KtNamedDeclaration
-
-                    val index = Index(
-                        owner.fqName!!,
-                        when (owner) {
-                            is KtClassOrObject -> "class"
-                            is KtConstructor<*> -> "constructor"
-                            is KtFunction -> "function"
-                            is KtProperty -> "property"
-                            else -> error("Unexpected declaration ${declaration.text}")
-                        }
-                    )
-                    indices += index
-                }
-            })
+            val indices = file.collectIndices()
 
             if (indices.isEmpty()) return@forEach
 
             val fileName = file.packageFqName.pathSegments().joinToString("_") +
                     "_${file.name.removeSuffix(".kt")}Indices.kt"
             val nameProvider = UniqueNameProvider()
-            context.generateFile(
-                originatingFile = file,
+            fileManager.generateFile(
+                originatingFile = file.virtualFilePath,
                 packageFqName = InjektFqNames.IndexPackage,
                 fileName = fileName,
                 code = buildString {
@@ -85,4 +54,5 @@ class IndexGenerator : Generator {
             )
         }
     }
+
 }

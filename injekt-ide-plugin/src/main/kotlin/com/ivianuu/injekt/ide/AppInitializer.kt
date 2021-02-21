@@ -32,17 +32,15 @@ import com.ivianuu.injekt.compiler.analysis.GivenCallResolutionInterceptorExtens
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
 import com.ivianuu.injekt.compiler.analysis.InjektTypeResolutionInterceptor
-import com.ivianuu.injekt.ide.playground.registerGeneratorRunner
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import com.ivianuu.injekt.ide.index.IdeIndexStoreFactory
+import com.ivianuu.injekt.ide.index.registerIndexStoreRunner
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.extensions.internal.CandidateInterceptor
 import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
 import org.jetbrains.kotlin.idea.KotlinFileType
-import org.jetbrains.kotlin.idea.resolve.ResolutionFacade
 import org.jetbrains.kotlin.idea.search.projectScope
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
-import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
 
 @Suppress("UnstableApiUsage")
 class AppInitializer : ApplicationInitializedListener {
@@ -52,11 +50,11 @@ class AppInitializer : ApplicationInitializedListener {
         app?.projectOpened { project ->
             StorageComponentContainerContributor.registerExtension(
                 project,
-                InjektStorageComponentContainerContributor()
+                InjektStorageComponentContainerContributor(IdeIndexStoreFactory)
             )
             CandidateInterceptor.registerExtension(
                 project,
-                GivenCallResolutionInterceptorExtension()
+                GivenCallResolutionInterceptorExtension(IdeIndexStoreFactory)
             )
 
             TypeResolutionInterceptor.registerExtension(
@@ -68,8 +66,8 @@ class AppInitializer : ApplicationInitializedListener {
             Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
                 .registerExtension(InjektDiagnosticSuppressor())
 
-            app.registerGeneratorRunner(project)
-            app.registerGivenCallCheckerRunner(project)
+            app.registerIndexStoreRunner(project)
+            app.registerGivenCallCheckerRunner(project, IdeIndexStoreFactory)
         }
     }
 }
