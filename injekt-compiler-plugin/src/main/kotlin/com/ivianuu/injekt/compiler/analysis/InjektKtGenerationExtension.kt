@@ -17,10 +17,11 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.CacheDir
+import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.FileManager
 import com.ivianuu.injekt.compiler.SrcDir
-import com.ivianuu.injekt.compiler.generator.Generator
-import com.ivianuu.injekt.compiler.generator.IndexGenerator
+import com.ivianuu.injekt.compiler.index.CliIndexStore
+import com.ivianuu.injekt.compiler.index.IndexGenerator
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.container.ComponentProvider
@@ -58,18 +59,7 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : Analysis
             files += fileManager.preGenerate(tmpFiles)
 
             val filesToProcess = files.toList()
-            val context = object : Generator.Context {
-                override fun generateFile(
-                    packageFqName: FqName,
-                    fileName: String,
-                    originatingFile: KtFile,
-                    code: String,
-                ) {
-                    fileManager.generateFile(packageFqName,
-                        fileName, originatingFile.virtualFilePath, code)
-                }
-            }
-            IndexGenerator().generate(context, filesToProcess)
+            IndexGenerator(fileManager).generate(filesToProcess)
             fileManager.postGenerate()
             generatedCode = true
             return AnalysisResult.RetryWithAdditionalRoots(
@@ -105,7 +95,13 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : Analysis
                 )
             } catch (e: Throwable) {
             }
-            val checker = GivenCallChecker(bindingTrace, module)
+            val checker = GivenCallChecker(
+                bindingTrace,
+                DeclarationStore(
+                    CliIndexStore(module),
+                    module
+                )
+            )
             files.forEach { it.accept(checker) }
         }
         return null

@@ -20,7 +20,9 @@ import com.intellij.openapi.application.Application
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.registerServiceInstance
+import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.analysis.GivenCallChecker
+import com.ivianuu.injekt.compiler.index.IndexStoreFactory
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.analyzer.ModuleInfo
 import org.jetbrains.kotlin.caches.resolve.KotlinCacheService
@@ -31,20 +33,24 @@ import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
 
-fun Application.registerGivenCallCheckerRunner(project: Project) {
-    return
+fun Application.registerGivenCallCheckerRunner(
+    project: Project,
+    indexStoreFactory: IndexStoreFactory
+) {
     val existing = project.getService(KotlinCacheService::class.java)
     project.registerServiceInstance(
         KotlinCacheService::class.java,
-        existing.intercepted()
+        existing.intercepted(indexStoreFactory)
     )
 }
 
-private fun KotlinCacheService.intercepted() = object : KotlinCacheService by this {
+private fun KotlinCacheService.intercepted(
+    indexStoreFactory: IndexStoreFactory
+) = object : KotlinCacheService by this {
     override fun getResolutionFacade(elements: List<KtElement>): ResolutionFacade {
         println("get resolution facade $elements")
         return this@intercepted.getResolutionFacade(elements)
-            .intercepted()
+            .intercepted(indexStoreFactory)
     }
 
     override fun getResolutionFacade(
@@ -53,7 +59,7 @@ private fun KotlinCacheService.intercepted() = object : KotlinCacheService by th
     ): ResolutionFacade {
         println("reso facade for elements $elements")
         return this@intercepted.getResolutionFacade(elements, platform)
-            .intercepted()
+            .intercepted(indexStoreFactory)
     }
 
     override fun getResolutionFacadeByFile(
@@ -62,7 +68,7 @@ private fun KotlinCacheService.intercepted() = object : KotlinCacheService by th
     ): ResolutionFacade? {
         println("reso facade by file $file")
         return this@intercepted.getResolutionFacadeByFile(file, platform)
-            ?.intercepted()
+            ?.intercepted(indexStoreFactory)
     }
 
     override fun getResolutionFacadeByModuleInfo(
@@ -71,11 +77,13 @@ private fun KotlinCacheService.intercepted() = object : KotlinCacheService by th
     ): ResolutionFacade? {
         println("reso facade by module $moduleInfo")
         return this@intercepted.getResolutionFacadeByModuleInfo(moduleInfo, platform)
-            ?.intercepted()
+            ?.intercepted(indexStoreFactory)
     }
 }
 
-private fun ResolutionFacade.intercepted() = object : ResolutionFacade by this {
+private fun ResolutionFacade.intercepted(
+    indexStoreFactory: IndexStoreFactory
+) = object : ResolutionFacade by this {
     override fun analyze(
         elements: Collection<KtElement>,
         bodyResolveMode: BodyResolveMode,
@@ -115,7 +123,13 @@ private fun ResolutionFacade.intercepted() = object : ResolutionFacade by this {
             .forEach {
                 try {
                     it.accept(
-                        GivenCallChecker(bindingTrace, moduleDescriptor),
+                        GivenCallChecker(
+                            bindingTrace,
+                            DeclarationStore(
+                                indexStoreFactory(moduleDescriptor),
+                                moduleDescriptor
+                            )
+                        ),
                         null
                     )
                 } catch (e: Throwable) {

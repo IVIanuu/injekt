@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.index.CliIndexStore
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -25,7 +26,10 @@ import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 class InjektIrGenerationExtension : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         moduleFragment.transform(InfoTransformer(
-            DeclarationStore(pluginContext.moduleDescriptor),
+            DeclarationStore(
+                CliIndexStore(pluginContext.moduleDescriptor),
+                pluginContext.moduleDescriptor
+            ),
             pluginContext
         ), null)
         moduleFragment.transform(GivenCallTransformer(pluginContext), null)

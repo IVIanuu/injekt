@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.Index
+import com.ivianuu.injekt.compiler.index.IndexStore
 import com.ivianuu.injekt.compiler.resolution.*
 import com.squareup.moshi.Moshi
 import org.jetbrains.kotlin.descriptors.*
@@ -29,20 +30,12 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.Base64
 
 @Suppress("NewApi")
-class DeclarationStore(val module: ModuleDescriptor) {
+class DeclarationStore(
+    private val indexStore: IndexStore,
+    val module: ModuleDescriptor
+) {
 
-    private val allIndices by unsafeLazy {
-        (memberScopeForFqName(InjektFqNames.IndexPackage)
-            ?.getContributedDescriptors(DescriptorKindFilter.VALUES)
-            ?.filterIsInstance<PropertyDescriptor>()
-            ?.filter { it.hasAnnotation(InjektFqNames.Index) }
-            ?.map { indexProperty ->
-                val annotation = indexProperty.annotations.findAnnotation(InjektFqNames.Index)!!
-                val fqName = annotation.allValueArguments["fqName".asNameId()]!!.value as String
-                val type = annotation.allValueArguments["type".asNameId()]!!.value as String
-                Index(FqName(fqName), type)
-            } ?: emptyList())
-    }
+    private val allIndices by unsafeLazy { indexStore.indices }
 
     private val classIndices by unsafeLazy {
         allIndices

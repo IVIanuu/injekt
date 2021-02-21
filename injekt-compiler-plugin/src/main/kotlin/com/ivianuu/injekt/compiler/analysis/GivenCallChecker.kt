@@ -67,10 +67,8 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class GivenCallChecker(
     private val bindingTrace: BindingTrace,
-    module: ModuleDescriptor,
+    private val declarationStore: DeclarationStore
 ) : KtTreeVisitorVoid() {
-
-    private val declarationStore = DeclarationStore(module)
 
     private fun ResolutionScope.check(call: ResolvedCall<*>, reportOn: KtElement) {
         val resultingDescriptor = call.resultingDescriptor

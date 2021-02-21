@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.ide.playground
+package com.ivianuu.injekt.ide.index
 
 import com.intellij.openapi.application.Application
 import com.intellij.openapi.application.ReadAction
@@ -28,7 +28,6 @@ import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.FileIndexFacade
 import com.intellij.openapi.startup.StartupActivity
-import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.testFramework.LightVirtualFile
 import com.intellij.util.Alarm
@@ -37,20 +36,15 @@ import com.intellij.util.ui.update.Update
 import com.ivianuu.injekt.ide.relevantFile
 import com.ivianuu.injekt.ide.relevantFiles
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.resolve.jvm.extensions.PackageFragmentProviderExtension
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
-import java.io.File
 
-fun Application.registerGeneratorRunner(project: Project) {
-    return
-    val generatorManager = GeneratorManager(this, project)
-
+fun Application.registerIndexStoreRunner(project: Project) {
     fun projectOpened() {
         ReadAction.nonBlocking {
             val projectFiles = project.relevantFiles()
             println("relvant files $projectFiles")
-            generatorManager.refresh(projectFiles)
-        }.submit(generatorManager.cacheExecutor)
+            IdeIndexStore.refresh(projectFiles)
+        }.submit(IdeIndexStore.cacheExecutor)
     }
 
     runBackgroundableTask("Initialize injekt") { projectOpened() }
@@ -106,11 +100,10 @@ fun Application.registerGeneratorRunner(project: Project) {
                                 ?.takeIf { it.isPhysical && !it.isCompiled }
                                 ?.let { ktFile ->
                                     println("transforming ${ktFile.name} after change in editor")
-                                    generatorManager.refresh(listOf(ktFile))
+                                    IdeIndexStore.refresh(listOf(ktFile))
                                 }
                         }
-                }.expireWith(project)
-                    .submit(generatorManager.cacheExecutor)
+                }.expireWith(project).submit(IdeIndexStore.cacheExecutor)
             })
         }
     }, project)
