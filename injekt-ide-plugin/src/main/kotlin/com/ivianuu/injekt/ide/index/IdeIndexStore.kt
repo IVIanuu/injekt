@@ -40,7 +40,6 @@ object IdeIndexStore : IndexStore {
                 println("refresh indices for files $files")
 
                 for (file in files) {
-                    println("Process $file")
                     indicesByFile[file.virtualFilePath] = file.collectIndices()
                 }
             } catch (e: Throwable) {
@@ -53,8 +52,7 @@ object IdeIndexStore : IndexStore {
                     e.printStackTrace()
                 }
             }
-        }
-            .submit(cacheExecutor)
+        }.submit(cacheExecutor)
     }
 
 

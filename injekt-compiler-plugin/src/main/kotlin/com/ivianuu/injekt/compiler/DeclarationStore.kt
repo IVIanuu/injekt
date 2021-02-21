@@ -16,14 +16,12 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.Index
 import com.ivianuu.injekt.compiler.index.IndexStore
 import com.ivianuu.injekt.compiler.resolution.*
 import com.squareup.moshi.Moshi
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -40,13 +38,19 @@ class DeclarationStore(
     private val classIndices by unsafeLazy {
         allIndices
             .filter { it.type == "class" }
-            .map { classDescriptorForFqName(it.fqName) }
+            .mapNotNull {
+                try {
+                    classDescriptorForFqName(it.fqName)
+                } catch (e: Throwable) {
+                    null
+                }
+            }
     }
 
     private val functionIndices by unsafeLazy {
         allIndices
             .filter { it.type == "function" }
-            .flatMap { functionDescriptorForFqName(it.fqName) }
+            .flatMap { functionDescriptorsForFqName(it.fqName) }
     }
 
     private val propertyIndices by unsafeLazy {
@@ -132,7 +136,7 @@ class DeclarationStore(
             return@getOrPut memberScopeForFqName(fqName.parent())?.getContributedClassifier(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
             )?.takeIf { it.uniqueKey(this) == key }
-                ?: functionDescriptorForFqName(fqName.parent())
+                ?: functionDescriptorsForFqName(fqName.parent())
                     .flatMap { it.typeParameters }
                     .firstOrNull {
                         it.uniqueKey(this@DeclarationStore) == key
@@ -154,20 +158,20 @@ class DeclarationStore(
         classifierDescriptorForFqName(fqName) as ClassDescriptor
 
     private val functionDescriptorsByFqName = mutableMapOf<FqName, List<FunctionDescriptor>>()
-    fun functionDescriptorForFqName(fqName: FqName): List<FunctionDescriptor> {
+    fun functionDescriptorsForFqName(fqName: FqName): List<FunctionDescriptor> {
         return functionDescriptorsByFqName.getOrPut(fqName) {
-            memberScopeForFqName(fqName.parent())!!.getContributedFunctions(
+            memberScopeForFqName(fqName.parent())?.getContributedFunctions(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
-            ).toList()
+            )?.toList() ?: emptyList()
         }
     }
 
     private val propertyDescriptorsByFqName = mutableMapOf<FqName, List<PropertyDescriptor>>()
     private fun propertyDescriptorsForFqName(fqName: FqName): List<PropertyDescriptor> {
         return propertyDescriptorsByFqName.getOrPut(fqName) {
-            memberScopeForFqName(fqName.parent())!!.getContributedVariables(
+            memberScopeForFqName(fqName.parent())?.getContributedVariables(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
-            ).toList()
+            )?.toList() ?: emptyList()
         }
     }
 

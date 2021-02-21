@@ -42,7 +42,6 @@ fun Application.registerIndexStoreRunner(project: Project) {
     fun projectOpened() {
         ReadAction.nonBlocking {
             val projectFiles = project.relevantFiles()
-            println("relvant files $projectFiles")
             IdeIndexStore.refresh(projectFiles)
         }.submit(IdeIndexStore.cacheExecutor)
     }
@@ -83,7 +82,6 @@ fun Application.registerIndexStoreRunner(project: Project) {
     EditorFactory.getInstance().eventMulticaster.addDocumentListener(object : BulkAwareDocumentListener.Simple {
         override fun afterDocumentChange(document: Document) {
             editorQueue.queue(Update.create(document) {
-                println("document changed $document")
                 ReadAction.nonBlocking {
                     FileDocumentManager.getInstance()
                         .getFile(document)
@@ -98,10 +96,7 @@ fun Application.registerIndexStoreRunner(project: Project) {
                                 .getPsiFile(document)
                                 ?.safeAs<KtFile>()
                                 ?.takeIf { it.isPhysical && !it.isCompiled }
-                                ?.let { ktFile ->
-                                    println("transforming ${ktFile.name} after change in editor")
-                                    IdeIndexStore.refresh(listOf(ktFile))
-                                }
+                                ?.let { IdeIndexStore.refresh(listOf(it)) }
                         }
                 }.expireWith(project).submit(IdeIndexStore.cacheExecutor)
             })

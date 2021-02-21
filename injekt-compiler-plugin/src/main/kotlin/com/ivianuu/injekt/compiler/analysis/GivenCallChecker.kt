@@ -250,6 +250,7 @@ class GivenCallChecker(
             val descriptor = try {
                 property.descriptor<VariableDescriptor>(bindingTrace.bindingContext)
             } catch (e: Throwable) {
+                e.printStackTrace()
                 null
             } ?: return
             scope = LocalDeclarationResolutionScope(
