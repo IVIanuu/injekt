@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.resolution.ContributionKind
 import com.ivianuu.injekt.compiler.resolution.contributionKind
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.builtins.isFunctionType
@@ -75,6 +76,17 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
             if (givenConstructors.size > 1) {
                 context.trace.report(
                     InjektErrors.CLASS_WITH_MULTIPLE_GIVEN_CONSTRUCTORS
+                        .on(declaration)
+                )
+            }
+
+            val givenSuperTypes = descriptor.defaultType.constructor.supertypes
+                .filter { it.contributionKind(declarationStore) == ContributionKind.VALUE }
+
+            if (givenSuperTypes.isNotEmpty() && !descriptor.hasAnnotation(InjektFqNames.Given) &&
+                    givenConstructors.isEmpty()) {
+                context.trace.report(
+                    InjektErrors.GIVEN_SUPER_TYPE_WITHOUT_GIVEN_CLASS
                         .on(declaration)
                 )
             }

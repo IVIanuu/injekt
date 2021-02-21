@@ -46,6 +46,17 @@ class GivenDeclarationCheckTest {
     }
 
     @Test
+    fun testClassWithGivenSupertypeWithoutGiven() = codegen(
+        """
+            interface Dep
+
+            class DepImpl : @Given Dep
+        """
+    ) {
+        assertCompileError("class with a @Given super type must be marked with @Given or must have a @Given marked constructor")
+    }
+
+    @Test
     fun testNonGivenValueParameterOnGivenFunction() = codegen(
         """
             @Given fun bar(foo: Foo) = Bar(foo)
