@@ -66,8 +66,8 @@ class AppInitializer : ApplicationInitializedListener {
             Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
                 .registerExtension(InjektDiagnosticSuppressor())
 
-            app.registerIndexStoreRunner(project)
-            app.registerGivenCallCheckerRunner(project, IdeIndexStoreFactory)
+            //app.registerIndexStoreRunner(project)
+            //app.registerGivenCallCheckerRunner(project, IdeIndexStoreFactory)
         }
     }
 }
