@@ -51,6 +51,23 @@ class MacroTest {
     }
 
     @Test
+    fun testMacroModule() = codegen(
+        """
+            class MyModule<T : S, S> {
+                @GivenSetElement fun intoSet(@Given instance: T): S = instance
+            }
+            @Qualifier annotation class Trigger
+            @Macro @Module fun <T : @Trigger S, S> macroImpl(@Given instance: T): MyModule<T, S> = MyModule()
+
+            @Trigger @Given fun foo() = Foo()
+
+            fun invoke() = given<Set<Foo>>()
+        """
+    ) {
+        assertEquals(1, invokeSingleFile<Set<Foo>>().size)
+    }
+
+    @Test
     fun testMacroWithoutTypeParameter() = codegen(
         """
             @Macro @Given fun macroImpl() = Unit
