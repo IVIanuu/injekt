@@ -22,7 +22,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.common.ForKey
 import com.ivianuu.injekt.common.Scoped
 import com.ivianuu.injekt.component.AppComponent
 import kotlinx.coroutines.CoroutineScope

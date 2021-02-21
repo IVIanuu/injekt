@@ -85,12 +85,12 @@ interface InjektErrors {
                 .also { MAP.put(it, "declaration may be only annotated with one contribution annotation") }
 
         @JvmField
-        val NON_FOR_KEY_TYPE_PARAMETER_AS_FOR_KEY =
+        val NON_FOR_TYPE_KEY_TYPE_PARAMETER_AS_FOR_TYPE_KEY =
             DiagnosticFactory1.create<PsiElement, TypeParameterDescriptor>(Severity.ERROR)
                 .also {
                     MAP.put(
                         it,
-                        "cannot use {0} as @ForKey type argument",
+                        "cannot use {0} as @ForTypeKey type argument",
                         object : DiagnosticParameterRenderer<TypeParameterDescriptor> {
                             override fun render(
                                 obj: TypeParameterDescriptor,

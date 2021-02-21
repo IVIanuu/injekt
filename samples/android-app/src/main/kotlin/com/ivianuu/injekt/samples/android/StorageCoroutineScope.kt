@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.samples.android
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.common.ForKey
+import com.ivianuu.injekt.common.ForTypeKey
 import com.ivianuu.injekt.common.invoke
 import com.ivianuu.injekt.component.Component
 import kotlinx.coroutines.CoroutineScope
@@ -29,7 +29,7 @@ import kotlin.coroutines.CoroutineContext
 
 typealias ComponentCoroutineScope<C> = CoroutineScope
 
-@Given fun <@ForKey C : Component> storageCoroutineScope(@Given component: C): ComponentCoroutineScope<C> =
+@Given fun <@ForTypeKey C : Component> storageCoroutineScope(@Given component: C): ComponentCoroutineScope<C> =
     component {
         object : CoroutineScope, DisposableHandle {
             override val coroutineContext: CoroutineContext = Job() + Dispatchers.Default

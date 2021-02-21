@@ -63,12 +63,12 @@ class MacroTest {
     fun testMacroWithQualifierWithTypeParameter() = codegen(
         """
             @Qualifier annotation class Trigger<S>
-            @Macro @Given fun <@ForKey T : @Trigger<S> Any?, @ForKey S> macroImpl() = 
-                keyOf<S>()
+            @Macro @Given fun <@ForTypeKey T : @Trigger<S> Any?, @ForTypeKey S> macroImpl() = 
+                typeKeyOf<S>()
 
             @Trigger<Bar> @Given fun foo() = Foo()
 
-            fun invoke() = given<Key<Bar>>().value
+            fun invoke() = given<TypeKey<Bar>>().value
         """
     ) {
         assertEquals("com.ivianuu.injekt.test.Bar", invokeSingleFile())
@@ -80,8 +80,8 @@ class MacroTest {
             source(
                 """
                     @Qualifier annotation class Trigger<S>
-                    @Macro @Given fun <@ForKey T : @Trigger<S> Any?, @ForKey S> macroImpl() = 
-                        keyOf<S>()
+                    @Macro @Given fun <@ForTypeKey T : @Trigger<S> Any?, @ForTypeKey S> macroImpl() = 
+                        typeKeyOf<S>()
                 """
             )
         ),
@@ -95,8 +95,8 @@ class MacroTest {
         listOf(
             source(
                 """
-                    fun <T> givenKeyOf(@Given value: () -> Key<T>) = value()
-                    fun invoke() = givenKeyOf<Bar>().value
+                    fun <T> givenTypeKeyOf(@Given value: () -> TypeKey<T>) = value()
+                    fun invoke() = givenTypeKeyOf<Bar>().value
                 """,
                 name = "File.kt"
             )
@@ -111,8 +111,8 @@ class MacroTest {
             source(
                 """
                     @Qualifier annotation class Trigger<S>
-                    @Macro @Given fun <@ForKey T : @Trigger<S> Any?, @ForKey S> macroImpl() = 
-                        keyOf<S>()
+                    @Macro @Given fun <@ForTypeKey T : @Trigger<S> Any?, @ForTypeKey S> macroImpl() = 
+                        typeKeyOf<S>()
                 """
             )
         ),
@@ -126,7 +126,7 @@ class MacroTest {
         listOf(
             source(
                 """
-                    fun <T> givenKeyOf(@Given value: () -> Key<T>) = value()
+                    fun <T> givenKeyOf(@Given value: () -> TypeKey<T>) = value()
                     fun invoke() = givenKeyOf<Bar>().value
                 """,
                 name = "File.kt"

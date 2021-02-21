@@ -17,10 +17,7 @@
 package com.ivianuu.injekt.component
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenSetElement
-import com.ivianuu.injekt.common.keyOf
-import io.kotest.matchers.booleans.shouldBeFalse
-import io.kotest.matchers.booleans.shouldBeTrue
+import com.ivianuu.injekt.common.typeKeyOf
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import org.junit.Test
@@ -38,7 +35,7 @@ class ComponentTest {
     @Test
     fun testReturnsNullForNotExistingValue() {
         val component = ComponentBuilder<TestComponent1>().build()
-        component.getOrNull(keyOf<String>()) shouldBe null
+        component.getOrNull(typeKeyOf<String>()) shouldBe null
     }
 
     @Test
@@ -63,7 +60,7 @@ class ComponentTest {
 
     @Test fun testGetDependencyReturnsNullIfNotExists() {
         val dependent = ComponentBuilder<TestComponent2>().build()
-        dependent.getOrNull(keyOf<TestComponent1>()) shouldBe null
+        dependent.getOrNull(typeKeyOf<TestComponent1>()) shouldBe null
     }
 
     @Test

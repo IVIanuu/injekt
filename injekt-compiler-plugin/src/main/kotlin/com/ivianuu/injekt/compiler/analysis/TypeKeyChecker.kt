@@ -27,7 +27,7 @@ import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.types.KotlinType
 
-class KeyChecker : CallChecker {
+class TypeKeyChecker : CallChecker {
     override fun check(
         resolvedCall: ResolvedCall<*>,
         reportOn: PsiElement,
@@ -35,22 +35,22 @@ class KeyChecker : CallChecker {
     ) {
         resolvedCall
             .typeArguments
-            .filterKeys { it.hasAnnotation(InjektFqNames.ForKey) }
-            .forEach { it.value.checkAllForKey(reportOn, context.trace) }
+            .filterKeys { it.hasAnnotation(InjektFqNames.ForTypeKey) }
+            .forEach { it.value.checkAllForTypeKey(reportOn, context.trace) }
     }
 
-    private fun KotlinType.checkAllForKey(
+    private fun KotlinType.checkAllForTypeKey(
         reportOn: PsiElement,
         trace: BindingTrace
     ) {
         if (constructor.declarationDescriptor is TypeParameterDescriptor &&
-                !constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ForKey)) {
+                !constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ForTypeKey)) {
             trace.report(
-                InjektErrors.NON_FOR_KEY_TYPE_PARAMETER_AS_FOR_KEY
+                InjektErrors.NON_FOR_TYPE_KEY_TYPE_PARAMETER_AS_FOR_TYPE_KEY
                     .on(reportOn, constructor.declarationDescriptor as TypeParameterDescriptor)
             )
         }
 
-        arguments.forEach { it.type.checkAllForKey(reportOn, trace) }
+        arguments.forEach { it.type.checkAllForTypeKey(reportOn, trace) }
     }
 }

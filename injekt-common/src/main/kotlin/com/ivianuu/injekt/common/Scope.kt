@@ -36,7 +36,7 @@ fun Scope(): Scope = ScopeImpl()
 
 @Macro
 @Given
-inline fun <@ForKey T : @Scoped<U> S, @ForKey S : Any, @ForKey U : Scope> scopedImpl(
+inline fun <@ForTypeKey T : @Scoped<U> S, @ForTypeKey S : Any, @ForTypeKey U : Scope> scopedImpl(
     @Given scope: U,
     @Given factory: () -> T
 ): S = scope(factory)
@@ -54,8 +54,8 @@ inline operator fun <T : Any> Scope.invoke(key: Int, block: () -> T): T {
 inline operator fun <T : Any> Scope.invoke(key: Any, block: () -> T): T =
     this(key.hashCode(), block)
 
-inline operator fun <@ForKey T : Any> Scope.invoke(block: () -> T): T =
-    this(keyOf<T>(), block)
+inline operator fun <@ForTypeKey T : Any> Scope.invoke(block: () -> T): T =
+    this(typeKeyOf<T>(), block)
 
 private class ScopeImpl(private val values: MutableMap<Int, Any> = mutableMapOf()) : Scope {
     @Suppress("UNCHECKED_CAST")

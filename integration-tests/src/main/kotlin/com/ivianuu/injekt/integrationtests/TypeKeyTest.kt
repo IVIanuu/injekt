@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.common.Key
+import com.ivianuu.injekt.common.TypeKey
 import com.ivianuu.injekt.test.assertCompileError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
@@ -25,72 +25,72 @@ import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
-class KeyTest {
+class TypeKeyTest {
 
     @Test
-    fun testKeyOf() = codegen(
+    fun testTypeKeyOf() = codegen(
         """
-           fun invoke() = keyOf<String>() 
+           fun invoke() = typeKeyOf<String>() 
         """
     ) {
         assertEquals("kotlin.String",
-            invokeSingleFile<Key<String>>().value)
+            invokeSingleFile<TypeKey<String>>().value)
     }
 
     @Test
-    fun testForKeyTypeParameter() = codegen(
+    fun testForTypeKeyTypeParameter() = codegen(
         """
-            inline fun <@ForKey T> listKeyOf() = keyOf<List<T>>()
-            fun invoke() = listKeyOf<String>() 
+            inline fun <@ForTypeKey T> listTypeKeyOf() = typeKeyOf<List<T>>()
+            fun invoke() = listTypeKeyOf<String>() 
         """
     ) {
         assertEquals("kotlin.collections.List<kotlin.String>",
-            invokeSingleFile<Key<List<String>>>().value)
+            invokeSingleFile<TypeKey<List<String>>>().value)
     }
 
     @Test
-    fun testForKeyTypeParameterInInterface() = codegen(
+    fun testForTypeKeyTypeParameterInInterface() = codegen(
         """
             interface KeyFactory {
-                fun <@ForKey T> listKeyOf(): Key<List<T>>
+                fun <@ForTypeKey T> listTypeKeyOf(): TypeKey<List<T>>
                 companion object : KeyFactory {
-                    override fun <@ForKey T> listKeyOf() = keyOf<List<T>>()
+                    override fun <@ForTypeKey T> listTypeKeyOf() = typeKeyOf<List<T>>()
                 }
             }
-            fun invoke() = KeyFactory.listKeyOf<String>() 
+            fun invoke() = KeyFactory.listTypeKeyOf<String>() 
         """
     ) {
         assertEquals("kotlin.collections.List<kotlin.String>",
-            invokeSingleFile<Key<List<String>>>().value)
+            invokeSingleFile<TypeKey<List<String>>>().value)
     }
 
     @Test
-    fun testForKeyTypeParameterMulti() = multiCodegen(
+    fun testForTypeKeyTypeParameterMulti() = multiCodegen(
         listOf(
             source(
                 """
-                    inline fun <@ForKey T> listKeyOf() = keyOf<List<T>>()
+                    inline fun <@ForTypeKey T> listTypeKeyOf() = typeKeyOf<List<T>>()
                 """
             )
         ),
         listOf(
             source(
                 """
-                    fun invoke() = listKeyOf<String>()
+                    fun invoke() = listTypeKeyOf<String>()
                 """,
                 name = "File.kt"
             )
         )
     ) {
         assertEquals("kotlin.collections.List<kotlin.String>",
-            it.last().invokeSingleFile<Key<List<String>>>().value
+            it.last().invokeSingleFile<TypeKey<List<String>>>().value
         )
     }
 
     @Test
-    fun testNonForKeyTypeParameterCannotBeUsedForForKey() = codegen(
+    fun testNonForTypeKeyTypeParameterCannotBeUsedForForTypeKey() = codegen(
         """
-           fun <T> invoke() = keyOf<T>() 
+           fun <T> invoke() = typeKeyOf<T>() 
         """
     ) {
         assertCompileError()

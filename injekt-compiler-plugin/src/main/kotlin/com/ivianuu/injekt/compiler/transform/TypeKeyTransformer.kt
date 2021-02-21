@@ -49,7 +49,7 @@ import org.jetbrains.kotlin.load.java.JvmAbi
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class KeyTypeParameterTransformer(
+class TypeKeyTransformer(
     private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
 
@@ -57,7 +57,7 @@ class KeyTypeParameterTransformer(
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         super.visitModuleFragment(declaration)
-        declaration.transformCallsWithForKey(emptyMap())
+        declaration.transformCallsWithForTypeKey(emptyMap())
         return declaration
     }
 
@@ -68,14 +68,14 @@ class KeyTypeParameterTransformer(
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
 
-        if (function.descriptor.typeParameters.none { it.hasAnnotation(InjektFqNames.ForKey) })
+        if (function.descriptor.typeParameters.none { it.hasAnnotation(InjektFqNames.ForTypeKey) })
             return function
 
-        val transformedFunction = function.copyWithKeyParams()
+        val transformedFunction = function.copyWithTypeKeyParams()
         transformedFunctions[function] = transformedFunction
 
-        val keyParams = transformedFunction.typeParameters
-            .filter { it.descriptor.hasAnnotation(InjektFqNames.ForKey) }
+        val typeKeyParams = transformedFunction.typeParameters
+            .filter { it.descriptor.hasAnnotation(InjektFqNames.ForTypeKey) }
             .associateWith {
                 transformedFunction.addValueParameter(
                     "_${it.name}Key",
@@ -83,8 +83,8 @@ class KeyTypeParameterTransformer(
                 )
             }
 
-        transformedFunction.transformCallsWithForKey(
-            keyParams
+        transformedFunction.transformCallsWithForTypeKey(
+            typeKeyParams
                 .mapValues {
                     {
                         DeclarationIrBuilder(pluginContext, transformedFunction.symbol)
@@ -96,7 +96,7 @@ class KeyTypeParameterTransformer(
         return transformedFunction
     }
 
-    private fun IrElement.transformCallsWithForKey(
+    private fun IrElement.transformCallsWithForTypeKey(
         typeParameterKeyExpressions: Map<IrTypeParameter, () -> IrExpression>
     ) {
         transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -111,22 +111,22 @@ class KeyTypeParameterTransformer(
         expression: IrCall,
         typeParameterKeyExpressions: Map<IrTypeParameter, () -> IrExpression>
     ): IrExpression {
-        if (expression.symbol.descriptor.fqNameSafe == InjektFqNames.keyOf) {
+        if (expression.symbol.descriptor.fqNameSafe == InjektFqNames.typeKeyOf) {
             val typeArgument = expression.getTypeArgument(0)!!
             return DeclarationIrBuilder(pluginContext, expression.symbol).irCall(
-                pluginContext.referenceClass(InjektFqNames.Key)!!
+                pluginContext.referenceClass(InjektFqNames.TypeKey)!!
                     .constructors
                     .single()
             ).apply {
                 putTypeArgument(0, typeArgument)
                 putValueArgument(
                     0,
-                    typeArgument.keyStringExpression(expression.symbol, typeParameterKeyExpressions)
+                    typeArgument.typeKeyStringExpression(expression.symbol, typeParameterKeyExpressions)
                 )
             }
         }
         val callee = expression.symbol.owner
-        if (callee.descriptor.typeParameters.none { it.hasAnnotation(InjektFqNames.ForKey) }) return expression
+        if (callee.descriptor.typeParameters.none { it.hasAnnotation(InjektFqNames.ForTypeKey) }) return expression
         val transformedCallee = transformFunctionIfNeeded(callee)
         if (expression.symbol == transformedCallee.symbol) return expression
         return IrCallImpl(
@@ -143,11 +143,11 @@ class KeyTypeParameterTransformer(
             var currentIndex = expression.valueArgumentsCount
             (0 until typeArgumentsCount)
                 .map { transformedCallee.typeParameters[it] to getTypeArgument(it)!! }
-                .filter { it.first.descriptor.hasAnnotation(InjektFqNames.ForKey) }
+                .filter { it.first.descriptor.hasAnnotation(InjektFqNames.ForTypeKey) }
                 .forEach { (_, typeArgument) ->
                     putValueArgument(
                         currentIndex++,
-                        typeArgument.keyStringExpression(
+                        typeArgument.typeKeyStringExpression(
                             expression.symbol,
                             typeParameterKeyExpressions
                         )
@@ -156,7 +156,7 @@ class KeyTypeParameterTransformer(
         }
     }
 
-    private fun IrType.keyStringExpression(
+    private fun IrType.typeKeyStringExpression(
         symbol: IrSymbol,
         typeParameterKeyExpressions: Map<IrTypeParameter, () -> IrExpression>
     ): IrExpression {
@@ -240,7 +240,7 @@ class KeyTypeParameterTransformer(
         }
     }
 
-    private fun IrFunction.copyWithKeyParams(): IrFunction {
+    private fun IrFunction.copyWithTypeKeyParams(): IrFunction {
         return copy(pluginContext).apply {
             val descriptor = descriptor
             if (descriptor is PropertyGetterDescriptor &&
@@ -260,8 +260,8 @@ class KeyTypeParameterTransformer(
                 correspondingPropertySymbol?.owner?.setter = this
             }
 
-            if (this@copyWithKeyParams is IrOverridableDeclaration<*>) {
-                overriddenSymbols = this@copyWithKeyParams.overriddenSymbols.map {
+            if (this@copyWithTypeKeyParams is IrOverridableDeclaration<*>) {
+                overriddenSymbols = this@copyWithTypeKeyParams.overriddenSymbols.map {
                     transformFunctionIfNeeded(it.owner as IrFunction).symbol as IrSimpleFunctionSymbol
                 }
             }

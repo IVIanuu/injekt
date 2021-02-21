@@ -38,9 +38,9 @@ object InjektFqNames {
     val IndexPackage = InternalPackage.child("index".asNameId())
 
     val CommonPackage = InjektPackage.child("common".asNameId())
-    val ForKey = CommonPackage.child("ForKey".asNameId())
-    val Key = CommonPackage.child("Key".asNameId())
-    val keyOf = CommonPackage.child("keyOf".asNameId())
+    val ForTypeKey = CommonPackage.child("ForTypeKey".asNameId())
+    val TypeKey = CommonPackage.child("TypeKey".asNameId())
+    val typeKeyOf = CommonPackage.child("typeKeyOf".asNameId())
 
     val Composable = FqName("androidx.compose.runtime.Composable")
 

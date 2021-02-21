@@ -22,58 +22,58 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.Macro
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.common.ForKey
-import com.ivianuu.injekt.common.Key
+import com.ivianuu.injekt.common.ForTypeKey
+import com.ivianuu.injekt.common.TypeKey
 import com.ivianuu.injekt.common.Scope
-import com.ivianuu.injekt.common.keyOf
+import com.ivianuu.injekt.common.typeKeyOf
 
 interface Component : Scope {
-    val key: Key<Component>
+    val key: TypeKey<Component>
 
-    fun <T> getOrNull(key: Key<T>): T?
+    fun <T> getOrNull(key: TypeKey<T>): T?
 
     interface Builder<C : Component> {
         fun <T : Component> dependency(parent: T): Builder<C>
-        fun <T> element(key: Key<T>, factory: () -> T): Builder<C>
+        fun <T> element(key: TypeKey<T>, factory: () -> T): Builder<C>
         fun build(): C
     }
 }
 
-fun <@ForKey T> Component.get(): T {
-    val key = keyOf<T>()
+fun <@ForTypeKey T> Component.get(): T {
+    val key = typeKeyOf<T>()
     return getOrNull(key)
         ?: error("No value for for $key in ${this.key}")
 }
 
-@Given fun <@ForKey C : Component> ComponentBuilder(
+@Given fun <@ForTypeKey C : Component> ComponentBuilder(
     @Given injectedElements: (@Given C) -> Set<ComponentElement<C>>,
 ): Component.Builder<C> = ComponentImpl.Builder(
-    keyOf<C>(),
+    typeKeyOf<C>(),
     injectedElements as (Component) -> Set<ComponentElement<*>>
 )
 
-fun <C : Component, @ForKey T> Component.Builder<C>.element(factory: () -> T) =
-    element(keyOf(), factory)
+fun <C : Component, @ForTypeKey T> Component.Builder<C>.element(factory: () -> T) =
+    element(typeKeyOf(), factory)
 
-typealias ComponentElement<@Suppress("unused") C> = Pair<Key<*>, () -> Any?>
+typealias ComponentElement<@Suppress("unused") C> = Pair<TypeKey<*>, () -> Any?>
 
 @Qualifier annotation class ComponentElementBinding<C : Component>
 
 @Macro
 @GivenSetElement
-fun <T : @ComponentElementBinding<C> S, @ForKey S, @ForKey C : Component>
+fun <T : @ComponentElementBinding<C> S, @ForTypeKey S, @ForTypeKey C : Component>
         componentElementBindingImpl(@Given factory: () -> T): ComponentElement<C> =
-    keyOf<S>() to factory as () -> Any?
+    typeKeyOf<S>() to factory as () -> Any?
 
 @PublishedApi internal class ComponentImpl(
-    override val key: Key<Component>,
+    override val key: TypeKey<Component>,
     private val dependencies: List<Component>,
-    explicitElements: Map<Key<*>, () -> Any?>,
+    explicitElements: Map<TypeKey<*>, () -> Any?>,
     injectedElements: (@Given Component) -> Set<ComponentElement<*>>,
 ) : Component, Scope by Scope() {
     private val elements = explicitElements + injectedElements(this)
 
-    override fun <T> getOrNull(key: Key<T>): T? {
+    override fun <T> getOrNull(key: TypeKey<T>): T? {
         if (key == this.key) return this as T
         elements[key]?.let { return it() as T }
 
@@ -84,16 +84,16 @@ fun <T : @ComponentElementBinding<C> S, @ForKey S, @ForKey C : Component>
     }
 
     class Builder<C : Component>(
-        private val key: Key<Component>,
+        private val key: TypeKey<Component>,
         private val injectedElements: (Component) -> Set<ComponentElement<*>>,
     ) : Component.Builder<C> {
         private val dependencies = mutableListOf<Component>()
-        private val elements = mutableMapOf<Key<*>, () -> Any?>()
+        private val elements = mutableMapOf<TypeKey<*>, () -> Any?>()
 
         override fun <T : Component> dependency(parent: T): Component.Builder<C> =
             apply { dependencies += parent }
 
-        override fun <T> element(key: Key<T>, factory: () -> T): Component.Builder<C> =
+        override fun <T> element(key: TypeKey<T>, factory: () -> T): Component.Builder<C> =
             apply { elements[key] = factory }
 
         override fun build(): C =
