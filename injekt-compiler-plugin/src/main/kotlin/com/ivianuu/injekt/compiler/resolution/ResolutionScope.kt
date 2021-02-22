@@ -59,6 +59,7 @@ class ResolutionScope(
             contribution.collectContributions(
                 declarationStore = declarationStore,
                 path = listOf(contribution.callable.fqNameSafe),
+                substitutionMap = emptyMap(),
                 addGiven = { callable ->
                     givens += callable to this
                     val typeWithPath = callable.type
@@ -101,7 +102,6 @@ class ResolutionScope(
                     interceptorsForType(type),
                     declarationStore
                 )
-
 
                 if (type.isSubTypeOf(declarationStore, setType)) {
                     val setElementType = type.subtypeView(setType.classifier)!!.arguments.single()
@@ -179,6 +179,7 @@ class ResolutionScope(
             newContribution.collectContributions(
                 declarationStore = declarationStore,
                 path = listOf(newContribution.callable.fqNameSafe),
+                substitutionMap = outputsSubstitutionMap,
                 addGiven = { givens += it to this },
                 addGivenSetElement = { givenSetElements += it },
                 addInterceptor = { interceptors += it },
@@ -193,6 +194,7 @@ class ResolutionScope(
                 )
                 newContributionWithPath.collectContributions(
                     declarationStore = declarationStore,
+                    substitutionMap = newContributionWithPath.typeArguments,
                     path = listOf(newContributionWithPath.callable.fqNameSafe),
                     addGiven = { givens += it to this },
                     addGivenSetElement = { givenSetElements += it },
@@ -247,7 +249,8 @@ fun ClassResolutionScope(
         descriptor.unsubstitutedMemberScope
             .collectContributions(
                 declarationStore,
-                descriptor.toClassifierRef(declarationStore).defaultType
+                descriptor.toClassifierRef(declarationStore).defaultType,
+                emptyMap()
             ) + descriptor.thisAsReceiverParameter.toCallableRef(declarationStore)
             .copy(contributionKind = ContributionKind.VALUE)
     }

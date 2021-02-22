@@ -105,7 +105,8 @@ fun CallableDescriptor.toCallableRef(
 
 fun MemberScope.collectContributions(
     declarationStore: DeclarationStore,
-    type: TypeRef
+    type: TypeRef,
+    substitutionMap: Map<ClassifierRef, TypeRef>
 ): List<CallableRef> {
     // special case to support @Given () -> Foo etc
     if ((type.classifier.fqName.asString().startsWith("kotlin.Function")
@@ -124,7 +125,7 @@ fun MemberScope.collectContributions(
                             contributionKind = contributionKind,
                             parameterTypes = callable.parameterTypes.toMutableMap()
                                 .also { it[callable.callable.dispatchReceiverParameter!!.injektName()] = type }
-                        )
+                        ).substitute(substitutionMap)
                     }
             )
         }
@@ -144,18 +145,21 @@ fun MemberScope.collectContributions(
         .flatMap { callable ->
             when (callable) {
                 is ClassDescriptor -> callable.getContributionConstructors(declarationStore)
+                    .map { it.substitute(substitutionMap) }
                 is PropertyDescriptor -> (callable.contributionKind(declarationStore)
                     ?: primaryConstructorKinds[callable.name])
                     ?.let { kind ->
                         listOf(
                             callable.toCallableRef(declarationStore)
                                 .copy(contributionKind = kind)
+                                .substitute(substitutionMap)
                         )
                     } ?: emptyList()
                 is FunctionDescriptor -> callable.contributionKind(declarationStore)?.let { kind ->
                     listOf(
                         callable.toCallableRef(declarationStore)
                             .copy(contributionKind = kind)
+                            .substitute(substitutionMap)
                     )
                 } ?: emptyList()
                 else -> emptyList()
@@ -195,7 +199,8 @@ fun CallableDescriptor.collectContributions(
             .copy(contributionKind = ContributionKind.VALUE)
         declarations += receiver.type.memberScope.collectContributions(
             declarationStore,
-            extensionReceiverParameter!!.type.toTypeRef(declarationStore)
+            extensionReceiverParameter!!.type.toTypeRef(declarationStore),
+            emptyMap()
         )
     }
 
@@ -260,6 +265,7 @@ fun ClassDescriptor.allGivenTypes(declarationStore: DeclarationStore): List<Type
 fun CallableRef.collectContributions(
     declarationStore: DeclarationStore,
     path: List<Any>,
+    substitutionMap: Map<ClassifierRef, TypeRef>,
     addGiven: (CallableRef) -> Unit,
     addGivenSetElement: (CallableRef) -> Unit,
     addInterceptor: (CallableRef) -> Unit,
@@ -285,11 +291,12 @@ fun CallableRef.collectContributions(
             callable
                 .returnType!!
                 .memberScope
-                .collectContributions(declarationStore, nextCallable.type)
+                .collectContributions(declarationStore, nextCallable.type, substitutionMap)
                 .forEach {
                     it.collectContributions(
                         declarationStore,
                         path + it.callable.fqNameSafe,
+                        substitutionMap,
                         addGiven,
                         addGivenSetElement,
                         addInterceptor,
