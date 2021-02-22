@@ -100,7 +100,7 @@ fun ClassifierDescriptor.toClassifierRef(
         descriptor = this,
         qualifiers = qualifiers
     ).let {
-        if (applyClassifierInfo) it.apply(
+        if (applyClassifierInfo && isExternalDeclaration()) it.apply(
             declarationStore,
             declarationStore.classifierInfoFor(it)
         ) else it
