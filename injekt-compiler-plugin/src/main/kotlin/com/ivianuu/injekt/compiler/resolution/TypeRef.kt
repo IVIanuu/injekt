@@ -514,16 +514,17 @@ fun TypeRef.isSubTypeOf(
                     subTypeArg.isSubTypeOf(declarationStore, it, substitutionMap)
                 }
             }
-    } else if (superType.classifier.isTypeParameter ||
-        superType.classifier.isTypeAlias
-    ) {
+    } else if (superType.classifier.isTypeParameter || superType.classifier.isTypeAlias) {
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
         ) return@memoize false
         if (path != superType.path) return@memoize false
         if (thisAndAllSuperTypes.any { it.isComposable } != superType.thisAndAllSuperTypes.any { it.isComposable }) return@memoize false
         return@memoize superType.superTypes(substitutionMap).all { upperBound ->
-            isSubTypeOf(declarationStore, upperBound, substitutionMap)
+            // todo should do this comparison without qualifiers?
+            isSubTypeOf(declarationStore, upperBound, substitutionMap) ||
+                    (superType.qualifiers.isNotEmpty() &&
+                            copy(qualifiers = emptyList()).isSubTypeOf(declarationStore, upperBound, substitutionMap))
         }
     }
     return@memoize false

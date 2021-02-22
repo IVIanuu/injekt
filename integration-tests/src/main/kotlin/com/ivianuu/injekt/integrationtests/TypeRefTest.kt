@@ -221,6 +221,14 @@ class TypeRefTest {
         }
 
     @Test
+    fun testQualifiedTypeIsSubTypeOfTypeParameterWithQualifiedUpperBound() = withAnalysisContext {
+        val sTypeParameter = typeParameter(listType.typeWith(stringType))
+        val tTypeParameter = typeParameter(sTypeParameter.qualified(qualifier1()))
+        listType.typeWith(stringType)
+            .qualified(qualifier1()) shouldBeSubTypeOf tTypeParameter
+    }
+
+    @Test
     fun testQualifiedTypeAliasIsSubTypeOfTypeParameterWithSameQualifiers() = withAnalysisContext {
         typeAlias(
             function(0)
