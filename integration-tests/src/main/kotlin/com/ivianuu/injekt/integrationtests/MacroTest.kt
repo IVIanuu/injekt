@@ -295,4 +295,29 @@ class MacroTest {
         """
     )
 
+    @Test
+    fun testUiDecorator() = codegen(
+        """
+            typealias UiDecorator = @Composable (@Composable () -> Unit) -> Unit
+
+            @Qualifier annotation class UiDecoratorBinding
+
+            @Macro
+            @GivenSetElement
+            fun <T : @UiDecoratorBinding S, @ForTypeKey S : UiDecorator> uiDecoratorBindingImpl(
+                @Given instance: T
+            ): UiDecorator = instance as UiDecorator
+
+            typealias RootSystemBarsProvider = UiDecorator
+            
+            @UiDecoratorBinding
+            @Given
+            fun rootSystemBarsProvider(): RootSystemBarsProvider = {}
+
+            fun invoke() = given<Set<UiDecorator>>().size
+        """
+    ) {
+        assertEquals(1, invokeSingleFile())
+    }
+
 }

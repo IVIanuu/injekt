@@ -263,6 +263,22 @@ class TypeRefTest {
     }
 
     @Test
+    fun testTypeAliasIsSubTypeOfOtherTypeAlias() = withAnalysisContext {
+        val typeAlias1 = typeAlias(function(0).typeWith(stringType))
+        val typeAlias2 = typeAlias(typeAlias1)
+        typeAlias2 shouldBeSubTypeOf typeAlias1
+    }
+
+    @Test
+    fun testTypeAliasIsSubTypeOfTypeParameterWithTypeAliasUpperBound() = withAnalysisContext {
+        val superTypeAlias = typeAlias(function(0))
+        val typeParameterS = typeParameter(superTypeAlias)
+        val typeParameterT = typeParameter(typeParameterS.qualified(qualifier1()))
+        val subTypeAlias = typeAlias(superTypeAlias)
+        subTypeAlias.qualified(qualifier1()) shouldBeSubTypeOf typeParameterT
+    }
+
+    @Test
     fun testGetSubstitutionMap() = withAnalysisContext {
         val superType = typeParameter()
         val map = getSubstitutionMap(declarationStore, listOf(stringType to superType))

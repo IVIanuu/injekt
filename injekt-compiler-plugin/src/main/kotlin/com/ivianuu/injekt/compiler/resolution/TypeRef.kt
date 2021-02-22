@@ -83,8 +83,8 @@ fun ClassifierDescriptor.toClassifierRef(
     declarationStore: DeclarationStore,
     applyClassifierInfo: Boolean = true
 ): ClassifierRef {
-    val expandedType = (original as? TypeAliasDescriptor)?.expandedType
-        ?.toTypeRef(declarationStore)?.fullyExpandedType
+    val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
+        ?.toTypeRef(declarationStore)
     val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
         .map { it.toAnnotationRef(declarationStore) }
     return ClassifierRef(
@@ -535,9 +535,10 @@ fun TypeRef.isSubTypeOf(
         if (thisAndAllSuperTypes.any { it.isComposable } != superType.thisAndAllSuperTypes.any { it.isComposable }) return@memoize false
         return@memoize superType.superTypes(substitutionMap).all { upperBound ->
             // todo should do this comparison without qualifiers?
-            isSubTypeOf(declarationStore, upperBound, substitutionMap) ||
+            val r = isSubTypeOf(declarationStore, upperBound, substitutionMap) ||
                     (superType.qualifiers.isNotEmpty() &&
                             copy(qualifiers = emptyList()).isSubTypeOf(declarationStore, upperBound, substitutionMap))
+            r
         }
     }
     return@memoize false
