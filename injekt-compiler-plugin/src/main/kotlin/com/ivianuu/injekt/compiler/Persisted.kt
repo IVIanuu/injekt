@@ -100,12 +100,16 @@ fun CallableRef.apply(
 
 @JsonClass(generateAdapter = true) data class PersistedClassifierInfo(
     val fqName: String,
-    val qualifiers: List<PersistedAnnotationRef>
+    val qualifiers: List<PersistedAnnotationRef>,
+    val superTypes: List<PersistedTypeRef>,
+    val expandedType: PersistedTypeRef?
 )
 
 fun ClassifierRef.toPersistedClassifierInfo(declarationStore: DeclarationStore) = PersistedClassifierInfo(
     fqName = descriptor!!.fqNameSafe.asString(),
-    qualifiers = qualifiers.map { it.toPersistedAnnotationRef(declarationStore) }
+    qualifiers = qualifiers.map { it.toPersistedAnnotationRef(declarationStore) },
+    superTypes = superTypes.map { it.toPersistedTypeRef(declarationStore) },
+    expandedType = expandedType?.toPersistedTypeRef(declarationStore)
 )
 
 @JsonClass(generateAdapter = true) data class PersistedTypeRef(
@@ -120,7 +124,7 @@ fun ClassifierRef.toPersistedClassifierInfo(declarationStore: DeclarationStore) 
 )
 
 fun TypeRef.toPersistedTypeRef(declarationStore: DeclarationStore): PersistedTypeRef = PersistedTypeRef(
-    classifierKey = classifier.descriptor?.uniqueKey(declarationStore) ?: "",
+    classifierKey = classifier.descriptor?.uniqueKey() ?: "",
     qualifiers = qualifiers.map { it.toPersistedAnnotationRef(declarationStore) },
     arguments = arguments.map { it.toPersistedTypeRef(declarationStore) },
     isStarProjection = isStarProjection,
@@ -161,9 +165,9 @@ fun ClassifierRef.toPersistedClassifierRef(
             ?.constructedClass
             ?.declaredTypeParameters
             ?.single { it.name == descriptor.name }
-            ?.uniqueKey(declarationStore)
-            ?: descriptor.uniqueKey(declarationStore)
-     } else descriptor!!.uniqueKey(declarationStore),
+            ?.uniqueKey()
+            ?: descriptor.uniqueKey()
+     } else descriptor!!.uniqueKey(),
     superTypes = superTypes.map { it.toPersistedTypeRef(declarationStore) },
     expandedType = expandedType?.toPersistedTypeRef(declarationStore),
     qualifiers = qualifiers.map { it.toPersistedAnnotationRef(declarationStore) }
@@ -179,12 +183,23 @@ fun PersistedClassifierRef.toClassifierRef(declarationStore: DeclarationStore): 
         )
 }
 
+fun PersistedClassifierRef.toPersistedClassifierInfo() = PersistedClassifierInfo(
+    fqName = key.split(":")[1],
+    qualifiers = qualifiers,
+    superTypes = superTypes,
+    expandedType = expandedType
+)
+
 fun ClassifierRef.apply(
     declarationStore: DeclarationStore,
     info: PersistedClassifierInfo?
 ): ClassifierRef {
     return if (info == null || !descriptor!!.isExternalDeclaration()) this
-    else copy(qualifiers = info.qualifiers.map { it.toAnnotationRef(declarationStore) })
+    else copy(
+        qualifiers = info.qualifiers.map { it.toAnnotationRef(declarationStore) },
+        superTypes = info.superTypes.map { it.toTypeRef(declarationStore) },
+        expandedType = info.expandedType?.toTypeRef(declarationStore)
+    )
 }
 
 

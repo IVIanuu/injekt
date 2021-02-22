@@ -364,6 +364,18 @@ fun TypeRef.uniqueTypeName(depth: Int = 0): String {
     }
 }
 
+fun KotlinType.uniqueTypeName(depth: Int = 0): String {
+    if (depth > 15) return ""
+    return buildString {
+        append(constructor.declarationDescriptor!!.fqNameSafe.pathSegments().joinToString("_") { it.asString() })
+        arguments.forEachIndexed { index, typeArgument ->
+            if (index == 0) append("_")
+            append(typeArgument.type.uniqueTypeName(depth + 1))
+            if (index != arguments.lastIndex) append("_")
+        }
+    }
+}
+
 fun getSubstitutionMap(
     declarationStore: DeclarationStore,
     pairs: List<Pair<TypeRef, TypeRef>>
@@ -544,6 +556,9 @@ fun AnnotationRef.isAssignableTo(declarationStore: DeclarationStore, superQualif
 
 val TypeRef.fullyExpandedType: TypeRef
     get() = expandedType?.fullyExpandedType ?: this
+
+val KotlinType.fullyAbbreviatedType: KotlinType
+    get() = getAbbreviatedType()?.fullyAbbreviatedType ?: this
 
 fun TypeRef.subtypeView(
     classifier: ClassifierRef,

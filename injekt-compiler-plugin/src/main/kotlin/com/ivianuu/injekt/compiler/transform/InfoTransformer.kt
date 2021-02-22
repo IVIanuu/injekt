@@ -21,7 +21,9 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.PersistedCallableInfo
 import com.ivianuu.injekt.compiler.PersistedClassifierInfo
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
+import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.toPersistedCallableInfo
+import com.ivianuu.injekt.compiler.toPersistedClassifierInfo
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.IrStatement
@@ -53,7 +55,8 @@ class InfoTransformer(
                             .constructors
                             .single()
                     ).apply {
-                        val info = declarationStore.classifierInfoFor(declaration.descriptor)
+                        val info = declaration.descriptor.toClassifierRef(declarationStore)
+                            .toPersistedClassifierInfo(declarationStore)
                         val value = Base64.getEncoder()
                             .encode(declarationStore.moshi.adapter(PersistedClassifierInfo::class.java)
                                 .toJson(info).toByteArray())

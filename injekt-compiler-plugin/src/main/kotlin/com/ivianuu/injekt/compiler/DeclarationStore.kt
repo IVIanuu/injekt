@@ -115,10 +115,17 @@ class DeclarationStore(
                         .decodeToString()
                     moshi.adapter(PersistedClassifierInfo::class.java).fromJson(json)!!
                 }
-                ?: classifier.toPersistedClassifierInfo(this@DeclarationStore)
+                ?: classifier.descriptor
+                    .containingDeclaration
+                    .safeAs<CallableDescriptor>()
+                    ?.let { callableInfoFor(it) }
+                    ?.typeParameters
+                    ?.singleOrNull {
+                        val fqName = FqName(it.key.split(":")[1])
+                        fqName == classifier.fqName
+                    }
+                    ?.toPersistedClassifierInfo()
         }
-    fun classifierInfoFor(classifier: ClassifierDescriptor): PersistedClassifierInfo? =
-        classifierInfoFor(classifier.toClassifierRef(this))
 
     private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor>()
     fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor {
@@ -135,21 +142,21 @@ class DeclarationStore(
             val fqName = FqName(key.split(":")[1])
             return@getOrPut memberScopeForFqName(fqName.parent())?.getContributedClassifier(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
-            )?.takeIf { it.uniqueKey(this) == key }
+            )?.takeIf { it.uniqueKey() == key }
                 ?: functionDescriptorsForFqName(fqName.parent())
                     .flatMap { it.typeParameters }
                     .firstOrNull {
-                        it.uniqueKey(this@DeclarationStore) == key
+                        it.uniqueKey() == key
                     }
                 ?: propertyDescriptorsForFqName(fqName.parent())
                     .flatMap { it.typeParameters }
                     .firstOrNull {
-                        it.uniqueKey(this@DeclarationStore) == key
+                        it.uniqueKey() == key
                     }
                 ?: classifierDescriptorForFqName(fqName.parent())
                     .safeAs<ClassifierDescriptorWithTypeParameters>()
                     ?.declaredTypeParameters
-                    ?.firstOrNull { it.uniqueKey(this@DeclarationStore) == key }
+                    ?.firstOrNull { it.uniqueKey() == key }
                 ?: error("Could not get for $fqName $key")
         }
     }

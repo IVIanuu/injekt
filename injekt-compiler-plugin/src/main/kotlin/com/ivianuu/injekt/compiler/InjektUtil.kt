@@ -22,7 +22,7 @@ import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.ContributionKind
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.contributionKind
-import com.ivianuu.injekt.compiler.resolution.fullyExpandedType
+import com.ivianuu.injekt.compiler.resolution.fullyAbbreviatedType
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
@@ -178,15 +178,14 @@ fun IrType.getAnnotatedAnnotations(annotation: FqName): List<IrConstructorCall> 
         inner.hasAnnotation(annotation)
     }
 
-fun DeclarationDescriptor.uniqueKey(declarationStore: DeclarationStore): String {
+fun DeclarationDescriptor.uniqueKey(): String {
     val original = this.original
     return when (original) {
         is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
             original.valueParameters
                 .joinToString(",") {
                     it.type
-                        .toTypeRef(declarationStore)
-                        .fullyExpandedType
+                        .fullyAbbreviatedType
                         .uniqueTypeName()
                 }
         }"
@@ -197,24 +196,22 @@ fun DeclarationDescriptor.uniqueKey(declarationStore: DeclarationStore): String 
                 .plus(original.valueParameters)
                 .joinToString(",") { 
                     it.type
-                        .toTypeRef(declarationStore)
-                        .fullyExpandedType
+                        .fullyAbbreviatedType
                         .uniqueTypeName()
                 }
         }"
         is PropertyDescriptor -> "property:$fqNameSafe:${
             listOfNotNull(
                 original.dispatchReceiverParameter, original.extensionReceiverParameter)
-                .joinToString(",") { 
+                .joinToString(",") {
                     it.type
-                        .toTypeRef(declarationStore)
-                        .fullyExpandedType
+                        .fullyAbbreviatedType
                         .uniqueTypeName()
                 }
         }"
         is TypeAliasDescriptor -> "typealias:$fqNameSafe"
         is TypeParameterDescriptor ->
-            "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey(declarationStore)}"
+            "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey()}"
         is ParameterDescriptor -> ""
         is ValueParameterDescriptor -> ""
         is VariableDescriptor -> ""
