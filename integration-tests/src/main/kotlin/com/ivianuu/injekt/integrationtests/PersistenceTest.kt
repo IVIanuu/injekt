@@ -123,10 +123,10 @@ class PersistenceTest {
                     }
 
                     typealias FuncA = suspend () -> Unit
-                    typealias FuncB = suspend () -> Unit
+                    typealias FuncB = suspend () -> Boolean
 
                     @Given fun funcA(@Given funcB: FuncB): FuncA = { }
-                    @Given fun funcB(): FuncB = {}
+                    @Given fun funcB(): FuncB = { true }
                 """
             )
         ),

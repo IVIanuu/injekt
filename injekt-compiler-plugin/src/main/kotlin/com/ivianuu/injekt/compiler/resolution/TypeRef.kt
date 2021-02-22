@@ -526,7 +526,8 @@ fun TypeRef.isSubTypeOf(
                     subTypeArg.isSubTypeOf(declarationStore, it, substitutionMap)
                 }
             }
-    } else if (superType.classifier.isTypeParameter || superType.classifier.isTypeAlias) {
+    } else if ((superType.classifier.isTypeParameter && !classifier.isTypeParameter) || (superType.classifier.isTypeAlias &&
+                !classifier.isTypeAlias)) {
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
         ) return@memoize false
@@ -558,7 +559,10 @@ val TypeRef.fullyExpandedType: TypeRef
     get() = expandedType?.fullyExpandedType ?: this
 
 val KotlinType.fullyAbbreviatedType: KotlinType
-    get() = getAbbreviatedType()?.fullyAbbreviatedType ?: this
+    get() {
+        val abbreviatedType = getAbbreviatedType()
+        return if (abbreviatedType != null && abbreviatedType != this) abbreviatedType.fullyAbbreviatedType else this
+    }
 
 fun TypeRef.subtypeView(
     classifier: ClassifierRef,

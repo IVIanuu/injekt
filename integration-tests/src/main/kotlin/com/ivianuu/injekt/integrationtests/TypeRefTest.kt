@@ -255,6 +255,14 @@ class TypeRefTest {
     }
 
     @Test
+    fun testTypeAliasIsNotSubTypeOfTypeParameterWithOtherTypeAliasUpperBound() = withAnalysisContext {
+        val typeAlias1 = typeAlias(function(0).typeWith(stringType))
+        val typeAlias2 = typeAlias(function(0).typeWith(intType))
+        val typeParameter = typeParameter(typeAlias1)
+        typeAlias2 shouldNotBeSubTypeOf typeParameter
+    }
+
+    @Test
     fun testGetSubstitutionMap() = withAnalysisContext {
         val superType = typeParameter()
         val map = getSubstitutionMap(declarationStore, listOf(stringType to superType))
@@ -427,13 +435,13 @@ class TypeRefTest {
 
         infix fun TypeRef.shouldBeAssignable(other: TypeRef) {
             if (!isAssignableTo(declarationStore, other)) {
-                throw AssertionError("'$this' is not assignable '$other'")
+                throw AssertionError("'$this' is not assignable to '$other'")
             }
         }
 
         infix fun TypeRef.shouldNotBeAssignable(other: TypeRef) {
             if (isAssignableTo(declarationStore, other)) {
-                throw AssertionError("'$this' is assignable '$other'")
+                throw AssertionError("'$this' is assignable to '$other'")
             }
         }
 
