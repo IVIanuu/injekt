@@ -111,4 +111,38 @@ class PersistenceTest {
         assertEquals("42", it.last().invokeSingleFile())
     }
 
+    @Test
+    fun testFunctionTypeParameterClassifier() = multiCodegen(
+        listOf(
+            source(
+                """
+                    var callCount = 0
+                    @Interceptor fun <T : FuncA> intercept(factory: () -> T): T { 
+                        callCount = callCount + 1
+                        return factory()
+                    }
+
+                    typealias FuncA = suspend () -> Unit
+                    typealias FuncB = suspend () -> Unit
+
+                    @Given fun funcA(@Given funcB: FuncB): FuncA = { }
+                    @Given fun funcB(): FuncB = {}
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke(): Int {
+                        given<FuncA>()
+                        return callCount
+                    } 
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        assertEquals(1, it.last().invokeSingleFile<Int>())
+    }
+
 }
