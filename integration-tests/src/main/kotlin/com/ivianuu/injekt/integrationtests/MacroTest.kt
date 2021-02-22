@@ -60,6 +60,7 @@ class MacroTest {
             @Macro @Module fun <T : @Trigger S, S> macroImpl(@Given instance: T): MyModule<T, S> = MyModule()
 
             @Trigger @Given fun foo() = Foo()
+            @Trigger @Given fun string() = ""
 
             fun invoke() = given<Set<Foo>>()
         """
