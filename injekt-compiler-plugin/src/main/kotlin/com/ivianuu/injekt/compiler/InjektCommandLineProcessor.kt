@@ -33,7 +33,8 @@ class InjektCommandLineProcessor : CommandLineProcessor {
         GenerateComponentsOption,
         GenerateMergeComponentsOption,
         SrcDirOption,
-        CacheDirOption
+        CacheDirOption,
+        SetInvalidationFileOption
     )
 
     override fun processOption(
@@ -44,6 +45,8 @@ class InjektCommandLineProcessor : CommandLineProcessor {
         when (option.optionName) {
             SrcDirOption.optionName -> configuration.put(SrcDirKey, value)
             CacheDirOption.optionName -> configuration.put(CacheDirKey, value)
+            CacheDirOption.optionName -> configuration.put(CacheDirKey, value)
+            SetInvalidationFileOption.optionName -> configuration.put(SetInvalidationFileKey, value)
         }
     }
 }
@@ -67,6 +70,11 @@ val CacheDirOption = CliOption(
     optionName = "cacheDir",
     valueDescription = "cacheDir",
     description = "cacheDir"
+)
+val SetInvalidationFileOption = CliOption(
+    optionName = "setInvalidationFile",
+    valueDescription = "setInvalidationFile",
+    description = "setInvalidationFile"
 )
 
 val SrcDirKey = CompilerConfigurationKey<String>("srcDir")
@@ -93,3 +101,13 @@ fun dumpDir(configuration: CompilerConfiguration, srcDir: SrcDir): DumpDir {
         .resolve("dump/$sourceSetName")
         .also { it.mkdirs() }
 }
+
+val SetInvalidationFileKey = CompilerConfigurationKey<String>("setInvalidationFile")
+typealias SetInvalidationFile = File
+
+fun setInvalidationFile(configuration: CompilerConfiguration): SetInvalidationFile =
+    File(configuration.getNotNull(SetInvalidationFileKey))
+        .also { it.parentFile.mkdirs() }
+
+val SetInvalidationFile.setInvalidationClassName: String
+    get() = name.removeSuffix(".kt")

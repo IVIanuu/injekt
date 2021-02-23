@@ -43,6 +43,10 @@ abstract class CleanGeneratedFiles : DefaultTask() {
     @get:Optional
     lateinit var generatedSrcDir: File
 
+    @get:InputFiles
+    @get:Optional
+    lateinit var setInvalidationDir: File
+
     @get:Input
     var isIncremental = true
 
@@ -76,6 +80,8 @@ abstract class CleanGeneratedFiles : DefaultTask() {
     @TaskAction
     operator fun invoke(inputs: IncrementalTaskInputs) {
         log("clean files: incremental $isIncremental")
+
+        setInvalidationDir.deleteRecursively()
 
         if (!isIncremental) {
             log("clean files: Clear all files because not incremental")

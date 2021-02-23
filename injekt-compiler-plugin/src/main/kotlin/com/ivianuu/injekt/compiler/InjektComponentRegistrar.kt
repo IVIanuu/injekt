@@ -54,36 +54,41 @@ class InjektComponentRegistrar : ComponentRegistrar {
             listOf("tmp", "kapt3", "incApCache")
         ).map { File(it.joinToString(File.separator)) }
         val isGenerateKaptStubs = kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
-        if (!isGenerateKaptStubs) {
-            AnalysisHandlerExtension.registerExtension(
-                project,
-                InjektKtGenerationExtension(srcDir(configuration), cacheDir(configuration))
-            )
-            StorageComponentContainerContributor.registerExtension(
-                project,
-                InjektStorageComponentContainerContributor(CliIndexStoreFactory)
-            )
-            IrGenerationExtension.registerExtensionFirst(
-                project,
-                InjektIrGenerationExtension()
-            )
-            IrGenerationExtension.registerExtensionLast(
-                project,
-                InjektIrDumper(cacheDir(configuration),
-                    dumpDir(configuration, srcDir(configuration)))
-            )
-            CandidateInterceptor.registerExtension(
-                project,
-                GivenCallResolutionInterceptorExtension(CliIndexStoreFactory)
-            )
-            TypeResolutionInterceptor.registerExtension(
-                project,
-                InjektTypeResolutionInterceptor()
-            )
-            @Suppress("DEPRECATION")
-            Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
-                .registerExtension(InjektDiagnosticSuppressor())
-        }
+        if (isGenerateKaptStubs) return
+
+        val cacheDir = cacheDir(configuration)
+        val srcDir = srcDir(configuration)
+        val setInvalidationFile = setInvalidationFile(configuration)
+        val dumpDir = dumpDir(configuration, srcDir)
+
+        AnalysisHandlerExtension.registerExtension(
+            project,
+            InjektKtGenerationExtension(srcDir, cacheDir,
+            setInvalidationFile)
+        )
+        StorageComponentContainerContributor.registerExtension(
+            project,
+            InjektStorageComponentContainerContributor(CliIndexStoreFactory)
+        )
+        IrGenerationExtension.registerExtensionFirst(
+            project,
+            InjektIrGenerationExtension()
+        )
+        IrGenerationExtension.registerExtensionLast(
+            project,
+            InjektIrDumper(cacheDir, dumpDir, setInvalidationFile)
+        )
+        CandidateInterceptor.registerExtension(
+            project,
+            GivenCallResolutionInterceptorExtension(CliIndexStoreFactory)
+        )
+        TypeResolutionInterceptor.registerExtension(
+            project,
+            InjektTypeResolutionInterceptor()
+        )
+        @Suppress("DEPRECATION")
+        Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
+            .registerExtension(InjektDiagnosticSuppressor())
     }
 }
 

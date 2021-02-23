@@ -63,8 +63,30 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
 
     val cacheDir = project.buildDir.resolve("injekt/cache")
         .also { it.mkdirs() }
+
+    val setInvalidationDir = srcDir.resolve("com/ivianuu/injekt/internal/setinvalidation")
+
+    val setInvalidationInfoFile = cacheDir.resolve("set_invalidation_info")
+
+    val setInvalidationNumber = if (setInvalidationInfoFile.exists()) {
+        setInvalidationInfoFile.readText().toInt() + 1
+    } else {
+        1
+    }
+
+    setInvalidationInfoFile.parentFile.mkdirs()
+    setInvalidationInfoFile.createNewFile()
+    setInvalidationInfoFile.writeText(setInvalidationNumber.toString())
+
     val dumpDir = project.buildDir.resolve("injekt/dump")
         .also { it.mkdirs() }
+
+    val setInvalidationFile = setInvalidationDir.resolve("SetInvalidation${
+        srcDir.absolutePath
+            .hashCode()
+            .toString()
+            .replace("-", "")
+    }_$setInvalidationNumber.kt")
 
     val extension = project.extensions.getByType(InjektExtension::class.java)
 
@@ -82,6 +104,7 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
         cleanGeneratedFiles.cacheDir = cacheDir
         cleanGeneratedFiles.dumpDir = dumpDir
         cleanGeneratedFiles.generatedSrcDir = srcDir
+        cleanGeneratedFiles.setInvalidationDir = setInvalidationDir
         cleanGeneratedFiles.srcDirs = if (androidVariantData != null) {
             androidVariantData.sourceSets
                 .flatMap { it.javaDirectories }
@@ -105,6 +128,7 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
                 "incremental: $isIncremental\n" +
                 "cache dir $cacheDir\n" +
                 "gen dir $srcDir\n" +
+                "set invalidation file $setInvalidationFile\n" +
                 "src dirs ${cleanGeneratedFiles.srcDirs.joinToString("\n")}\n" +
                 "compilation $compilation" +
                 "variant data $androidVariantData")
@@ -126,6 +150,10 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
         SubpluginOption(
             key = "cacheDir",
             value = cacheDir.absolutePath
+        ),
+        SubpluginOption(
+            key = "setInvalidationFile",
+            value = setInvalidationFile.absolutePath
         )
     )
 }

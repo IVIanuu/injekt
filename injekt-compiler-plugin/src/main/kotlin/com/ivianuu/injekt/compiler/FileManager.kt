@@ -23,6 +23,7 @@ import java.io.File
 class FileManager(
     private val srcDir: SrcDir,
     private val cacheDir: CacheDir,
+    private val setInvalidationFile: SetInvalidationFile
 ) {
     private val originatingFilePaths = mutableMapOf<File, String>()
 
@@ -46,6 +47,8 @@ class FileManager(
         val finalFiles = mutableListOf<KtFile>()
 
         files.forEach { file ->
+            if (file.virtualFilePath.contains("com/ivianuu/injekt/internal/setinvalidation")) return@forEach
+
             val originatingFilePath = cacheEntries
                 .singleOrNull { it.second == file.virtualFilePath }
                 ?.first

@@ -113,15 +113,22 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
     jvmTarget = "1.8"
     verbose = false
     kotlincArguments += "-XXLanguage:+NewInference"
+    val srcDir = workingDir.resolve("injekt/generated/src")
     pluginOptions += PluginOption(
         "com.ivianuu.injekt",
         "srcDir",
-        workingDir.resolve("injekt/generated/src").absolutePath
+        srcDir.absolutePath
     )
     pluginOptions += PluginOption(
         "com.ivianuu.injekt",
         "cacheDir",
         workingDir.resolve("injekt/cache").absolutePath
+    )
+    val setInvalidationFile = srcDir.resolve("com/ivianuu/injekt/internal/SetInvalidation.kt")
+    pluginOptions += PluginOption(
+        "com.ivianuu.injekt",
+        "setInvalidationFile",
+        setInvalidationFile.absolutePath
     )
     setGenerateComponents(true)
     setGenerateMergeComponents(false)

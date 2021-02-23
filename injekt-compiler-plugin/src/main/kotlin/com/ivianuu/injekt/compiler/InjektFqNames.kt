@@ -37,6 +37,8 @@ object InjektFqNames {
 
     val IndexPackage = InternalPackage.child("index".asNameId())
 
+    val SetInvalidationPackage = InternalPackage.child("setinvalidation".asNameId())
+
     val CommonPackage = InjektPackage.child("common".asNameId())
     val ForTypeKey = CommonPackage.child("ForTypeKey".asNameId())
     val TypeKey = CommonPackage.child("TypeKey".asNameId())

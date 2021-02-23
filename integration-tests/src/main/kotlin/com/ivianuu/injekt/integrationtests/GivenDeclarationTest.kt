@@ -83,7 +83,7 @@ class GivenDeclarationTest {
     }
 
     @Test
-    fun testGivenSuperTypeClass() = codegen(
+    fun testGivenClassSuperType() = codegen(
         """
             interface Dep<T>
             @Given class DepImpl<T>(@Given value: T) : @Given Dep<T>
@@ -97,7 +97,7 @@ class GivenDeclarationTest {
     }
 
     @Test
-    fun testGivenSuperTypeClassWithGivenConstructor() = codegen(
+    fun testGivenClassSuperTypeWithGivenConstructor() = codegen(
         """
             interface Dep<T>
             class DepImpl<T> : @Given Dep<T> {
