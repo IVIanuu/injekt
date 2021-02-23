@@ -99,6 +99,19 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
         }
         dependsOn(cleanGeneratedFiles)
 
+        val rewriteKotlinBuildHistory = project.tasks.create(
+            "${name}AfterKotlinTest", RewriteKotlinBuildHistory::class.java)
+
+        val buildHistoryFile = project.buildDir
+            .resolve("kotlin/$name/build-history.bin")
+            .also {
+                it.parentFile.mkdirs()
+                it.createNewFile()
+            }
+        rewriteKotlinBuildHistory.buildHistoryFile = buildHistoryFile
+
+        finalizedBy(rewriteKotlinBuildHistory)
+
         log("Setup in ${project.name} $name\n" +
                 "source set $sourceSetName\n" +
                 "extension: $extension\n" +

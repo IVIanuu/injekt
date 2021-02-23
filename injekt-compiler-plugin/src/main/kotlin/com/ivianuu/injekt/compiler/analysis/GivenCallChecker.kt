@@ -31,6 +31,7 @@ import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.InternalResolutionScope
 import com.ivianuu.injekt.compiler.resolution.LocalDeclarationResolutionScope
 import com.ivianuu.injekt.compiler.resolution.ResolutionScope
+import com.ivianuu.injekt.compiler.resolution.SetGivenNode
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.contributionKind
 import com.ivianuu.injekt.compiler.resolution.resolveGiven
@@ -44,6 +45,8 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
+import org.jetbrains.kotlin.incremental.components.LookupTracker
+import org.jetbrains.kotlin.incremental.recordPackageLookup
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
@@ -67,7 +70,8 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class GivenCallChecker(
     private val bindingTrace: BindingTrace,
-    private val declarationStore: DeclarationStore
+    private val declarationStore: DeclarationStore,
+    private val lookupTracker: LookupTracker?
 ) : KtTreeVisitorVoid() {
 
     private fun ResolutionScope.check(call: ResolvedCall<*>, reportOn: KtElement) {
@@ -112,6 +116,15 @@ class GivenCallChecker(
                             Unit
                         )
                     }
+
+                if (lookupTracker != null &&
+                    graph.givens.values.any { it is SetGivenNode }) {
+                    lookupTracker.recordPackageLookup(
+                        KotlinLookupLocation(reportOn),
+                        "com.ivianuu.injekt.setinvalidation",
+                        "trigger"
+                    )
+                }
                 bindingTrace.record(
                     InjektWritableSlices.GIVEN_GRAPH,
                     SourcePosition(

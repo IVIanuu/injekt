@@ -28,6 +28,8 @@ import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.incremental.components.LookupTracker
+import org.jetbrains.kotlin.incremental.record
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -42,6 +44,7 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : Analysis
     private var generatedCode = false
 
     private lateinit var lazyTopDownAnalyzer: LazyTopDownAnalyzer
+    private lateinit var lookupTracker: LookupTracker
 
     override fun doAnalysis(
         project: Project,
@@ -54,6 +57,7 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : Analysis
         files as ArrayList<KtFile>
         if (!generatedCode) {
             lazyTopDownAnalyzer = componentProvider.get()
+            lookupTracker = componentProvider.get()
             val tmpFiles = files.toList()
             files.clear()
             files += fileManager.preGenerate(tmpFiles)
@@ -100,7 +104,8 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : Analysis
                 DeclarationStore(
                     CliIndexStore(module),
                     module
-                )
+                ),
+                lookupTracker
             )
             files.forEach { it.accept(checker) }
         }

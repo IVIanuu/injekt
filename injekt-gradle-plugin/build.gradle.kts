@@ -48,6 +48,7 @@ dependencies {
     implementation(Deps.androidGradlePlugin)
     implementation(Deps.Kotlin.gradlePlugin)
     implementation(Deps.Kotlin.gradlePluginApi)
+    implementation(Deps.Kotlin.compilerEmbeddable)
     implementation(Deps.processingX)
     kapt(Deps.processingX)
 }
