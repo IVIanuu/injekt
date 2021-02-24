@@ -49,6 +49,9 @@ fun Service.createServiceComponent(): ServiceComponent =
 @Given val @Given ServiceComponent.appComponentFromService: AppComponent
     get() = get()
 
+@Given inline val @Given ServiceComponent.service: Service
+    get() = get()
+
 typealias ServiceContext = Context
 
 @Given inline val @Given Service.serviceContext: ServiceContext

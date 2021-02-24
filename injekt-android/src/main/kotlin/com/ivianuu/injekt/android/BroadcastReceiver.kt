@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.android
 
 import android.app.Application
+import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -54,6 +55,9 @@ fun BroadcastReceiver.createReceiverComponent(
     .invoke(this, context, intent)
 
 @Given val @Given ReceiverComponent.appComponentFromReceiver: AppComponent
+    get() = get()
+
+@Given inline val @Given ReceiverComponent.receiver: BroadcastReceiver
     get() = get()
 
 typealias ReceiverContext = Context
