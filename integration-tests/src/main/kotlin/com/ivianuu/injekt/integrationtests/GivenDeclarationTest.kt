@@ -130,6 +130,25 @@ class GivenDeclarationTest {
     }
 
     @Test
+    fun testGivenCompanionObject() = codegen(
+        """
+            @Given val foo = Foo()
+            class Dep {
+                @Given
+                companion object {
+                    init {
+                        given<Foo>()
+                    }
+                }
+            }
+            fun invoke() = given<Dep.Companion>()
+        """
+    ) {
+        assertEquals("com.ivianuu.injekt.integrationtests.Dep\$Companion",
+            invokeSingleFile<Any>().javaClass.name)
+    }
+
+    @Test
     fun testGivenExtensionFunction() = codegen(
         """
             @Given fun @Given Foo.bar() = Bar(this)
