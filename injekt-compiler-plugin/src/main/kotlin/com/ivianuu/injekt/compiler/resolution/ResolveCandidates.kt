@@ -156,7 +156,10 @@ private fun postProcess(
         }
         if (givenGroup != null) {
             if (given.depth(scope) < givenGroup.givenToUse.depth(scope)) {
+                given.usages += givenGroup.givenToUse.usages
                 givenGroup.givenToUse = given
+            } else {
+                givenGroup.givenToUse.usages++
             }
             givenGroup.requestsToReplace += request
         } else {
