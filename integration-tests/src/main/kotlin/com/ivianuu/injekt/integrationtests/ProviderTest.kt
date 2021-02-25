@@ -172,5 +172,20 @@ class ProviderTest {
     ) {
         invokeSingleFile()
     }
+
+    @Test
+    fun testMultipleProvidersInSetWithDependencyDerivedByProviderArgument() = codegen(
+        """
+            typealias MyComponent = Component
+            @Given val @Given MyComponent.key: String get() = ""
+            @Given fun foo(@Given key: String) = Foo()
+            @GivenSetElement fun fooIntoSet(@Given provider: (@Given MyComponent) -> Foo): (MyComponent) -> Any = provider as (MyComponent) -> Any 
+            @Given class Dep(@Given key: String)
+            @GivenSetElement fun depIntoSet(@Given provider: (@Given MyComponent) -> Dep): (MyComponent) -> Any = provider as (MyComponent) -> Any
+            fun invoke() {
+                given<Set<(MyComponent) -> Any>>()
+            }
+        """
+    )
     
 }
