@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 sealed class GivenNode {
+    abstract val uniqueKey: Any
     abstract val type: TypeRef
     abstract val originalType: TypeRef
     abstract val dependencies: List<GivenRequest>
@@ -42,13 +43,14 @@ sealed class GivenNode {
     abstract val interceptors: List<InterceptorNode>
 }
 
-data class CallableGivenNode(
+class CallableGivenNode(
     override val type: TypeRef,
     override val dependencies: List<GivenRequest>,
     override val ownerScope: ResolutionScope,
     override val interceptors: List<InterceptorNode>,
     val callable: CallableRef,
 ) : GivenNode() {
+    override val uniqueKey: Any = callable
     override val callableFqName: FqName = if (callable.callable is ClassConstructorDescriptor)
         callable.callable.constructedClass.fqNameSafe
     else callable.callable.fqNameSafe
@@ -64,13 +66,14 @@ data class CallableGivenNode(
         get() = false
 }
 
-data class SetGivenNode(
+class SetGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope,
     override val interceptors: List<InterceptorNode>,
     val elements: List<CallableRef>,
     override val dependencies: List<GivenRequest>,
 ) : GivenNode() {
+    override val uniqueKey: Any = "Set" to type
     override val callableFqName: FqName = FqName("GivenSet<${type.render()}>")
     override val callContext: CallContext
         get() = CallContext.DEFAULT
@@ -84,10 +87,11 @@ data class SetGivenNode(
         get() = true
 }
 
-data class DefaultGivenNode(
+class DefaultGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope
 ) : GivenNode() {
+    override val uniqueKey: Any = "Default"
     override val callContext: CallContext
         get() = CallContext.DEFAULT
     override val callableFqName: FqName
@@ -106,12 +110,13 @@ data class DefaultGivenNode(
         get() = emptyList()
 }
 
-data class ProviderGivenNode(
+class ProviderGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope,
     override val interceptors: List<InterceptorNode>,
     val declarationStore: DeclarationStore
 ) : GivenNode() {
+    override val uniqueKey: Any = "Provider" to type
     override val callableFqName: FqName = FqName("Provider<${type.render()}>")
     override val dependencies: List<GivenRequest> = listOf(
         GivenRequest(

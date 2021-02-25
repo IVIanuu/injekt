@@ -31,9 +31,9 @@ class ResolutionScope(
     val callContext: CallContext,
     produceContributions: () -> List<CallableRef>
 ) {
-    val chain: MutableSet<GivenNode> = parent?.chain ?: mutableSetOf()
+    val chain: MutableSet<CandidateKey> = parent?.chain ?: mutableSetOf()
     val resultsByRequest = mutableMapOf<GivenRequest, ResolutionResult>()
-    val resultsByCandidate = mutableMapOf<GivenNode, CandidateResolutionResult>()
+    val resultsByCandidate = mutableMapOf<CandidateKey, CandidateResolutionResult>()
 
     private val givens = mutableListOf<Pair<CallableRef, ResolutionScope>>()
     private val givenSetElements = mutableListOf<CallableRef>()
@@ -55,22 +55,24 @@ class ResolutionScope(
         parent?.interceptors?.forEach { interceptors += it }
         parent?.macros?.forEach { macros += it }
 
-        produceContributions().forEach { contribution ->
-            contribution.collectContributions(
-                declarationStore = declarationStore,
-                path = listOf(contribution.callable.fqNameSafe),
-                substitutionMap = emptyMap(),
-                addGiven = { callable ->
-                    givens += callable to this
-                    val typeWithPath = callable.type
-                        .copy(path = listOf(callable.callable.fqNameSafe))
-                    givens += callable.copy(type = typeWithPath) to this
-                },
-                addGivenSetElement = { givenSetElements += it },
-                addInterceptor = { interceptors += it },
-                addMacro = { macros += it }
-            )
-        }
+        produceContributions()
+            .distinctBy { it.type to it.callable.original }
+            .forEach { contribution ->
+                contribution.collectContributions(
+                    declarationStore = declarationStore,
+                    path = listOf(contribution.callable.fqNameSafe),
+                    substitutionMap = emptyMap(),
+                    addGiven = { callable ->
+                        givens += callable to this
+                        val typeWithPath = callable.type
+                            .copy(path = listOf(callable.callable.fqNameSafe))
+                        givens += callable.copy(type = typeWithPath) to this
+                    },
+                    addGivenSetElement = { givenSetElements += it },
+                    addInterceptor = { interceptors += it },
+                    addMacro = { macros += it }
+                )
+            }
 
         givens
             .filter { it.first.type.path != null }
@@ -96,12 +98,14 @@ class ResolutionScope(
                     type.arguments.dropLast(1).all {
                         it.contributionKind != null
                     }
-                ) this += ProviderGivenNode(
-                    type,
-                    this@ResolutionScope,
-                    interceptorsForType(type),
-                    declarationStore
-                )
+                ) {
+                    this += ProviderGivenNode(
+                        type,
+                        this@ResolutionScope,
+                        interceptorsForType(type),
+                        declarationStore
+                    )
+                }
 
                 if (type.isSubTypeOf(declarationStore, setType)) {
                     val setElementType = type.subtypeView(setType.classifier)!!.arguments.single()
@@ -116,7 +120,7 @@ class ResolutionScope(
                         }
                     )
                 }
-            }.distinct()
+            }
         }
     }
 

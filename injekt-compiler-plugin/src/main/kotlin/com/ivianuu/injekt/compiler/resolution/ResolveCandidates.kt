@@ -139,20 +139,43 @@ private fun List<ResolutionResult.Failure>.toErrorGraph(): GivenGraph.Error {
     return GivenGraph.Error(failuresByRequest)
 }
 
+class CandidateKey(val candidate: GivenNode) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as CandidateKey
+
+        if (candidate.uniqueKey != other.candidate.uniqueKey) return false
+        if (candidate.type != other.candidate.type) return false
+        if (candidate.ownerScope != other.candidate.ownerScope) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = candidate.uniqueKey.hashCode()
+        result = 31 * result + candidate.type.hashCode()
+        result = 31 * result + candidate.ownerScope.hashCode()
+        return result
+    }
+}
+
 private fun ResolutionScope.computeForCandidate(
     request: GivenRequest,
     candidate: GivenNode,
     compute: () -> CandidateResolutionResult,
 ): CandidateResolutionResult {
-    resultsByCandidate[candidate]?.let { return it }
-    val subChain = mutableSetOf(candidate)
+    val key = CandidateKey(candidate)
+    resultsByCandidate[key]?.let { return it }
+    val subChain = mutableSetOf(key)
     chain.reversed().forEach { prev ->
         subChain += prev
-        if (prev.callableFqName == candidate.callableFqName &&
-            prev.type.coveringSet == candidate.type.coveringSet &&
-            (prev.type.typeSize < candidate.type.typeSize ||
-                    (prev.type == candidate.type &&
-                            subChain.none { it.lazyDependencies }))
+        if (prev.candidate.callableFqName == candidate.callableFqName &&
+            prev.candidate.type.coveringSet == candidate.type.coveringSet &&
+            (prev.candidate.type.typeSize < candidate.type.typeSize ||
+                    (prev.candidate.type == candidate.type &&
+                            subChain.none { it.candidate.lazyDependencies }))
         ) {
             return CandidateResolutionResult.Failure(
                 request,
@@ -162,7 +185,7 @@ private fun ResolutionScope.computeForCandidate(
         }
     }
 
-    if (candidate in chain) {
+    if (key in chain) {
         return CandidateResolutionResult.Success(
             request,
             candidate,
@@ -170,10 +193,10 @@ private fun ResolutionScope.computeForCandidate(
         )
     }
 
-    chain += candidate
+    chain += key
     val result = compute()
-    resultsByCandidate[candidate] = result
-    chain -= candidate
+    resultsByCandidate[key] = result
+    chain -= key
     return result
 }
 

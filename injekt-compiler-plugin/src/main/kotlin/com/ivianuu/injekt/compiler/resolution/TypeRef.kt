@@ -473,6 +473,7 @@ fun TypeRef.isAssignableTo(
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
         ) return@memoize false
+        if (path != superType.path) return@memoize false
         return@memoize true
     } else if (classifier.isTypeParameter) {
         val superTypesAssignable = superTypes(substitutionMap).all { upperBound ->
@@ -482,6 +483,7 @@ fun TypeRef.isAssignableTo(
         if (qualifiers.isNotEmpty() &&
             !superType.qualifiers.isAssignableTo(declarationStore, qualifiers)
         ) return@memoize false
+        if (path != superType.path) return@memoize false
         return@memoize true
     }
     return@memoize false
