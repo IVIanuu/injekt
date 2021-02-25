@@ -38,10 +38,15 @@ object Deps {
     const val androidGradlePlugin = "com.android.tools.build:gradle:4.1.2"
 
     object AndroidX {
+        object Activity {
+            private const val version = "1.3.0-alpha02"
+            const val activity = "androidx.activity:activity:$version"
+            const val compose = "androidx.activity:activity-compose:$version"
+        }
         const val appCompat = "androidx.appcompat:appcompat:1.1.0"
 
         object Compose {
-            const val version = "1.0.0-alpha12"
+            const val version = "1.0.0-beta01"
             const val compiler = "androidx.compose.compiler:compiler:$version"
             const val material = "androidx.compose.material:material:$version"
             const val runtime = "androidx.compose.runtime:runtime:$version"

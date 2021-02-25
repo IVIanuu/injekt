@@ -17,8 +17,8 @@
 package com.ivianuu.injekt.samples.android
 
 import android.os.Bundle
+import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.ui.platform.setContent
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityRetainedComponent

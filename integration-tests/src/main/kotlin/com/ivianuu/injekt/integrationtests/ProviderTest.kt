@@ -166,7 +166,7 @@ class ProviderTest {
     @Test
     fun testComposableProviderGiven() = codegen(
         """
-            @Given @Composable val foo: Foo get() = Foo()
+            @Given val foo: Foo @Composable get() = Foo()
             fun invoke() = given<@Composable () -> Foo>()
         """
     ) {
