@@ -17,19 +17,18 @@
 package com.ivianuu.injekt.samples.android
 
 import android.os.Bundle
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.appcompat.app.AppCompatActivity
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityRetainedComponent
 import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.component.ComponentElementBinding
 import com.ivianuu.injekt.component.get
-import com.ivianuu.injekt.given
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val component = activityComponent.get<MainActivityComponent>()

@@ -33,7 +33,6 @@ injekt {
 dependencies {
     implementation(Deps.AndroidX.Activity.activity)
     implementation(Deps.AndroidX.Activity.compose)
-    implementation(Deps.AndroidX.appCompat)
     implementation(project(":injekt-android"))
     implementation(project(":injekt-android-work"))
     implementation(project(":injekt-core"))
