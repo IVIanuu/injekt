@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.injektName
@@ -30,6 +31,7 @@ import org.jetbrains.kotlin.cfg.index
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -37,18 +39,25 @@ import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.builders.Scope
+import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlock
+import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irCallConstructor
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
+import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSet
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.builders.irUnit
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrVariable
+import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
@@ -62,14 +71,39 @@ import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 
 class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrElementTransformerVoid() {
 
-    private data class ResolutionContext(val graph: GivenGraph.Success) {
-        val initializingExpressions = mutableMapOf<GivenNode, GivenExpression?>()
+    private class GraphContext(val graph: GivenGraph.Success) {
+        val statements = mutableListOf<IrStatement>()
+        private val scopeContexts = mutableMapOf<ResolutionScope, ScopeContext>()
+
+        fun scopeContext(scope: ResolutionScope, symbol: IrSymbol) = scopeContexts.getOrPut(scope) {
+            ScopeContext(this, scope, symbol)
+        }
+
+        fun scopeContext(given: GivenNode, symbol: IrSymbol): ScopeContext {
+            val resolutionScopeToUse = if (given.depth(given.requestedInScope) < given.depth(graph.scope))
+                graph.scope else given.requestedInScope
+            return scopeContext(resolutionScopeToUse, symbol)
+        }
     }
 
-    private fun ResolutionContext.fillGivens(
+    private class ScopeContext(
+        val graphContext: GraphContext,
+        val scope: ResolutionScope,
+        val symbol: IrSymbol
+    ) {
+        val irScope = Scope(symbol)
+        val statements =
+            if (graphContext.graph.scope == scope) graphContext.statements else mutableListOf()
+        val initializingExpressions = mutableMapOf<GivenNode, GivenExpression?>()
+        val cachedExpressions = mutableMapOf<GivenNode, () -> IrExpression>()
+        val functionExpressions = mutableMapOf<GivenNode, () -> IrExpression>()
+    }
+
+    private fun GraphContext.fillGivens(
         callable: CallableRef,
         call: IrFunctionAccessExpression,
     ) {
@@ -107,17 +141,14 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             .forEach { call.putValueArgument(it.first.index, it.second) }
     }
 
-    private inner class GivenExpression(
-        private val given: GivenNode,
-        private val symbol: IrSymbol
-    ) {
+    private inner class GivenExpression(private val given: GivenNode) {
         private var block: IrBlock? = null
         private var tmpVariable: IrVariable? = null
         private var finalExpression: IrExpression? = null
 
         private var initializing = false
 
-        fun ResolutionContext.get(): IrExpression? {
+        fun ScopeContext.get(): IrExpression? {
             if (initializing) {
                 if (block == null) {
                     block = DeclarationIrBuilder(pluginContext, symbol)
@@ -132,11 +163,13 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             initializing = true
 
             val rawExpression = when (given) {
-                is CallableGivenNode -> callableExpression(given, symbol)
+                is CallableGivenNode -> graphContext.callableExpression(given, symbol)
                 is DefaultGivenNode -> null
-                is ProviderGivenNode -> providerExpression(given, symbol)
-                is SetGivenNode -> setExpression(given, symbol)
-            }?.let { intercepted(it, given, symbol) }
+                is ProviderGivenNode -> graphContext.providerExpression(given, symbol)
+                is SetGivenNode -> graphContext.setExpression(given, symbol)
+            }
+                ?.let { graphContext.intercepted(it, given, symbol) }
+                ?.let { wrapInFunctionIfNeeded(it, given) }
 
             initializing = false
 
@@ -152,20 +185,61 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         }
     }
 
-    private fun ResolutionContext.expressionFor(
+    private fun GraphContext.expressionFor(
         request: GivenRequest,
         symbol: IrSymbol,
     ): IrExpression? {
         val given = graph.givens[request]!!
-        initializingExpressions[given]?.run { return get() }
-        val expression = GivenExpression(given, symbol)
-        initializingExpressions[given] = expression
-        val irExpression = expression.run { get() }
-        initializingExpressions -= given
+        val scopeContext = scopeContext(given, symbol)
+        scopeContext.initializingExpressions[given]?.run { return with(scopeContext) { get() } }
+        val expression = GivenExpression(given)
+        scopeContext.initializingExpressions[given] = expression
+        val irExpression = expression.run { with(scopeContext) { get() } }
+        scopeContext.initializingExpressions -= given
         return irExpression
     }
 
-    private fun ResolutionContext.intercepted(
+    private fun ScopeContext.wrapInFunctionIfNeeded(
+        expression: IrExpression,
+        given: GivenNode
+    ): IrExpression {
+        if (given.usages < 2 || given.dependencies.isEmpty()) return expression
+        return functionExpressions.getOrPut(given) {
+            val function = IrFactoryImpl.buildFun {
+                origin = IrDeclarationOrigin.DEFINED
+                name = Name.special("<anonymous>")
+                returnType = expression.type
+                visibility = DescriptorVisibilities.LOCAL
+                isSuspend = given.callContext == CallContext.SUSPEND
+            }.apply {
+                if (given.callContext == CallContext.COMPOSABLE) {
+                    annotations += DeclarationIrBuilder(pluginContext, symbol)
+                        .irCallConstructor(
+                            pluginContext.referenceConstructors(InjektFqNames.Composable)
+                                .single(),
+                            emptyList()
+                        )
+                }
+                parent = irScope.getLocalDeclarationParent()
+                statements += this
+                this.body = DeclarationIrBuilder(pluginContext, symbol).run {
+                        irBlockBody {
+                            +irReturn(expression)
+                        }
+                    }
+            }
+
+            val functionCallExpression: () -> IrExpression = {
+                DeclarationIrBuilder(
+                    pluginContext,
+                    symbol
+                ).irCall(function)
+            }
+            functionCallExpression
+        }()
+    }
+
+    private fun GraphContext.intercepted(
         unintercepted: IrExpression,
         given: GivenNode,
         symbol: IrSymbol
@@ -201,7 +275,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
 
     private val lambdasByProviderGiven = mutableMapOf<ProviderGivenNode, IrFunction>()
 
-    private fun ResolutionContext.objectExpression(
+    private fun GraphContext.objectExpression(
         type: TypeRef,
         symbol: IrSymbol,
     ): IrExpression {
@@ -209,19 +283,27 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             .irGetObject(pluginContext.referenceClass(type.classifier.fqName)!!)
     }
 
-    private fun ResolutionContext.providerExpression(
+    private fun GraphContext.providerExpression(
         given: ProviderGivenNode,
         symbol: IrSymbol,
     ): IrExpression {
         return DeclarationIrBuilder(pluginContext, symbol)
             .irLambda(given.type.toIrType(pluginContext)) { function ->
                 lambdasByProviderGiven[given] = function
-                expressionFor(given.dependencies.single(), symbol)
-                    ?: DeclarationIrBuilder(pluginContext, symbol).irUnit()
+                val expression = expressionFor(given.dependencies.single(), function.symbol)
+                    ?: DeclarationIrBuilder(pluginContext, function.symbol).irUnit()
+                val dependencyScopeContext = scopeContext(given.dependencyScope, function.symbol)
+                if (dependencyScopeContext.statements.isEmpty()) expression
+                else {
+                    irBlock {
+                        dependencyScopeContext.statements.forEach { +it }
+                        +expression
+                    }
+                }
             }
     }
 
-    private fun ResolutionContext.setExpression(
+    private fun GraphContext.setExpression(
         given: SetGivenNode,
         symbol: IrSymbol,
     ): IrExpression {
@@ -270,7 +352,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         }
     }
 
-    private fun ResolutionContext.callableExpression(
+    private fun GraphContext.callableExpression(
         given: CallableGivenNode,
         symbol: IrSymbol,
     ): IrExpression {
@@ -296,7 +378,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         }
     }
 
-    private fun ResolutionContext.classExpression(
+    private fun GraphContext.classExpression(
         type: TypeRef,
         callable: CallableRef,
         descriptor: ClassConstructorDescriptor,
@@ -330,7 +412,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         }
     }
 
-    private fun ResolutionContext.propertyExpression(
+    private fun GraphContext.propertyExpression(
         type: TypeRef,
         callable: CallableRef,
         descriptor: PropertyDescriptor,
@@ -354,7 +436,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             }
     }
 
-    private fun ResolutionContext.functionExpression(
+    private fun GraphContext.functionExpression(
         callable: CallableRef,
         descriptor: FunctionDescriptor,
         symbol: IrSymbol,
@@ -376,7 +458,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             }
     }
 
-    private fun ResolutionContext.parameterExpression(
+    private fun GraphContext.parameterExpression(
         descriptor: ParameterDescriptor,
         symbol: IrSymbol,
     ): IrExpression {
@@ -409,7 +491,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         }
     }
 
-    private fun ResolutionContext.variableExpression(
+    private fun GraphContext.variableExpression(
         descriptor: VariableDescriptor,
         symbol: IrSymbol,
     ): IrExpression {
@@ -486,46 +568,55 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             .also { variables += declaration }
     }
 
-    override fun visitFunctionAccess(expression: IrFunctionAccessExpression) =
-        super.visitFunctionAccess(expression.apply {
-            val graph = pluginContext.bindingContext[
-                    InjektWritableSlices.GIVEN_GRAPH,
-                    SourcePosition(
-                        fileStack.last().fileEntry.name,
-                        expression.startOffset,
-                        expression.endOffset
-                    )
-            ]
-            if (graph != null) {
-                try {
-                    val substitutionMap = getSubstitutionMap(
-                        graph.scope.declarationStore,
-                        (0 until expression.typeArgumentsCount)
-                            .map { getTypeArgument(it)!!.toKotlinType().toTypeRef(graph.scope.declarationStore) }
-                            .zip(
-                                expression.symbol.descriptor.typeParameters
-                                    .map { it.toClassifierRef(graph.scope.declarationStore).defaultType }
-                            )
-                    ) + getSubstitutionMap(
-                        graph.scope.declarationStore,
-                        ((dispatchReceiver?.type as? IrSimpleType)?.arguments
-                            ?.map { it.typeOrNull!!.toKotlinType().toTypeRef(graph.scope.declarationStore) }
-                            ?: emptyList())
-                            .zip(
-                                dispatchReceiver?.type?.classOrNull?.owner?.let {
-                                    it.typeParameters
-                                        .map { it.defaultType.toKotlinType().toTypeRef(graph.scope.declarationStore) }
-                                } ?: emptyList()
-                            )
-                    )
-                    ResolutionContext(graph)
-                        .fillGivens(expression.symbol.descriptor.toCallableRef(graph.scope.declarationStore)
-                            .substitute(substitutionMap), expression)
-                } catch (e: Throwable) {
-                    throw RuntimeException("Wtf ${expression.dump()}", e)
-                }
-            }
-        })
+    override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
+        val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
+        val graph = pluginContext.bindingContext[
+                InjektWritableSlices.GIVEN_GRAPH,
+                SourcePosition(
+                    fileStack.last().fileEntry.name,
+                    result.startOffset,
+                    result.endOffset
+                )
+        ] ?: return result
+        val substitutionMap = getSubstitutionMap(
+            graph.scope.declarationStore,
+            (0 until expression.typeArgumentsCount)
+                .map { result.getTypeArgument(it)!!.toKotlinType().toTypeRef(graph.scope.declarationStore) }
+                .zip(
+                    expression.symbol.descriptor.typeParameters
+                        .map { it.toClassifierRef(graph.scope.declarationStore).defaultType }
+                )
+        ) + getSubstitutionMap(
+            graph.scope.declarationStore,
+            ((result.dispatchReceiver?.type as? IrSimpleType)?.arguments
+                ?.map { it.typeOrNull!!.toKotlinType().toTypeRef(graph.scope.declarationStore) }
+                ?: emptyList())
+                .zip(
+                    result.dispatchReceiver?.type?.classOrNull?.owner?.let {
+                        it.typeParameters
+                            .map { it.defaultType.toKotlinType().toTypeRef(graph.scope.declarationStore) }
+                    } ?: emptyList()
+                )
+        )
 
+        val graphContext = GraphContext(graph)
+        try {
+            graphContext
+                .fillGivens(result.symbol.descriptor.toCallableRef(graph.scope.declarationStore)
+                    .substitute(substitutionMap), result)
+        } catch (e: Throwable) {
+            throw RuntimeException("Wtf ${expression.dump()}", e)
+        }
+
+        return if (graphContext.statements.isEmpty()) {
+            result
+        } else {
+            DeclarationIrBuilder(pluginContext, result.symbol)
+                .irBlock {
+                    graphContext.statements.forEach { +it }
+                    +result
+                }
+        }
+    }
 
 }

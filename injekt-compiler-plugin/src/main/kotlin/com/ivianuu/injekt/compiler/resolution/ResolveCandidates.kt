@@ -127,16 +127,19 @@ private fun List<ResolutionResult.Success>.toSuccessGraph(scope: ResolutionScope
             .forEach { it.visit() }
     }
     forEach { it.visit() }
-    postProcess(givensByRequest)
+    postProcess(scope, givensByRequest)
     return GivenGraph.Success(scope, givensByRequest)
 }
 
-private fun postProcess(givensByRequest: MutableMap<GivenRequest, GivenNode>) {
+private fun postProcess(
+    scope: ResolutionScope,
+    givensByRequest: MutableMap<GivenRequest, GivenNode>
+) {
     class MergeGivenGroup(
         val key: Any,
         val type: TypeRef,
         val dependencyGivens: List<GivenNode>,
-        val givenToUse: GivenNode
+        var givenToUse: GivenNode
     ) {
         val requestsToReplace = mutableListOf<GivenRequest>()
     }
@@ -152,6 +155,9 @@ private fun postProcess(givensByRequest: MutableMap<GivenRequest, GivenNode>) {
                     it.dependencyGivens == given.dependencyGivens()
         }
         if (givenGroup != null) {
+            if (given.depth(scope) < givenGroup.givenToUse.depth(scope)) {
+                givenGroup.givenToUse = given
+            }
             givenGroup.requestsToReplace += request
         } else {
             givenGroups += MergeGivenGroup(given.uniqueKey, given.type, given.dependencyGivens(), given)
@@ -235,6 +241,7 @@ private fun ResolutionScope.computeForCandidate(
     chain += key
     val result = compute()
     result.candidate.usages++
+    result.candidate.requestedInScope = this
     resultsByCandidate[key] = result
     chain -= key
     return result
@@ -301,7 +308,8 @@ private fun ResolutionResult.fallbackToDefaultIfNeeded(
     is ResolutionResult.Success -> this
     is ResolutionResult.Failure -> if (request.required) this
     else ResolutionResult.Success(request, CandidateResolutionResult.Success(
-        request, DefaultGivenNode(request.type, scope), emptyList()
+        request, DefaultGivenNode(request.type, scope)
+            .also { it.requestedInScope = scope }, emptyList()
     ))
 }
 
@@ -348,7 +356,7 @@ private fun ResolutionScope.resolveCandidate(
     )
 }
 
-private fun GivenNode.depth(scope: ResolutionScope): Int {
+fun GivenNode.depth(scope: ResolutionScope): Int {
     var currentScope: ResolutionScope? = scope
     var depth = 0
     while (currentScope != null && currentScope != ownerScope) {
