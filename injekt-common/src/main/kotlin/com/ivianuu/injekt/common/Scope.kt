@@ -23,7 +23,7 @@ import com.ivianuu.injekt.Qualifier
 interface Scope {
     operator fun <T : Any> get(key: Int): T?
     operator fun <T : Any> set(key: Int, value: T)
-    operator fun <T : Any> minusAssign(key: Int)
+    operator fun minusAssign(key: Int)
     fun dispose()
     interface Disposable {
         fun dispose()
@@ -65,7 +65,7 @@ private class ScopeImpl(private val values: MutableMap<Int, Any> = mutableMapOf(
         values[key] = value
     }
 
-    override fun <T : Any> minusAssign(key: Int) {
+    override fun minusAssign(key: Int) {
         values -= key
     }
 
