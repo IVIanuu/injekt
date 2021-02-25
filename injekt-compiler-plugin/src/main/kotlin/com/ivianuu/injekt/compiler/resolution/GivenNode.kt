@@ -43,7 +43,6 @@ sealed class GivenNode {
     abstract val interceptors: List<InterceptorNode>
     abstract val cache: Boolean
     var usages = 0
-    lateinit var requestedInScope: ResolutionScope
 }
 
 class CallableGivenNode(

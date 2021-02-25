@@ -19,7 +19,7 @@ package com.ivianuu.injekt.compiler.resolution
 sealed class GivenGraph {
     data class Success(
         val scope: ResolutionScope,
-        val givens: Map<GivenRequest, GivenNode>,
+        val givensByScope: Map<ResolutionScope, Map<GivenRequest, GivenNode>>,
     ) : GivenGraph()
 
     data class Error(
@@ -46,9 +46,11 @@ sealed class CandidateResolutionResult {
 
 sealed class ResolutionResult {
     abstract val request: GivenRequest
+    abstract val scope: ResolutionScope
 
     data class Success(
         override val request: GivenRequest,
+        override val scope: ResolutionScope,
         val candidateResult: CandidateResolutionResult.Success,
     ) : ResolutionResult()
 
@@ -57,6 +59,7 @@ sealed class ResolutionResult {
 
         data class CandidateAmbiguity(
             override val request: GivenRequest,
+            override val scope: ResolutionScope,
             val candidateResults: List<CandidateResolutionResult.Success>,
         ) : Failure() {
             override val failureOrdering: Int
@@ -65,6 +68,7 @@ sealed class ResolutionResult {
 
         data class CallContextMismatch(
             override val request: GivenRequest,
+            override val scope: ResolutionScope,
             val actualCallContext: CallContext,
             val candidate: GivenNode,
         ) : Failure() {
@@ -74,6 +78,7 @@ sealed class ResolutionResult {
 
         data class DivergentGiven(
             override val request: GivenRequest,
+            override val scope: ResolutionScope,
             val chain: List<GivenRequest>
         ) : Failure() {
             override val failureOrdering: Int
@@ -82,13 +87,17 @@ sealed class ResolutionResult {
 
         data class CandidateFailures(
             override val request: GivenRequest,
+            override val scope: ResolutionScope,
             val candidateFailure: CandidateResolutionResult.Failure,
         ) : Failure() {
             override val failureOrdering: Int
                 get() = 1
         }
 
-        data class NoCandidates(override val request: GivenRequest) : Failure() {
+        data class NoCandidates(
+            override val request: GivenRequest,
+            override val scope: ResolutionScope
+        ) : Failure() {
             override val failureOrdering: Int
                 get() = 2
         }
@@ -119,16 +128,17 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
 }
 
 private fun List<ResolutionResult.Success>.toSuccessGraph(scope: ResolutionScope): GivenGraph.Success {
-    val givensByRequest = mutableMapOf<GivenRequest, GivenNode>()
+    val givensByScope = mutableMapOf<ResolutionScope, MutableMap<GivenRequest, GivenNode>>()
     fun ResolutionResult.Success.visit() {
+        val givensByRequest = givensByScope.getOrPut(this.scope) { mutableMapOf() }
         if (request in givensByRequest) return
         givensByRequest[request] = candidateResult.candidate
         candidateResult.dependencyResults
             .forEach { it.visit() }
     }
     forEach { it.visit() }
-    postProcess(scope, givensByRequest)
-    return GivenGraph.Success(scope, givensByRequest)
+    //postProcess(scope, givensByRequest)
+    return GivenGraph.Success(scope, givensByScope)
 }
 
 private fun postProcess(
@@ -228,7 +238,7 @@ private fun ResolutionScope.computeForCandidate(
             return CandidateResolutionResult.Failure(
                 request,
                 candidate,
-                ResolutionResult.Failure.DivergentGiven(request, emptyList()) // todo
+                ResolutionResult.Failure.DivergentGiven(request, this, emptyList()) // todo
             )
         }
     }
@@ -244,7 +254,6 @@ private fun ResolutionScope.computeForCandidate(
     chain += key
     val result = compute()
     result.candidate.usages++
-    result.candidate.requestedInScope = this
     resultsByCandidate[key] = result
     chain -= key
     return result
@@ -254,15 +263,15 @@ private fun ResolutionScope.resolveCandidates(
     request: GivenRequest,
     candidates: List<GivenNode>,
 ): ResolutionResult {
-    if (candidates.isEmpty()) return ResolutionResult.Failure.NoCandidates(request)
+    if (candidates.isEmpty()) return ResolutionResult.Failure.NoCandidates(request, this)
 
     if (candidates.size == 1) {
         val candidate = candidates.single()
         return when (val candidateResult = resolveCandidate(request, candidate)) {
             is CandidateResolutionResult.Success ->
-                ResolutionResult.Success(request, candidateResult)
+                ResolutionResult.Success(request, this, candidateResult)
             is CandidateResolutionResult.Failure ->
-                ResolutionResult.Failure.CandidateFailures(request, candidateResult)
+                ResolutionResult.Failure.CandidateFailures(request, this, candidateResult)
         }
     }
 
@@ -298,10 +307,10 @@ private fun ResolutionScope.resolveCandidates(
 
     return if (successes.isNotEmpty()) {
         successes.singleOrNull()?.let {
-            ResolutionResult.Success(request, it)
-        } ?: ResolutionResult.Failure.CandidateAmbiguity(request, successes)
+            ResolutionResult.Success(request, this, it)
+        } ?: ResolutionResult.Failure.CandidateAmbiguity(request, this, successes)
     } else {
-        ResolutionResult.Failure.CandidateFailures(request, failure!!)
+        ResolutionResult.Failure.CandidateFailures(request, this, failure!!)
     }
 }
 
@@ -310,9 +319,8 @@ private fun ResolutionResult.fallbackToDefaultIfNeeded(
 ): ResolutionResult = when (this) {
     is ResolutionResult.Success -> this
     is ResolutionResult.Failure -> if (request.required) this
-    else ResolutionResult.Success(request, CandidateResolutionResult.Success(
-        request, DefaultGivenNode(request.type, scope)
-            .also { it.requestedInScope = scope }, emptyList()
+    else ResolutionResult.Success(request, scope, CandidateResolutionResult.Success(
+        request, DefaultGivenNode(request.type, scope), emptyList()
     ))
 }
 
@@ -324,7 +332,7 @@ private fun ResolutionScope.resolveCandidate(
         return@computeForCandidate CandidateResolutionResult.Failure(
             request,
             candidate,
-            ResolutionResult.Failure.CallContextMismatch(request, callContext, candidate)
+            ResolutionResult.Failure.CallContextMismatch(request, this, callContext, candidate)
         )
     }
 

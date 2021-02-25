@@ -93,7 +93,10 @@ class GivenCallChecker(
 
         when (graph) {
             is GivenGraph.Success -> {
-                graph.givens.values
+                graph
+                    .givensByScope
+                    .values
+                    .flatMap { it.values }
                     .filterIsInstance<CallableGivenNode>()
                     .forEach { given ->
                         val lookedUpDeclaration = when (val callable = given.callable.callable) {
