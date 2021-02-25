@@ -141,9 +141,9 @@ private fun List<ResolutionResult.Success>.toSuccessGraph(scope: ResolutionScope
     return GivenGraph.Success(scope, givensByScope)
 }
 
-private fun postProcess(
+.../*private fun postProcess(
     scope: ResolutionScope,
-    givensByRequest: MutableMap<GivenRequest, GivenNode>
+    givensByScope: MutableMap<ResolutionScope, MutableMap<GivenRequest, GivenNode>>
 ) {
     class MergeGivenGroup(
         val key: Any,
@@ -151,39 +151,42 @@ private fun postProcess(
         val dependencyGivens: List<GivenNode>,
         var givenToUse: GivenNode
     ) {
-        val requestsToReplace = mutableListOf<GivenRequest>()
+        val requestsToRemove = mutableListOf<Pair<GivenRequest, ResolutionScope>>()
     }
 
     fun GivenNode.dependencyGivens() = dependencies
-        .map { givensByRequest[it]!! }
+        .map { givensByScope[dependencyScope]!![it]!! }
 
     val givenGroups = mutableListOf<MergeGivenGroup>()
-    givensByRequest.forEach { (request, given) ->
-        val givenGroup = givenGroups.singleOrNull {
-            it.key == given.uniqueKey &&
-                    it.type == given.type &&
-                    it.dependencyGivens == given.dependencyGivens()
-        }
-        if (givenGroup != null) {
-            if (given.depth(scope) < givenGroup.givenToUse.depth(scope)) {
-                given.usages += givenGroup.givenToUse.usages
-                givenGroup.givenToUse = given
-            } else {
-                givenGroup.givenToUse.usages++
+    givensByScope
+        .values
+        .flatMap { it.entries }
+        .forEach { (request, given) ->
+            val givenGroup = givenGroups.singleOrNull {
+                it.key == given.uniqueKey &&
+                        it.type == given.type &&
+                        it.dependencyGivens == given.dependencyGivens()
             }
-            givenGroup.requestsToReplace += request
-        } else {
-            givenGroups += MergeGivenGroup(given.uniqueKey, given.type, given.dependencyGivens(), given)
-                .also { it.requestsToReplace += request }
+            if (givenGroup != null) {
+                if (given.depth(scope) < givenGroup.givenToUse.depth(scope)) {
+                    given.usages += givenGroup.givenToUse.usages
+                    givenGroup.givenToUse = given
+                } else {
+                    givenGroup.givenToUse.usages++
+                }
+                givenGroup.requestsToRemove += request to given.ownerScope
+            } else {
+                givenGroups += MergeGivenGroup(given.uniqueKey, given.type, given.dependencyGivens(), given)
+                    .also { it.requestsToRemove += request }
+            }
         }
-    }
 
     givenGroups.forEach { givenGroup ->
         givenGroup.requestsToReplace.forEach { request ->
             givensByRequest[request] = givenGroup.givenToUse
         }
     }
-}
+}*/
 
 private fun List<ResolutionResult.Failure>.toErrorGraph(): GivenGraph.Error {
     val failuresByRequest = mutableMapOf<GivenRequest, MutableList<ResolutionResult.Failure>>()

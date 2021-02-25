@@ -74,6 +74,7 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
         incremental = isIncremental
         if (!isIncremental) {
             outputs.cacheIf { false }
+            outputs.upToDateWhen { false }
         }
 
         val cleanGeneratedFiles = project.tasks.create(
