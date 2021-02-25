@@ -71,7 +71,7 @@ data class SetGivenNode(
     val elements: List<CallableRef>,
     override val dependencies: List<GivenRequest>,
 ) : GivenNode() {
-    override val callableFqName: FqName = FqName("GivenSet")
+    override val callableFqName: FqName = FqName("GivenSet<${type.render()}>")
     override val callContext: CallContext
         get() = CallContext.DEFAULT
     override val dependencyScope: ResolutionScope?
@@ -112,7 +112,7 @@ data class ProviderGivenNode(
     override val interceptors: List<InterceptorNode>,
     val declarationStore: DeclarationStore
 ) : GivenNode() {
-    override val callableFqName: FqName = FqName("Provider")
+    override val callableFqName: FqName = FqName("Provider<${type.render()}>")
     override val dependencies: List<GivenRequest> = listOf(
         GivenRequest(
             type = type.arguments.last(),
@@ -123,7 +123,7 @@ data class ProviderGivenNode(
     )
 
     override val dependencyScope = ResolutionScope(
-        "Provider",
+        "Provider<${type.render()}>",
         parent = ownerScope,
         declarationStore = declarationStore,
         callContext = type.callContext,
