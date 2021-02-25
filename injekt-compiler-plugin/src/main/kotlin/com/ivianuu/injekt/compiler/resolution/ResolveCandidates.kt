@@ -119,15 +119,51 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
 }
 
 private fun List<ResolutionResult.Success>.toSuccessGraph(scope: ResolutionScope): GivenGraph.Success {
-    val givensByType = mutableMapOf<GivenRequest, GivenNode>()
+    val givensByRequest = mutableMapOf<GivenRequest, GivenNode>()
     fun ResolutionResult.Success.visit() {
-        if (request in givensByType) return
-        givensByType[request] = candidateResult.candidate
+        if (request in givensByRequest) return
+        givensByRequest[request] = candidateResult.candidate
         candidateResult.dependencyResults
             .forEach { it.visit() }
     }
     forEach { it.visit() }
-    return GivenGraph.Success(scope, givensByType)
+    postProcess(givensByRequest)
+    return GivenGraph.Success(scope, givensByRequest)
+}
+
+private fun postProcess(givensByRequest: MutableMap<GivenRequest, GivenNode>) {
+    class MergeGivenGroup(
+        val key: Any,
+        val type: TypeRef,
+        val dependencyGivens: List<GivenNode>,
+        val givenToUse: GivenNode
+    ) {
+        val requestsToReplace = mutableListOf<GivenRequest>()
+    }
+
+    fun GivenNode.dependencyGivens() = dependencies
+        .map { givensByRequest[it]!! }
+
+    val givenGroups = mutableListOf<MergeGivenGroup>()
+    givensByRequest.forEach { (request, given) ->
+        val givenGroup = givenGroups.singleOrNull {
+            it.key == given.uniqueKey &&
+                    it.type == given.type &&
+                    it.dependencyGivens == given.dependencyGivens()
+        }
+        if (givenGroup != null) {
+            givenGroup.requestsToReplace += request
+        } else {
+            givenGroups += MergeGivenGroup(given.uniqueKey, given.type, given.dependencyGivens(), given)
+                .also { it.requestsToReplace += request }
+        }
+    }
+
+    givenGroups.forEach { givenGroup ->
+        givenGroup.requestsToReplace.forEach { request ->
+            givensByRequest[request] = givenGroup.givenToUse
+        }
+    }
 }
 
 private fun List<ResolutionResult.Failure>.toErrorGraph(): GivenGraph.Error {
@@ -167,7 +203,10 @@ private fun ResolutionScope.computeForCandidate(
     compute: () -> CandidateResolutionResult,
 ): CandidateResolutionResult {
     val key = CandidateKey(candidate)
-    resultsByCandidate[key]?.let { return it }
+    resultsByCandidate[key]?.let {
+        it.candidate.usages++
+        return it
+    }
     val subChain = mutableSetOf(key)
     chain.reversed().forEach { prev ->
         subChain += prev
@@ -195,6 +234,7 @@ private fun ResolutionScope.computeForCandidate(
 
     chain += key
     val result = compute()
+    result.candidate.usages++
     resultsByCandidate[key] = result
     chain -= key
     return result
