@@ -202,40 +202,43 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
     private fun ScopeContext.wrapInFunctionIfNeeded(
         expression: IrExpression,
         given: GivenNode
-    ): IrExpression = if (given.usages < 2 || given.dependencies.isEmpty()) expression
-    else functionExpressions.getOrPut(given) {
-        val function = IrFactoryImpl.buildFun {
-            origin = IrDeclarationOrigin.DEFINED
-            name = Name.special("<anonymous>")
-            returnType = given.type.toIrType(pluginContext)
-            visibility = DescriptorVisibilities.LOCAL
-            isSuspend = given.callContext == CallContext.SUSPEND
-        }.apply {
-            parent = irScope.getLocalDeclarationParent()
-            if (given.callContext == CallContext.COMPOSABLE) {
-                annotations += DeclarationIrBuilder(pluginContext, symbol)
-                    .irCallConstructor(
-                        pluginContext.referenceConstructors(InjektFqNames.Composable)
-                            .single(),
-                        emptyList()
-                    )
-            }
-            statements += this
-            this.body = DeclarationIrBuilder(pluginContext, symbol).run {
+    ): IrExpression {
+        return expression
+        return if (given.usages < 2 || given.dependencies.isEmpty()) expression
+        else functionExpressions.getOrPut(given) {
+            val function = IrFactoryImpl.buildFun {
+                origin = IrDeclarationOrigin.DEFINED
+                name = Name.special("<anonymous>")
+                returnType = given.type.toIrType(pluginContext)
+                visibility = DescriptorVisibilities.LOCAL
+                isSuspend = given.callContext == CallContext.SUSPEND
+            }.apply {
+                parent = irScope.getLocalDeclarationParent()
+                if (given.callContext == CallContext.COMPOSABLE) {
+                    annotations += DeclarationIrBuilder(pluginContext, symbol)
+                        .irCallConstructor(
+                            pluginContext.referenceConstructors(InjektFqNames.Composable)
+                                .single(),
+                            emptyList()
+                        )
+                }
+                statements += this
+                this.body = DeclarationIrBuilder(pluginContext, symbol).run {
                     irBlockBody {
                         +irReturn(expression)
                     }
                 }
-        }
+            }
 
-        val functionCallExpression: () -> IrExpression = {
-            DeclarationIrBuilder(
-                pluginContext,
-                symbol
-            ).irCall(function)
-        }
-        functionCallExpression
-    }()
+            val functionCallExpression: () -> IrExpression = {
+                DeclarationIrBuilder(
+                    pluginContext,
+                    symbol
+                ).irCall(function)
+            }
+            functionCallExpression
+        }()
+    }
 
     private fun GraphContext.intercepted(
         unintercepted: IrExpression,
