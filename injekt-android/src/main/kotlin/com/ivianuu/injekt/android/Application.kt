@@ -36,9 +36,6 @@ import com.ivianuu.injekt.component.get
 @Given inline val @Given App.application: Application
     get() = this as Application
 
-@Given inline val @Given AppComponent.app: App
-    get() = get()
-
 typealias AppContext = Context
 
 @Given inline val @Given Application.appContext: AppContext
