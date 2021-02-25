@@ -24,7 +24,6 @@
             <option value="$PROJECT_DIR$/samples" />
             <option value="$PROJECT_DIR$/samples/android-app" />
             <option value="$PROJECT_DIR$/samples/coffee-maker" />
-            <option value="$PROJECT_DIR$/samples/performance-comparison" />
             <option value="$PROJECT_DIR$/test-util" />
           </set>
         </option>

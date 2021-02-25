@@ -16,7 +16,6 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/samples/injekt.samples.iml" filepath="$PROJECT_DIR$/.idea/modules/samples/injekt.samples.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/samples/android-app/injekt.samples.android-app.iml" filepath="$PROJECT_DIR$/.idea/modules/samples/android-app/injekt.samples.android-app.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/samples/coffee-maker/injekt.samples.coffee-maker.iml" filepath="$PROJECT_DIR$/.idea/modules/samples/coffee-maker/injekt.samples.coffee-maker.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/samples/performance-comparison/injekt.samples.performance-comparison.iml" filepath="$PROJECT_DIR$/.idea/modules/samples/performance-comparison/injekt.samples.performance-comparison.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/test-util/injekt.test-util.iml" filepath="$PROJECT_DIR$/.idea/modules/test-util/injekt.test-util.iml" />
     </modules>
   </component>

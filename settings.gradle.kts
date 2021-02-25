@@ -26,6 +26,5 @@ include(
     ":integration-tests",
     ":test-util",
     "samples:android-app",
-    "samples:coffee-maker",
-    "samples:performance-comparison"
+    "samples:coffee-maker"
 )
