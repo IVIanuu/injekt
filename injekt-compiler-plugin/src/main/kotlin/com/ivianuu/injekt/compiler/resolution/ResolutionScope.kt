@@ -100,10 +100,11 @@ class ResolutionScope(
                     }
                 ) {
                     this += ProviderGivenNode(
-                        type,
-                        this@ResolutionScope,
-                        interceptorsForType(type),
-                        declarationStore
+                        type = type,
+                        ownerScope = this@ResolutionScope,
+                        requestingScope = this@ResolutionScope,
+                        interceptors = interceptorsForType(type),
+                        declarationStore = declarationStore
                     )
                 }
 
@@ -111,11 +112,12 @@ class ResolutionScope(
                     val setElementType = type.subtypeView(setType.classifier)!!.arguments.single()
                     val elements = givenSetElementsForType(setElementType)
                     this += SetGivenNode(
-                        type,
-                        this@ResolutionScope,
-                        interceptorsForType(type),
-                        elements,
-                        elements.flatMap { element ->
+                        type = type,
+                        ownerScope = this@ResolutionScope,
+                        requestingScope = this@ResolutionScope,
+                        interceptors = interceptorsForType(type),
+                        elements = elements,
+                        dependencies = elements.flatMap { element ->
                             element.getGivenRequests(declarationStore)
                         }
                     )

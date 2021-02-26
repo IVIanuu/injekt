@@ -40,6 +40,7 @@ import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.Scope
+import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
@@ -106,6 +107,14 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                 check(it.symbol === symbol)
             }
         }
+    }
+
+    private val givensByRequestsByScope = mutableMapOf<ResolutionScope, Map<GivenRequest, GivenNode>>()
+    private fun ResolutionScope.getGivensByRequest(
+        graphContext: GraphContext
+    ): Map<GivenRequest, GivenNode> = givensByRequestsByScope.getOrPut(this) {
+        (parent?.getGivensByRequest(graphContext) ?: emptyMap()) +
+                (graphContext.graph.givensByScope[this] ?: emptyMap())
     }
 
     private class ScopeContext(
@@ -221,9 +230,48 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         expression: IrExpression,
         given: GivenNode
     ): IrExpression {
-        return expression
-        return if (given.dependencies.isEmpty()) expression
-        else functionExpressions.getOrPut(given) {
+        if (given.dependencies.isEmpty()) return expression
+        val expression = functionExpressions.getOrPut(given) {
+            val usages = graphContext.graph.givensByScope
+                .values
+                .flatMap { it.values }
+                .filter {
+                    it.type == given.type &&
+                            it.uniqueKey == given.uniqueKey
+                }
+
+            if (usages.size == 1) return@getOrPut { expression }
+
+            /*fun ResolutionScope.allScopes(): List<ResolutionScope> =
+                (parent?.allScopes() ?: emptyList()) + this
+
+            val hostingScope = given.requestingScope.allScopes()
+                .last { candidateScope ->
+                    usages
+                        .all { usage ->
+                            candidateScope in usage.requestingScope.allScopes()
+                        }
+                }
+
+            val mergedDependencies = given.dependencies
+                .indices
+                .map { parameterIndex ->
+                    usages
+                        .map { usage ->
+                            usage.dependencies[parameterIndex] to
+                                    usage.requestingScope.getGivensByRequest(graphContext)[usage.dependencies[parameterIndex]]!!
+                        }
+                        .toSet()
+                }
+
+            val (stableDependencies, unstableDependencies) = mergedDependencies
+                .partition { it.size == 1 }
+                .let {
+                    it.first
+                        .map { it.first().first } to it.second
+                        .map { it.first().first }
+                }*/
+
             val function = IrFactoryImpl.buildFun {
                 origin = IrDeclarationOrigin.DEFINED
                 name = Name.special("<anonymous>")
@@ -240,22 +288,40 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                             emptyList()
                         )
                 }
-                statements += this
+                given.dependencies.forEach {
+                    addValueParameter(
+                        it.parameterName.asString(),
+                        it.type.toIrType(pluginContext)
+                    ).apply {
+                        annotations += DeclarationIrBuilder(pluginContext, symbol)
+                            .irCallConstructor(
+                                pluginContext.referenceConstructors(
+                                    InjektFqNames.Given
+                                ).first(),
+                                emptyList()
+                            )
+                    }
+                }
                 this.body = DeclarationIrBuilder(pluginContext, symbol).run {
                     irBlockBody {
                         +irReturn(expression)
                     }
                 }
+
+                graphContext.existingScopeContext(graphContext.graph.scope)
+                    .statements += this
             }
 
-            val functionCallExpression: () -> IrExpression = {
+            return@getOrPut {
                 DeclarationIrBuilder(
                     pluginContext,
                     symbol
                 ).irCall(function)
             }
-            functionCallExpression
         }()
+
+        return expression.apply {
+        }
     }
 
     private fun ScopeContext.intercepted(

@@ -42,12 +42,14 @@ sealed class GivenNode {
     abstract val isFrameworkGiven: Boolean
     abstract val interceptors: List<InterceptorNode>
     abstract val cache: Boolean
+    abstract val requestingScope: ResolutionScope
 }
 
 class CallableGivenNode(
     override val type: TypeRef,
     override val dependencies: List<GivenRequest>,
     override val ownerScope: ResolutionScope,
+    override val requestingScope: ResolutionScope,
     override val interceptors: List<InterceptorNode>,
     val callable: CallableRef,
 ) : GivenNode() {
@@ -72,6 +74,7 @@ class CallableGivenNode(
 class SetGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope,
+    override val requestingScope: ResolutionScope,
     override val interceptors: List<InterceptorNode>,
     val elements: List<CallableRef>,
     override val dependencies: List<GivenRequest>,
@@ -94,7 +97,8 @@ class SetGivenNode(
 
 class DefaultGivenNode(
     override val type: TypeRef,
-    override val ownerScope: ResolutionScope
+    override val ownerScope: ResolutionScope,
+    override val requestingScope: ResolutionScope
 ) : GivenNode() {
     override val uniqueKey: Any = "Default"
     override val callContext: CallContext
@@ -120,6 +124,7 @@ class DefaultGivenNode(
 class ProviderGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope,
+    override val requestingScope: ResolutionScope,
     override val interceptors: List<InterceptorNode>,
     val declarationStore: DeclarationStore
 ) : GivenNode() {
@@ -185,6 +190,7 @@ fun CallableRef.toGivenNode(
         type,
         finalCallable.getGivenRequests(ownerScope.declarationStore),
         ownerScope,
+        requestingScope,
         requestingScope.interceptorsForType(type),
         finalCallable
     )
