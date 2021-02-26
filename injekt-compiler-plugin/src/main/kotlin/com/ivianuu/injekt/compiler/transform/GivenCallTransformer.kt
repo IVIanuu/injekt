@@ -283,7 +283,10 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                 }
 
             val (stableDependencies, unstableDependencies) = mergedDependencies
-                .partition { it.size == 1 }
+                .partition {
+                    it.size == 1 &&
+                            it.single().second.ownerScope.depth(hostingScope) <= 0
+                }
                 .let {
                     it.first
                         .map { it.first().first } to it.second
@@ -291,7 +294,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                 }
 
             val function = IrFactoryImpl.buildFun {
-                origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
+                origin = IrDeclarationOrigin.DEFINED
                 name = Name.special("<anonymous>")
                 returnType = given.type.toIrType(pluginContext)
                 visibility = DescriptorVisibilities.LOCAL
