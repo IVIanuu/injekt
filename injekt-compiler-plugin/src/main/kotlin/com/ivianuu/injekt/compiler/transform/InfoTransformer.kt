@@ -72,13 +72,11 @@ class InfoTransformer(
     override fun visitFunction(declaration: IrFunction): IrStatement {
         if (declaration.hasAnnotation(InjektFqNames.Given) ||
             declaration.hasAnnotation(InjektFqNames.GivenSetElement) ||
-            declaration.hasAnnotation(InjektFqNames.Module) ||
-            declaration.hasAnnotation(InjektFqNames.Interceptor) || (
+            declaration.hasAnnotation(InjektFqNames.Module) || (
                     declaration is IrConstructor &&
                             (declaration.constructedClass.hasAnnotation(InjektFqNames.Given) ||
                                     declaration.constructedClass.hasAnnotation(InjektFqNames.GivenSetElement) ||
-                                    declaration.constructedClass.hasAnnotation(InjektFqNames.Module) ||
-                                    declaration.constructedClass.hasAnnotation(InjektFqNames.Interceptor)))) {
+                                    declaration.constructedClass.hasAnnotation(InjektFqNames.Module)))) {
                 val annotation = DeclarationIrBuilder(pluginContext, declaration.symbol)
                     .run {
                         irCall(
@@ -110,8 +108,7 @@ class InfoTransformer(
     override fun visitProperty(declaration: IrProperty): IrStatement {
         if (declaration.hasAnnotation(InjektFqNames.Given) ||
             declaration.hasAnnotation(InjektFqNames.GivenSetElement) ||
-            declaration.hasAnnotation(InjektFqNames.Module) ||
-            declaration.hasAnnotation(InjektFqNames.Interceptor)) {
+            declaration.hasAnnotation(InjektFqNames.Module)) {
             declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
                 .run {
                     irCall(

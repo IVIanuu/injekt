@@ -188,9 +188,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                 is DefaultGivenNode -> null
                 is ProviderGivenNode -> providerExpression(given)
                 is SetGivenNode -> setExpression(given)
-            }
-                ?.let { intercepted(it, given) }
-                ?.let { wrapInFunctionIfNeeded(it, given) }
+            }?.let { wrapInFunctionIfNeeded(it, given) }
 
             initializing = false
 
@@ -256,38 +254,6 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             }
             functionCallExpression
         }()
-    }
-
-    private fun ScopeContext.intercepted(
-        unintercepted: IrExpression,
-        given: GivenNode
-    ): IrExpression {
-        if (given.interceptors.isEmpty()) return unintercepted
-        val providerType = given.callContext
-            .providerType(graphContext.graph.scope.declarationStore)
-            .typeWith(listOf(given.type))
-        return given.interceptors
-            .reversed()
-            .fold(unintercepted) { acc: IrExpression, interceptor: InterceptorNode ->
-                callableExpression(
-                    interceptor.callable
-                        .toGivenNode(interceptor.callable.type, given.ownerScope, given.ownerScope)
-                ).apply {
-                    this as IrFunctionAccessExpression
-                    interceptor.callable.callable.valueParameters
-                        .single { interceptor.callable.parameterTypes[it.injektName()] == providerType }
-                        .index
-                        .let { factoryIndex ->
-                            putValueArgument(
-                                factoryIndex,
-                                DeclarationIrBuilder(
-                                    pluginContext,
-                                    symbol
-                                ).irLambda(providerType.toIrType(pluginContext)) { acc }
-                            )
-                        }
-                }
-            }
     }
 
     private fun ScopeContext.objectExpression(type: TypeRef): IrExpression =

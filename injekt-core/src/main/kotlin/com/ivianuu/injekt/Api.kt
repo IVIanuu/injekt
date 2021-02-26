@@ -52,14 +52,6 @@ annotation class GivenSetElement
 )
 annotation class Module
 
-@Target(
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.LOCAL_VARIABLE,
-    AnnotationTarget.VALUE_PARAMETER,
-    AnnotationTarget.TYPE
-)
-annotation class Interceptor
-
 @Target(AnnotationTarget.FUNCTION)
 annotation class Macro
 

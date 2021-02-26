@@ -169,7 +169,6 @@ class TypeKeyTransformer(
                 if (hasAnnotation(InjektFqNames.Given)) "@Given" else null,
                 if (hasAnnotation(InjektFqNames.GivenSetElement)) "@GivenSetElement" else null,
                 if (hasAnnotation(InjektFqNames.Module)) "@Module" else null,
-                if (hasAnnotation(InjektFqNames.Interceptor)) "@Interceptor" else null,
                 if (hasAnnotation(InjektFqNames.Composable)) "@Composable" else null,
                 *getAnnotatedAnnotations(InjektFqNames.Qualifier)
                     .map { it.type.classifierOrFail.descriptor.fqNameSafe.asString() +

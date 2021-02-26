@@ -37,12 +37,10 @@ class ResolutionScope(
 
     private val givens = mutableListOf<Pair<CallableRef, ResolutionScope>>()
     private val givenSetElements = mutableListOf<CallableRef>()
-    private val interceptors = mutableListOf<CallableRef>()
     private val macros = mutableListOf<CallableRef>()
 
     private val givenNodesByType = mutableMapOf<TypeRef, List<GivenNode>>()
     private val givenSetElementsByType = mutableMapOf<TypeRef, List<CallableRef>>()
-    private val interceptorsByType = mutableMapOf<TypeRef, List<InterceptorNode>>()
 
     private val processedContributions = mutableSetOf<Pair<CallableRef, TypeRef>>()
 
@@ -52,7 +50,6 @@ class ResolutionScope(
         parent?.processedContributions?.let { processedContributions += it }
         parent?.givens?.forEach { givens += it }
         parent?.givenSetElements?.forEach { givenSetElements += it }
-        parent?.interceptors?.forEach { interceptors += it }
         parent?.macros?.forEach { macros += it }
 
         produceContributions()
@@ -69,7 +66,6 @@ class ResolutionScope(
                         givens += callable.copy(type = typeWithPath) to this
                     },
                     addGivenSetElement = { givenSetElements += it },
-                    addInterceptor = { interceptors += it },
                     addMacro = { macros += it }
                 )
             }
@@ -102,7 +98,6 @@ class ResolutionScope(
                     this += ProviderGivenNode(
                         type,
                         this@ResolutionScope,
-                        interceptorsForType(type),
                         declarationStore
                     )
                 }
@@ -113,7 +108,6 @@ class ResolutionScope(
                     this += SetGivenNode(
                         type,
                         this@ResolutionScope,
-                        interceptorsForType(type),
                         elements,
                         elements.flatMap { element ->
                             element.getGivenRequests(declarationStore)
@@ -130,27 +124,6 @@ class ResolutionScope(
             givenSetElements
                 .filter { it.type.isAssignableTo(declarationStore, type) }
                 .map { it.substitute(getSubstitutionMap(declarationStore, listOf(type to it.type))) }
-        }
-    }
-
-    fun interceptorsForType(type: TypeRef): List<InterceptorNode> {
-        initialize
-        return interceptorsByType.getOrPut(type) {
-            interceptors
-                .filter { callContext.canCall(it.callContext) }
-                .filter { it.type.isAssignableTo(declarationStore, type) }
-                .map { it.substitute(getSubstitutionMap(declarationStore, listOf(type to it.type))) }
-                .filter { interceptor ->
-                    interceptor.parameterTypes
-                        .values
-                        .none { it == type }
-                }
-                .map {
-                    InterceptorNode(
-                        it,
-                        it.getGivenRequests(declarationStore)
-                    )
-                }
         }
     }
 
@@ -186,7 +159,6 @@ class ResolutionScope(
                 substitutionMap = outputsSubstitutionMap,
                 addGiven = { givens += it to this },
                 addGivenSetElement = { givenSetElements += it },
-                addInterceptor = { interceptors += it },
                 addMacro = { macros += it }
             )
 
@@ -202,7 +174,6 @@ class ResolutionScope(
                     path = listOf(newContributionWithPath.callable.fqNameSafe),
                     addGiven = { givens += it to this },
                     addGivenSetElement = { givenSetElements += it },
-                    addInterceptor = { interceptors += it },
                     addMacro = { macros += it }
                 )
                 runMacros(newContributionWithPath.type)

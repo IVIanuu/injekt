@@ -28,9 +28,6 @@ TODO
 # Macros
 TODO
 
-# Interceptors
-TODO
-
 # Modules
 TODO
 
