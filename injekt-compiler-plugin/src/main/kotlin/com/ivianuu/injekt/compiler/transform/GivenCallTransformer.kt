@@ -283,7 +283,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
     private fun ScopeContext.setExpression(given: SetGivenNode): IrExpression {
         val elementType = given.type.fullyExpandedType.arguments.single()
 
-        if (given.elements.isEmpty()) {
+        if (given.dependencies.isEmpty()) {
             val emptySet = pluginContext.referenceFunctions(
                 FqName("kotlin.collections.emptySet")
             ).single()
@@ -308,16 +308,11 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                     .apply { putTypeArgument(0, elementType.toIrType(pluginContext)) }
             )
 
-            given.elements
+            given.dependencies
                 .forEach {
                     +irCall(setAddAll).apply {
                         dispatchReceiver = irGet(tmpSet)
-                        putValueArgument(
-                            0,
-                            callableExpression(
-                                it.toGivenNode(elementType, this@setExpression.scope, this@setExpression.scope)
-                            )
-                        )
+                        putValueArgument(0, expressionFor(it))
                     }
                 }
 

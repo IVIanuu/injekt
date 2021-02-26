@@ -22,8 +22,8 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class ResolutionScope(
     val name: String,
@@ -41,7 +41,7 @@ class ResolutionScope(
     private val macros = mutableListOf<CallableRef>()
 
     private val givenNodesByType = mutableMapOf<TypeRef, List<GivenNode>>()
-    private val givenSetElementsByType = mutableMapOf<TypeRef, List<CallableRef>>()
+    private val givenSetElementsByType = mutableMapOf<TypeRef, List<GivenRequest>>()
 
     private val processedContributions = mutableSetOf<Pair<CallableRef, TypeRef>>()
 
@@ -61,9 +61,9 @@ class ResolutionScope(
                     substitutionMap = emptyMap(),
                     addGiven = { callable ->
                         givens += callable to this
-                        val typeWithPath = callable.type
-                            .copy(additionalKey = listOf(callable.callable.fqNameSafe))
-                        givens += callable.copy(type = typeWithPath) to this
+                        val typeWithMacroChain = callable.type
+                            .copy(macroChain = listOf(callable.callable.fqNameSafe))
+                        givens += callable.copy(type = typeWithMacroChain) to this
                     },
                     addGivenSetElement = { givenSetElements += it },
                     addMacro = { macros += it }
@@ -71,7 +71,7 @@ class ResolutionScope(
             }
 
         givens
-            .filter { it.first.type.additionalKey != null }
+            .filter { it.first.type.macroChain.isNotEmpty() }
             .forEach { runMacros(it.first.type) }
     }
 
@@ -86,7 +86,8 @@ class ResolutionScope(
                     .filter { it.first.type.isAssignableTo(declarationStore, type) }
                     .map { it.first.toGivenNode(type, it.second, this@ResolutionScope) }
 
-                if (type.additionalKey == null &&
+                if (type.macroChain.isEmpty() &&
+                    type.setKey == null &&
                     type.qualifiers.isEmpty() &&
                     (type.classifier.fqName.asString().startsWith("kotlin.Function")
                             || type.classifier.fqName.asString()
@@ -96,34 +97,47 @@ class ResolutionScope(
                     }
                 ) {
                     this += ProviderGivenNode(
-                        type,
-                        this@ResolutionScope,
-                        declarationStore
+                        type = type,
+                        ownerScope = this@ResolutionScope,
+                        declarationStore = declarationStore
                     )
                 }
 
-                if (type.isSubTypeOf(declarationStore, setType)) {
+                if (type.macroChain.isEmpty() &&
+                    type.setKey == null &&
+                    type.isSubTypeOf(declarationStore, setType)) {
                     val setElementType = type.subtypeView(setType.classifier)!!.arguments.single()
                     val elements = givenSetElementsForType(setElementType)
                     this += SetGivenNode(
-                        type,
-                        this@ResolutionScope,
-                        elements,
-                        elements.flatMap { element ->
-                            element.getGivenRequests(declarationStore)
-                        }
+                        type = type,
+                        ownerScope = this@ResolutionScope,
+                        dependencies = elements
                     )
                 }
             }
         }
     }
 
-    fun givenSetElementsForType(type: TypeRef): List<CallableRef> {
+    private fun givenSetElementsForType(type: TypeRef): List<GivenRequest> {
         initialize
         return givenSetElementsByType.getOrPut(type) {
             givenSetElements
                 .filter { it.type.isAssignableTo(declarationStore, type) }
                 .map { it.substitute(getSubstitutionMap(declarationStore, listOf(type to it.type))) }
+                .map { callable ->
+                    val typeWithSetKey = type.copy(
+                        setKey = SetKey(type, callable)
+                    )
+                    givenNodesByType[typeWithSetKey] = listOf(
+                        callable.toGivenNode(typeWithSetKey, this, this)
+                    )
+                    GivenRequest(
+                        type = typeWithSetKey,
+                        required = true,
+                        callableFqName = FqName("GivenSet"),
+                        parameterName = "element".asNameId()
+                    )
+                }
         }
     }
 
@@ -134,8 +148,8 @@ class ResolutionScope(
             processedContributions += key
 
             val macroType = macro.typeParameters.first().defaultType
-            if (!contribution.copy(additionalKey = null).isSubTypeOf(declarationStore, macroType)) continue
-            if (macro.callable.fqNameSafe in contribution.additionalKey.cast<List<Any>>()) continue
+            if (!contribution.copy(macroChain = emptyList()).isSubTypeOf(declarationStore, macroType)) continue
+            if (macro.callable.fqNameSafe in contribution.macroChain) continue
 
             val inputsSubstitutionMap = getSubstitutionMap(
                 declarationStore,
@@ -143,7 +157,7 @@ class ResolutionScope(
             )
             val outputsSubstitutionMap = getSubstitutionMap(
                 declarationStore,
-                listOf(contribution.copy(additionalKey = null) to macroType)
+                listOf(contribution.copy(macroChain = emptyList()) to macroType)
             )
             val newContribution = macro.substituteInputs(inputsSubstitutionMap)
                 .copy(
@@ -162,19 +176,19 @@ class ResolutionScope(
             )
 
             if (newContribution.contributionKind == ContributionKind.VALUE) {
-                val newContributionWithPath = newContribution.copy(
+                val newContributionWithChain = newContribution.copy(
                     type = newContribution.type.copy(
-                        additionalKey = contribution.additionalKey!!.cast<List<Any>>() + newContribution.callable.fqNameSafe
+                        macroChain = contribution.macroChain + newContribution.callable.fqNameSafe
                     )
                 )
-                newContributionWithPath.collectContributions(
+                newContributionWithChain.collectContributions(
                     declarationStore = declarationStore,
-                    substitutionMap = newContributionWithPath.typeArguments,
+                    substitutionMap = newContributionWithChain.typeArguments,
                     addGiven = { givens += it to this },
                     addGivenSetElement = { givenSetElements += it },
                     addMacro = { macros += it }
                 )
-                runMacros(newContributionWithPath.type)
+                runMacros(newContributionWithChain.type)
             }
         }
     }

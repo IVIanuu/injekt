@@ -116,7 +116,8 @@ sealed class TypeRef {
     abstract val contributionKind: ContributionKind?
     abstract val isStarProjection: Boolean
     abstract val qualifiers: List<AnnotationRef>
-    abstract val additionalKey: Any?
+    abstract val macroChain: List<FqName>
+    abstract val setKey: SetKey?
 
     private val typeName by unsafeLazy { uniqueTypeName() }
 
@@ -133,7 +134,8 @@ sealed class TypeRef {
         result = 31 * result + isComposable.hashCode()
         result = 31 * result + isStarProjection.hashCode()
         result = 31 * result + qualifiers.hashCode()
-        result = 31 * result + additionalKey.hashCode()
+        result = 31 * result + macroChain.hashCode()
+        result = 31 * result + setKey.hashCode()
 
         result
     }
@@ -210,8 +212,14 @@ class KotlinTypeRef(
         kotlinType.getAnnotatedAnnotations(InjektFqNames.Qualifier)
             .map { it.toAnnotationRef(declarationStore) }
     }
-    override val additionalKey: Any? get() = null
+    override val macroChain: List<FqName> get() = emptyList()
+    override val setKey: SetKey? get() = null
 }
+
+data class SetKey(
+    val type: TypeRef,
+    val callable: CallableRef
+)
 
 class SimpleTypeRef(
     override val classifier: ClassifierRef,
@@ -222,7 +230,8 @@ class SimpleTypeRef(
     override val contributionKind: ContributionKind? = null,
     override val isStarProjection: Boolean = false,
     override val qualifiers: List<AnnotationRef> = emptyList(),
-    override val additionalKey: Any? = null
+    override val macroChain: List<FqName> = emptyList(),
+    override val setKey: SetKey? = null
 ) : TypeRef() {
     init {
         check(arguments.size == classifier.typeParameters.size) {
@@ -244,7 +253,8 @@ fun TypeRef.copy(
     contributionKind: ContributionKind? = this.contributionKind,
     isStarProjection: Boolean = this.isStarProjection,
     qualifiers: List<AnnotationRef> = this.qualifiers,
-    additionalKey: Any? = this.additionalKey
+    macroChain: List<FqName> = this.macroChain,
+    setKey: SetKey? = this.setKey
 ) = SimpleTypeRef(
     classifier,
     isMarkedNullable,
@@ -254,7 +264,8 @@ fun TypeRef.copy(
     contributionKind,
     isStarProjection,
     qualifiers,
-    additionalKey
+    macroChain,
+    setKey
 )
 
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
@@ -413,7 +424,7 @@ fun getSubstitutionMap(
                 if (baseSuperType.classifier.isTypeParameter) {
                     val thisTypeToUse = thisBaseTypeView ?: thisType
                     visitType(thisTypeToUse
-                        .copy(qualifiers = emptyList(), additionalKey = null), baseSuperType)
+                        .copy(qualifiers = emptyList(), macroChain = emptyList(), setKey = null), baseSuperType)
                     if (thisTypeToUse.qualifiers.isAssignableTo(declarationStore, baseSuperType.qualifiers)) {
                         thisTypeToUse.qualifiers.zip(baseSuperType.qualifiers)
                             .forEach { visitType(it.first.type, it.second.type) }
@@ -449,7 +460,8 @@ fun TypeRef.isAssignableTo(
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return@memoize false
         if (!qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return@memoize false
-        if (additionalKey != superType.additionalKey) return@memoize false
+        if (macroChain != superType.macroChain) return@memoize false
+        if (setKey != superType.setKey) return@memoize false
         if (thisAndAllSuperTypes.any { it.isComposable } != superType.thisAndAllSuperTypes.any { it.isComposable }) return@memoize false
         if (arguments.zip(superType.arguments)
                 .any { (a, b) -> !a.isAssignableTo(declarationStore, b, substitutionMap) }
@@ -465,7 +477,8 @@ fun TypeRef.isAssignableTo(
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
         ) return@memoize false
-        if (additionalKey != superType.additionalKey) return@memoize false
+        if (macroChain != superType.macroChain) return@memoize false
+        if (setKey != superType.setKey) return@memoize false
         return@memoize true
     } else if (classifier.isTypeParameter) {
         val superTypesAssignable = superTypes(substitutionMap).all { upperBound ->
@@ -475,7 +488,8 @@ fun TypeRef.isAssignableTo(
         if (qualifiers.isNotEmpty() &&
             !superType.qualifiers.isAssignableTo(declarationStore, qualifiers)
         ) return@memoize false
-        if (additionalKey != superType.additionalKey) return@memoize false
+        if (macroChain != superType.macroChain) return@memoize false
+        if (setKey != superType.setKey) return@memoize false
         return@memoize true
     }
     return@memoize false
@@ -490,7 +504,8 @@ fun TypeRef.isSubTypeOf(
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return@memoize false
         if (!qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return@memoize false
-        if (additionalKey != superType.additionalKey) return@memoize false
+        if (macroChain != superType.macroChain) return@memoize false
+        if (setKey != superType.setKey) return@memoize false
         if (thisAndAllSuperTypes.any { it.isComposable } != superType.thisAndAllSuperTypes.any { it.isComposable }) return@memoize false
         if (arguments.zip(superType.arguments)
                 .any { (a, b) -> !a.isAssignableTo(declarationStore, b, substitutionMap) }
@@ -512,7 +527,8 @@ fun TypeRef.isSubTypeOf(
         ) return@memoize true
         if (subTypeView.isMarkedNullable && !superType.isMarkedNullable) return@memoize false
         if (!subTypeView.qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return@memoize false
-        if (subTypeView.additionalKey != superType.additionalKey) return@memoize false
+        if (subTypeView.macroChain != superType.macroChain) return@memoize false
+        if (subTypeView.setKey != superType.setKey) return@memoize false
         if (thisAndAllSuperTypes.any { it.isComposable } != superType.thisAndAllSuperTypes.any { it.isComposable }) return@memoize false
         return@memoize subTypeView.arguments.zip(superType.arguments)
             .all { (subTypeArg, superTypeArg) ->
@@ -525,7 +541,8 @@ fun TypeRef.isSubTypeOf(
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
         ) return@memoize false
-        if (additionalKey != superType.additionalKey) return@memoize false
+        if (macroChain != superType.macroChain) return@memoize false
+        if (setKey != superType.setKey) return@memoize false
         if (thisAndAllSuperTypes.any { it.isComposable } != superType.thisAndAllSuperTypes.any { it.isComposable }) return@memoize false
         return@memoize superType.superTypes(substitutionMap).all { upperBound ->
             // todo should do this comparison without qualifiers?

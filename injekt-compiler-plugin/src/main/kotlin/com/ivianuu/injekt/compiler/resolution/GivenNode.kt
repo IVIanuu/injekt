@@ -70,7 +70,6 @@ class CallableGivenNode(
 class SetGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope,
-    val elements: List<CallableRef>,
     override val dependencies: List<GivenRequest>,
 ) : GivenNode() {
     override val uniqueKey: Any = "Set" to type
