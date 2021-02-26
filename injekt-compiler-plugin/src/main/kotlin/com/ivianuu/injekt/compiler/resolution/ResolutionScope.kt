@@ -99,6 +99,7 @@ class ResolutionScope(
                     this += ProviderGivenNode(
                         type = type,
                         ownerScope = this@ResolutionScope,
+                        requestingScope = this@ResolutionScope,
                         declarationStore = declarationStore
                     )
                 }
@@ -111,6 +112,7 @@ class ResolutionScope(
                     this += SetGivenNode(
                         type = type,
                         ownerScope = this@ResolutionScope,
+                        requestingScope = this@ResolutionScope,
                         dependencies = elements
                     )
                 }

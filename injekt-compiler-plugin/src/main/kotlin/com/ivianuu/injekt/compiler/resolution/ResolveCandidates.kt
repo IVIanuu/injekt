@@ -271,7 +271,7 @@ private fun ResolutionResult.fallbackToDefaultIfNeeded(
     is ResolutionResult.Success -> this
     is ResolutionResult.Failure -> if (request.required) this
     else ResolutionResult.Success(request, scope, CandidateResolutionResult.Success(
-        request, DefaultGivenNode(request.type, scope), emptyList()
+        request, DefaultGivenNode(request.type, scope, scope), emptyList()
     ))
 }
 
@@ -306,15 +306,15 @@ private fun ResolutionScope.resolveCandidate(
     )
 }
 
-fun GivenNode.depth(scope: ResolutionScope): Int {
+fun ResolutionScope.depth(scope: ResolutionScope): Int {
     var currentScope: ResolutionScope? = scope
     var depth = 0
-    while (currentScope != null && currentScope != ownerScope) {
+    while (currentScope != null && currentScope != this) {
         depth++
         currentScope = currentScope.parent
     }
     if (currentScope == null) {
-        currentScope = ownerScope
+        currentScope = this
         depth = 0
         while (currentScope != null && currentScope != scope) {
             depth--
@@ -373,8 +373,8 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     b!!
 
     if (!a.isFrameworkGiven && !b.isFrameworkGiven) {
-        val depthA = a.depth(this)
-        val depthB = b.depth(this)
+        val depthA = a.ownerScope.depth(this)
+        val depthB = b.ownerScope.depth(this)
         if (depthA < depthB) return -1
         if (depthB < depthA) return 1
     }

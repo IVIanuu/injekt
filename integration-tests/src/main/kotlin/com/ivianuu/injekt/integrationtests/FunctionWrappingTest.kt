@@ -38,9 +38,9 @@ class FunctionWrappingTest {
         """
             @Given val foo = Foo()
             @Given fun bar(@Given foo: Foo) = Bar(foo)
-            @Given fun <T> pair(@Given a: T, @Given b: T): Pair<T, T> = a to b
+            @Given fun <T> pair(@Given a: T, @Given b: (@Given Foo) -> T): Pair<T, (Foo) -> T> = a to b
             fun invoke() {
-                given<(@Given Foo) -> Pair<Bar, Bar>>()
+                given<(@Given Foo) -> Pair<Bar, (Foo) -> Bar>>()(Foo())
             }
         """
     )

@@ -41,12 +41,14 @@ sealed class GivenNode {
     abstract val lazyDependencies: Boolean
     abstract val isFrameworkGiven: Boolean
     abstract val cache: Boolean
+    abstract val requestingScope: ResolutionScope
 }
 
 class CallableGivenNode(
     override val type: TypeRef,
     override val dependencies: List<GivenRequest>,
     override val ownerScope: ResolutionScope,
+    override val requestingScope: ResolutionScope,
     val callable: CallableRef,
 ) : GivenNode() {
     override val uniqueKey: Any = callable
@@ -70,6 +72,7 @@ class CallableGivenNode(
 class SetGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope,
+    override val requestingScope: ResolutionScope,
     override val dependencies: List<GivenRequest>,
 ) : GivenNode() {
     override val uniqueKey: Any = "Set" to type
@@ -90,7 +93,8 @@ class SetGivenNode(
 
 class DefaultGivenNode(
     override val type: TypeRef,
-    override val ownerScope: ResolutionScope
+    override val ownerScope: ResolutionScope,
+    override val requestingScope: ResolutionScope
 ) : GivenNode() {
     override val uniqueKey: Any = "Default"
     override val callContext: CallContext
@@ -114,6 +118,7 @@ class DefaultGivenNode(
 class ProviderGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope,
+    override val requestingScope: ResolutionScope,
     val declarationStore: DeclarationStore
 ) : GivenNode() {
     override val uniqueKey: Any = "Provider" to type
@@ -178,6 +183,7 @@ fun CallableRef.toGivenNode(
         type,
         finalCallable.getGivenRequests(ownerScope.declarationStore),
         ownerScope,
+        requestingScope,
         finalCallable
     )
 }
