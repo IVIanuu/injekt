@@ -144,8 +144,8 @@ class PersistenceTest {
         )
     ) {
         with(it.last()) {
-            assertNoMessage("no given argument found of type @com_ivianuu_injekt_integrationtests_MyQualifier() com.ivianuu.injekt.integrationtests.FuncA for parameter value of function com.ivianuu.injekt.given")
-            assertMessage("no given argument found of type @com_ivianuu_injekt_integrationtests_MyQualifier() com.ivianuu.injekt.integrationtests.FuncB for parameter value of function com.ivianuu.injekt.given")
+            assertNoMessage("no given argument found of type @com.ivianuu.injekt.integrationtests.MyQualifier() com.ivianuu.injekt.integrationtests.FuncA for parameter value of function com.ivianuu.injekt.given")
+            assertMessage("no given argument found of type @com.ivianuu.injekt.integrationtests.MyQualifier() com.ivianuu.injekt.integrationtests.FuncB for parameter value of function com.ivianuu.injekt.given")
         }
     }
 

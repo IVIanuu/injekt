@@ -312,11 +312,17 @@ fun TypeRef.render(depth: Int = 0): String {
     return buildString {
         fun TypeRef.inner() {
             val annotations = qualifiers.map {
-                "@${it.type}(${
+                "@${it.type.render()}(${
                     it.arguments.toList().joinToString { "${it.first}=${it.second}" }
                 })"
             } + listOfNotNull(
                 if (isComposable) "@${InjektFqNames.Composable}" else null,
+            ) + listOfNotNull(
+                if (macroChain.isNotEmpty()) "@MacroChain(\"${macroChain.joinToString(":") { 
+                    it.pathSegments().joinToString(".")
+                }}\"" else null
+            ) + listOfNotNull(
+                if (setKey != null) "@SetKey(\"${setKey!!.type},${setKey!!.callable.callable.fqNameSafe}\")" else null
             )
             if (annotations.isNotEmpty()) {
                 annotations.forEach { annotation ->
@@ -359,6 +365,10 @@ fun TypeRef.uniqueTypeName(depth: Int = 0): String {
         // if (includeNullability && isMarkedNullable) append("nullable_")
         if (isStarProjection) append("star")
         else append(classifier.fqName.pathSegments().joinToString("_") { it.asString() })
+        if (macroChain.isNotEmpty()) {
+            append(macroChain.joinToString("_", postfix = "_"))
+        }
+        if (setKey != null) append("${setKey.hashCode()}_")
         arguments.forEachIndexed { index, typeArgument ->
             if (index == 0) append("_")
             append(typeArgument.uniqueTypeName(depth + 1))

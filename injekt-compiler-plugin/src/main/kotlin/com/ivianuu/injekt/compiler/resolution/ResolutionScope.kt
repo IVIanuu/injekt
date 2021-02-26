@@ -40,7 +40,7 @@ class ResolutionScope(
     private val givenSetElements = mutableListOf<CallableRef>()
     private val macros = mutableListOf<CallableRef>()
 
-    private val givenNodesByType = mutableMapOf<TypeRef, List<GivenNode>>()
+    private val givensByType = mutableMapOf<TypeRef, List<GivenNode>>()
     private val givenSetElementsByType = mutableMapOf<TypeRef, List<GivenRequest>>()
 
     private val processedContributions = mutableSetOf<Pair<CallableRef, TypeRef>>()
@@ -80,7 +80,7 @@ class ResolutionScope(
 
     fun givensForType(type: TypeRef): List<GivenNode> {
         initialize
-        return givenNodesByType.getOrPut(type) {
+        return givensByType.getOrPut(type) {
             buildList<GivenNode> {
                 this += givens
                     .filter { it.first.type.isAssignableTo(declarationStore, type) }
@@ -130,7 +130,7 @@ class ResolutionScope(
                     val typeWithSetKey = type.copy(
                         setKey = SetKey(type, callable)
                     )
-                    givenNodesByType[typeWithSetKey] = listOf(
+                    givensByType[typeWithSetKey] = listOf(
                         callable.toGivenNode(typeWithSetKey, this, this)
                     )
                     GivenRequest(
