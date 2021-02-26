@@ -130,9 +130,8 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
         if (descriptor.annotations.count {
                 it.fqName == InjektFqNames.Given ||
                         it.fqName == InjektFqNames.GivenSetElement ||
-                        it.fqName == InjektFqNames.Module ||
-                        it.fqName == InjektFqNames.Interceptor
-            } > 1) {
+                        it.fqName == InjektFqNames.Module
+        } > 1) {
             trace.report(
                 InjektErrors.DECLARATION_WITH_MULTIPLE_CONTRIBUTIONS
                     .on(declaration)
@@ -154,9 +153,8 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
                     type.isSuspendFunctionType) &&
             (type.hasAnnotation(InjektFqNames.Given) ||
                     type.hasAnnotation(InjektFqNames.Module) ||
-                    type.hasAnnotation(InjektFqNames.GivenSetElement) ||
-                    type.hasAnnotation(InjektFqNames.Interceptor)) &&
-            type.arguments.dropLast(if (type.hasAnnotation(InjektFqNames.Interceptor)) 2 else 1)
+                    type.hasAnnotation(InjektFqNames.GivenSetElement)) &&
+            type.arguments.dropLast(1)
                 .any { it.type.contributionKind(declarationStore) == null }) {
             trace.report(
                 InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
@@ -166,7 +164,6 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
                             type.hasAnnotation(InjektFqNames.Given) -> InjektFqNames.Given.shortName()
                             type.hasAnnotation(InjektFqNames.Module) -> InjektFqNames.Module.shortName()
                             type.hasAnnotation(InjektFqNames.GivenSetElement) -> InjektFqNames.GivenSetElement.shortName()
-                            type.hasAnnotation(InjektFqNames.Interceptor) -> InjektFqNames.Interceptor.shortName()
                             else -> error("")
                         }
                     )
@@ -201,7 +198,6 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
                                     descriptor.hasAnnotation(InjektFqNames.Given) -> InjektFqNames.Given.shortName()
                                     descriptor.hasAnnotation(InjektFqNames.Module) -> InjektFqNames.Module.shortName()
                                     descriptor.hasAnnotation(InjektFqNames.GivenSetElement) -> InjektFqNames.GivenSetElement.shortName()
-                                    descriptor.hasAnnotation(InjektFqNames.Interceptor) -> InjektFqNames.Interceptor.shortName()
                                     else -> error("")
                                 }
                             )

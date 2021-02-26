@@ -369,18 +369,6 @@ private fun ResolutionScope.resolveCandidate(
             )
         }
     }
-    for (interceptor in candidate.interceptors) {
-        for (dependency in interceptor.dependencies) {
-            when (val result = resolveRequest(dependency)) {
-                is ResolutionResult.Success -> successDependencyResults += result
-                is ResolutionResult.Failure -> return@computeForCandidate CandidateResolutionResult.Failure(
-                    dependency,
-                    candidate,
-                    result
-                )
-            }
-        }
-    }
     return@computeForCandidate CandidateResolutionResult.Success(
         request,
         candidate,

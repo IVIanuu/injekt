@@ -70,24 +70,6 @@ class LambdaContributionsTest {
     )
 
     @Test
-    fun testInterceptorLambda() = codegen(
-        """
-            var called = false
-            fun <T> interceptorFactory(): @Interceptor (() -> T) -> T = { called = true; it() }
-           
-            @Module val fooInterceptorModule = interceptorFactory<Foo>()
-            @Given fun foo() = Foo()
-            
-            fun invoke(): Boolean {
-                given<Foo>()
-                return called
-            }
-        """
-    ) {
-        assertTrue(invokeSingleFile<Boolean>())
-    }
-
-    @Test
     fun testScopedLambdaGiven() = codegen(
         """
             @Module val givens: @Given (@Given Foo) -> @Scoped<AppComponent> Bar = { Bar(it) } 

@@ -62,7 +62,7 @@ fun CallableRef.substituteInputs(substitutionMap: Map<ClassifierRef, TypeRef>): 
 }
 
 enum class ContributionKind {
-    VALUE, SET_ELEMENT, MODULE, INTERCEPTOR
+    VALUE, SET_ELEMENT, MODULE
 }
 
 fun CallableDescriptor.toCallableRef(
@@ -171,7 +171,6 @@ fun Annotated.contributionKind(declarationStore: DeclarationStore): Contribution
     hasAnnotation(InjektFqNames.Given) -> ContributionKind.VALUE
     hasAnnotation(InjektFqNames.GivenSetElement) -> ContributionKind.SET_ELEMENT
     hasAnnotation(InjektFqNames.Module) -> ContributionKind.MODULE
-    hasAnnotation(InjektFqNames.Interceptor) -> ContributionKind.INTERCEPTOR
     this is ClassConstructorDescriptor -> constructedClass.contributionKind(declarationStore)
     else -> null
 }
@@ -184,14 +183,9 @@ fun CallableDescriptor.collectContributions(
     declarations += allParameters
         .mapNotNull { parameter ->
             val kind = parameter.contributionKind(declarationStore)
-            when {
-                kind == ContributionKind.INTERCEPTOR ->
-                    parameter.toCallableRef(declarationStore)
-                        .copy(contributionKind = ContributionKind.MODULE)
-                kind != null ->  parameter.toCallableRef(declarationStore)
-                    .copy(contributionKind = kind)
-                else -> null
-            }
+            if (kind != null) parameter.toCallableRef(declarationStore)
+                .copy(contributionKind = kind)
+            else null
         }
 
     extensionReceiverParameter?.let { receiver ->
@@ -215,7 +209,6 @@ fun ParameterDescriptor.contributionKind(declarationStore: DeclarationStore): Co
             userData.hasAnnotation(InjektFqNames.Given) -> ContributionKind.VALUE
             userData.hasAnnotation(InjektFqNames.GivenSetElement) -> ContributionKind.SET_ELEMENT
             userData.hasAnnotation(InjektFqNames.Module) -> ContributionKind.MODULE
-            userData.hasAnnotation(InjektFqNames.Interceptor) -> ContributionKind.INTERCEPTOR
             else -> null
         }
     } ?: getContributionParameters(declarationStore)
@@ -268,7 +261,6 @@ fun CallableRef.collectContributions(
     substitutionMap: Map<ClassifierRef, TypeRef>,
     addGiven: (CallableRef) -> Unit,
     addGivenSetElement: (CallableRef) -> Unit,
-    addInterceptor: (CallableRef) -> Unit,
     addMacro: (CallableRef) -> Unit
 ) {
     if (isMacro) {
@@ -278,7 +270,6 @@ fun CallableRef.collectContributions(
     when (contributionKind) {
         ContributionKind.VALUE -> addGiven(this)
         ContributionKind.SET_ELEMENT -> addGivenSetElement(this)
-        ContributionKind.INTERCEPTOR -> addInterceptor(this)
         ContributionKind.MODULE -> {
             val isFunction = type.allTypes.any {
                 it.classifier.fqName.asString().startsWith("kotlin.Function")
@@ -299,7 +290,6 @@ fun CallableRef.collectContributions(
                         substitutionMap,
                         addGiven,
                         addGivenSetElement,
-                        addInterceptor,
                         addMacro
                     )
                 }

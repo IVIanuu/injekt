@@ -74,6 +74,5 @@ private fun KtDeclaration.shouldBeIndexed(): Boolean {
 
     return hasAnnotation(InjektFqNames.Given) ||
             hasAnnotation(InjektFqNames.GivenSetElement) ||
-            hasAnnotation(InjektFqNames.Module) ||
-            hasAnnotation(InjektFqNames.Interceptor)
+            hasAnnotation(InjektFqNames.Module)
 }

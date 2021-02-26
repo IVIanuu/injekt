@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.assertMessage
+import com.ivianuu.injekt.test.assertNoMessage
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
@@ -117,9 +119,9 @@ class PersistenceTest {
             source(
                 """
                     var callCount = 0
-                    @Interceptor fun <T : FuncA> intercept(factory: () -> T): T { 
-                        callCount = callCount + 1
-                        return factory()
+                    @Qualifier annotation class MyQualifier
+                    @Macro @Given fun <T : FuncA> impl(@Given instance: T): @MyQualifier T {
+                        return instance
                     }
 
                     typealias FuncA = suspend () -> Unit
@@ -133,16 +135,18 @@ class PersistenceTest {
         listOf(
             source(
                 """
-                    fun invoke(): Int {
-                        given<FuncA>()
-                        return callCount
+                    fun invoke() {
+                        given<@MyQualifier FuncA>()
+                        given<@MyQualifier FuncB>()
                     } 
-                """,
-                name = "File.kt"
+                """
             )
         )
     ) {
-        assertEquals(1, it.last().invokeSingleFile<Int>())
+        with(it.last()) {
+            assertNoMessage("no given argument found of type @com_ivianuu_injekt_integrationtests_MyQualifier() com.ivianuu.injekt.integrationtests.FuncA for parameter value of function com.ivianuu.injekt.given")
+            assertMessage("no given argument found of type @com_ivianuu_injekt_integrationtests_MyQualifier() com.ivianuu.injekt.integrationtests.FuncB for parameter value of function com.ivianuu.injekt.given")
+        }
     }
 
 }
