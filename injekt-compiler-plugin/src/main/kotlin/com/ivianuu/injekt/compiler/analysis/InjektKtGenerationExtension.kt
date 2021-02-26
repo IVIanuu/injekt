@@ -51,22 +51,20 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : Analysis
         componentProvider: ComponentProvider,
     ): AnalysisResult? {
         files as ArrayList<KtFile>
-        if (!generatedCode) {
-            lazyTopDownAnalyzer = componentProvider.get()
-            val tmpFiles = files.toList()
-            files.clear()
-            files += fileManager.preGenerate(tmpFiles)
+        if (generatedCode) return null
 
-            val filesToProcess = files.toList()
-            IndexGenerator(fileManager).generate(filesToProcess)
-            fileManager.postGenerate()
-            generatedCode = true
-            return AnalysisResult.RetryWithAdditionalRoots(
-                bindingTrace.bindingContext, module, emptyList(), fileManager.newFiles, addToEnvironment = true
-            )
-        }
+        lazyTopDownAnalyzer = componentProvider.get()
+        val tmpFiles = files.toList()
+        files.clear()
+        files += fileManager.preGenerate(tmpFiles)
 
-        return null
+        val filesToProcess = files.toList()
+        IndexGenerator(fileManager).generate(filesToProcess)
+        fileManager.postGenerate()
+        generatedCode = true
+        return AnalysisResult.RetryWithAdditionalRoots(
+            bindingTrace.bindingContext, module, emptyList(), fileManager.newFiles, addToEnvironment = true
+        )
     }
 
     private var completedOnce = false

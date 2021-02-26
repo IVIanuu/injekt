@@ -23,9 +23,8 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class GivenOptimizationTransformer : IrElementTransformerVoid() {
-    override fun visitCall(expression: IrCall): IrExpression {
-        return if (expression.symbol.descriptor.fqNameSafe == InjektFqNames.givenfun) {
+    override fun visitCall(expression: IrCall): IrExpression =
+        if (expression.symbol.descriptor.fqNameSafe == InjektFqNames.givenfun) {
             expression.getValueArgument(0)!!
         } else super.visitCall(expression)
-    }
 }

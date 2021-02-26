@@ -18,8 +18,6 @@ package com.ivianuu.injekt.compiler.index
 
 import com.ivianuu.injekt.compiler.FileManager
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.UniqueNameProvider
-import com.ivianuu.injekt.compiler.asNameId
 import org.jetbrains.kotlin.psi.KtFile
 
 class IndexGenerator(private val fileManager: FileManager) {
@@ -32,7 +30,6 @@ class IndexGenerator(private val fileManager: FileManager) {
 
             val fileName = file.packageFqName.pathSegments().joinToString("_") +
                     "_${file.name.removeSuffix(".kt")}Indices.kt"
-            val nameProvider = UniqueNameProvider()
             fileManager.generateFile(
                 originatingFile = file.virtualFilePath,
                 packageFqName = InjektFqNames.IndexPackage,
@@ -43,10 +40,8 @@ class IndexGenerator(private val fileManager: FileManager) {
                     appendLine("import ${InjektFqNames.Index}")
                     indices
                         .distinct()
-                        .forEach { index ->
-                            val indexName = nameProvider(
-                                index.fqName.pathSegments().joinToString("_") + "${file.name}_index"
-                            ).asNameId()
+                        .forEachIndexed { i, index ->
+                            val indexName = index.fqName.pathSegments().joinToString("_") + "${file.name.removeSuffix(".kt")}_index_$i"
                             appendLine("@Index(fqName = \"${index.fqName}\", type = \"${index.type}\")")
                             appendLine("internal val $indexName = Unit")
                         }

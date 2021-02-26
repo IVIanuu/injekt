@@ -151,18 +151,6 @@ fun String.asNameId() = Name.identifier(this)
 
 fun <T> unsafeLazy(init: () -> T) = lazy(LazyThreadSafetyMode.NONE, init)
 
-fun String.removeIllegalChars() =
-    replace(".", "")
-        .replace("<", "")
-        .replace(">", "")
-        .replace(" ", "")
-        .replace("[", "")
-        .replace("]", "")
-        .replace("@", "")
-        .replace(",", "")
-        .replace(" ", "")
-        .replace("-", "")
-
 fun Annotated.hasAnnotation(fqName: FqName): Boolean =
     annotations.hasAnnotation(fqName)
 
