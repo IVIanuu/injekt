@@ -60,7 +60,6 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.expressions.IrBlock
-import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.symbols.IrBindableSymbol
@@ -79,8 +78,10 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
 
     private inner class GraphContext(val graph: GivenGraph.Success) {
         val statements = mutableListOf<IrStatement>()
-        val functionExpressions = mutableMapOf<GivenKey, () -> IrFunctionAccessExpression>()
+        val functionExpressions = mutableMapOf<GivenKey, WrappedExpression>()
         private val scopeContexts = mutableMapOf<ResolutionScope, ScopeContext>()
+
+        val givensByRequestsByScope = mutableMapOf<ResolutionScope, Map<GivenRequest, GivenNode>>()
 
         private val graphContextParents = buildList<ResolutionScope> {
             var current: ResolutionScope? = graph.scope.parent
@@ -111,10 +112,9 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         }
     }
 
-    private val givensByRequestsByScope = mutableMapOf<ResolutionScope, Map<GivenRequest, GivenNode>>()
     private fun ResolutionScope.getGivensByRequest(
         graphContext: GraphContext
-    ): Map<GivenRequest, GivenNode> = givensByRequestsByScope.getOrPut(this) {
+    ): Map<GivenRequest, GivenNode> = graphContext.givensByRequestsByScope.getOrPut(this) {
         (parent?.getGivensByRequest(graphContext) ?: emptyMap()) +
                 (graphContext.graph.givensByScope[this] ?: emptyMap())
     }
@@ -125,10 +125,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         val symbol: IrSymbol
     ) {
         val irScope = Scope(symbol)
-        val givensByRequest: Map<GivenRequest, GivenNode> =
-            (scope.parent
-                ?.let { graphContext.existingScopeContextOrNull(it)?.givensByRequest }
-                ?: emptyMap()) + (graphContext.graph.givensByScope[scope] ?: emptyMap())
+        val givensByRequest: Map<GivenRequest, GivenNode> = scope.getGivensByRequest(graphContext)
         val statements =
             if (graphContext.graph.scope == scope) graphContext.statements else mutableListOf()
         val initializingExpressions = mutableMapOf<GivenNode, GivenExpression?>()
@@ -136,7 +133,8 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             ?.let { graphContext.existingScopeContextOrNull(it)?.lambdasByProviderGiven }
             ?: mutableMapOf()
         val scopeExpressionProvider: (GivenRequest) -> IrExpression? = provider@ { request ->
-            val given = givensByRequest[request] ?: error("Wtf $request")
+            val given = givensByRequest[request]
+                ?: error("Wtf $request")
             val scopeContext = graphContext.existingScopeContext(given.ownerScope)
             scopeContext.initializingExpressions[given]?.run { return@provider get() }
             val expression = GivenExpression(given)
@@ -233,24 +231,33 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         val dependencies: List<GivenRequest>
     )
 
+    private class WrappedExpression(
+        val unstableDependencies: List<GivenRequest>,
+        val function: IrFunction
+    )
+
     private fun ScopeContext.wrapInFunctionIfNeeded(
         given: GivenNode,
         expression: ((GivenRequest) -> IrExpression?) -> IrExpression?
     ): IrExpression? {
-        if (given is ProviderGivenNode) return expression(scopeExpressionProvider)
         if (given.dependencies.isEmpty()) return expression(scopeExpressionProvider)
+        if (given is ProviderGivenNode) return expression(scopeExpressionProvider)
+        if (given.hasCircularDependency) return expression(scopeExpressionProvider)
 
         val key = GivenKey(given.type, given.uniqueKey, given.dependencies)
 
-        val functionCallExpression = graphContext.functionExpressions.getOrPut(key) {
+        val wrappedExpression = graphContext.functionExpressions.getOrPut(key) {
             val usages = graphContext.graph.givensByScope
                 .values
                 .flatMap { it.values }
                 .filter { GivenKey(it.type, it.uniqueKey, it.dependencies) == key }
 
+            if (usages.any { it.hasCircularDependency })
+                return expression(scopeExpressionProvider)
+
             if (usages.size == 1) return expression(scopeExpressionProvider)
 
-            /*fun ResolutionScope.allScopes(): List<ResolutionScope> =
+            fun ResolutionScope.allScopes(): List<ResolutionScope> =
                 (parent?.allScopes() ?: emptyList()) + this
 
             val hostingScope = given.requestingScope.allScopes()
@@ -260,6 +267,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                             candidateScope in usage.requestingScope.allScopes()
                         }
                 }
+            val hostingScopeContext = graphContext.existingScopeContext(hostingScope)
 
             val mergedDependencies = given.dependencies
                 .indices
@@ -269,7 +277,9 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                             usage.dependencies[parameterIndex] to
                                     usage.requestingScope.getGivensByRequest(graphContext)[usage.dependencies[parameterIndex]]!!
                         }
-                        .toSet()
+                        .distinctBy {
+                            GivenKey(it.second.type, it.second.uniqueKey, it.second.dependencies)
+                        }
                 }
 
             val (stableDependencies, unstableDependencies) = mergedDependencies
@@ -278,10 +288,10 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                     it.first
                         .map { it.first().first } to it.second
                         .map { it.first().first }
-                }*/
+                }
 
             val function = IrFactoryImpl.buildFun {
-                origin = IrDeclarationOrigin.DEFINED
+                origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
                 name = Name.special("<anonymous>")
                 returnType = given.type.toIrType(pluginContext)
                 visibility = DescriptorVisibilities.LOCAL
@@ -296,7 +306,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                             emptyList()
                         )
                 }
-                val valueParametersByDependency = given.dependencies
+                val valueParametersByDependency = unstableDependencies
                     .associateWith {
                         addValueParameter(
                             it.parameterName.asString(),
@@ -308,27 +318,35 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                     irBlockBody {
                         +irReturn(
                             expression { request ->
-                                valueParametersByDependency[request]
-                                    ?.let { irGet(it) }
-                                    ?: error("Wtf $request")
-                            } ?: irUnit()
+                                when (request) {
+                                    in stableDependencies -> {
+                                        scopeExpressionProvider(request)
+                                    }
+                                    in unstableDependencies -> {
+                                        valueParametersByDependency[request]
+                                            ?.let { irGet(it) }
+                                            ?: error("Wtf $request")
+                                    }
+                                    else -> {
+                                        error("Unexpected request $request")
+                                    }
+                                }
+                            } ?: error("Wtf")
                         )
                     }
                 }
 
-                graphContext.statements += this
+                hostingScopeContext.statements += this
             }
 
-            return@getOrPut {
-                DeclarationIrBuilder(
-                    pluginContext,
-                    symbol
-                ).irCall(function)
-            }
-        }()
+            WrappedExpression(unstableDependencies, function)
+        }
 
-        return functionCallExpression.apply {
-            given.dependencies
+        return DeclarationIrBuilder(
+            pluginContext,
+            symbol
+        ).irCall(wrappedExpression.function).apply {
+            wrappedExpression.unstableDependencies
                 .forEachIndexed { index, dependency ->
                     putValueArgument(index, scopeExpressionProvider(dependency))
                 }
@@ -350,7 +368,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                 dependencyScopeContext.lambdasByProviderGiven[given] = function
                 val expression = with(dependencyScopeContext) {
                     scopeExpressionProvider(given.dependencies.single())
-                        ?: DeclarationIrBuilder(pluginContext, symbol).irUnit()
+                        ?: error("Wtf")
                 }
                 if (dependencyScopeContext.statements.isEmpty()) expression
                 else {

@@ -42,6 +42,7 @@ sealed class GivenNode {
     abstract val isFrameworkGiven: Boolean
     abstract val cache: Boolean
     abstract val requestingScope: ResolutionScope
+    var hasCircularDependency = false
 }
 
 class CallableGivenNode(

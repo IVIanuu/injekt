@@ -191,7 +191,7 @@ private fun ResolutionScope.computeForCandidate(
     if (key in chain) {
         return CandidateResolutionResult.Success(
             request,
-            candidate,
+            candidate.also { candidate.hasCircularDependency = true },
             emptyList()
         )
     }
