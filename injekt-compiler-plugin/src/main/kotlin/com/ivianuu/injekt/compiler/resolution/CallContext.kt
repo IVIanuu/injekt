@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.backend.common.descriptors.isSuspend
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 
 enum class CallContext {
     DEFAULT, COMPOSABLE, SUSPEND
@@ -31,7 +32,9 @@ fun CallContext.canCall(other: CallContext) =
 val CallableDescriptor.callContext: CallContext
     get() = when {
         isSuspend -> CallContext.SUSPEND
-        hasAnnotation(InjektFqNames.Composable) -> CallContext.COMPOSABLE
+        (hasAnnotation(InjektFqNames.Composable) ||
+                (this is PropertyDescriptor &&
+                        getter?.hasAnnotation(InjektFqNames.Composable) == true)) -> CallContext.COMPOSABLE
         else -> CallContext.DEFAULT
     }
 
