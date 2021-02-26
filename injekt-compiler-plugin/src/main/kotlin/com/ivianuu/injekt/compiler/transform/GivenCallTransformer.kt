@@ -121,7 +121,6 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         val statements =
             if (graphContext.graph.scope == scope) graphContext.statements else mutableListOf()
         val initializingExpressions = mutableMapOf<GivenNode, GivenExpression?>()
-        val cachedExpressions = mutableMapOf<GivenNode, () -> IrExpression>()
         val functionExpressions = mutableMapOf<GivenNode, () -> IrExpression>()
         val lambdasByProviderGiven: MutableMap<ProviderGivenNode, IrFunction> = scope.parent
             ?.let { graphContext.existingScopeContextOrNull(it)?.lambdasByProviderGiven }
@@ -223,7 +222,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         given: GivenNode
     ): IrExpression {
         return expression
-        return if (given.usages < 2 || given.dependencies.isEmpty()) expression
+        return if (given.dependencies.isEmpty()) expression
         else functionExpressions.getOrPut(given) {
             val function = IrFactoryImpl.buildFun {
                 origin = IrDeclarationOrigin.DEFINED

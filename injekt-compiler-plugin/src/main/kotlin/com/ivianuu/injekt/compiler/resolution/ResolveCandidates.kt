@@ -247,10 +247,7 @@ private fun ResolutionScope.computeForCandidate(
     compute: () -> CandidateResolutionResult,
 ): CandidateResolutionResult {
     val key = CandidateKey(candidate)
-    resultsByCandidate[key]?.let {
-        it.candidate.usages++
-        return it
-    }
+    resultsByCandidate[key]?.let { return it }
     val subChain = mutableSetOf(key)
     chain.reversed().forEach { prev ->
         subChain += prev
@@ -278,7 +275,6 @@ private fun ResolutionScope.computeForCandidate(
 
     chain += key
     val result = compute()
-    result.candidate.usages++
     resultsByCandidate[key] = result
     chain -= key
     return result

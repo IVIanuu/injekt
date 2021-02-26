@@ -42,7 +42,6 @@ sealed class GivenNode {
     abstract val isFrameworkGiven: Boolean
     abstract val interceptors: List<InterceptorNode>
     abstract val cache: Boolean
-    var usages = 0
 }
 
 class CallableGivenNode(
