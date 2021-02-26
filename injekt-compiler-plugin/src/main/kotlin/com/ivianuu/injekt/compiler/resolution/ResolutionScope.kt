@@ -126,7 +126,7 @@ class ResolutionScope(
             givenSetElements
                 .filter { it.type.isAssignableTo(declarationStore, type) }
                 .map { it.substitute(getSubstitutionMap(declarationStore, listOf(type to it.type))) }
-                .map { callable ->
+                .mapIndexed { index, callable ->
                     val typeWithSetKey = type.copy(
                         setKey = SetKey(type, callable)
                     )
@@ -137,7 +137,7 @@ class ResolutionScope(
                         type = typeWithSetKey,
                         required = true,
                         callableFqName = FqName("GivenSet"),
-                        parameterName = "element".asNameId()
+                        parameterName = "element$index".asNameId()
                     )
                 }
         }
