@@ -48,7 +48,7 @@ class GivenResolutionTest {
             )
         )
     ) {
-        assertTrue(it.last().invokeSingleFile() is Foo)
+        assertTrue(it.invokeSingleFile() is Foo)
     }
 
     @Test
@@ -87,7 +87,7 @@ class GivenResolutionTest {
     ) {
         val internal = Foo()
         val external = Foo()
-        val result = it.last().invokeSingleFile(internal, external)
+        val result = it.invokeSingleFile(internal, external)
         assertSame(result, internal)
     }
 

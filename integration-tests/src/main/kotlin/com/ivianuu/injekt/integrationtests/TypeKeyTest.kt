@@ -83,7 +83,7 @@ class TypeKeyTest {
         )
     ) {
         assertEquals("kotlin.collections.List<kotlin.String>",
-            it.last().invokeSingleFile<TypeKey<List<String>>>().value
+            it.invokeSingleFile<TypeKey<List<String>>>().value
         )
     }
 

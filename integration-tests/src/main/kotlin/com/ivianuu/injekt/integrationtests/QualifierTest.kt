@@ -133,7 +133,7 @@ class QualifierTest {
             )
         )
     ) {
-        assertTrue(it.last().invokeSingleFile() is Foo)
+        assertTrue(it.invokeSingleFile() is Foo)
     }
 
     @Test
@@ -167,7 +167,7 @@ class QualifierTest {
             )
         )
     ) {
-        assertTrue(it.last().invokeSingleFile() is Foo)
+        assertTrue(it.invokeSingleFile() is Foo)
     }
 
     @Test

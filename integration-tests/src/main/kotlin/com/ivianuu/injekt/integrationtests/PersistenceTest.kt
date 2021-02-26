@@ -110,7 +110,7 @@ class PersistenceTest {
             )
         )
     ) {
-        assertEquals("42", it.last().invokeSingleFile())
+        assertEquals("42", it.invokeSingleFile())
     }
 
     @Test

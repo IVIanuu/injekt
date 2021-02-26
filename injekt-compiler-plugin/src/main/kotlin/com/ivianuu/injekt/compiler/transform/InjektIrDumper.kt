@@ -26,25 +26,32 @@ import org.jetbrains.kotlin.ir.util.FakeOverridesStrategy
 import org.jetbrains.kotlin.ir.util.KotlinLikeDumpOptions
 import org.jetbrains.kotlin.ir.util.dumpKotlinLike
 import java.io.File
+import java.io.PrintWriter
+import java.io.StringWriter
 
 class InjektIrDumper(
     private val cacheDir: CacheDir,
-    private val dumpDir: DumpDir
+    private val dumpDir: DumpDir,
 ) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val fileManager = FileManager(dumpDir, cacheDir)
         moduleFragment.files.forEach {
             val file = File(it.fileEntry.name)
-            fileManager.generateFile(
-                it.fqName,
-                file.name.removeSuffix(".kt"),
-                file.absolutePath,
+            val content = try {
                 it.dumpKotlinLike(
                     KotlinLikeDumpOptions(
                         useNamedArguments = true,
                         printFakeOverridesStrategy = FakeOverridesStrategy.NONE
                     )
                 )
+            } catch (e: Throwable) {
+                e.stackTraceToString()
+            }
+            fileManager.generateFile(
+                it.fqName,
+                file.name.removeSuffix(".kt"),
+                file.absolutePath,
+                content
             )
         }
         fileManager.postGenerate()

@@ -16,5 +16,4 @@
 
 package com.ivianuu.injekt.internal
 
-@Target(AnnotationTarget.PROPERTY)
 annotation class Index(val fqName: String, val type: String)

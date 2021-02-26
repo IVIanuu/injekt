@@ -78,31 +78,12 @@ object Deps {
         const val test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:$version"
     }
 
-    object Dagger2 {
-        private const val version = "2.26"
-        const val dagger2 = "com.google.dagger:dagger:$version"
-        const val compiler = "com.google.dagger:dagger-compiler:$version"
-    }
-
-
-    const val dagger2Reflect = "com.jakewharton.dagger:dagger-reflect:0.2.0"
-
-    const val guava = "com.google.guava:guava:27.1-android"
-
-    const val guice = "com.google.inject:guice:4.2.2"
-
     object Injekt {
         const val version = "0.0.1-dev439"
         const val gradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:$version"
     }
 
     const val junit = "junit:junit:4.12"
-
-    const val katana = "org.rewedigital.katana:katana-core:1.13.1"
-
-    const val kodein = "org.kodein.di:kodein-di-erased-jvm:6.5.3"
-
-    const val koin = "org.koin:koin-core:2.1.5"
 
     object Kotlin {
         private const val version = "1.4.30"
@@ -113,7 +94,7 @@ object Deps {
         const val stdlib = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$version"
     }
 
-    const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.3.1"
+    const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.3.6"
 
     const val kotestAssertions = "io.kotest:kotest-assertions-core:4.3.0"
 
@@ -137,12 +118,4 @@ object Deps {
     const val shadowGradlePlugin = "com.github.jengelman.gradle.plugins:shadow:5.2.0"
 
     const val spotlessGradlePlugin = "com.diffplug.spotless:spotless-plugin-gradle:3.26.1"
-
-    object Toothpick {
-        private const val version = "3.1.0"
-        const val toothpick =
-            "com.github.stephanenicolas.toothpick:toothpick-runtime:$version"
-        const val compiler =
-            "com.github.stephanenicolas.toothpick:toothpick-compiler:$version"
-    }
 }

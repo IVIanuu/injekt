@@ -28,6 +28,7 @@ import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.name.FqName
+import java.net.URLClassLoader
 import kotlin.reflect.KClass
 
 var fileIndex = 0
@@ -155,18 +156,33 @@ fun KotlinCompilation.Result.assertOk() {
 }
 
 @JvmName("invokeSingleFileTypeless")
-fun KotlinCompilation.Result.invokeSingleFile(vararg args: Any?): Any? =
+fun List<KotlinCompilation.Result>.invokeSingleFile(vararg args: Any?): Any? =
     invokeSingleFile<Any?>(*args)
 
-fun <T> KotlinCompilation.Result.invokeSingleFile(vararg args: Any?): T {
-    val generatedClass = getSingleClass().java
+fun <T> List<KotlinCompilation.Result>.invokeSingleFile(vararg args: Any?): T {
+    val classLoader = URLClassLoader(
+        flatMap { it.classLoader.urLs.toList() }
+            .toTypedArray()
+    )
+    val generatedClass = classLoader.getSingleClass().java
     return generatedClass.declaredMethods
         .single { it.name == "invoke" && it.parameterTypes.size == args.size }
         .invoke(null, *args) as T
 }
 
-private fun KotlinCompilation.Result.getSingleClass(): KClass<*> =
-    classLoader.loadClass("com.ivianuu.injekt.integrationtests.FileKt").kotlin
+@JvmName("invokeSingleFileTypeless")
+fun KotlinCompilation.Result.invokeSingleFile(vararg args: Any?): Any? =
+    invokeSingleFile<Any?>(*args)
+
+fun <T> KotlinCompilation.Result.invokeSingleFile(vararg args: Any?): T {
+    val generatedClass = classLoader.getSingleClass().java
+    return generatedClass.declaredMethods
+        .single { it.name == "invoke" && it.parameterTypes.size == args.size }
+        .invoke(null, *args) as T
+}
+
+private fun ClassLoader.getSingleClass(): KClass<*> =
+    loadClass("com.ivianuu.injekt.integrationtests.FileKt").kotlin
 
 fun KotlinCompilation.Result.assertCompileError(
     message: String? = null,

@@ -128,7 +128,7 @@ class MacroTest {
             )
         )
     ) {
-        assertEquals("com.ivianuu.injekt.test.Bar", it.last().invokeSingleFile())
+        assertEquals("com.ivianuu.injekt.test.Bar", it.invokeSingleFile())
     }
 
     @Test
@@ -162,7 +162,7 @@ class MacroTest {
             )
         )
     ) {
-        assertEquals("com.ivianuu.injekt.test.Bar", it.last().invokeSingleFile())
+        assertEquals("com.ivianuu.injekt.test.Bar", it.invokeSingleFile())
     }
 
     @Test
@@ -237,7 +237,7 @@ class MacroTest {
             )
         )
     ) {
-        assertTrue(it.last().invokeSingleFile() is Foo)
+        assertTrue(it.invokeSingleFile() is Foo)
     }
 
     @Test
