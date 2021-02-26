@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.analysis
+package com.ivianuu.injekt.compiler.index
 
 import org.jetbrains.kotlin.name.FqName
 

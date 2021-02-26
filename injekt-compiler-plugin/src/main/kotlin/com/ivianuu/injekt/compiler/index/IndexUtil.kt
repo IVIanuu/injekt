@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.index
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.analysis.Index
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor

@@ -31,12 +31,9 @@ import com.intellij.util.messages.Topic
 import com.ivianuu.injekt.compiler.analysis.GivenCallResolutionInterceptorExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
-import com.ivianuu.injekt.compiler.analysis.InjektTypeResolutionInterceptor
 import com.ivianuu.injekt.ide.index.IdeIndexStoreFactory
-import com.ivianuu.injekt.ide.index.registerIndexStoreRunner
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.extensions.internal.CandidateInterceptor
-import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.idea.search.projectScope
 import org.jetbrains.kotlin.psi.KtFile
@@ -55,11 +52,6 @@ class AppInitializer : ApplicationInitializedListener {
             CandidateInterceptor.registerExtension(
                 project,
                 GivenCallResolutionInterceptorExtension(IdeIndexStoreFactory)
-            )
-
-            TypeResolutionInterceptor.registerExtension(
-                project,
-                InjektTypeResolutionInterceptor()
             )
 
             @Suppress("DEPRECATION")

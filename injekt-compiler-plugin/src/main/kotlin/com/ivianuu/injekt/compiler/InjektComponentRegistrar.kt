@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.analysis.GivenCallResolutionInterceptorExtens
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektKtGenerationExtension
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
-import com.ivianuu.injekt.compiler.analysis.InjektTypeResolutionInterceptor
 import com.ivianuu.injekt.compiler.index.CliIndexStoreFactory
 import com.ivianuu.injekt.compiler.transform.InjektIrDumper
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
@@ -34,7 +33,6 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.JVMConfigurationKeys
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.extensions.internal.CandidateInterceptor
-import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.io.File
@@ -54,53 +52,43 @@ class InjektComponentRegistrar : ComponentRegistrar {
             listOf("tmp", "kapt3", "incApCache")
         ).map { File(it.joinToString(File.separator)) }
         val isGenerateKaptStubs = kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
-        if (!isGenerateKaptStubs) {
-            AnalysisHandlerExtension.registerExtension(
-                project,
-                InjektKtGenerationExtension(srcDir(configuration), cacheDir(configuration))
-            )
-            StorageComponentContainerContributor.registerExtension(
-                project,
-                InjektStorageComponentContainerContributor(CliIndexStoreFactory)
-            )
-            IrGenerationExtension.registerExtensionFirst(
-                project,
-                InjektIrGenerationExtension()
-            )
-            IrGenerationExtension.registerExtensionLast(
-                project,
-                InjektIrDumper(cacheDir(configuration),
-                    dumpDir(configuration, srcDir(configuration)))
-            )
-            CandidateInterceptor.registerExtension(
-                project,
-                GivenCallResolutionInterceptorExtension(CliIndexStoreFactory)
-            )
-            TypeResolutionInterceptor.registerExtension(
-                project,
-                InjektTypeResolutionInterceptor()
-            )
-            @Suppress("DEPRECATION")
-            Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
-                .registerExtension(InjektDiagnosticSuppressor())
-        }
+        if (isGenerateKaptStubs) return
+
+        AnalysisHandlerExtension.registerExtension(
+            project,
+            InjektKtGenerationExtension(srcDir(configuration), cacheDir(configuration))
+        )
+        StorageComponentContainerContributor.registerExtension(
+            project,
+            InjektStorageComponentContainerContributor(CliIndexStoreFactory)
+        )
+        IrGenerationExtension.registerExtensionWithLoadingOrder(
+            project,
+            LoadingOrder.FIRST,
+            InjektIrGenerationExtension()
+        )
+        IrGenerationExtension.registerExtensionWithLoadingOrder(
+            project,
+            LoadingOrder.LAST,
+            InjektIrDumper(cacheDir(configuration),
+                dumpDir(configuration, srcDir(configuration)))
+        )
+        CandidateInterceptor.registerExtension(
+            project,
+            GivenCallResolutionInterceptorExtension(CliIndexStoreFactory)
+        )
+        @Suppress("DEPRECATION")
+        Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
+            .registerExtension(InjektDiagnosticSuppressor())
     }
 }
 
-private fun IrGenerationExtension.Companion.registerExtensionFirst(
+private fun IrGenerationExtension.Companion.registerExtensionWithLoadingOrder(
     project: MockProject,
+    loadingOrder: LoadingOrder,
     extension: IrGenerationExtension,
 ) {
     project.extensionArea
         .getExtensionPoint(IrGenerationExtension.extensionPointName)
-        .registerExtension(extension, LoadingOrder.FIRST, project)
-}
-
-private fun IrGenerationExtension.Companion.registerExtensionLast(
-    project: MockProject,
-    extension: IrGenerationExtension,
-) {
-    project.extensionArea
-        .getExtensionPoint(IrGenerationExtension.extensionPointName)
-        .registerExtension(extension, LoadingOrder.LAST, project)
+        .registerExtension(extension, loadingOrder, project)
 }

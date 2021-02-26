@@ -108,29 +108,6 @@ fun MemberScope.collectContributions(
     type: TypeRef,
     substitutionMap: Map<ClassifierRef, TypeRef>
 ): List<CallableRef> {
-    // special case to support @Given () -> Foo etc
-    if ((type.classifier.fqName.asString().startsWith("kotlin.Function")
-                || type.classifier.fqName.asString()
-            .startsWith("kotlin.coroutines.SuspendFunction"))
-    ) {
-        val contributionKind = type.contributionKind
-        if (contributionKind != null) {
-            return listOf(
-                getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
-                    .first()
-                    .toCallableRef(declarationStore)
-                    .let { callable ->
-                        callable.copy(
-                            type = type.arguments.last(),
-                            contributionKind = contributionKind,
-                            parameterTypes = callable.parameterTypes.toMutableMap()
-                                .also { it[callable.callable.dispatchReceiverParameter!!.injektName()] = type }
-                        ).substitute(substitutionMap)
-                    }
-            )
-        }
-    }
-
     val primaryConstructorKinds = (type.classifier.descriptor
         ?.safeAs<ClassDescriptor>()
         ?.unsubstitutedPrimaryConstructor
@@ -257,7 +234,6 @@ fun ClassDescriptor.allGivenTypes(declarationStore: DeclarationStore): List<Type
 
 fun CallableRef.collectContributions(
     declarationStore: DeclarationStore,
-    path: List<Any>,
     substitutionMap: Map<ClassifierRef, TypeRef>,
     addGiven: (CallableRef) -> Unit,
     addGivenSetElement: (CallableRef) -> Unit,
@@ -271,22 +247,14 @@ fun CallableRef.collectContributions(
         ContributionKind.VALUE -> addGiven(this)
         ContributionKind.SET_ELEMENT -> addGivenSetElement(this)
         ContributionKind.MODULE -> {
-            val isFunction = type.allTypes.any {
-                it.classifier.fqName.asString().startsWith("kotlin.Function")
-                        || it.classifier.fqName.asString()
-                    .startsWith("kotlin.coroutines.SuspendFunction")
-            }
-            val nextPath = if (isFunction) path + callable.fqNameSafe else path
-            val nextCallable = if (isFunction) copy(type = type.copy(path = nextPath)) else this
-            addGiven(nextCallable)
+            addGiven(this)
             callable
                 .returnType!!
                 .memberScope
-                .collectContributions(declarationStore, nextCallable.type, substitutionMap)
+                .collectContributions(declarationStore, type, substitutionMap)
                 .forEach {
                     it.collectContributions(
                         declarationStore,
-                        path + it.callable.fqNameSafe,
                         substitutionMap,
                         addGiven,
                         addGivenSetElement,
