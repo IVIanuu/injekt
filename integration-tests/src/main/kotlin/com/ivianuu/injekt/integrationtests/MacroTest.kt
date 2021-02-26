@@ -16,8 +16,16 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.*
-import junit.framework.Assert.*
+import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.assertCompileError
+import com.ivianuu.injekt.test.assertNoMessage
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
+import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertFalse
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class MacroTest {

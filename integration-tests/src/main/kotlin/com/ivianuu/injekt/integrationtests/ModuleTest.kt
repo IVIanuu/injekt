@@ -16,13 +16,9 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
-import junit.framework.Assert
-import junit.framework.Assert.assertSame
 import org.junit.Test
 
 class ModuleTest {

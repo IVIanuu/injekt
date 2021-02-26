@@ -17,12 +17,10 @@
 package com.ivianuu.injekt.android
 
 import android.app.Application
-import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.component.AppComponent
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.ComponentElementBinding

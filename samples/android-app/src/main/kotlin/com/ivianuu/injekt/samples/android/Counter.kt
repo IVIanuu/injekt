@@ -25,7 +25,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.samples.android.CounterAction.*
+import com.ivianuu.injekt.samples.android.CounterAction.Dec
+import com.ivianuu.injekt.samples.android.CounterAction.Inc
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

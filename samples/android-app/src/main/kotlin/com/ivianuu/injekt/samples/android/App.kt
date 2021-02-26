@@ -17,11 +17,7 @@
 package com.ivianuu.injekt.samples.android
 
 import android.app.Application
-import android.app.Service
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.android.ServiceComponent
 import com.ivianuu.injekt.common.withGiven
-import com.ivianuu.injekt.component.ComponentElementBinding
 import com.ivianuu.injekt.component.initializeApp
 import com.ivianuu.injekt.given
 

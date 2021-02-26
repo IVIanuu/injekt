@@ -17,8 +17,6 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.DeclarationStore
-import com.ivianuu.injekt.compiler.index.CliIndexStoreFactory
-import com.ivianuu.injekt.compiler.index.IndexStore
 import com.ivianuu.injekt.compiler.index.IndexStoreFactory
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useInstance

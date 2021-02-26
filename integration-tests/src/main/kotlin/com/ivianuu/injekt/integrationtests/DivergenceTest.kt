@@ -16,7 +16,11 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.*
+import com.ivianuu.injekt.test.assertCompileError
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import org.junit.Test
 
 class DivergenceTest {

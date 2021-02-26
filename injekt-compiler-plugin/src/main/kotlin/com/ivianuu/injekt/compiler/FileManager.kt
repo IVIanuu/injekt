@@ -132,7 +132,7 @@ class FileManager(
                     it.createNewFile()
                 }
             }
-            .writeText(compilingFiles.map { it.virtualFilePath }.joinToString("\n"))
+            .writeText(compilingFiles.joinToString("\n") { it.virtualFilePath })
 
         cacheEntries
             .joinToString("\n") { "${it.first}=:=${it.second}" }

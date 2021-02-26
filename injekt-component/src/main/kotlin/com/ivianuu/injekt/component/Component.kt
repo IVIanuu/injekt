@@ -23,8 +23,8 @@ import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.Macro
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.common.ForTypeKey
-import com.ivianuu.injekt.common.TypeKey
 import com.ivianuu.injekt.common.Scope
+import com.ivianuu.injekt.common.TypeKey
 import com.ivianuu.injekt.common.typeKeyOf
 
 interface Component : Scope {

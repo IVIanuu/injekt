@@ -135,7 +135,7 @@ class ResolutionScope(
 
             val macroType = macro.typeParameters.first().defaultType
             if (!contribution.copy(additionalKey = null).isSubTypeOf(declarationStore, macroType)) continue
-            if (macro.callable.fqNameSafe in contribution.additionalKey.cast<List<Any>>()!!) continue
+            if (macro.callable.fqNameSafe in contribution.additionalKey.cast<List<Any>>()) continue
 
             val inputsSubstitutionMap = getSubstitutionMap(
                 declarationStore,

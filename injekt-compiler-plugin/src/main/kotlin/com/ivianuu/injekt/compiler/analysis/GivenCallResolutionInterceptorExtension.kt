@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.getGivenParameters
-import com.ivianuu.injekt.compiler.index.IndexStore
 import com.ivianuu.injekt.compiler.index.IndexStoreFactory
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.extensions.internal.CallResolutionInterceptorExtension
