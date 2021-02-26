@@ -43,13 +43,3 @@ val TypeRef.callContext: CallContext
             .startsWith("kotlin.coroutines.SuspendFunction") -> CallContext.SUSPEND
         else -> CallContext.DEFAULT
     }
-
-fun CallContext.providerType(declarationStore: DeclarationStore): TypeRef = when (this) {
-    CallContext.DEFAULT -> declarationStore.module.builtIns.getFunction(0)
-        .toClassifierRef(declarationStore).defaultType
-    CallContext.SUSPEND -> declarationStore.module.builtIns.getSuspendFunction(0)
-        .toClassifierRef(declarationStore).defaultType
-    CallContext.COMPOSABLE -> declarationStore.module.builtIns.getFunction(0)
-        .toClassifierRef(declarationStore).defaultType
-        .copy(isComposable = true)
-}

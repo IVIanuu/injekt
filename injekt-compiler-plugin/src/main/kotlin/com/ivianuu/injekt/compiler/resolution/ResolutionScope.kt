@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class ResolutionScope(
     val name: String,
@@ -57,12 +58,11 @@ class ResolutionScope(
             .forEach { contribution ->
                 contribution.collectContributions(
                     declarationStore = declarationStore,
-                    path = listOf(contribution.callable.fqNameSafe),
                     substitutionMap = emptyMap(),
                     addGiven = { callable ->
                         givens += callable to this
                         val typeWithPath = callable.type
-                            .copy(path = listOf(callable.callable.fqNameSafe))
+                            .copy(additionalKey = listOf(callable.callable.fqNameSafe))
                         givens += callable.copy(type = typeWithPath) to this
                     },
                     addGivenSetElement = { givenSetElements += it },
@@ -71,7 +71,7 @@ class ResolutionScope(
             }
 
         givens
-            .filter { it.first.type.path != null }
+            .filter { it.first.type.additionalKey != null }
             .forEach { runMacros(it.first.type) }
     }
 
@@ -86,7 +86,7 @@ class ResolutionScope(
                     .filter { it.first.type.isAssignableTo(declarationStore, type) }
                     .map { it.first.toGivenNode(type, it.second, this@ResolutionScope) }
 
-                if (type.path == null &&
+                if (type.additionalKey == null &&
                     type.qualifiers.isEmpty() &&
                     (type.classifier.fqName.asString().startsWith("kotlin.Function")
                             || type.classifier.fqName.asString()
@@ -134,8 +134,8 @@ class ResolutionScope(
             processedContributions += key
 
             val macroType = macro.typeParameters.first().defaultType
-            if (!contribution.copy(path = null).isSubTypeOf(declarationStore, macroType)) continue
-            if (macro.callable.fqNameSafe in contribution.path!!) continue
+            if (!contribution.copy(additionalKey = null).isSubTypeOf(declarationStore, macroType)) continue
+            if (macro.callable.fqNameSafe in contribution.additionalKey.cast<List<Any>>()!!) continue
 
             val inputsSubstitutionMap = getSubstitutionMap(
                 declarationStore,
@@ -143,7 +143,7 @@ class ResolutionScope(
             )
             val outputsSubstitutionMap = getSubstitutionMap(
                 declarationStore,
-                listOf(contribution.copy(path = null) to macroType)
+                listOf(contribution.copy(additionalKey = null) to macroType)
             )
             val newContribution = macro.substituteInputs(inputsSubstitutionMap)
                 .copy(
@@ -155,7 +155,6 @@ class ResolutionScope(
 
             newContribution.collectContributions(
                 declarationStore = declarationStore,
-                path = listOf(newContribution.callable.fqNameSafe),
                 substitutionMap = outputsSubstitutionMap,
                 addGiven = { givens += it to this },
                 addGivenSetElement = { givenSetElements += it },
@@ -165,13 +164,12 @@ class ResolutionScope(
             if (newContribution.contributionKind == ContributionKind.VALUE) {
                 val newContributionWithPath = newContribution.copy(
                     type = newContribution.type.copy(
-                        path = contribution.path!! + newContribution.callable.fqNameSafe
+                        additionalKey = contribution.additionalKey!!.cast<List<Any>>() + newContribution.callable.fqNameSafe
                     )
                 )
                 newContributionWithPath.collectContributions(
                     declarationStore = declarationStore,
                     substitutionMap = newContributionWithPath.typeArguments,
-                    path = listOf(newContributionWithPath.callable.fqNameSafe),
                     addGiven = { givens += it to this },
                     addGivenSetElement = { givenSetElements += it },
                     addMacro = { macros += it }

@@ -137,7 +137,10 @@ class MacroTest {
         listOf(
             source(
                 """
-                    @Module val fooModule: @Given () -> @Trigger<Bar> Foo = { Foo() }
+                    @Module
+                    object FooModule {
+                        @Given fun fooModule(): @Trigger<Bar> Foo = Foo()
+                    }
                 """
             )
         ),

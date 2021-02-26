@@ -19,7 +19,7 @@ package com.ivianuu.injekt.ide.index
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.util.concurrency.AppExecutorUtil
-import com.ivianuu.injekt.compiler.analysis.Index
+import com.ivianuu.injekt.compiler.index.Index
 import com.ivianuu.injekt.compiler.index.IndexStore
 import com.ivianuu.injekt.compiler.index.IndexStoreFactory
 import com.ivianuu.injekt.compiler.index.collectIndices

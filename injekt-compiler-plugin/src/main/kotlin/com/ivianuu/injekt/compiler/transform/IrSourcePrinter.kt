@@ -1142,9 +1142,6 @@ private class IrSourcePrinterVisitor(
         "<ERROR TYPE>"
     }
 
-    private inline fun buildTrimEnd(fn: StringBuilder.() -> Unit): String =
-        buildString(fn).trimEnd()
-
     private fun StringBuilder.renderAsAnnotation(irAnnotation: IrConstructorCall) {
         val annotationClassName = try {
             irAnnotation.symbol.owner.parentAsClass.name.asString()

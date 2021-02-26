@@ -43,9 +43,6 @@ TODO
 # Scopes
 TODO
 
-# Keys
-TODO
-
 # Components
 TODO
 
@@ -53,4 +50,7 @@ TODO
 TODO
 
 # Android work
+TODO
+
+# Type keys
 TODO
