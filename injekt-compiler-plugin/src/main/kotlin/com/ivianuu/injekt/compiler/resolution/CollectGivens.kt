@@ -237,10 +237,12 @@ fun ClassDescriptor.getContributionConstructors(
 
 
 fun ClassDescriptor.allGivenTypes(declarationStore: DeclarationStore): List<TypeRef> = buildList<TypeRef> {
-    this += toClassifierRef(declarationStore).defaultType
+    val classifier = toClassifierRef(declarationStore)
+    this += classifier.defaultType
     this += defaultType.constructor.supertypes
         .filter { it.hasAnnotation(InjektFqNames.Given) }
         .map { it.toTypeRef(declarationStore) }
+        .map { it.copy(qualifiers = classifier.qualifiers + it.qualifiers) }
 }
 
 fun CallableRef.collectContributions(
