@@ -228,7 +228,7 @@ fun ClassDescriptor.getContributionConstructors(
     .flatMap { declaration ->
         if (declaration.contributionKind == ContributionKind.VALUE) {
             allGivenTypes(declarationStore).map { type ->
-                declaration.copy(type = type)
+                declaration.copy(type = type, originalType = type)
             }
         } else {
             listOf(declaration)
