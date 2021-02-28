@@ -123,4 +123,41 @@ class ModuleTest {
         )
     )
 
+    @Test
+    fun testGenericModuleClass() = codegen(
+        """
+            @Module
+            class MyModule<T> {
+                @Given fun provide(@Given instance: T) = instance to instance
+            }
+
+            @Given val foo = Foo()
+            @Given fun bar(@Given foo: Foo) = Bar(foo)
+
+            fun invoke() {
+                given<Pair<Foo, Foo>>()
+                given<Pair<Bar, Bar>>()
+            }
+        """
+    )
+
+    @Test
+    fun testGenericModuleFunction() = codegen(
+        """
+            class MyModule<T> {
+                @Given fun provide(@Given instance: T) = instance to instance
+            }
+
+            @Module fun <T> myModule() = MyModule<T>()
+
+            @Given val foo = Foo()
+            @Given fun bar(@Given foo: Foo) = Bar(foo)
+
+            fun invoke() {
+                given<Pair<Foo, Foo>>()
+                given<Pair<Bar, Bar>>()
+            }
+        """
+    )
+
 }
