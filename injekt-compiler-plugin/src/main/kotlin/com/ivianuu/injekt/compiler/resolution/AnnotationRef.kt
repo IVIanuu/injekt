@@ -38,18 +38,18 @@ fun AnnotationDescriptor.toAnnotationRef(declarationStore: DeclarationStore): An
     )
 }
 
-fun AnnotationRef.toAnnotationDescriptor() = AnnotationDescriptorImpl(
-    type.toKotlinType(),
-    arguments.mapValues { it.value.toKotlinConstantValue() },
+fun AnnotationRef.toAnnotationDescriptor(declarationStore: DeclarationStore) = AnnotationDescriptorImpl(
+    type.toKotlinType(declarationStore),
+    arguments.mapValues { it.value.toKotlinConstantValue(declarationStore) },
     SourceElement.NO_SOURCE
 )
 
 fun ConstantValue<*>.toKotlinConstantValue(
-    
+    declarationStore: DeclarationStore
 ): org.jetbrains.kotlin.resolve.constants.ConstantValue<*> = when (this) {
     is ArrayValue -> org.jetbrains.kotlin.resolve.constants.ArrayValue(
-        value.map { it.toKotlinConstantValue() }
-    ) { type.toKotlinType() }
+        value.map { it.toKotlinConstantValue(declarationStore) }
+    ) { type.toKotlinType(declarationStore) }
     is BooleanValue -> org.jetbrains.kotlin.resolve.constants.BooleanValue(value)
     is ByteValue -> org.jetbrains.kotlin.resolve.constants.ByteValue(value)
     is CharValue -> org.jetbrains.kotlin.resolve.constants.CharValue(value)
@@ -60,7 +60,7 @@ fun ConstantValue<*>.toKotlinConstantValue(
     is FloatValue -> org.jetbrains.kotlin.resolve.constants.FloatValue(value)
     is IntValue -> org.jetbrains.kotlin.resolve.constants.IntValue(value)
     is KClassValue -> org.jetbrains.kotlin.resolve.constants.KClassValue.create(
-        value.defaultType.toKotlinType())!!
+        value.defaultType.toKotlinType(declarationStore))!!
     is LongValue -> org.jetbrains.kotlin.resolve.constants.LongValue(value)
     is ShortValue -> org.jetbrains.kotlin.resolve.constants.ShortValue(value)
     is StringValue -> org.jetbrains.kotlin.resolve.constants.StringValue(value)

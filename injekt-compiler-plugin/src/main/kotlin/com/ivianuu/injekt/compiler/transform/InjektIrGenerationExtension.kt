@@ -25,14 +25,15 @@ import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 
 class InjektIrGenerationExtension : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+        val declarationStore = DeclarationStore(
+            CliIndexStore(pluginContext.moduleDescriptor),
+            pluginContext.moduleDescriptor
+        )
         moduleFragment.transform(InfoTransformer(
-            DeclarationStore(
-                CliIndexStore(pluginContext.moduleDescriptor),
-                pluginContext.moduleDescriptor
-            ),
+            declarationStore,
             pluginContext
         ), null)
-        moduleFragment.transform(GivenCallTransformer(pluginContext), null)
+        moduleFragment.transform(GivenCallTransformer(declarationStore, pluginContext), null)
         moduleFragment.transform(GivenOptimizationTransformer(), null)
         moduleFragment.transform(TypeKeyTransformer(pluginContext), null)
         moduleFragment.patchDeclarationParents()

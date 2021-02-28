@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.expandedType
@@ -86,8 +87,11 @@ import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.withAbbreviation
 
-fun TypeRef.toIrType(pluginContext: IrPluginContext): IrType =
-    pluginContext.typeTranslator.translateType(toKotlinType())
+fun TypeRef.toIrType(
+    pluginContext: IrPluginContext,
+    declarationStore: DeclarationStore
+): IrType =
+    pluginContext.typeTranslator.translateType(toKotlinType(declarationStore))
         .also {
             it.classifierOrNull?.let {
                 (pluginContext as IrPluginContextImpl)
@@ -95,16 +99,17 @@ fun TypeRef.toIrType(pluginContext: IrPluginContext): IrType =
             }
         }
 
-fun TypeRef.toKotlinType(): SimpleType {
+fun TypeRef.toKotlinType(declarationStore: DeclarationStore): SimpleType {
+    if (isStarProjection) return declarationStore.module.builtIns.anyType
     return if (classifier.isTypeAlias) {
-        expandedType!!.toKotlinType()
-            .withAbbreviation(toAbbreviation())
+        expandedType!!.toKotlinType(declarationStore)
+            .withAbbreviation(toAbbreviation(declarationStore))
     } else {
         classifier.descriptor!!.original.defaultType
             .replace(newArguments = arguments.map {
                 TypeProjectionImpl(
                     it.variance,
-                    it.toKotlinType()
+                    it.toKotlinType(declarationStore)
                 )
             })
             .makeComposableAsSpecified(isComposable)
@@ -112,13 +117,13 @@ fun TypeRef.toKotlinType(): SimpleType {
     }
 }
 
-fun TypeRef.toAbbreviation(): SimpleType {
+fun TypeRef.toAbbreviation(declarationStore: DeclarationStore): SimpleType {
     val defaultType = classifier.descriptor!!.defaultType
     return defaultType
         .replace(newArguments = arguments.map {
             TypeProjectionImpl(
                 it.variance,
-                it.toKotlinType()
+                it.toKotlinType(declarationStore)
             )
         })
 

@@ -140,7 +140,7 @@ class ProviderGivenNode(
         callContext = type.callContext,
         produceContributions = {
             type
-                .toKotlinType()
+                .toKotlinType(declarationStore)
                 .memberScope
                 .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
                 .first()

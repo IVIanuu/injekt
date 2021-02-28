@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
@@ -74,7 +75,10 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
-class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrElementTransformerVoid() {
+class GivenCallTransformer(
+    private val declarationStore: DeclarationStore,
+    private val pluginContext: IrPluginContext
+) : IrElementTransformerVoid() {
 
     private inner class GraphContext(val graph: GivenGraph.Success) {
         val statements = mutableListOf<IrStatement>()
@@ -296,7 +300,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             val function = IrFactoryImpl.buildFun {
                 origin = IrDeclarationOrigin.DEFINED
                 name = Name.special("<anonymous>")
-                returnType = given.type.toIrType(pluginContext)
+                returnType = given.type.toIrType(pluginContext, declarationStore)
                 visibility = DescriptorVisibilities.LOCAL
                 isSuspend = given.callContext == CallContext.SUSPEND
             }.apply {
@@ -313,7 +317,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                     .associateWith {
                         addValueParameter(
                             it.parameterName.asString(),
-                            it.type.toIrType(pluginContext)
+                            it.type.toIrType(pluginContext, declarationStore)
                         )
                     }
 
@@ -365,7 +369,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
         expressionProvider: (GivenRequest) -> IrExpression?
     ): IrExpression {
         return DeclarationIrBuilder(pluginContext, symbol)
-            .irLambda(given.type.toIrType(pluginContext)) { function ->
+            .irLambda(given.type.toIrType(pluginContext, declarationStore)) { function ->
                 val dependencyScopeContext = graphContext.existingScopeContextOrNull(given.dependencyScope)
                     ?: graphContext.createScopeContext(given.dependencyScope, function.symbol)
                 dependencyScopeContext.lambdasByProviderGiven[given] = function
@@ -395,7 +399,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
             ).single()
             return DeclarationIrBuilder(pluginContext, symbol)
                 .irCall(emptySet)
-                .apply { putTypeArgument(0, elementType.toIrType(pluginContext)) }
+                .apply { putTypeArgument(0, elementType.toIrType(pluginContext, declarationStore)) }
         }
 
         return DeclarationIrBuilder(pluginContext, symbol).irBlock {
@@ -411,7 +415,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
 
             val tmpSet = irTemporary(
                 irCall(mutableSetOf)
-                    .apply { putTypeArgument(0, elementType.toIrType(pluginContext)) }
+                    .apply { putTypeArgument(0, elementType.toIrType(pluginContext, declarationStore)) }
             )
 
             given.dependencies
@@ -486,7 +490,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                                 ?: error("No substitution found for $it")
                         }
                         .forEachIndexed { index, typeArgument ->
-                            putTypeArgument(index, typeArgument.toIrType(pluginContext))
+                            putTypeArgument(index, typeArgument.toIrType(pluginContext, declarationStore))
                         }
 
                     fillGivens(callable, this, expressionProvider)
@@ -512,7 +516,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                             ?: error("No substitution found for $it")
                     }
                     .forEachIndexed { index, typeArgument ->
-                        putTypeArgument(index, typeArgument.toIrType(pluginContext))
+                        putTypeArgument(index, typeArgument.toIrType(pluginContext, declarationStore))
                     }
 
                 fillGivens(callable, this, expressionProvider)
@@ -535,7 +539,7 @@ class GivenCallTransformer(private val pluginContext: IrPluginContext) : IrEleme
                             ?: error("No substitution found for $it")
                     }
                     .forEachIndexed { index, typeArgument ->
-                        putTypeArgument(index, typeArgument.toIrType(pluginContext))
+                        putTypeArgument(index, typeArgument.toIrType(pluginContext, declarationStore))
                     }
 
                 fillGivens(callable, this, expressionProvider)
