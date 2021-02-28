@@ -317,13 +317,8 @@ fun TypeRef.render(depth: Int = 0): String {
                 })"
             } + listOfNotNull(
                 if (isComposable) "@${InjektFqNames.Composable}" else null,
-            ) + listOfNotNull(
-                if (macroChain.isNotEmpty()) "@MacroChain(\"${macroChain.joinToString(":") { 
-                    it.pathSegments().joinToString(".")
-                }}\"" else null
-            ) + listOfNotNull(
-                if (setKey != null) "@SetKey(\"${setKey!!.type},${setKey!!.callable.callable.fqNameSafe}\")" else null
             )
+
             if (annotations.isNotEmpty()) {
                 annotations.forEach { annotation ->
                     append(annotation)
