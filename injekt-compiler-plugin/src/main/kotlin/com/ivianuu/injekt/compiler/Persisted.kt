@@ -87,6 +87,7 @@ fun CallableRef.apply(
         )
         copy(
             type = info.type.toTypeRef(declarationStore),
+            originalType = info.type.toTypeRef(declarationStore),
             typeParameters = info.typeParameters.map {
                 it.toClassifierRef(declarationStore)
             },
