@@ -222,36 +222,8 @@ fun ParameterDescriptor.injektName(): String {
     }
 }
 
-fun <P1> hashOf(p1: P1): Int {
-    return p1.hashCode()
-}
-
-fun <P1, P2> hashOf(p1: P1, p2: P2): Int {
-    var result = p1.hashCode()
-    result = 31 * result + p2.hashCode()
-    return result
-}
-
-fun <P1, P2, P3> hashOf(p1: P1, p2: P2, p3: P3): Int {
-    var result = p1.hashCode()
-    result = 31 * result + p2.hashCode()
-    result = 31 * result + p3.hashCode()
-    return result
-}
-
-fun <P1, P2, P3, P4> hashOf(p1: P1, p2: P2, p3: P3, p4: P4): Int {
-    var result = p1.hashCode()
-    result = 31 * result + p2.hashCode()
-    result = 31 * result + p3.hashCode()
-    result = 31 * result + p4.hashCode()
-    return result
-}
-
-fun <P1, P2, P3, P4, P5> hashOf(p1: P1, p2: P2, p3: P3, p4: P4, p5: P5): Int {
-    var result = p1.hashCode()
-    result = 31 * result + p2.hashCode()
-    result = 31 * result + p3.hashCode()
-    result = 31 * result + p4.hashCode()
-    result = 31 * result + p5.hashCode()
-    return result
-}
+data class HashKey1<P1>(val p1: P1)
+data class HashKey2<P1, P2>(val p1: P1, val p2: P2)
+data class HashKey3<P1, P2, P3>(val p1: P1, val p2: P2, val p3: P3)
+data class HashKey4<P1, P2, P3, P4>(val p1: P1, val p2: P2, val p3: P3, val p4: P4)
+data class HashKey5<P1, P2, P3, P4, P5>(val p1: P1, val p2: P2, val p3: P3, val p4: P4, val p5: P5)

@@ -465,7 +465,7 @@ fun TypeRef.isAssignableTo(
     declarationStore: DeclarationStore,
     superType: TypeRef,
     substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
-): Boolean = declarationStore.memoize(hashOf(this, superType, substitutionMap)) {
+): Boolean = declarationStore.memoize(HashKey3(this, superType, substitutionMap)) {
     if (isStarProjection || superType.isStarProjection) return@memoize true
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return@memoize false
@@ -509,7 +509,7 @@ fun TypeRef.isSubTypeOf(
     declarationStore: DeclarationStore,
     superType: TypeRef,
     substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
-): Boolean = declarationStore.memoize(hashOf(this, superType, substitutionMap)) {
+): Boolean = declarationStore.memoize(HashKey3(this, superType, substitutionMap)) {
     if (isStarProjection) return@memoize true
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return@memoize false
