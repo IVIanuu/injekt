@@ -35,6 +35,7 @@ interface Component : Scope {
     interface Builder<C : Component> {
         fun <T : Component> dependency(parent: T): Builder<C>
         fun <T> element(key: TypeKey<T>, factory: () -> T): Builder<C>
+        fun initializer(initializer: ComponentInitializer<C>): Builder<C>
         fun build(): C
     }
 }
@@ -45,11 +46,14 @@ fun <@ForTypeKey T> Component.get(): T {
         ?: error("No value for for $key in ${this.key}")
 }
 
-@Given fun <@ForTypeKey C : Component> ComponentBuilder(
-    @Given injectedElements: (@Given C) -> Set<ComponentElement<C>>,
+@Given
+fun <@ForTypeKey C : Component> ComponentBuilder(
+    @Given elementsFactory: (@Given C) -> Set<ComponentElement<C>>,
+    @Given initializersFactory: (@Given C) -> Set<ComponentInitializer<C>>
 ): Component.Builder<C> = ComponentImpl.Builder(
     typeKeyOf<C>(),
-    injectedElements as (Component) -> Set<ComponentElement<*>>
+    elementsFactory as (Component) -> Set<ComponentElement<Component>>,
+    initializersFactory as (Component) -> Set<ComponentInitializer<Component>>,
 )
 
 fun <C : Component, @ForTypeKey T> Component.Builder<C>.element(factory: () -> T) =
@@ -57,7 +61,8 @@ fun <C : Component, @ForTypeKey T> Component.Builder<C>.element(factory: () -> T
 
 typealias ComponentElement<@Suppress("unused") C> = Pair<TypeKey<*>, () -> Any?>
 
-@Qualifier annotation class ComponentElementBinding<C : Component>
+@Qualifier
+annotation class ComponentElementBinding<C : Component>
 
 @Macro
 @GivenSetElement
@@ -65,38 +70,69 @@ fun <T : @ComponentElementBinding<C> S, @ForTypeKey S, @ForTypeKey C : Component
         componentElementBindingImpl(@Given factory: () -> T): ComponentElement<C> =
     typeKeyOf<S>() to factory as () -> Any?
 
+typealias ComponentInitializer<C> = (C) -> Unit
+
+@Qualifier
+annotation class ComponentInitializerBinding
+
+@Macro
+@GivenSetElement
+fun <T : @ComponentInitializerBinding ComponentInitializer<C>, C : Component>
+        componentInitializerBindingImpl(
+    @Given initializer: T): ComponentInitializer<C> = initializer
+
 @PublishedApi internal class ComponentImpl(
     override val key: TypeKey<Component>,
-    private val dependencies: List<Component>,
-    explicitElements: Map<TypeKey<*>, () -> Any?>,
+    private val dependencies: List<Component>?,
+    explicitElements: Map<TypeKey<*>, () -> Any?>?,
     injectedElements: (@Given Component) -> Set<ComponentElement<*>>,
 ) : Component, Scope by Scope() {
-    private val elements = explicitElements + injectedElements(this)
+    private val elements = (explicitElements ?: emptyMap()) + injectedElements(this)
 
     override fun <T> getOrNull(key: TypeKey<T>): T? {
         if (key == this.key) return this as T
         elements[key]?.let { return it() as T }
 
-        for (dependency in dependencies)
-            dependency.getOrNull(key)?.let { return it }
+        if (dependencies != null) {
+            for (dependency in dependencies)
+                dependency.getOrNull(key)?.let { return it }
+        }
 
         return null
     }
 
     class Builder<C : Component>(
         private val key: TypeKey<Component>,
-        private val injectedElements: (Component) -> Set<ComponentElement<*>>,
+        private val injectedElementsFactory: (Component) -> Set<ComponentElement<C>>,
+        private val injectedInitializersFactory: (Component) -> Set<ComponentInitializer<C>>
     ) : Component.Builder<C> {
-        private val dependencies = mutableListOf<Component>()
-        private val elements = mutableMapOf<TypeKey<*>, () -> Any?>()
+        private var dependencies: MutableList<Component>? = null
+        private var elements: MutableMap<TypeKey<*>, () -> Any?>? = null
+        private var initializers: MutableList<ComponentInitializer<C>>? = null
 
         override fun <T : Component> dependency(parent: T): Component.Builder<C> =
-            apply { dependencies += parent }
+            apply {
+                (dependencies ?: mutableListOf<Component>()
+                    .also { dependencies = it }) += parent
+            }
 
         override fun <T> element(key: TypeKey<T>, factory: () -> T): Component.Builder<C> =
-            apply { elements[key] = factory }
+            apply {
+                (elements ?: mutableMapOf<TypeKey<*>, () -> Any?>()
+                    .also { elements = it })[key] = factory
+            }
 
-        override fun build(): C =
-            ComponentImpl(key, dependencies, elements, injectedElements) as C
+        override fun initializer(initializer: ComponentInitializer<C>): Component.Builder<C> =
+            apply {
+                (initializers ?: mutableListOf<ComponentInitializer<C>>()
+                    .also { initializers = it }) += initializer
+            }
+
+        override fun build(): C {
+            val component = ComponentImpl(key, dependencies, elements, injectedElementsFactory) as C
+            initializers?.forEach { it(component) }
+            injectedInitializersFactory(component).forEach { it(component) }
+            return component
+        }
     }
 }

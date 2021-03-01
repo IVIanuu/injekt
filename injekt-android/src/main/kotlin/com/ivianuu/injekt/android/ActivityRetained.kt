@@ -25,7 +25,8 @@ import com.ivianuu.injekt.component.get
 
 typealias ActivityRetainedComponent = Component
 
-@Given val @Given ComponentActivity.activityRetainedComponent: ActivityRetainedComponent
+@Given
+val @Given ComponentActivity.activityRetainedComponent: ActivityRetainedComponent
     get() = viewModelStore.component {
         application.appComponent.get<() -> ActivityRetainedComponent>()()
     }
@@ -37,5 +38,6 @@ fun activityRetainedComponentFactory(
     @Given builderFactory: () -> Component.Builder<ActivityRetainedComponent>,
 ): () -> ActivityRetainedComponent = { builderFactory().dependency(parent).build() }
 
-@Given val @Given ActivityRetainedComponent.appComponentFromRetained: AppComponent
+@Given
+val @Given ActivityRetainedComponent.appComponentFromRetained: AppComponent
     get() = get()

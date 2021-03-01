@@ -52,21 +52,26 @@ fun BroadcastReceiver.createReceiverComponent(
     .get<(BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent>()
     .invoke(this, context, intent)
 
-@Given val @Given ReceiverComponent.appComponentFromReceiver: AppComponent
+@Given
+val @Given ReceiverComponent.appComponentFromReceiver: AppComponent
     get() = get()
 
-@Given inline val @Given ReceiverComponent.receiver: BroadcastReceiver
+@Given
+inline val @Given ReceiverComponent.receiver: BroadcastReceiver
     get() = get()
 
 typealias ReceiverContext = Context
 
-@Given val @Given ReceiverComponent.receiverContext: ReceiverContext
+@Given
+val @Given ReceiverComponent.receiverContext: ReceiverContext
     get() = get()
 
 typealias ReceiverIntent = Intent
 
-@Given val @Given ReceiverComponent.receiverIntent: ReceiverIntent
+@Given
+val @Given ReceiverComponent.receiverIntent: ReceiverIntent
     get() = get()
 
-@Given val @Given ReceiverComponent.appComponent: AppComponent
+@Given
+val @Given ReceiverComponent.appComponent: AppComponent
     get() = get()

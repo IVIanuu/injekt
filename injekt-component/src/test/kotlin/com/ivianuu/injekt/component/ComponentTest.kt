@@ -92,4 +92,18 @@ class ComponentTest {
         component.get<Pair<TestComponent1, TestComponent1>>().first shouldBeSameInstanceAs component
     }
 
+    @Test
+    fun testComponentInitializer()  {
+        var called = false
+        @ComponentInitializerBinding
+        @Given
+        fun something(@Given component: TestComponent1): ComponentInitializer<TestComponent1> = {
+            called = true
+        }
+        val builder = ComponentBuilder<TestComponent1>()
+        called shouldBe false
+        val component = builder.build()
+        called shouldBe true
+    }
+
 }

@@ -20,12 +20,14 @@ package com.ivianuu.injekt.android.work
 
 import android.content.Context
 import androidx.work.ListenableWorker
+import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.Macro
 import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.android.AppContext
 import com.ivianuu.injekt.component.AppComponent
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.ComponentElementBinding
@@ -33,9 +35,12 @@ import com.ivianuu.injekt.component.element
 import com.ivianuu.injekt.component.get
 import kotlin.reflect.KClass
 
-@Qualifier annotation class WorkerBinding
+@Qualifier
+annotation class WorkerBinding
 
-@Macro @GivenSetElement inline fun <reified T : @WorkerBinding S, S : ListenableWorker> workerBinding(
+@Macro
+@GivenSetElement
+inline fun <reified T : @WorkerBinding S, S : ListenableWorker> workerBinding(
     @Given noinline provider: (@Given WorkerComponent) -> T
 ): WorkerElement = T::class to provider
 
@@ -56,20 +61,29 @@ fun workerComponentFactory(
 
 typealias WorkerContext = Context
 
-@Given val @Given WorkerComponent.workerContext: WorkerContext get() = get()
+@Given
+val @Given WorkerComponent.workerContext: WorkerContext get() = get()
 
-@Given val @Given WorkerComponent.workerParameters: WorkerParameters get() = get()
+@Given
+val @Given WorkerComponent.workerParameters: WorkerParameters get() = get()
 
 typealias WorkerElement =
         Pair<KClass<out ListenableWorker>, (@Given WorkerComponent) -> ListenableWorker>
 
-@Given inline val @Given WorkerComponent.appComponent: AppComponent
+@Given
+inline val @Given WorkerComponent.appComponent: AppComponent
     get() = get()
 
-@Given inline val @Given AppComponent.workerComponentFactory:
+@Given
+inline val @Given AppComponent.workerComponentFactory:
             (WorkerContext, WorkerParameters) -> WorkerComponent get() = get()
 
-@Given class InjektWorkerFactory(
+@Given
+val @Given AppContext.workManager: WorkManager
+    get() = WorkManager.getInstance(this)
+
+@Given
+class InjektWorkerFactory(
     @Given workersFactory: () -> Set<WorkerElement>,
     @Given private val workerComponentFactory: (WorkerContext, WorkerParameters) -> WorkerComponent,
 ) : @Given WorkerFactory() {

@@ -17,17 +17,30 @@
 package com.ivianuu.injekt.samples.android
 
 import android.app.Application
+import androidx.work.WorkerFactory
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.android.AppContext
+import com.ivianuu.injekt.android.work.InjektWorkerFactory
 import com.ivianuu.injekt.common.withGiven
+import com.ivianuu.injekt.component.AppComponent
+import com.ivianuu.injekt.component.ComponentInitializer
+import com.ivianuu.injekt.component.ComponentInitializerBinding
 import com.ivianuu.injekt.component.initializeApp
 import com.ivianuu.injekt.given
 
 class App : Application() {
     override fun onCreate() {
-        super.onCreate()
         initializeApp()
-        withGiven(this as Application) {
-            initializeWorkers()
-            given<Database>()
-        }
+        super.onCreate()
     }
+}
+
+@ComponentInitializerBinding
+@Given
+fun myAppComponentInitializer(
+    @Given appContext: AppContext,
+    @Given database: Database,
+    @Given workerFactory: WorkerFactory
+): ComponentInitializer<AppComponent> = {
+    initializeWorkers()
 }

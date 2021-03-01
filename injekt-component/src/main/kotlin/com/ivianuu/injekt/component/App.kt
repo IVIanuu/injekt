@@ -21,18 +21,22 @@ import com.ivianuu.injekt.Given
 typealias AppComponent = Component
 
 fun App.initializeApp(
-    @Given elementsFactory: (@Given AppComponent) -> Set<ComponentElement<AppComponent>>
+    @Given elementsFactory: (@Given AppComponent) -> Set<ComponentElement<AppComponent>>,
+    @Given initializersFactory: (@Given AppComponent) -> Set<ComponentInitializer<AppComponent>>
 ) {
-    _appComponent = ComponentBuilder(elementsFactory)
+    _appComponent = ComponentBuilder(elementsFactory, initializersFactory)
         .element { this }
         .build()
 }
 
 typealias App = Any
 
-@Given val @Given AppComponent.app: App
+@Given
+val @Given AppComponent.app: App
     get() = get()
 
 private lateinit var _appComponent: AppComponent
-@Given val @Given App.appComponent: AppComponent
+
+@Given
+val @Given App.appComponent: AppComponent
     get() = _appComponent

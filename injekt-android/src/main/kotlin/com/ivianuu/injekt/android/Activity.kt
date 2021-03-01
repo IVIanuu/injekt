@@ -35,7 +35,8 @@ import com.ivianuu.injekt.component.get
 
 typealias ActivityComponent = Component
 
-@Given val @Given ComponentActivity.activityComponent: ActivityComponent
+@Given
+val @Given ComponentActivity.activityComponent: ActivityComponent
     get() = lifecycle.component {
         activityRetainedComponent
             .get<(ComponentActivity) -> ActivityComponent>()(this)
@@ -53,43 +54,52 @@ fun activityComponentFactory(
         .build()
 }
 
-@Given val @Given ActivityComponent.retainedComponentFromActivity: ActivityRetainedComponent
+@Given
+val @Given ActivityComponent.retainedComponentFromActivity: ActivityRetainedComponent
     get() = get()
 
-@Given val @Given ActivityComponent.activity: ComponentActivity
+@Given
+val @Given ActivityComponent.activity: ComponentActivity
     get() = get()
 
 typealias ActivityContext = Context
 
-@Given inline val @Given ComponentActivity.activityContext: ActivityContext
+@Given
+inline val @Given ComponentActivity.activityContext: ActivityContext
     get() = this
 
 typealias ActivityResources = Resources
 
-@Given inline val @Given ComponentActivity.activityResources: ActivityResources
+@Given
+inline val @Given ComponentActivity.activityResources: ActivityResources
     get() = resources
 
 typealias ActivityLifecycleOwner = LifecycleOwner
 
-@Given inline val @Given ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
+@Given
+inline val @Given ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
     get() = this
 
 typealias ActivityOnBackPressedDispatcherOwner = OnBackPressedDispatcherOwner
 
-@Given inline val @Given ComponentActivity.activityOnBackPressedDispatcherOwner: ActivityOnBackPressedDispatcherOwner
+@Given
+inline val @Given ComponentActivity.activityOnBackPressedDispatcherOwner: ActivityOnBackPressedDispatcherOwner
     get() = this
 
 typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
 
-@Given inline val @Given ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
+@Given
+inline val @Given ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
     get() = this
 
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
-@Given inline val @Given ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
+@Given
+inline val @Given ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
     get() = this
 
 typealias ActivityCoroutineScope = LifecycleCoroutineScope
 
-@Given inline val @Given ComponentActivity.activityCoroutineScope: ActivityCoroutineScope
+@Given
+inline val @Given ComponentActivity.activityCoroutineScope: ActivityCoroutineScope
     get() = lifecycleScope

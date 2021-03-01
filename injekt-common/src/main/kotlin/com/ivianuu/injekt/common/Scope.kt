@@ -32,7 +32,8 @@ interface Scope {
 
 fun Scope(): Scope = ScopeImpl()
 
-@Qualifier annotation class Scoped<S : Scope>
+@Qualifier
+annotation class Scoped<S : Scope>
 
 @Macro
 @Given

@@ -29,24 +29,29 @@ import com.ivianuu.injekt.component.AppComponent
 import com.ivianuu.injekt.component.appComponent
 
 @Suppress("unused")
-@Given val @Given Application.appComponent: AppComponent
+@Given
+val @Given Application.appComponent: AppComponent
     get() = (this as App).appComponent
 
-@Given inline val @Given App.application: Application
+@Given
+inline val @Given App.application: Application
     get() = this as Application
 
 typealias AppContext = Context
 
-@Given inline val @Given Application.appContext: AppContext
+@Given
+inline val @Given Application.appContext: AppContext
     get() = this
 
 typealias AppResources = Resources
 
-@Given inline val @Given AppContext.appResources: AppResources
+@Given
+inline val @Given AppContext.appResources: AppResources
     get() = resources
 
 typealias AppLifecycleOwner = LifecycleOwner
 
 @Suppress("unused")
-@Given inline val @Given Application.appLifecycleOwner: AppLifecycleOwner
+@Given
+inline val @Given Application.appLifecycleOwner: AppLifecycleOwner
     get() = ProcessLifecycleOwner.get()

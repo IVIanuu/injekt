@@ -45,18 +45,22 @@ fun serviceComponentFactory(
 fun Service.createServiceComponent(): ServiceComponent =
     application.appComponent.get<(Service) -> ServiceComponent>()(this)
 
-@Given val @Given ServiceComponent.appComponentFromService: AppComponent
+@Given
+val @Given ServiceComponent.appComponentFromService: AppComponent
     get() = get()
 
-@Given inline val @Given ServiceComponent.service: Service
+@Given
+inline val @Given ServiceComponent.service: Service
     get() = get()
 
 typealias ServiceContext = Context
 
-@Given inline val @Given Service.serviceContext: ServiceContext
+@Given
+inline val @Given Service.serviceContext: ServiceContext
     get() = this
 
 typealias ServiceResources = Resources
 
-@Given inline val @Given Service.serviceResources: ServiceResources
+@Given
+inline val @Given Service.serviceResources: ServiceResources
     get() = resources
