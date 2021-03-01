@@ -85,7 +85,7 @@ fun <T : @ComponentInitializerBinding ComponentInitializer<C>, C : Component>
     override val key: TypeKey<Component>,
     private val dependencies: List<Component>?,
     explicitElements: Map<TypeKey<*>, () -> Any?>?,
-    injectedElements: (@Given Component) -> Set<ComponentElement<*>>,
+    injectedElements: (Component) -> Set<ComponentElement<*>>,
 ) : Component, Scope by Scope() {
     private val elements = (explicitElements ?: emptyMap()) + injectedElements(this)
 
