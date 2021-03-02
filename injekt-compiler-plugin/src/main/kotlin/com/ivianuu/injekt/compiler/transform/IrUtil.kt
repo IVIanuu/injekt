@@ -260,6 +260,7 @@ fun IrBuilderWithScope.irLambda(
     type: IrType,
     startOffset: Int = UNDEFINED_OFFSET,
     endOffset: Int = UNDEFINED_OFFSET,
+    parameterNameProvider: (Int) -> String = { "p$it" },
     body: IrBuilderWithScope.(IrFunction) -> IrExpression,
 ): IrExpression {
     type as IrSimpleType
@@ -276,7 +277,7 @@ fun IrBuilderWithScope.irLambda(
         parent = scope.getLocalDeclarationParent()
         type.arguments.dropLast(1).forEachIndexed { index, typeArgument ->
             addValueParameter(
-                "p$index",
+                parameterNameProvider(index),
                 typeArgument.typeOrNull!!
             )
         }

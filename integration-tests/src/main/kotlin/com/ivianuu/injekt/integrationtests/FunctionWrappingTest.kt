@@ -45,4 +45,17 @@ class FunctionWrappingTest {
         """
     )
 
+    @Test
+    fun testStableDependencyWithDefaultValueAndMixedAvailability() = codegen(
+        """
+            @Given fun bar(@Given foo: Foo = Foo()) = Bar(foo)
+            @Given class Dep1(@Given val bar: Bar)
+            @Given class Dep2(@Given val bar: Bar)
+            @Given fun pair(@Given a: Dep1, @Given b: (@Given Foo) -> Dep2): Pair<Dep1, (Foo) -> Dep2> = a to b
+            fun invoke() {
+                given<Pair<Dep1, (Foo) -> Dep2>>()
+            }
+        """
+    )
+
 }

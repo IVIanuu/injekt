@@ -47,6 +47,7 @@ import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
+import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
@@ -84,6 +85,8 @@ class GivenCallTransformer(
         val statements = mutableListOf<IrStatement>()
         val functionExpressions = mutableMapOf<GivenKey, WrappedExpression>()
         private val scopeContexts = mutableMapOf<ResolutionScope, ScopeContext>()
+
+        var parameterIndex = 0
 
         val givensByRequestsByScope = mutableMapOf<ResolutionScope, Map<GivenRequest, GivenNode>>()
 
@@ -247,6 +250,7 @@ class GivenCallTransformer(
         if (!given.isFunctionWrappingAllowed) return expression(scopeExpressionProvider)
         if (given.dependencies.isEmpty()) return expression(scopeExpressionProvider)
         if (given.hasCircularDependency) return expression(scopeExpressionProvider)
+        if (given.dependencies.any { !it.required }) return expression(scopeExpressionProvider)
 
         val key = GivenKey(given.type, given.uniqueKey, given.dependencies)
 
@@ -254,9 +258,10 @@ class GivenCallTransformer(
             val usages = graphContext.graph.givensByScope
                 .values
                 .flatMap { it.values }
-                .filter {
-                    it.isFunctionWrappingAllowed &&
-                            !it.hasCircularDependency
+                .filter { usage ->
+                    usage.isFunctionWrappingAllowed &&
+                            !usage.hasCircularDependency &&
+                            usage.dependencies.all { it.required }
                 }
                 .filter { GivenKey(it.type, it.uniqueKey, it.dependencies) == key }
 
@@ -289,8 +294,8 @@ class GivenCallTransformer(
 
             val (stableDependencies, unstableDependencies) = mergedDependencies
                 .partition {
-                    it.size == 1 &&
-                            it.single().second.ownerScope.depth(hostingScope) <= 0
+                    val singleDependencyNode = it.singleOrNull() ?: return@partition false
+                    singleDependencyNode.second.ownerScope.depth(hostingScope) >= 0
                 }
                 .let {
                     it.first
@@ -315,11 +320,17 @@ class GivenCallTransformer(
                         )
                 }
                 val valueParametersByDependency = unstableDependencies
-                    .associateWith {
+                    .associateWith { request ->
                         addValueParameter(
-                            it.parameterName.asString(),
-                            it.type.toIrType(pluginContext, declarationStore)
-                        )
+                            request.parameterName.asString(),
+                            request.type.toIrType(pluginContext, declarationStore)
+                        ).apply {
+                            /*if (!request.required) {
+                                defaultValue = DeclarationIrBuilder(pluginContext, symbol).apply {
+                                    irExprBody(irNull())
+                                }
+                            }*/
+                        }
                     }
 
                 this.body = DeclarationIrBuilder(pluginContext, symbol).run {
@@ -370,7 +381,12 @@ class GivenCallTransformer(
         expressionProvider: (GivenRequest) -> IrExpression?
     ): IrExpression {
         return DeclarationIrBuilder(pluginContext, symbol)
-            .irLambda(given.type.toIrType(pluginContext, declarationStore)) { function ->
+            .irLambda(
+                given.type.toIrType(pluginContext, declarationStore),
+                parameterNameProvider = {
+                    "p${graphContext.parameterIndex++}"
+                }
+            ) { function ->
                 val dependencyScopeContext = graphContext.existingScopeContextOrNull(given.dependencyScope)
                     ?: graphContext.createScopeContext(given.dependencyScope, function.symbol)
                 dependencyScopeContext.lambdasByProviderGiven[given] = function
