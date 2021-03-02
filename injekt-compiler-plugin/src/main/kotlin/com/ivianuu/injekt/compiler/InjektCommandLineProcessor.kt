@@ -81,5 +81,5 @@ val DumpDirKey = CompilerConfigurationKey<String>("dumpDir")
 typealias DumpDir = File
 
 fun dumpDir(configuration: CompilerConfiguration): DumpDir =
-    File(configuration.getNotNull(CacheDirKey))
+    File(configuration.getNotNull(DumpDirKey))
         .also { it.mkdirs() }

@@ -64,15 +64,8 @@ class FileManager(
                 it.virtualFilePath == originatingFilePath
             }
 
-            if (compilingOriginatingFile != null) {
-                File(file.virtualFilePath).delete()
-                cacheEntries.removeAll {
-                    it.second == file.virtualFilePath
-                }
-                return@forEach
-            }
-
-            if (!File(originatingFilePath).exists()) {
+            if (compilingOriginatingFile != null ||
+                    !File(originatingFilePath).exists()) {
                 File(file.virtualFilePath).delete()
                 cacheEntries.removeAll {
                     it.second == file.virtualFilePath
