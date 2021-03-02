@@ -449,6 +449,22 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testPrefersExactCallContext() = codegen(
+        """
+            @Given lateinit var _foo: Foo
+            val suspendFoo = Foo()
+            @Given suspend fun suspendFoo() = suspendFoo
+            fun invoke(foo: Foo): Foo {
+                _foo = foo
+                return given()
+            }
+        """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
+    }
+
+    @Test
     fun testGenericGiven() = codegen(
         """
             @Given val foo = Foo()
@@ -602,4 +618,5 @@ class GivenResolutionTest {
             fun invoke() = given<MyObject>()
         """
     )
+
 }

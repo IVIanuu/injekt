@@ -387,6 +387,12 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     if (!isAMacro && isBMacro) return -1
     if (!isBMacro && isAMacro) return 1
 
+    if (callContext == a.callContext &&
+            callContext != b.callContext) return -1
+
+    if (callContext == b.callContext &&
+        callContext != a.callContext) return 1
+
     return 0
 }
 
