@@ -28,12 +28,10 @@ import java.io.File
 class InjektCommandLineProcessor : CommandLineProcessor {
     override val pluginId = "com.ivianuu.injekt"
 
-    // todo remove options
     override val pluginOptions = listOf(
-        GenerateComponentsOption,
-        GenerateMergeComponentsOption,
         SrcDirOption,
-        CacheDirOption
+        CacheDirOption,
+        DumpDirOption
     )
 
     override fun processOption(
@@ -44,20 +42,11 @@ class InjektCommandLineProcessor : CommandLineProcessor {
         when (option.optionName) {
             SrcDirOption.optionName -> configuration.put(SrcDirKey, value)
             CacheDirOption.optionName -> configuration.put(CacheDirKey, value)
+            DumpDirOption.optionName -> configuration.put(DumpDirKey, value)
         }
     }
 }
 
-val GenerateComponentsOption = CliOption(
-    optionName = "generateComponents",
-    valueDescription = "generateComponents",
-    description = "generateComponents"
-)
-val GenerateMergeComponentsOption = CliOption(
-    optionName = "generateMergeComponents",
-    valueDescription = "generateMergeComponents",
-    description = "generateMergeComponents"
-)
 val SrcDirOption = CliOption(
     optionName = "srcDir",
     valueDescription = "srcDir",
@@ -67,6 +56,11 @@ val CacheDirOption = CliOption(
     optionName = "cacheDir",
     valueDescription = "cacheDir",
     description = "cacheDir"
+)
+val DumpDirOption = CliOption(
+    optionName = "dumpDir",
+    valueDescription = "dumpDir",
+    description = "dumpDir"
 )
 
 val SrcDirKey = CompilerConfigurationKey<String>("srcDir")
@@ -86,10 +80,6 @@ fun cacheDir(configuration: CompilerConfiguration): CacheDir =
 val DumpDirKey = CompilerConfigurationKey<String>("dumpDir")
 typealias DumpDir = File
 
-fun dumpDir(cacheDir: CacheDir, srcDir: SrcDir): DumpDir {
-    val sourceSetName = srcDir.name
-    return cacheDir
-        .parentFile
-        .resolve("dump/$sourceSetName")
+fun dumpDir(configuration: CompilerConfiguration): DumpDir =
+    File(configuration.getNotNull(DumpDirKey))
         .also { it.mkdirs() }
-}

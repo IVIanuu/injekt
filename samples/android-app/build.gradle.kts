@@ -26,10 +26,6 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 ////apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-source-sets-android.gradle")
 
-injekt {
-    generateMergeComponents = true
-}
-
 dependencies {
     implementation(Deps.AndroidX.Activity.activity)
     implementation(Deps.AndroidX.Activity.compose)
