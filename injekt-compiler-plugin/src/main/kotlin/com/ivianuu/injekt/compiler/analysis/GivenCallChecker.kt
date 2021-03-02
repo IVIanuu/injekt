@@ -106,7 +106,6 @@ class GivenCallChecker(
                     .flatMap { it.values }
                     .filterIsInstance<CallableGivenNode>()
                     .forEach { given ->
-
                         bindingTrace.record(
                             InjektWritableSlices.USED_GIVEN,
                             given.callable.callable,
