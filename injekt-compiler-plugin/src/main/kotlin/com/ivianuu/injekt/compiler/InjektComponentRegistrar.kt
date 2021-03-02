@@ -71,7 +71,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
             project,
             LoadingOrder.LAST,
             InjektIrDumper(cacheDir(configuration),
-                dumpDir(configuration, srcDir(configuration)))
+                dumpDir(cacheDir(configuration), srcDir(configuration)))
         )
         CandidateInterceptor.registerExtension(
             project,

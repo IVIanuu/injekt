@@ -117,7 +117,7 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
     pluginOptions += PluginOption(
         "com.ivianuu.injekt",
         "srcDir",
-        workingDir.resolve("injekt/generated/src").absolutePath
+        workingDir.resolve("injekt/generated/src/main").absolutePath
     )
     pluginOptions += PluginOption(
         "com.ivianuu.injekt",
@@ -199,4 +199,32 @@ fun KotlinCompilation.Result.assertMessage(
 
 fun KotlinCompilation.Result.assertNoMessage(message: String) {
     assertFalse(message in messages)
+}
+
+inline fun KotlinCompilation.Result.irAssertions(block: (String) -> Unit) {
+    assertOk()
+    outputDirectory
+        .parentFile
+        .resolve("injekt/dump/main")
+        .walkTopDown()
+        .filter { it.isFile }
+        .map { it.readText() }
+        .joinToString("\n")
+        .let(block)
+}
+
+fun KotlinCompilation.Result.assertIrContainsText(text: String) {
+    irAssertions {
+        assert(text in it) {
+            "'$text' not in source '$it'"
+        }
+    }
+}
+
+fun KotlinCompilation.Result.assertIrNotContainsText(text: String) {
+    irAssertions {
+        assert(text !in it) {
+            "'$text' in source '$it'"
+        }
+    }
 }

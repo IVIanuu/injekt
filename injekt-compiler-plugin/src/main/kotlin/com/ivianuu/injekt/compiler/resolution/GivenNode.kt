@@ -68,7 +68,7 @@ class CallableGivenNode(
     override val isFrameworkGiven: Boolean
         get() = false
     override val isFunctionWrappingAllowed: Boolean
-        get() = dependencies.isNotEmpty() && callable.callable !is ValueParameterDescriptor
+        get() = true
 }
 
 class SetGivenNode(

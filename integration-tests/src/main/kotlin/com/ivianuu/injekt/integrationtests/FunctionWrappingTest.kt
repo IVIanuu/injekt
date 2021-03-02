@@ -16,13 +16,15 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.assertIrContainsText
+import com.ivianuu.injekt.test.assertIrNotContainsText
 import com.ivianuu.injekt.test.codegen
 import org.junit.Test
 
 class FunctionWrappingTest {
 
     @Test
-    fun testFunctionWrapping() = codegen(
+    fun testWrapsExpressionWithMultipleUsagesAndDependencies() = codegen(
         """
             @Given val foo = Foo()
             @Given fun bar(@Given foo: Foo) = Bar(foo)
@@ -31,22 +33,25 @@ class FunctionWrappingTest {
                 given<Pair<Bar, Bar>>()
             }
         """
-    )
+    ) {
+        assertIrContainsText("local fun <anonymous>(): Bar {")
+    }
 
     @Test
-    fun testFunctionWrappingInProvider() = codegen(
+    fun testDoesNotWrapExpressionWithMultipleUsagesButNoDependencies() = codegen(
         """
-            @Given val foo = Foo()
-            @Given fun bar(@Given foo: Foo) = Bar(foo)
-            @Given fun <T> pair(@Given a: T, @Given b: (@Given Foo) -> T): Pair<T, (Foo) -> T> = a to b
+            @Given fun foo() = Foo()
+            @Given fun <T> pair(@Given a: T, @Given b: T): Pair<T, T> = a to b
             fun invoke() {
-                given<(@Given Foo) -> Pair<Bar, (Foo) -> Bar>>()(Foo())
+                given<Pair<Foo, Foo>>()
             }
         """
-    )
+    ) {
+        assertIrNotContainsText("local fun <anonymous>(): Foo {")
+    }
 
     @Test
-    fun testStableDependencyWithDefaultValueAndMixedAvailability() = codegen(
+    fun testDoesNotWrapFunctionWithDefaultParameters() = codegen(
         """
             @Given fun bar(@Given foo: Foo = Foo()) = Bar(foo)
             @Given class Dep1(@Given val bar: Bar)
@@ -56,6 +61,8 @@ class FunctionWrappingTest {
                 given<Pair<Dep1, (Foo) -> Dep2>>()
             }
         """
-    )
+    ) {
+        assertIrNotContainsText("local fun <anonymous>(): Bar {")
+    }
 
 }
