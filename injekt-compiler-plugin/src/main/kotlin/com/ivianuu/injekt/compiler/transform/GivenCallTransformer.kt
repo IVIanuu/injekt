@@ -236,35 +236,34 @@ class GivenCallTransformer(
         val type: TypeRef,
         val uniqueKey: Any,
         val dependencies: List<GivenRequest>
-    )
+    ) {
+        constructor(given: GivenNode) : this(given.type, given.uniqueKey, given.dependencies)
+    }
 
     private class WrappedExpression(
         val unstableDependencies: List<GivenRequest>,
         val function: IrFunction
     )
 
+    private fun GivenNode.canFunctionWrap(): Boolean = this !is ProviderGivenNode &&
+            dependencies.isNotEmpty() &&
+            !hasCircularDependency &&
+            dependencies.all { it.required }
+
     private fun ScopeContext.wrapInFunctionIfNeeded(
         given: GivenNode,
         expression: ((GivenRequest) -> IrExpression?) -> IrExpression?
     ): IrExpression? {
-        if (given is ProviderGivenNode) return expression(scopeExpressionProvider)
-        if (given.dependencies.isEmpty()) return expression(scopeExpressionProvider)
-        if (given.hasCircularDependency) return expression(scopeExpressionProvider)
-        if (given.dependencies.any { !it.required }) return expression(scopeExpressionProvider)
+        if (!given.canFunctionWrap()) return expression(scopeExpressionProvider)
 
-        val key = GivenKey(given.type, given.uniqueKey, given.dependencies)
+        val key = GivenKey(given)
 
         val wrappedExpression = graphContext.functionExpressions.getOrPut(key) {
             val usages = graphContext.graph.givensByScope
                 .values
                 .flatMap { it.values }
-                .filter { usage ->
-                    usage !is ProviderGivenNode &&
-                            usage.dependencies.isNotEmpty() &&
-                            !usage.hasCircularDependency &&
-                            usage.dependencies.all { it.required }
-                }
-                .filter { GivenKey(it.type, it.uniqueKey, it.dependencies) == key }
+                .filter { it.canFunctionWrap() }
+                .filter { GivenKey(it) == key }
 
             if (usages.size == 1) return expression(scopeExpressionProvider)
 
@@ -290,9 +289,7 @@ class GivenCallTransformer(
                             usage.dependencies[parameterIndex] to (givensByRequest[usageParameterRequest]
                                 ?: error("Wtf"))
                         }
-                        .distinctBy {
-                            GivenKey(it.second.type, it.second.uniqueKey, it.second.dependencies)
-                        }
+                        .distinctBy { GivenKey(it.second) }
                 }
 
             fun GivenNode.ensureAllInScope(scope: ResolutionScope): Boolean {
