@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.transform.toKotlinType
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
+import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -40,7 +41,7 @@ sealed class GivenNode {
     abstract val dependencyScope: ResolutionScope?
     abstract val lazyDependencies: Boolean
     abstract val isFrameworkGiven: Boolean
-    abstract val cache: Boolean
+    abstract val isFunctionWrappingAllowed: Boolean
     abstract val requestingScope: ResolutionScope
     var hasCircularDependency = false
 }
@@ -66,8 +67,8 @@ class CallableGivenNode(
         get() = callable.originalType
     override val isFrameworkGiven: Boolean
         get() = false
-    override val cache: Boolean
-        get() = false
+    override val isFunctionWrappingAllowed: Boolean
+        get() = dependencies.isNotEmpty() && callable.callable !is ValueParameterDescriptor
 }
 
 class SetGivenNode(
@@ -88,8 +89,8 @@ class SetGivenNode(
         get() = type
     override val isFrameworkGiven: Boolean
         get() = true
-    override val cache: Boolean
-        get() = false
+    override val isFunctionWrappingAllowed: Boolean
+        get() = true
 }
 
 class DefaultGivenNode(
@@ -112,7 +113,7 @@ class DefaultGivenNode(
         get() = false
     override val isFrameworkGiven: Boolean
         get() = true
-    override val cache: Boolean
+    override val isFunctionWrappingAllowed: Boolean
         get() = false
 }
 
@@ -165,8 +166,8 @@ class ProviderGivenNode(
         get() = type
     override val isFrameworkGiven: Boolean
         get() = true
-    override val cache: Boolean
-        get() = true
+    override val isFunctionWrappingAllowed: Boolean
+        get() = false
 
     class ProviderParameterDescriptor(
         val given: ProviderGivenNode,

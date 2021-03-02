@@ -244,8 +244,8 @@ class GivenCallTransformer(
         given: GivenNode,
         expression: ((GivenRequest) -> IrExpression?) -> IrExpression?
     ): IrExpression? {
+        if (!given.isFunctionWrappingAllowed) return expression(scopeExpressionProvider)
         if (given.dependencies.isEmpty()) return expression(scopeExpressionProvider)
-        if (given is ProviderGivenNode) return expression(scopeExpressionProvider)
         if (given.hasCircularDependency) return expression(scopeExpressionProvider)
 
         val key = GivenKey(given.type, given.uniqueKey, given.dependencies)
@@ -254,10 +254,11 @@ class GivenCallTransformer(
             val usages = graphContext.graph.givensByScope
                 .values
                 .flatMap { it.values }
+                .filter {
+                    it.isFunctionWrappingAllowed &&
+                            !it.hasCircularDependency
+                }
                 .filter { GivenKey(it.type, it.uniqueKey, it.dependencies) == key }
-
-            if (usages.any { it.hasCircularDependency })
-                return expression(scopeExpressionProvider)
 
             if (usages.size == 1) return expression(scopeExpressionProvider)
 
