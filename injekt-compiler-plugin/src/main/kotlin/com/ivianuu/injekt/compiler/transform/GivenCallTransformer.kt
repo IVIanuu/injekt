@@ -247,7 +247,7 @@ class GivenCallTransformer(
         given: GivenNode,
         expression: ((GivenRequest) -> IrExpression?) -> IrExpression?
     ): IrExpression? {
-        if (!given.isFunctionWrappingAllowed) return expression(scopeExpressionProvider)
+        if (given is ProviderGivenNode) return expression(scopeExpressionProvider)
         if (given.dependencies.isEmpty()) return expression(scopeExpressionProvider)
         if (given.hasCircularDependency) return expression(scopeExpressionProvider)
         if (given.dependencies.any { !it.required }) return expression(scopeExpressionProvider)
@@ -259,7 +259,8 @@ class GivenCallTransformer(
                 .values
                 .flatMap { it.values }
                 .filter { usage ->
-                    usage.isFunctionWrappingAllowed &&
+                    usage !is ProviderGivenNode &&
+                            usage.dependencies.isNotEmpty() &&
                             !usage.hasCircularDependency &&
                             usage.dependencies.all { it.required }
                 }
@@ -284,8 +285,10 @@ class GivenCallTransformer(
                 .map { parameterIndex ->
                     usages
                         .map { usage ->
-                            usage.dependencies[parameterIndex] to
-                                    usage.requestingScope.getGivensByRequest(graphContext)[usage.dependencies[parameterIndex]]!!
+                            val usageParameterRequest = usage.dependencies[parameterIndex]
+                            val givensByRequest = usage.requestingScope.getGivensByRequest(graphContext)
+                            usage.dependencies[parameterIndex] to (givensByRequest[usageParameterRequest]
+                                ?: error("Wtf"))
                         }
                         .distinctBy {
                             GivenKey(it.second.type, it.second.uniqueKey, it.second.dependencies)

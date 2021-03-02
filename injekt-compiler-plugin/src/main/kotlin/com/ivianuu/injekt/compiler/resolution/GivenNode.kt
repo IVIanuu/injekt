@@ -41,7 +41,6 @@ sealed class GivenNode {
     abstract val dependencyScope: ResolutionScope?
     abstract val lazyDependencies: Boolean
     abstract val isFrameworkGiven: Boolean
-    abstract val isFunctionWrappingAllowed: Boolean
     abstract val requestingScope: ResolutionScope
     var hasCircularDependency = false
 }
@@ -67,8 +66,6 @@ class CallableGivenNode(
         get() = callable.originalType
     override val isFrameworkGiven: Boolean
         get() = false
-    override val isFunctionWrappingAllowed: Boolean
-        get() = true
 }
 
 class SetGivenNode(
@@ -88,8 +85,6 @@ class SetGivenNode(
     override val originalType: TypeRef
         get() = type
     override val isFrameworkGiven: Boolean
-        get() = true
-    override val isFunctionWrappingAllowed: Boolean
         get() = true
 }
 
@@ -113,8 +108,6 @@ class DefaultGivenNode(
         get() = false
     override val isFrameworkGiven: Boolean
         get() = true
-    override val isFunctionWrappingAllowed: Boolean
-        get() = false
 }
 
 class ProviderGivenNode(
@@ -166,8 +159,6 @@ class ProviderGivenNode(
         get() = type
     override val isFrameworkGiven: Boolean
         get() = true
-    override val isFunctionWrappingAllowed: Boolean
-        get() = false
 
     class ProviderParameterDescriptor(
         val given: ProviderGivenNode,
