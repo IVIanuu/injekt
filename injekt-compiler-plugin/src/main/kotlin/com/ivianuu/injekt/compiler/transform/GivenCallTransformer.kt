@@ -292,10 +292,19 @@ class GivenCallTransformer(
                         }
                 }
 
+            fun GivenNode.ensureAllInScope(scope: ResolutionScope): Boolean {
+                val allGivensByRequest = scope.getGivensByRequest(graphContext)
+                return dependencies
+                    .map { allGivensByRequest[it] }
+                    .all {
+                        it != null && it.ensureAllInScope(scope)
+                    }
+            }
+
             val (stableDependencies, unstableDependencies) = mergedDependencies
                 .partition {
                     val singleDependencyNode = it.singleOrNull() ?: return@partition false
-                    singleDependencyNode.second.ownerScope.depth(hostingScope) >= 0
+                    singleDependencyNode.second.ensureAllInScope(hostingScope)
                 }
                 .let {
                     it.first
