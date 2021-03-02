@@ -40,12 +40,15 @@ class IndexGenerator(private val fileManager: FileManager) {
                     appendLine("import ${InjektFqNames.Index}")
                     indices
                         .distinct()
-                        .forEach { index ->
+                        .forEachIndexed { i, index ->
                             appendLine("object ${index.indexObjectName}")
                             appendLine()
                             appendLine("@Index(fqName = \"${index.fqName}\", type = \"${index.type}\")")
-                            appendLine("fun Index.Companion.com_ivianuu_injekt_contribution(" +
-                                    "${index.indexObjectName.decapitalize()}: ${index.indexObjectName}) {")
+                            appendLine("fun Index.Companion.com_ivianuu_injekt_contribution(")
+                            repeat(i + 1) {
+                                appendLine("${index.indexObjectName.decapitalize()}_${index.hash}_$it: ${index.indexObjectName},")
+                            }
+                            appendLine(") {")
                             appendLine("}")
                         }
                 }

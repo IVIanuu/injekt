@@ -38,13 +38,12 @@ import com.ivianuu.injekt.compiler.resolution.contributionKind
 import com.ivianuu.injekt.compiler.resolution.resolveGiven
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.com.intellij.psi.PsiFile
-import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
+import org.jetbrains.kotlin.incremental.components.LookupTracker
+import org.jetbrains.kotlin.incremental.recordPackageLookup
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
@@ -68,7 +67,8 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class GivenCallChecker(
     private val bindingTrace: BindingTrace,
-    private val declarationStore: DeclarationStore
+    private val declarationStore: DeclarationStore,
+    private val lookupTracker: LookupTracker?
 ) : KtTreeVisitorVoid() {
 
     private fun ResolutionScope.check(call: ResolvedCall<*>, reportOn: KtElement) {
@@ -94,11 +94,10 @@ class GivenCallChecker(
 
         when (graph) {
             is GivenGraph.Success -> {
-                declarationStore.memberScopeForFqName(
-                    InjektFqNames.IndexPackage
-                )!!.recordLookup(
-                    "com_ivianuu_injekt_contribution".asNameId(),
-                    KotlinLookupLocation(reportOn)
+                lookupTracker?.recordPackageLookup(
+                    KotlinLookupLocation(reportOn),
+                    InjektFqNames.IndexPackage.asString(),
+                    "com_ivianuu_injekt_contribution"
                 )
                 graph
                     .givensByScope
