@@ -66,20 +66,9 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
     val dumpDir = project.buildDir.resolve("injekt/dump")
         .also { it.mkdirs() }
 
-    val extension = project.extensions.getByType(InjektExtension::class.java)
-
     project.afterEvaluate {
-        val isIncremental = !extension.generateComponents && !extension.generateMergeComponents
-
-        incremental = isIncremental
-        if (!isIncremental) {
-            outputs.cacheIf { false }
-            outputs.upToDateWhen { false }
-        }
-
         val cleanGeneratedFiles = project.tasks.create(
             "${name}InjektCleanGeneratedFiles", CleanGeneratedFiles::class.java)
-        cleanGeneratedFiles.isIncremental = isIncremental
         cleanGeneratedFiles.cacheDir = cacheDir
         cleanGeneratedFiles.dumpDir = dumpDir
         cleanGeneratedFiles.generatedSrcDir = srcDir
@@ -102,8 +91,6 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
 
         log("Setup in ${project.name} $name\n" +
                 "source set $sourceSetName\n" +
-                "extension: $extension\n" +
-                "incremental: $isIncremental\n" +
                 "cache dir $cacheDir\n" +
                 "gen dir $srcDir\n" +
                 "src dirs ${cleanGeneratedFiles.srcDirs.joinToString("\n")}\n" +
@@ -113,20 +100,16 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
 
     return listOf(
         SubpluginOption(
-            key = "generateComponents",
-            value = extension.generateComponents.toString()
-        ),
-        SubpluginOption(
-            key = "generateMergeComponents",
-            value = extension.generateMergeComponents.toString()
-        ),
-        SubpluginOption(
             key = "srcDir",
             value = srcDir.absolutePath
         ),
         SubpluginOption(
             key = "cacheDir",
             value = cacheDir.absolutePath
+        ),
+        SubpluginOption(
+            key = "dumpDir",
+            value = dumpDir.absolutePath
         )
     )
 }

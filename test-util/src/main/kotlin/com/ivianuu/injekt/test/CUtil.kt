@@ -124,27 +124,12 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
         "cacheDir",
         workingDir.resolve("injekt/cache").absolutePath
     )
-    setGenerateComponents(true)
-    setGenerateMergeComponents(false)
+    pluginOptions += PluginOption(
+        "com.ivianuu.injekt",
+        "dumpDir",
+        workingDir.resolve("injekt/dump").absolutePath
+    )
     block()
-}
-
-fun KotlinCompilation.setGenerateComponents(value: Boolean) {
-    pluginOptions = pluginOptions
-        .filter { it.optionName != "generateComponents" } + PluginOption(
-        "com.ivianuu.injekt",
-        "generateComponents",
-        value.toString()
-    )
-}
-
-fun KotlinCompilation.setGenerateMergeComponents(value: Boolean) {
-    pluginOptions = pluginOptions
-        .filter { it.optionName != "generateMergeComponents" } + PluginOption(
-        "com.ivianuu.injekt",
-        "generateMergeComponents",
-        value.toString()
-    )
 }
 
 fun compile(block: KotlinCompilation.() -> Unit = {}) = compilation(

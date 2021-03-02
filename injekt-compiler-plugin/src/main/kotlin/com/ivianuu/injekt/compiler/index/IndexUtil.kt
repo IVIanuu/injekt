@@ -29,9 +29,10 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.psiUtil.isTopLevelKtOrJavaMember
+import org.jetbrains.kotlin.psi.psiUtil.startOffset
 
-fun KtElement.collectIndices(): List<Index> {
-    val indices = mutableListOf<Index>()
+fun KtElement.collectIndices(): List<NewIndex> {
+    val indices = mutableListOf<NewIndex>()
     accept(object : KtTreeVisitorVoid() {
         override fun visitDeclaration(declaration: KtDeclaration) {
             super.visitDeclaration(declaration)
@@ -43,7 +44,7 @@ fun KtElement.collectIndices(): List<Index> {
                 else -> declaration
             } as KtNamedDeclaration
 
-            val index = Index(
+            val index = NewIndex(
                 owner.fqName!!,
                 when (owner) {
                     is KtClassOrObject -> "class"
@@ -51,7 +52,9 @@ fun KtElement.collectIndices(): List<Index> {
                     is KtFunction -> "function"
                     is KtProperty -> "property"
                     else -> error("Unexpected declaration ${declaration.text}")
-                }
+                },
+                "${owner.fqName!!.pathSegments()
+                    .joinToString("_")}__${owner.containingKtFile.name.removeSuffix(".kt")}__${declaration.startOffset}"
             )
             indices += index
         }

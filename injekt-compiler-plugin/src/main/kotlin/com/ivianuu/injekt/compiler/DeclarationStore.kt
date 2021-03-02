@@ -184,7 +184,7 @@ class DeclarationStore(
     }
 
     private val memberScopeByFqName = mutableMapOf<FqName, MemberScope?>()
-    private fun memberScopeForFqName(fqName: FqName): MemberScope? {
+    fun memberScopeForFqName(fqName: FqName): MemberScope? {
         return memberScopeByFqName.getOrPut(fqName) {
             val pkg = module.getPackage(fqName)
 

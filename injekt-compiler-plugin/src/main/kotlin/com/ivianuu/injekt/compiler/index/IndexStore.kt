@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.index
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.hasAnnotation
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.name.FqName
@@ -33,8 +34,8 @@ class CliIndexStore(private val module: ModuleDescriptor) : IndexStore {
     override val indices: List<Index>
         get() = module.getPackage(InjektFqNames.IndexPackage)
             .memberScope
-            .getContributedDescriptors(DescriptorKindFilter.VALUES)
-            .filterIsInstance<PropertyDescriptor>()
+            .getContributedDescriptors(DescriptorKindFilter.FUNCTIONS)
+            .filterIsInstance<FunctionDescriptor>()
             .filter { it.hasAnnotation(InjektFqNames.Index) }
             .map { indexProperty ->
                 val annotation = indexProperty.annotations.findAnnotation(InjektFqNames.Index)!!

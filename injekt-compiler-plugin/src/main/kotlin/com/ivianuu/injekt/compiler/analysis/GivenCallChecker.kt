@@ -18,8 +18,10 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektErrors
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.ClassResolutionScope
@@ -92,22 +94,19 @@ class GivenCallChecker(
 
         when (graph) {
             is GivenGraph.Success -> {
+                declarationStore.memberScopeForFqName(
+                    InjektFqNames.IndexPackage
+                )!!.recordLookup(
+                    "com_ivianuu_injekt_contribution".asNameId(),
+                    KotlinLookupLocation(reportOn)
+                )
                 graph
                     .givensByScope
                     .values
                     .flatMap { it.values }
                     .filterIsInstance<CallableGivenNode>()
                     .forEach { given ->
-                        val lookedUpDeclaration = when (val callable = given.callable.callable) {
-                            is ClassConstructorDescriptor -> callable.constructedClass
-                            else -> callable
-                        } as DeclarationDescriptor
-                        when (val parent = lookedUpDeclaration.containingDeclaration) {
-                            is ClassDescriptor -> parent.unsubstitutedMemberScope
-                            is PackageFragmentDescriptor -> parent.getMemberScope()
-                            else -> null
-                        }?.recordLookup(given.callable.callable.name,
-                            KotlinLookupLocation(reportOn))
+
                         bindingTrace.record(
                             InjektWritableSlices.USED_GIVEN,
                             given.callable.callable,

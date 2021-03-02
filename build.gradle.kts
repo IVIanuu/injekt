@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import com.ivianuu.injekt.gradle.InjektExtension
 import com.ivianuu.injekt.gradle.setupForInjekt
 
 buildscript {
@@ -48,10 +47,6 @@ allprojects {
         jcenter()
         maven("https://oss.sonatype.org/content/repositories/snapshots")
         maven("https://plugins.gradle.org/m2")
-    }
-
-    if (project.name != "injekt-compiler-plugin") {
-        extensions.add<InjektExtension>("injekt", InjektExtension())
     }
 
     afterEvaluate {
