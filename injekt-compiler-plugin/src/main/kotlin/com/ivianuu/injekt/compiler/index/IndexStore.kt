@@ -34,8 +34,8 @@ class CliIndexStore(private val module: ModuleDescriptor) : IndexStore {
     override val indices: List<Index>
         get() = module.getPackage(InjektFqNames.IndexPackage)
             .memberScope
-            .getContributedDescriptors(DescriptorKindFilter.FUNCTIONS)
-            .filterIsInstance<FunctionDescriptor>()
+            .getContributedDescriptors(DescriptorKindFilter.VALUES)
+            .filterIsInstance<PropertyDescriptor>()
             .filter { it.hasAnnotation(InjektFqNames.Index) }
             .map { indexProperty ->
                 val annotation = indexProperty.annotations.findAnnotation(InjektFqNames.Index)!!

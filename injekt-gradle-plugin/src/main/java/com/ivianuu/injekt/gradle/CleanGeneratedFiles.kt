@@ -17,17 +17,12 @@
 package com.ivianuu.injekt.gradle
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 import java.io.File
-
-// Incremental compilation
-// Delete generated code if the originating file was removed
-// Regenerate code if the originating file has changed
 
 abstract class CleanGeneratedFiles : DefaultTask() {
 
@@ -42,9 +37,6 @@ abstract class CleanGeneratedFiles : DefaultTask() {
     @get:InputFiles
     @get:Optional
     lateinit var generatedSrcDir: File
-
-    @get:Input
-    var isIncremental = true
 
     @get:InputFiles
     lateinit var srcDirs: List<File>
@@ -73,19 +65,23 @@ abstract class CleanGeneratedFiles : DefaultTask() {
             .toMutableMap()
     }
 
+    private val givenCallsFile by lazy {
+        cacheDir.resolve("given_calls_file")
+    }
+
+    private val filesWithGivenCalls by lazy {
+        if (!givenCallsFile.exists()) mutableSetOf()
+        else givenCallsFile.readText()
+            .split("\n")
+            .filter { it.isNotEmpty() }
+            .toMutableSet()
+    }
+
     @TaskAction
     operator fun invoke(inputs: IncrementalTaskInputs) {
-        log("clean files: incremental $isIncremental")
+        log("clean files")
 
-        if (!isIncremental) {
-            log("clean files: Clear all files because not incremental")
-            generatedSrcDir.deleteRecursively()
-            dumpDir.deleteRecursively()
-            project.buildDir.resolve("classes").deleteRecursively()
-            project.buildDir.resolve("kotlin").deleteRecursively()
-            return
-        }
-
+        val oldFilesWithGivenCalls = filesWithGivenCalls.toSet()
         val oldCacheEntries = cacheEntries.toMap()
         inputs.outOfDate { details ->
             cacheEntries.remove(details.file.absolutePath)
@@ -94,6 +90,7 @@ abstract class CleanGeneratedFiles : DefaultTask() {
                 }
                 ?.forEach {
                     File(it).delete()
+                    filesWithGivenCalls -= it
                 }
         }
         inputs.removed { details ->
@@ -103,7 +100,9 @@ abstract class CleanGeneratedFiles : DefaultTask() {
                 }
                 ?.forEach {
                     File(it).delete()
+                    filesWithGivenCalls -= it
                 }
+            filesWithGivenCalls -= details.file.absolutePath
         }
 
         if (cacheEntries != oldCacheEntries) {
@@ -122,6 +121,33 @@ abstract class CleanGeneratedFiles : DefaultTask() {
                     log("clean files: Updated cache $it")
                 }
         }
+
+        if (filesWithGivenCalls != oldFilesWithGivenCalls) {
+            filesWithGivenCalls
+                .joinToString("\n")
+                .let {
+                    if (!givenCallsFile.exists()) {
+                        givenCallsFile.parentFile.mkdirs()
+                        givenCallsFile.createNewFile()
+                    }
+                    givenCallsFile.writeText(it)
+                    log("clean files: Updated files with given calls $it")
+                }
+        }
+
+        filesWithGivenCalls
+            .map { File(it) }
+            .filter { it.exists() }
+            .forEach { fileWithGivenCall ->
+                val text = fileWithGivenCall.readText()
+                val newText = if (text.startsWith("// injekt-incremental-fix")) {
+                    "// injekt-incremental-fix ${System.currentTimeMillis()} injekt-end\n" + text.split("injekt-end\n")[1]
+                } else {
+                    "// injekt-incremental-fix ${System.currentTimeMillis()} injekt-end\n" + text
+                }
+                log("clean files: Force recompilation of $fileWithGivenCall")
+                fileWithGivenCall.writeText(newText)
+            }
     }
 
 }

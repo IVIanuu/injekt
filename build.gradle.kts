@@ -53,7 +53,8 @@ allprojects {
         tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
             kotlinOptions {
                 useIR = true
-                if (project.name != "injekt-compiler-plugin") {
+                if (project.name != "injekt-compiler-plugin" &&
+                        project.name != "injekt-gradle-plugin") {
                     val options = setupForInjekt()
                     options.forEach {
                         freeCompilerArgs += listOf(

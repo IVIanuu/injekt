@@ -32,8 +32,8 @@ import org.jetbrains.kotlin.psi.psiUtil.isTopLevelKtOrJavaMember
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import kotlin.math.absoluteValue
 
-fun KtElement.collectIndices(): List<NewIndex> {
-    val indices = mutableListOf<NewIndex>()
+fun KtElement.collectIndices(): List<Index> {
+    val indices = mutableListOf<Index>()
     accept(object : KtTreeVisitorVoid() {
         override fun visitDeclaration(declaration: KtDeclaration) {
             super.visitDeclaration(declaration)
@@ -45,7 +45,7 @@ fun KtElement.collectIndices(): List<NewIndex> {
                 else -> declaration
             } as KtNamedDeclaration
 
-            val index = NewIndex(
+            val index = Index(
                 owner.fqName!!,
                 when (owner) {
                     is KtClassOrObject -> "class"
@@ -53,11 +53,7 @@ fun KtElement.collectIndices(): List<NewIndex> {
                     is KtFunction -> "function"
                     is KtProperty -> "property"
                     else -> error("Unexpected declaration ${declaration.text}")
-                },
-                "${owner.fqName!!.pathSegments()
-                    .joinToString("_")}__${owner.containingKtFile.name.removeSuffix(".kt")}__${declaration.startOffset}",
-                declaration.text.hashCode()
-                    .absoluteValue
+                }
             )
             indices += index
         }

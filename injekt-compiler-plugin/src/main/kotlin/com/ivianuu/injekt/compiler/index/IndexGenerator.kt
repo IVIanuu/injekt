@@ -41,15 +41,9 @@ class IndexGenerator(private val fileManager: FileManager) {
                     indices
                         .distinct()
                         .forEachIndexed { i, index ->
-                            appendLine("object ${index.indexObjectName}")
-                            appendLine()
+                            val indexName = index.fqName.pathSegments().joinToString("_") + "${file.name.removeSuffix(".kt")}_index_$i"
                             appendLine("@Index(fqName = \"${index.fqName}\", type = \"${index.type}\")")
-                            appendLine("fun Index.Companion.com_ivianuu_injekt_contribution(")
-                            repeat(i + 1) {
-                                appendLine("${index.indexObjectName.decapitalize()}_${index.hash}_$it: ${index.indexObjectName},")
-                            }
-                            appendLine(") {")
-                            appendLine("}")
+                            appendLine("internal val $indexName = Unit")
                         }
                 }
             )

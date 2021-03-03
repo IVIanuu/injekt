@@ -19,10 +19,3 @@ package com.ivianuu.injekt.compiler.index
 import org.jetbrains.kotlin.name.FqName
 
 data class Index(val fqName: FqName, val type: String)
-
-data class NewIndex(
-    val fqName: FqName,
-    val type: String,
-    val indexObjectName: String,
-    val hash: Int
-)

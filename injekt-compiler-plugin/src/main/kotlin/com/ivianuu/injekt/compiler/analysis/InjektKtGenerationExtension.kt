@@ -38,11 +38,11 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : AnalysisHandlerExtension {
 
     private val fileManager = FileManager(srcDir, cacheDir)
+    private val givenCallFileManager = GivenCallFileManager(cacheDir)
 
     private var generatedCode = false
 
     private lateinit var lazyTopDownAnalyzer: LazyTopDownAnalyzer
-    private lateinit var lookupTracker: LookupTracker
 
     override fun doAnalysis(
         project: Project,
@@ -56,7 +56,6 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : Analysis
         if (generatedCode) return null
 
         lazyTopDownAnalyzer = componentProvider.get()
-        lookupTracker = componentProvider.get()
         val tmpFiles = files.toList()
         files.clear()
         files += fileManager.preGenerate(tmpFiles)
@@ -101,9 +100,10 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : Analysis
                     CliIndexStore(module),
                     module
                 ),
-                lookupTracker
+                givenCallFileManager
             )
             files.forEach { it.accept(checker) }
+            givenCallFileManager.flush()
         }
         return null
     }

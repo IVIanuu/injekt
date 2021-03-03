@@ -47,20 +47,6 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
 
     val srcDir = project.buildDir.resolve("generated/source/injekt/$sourceSetName")
         .also { it.mkdirs() }
-
-    if (androidVariantData != null) {
-        project.extensions.findByType(BaseExtension::class.java)
-            ?.sourceSets
-            ?.findByName(sourceSetName)
-            ?.java
-            ?.srcDir(srcDir)
-    } else {
-        project.extensions.findByType(SourceSetContainer::class.java)
-            ?.findByName(sourceSetName)
-            ?.java
-            ?.srcDir(srcDir)
-    }
-
     val cacheDir = project.buildDir.resolve("injekt/cache")
         .also { it.mkdirs() }
     val dumpDir = project.buildDir.resolve("injekt/dump")

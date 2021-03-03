@@ -30,8 +30,6 @@ class FileManager(
 
     val newFiles = mutableListOf<File>()
 
-    private var compilingFiles = emptyList<KtFile>()
-
     private val cacheEntries = if (!cacheFile.exists()) mutableSetOf()
     else cacheFile.readText()
         .split("\n")
@@ -76,7 +74,6 @@ class FileManager(
             finalFiles += file
         }
 
-        compilingFiles = finalFiles
         return finalFiles.distinctBy { it.virtualFilePath }
     }
 
@@ -108,24 +105,6 @@ class FileManager(
         originatingFilePaths.forEach { (newFile, originatingFilePath) ->
             cacheEntries += originatingFilePath to newFile.absolutePath
         }
-
-        cacheDir.resolve("generated_files")
-            .also {
-                if (!it.exists()) {
-                    it.parentFile.mkdirs()
-                    it.createNewFile()
-                }
-            }
-            .writeText(originatingFilePaths.keys.joinToString("\n"))
-
-        cacheDir.resolve("compiling_files")
-            .also {
-                if (!it.exists()) {
-                    it.parentFile.mkdirs()
-                    it.createNewFile()
-                }
-            }
-            .writeText(compilingFiles.joinToString("\n") { it.virtualFilePath })
 
         cacheEntries
             .joinToString("\n") { "${it.first}=:=${it.second}" }

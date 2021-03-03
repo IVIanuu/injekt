@@ -48,6 +48,7 @@ import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
@@ -68,7 +69,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class GivenCallChecker(
     private val bindingTrace: BindingTrace,
     private val declarationStore: DeclarationStore,
-    private val lookupTracker: LookupTracker?
+    private val givenCallFileManager: GivenCallFileManager?
 ) : KtTreeVisitorVoid() {
 
     private fun ResolutionScope.check(call: ResolvedCall<*>, reportOn: KtElement) {
@@ -94,11 +95,7 @@ class GivenCallChecker(
 
         when (graph) {
             is GivenGraph.Success -> {
-                lookupTracker?.recordPackageLookup(
-                    KotlinLookupLocation(reportOn),
-                    InjektFqNames.IndexPackage.asString(),
-                    "com_ivianuu_injekt_contribution"
-                )
+                currentFileHasGivenCalls = true
                 graph
                     .givensByScope
                     .values
@@ -128,19 +125,18 @@ class GivenCallChecker(
         }
     }
 
-    private var scope = ExternalResolutionScope(declarationStore)
+    private var scope = InternalResolutionScope(
+        ExternalResolutionScope(declarationStore),
+        declarationStore
+    )
 
-    override fun visitFile(file: PsiFile) {
-        inScope(
-            {
-                InternalResolutionScope(
-                    scope,
-                    declarationStore
-                )
-            }
-        ) {
-            super.visitFile(file)
-        }
+    private var currentFileHasGivenCalls = false
+
+    override fun visitKtFile(file: KtFile) {
+        currentFileHasGivenCalls = false
+        super.visitKtFile(file)
+        givenCallFileManager?.setFileHasGivenCalls(
+            file.virtualFilePath, currentFileHasGivenCalls)
     }
 
     private inline fun inScope(scope: () -> ResolutionScope, block: () -> Unit) {
