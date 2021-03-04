@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.backend.common.ir.allParameters
@@ -215,6 +216,9 @@ class GivenCallTransformer(
         }
     }
 
+    private val composableConstructor =
+        pluginContext.referenceConstructors(InjektFqNames.Composable).single()
+
     private class WrappedExpression(
         val unstableDependencies: List<GivenRequest>,
         val function: IrFunction
@@ -296,8 +300,7 @@ class GivenCallTransformer(
                 if (given.callContext == CallContext.COMPOSABLE) {
                     annotations += DeclarationIrBuilder(pluginContext, symbol)
                         .irCallConstructor(
-                            pluginContext.referenceConstructors(InjektFqNames.Composable)
-                                .single(),
+                            composableConstructor,
                             emptyList()
                         )
                 }
@@ -380,6 +383,20 @@ class GivenCallTransformer(
             }
     }
 
+    private val mutableSetOf = pluginContext.referenceFunctions(
+        FqName("kotlin.collections.mutableSetOf")
+    ).single { it.owner.valueParameters.isEmpty() }
+
+    private val setAddAll = mutableSetOf.owner.returnType
+        .classOrNull!!
+        .owner
+        .functions
+        .single { it.name.asString() == "add" }
+
+    private val emptySet = pluginContext.referenceFunctions(
+        FqName("kotlin.collections.emptySet")
+    ).single()
+
     private fun ScopeContext.setExpression(
         given: SetGivenNode,
         expressionProvider: (GivenRequest) -> IrExpression?
@@ -387,25 +404,13 @@ class GivenCallTransformer(
         val elementType = given.type.fullyExpandedType.arguments.single()
 
         if (given.dependencies.isEmpty()) {
-            val emptySet = pluginContext.referenceFunctions(
-                FqName("kotlin.collections.emptySet")
-            ).single()
+
             return DeclarationIrBuilder(pluginContext, symbol)
                 .irCall(emptySet)
                 .apply { putTypeArgument(0, elementType.toIrType(pluginContext, declarationStore)) }
         }
 
         return DeclarationIrBuilder(pluginContext, symbol).irBlock {
-            val mutableSetOf = pluginContext.referenceFunctions(
-                FqName("kotlin.collections.mutableSetOf")
-            ).single { it.owner.valueParameters.isEmpty() }
-
-            val setAddAll = mutableSetOf.owner.returnType
-                .classOrNull!!
-                .owner
-                .functions
-                .single { it.name.asString() == "add" }
-
             val tmpSet = irTemporary(
                 irCall(mutableSetOf)
                     .apply { putTypeArgument(0, elementType.toIrType(pluginContext, declarationStore)) }

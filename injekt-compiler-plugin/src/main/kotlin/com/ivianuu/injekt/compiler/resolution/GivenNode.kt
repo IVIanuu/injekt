@@ -45,17 +45,31 @@ sealed class GivenNode {
     abstract val requestingScope: ResolutionScope
     var hasCircularDependency = false
 
-    val key by unsafeLazy {
-        GivenKey(this)
-    }
+    val key = GivenKey(this)
 }
 
-data class GivenKey(
-    val type: TypeRef,
-    val uniqueKey: Any,
-    val dependencies: List<GivenRequest>
-) {
-    constructor(given: GivenNode) : this(given.type, given.uniqueKey, given.dependencies)
+class GivenKey(val candidate: GivenNode) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as GivenKey
+
+        if (candidate.type != other.candidate.type) return false
+        if (candidate.uniqueKey != other.candidate.uniqueKey) return false
+        if (candidate.dependencies != other.candidate.dependencies) return false
+        if (candidate.ownerScope != other.candidate.ownerScope) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = candidate.type.hashCode()
+        result = 31 * result + candidate.uniqueKey.hashCode()
+        result = 31 * result + candidate.dependencies.hashCode()
+        result = 31 * result + candidate.ownerScope.hashCode()
+        return result
+    }
 }
 
 class CallableGivenNode(

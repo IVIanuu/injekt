@@ -146,36 +146,13 @@ private fun List<ResolutionResult.Failure>.toErrorGraph(): GivenGraph.Error {
     return GivenGraph.Error(failuresByRequest)
 }
 
-class CandidateKey(val candidate: GivenNode) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as CandidateKey
-
-        if (candidate.uniqueKey != other.candidate.uniqueKey) return false
-        if (candidate.type != other.candidate.type) return false
-        if (candidate.ownerScope != other.candidate.ownerScope) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = candidate.uniqueKey.hashCode()
-        result = 31 * result + candidate.type.hashCode()
-        result = 31 * result + candidate.ownerScope.hashCode()
-        return result
-    }
-}
-
 private fun ResolutionScope.computeForCandidate(
     request: GivenRequest,
     candidate: GivenNode,
     compute: () -> CandidateResolutionResult,
 ): CandidateResolutionResult {
-    val key = CandidateKey(candidate)
-    resultsByCandidate[key]?.let { return it }
-    val subChain = mutableSetOf(key)
+    resultsByCandidate[candidate.key]?.let { return it }
+    val subChain = mutableSetOf(candidate.key)
     chain.reversed().forEach { prev ->
         subChain += prev
         if (prev.candidate.callableFqName == candidate.callableFqName &&
@@ -192,7 +169,7 @@ private fun ResolutionScope.computeForCandidate(
         }
     }
 
-    if (key in chain) {
+    if (candidate.key in chain) {
         return CandidateResolutionResult.Success(
             request,
             candidate.also { candidate.hasCircularDependency = true },
@@ -200,10 +177,10 @@ private fun ResolutionScope.computeForCandidate(
         )
     }
 
-    chain += key
+    chain += candidate.key
     val result = compute()
-    resultsByCandidate[key] = result
-    chain -= key
+    resultsByCandidate[candidate.key] = result
+    chain -= candidate.key
     return result
 }
 
