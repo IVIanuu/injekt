@@ -28,39 +28,23 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.component.ChildComponentModule1
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.ComponentElementBinding
 import com.ivianuu.injekt.component.element
-import com.ivianuu.injekt.component.get
 
 typealias ActivityComponent = Component
 
-@Given
-val @Given ComponentActivity.activityComponent: ActivityComponent
+@Module
+val activityComponentModule =
+    ChildComponentModule1<ActivityRetainedComponent, ComponentActivity, ActivityComponent>()
+
+val ComponentActivity.activityComponent: ActivityComponent
     get() = lifecycle.component {
         activityRetainedComponent
-            .get<(ComponentActivity) -> ActivityComponent>()(this)
+            .element<(ComponentActivity) -> ActivityComponent>()(this)
     }
-
-@ComponentElementBinding<ActivityRetainedComponent>
-@Given
-fun activityComponentFactory(
-    @Given parent: ActivityRetainedComponent,
-    @Given builderFactory: () -> Component.Builder<ActivityComponent>,
-): (ComponentActivity) -> ActivityComponent = { activity ->
-    builderFactory()
-        .dependency(parent)
-        .element { activity }
-        .build()
-}
-
-@Given
-val @Given ActivityComponent.retainedComponentFromActivity: ActivityRetainedComponent
-    get() = get()
-
-@Given
-val @Given ActivityComponent.activity: ComponentActivity
-    get() = get()
 
 typealias ActivityContext = Context
 

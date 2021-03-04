@@ -21,57 +21,29 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.component.AppComponent
+import com.ivianuu.injekt.component.ChildComponentModule2
+import com.ivianuu.injekt.component.ChildComponentModule3
+import com.ivianuu.injekt.component.ChildComponentModule4
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.ComponentElementBinding
 import com.ivianuu.injekt.component.element
-import com.ivianuu.injekt.component.get
 
 typealias ReceiverComponent = Component
 
-@ComponentElementBinding<AppComponent>
-@Given
-fun receiverComponentFactory(
-    @Given parent: AppComponent,
-    @Given builderFactory: () -> Component.Builder<ReceiverComponent>,
-): (BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent = {
-        receiver, context, intent ->
-    builderFactory()
-        .dependency(parent)
-        .element { receiver }
-        .element { context }
-        .element { intent }
-        .build()
-}
+@Module
+val receiverComponentModule =
+    ChildComponentModule3<AppComponent, BroadcastReceiver, ReceiverContext, ReceiverIntent, ReceiverComponent>()
 
 fun BroadcastReceiver.createReceiverComponent(
     context: Context,
     intent: Intent,
 ): ReceiverComponent = (context.applicationContext as Application)
     .appComponent
-    .get<(BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent>()
+    .element<(BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent>()
     .invoke(this, context, intent)
-
-@Given
-val @Given ReceiverComponent.appComponentFromReceiver: AppComponent
-    get() = get()
-
-@Given
-inline val @Given ReceiverComponent.receiver: BroadcastReceiver
-    get() = get()
 
 typealias ReceiverContext = Context
 
-@Given
-val @Given ReceiverComponent.receiverContext: ReceiverContext
-    get() = get()
-
 typealias ReceiverIntent = Intent
-
-@Given
-val @Given ReceiverComponent.receiverIntent: ReceiverIntent
-    get() = get()
-
-@Given
-val @Given ReceiverComponent.appComponent: AppComponent
-    get() = get()

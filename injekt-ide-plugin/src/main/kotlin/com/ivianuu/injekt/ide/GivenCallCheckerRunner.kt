@@ -110,7 +110,7 @@ private fun ResolutionFacade.intercepted(
             "Given call checker trace"
         )
 
-        val checker = GivenCallChecker(bindingTrace, declarationStore)
+        val checker = GivenCallChecker(bindingTrace, declarationStore, null)
 
         elements
             .forEach { element ->

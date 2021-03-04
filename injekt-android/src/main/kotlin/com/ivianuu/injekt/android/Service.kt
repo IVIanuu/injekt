@@ -22,36 +22,20 @@ import android.app.Service
 import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.component.AppComponent
+import com.ivianuu.injekt.component.ChildComponentModule1
 import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.ComponentElementBinding
 import com.ivianuu.injekt.component.element
-import com.ivianuu.injekt.component.get
 
 typealias ServiceComponent = Component
 
-@ComponentElementBinding<AppComponent>
-@Given
-fun serviceComponentFactory(
-    @Given parent: AppComponent,
-    @Given builderFactory: () -> Component.Builder<ServiceComponent>,
-): (Service) -> ServiceComponent = { service ->
-    builderFactory()
-        .dependency(parent)
-        .element { service }
-        .build()
-}
+@Module
+val serviceComponentModule =
+    ChildComponentModule1<AppComponent, Service, ServiceComponent>()
 
 fun Service.createServiceComponent(): ServiceComponent =
-    application.appComponent.get<(Service) -> ServiceComponent>()(this)
-
-@Given
-val @Given ServiceComponent.appComponentFromService: AppComponent
-    get() = get()
-
-@Given
-inline val @Given ServiceComponent.service: Service
-    get() = get()
+    application.appComponent.element<(Service) -> ServiceComponent>()(this)
 
 typealias ServiceContext = Context
 

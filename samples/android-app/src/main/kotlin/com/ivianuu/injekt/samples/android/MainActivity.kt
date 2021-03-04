@@ -24,14 +24,14 @@ import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityRetainedComponent
 import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.component.ComponentElementBinding
-import com.ivianuu.injekt.component.get
+import com.ivianuu.injekt.component.element
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val component = activityComponent.get<MainActivityComponent>()
+        val component = activityComponent.element<MainActivityComponent>()
         component.activityScope.launch {
             println("Activity work: start")
             try {

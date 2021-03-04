@@ -26,13 +26,15 @@ import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.Macro
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.android.AppContext
 import com.ivianuu.injekt.component.AppComponent
+import com.ivianuu.injekt.component.ChildComponentModule2
+import com.ivianuu.injekt.component.ChildComponentModule3
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.ComponentElementBinding
 import com.ivianuu.injekt.component.element
-import com.ivianuu.injekt.component.get
 import kotlin.reflect.KClass
 
 @Qualifier
@@ -40,43 +42,20 @@ annotation class WorkerBinding
 
 @Macro
 @GivenSetElement
-inline fun <reified T : @WorkerBinding S, S : ListenableWorker> workerBinding(
+inline fun <reified T : @WorkerBinding S, S : ListenableWorker> workerBindingImpl(
     @Given noinline provider: (@Given WorkerComponent) -> T
 ): WorkerElement = T::class to provider
 
 typealias WorkerComponent = Component
 
-@ComponentElementBinding<AppComponent>
-@Given
-fun workerComponentFactory(
-    @Given parent: AppComponent,
-    @Given builderFactory: () -> Component.Builder<WorkerComponent>,
-): (WorkerContext, WorkerParameters) -> WorkerComponent = { context, params ->
-    builderFactory()
-        .dependency(parent)
-        .element { context }
-        .element { params }
-        .build()
-}
+@Module
+val workerComponentModule =
+    ChildComponentModule2<AppComponent, WorkerContext, WorkerParameters, WorkerComponent>()
 
 typealias WorkerContext = Context
 
-@Given
-val @Given WorkerComponent.workerContext: WorkerContext get() = get()
-
-@Given
-val @Given WorkerComponent.workerParameters: WorkerParameters get() = get()
-
 typealias WorkerElement =
         Pair<KClass<out ListenableWorker>, (@Given WorkerComponent) -> ListenableWorker>
-
-@Given
-inline val @Given WorkerComponent.appComponent: AppComponent
-    get() = get()
-
-@Given
-inline val @Given AppComponent.workerComponentFactory:
-            (WorkerContext, WorkerParameters) -> WorkerComponent get() = get()
 
 @Given
 val @Given AppContext.workManager: WorkManager

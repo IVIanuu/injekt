@@ -18,26 +18,20 @@ package com.ivianuu.injekt.android
 
 import androidx.activity.ComponentActivity
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.component.AppComponent
+import com.ivianuu.injekt.component.ChildComponentModule0
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.ComponentElementBinding
-import com.ivianuu.injekt.component.get
+import com.ivianuu.injekt.component.element
 
 typealias ActivityRetainedComponent = Component
 
-@Given
-val @Given ComponentActivity.activityRetainedComponent: ActivityRetainedComponent
+@Module
+val activityRetainedComponentModule =
+    ChildComponentModule0<AppComponent, ActivityRetainedComponent>()
+
+val ComponentActivity.activityRetainedComponent: ActivityRetainedComponent
     get() = viewModelStore.component {
-        application.appComponent.get<() -> ActivityRetainedComponent>()()
+        application.appComponent.element<() -> ActivityRetainedComponent>()()
     }
-
-@ComponentElementBinding<AppComponent>
-@Given
-fun activityRetainedComponentFactory(
-    @Given parent: AppComponent,
-    @Given builderFactory: () -> Component.Builder<ActivityRetainedComponent>,
-): () -> ActivityRetainedComponent = { builderFactory().dependency(parent).build() }
-
-@Given
-val @Given ActivityRetainedComponent.appComponentFromRetained: AppComponent
-    get() = get()

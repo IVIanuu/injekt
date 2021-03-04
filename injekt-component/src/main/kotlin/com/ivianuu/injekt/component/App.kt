@@ -33,7 +33,7 @@ typealias App = Any
 
 @Given
 val @Given AppComponent.app: App
-    get() = get()
+    get() = element()
 
 private lateinit var _appComponent: AppComponent
 

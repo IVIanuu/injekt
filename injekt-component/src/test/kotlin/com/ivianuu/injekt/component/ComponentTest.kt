@@ -1,3 +1,4 @@
+// injekt-incremental-fix 1614880163049 injekt-end
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -29,13 +30,13 @@ class ComponentTest {
         val component = ComponentBuilder<TestComponent1>()
             .element { "value" }
             .build()
-        component.get<String>() shouldBe "value"
+        component.element<String>() shouldBe "value"
     }
 
     @Test
     fun testReturnsNullForNotExistingValue() {
         val component = ComponentBuilder<TestComponent1>().build()
-        component.getOrNull(typeKeyOf<String>()) shouldBe null
+        component.elementOrNull(typeKeyOf<String>()) shouldBe null
     }
 
     @Test
@@ -47,7 +48,7 @@ class ComponentTest {
                     .build()
             )
             .build()
-        component.get<String>() shouldBe "value"
+        component.element<String>() shouldBe "value"
     }
 
     @Test
@@ -56,13 +57,13 @@ fun testGetDependencyReturnsDependency() {
         val dependent = ComponentBuilder<TestComponent2>()
             .dependency(dependency)
             .build()
-        dependent.get<TestComponent1>() shouldBeSameInstanceAs dependency
+        dependent.element<TestComponent1>() shouldBeSameInstanceAs dependency
     }
 
     @Test
 fun testGetDependencyReturnsNullIfNotExists() {
         val dependent = ComponentBuilder<TestComponent2>().build()
-        dependent.getOrNull(typeKeyOf<TestComponent1>()) shouldBe null
+        dependent.elementOrNull(typeKeyOf<TestComponent1>()) shouldBe null
     }
 
     @Test
@@ -75,14 +76,14 @@ fun testGetDependencyReturnsNullIfNotExists() {
             )
             .element { "child" }
             .build()
-        component.get<String>() shouldBe "child"
+        component.element<String>() shouldBe "child"
     }
 
     @Test
     fun testInjectedElement() {
         @Given val injected: @ComponentElementBinding<TestComponent1> String = "value"
         val component = ComponentBuilder<TestComponent1>().build()
-        component.get<String>() shouldBe "value"
+        component.element<String>() shouldBe "value"
     }
 
     @Test
@@ -91,7 +92,7 @@ fun testGetDependencyReturnsNullIfNotExists() {
         @Given
         fun something(@Given component: TestComponent1) = component to component
         val component = ComponentBuilder<TestComponent1>().build()
-        component.get<Pair<TestComponent1, TestComponent1>>().first shouldBeSameInstanceAs component
+        component.element<Pair<TestComponent1, TestComponent1>>().first shouldBeSameInstanceAs component
     }
 
     @Test

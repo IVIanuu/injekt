@@ -29,8 +29,7 @@ import com.ivianuu.injekt.component.AppComponent
 import com.ivianuu.injekt.component.appComponent
 
 @Suppress("unused")
-@Given
-val @Given Application.appComponent: AppComponent
+val Application.appComponent: AppComponent
     get() = (this as App).appComponent
 
 @Given

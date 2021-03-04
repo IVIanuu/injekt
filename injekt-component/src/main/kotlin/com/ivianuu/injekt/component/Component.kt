@@ -30,7 +30,7 @@ import com.ivianuu.injekt.common.typeKeyOf
 interface Component : Scope {
     val key: TypeKey<Component>
 
-    fun <T> getOrNull(key: TypeKey<T>): T?
+    fun <T> elementOrNull(key: TypeKey<T>): T?
 
     interface Builder<C : Component> {
         fun <T : Component> dependency(parent: T): Builder<C>
@@ -40,10 +40,12 @@ interface Component : Scope {
     }
 }
 
-fun <@ForTypeKey T> Component.get(): T {
-    val key = typeKeyOf<T>()
-    return getOrNull(key)
-        ?: error("No value for for $key in ${this.key}")
+fun <@ForTypeKey T> Component.element(): T =
+    element(typeKeyOf<T>())
+
+fun <T> Component.element(key: TypeKey<T>): T {
+    return elementOrNull(key)
+        ?: error("No element for for $key in ${this.key}")
 }
 
 @Given
@@ -57,7 +59,7 @@ fun <@ForTypeKey C : Component> ComponentBuilder(
 )
 
 fun <C : Component, @ForTypeKey T> Component.Builder<C>.element(factory: () -> T) =
-    element(typeKeyOf(), factory)
+    element(typeKeyOf<T>(), factory)
 
 typealias ComponentElement<@Suppress("unused") C> = Pair<TypeKey<*>, () -> Any?>
 
@@ -81,7 +83,8 @@ fun <T : @ComponentInitializerBinding ComponentInitializer<C>, C : Component>
         componentInitializerBindingImpl(
     @Given initializer: T): ComponentInitializer<C> = initializer
 
-@PublishedApi internal class ComponentImpl(
+@PublishedApi
+internal class ComponentImpl(
     override val key: TypeKey<Component>,
     private val dependencies: List<Component>?,
     explicitElements: Map<TypeKey<*>, () -> Any?>?,
@@ -89,13 +92,14 @@ fun <T : @ComponentInitializerBinding ComponentInitializer<C>, C : Component>
 ) : Component, Scope by Scope() {
     private val elements = (explicitElements ?: emptyMap()) + injectedElements(this)
 
-    override fun <T> getOrNull(key: TypeKey<T>): T? {
+    override fun <T> elementOrNull(key: TypeKey<T>): T? {
+        println("${this.key} get $key all ${elements.keys}")
         if (key == this.key) return this as T
         elements[key]?.let { return it() as T }
 
         if (dependencies != null) {
             for (dependency in dependencies)
-                dependency.getOrNull(key)?.let { return it }
+                dependency.elementOrNull(key)?.let { return it }
         }
 
         return null
