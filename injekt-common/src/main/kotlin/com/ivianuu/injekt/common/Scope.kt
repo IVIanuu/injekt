@@ -21,9 +21,9 @@ import com.ivianuu.injekt.Macro
 import com.ivianuu.injekt.Qualifier
 
 interface Scope {
-    operator fun <T : Any> get(key: Int): T?
-    operator fun <T : Any> set(key: Int, value: T)
-    operator fun minusAssign(key: Int)
+    operator fun <T : Any> get(key: Any): T?
+    operator fun <T : Any> set(key: Any, value: T)
+    operator fun minusAssign(key: Any)
     fun dispose()
     interface Disposable {
         fun dispose()
@@ -42,7 +42,7 @@ inline fun <@ForTypeKey T : @Scoped<U> S, @ForTypeKey S : Any, @ForTypeKey U : S
     @Given factory: () -> T
 ): S = scope(factory)
 
-inline operator fun <T : Any> Scope.invoke(key: Int, block: () -> T): T {
+inline operator fun <T : Any> Scope.invoke(key: Any, block: () -> T): T {
     get<T>(key)?.let { return it }
     synchronized(this) {
         get<T>(key)?.let { return it }
@@ -52,21 +52,18 @@ inline operator fun <T : Any> Scope.invoke(key: Int, block: () -> T): T {
     }
 }
 
-inline operator fun <T : Any> Scope.invoke(key: Any, block: () -> T): T =
-    this(key.hashCode(), block)
-
 inline operator fun <@ForTypeKey T : Any> Scope.invoke(block: () -> T): T =
     this(typeKeyOf<T>(), block)
 
-private class ScopeImpl(private val values: MutableMap<Int, Any> = mutableMapOf()) : Scope {
+private class ScopeImpl(private val values: MutableMap<Any, Any> = mutableMapOf()) : Scope {
     @Suppress("UNCHECKED_CAST")
-    override fun <T : Any> get(key: Int): T? = values[key] as? T
+    override fun <T : Any> get(key: Any): T? = values[key] as? T
 
-    override fun <T : Any> set(key: Int, value: T) {
+    override fun <T : Any> set(key: Any, value: T) {
         values[key] = value
     }
 
-    override fun minusAssign(key: Int) {
+    override fun minusAssign(key: Any) {
         values -= key
     }
 
