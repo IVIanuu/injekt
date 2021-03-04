@@ -153,39 +153,23 @@ class GivenCallTransformer(
     }
 
     private fun ScopeContext.fillGivens(
-        callable: CallableRef,
         requests: List<GivenRequest>,
         call: IrFunctionAccessExpression,
         expressionProvider: (GivenRequest) -> IrExpression?
     ) {
-        if (callable.callable.dispatchReceiverParameter != null && call.dispatchReceiver == null) {
-            call.dispatchReceiver = expressionProvider(
-                requests.singleOrNull { it.parameterName.asString() == "_dispatchReceiver" }
-                    ?: error("Wtf ${requests.joinToString("\n")}")
-            )
-        }
-
-        if (callable.callable.extensionReceiverParameter != null && call.extensionReceiver == null) {
-            call.extensionReceiver = expressionProvider(
-                requests.singleOrNull { it.parameterName.asString() == "_extensionReceiver" }
-                    ?: error("Wtf ${requests.joinToString("\n")}")
-            )
-        }
-        callable.callable
-            .valueParameters
-            .filter { call.getValueArgument(it.index) == null }
-            .filter {
-                it.contributionKind(scope.declarationStore) == ContributionKind.VALUE ||
-                        callable.parameterTypes[it.injektName()]!!.contributionKind == ContributionKind.VALUE
+        var nonReceiverIndex = 0
+        requests
+            .forEach { request ->
+                val expression = expressionProvider(request)
+                when(request.parameterName.asString()) {
+                    "_dispatchReceiver" -> call.dispatchReceiver = expression
+                    "_extensionReceiver" -> call.extensionReceiver = expression
+                    else -> call.putValueArgument(
+                        nonReceiverIndex++,
+                        expression
+                    )
+                }
             }
-            .map { parameter ->
-                val parameterName = parameter.injektName()
-                parameter to expressionProvider(
-                    requests.singleOrNull { it.parameterName.asString() == parameterName }
-                        ?: error("Wtf $parameterName -> ${requests.joinToString("\n")}")
-                )
-            }
-            .forEach { call.putValueArgument(it.first.index, it.second) }
     }
 
     private inner class GivenExpression(private val given: GivenNode) {
@@ -497,7 +481,7 @@ class GivenCallTransformer(
                 .irCall(constructor.symbol)
                 .apply {
                     fillTypeParameters(given.callable)
-                    fillGivens(given.callable, given.dependencies, this, expressionProvider)
+                    fillGivens(given.dependencies, this, expressionProvider)
                 }
         }
     }
@@ -513,7 +497,7 @@ class GivenCallTransformer(
             .irCall(getter.symbol)
             .apply {
                 fillTypeParameters(given.callable)
-                fillGivens(given.callable, given.dependencies, this, expressionProvider)
+                fillGivens(given.dependencies, this, expressionProvider)
             }
     }
 
@@ -527,7 +511,7 @@ class GivenCallTransformer(
             .irCall(function.symbol)
             .apply {
                 fillTypeParameters(given.callable)
-                fillGivens(given.callable, given.dependencies, this, expressionProvider)
+                fillGivens(given.dependencies, this, expressionProvider)
             }
     }
 
@@ -654,36 +638,12 @@ class GivenCallTransformer(
                     result.endOffset
                 )
         ] ?: return result
-        val substitutionMap = getSubstitutionMap(
-            graph.scope.declarationStore,
-            (0 until expression.typeArgumentsCount)
-                .map { result.getTypeArgument(it)!!.toKotlinType().toTypeRef(graph.scope.declarationStore) }
-                .zip(
-                    expression.symbol.descriptor.typeParameters
-                        .map { it.toClassifierRef(graph.scope.declarationStore).defaultType }
-                )
-        ) + getSubstitutionMap(
-            graph.scope.declarationStore,
-            ((result.dispatchReceiver?.type as? IrSimpleType)?.arguments
-                ?.map { it.typeOrNull!!.toKotlinType().toTypeRef(graph.scope.declarationStore) }
-                ?: emptyList())
-                .zip(
-                    result.dispatchReceiver?.type?.classOrNull?.owner?.let {
-                        it.typeParameters
-                            .map { it.defaultType.toKotlinType().toTypeRef(graph.scope.declarationStore) }
-                    } ?: emptyList()
-                )
-        )
-
         val graphContext = GraphContext(graph)
         try {
             graphContext
                 .createScopeContext(graph.scope, result.symbol)
                 .run {
                     fillGivens(
-                        result.symbol.descriptor
-                            .toCallableRef(graph.scope.declarationStore)
-                            .substitute(substitutionMap),
                         graph.requests,
                         result,
                         scopeExpressionProvider
