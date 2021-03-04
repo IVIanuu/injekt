@@ -24,9 +24,6 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 //apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
 
 dependencies {
-    api(Deps.processingX)
-    kapt(Deps.processingX)
-
     api(Deps.AndroidX.Compose.compiler)
 
     api(project(":injekt-compiler-plugin"))

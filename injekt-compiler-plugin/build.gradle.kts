@@ -61,8 +61,8 @@ artifacts {
 }
 
 dependencies {
-    implementation(Deps.processingX)
-    kapt(Deps.processingX)
+    implementation(Deps.autoService)
+    kapt(Deps.autoService)
     api(Deps.Kotlin.compilerEmbeddable)
     implementation(Deps.Kotlin.stdlib)
     implementation(Deps.Moshi.moshi)

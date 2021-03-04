@@ -45,9 +45,9 @@ buildConfig {
 }
 
 dependencies {
+    implementation(Deps.autoService)
+    kapt(Deps.autoService)
     implementation(Deps.androidGradlePlugin)
     implementation(Deps.Kotlin.gradlePlugin)
     implementation(Deps.Kotlin.gradlePluginApi)
-    implementation(Deps.processingX)
-    kapt(Deps.processingX)
 }

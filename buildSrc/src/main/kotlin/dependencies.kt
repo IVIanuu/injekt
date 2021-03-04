@@ -65,6 +65,10 @@ object Deps {
         const val work = "androidx.work:work-runtime-ktx:2.4.0"
     }
 
+
+    const val autoService = "com.google.auto.service:auto-service:1.0-rc7"
+
+
     const val bintrayGradlePlugin =
         "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.5"
 
@@ -110,8 +114,6 @@ object Deps {
         const val sealedRuntime = "dev.zacsweers.moshix:moshi-sealed-runtime:$sealedVersion"
         const val sealedCodegen = "dev.zacsweers.moshix:moshi-sealed-codegen:$sealedVersion"
     }
-
-    const val processingX = "com.ivianuu.processingx:processingx:0.0.1-dev4"
 
     const val roboelectric = "org.robolectric:robolectric:4.4"
 
