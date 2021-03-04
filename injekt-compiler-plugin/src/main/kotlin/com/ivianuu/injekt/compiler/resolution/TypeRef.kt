@@ -47,17 +47,6 @@ data class ClassifierRef(
     override fun hashCode(): Int = fqName.hashCode()
 }
 
-val TypeRef.expandedType: TypeRef?
-    get() {
-        return classifier.expandedType?.let {
-            val substitutionMap = classifier.typeParameters
-                .zip(arguments)
-                .toMap()
-            it.substitute(substitutionMap)
-                .copy(isMarkedNullable = isMarkedNullable)
-        }
-    }
-
 val ClassifierRef.defaultType: TypeRef
     get() = SimpleTypeRef(
         this,
@@ -180,6 +169,20 @@ sealed class TypeRef {
         }
         visit(this)
         classifiers
+    }
+
+    val TypeRef.expandedType: TypeRef? by unsafeLazy {
+        classifier.expandedType?.let {
+            val substitutionMap = classifier.typeParameters
+                .zip(arguments)
+                .toMap()
+            it.substitute(substitutionMap)
+                .copy(isMarkedNullable = isMarkedNullable)
+        }
+    }
+
+    val isComposableType: Boolean by unsafeLazy {
+        thisAndAllSuperTypes.any { it.isComposable }
     }
 }
 
@@ -460,82 +463,82 @@ fun TypeRef.isAssignableTo(
     declarationStore: DeclarationStore,
     superType: TypeRef,
     substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
-): Boolean = declarationStore.memoize(HashKey3(this, superType, substitutionMap)) {
-    if (isStarProjection || superType.isStarProjection) return@memoize true
+): Boolean = declarationStore.isAssignableCache.getOrPut(MultiKey3(this, superType, substitutionMap)) {
+    if (isStarProjection || superType.isStarProjection) return@getOrPut true
     if (classifier.fqName == superType.classifier.fqName) {
-        if (isMarkedNullable && !superType.isMarkedNullable) return@memoize false
-        if (!qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return@memoize false
-        if (macroChain != superType.macroChain) return@memoize false
-        if (setKey != superType.setKey) return@memoize false
-        if (thisAndAllSuperTypes.any { it.isComposable } != superType.thisAndAllSuperTypes.any { it.isComposable }) return@memoize false
+        if (isMarkedNullable && !superType.isMarkedNullable) return@getOrPut false
+        if (!qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return@getOrPut false
+        if (macroChain != superType.macroChain) return@getOrPut false
+        if (setKey != superType.setKey) return@getOrPut false
+        if (isComposableType != superType.isComposableType) return@getOrPut false
         if (arguments.zip(superType.arguments)
                 .any { (a, b) -> !a.isAssignableTo(declarationStore, b, substitutionMap) }
         )
-            return@memoize false
-        return@memoize true
+            return@getOrPut false
+        return@getOrPut true
     }
     if (superType.classifier.isTypeParameter) {
         val superTypesAssignable = superType.superTypes(substitutionMap).all { upperBound ->
             isSubTypeOf(declarationStore, upperBound, substitutionMap)
         }
-        if (!superTypesAssignable) return@memoize false
+        if (!superTypesAssignable) return@getOrPut false
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
-        ) return@memoize false
-        if (macroChain != superType.macroChain) return@memoize false
-        if (setKey != superType.setKey) return@memoize false
-        return@memoize true
+        ) return@getOrPut false
+        if (macroChain != superType.macroChain) return@getOrPut false
+        if (setKey != superType.setKey) return@getOrPut false
+        return@getOrPut true
     } else if (classifier.isTypeParameter) {
         val superTypesAssignable = superTypes(substitutionMap).all { upperBound ->
             superType.isSubTypeOf(declarationStore, upperBound, substitutionMap)
         }
-        if (!superTypesAssignable) return@memoize false
+        if (!superTypesAssignable) return@getOrPut false
         if (qualifiers.isNotEmpty() &&
             !superType.qualifiers.isAssignableTo(declarationStore, qualifiers)
-        ) return@memoize false
-        if (macroChain != superType.macroChain) return@memoize false
-        if (setKey != superType.setKey) return@memoize false
-        return@memoize true
+        ) return@getOrPut false
+        if (macroChain != superType.macroChain) return@getOrPut false
+        if (setKey != superType.setKey) return@getOrPut false
+        return@getOrPut true
     }
-    return@memoize false
+    return@getOrPut false
 }
 
 fun TypeRef.isSubTypeOf(
     declarationStore: DeclarationStore,
     superType: TypeRef,
     substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
-): Boolean = declarationStore.memoize(HashKey3(this, superType, substitutionMap)) {
-    if (isStarProjection) return@memoize true
+): Boolean = declarationStore.isSubTypeCache.getOrPut(MultiKey3(this, superType, substitutionMap)) {
+    if (isStarProjection) return@getOrPut true
     if (classifier.fqName == superType.classifier.fqName) {
-        if (isMarkedNullable && !superType.isMarkedNullable) return@memoize false
-        if (!qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return@memoize false
-        if (macroChain != superType.macroChain) return@memoize false
-        if (setKey != superType.setKey) return@memoize false
-        if (thisAndAllSuperTypes.any { it.isComposable } != superType.thisAndAllSuperTypes.any { it.isComposable }) return@memoize false
+        if (isMarkedNullable && !superType.isMarkedNullable) return@getOrPut false
+        if (!qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return@getOrPut false
+        if (macroChain != superType.macroChain) return@getOrPut false
+        if (setKey != superType.setKey) return@getOrPut false
+        if (isComposableType != superType.isComposableType) return@getOrPut false
         if (arguments.zip(superType.arguments)
                 .any { (a, b) -> !a.isAssignableTo(declarationStore, b, substitutionMap) }
         )
-            return@memoize false
-        return@memoize true
+            return@getOrPut false
+        return@getOrPut true
     }
     if (superType.classifier.fqName == InjektFqNames.Any) {
-        if (isMarkedNullable && !superType.isMarkedNullable) return@memoize false
+        if (isMarkedNullable && !superType.isMarkedNullable) return@getOrPut false
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
-        ) return@memoize false
-        return@memoize true
+        ) return@getOrPut false
+        return@getOrPut true
     }
     val subTypeView = subtypeView(superType.classifier, substitutionMap)
     if (subTypeView != null) {
         if (subTypeView == superType && (!subTypeView.isMarkedNullable || superType.isMarkedNullable) &&
             (superType.qualifiers.isEmpty() || subTypeView.qualifiers.isAssignableTo(declarationStore, superType.qualifiers))
-        ) return@memoize true
-        if (subTypeView.isMarkedNullable && !superType.isMarkedNullable) return@memoize false
-        if (!subTypeView.qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return@memoize false
-        if (subTypeView.macroChain != superType.macroChain) return@memoize false
-        if (subTypeView.setKey != superType.setKey) return@memoize false
-        if (thisAndAllSuperTypes.any { it.isComposable } != superType.thisAndAllSuperTypes.any { it.isComposable }) return@memoize false
-        return@memoize subTypeView.arguments.zip(superType.arguments)
+        ) return@getOrPut true
+        if (subTypeView.isMarkedNullable && !superType.isMarkedNullable) return@getOrPut false
+        if (!subTypeView.qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return@getOrPut false
+        if (subTypeView.macroChain != superType.macroChain) return@getOrPut false
+        if (subTypeView.setKey != superType.setKey) return@getOrPut false
+        if (isComposableType != superType.isComposableType) return@getOrPut false
+        return@getOrPut subTypeView.arguments.zip(superType.arguments)
             .all { (subTypeArg, superTypeArg) ->
                 superTypeArg.superTypes(substitutionMap).all {
                     subTypeArg.isSubTypeOf(declarationStore, it, substitutionMap)
@@ -545,11 +548,11 @@ fun TypeRef.isSubTypeOf(
                 !classifier.isTypeAlias)) {
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
-        ) return@memoize false
-        if (macroChain != superType.macroChain) return@memoize false
-        if (setKey != superType.setKey) return@memoize false
-        if (thisAndAllSuperTypes.any { it.isComposable } != superType.thisAndAllSuperTypes.any { it.isComposable }) return@memoize false
-        return@memoize superType.superTypes(substitutionMap).all { upperBound ->
+        ) return@getOrPut false
+        if (macroChain != superType.macroChain) return@getOrPut false
+        if (setKey != superType.setKey) return@getOrPut false
+        if (isComposableType != superType.isComposableType) return@getOrPut false
+        return@getOrPut superType.superTypes(substitutionMap).all { upperBound ->
             // todo should do this comparison without qualifiers?
             val r = isSubTypeOf(declarationStore, upperBound, substitutionMap) ||
                     (superType.qualifiers.isNotEmpty() &&
@@ -557,7 +560,7 @@ fun TypeRef.isSubTypeOf(
             r
         }
     }
-    return@memoize false
+    return@getOrPut false
 }
 
 fun List<AnnotationRef>.isAssignableTo(declarationStore: DeclarationStore, superQualifiers: List<AnnotationRef>): Boolean {

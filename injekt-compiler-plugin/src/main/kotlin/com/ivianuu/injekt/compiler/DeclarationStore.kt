@@ -22,6 +22,7 @@ import com.squareup.moshi.Moshi
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -72,9 +73,8 @@ class DeclarationStore(
 
     val moshi = Moshi.Builder().build()!!
 
-    val cache = mutableMapOf<Any, Any?>()
-    @Suppress("UNCHECKED_CAST")
-    inline fun <R : Any> memoize(key: Any, block: () -> R): R = cache.getOrPut(key, block) as R
+    val isAssignableCache = mutableMapOf<Any, Boolean>()
+    val isSubTypeCache = mutableMapOf<Any, Boolean>()
 
     private val callableInfosByDeclaration = mutableMapOf<Any, PersistedCallableInfo?>()
     fun callableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? =
