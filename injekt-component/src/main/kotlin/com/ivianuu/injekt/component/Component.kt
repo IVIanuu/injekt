@@ -93,7 +93,6 @@ internal class ComponentImpl(
     private val elements = (explicitElements ?: emptyMap()) + injectedElements(this)
 
     override fun <T> elementOrNull(key: TypeKey<T>): T? {
-        println("${this.key} get $key all ${elements.keys}")
         if (key == this.key) return this as T
         elements[key]?.let { return it() as T }
 
