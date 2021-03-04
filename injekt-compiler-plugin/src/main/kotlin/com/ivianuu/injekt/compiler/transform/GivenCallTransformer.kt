@@ -216,14 +216,6 @@ class GivenCallTransformer(
         }
     }
 
-    private data class GivenKey(
-        val type: TypeRef,
-        val uniqueKey: Any,
-        val dependencies: List<GivenRequest>
-    ) {
-        constructor(given: GivenNode) : this(given.type, given.uniqueKey, given.dependencies)
-    }
-
     private class WrappedExpression(
         val unstableDependencies: List<GivenRequest>,
         val function: IrFunction
@@ -240,14 +232,12 @@ class GivenCallTransformer(
     ): IrExpression? {
         if (!given.canFunctionWrap()) return expression(scopeExpressionProvider)
 
-        val key = GivenKey(given)
-
-        val wrappedExpression = graphContext.functionExpressions.getOrPut(key) {
+        val wrappedExpression = graphContext.functionExpressions.getOrPut(given.key) {
             val usages = graphContext.graph.givensByScope
                 .values
                 .flatMap { it.values }
                 .filter { it.canFunctionWrap() }
-                .filter { GivenKey(it) == key }
+                .filter { it.key == given.key }
 
             if (usages.size == 1) return expression(scopeExpressionProvider)
 
@@ -273,7 +263,7 @@ class GivenCallTransformer(
                             usage.dependencies[parameterIndex] to (givensByRequest[usageParameterRequest]
                                 ?: error("Wtf"))
                         }
-                        .distinctBy { GivenKey(it.second) }
+                        .distinctBy { it.second.key }
                 }
 
             fun GivenNode.ensureAllInScope(scope: ResolutionScope): Boolean {

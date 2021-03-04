@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringGiven
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.transform.toKotlinType
+import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
@@ -43,6 +44,18 @@ sealed class GivenNode {
     abstract val isFrameworkGiven: Boolean
     abstract val requestingScope: ResolutionScope
     var hasCircularDependency = false
+
+    val key by unsafeLazy {
+        GivenKey(this)
+    }
+}
+
+data class GivenKey(
+    val type: TypeRef,
+    val uniqueKey: Any,
+    val dependencies: List<GivenRequest>
+) {
+    constructor(given: GivenNode) : this(given.type, given.uniqueKey, given.dependencies)
 }
 
 class CallableGivenNode(
