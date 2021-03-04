@@ -92,7 +92,8 @@ class ProviderTest {
             """
     )
 
-    @Test fun testProviderWithGenericGivenArgsMulti() = multiCodegen(
+    @Test
+    fun testProviderWithGenericGivenArgsMulti() = multiCodegen(
         listOf(
             source(
                 """
@@ -187,5 +188,5 @@ class ProviderTest {
             }
         """
     )
-    
+
 }

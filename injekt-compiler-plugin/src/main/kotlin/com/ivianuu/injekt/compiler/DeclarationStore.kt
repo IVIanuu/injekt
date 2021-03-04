@@ -75,6 +75,7 @@ class DeclarationStore(
 
     val isAssignableCache = mutableMapOf<Any, Boolean>()
     val isSubTypeCache = mutableMapOf<Any, Boolean>()
+    val uniqueKeys = mutableMapOf<DeclarationDescriptor, String>()
 
     private val callableInfosByDeclaration = mutableMapOf<Any, PersistedCallableInfo?>()
     fun callableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? =
@@ -143,21 +144,21 @@ class DeclarationStore(
             val fqName = FqName(key.split(":")[1])
             return@getOrPut memberScopeForFqName(fqName.parent())?.getContributedClassifier(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
-            )?.takeIf { it.uniqueKey() == key }
+            )?.takeIf { it.uniqueKey(this) == key }
                 ?: functionDescriptorsForFqName(fqName.parent())
                     .flatMap { it.typeParameters }
                     .firstOrNull {
-                        it.uniqueKey() == key
+                        it.uniqueKey(this) == key
                     }
                 ?: propertyDescriptorsForFqName(fqName.parent())
                     .flatMap { it.typeParameters }
                     .firstOrNull {
-                        it.uniqueKey() == key
+                        it.uniqueKey(this) == key
                     }
                 ?: classifierDescriptorForFqName(fqName.parent())
                     .safeAs<ClassifierDescriptorWithTypeParameters>()
                     ?.declaredTypeParameters
-                    ?.firstOrNull { it.uniqueKey() == key }
+                    ?.firstOrNull { it.uniqueKey(this) == key }
                 ?: error("Could not get for $fqName $key")
         }
     }

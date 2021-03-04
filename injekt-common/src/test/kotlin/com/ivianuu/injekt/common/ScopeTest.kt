@@ -22,14 +22,16 @@ import io.kotest.matchers.shouldBe
 import org.junit.Test
 
 class ScopeTest {
-    @Test fun testGetSet() {
+    @Test
+    fun testGetSet() {
         val scope = Scope()
         scope.get<String>(0) shouldBe null
         scope[0] = "value"
         scope.get<String>(0) shouldBe "value"
     }
 
-    @Test fun testScope() {
+    @Test
+    fun testScope() {
         val scope = Scope()
         var calls = 0
         scope(0) { calls++ }
@@ -38,7 +40,8 @@ class ScopeTest {
         calls shouldBe 2
     }
 
-    @Test fun testDispose() {
+    @Test
+    fun testDispose() {
         val scope = Scope()
         var disposed = false
         scope.set(

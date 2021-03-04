@@ -45,7 +45,8 @@ class ModuleTest {
         """
     )
 
-    @Test fun testModuleLambdaParameter() = codegen(
+    @Test
+    fun testModuleLambdaParameter() = codegen(
         """
             class MyModule {
                 @Given val foo = Foo()

@@ -166,44 +166,46 @@ fun IrType.getAnnotatedAnnotations(annotation: FqName): List<IrConstructorCall> 
         inner.hasAnnotation(annotation)
     }
 
-fun DeclarationDescriptor.uniqueKey(): String {
+fun DeclarationDescriptor.uniqueKey(declarationStore: DeclarationStore): String {
     val original = this.original
-    return when (original) {
-        is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
-            original.valueParameters
-                .joinToString(",") {
-                    it.type
-                        .fullyAbbreviatedType
-                        .uniqueTypeName()
-                }
-        }"
-        is ClassDescriptor -> "class:$fqNameSafe"
-        is FunctionDescriptor -> "function:$fqNameSafe:${
-            listOfNotNull(
-                original.dispatchReceiverParameter, original.extensionReceiverParameter)
-                .plus(original.valueParameters)
-                .joinToString(",") { 
-                    it.type
-                        .fullyAbbreviatedType
-                        .uniqueTypeName()
-                }
-        }"
-        is PropertyDescriptor -> "property:$fqNameSafe:${
-            listOfNotNull(
-                original.dispatchReceiverParameter, original.extensionReceiverParameter)
-                .joinToString(",") {
-                    it.type
-                        .fullyAbbreviatedType
-                        .uniqueTypeName()
-                }
-        }"
-        is TypeAliasDescriptor -> "typealias:$fqNameSafe"
-        is TypeParameterDescriptor ->
-            "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey()}"
-        is ParameterDescriptor -> ""
-        is ValueParameterDescriptor -> ""
-        is VariableDescriptor -> ""
-        else -> error("Unexpected declaration $this")
+    return declarationStore.uniqueKeys.getOrPut(original) {
+        when (original) {
+            is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
+                original.valueParameters
+                    .joinToString(",") {
+                        it.type
+                            .fullyAbbreviatedType
+                            .uniqueTypeName()
+                    }
+            }"
+            is ClassDescriptor -> "class:$fqNameSafe"
+            is FunctionDescriptor -> "function:$fqNameSafe:${
+                listOfNotNull(
+                    original.dispatchReceiverParameter, original.extensionReceiverParameter)
+                    .plus(original.valueParameters)
+                    .joinToString(",") {
+                        it.type
+                            .fullyAbbreviatedType
+                            .uniqueTypeName()
+                    }
+            }"
+            is PropertyDescriptor -> "property:$fqNameSafe:${
+                listOfNotNull(
+                    original.dispatchReceiverParameter, original.extensionReceiverParameter)
+                    .joinToString(",") {
+                        it.type
+                            .fullyAbbreviatedType
+                            .uniqueTypeName()
+                    }
+            }"
+            is TypeAliasDescriptor -> "typealias:$fqNameSafe"
+            is TypeParameterDescriptor ->
+                "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey(declarationStore)}"
+            is ParameterDescriptor -> ""
+            is ValueParameterDescriptor -> ""
+            is VariableDescriptor -> ""
+            else -> error("Unexpected declaration $this")
+        }
     }
 }
 

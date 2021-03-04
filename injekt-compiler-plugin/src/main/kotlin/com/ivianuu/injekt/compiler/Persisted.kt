@@ -125,7 +125,7 @@ fun ClassifierRef.toPersistedClassifierInfo(declarationStore: DeclarationStore) 
 )
 
 fun TypeRef.toPersistedTypeRef(declarationStore: DeclarationStore): PersistedTypeRef = PersistedTypeRef(
-    classifierKey = classifier.descriptor?.uniqueKey() ?: "",
+    classifierKey = classifier.descriptor?.uniqueKey(declarationStore) ?: "",
     qualifiers = qualifiers.map { it.toPersistedAnnotationRef(declarationStore) },
     arguments = arguments.map { it.toPersistedTypeRef(declarationStore) },
     isStarProjection = isStarProjection,
@@ -166,9 +166,9 @@ fun ClassifierRef.toPersistedClassifierRef(
             ?.constructedClass
             ?.declaredTypeParameters
             ?.single { it.name == descriptor.name }
-            ?.uniqueKey()
-            ?: descriptor.uniqueKey()
-     } else descriptor!!.uniqueKey(),
+            ?.uniqueKey(declarationStore)
+            ?: descriptor.uniqueKey(declarationStore)
+     } else descriptor!!.uniqueKey(declarationStore),
     superTypes = superTypes.map { it.toPersistedTypeRef(declarationStore) },
     expandedType = expandedType?.toPersistedTypeRef(declarationStore),
     qualifiers = qualifiers.map { it.toPersistedAnnotationRef(declarationStore) }

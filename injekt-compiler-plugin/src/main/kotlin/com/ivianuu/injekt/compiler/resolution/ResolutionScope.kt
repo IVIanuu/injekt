@@ -38,17 +38,18 @@ class ResolutionScope(
 
     private val givens = mutableListOf<Pair<CallableRef, ResolutionScope>>()
     private val givenSetElements = mutableListOf<CallableRef>()
-    private val macros = mutableListOf<CallableRef>()
+    private val macros = mutableListOf<MacroNode>()
+
+    private data class MacroNode(val callable: CallableRef) {
+        val processedContributions = mutableSetOf<TypeRef>()
+    }
 
     private val givensByType = mutableMapOf<TypeRef, List<GivenNode>>()
     private val givenSetElementsByType = mutableMapOf<TypeRef, List<GivenRequest>>()
 
-    private val processedContributions = mutableSetOf<Pair<CallableRef, TypeRef>>()
-
     private val initialize: Unit by unsafeLazy {
         parent?.initialize
 
-        parent?.processedContributions?.let { processedContributions += it }
         parent?.givens?.forEach { givens += it }
         parent?.givenSetElements?.forEach { givenSetElements += it }
         parent?.macros?.forEach { macros += it }
@@ -66,7 +67,7 @@ class ResolutionScope(
                         givens += callable.copy(type = typeWithMacroChain) to this
                     },
                     addGivenSetElement = { givenSetElements += it },
-                    addMacro = { macros += it }
+                    addMacro = { macros += MacroNode(it) }
                 )
             }
 
@@ -145,13 +146,12 @@ class ResolutionScope(
 
     private fun runMacros(contribution: TypeRef) {
         for (macro in macros) {
-            val key = macro to contribution
-            if (key in processedContributions) continue
-            processedContributions += key
+            if (contribution in macro.processedContributions) continue
+            macro.processedContributions += contribution
 
-            val macroType = macro.typeParameters.first().defaultType
+            val macroType = macro.callable.typeParameters.first().defaultType
             if (!contribution.copy(macroChain = emptyList()).isSubTypeOf(declarationStore, macroType)) continue
-            if (macro.callable.fqNameSafe in contribution.macroChain) continue
+            if (macro.callable.callable.fqNameSafe in contribution.macroChain) continue
 
             val inputsSubstitutionMap = getSubstitutionMap(
                 declarationStore,
@@ -161,12 +161,12 @@ class ResolutionScope(
                 declarationStore,
                 listOf(contribution.copy(macroChain = emptyList()) to macroType)
             )
-            val newContribution = macro.substituteInputs(inputsSubstitutionMap)
+            val newContribution = macro.callable.substituteInputs(inputsSubstitutionMap)
                 .copy(
                     isMacro = false,
                     isFromMacro = true,
                     typeArguments = inputsSubstitutionMap,
-                    type = macro.type.substitute(outputsSubstitutionMap)
+                    type = macro.callable.type.substitute(outputsSubstitutionMap)
                 )
 
             newContribution.collectContributions(
@@ -174,7 +174,7 @@ class ResolutionScope(
                 substitutionMap = outputsSubstitutionMap,
                 addGiven = { givens += it to this },
                 addGivenSetElement = { givenSetElements += it },
-                addMacro = { macros += it }
+                addMacro = { macros += MacroNode(it) }
             )
 
             if (newContribution.contributionKind == ContributionKind.VALUE) {
@@ -188,7 +188,7 @@ class ResolutionScope(
                     substitutionMap = newContributionWithChain.typeArguments,
                     addGiven = { givens += it to this },
                     addGivenSetElement = { givenSetElements += it },
-                    addMacro = { macros += it }
+                    addMacro = { macros += MacroNode(it) }
                 )
                 runMacros(newContributionWithChain.type)
             }

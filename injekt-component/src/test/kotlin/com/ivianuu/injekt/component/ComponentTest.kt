@@ -50,7 +50,8 @@ class ComponentTest {
         component.get<String>() shouldBe "value"
     }
 
-    @Test fun testGetDependencyReturnsDependency() {
+    @Test
+fun testGetDependencyReturnsDependency() {
         val dependency = ComponentBuilder<TestComponent1>().build()
         val dependent = ComponentBuilder<TestComponent2>()
             .dependency(dependency)
@@ -58,7 +59,8 @@ class ComponentTest {
         dependent.get<TestComponent1>() shouldBeSameInstanceAs dependency
     }
 
-    @Test fun testGetDependencyReturnsNullIfNotExists() {
+    @Test
+fun testGetDependencyReturnsNullIfNotExists() {
         val dependent = ComponentBuilder<TestComponent2>().build()
         dependent.getOrNull(typeKeyOf<TestComponent1>()) shouldBe null
     }
