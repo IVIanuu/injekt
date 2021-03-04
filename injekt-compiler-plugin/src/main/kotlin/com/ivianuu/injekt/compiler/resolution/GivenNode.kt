@@ -21,18 +21,15 @@ import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringGiven
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.transform.toKotlinType
-import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
-import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 sealed class GivenNode {
-    abstract val uniqueKey: Any
     abstract val type: TypeRef
     abstract val originalType: TypeRef
     abstract val dependencies: List<GivenRequest>
@@ -44,32 +41,26 @@ sealed class GivenNode {
     abstract val isFrameworkGiven: Boolean
     abstract val requestingScope: ResolutionScope
     var hasCircularDependency = false
-
-    val key = GivenKey(this)
+    abstract val key: GivenKey
 }
 
-class GivenKey(val candidate: GivenNode) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+class GivenKey(candidate: GivenNode, uniqueKey: Any) {
 
-        other as GivenKey
-
-        if (candidate.type != other.candidate.type) return false
-        if (candidate.uniqueKey != other.candidate.uniqueKey) return false
-        if (candidate.dependencies != other.candidate.dependencies) return false
-        if (candidate.ownerScope != other.candidate.ownerScope) return false
-
-        return true
+    private val _hashCode: Int
+    val candidate: GivenNode
+    init {
+        var hashCode = candidate.type.hashCode()
+        hashCode = 31 * hashCode + uniqueKey.hashCode()
+        hashCode = 31 * hashCode + candidate.dependencies.hashCode()
+        hashCode = 31 * hashCode + candidate.ownerScope.hashCode()
+        _hashCode = hashCode
+        this.candidate = candidate
     }
 
-    override fun hashCode(): Int {
-        var result = candidate.type.hashCode()
-        result = 31 * result + candidate.uniqueKey.hashCode()
-        result = 31 * result + candidate.dependencies.hashCode()
-        result = 31 * result + candidate.ownerScope.hashCode()
-        return result
-    }
+    override fun equals(other: Any?): Boolean =
+        other is GivenKey && other._hashCode == _hashCode
+
+    override fun hashCode(): Int = _hashCode
 }
 
 class CallableGivenNode(
@@ -79,7 +70,6 @@ class CallableGivenNode(
     override val requestingScope: ResolutionScope,
     val callable: CallableRef,
 ) : GivenNode() {
-    override val uniqueKey: Any = callable
     override val callableFqName: FqName = if (callable.callable is ClassConstructorDescriptor)
         callable.callable.constructedClass.fqNameSafe
     else callable.callable.fqNameSafe
@@ -93,6 +83,7 @@ class CallableGivenNode(
         get() = callable.originalType
     override val isFrameworkGiven: Boolean
         get() = false
+    override val key = GivenKey(this, callable)
 }
 
 class SetGivenNode(
@@ -101,7 +92,6 @@ class SetGivenNode(
     override val requestingScope: ResolutionScope,
     override val dependencies: List<GivenRequest>,
 ) : GivenNode() {
-    override val uniqueKey: Any = "Set" to type
     override val callableFqName: FqName = FqName("GivenSet<${type.render()}>")
     override val callContext: CallContext
         get() = CallContext.DEFAULT
@@ -113,6 +103,7 @@ class SetGivenNode(
         get() = type
     override val isFrameworkGiven: Boolean
         get() = true
+    override val key = GivenKey(this, "Set" to type)
 }
 
 class DefaultGivenNode(
@@ -120,7 +111,6 @@ class DefaultGivenNode(
     override val ownerScope: ResolutionScope,
     override val requestingScope: ResolutionScope
 ) : GivenNode() {
-    override val uniqueKey: Any = "Default"
     override val callContext: CallContext
         get() = CallContext.DEFAULT
     override val callableFqName: FqName
@@ -135,6 +125,7 @@ class DefaultGivenNode(
         get() = false
     override val isFrameworkGiven: Boolean
         get() = true
+    override val key = GivenKey(this, "Default")
 }
 
 class ProviderGivenNode(
@@ -143,7 +134,6 @@ class ProviderGivenNode(
     override val requestingScope: ResolutionScope,
     val declarationStore: DeclarationStore
 ) : GivenNode() {
-    override val uniqueKey: Any = "Provider" to type
     override val callableFqName: FqName = FqName("Provider<${type.render()} $ownerScope>")
     override val dependencies: List<GivenRequest> = listOf(
         GivenRequest(
@@ -186,6 +176,8 @@ class ProviderGivenNode(
         get() = type
     override val isFrameworkGiven: Boolean
         get() = true
+
+    override val key = GivenKey(this, "Provider" to type)
 
     class ProviderParameterDescriptor(
         val given: ProviderGivenNode,
