@@ -22,6 +22,7 @@ import io.kotest.matchers.shouldBe
 import org.junit.Test
 
 class ScopeTest {
+
     @Test
     fun testGetSet() {
         val scope = Scope()
@@ -57,4 +58,5 @@ class ScopeTest {
         scope.dispose()
         disposed.shouldBeTrue()
     }
+
 }
