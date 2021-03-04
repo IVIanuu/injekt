@@ -216,9 +216,6 @@ class GivenCallTransformer(
         }
     }
 
-    private val composableConstructor =
-        pluginContext.referenceConstructors(InjektFqNames.Composable).single()
-
     private class WrappedExpression(
         val unstableDependencies: List<GivenRequest>,
         val function: IrFunction
@@ -300,7 +297,8 @@ class GivenCallTransformer(
                 if (given.callContext == CallContext.COMPOSABLE) {
                     annotations += DeclarationIrBuilder(pluginContext, symbol)
                         .irCallConstructor(
-                            composableConstructor,
+                            pluginContext.referenceConstructors(InjektFqNames.Composable)
+                                .single(),
                             emptyList()
                         )
                 }
