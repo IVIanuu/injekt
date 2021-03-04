@@ -190,11 +190,16 @@ inline fun KotlinCompilation.Result.irAssertions(block: (String) -> Unit) {
     assertOk()
     outputDirectory
         .parentFile
-        .resolve("injekt/dump/main")
+        .resolve("injekt/dump")
         .walkTopDown()
         .filter { it.isFile }
         .map { it.readText() }
         .joinToString("\n")
+        .also {
+            assert(it.isNotEmpty()) {
+                "Source is empty"
+            }
+        }
         .let(block)
 }
 
