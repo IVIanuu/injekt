@@ -45,21 +45,14 @@ data class ClassifierRef(
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
     override fun hashCode(): Int = fqName.hashCode()
-}
 
-val ClassifierRef.defaultType: TypeRef
-    get() = SimpleTypeRef(
-        this,
-        arguments = typeParameters.map { it.defaultType },
-        qualifiers = qualifiers
-    )
-
-fun TypeRef.superTypes(substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()): List<TypeRef> {
-    val merged = classifier.typeParameters
-        .zip(arguments)
-        .toMap() + substitutionMap
-    return classifier.superTypes
-        .map { it.substitute(merged) }
+    val defaultType: TypeRef by unsafeLazy {
+        SimpleTypeRef(
+            this,
+            arguments = typeParameters.map { it.defaultType },
+            qualifiers = qualifiers
+        )
+    }
 }
 
 fun KotlinType.toTypeRef(
@@ -137,7 +130,7 @@ sealed class TypeRef {
             if (type in types) return
             types += type
             type.expandedType?.let { visit(it) }
-            type.superTypes().forEach { visit(it) }
+            type.superTypes.forEach { visit(it) }
         }
         visit(this)
         types
@@ -183,6 +176,14 @@ sealed class TypeRef {
 
     val isComposableType: Boolean by unsafeLazy {
         thisAndAllSuperTypes.any { it.isComposable }
+    }
+
+    val superTypes: List<TypeRef> by unsafeLazy {
+        val substitutionMap = classifier.typeParameters
+            .zip(arguments)
+            .toMap()
+        classifier.superTypes
+            .map { it.substitute(substitutionMap) }
     }
 }
 
@@ -426,8 +427,8 @@ fun getSubstitutionMap(
     pairs.forEach { visitType(it.first, it.second) }
 
     substitutionMap.forEach { (baseClassifier, thisType) ->
-        baseClassifier.defaultType.superTypes()
-            .map { thisType.subtypeView(it.classifier, substitutionMap) to it }
+        baseClassifier.defaultType.superTypes
+            .map { thisType.subtypeView(it.classifier) to it }
             .forEach { (thisBaseTypeView, baseSuperType) ->
                 if (baseSuperType.classifier.isTypeParameter) {
                     val thisTypeToUse = thisBaseTypeView ?: thisType
@@ -461,9 +462,8 @@ fun getSubstitutionMap(
 
 fun TypeRef.isAssignableTo(
     declarationStore: DeclarationStore,
-    superType: TypeRef,
-    substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
-): Boolean = declarationStore.isAssignableCache.getOrPut(MultiKey3(this, superType, substitutionMap)) {
+    superType: TypeRef
+): Boolean = declarationStore.isAssignableCache.getOrPut(MultiKey2(this, superType)) {
     if (isStarProjection || superType.isStarProjection) return@getOrPut true
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return@getOrPut false
@@ -472,14 +472,14 @@ fun TypeRef.isAssignableTo(
         if (setKey != superType.setKey) return@getOrPut false
         if (isComposableType != superType.isComposableType) return@getOrPut false
         if (arguments.zip(superType.arguments)
-                .any { (a, b) -> !a.isAssignableTo(declarationStore, b, substitutionMap) }
+                .any { (a, b) -> !a.isAssignableTo(declarationStore, b) }
         )
             return@getOrPut false
         return@getOrPut true
     }
     if (superType.classifier.isTypeParameter) {
-        val superTypesAssignable = superType.superTypes(substitutionMap).all { upperBound ->
-            isSubTypeOf(declarationStore, upperBound, substitutionMap)
+        val superTypesAssignable = superType.superTypes.all { upperBound ->
+            isSubTypeOf(declarationStore, upperBound)
         }
         if (!superTypesAssignable) return@getOrPut false
         if (superType.qualifiers.isNotEmpty() &&
@@ -489,8 +489,8 @@ fun TypeRef.isAssignableTo(
         if (setKey != superType.setKey) return@getOrPut false
         return@getOrPut true
     } else if (classifier.isTypeParameter) {
-        val superTypesAssignable = superTypes(substitutionMap).all { upperBound ->
-            superType.isSubTypeOf(declarationStore, upperBound, substitutionMap)
+        val superTypesAssignable = superTypes.all { upperBound ->
+            superType.isSubTypeOf(declarationStore, upperBound)
         }
         if (!superTypesAssignable) return@getOrPut false
         if (qualifiers.isNotEmpty() &&
@@ -505,9 +505,8 @@ fun TypeRef.isAssignableTo(
 
 fun TypeRef.isSubTypeOf(
     declarationStore: DeclarationStore,
-    superType: TypeRef,
-    substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
-): Boolean = declarationStore.isSubTypeCache.getOrPut(MultiKey3(this, superType, substitutionMap)) {
+    superType: TypeRef
+): Boolean = declarationStore.isSubTypeCache.getOrPut(MultiKey2(this, superType)) {
     if (isStarProjection) return@getOrPut true
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return@getOrPut false
@@ -516,7 +515,7 @@ fun TypeRef.isSubTypeOf(
         if (setKey != superType.setKey) return@getOrPut false
         if (isComposableType != superType.isComposableType) return@getOrPut false
         if (arguments.zip(superType.arguments)
-                .any { (a, b) -> !a.isAssignableTo(declarationStore, b, substitutionMap) }
+                .any { (a, b) -> !a.isAssignableTo(declarationStore, b) }
         )
             return@getOrPut false
         return@getOrPut true
@@ -528,7 +527,7 @@ fun TypeRef.isSubTypeOf(
         ) return@getOrPut false
         return@getOrPut true
     }
-    val subTypeView = subtypeView(superType.classifier, substitutionMap)
+    val subTypeView = subtypeView(superType.classifier)
     if (subTypeView != null) {
         if (subTypeView == superType && (!subTypeView.isMarkedNullable || superType.isMarkedNullable) &&
             (superType.qualifiers.isEmpty() || subTypeView.qualifiers.isAssignableTo(declarationStore, superType.qualifiers))
@@ -540,8 +539,8 @@ fun TypeRef.isSubTypeOf(
         if (isComposableType != superType.isComposableType) return@getOrPut false
         return@getOrPut subTypeView.arguments.zip(superType.arguments)
             .all { (subTypeArg, superTypeArg) ->
-                superTypeArg.superTypes(substitutionMap).all {
-                    subTypeArg.isSubTypeOf(declarationStore, it, substitutionMap)
+                superTypeArg.superTypes.all {
+                    subTypeArg.isSubTypeOf(declarationStore, it)
                 }
             }
     } else if ((superType.classifier.isTypeParameter && !classifier.isTypeParameter) || (superType.classifier.isTypeAlias &&
@@ -552,11 +551,11 @@ fun TypeRef.isSubTypeOf(
         if (macroChain != superType.macroChain) return@getOrPut false
         if (setKey != superType.setKey) return@getOrPut false
         if (isComposableType != superType.isComposableType) return@getOrPut false
-        return@getOrPut superType.superTypes(substitutionMap).all { upperBound ->
+        return@getOrPut superType.superTypes.all { upperBound ->
             // todo should do this comparison without qualifiers?
-            val r = isSubTypeOf(declarationStore, upperBound, substitutionMap) ||
+            val r = isSubTypeOf(declarationStore, upperBound) ||
                     (superType.qualifiers.isNotEmpty() &&
-                            copy(qualifiers = emptyList()).isSubTypeOf(declarationStore, upperBound, substitutionMap))
+                            copy(qualifiers = emptyList()).isSubTypeOf(declarationStore, upperBound))
             r
         }
     }
@@ -584,14 +583,11 @@ val KotlinType.fullyAbbreviatedType: KotlinType
         return if (abbreviatedType != null && abbreviatedType != this) abbreviatedType.fullyAbbreviatedType else this
     }
 
-fun TypeRef.subtypeView(
-    classifier: ClassifierRef,
-    substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap(),
-): TypeRef? {
+fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
     if (this.classifier == classifier) return this
-    expandedType?.subtypeView(classifier, substitutionMap)?.let { return it }
-    for (superType in superTypes(substitutionMap)) {
-        superType.subtypeView(classifier, substitutionMap)?.let { return it }
+    expandedType?.subtypeView(classifier)?.let { return it }
+    for (superType in superTypes) {
+        superType.subtypeView(classifier)?.let { return it }
     }
     return null
 }

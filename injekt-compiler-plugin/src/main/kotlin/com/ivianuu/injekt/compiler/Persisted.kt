@@ -40,7 +40,6 @@ import com.ivianuu.injekt.compiler.resolution.UIntValue
 import com.ivianuu.injekt.compiler.resolution.ULongValue
 import com.ivianuu.injekt.compiler.resolution.UShortValue
 import com.ivianuu.injekt.compiler.resolution.copy
-import com.ivianuu.injekt.compiler.resolution.defaultType
 import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
