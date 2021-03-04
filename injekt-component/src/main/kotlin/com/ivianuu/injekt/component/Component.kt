@@ -41,7 +41,7 @@ interface Component : Scope {
 }
 
 fun <@ForTypeKey T> Component.element(): T =
-    element(typeKeyOf<T>())
+    element(typeKeyOf())
 
 fun <T> Component.element(key: TypeKey<T>): T {
     return elementOrNull(key)
@@ -59,7 +59,7 @@ fun <@ForTypeKey C : Component> ComponentBuilder(
 )
 
 fun <C : Component, @ForTypeKey T> Component.Builder<C>.element(factory: () -> T) =
-    element(typeKeyOf<T>(), factory)
+    element(typeKeyOf(), factory)
 
 typealias ComponentElement<@Suppress("unused") C> = Pair<TypeKey<*>, () -> Any?>
 
