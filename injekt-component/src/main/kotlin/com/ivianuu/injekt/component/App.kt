@@ -24,7 +24,7 @@ fun App.initializeApp(
     @Given elementsFactory: (@Given AppComponent) -> Set<ComponentElement<AppComponent>>,
     @Given initializersFactory: (@Given AppComponent) -> Set<ComponentInitializer<AppComponent>>
 ) {
-    _appComponent = ComponentBuilder(elementsFactory, initializersFactory)
+    _appComponent = ComponentBuilder<AppComponent>(elementsFactory, initializersFactory)
         .element { this }
         .build()
 }
