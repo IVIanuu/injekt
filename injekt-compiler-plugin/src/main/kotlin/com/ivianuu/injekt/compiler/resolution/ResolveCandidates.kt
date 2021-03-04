@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.resolution
 
 sealed class GivenGraph {
     data class Success(
+        val requests: List<GivenRequest>,
         val scope: ResolutionScope,
         val givensByScope: Map<ResolutionScope, Map<GivenRequest, GivenNode>>,
     ) : GivenGraph()
@@ -104,7 +105,7 @@ fun ResolutionScope.resolveGiven(requests: List<GivenRequest>): GivenGraph {
                     it.filterIsInstance<ResolutionResult.Failure>()
         }
     return if (failureResults.isEmpty()) {
-        successResults.toSuccessGraph(this)
+        successResults.toSuccessGraph(requests, this)
     } else failureResults.toErrorGraph()
 }
 
@@ -118,7 +119,10 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
     return result
 }
 
-private fun List<ResolutionResult.Success>.toSuccessGraph(scope: ResolutionScope): GivenGraph.Success {
+private fun List<ResolutionResult.Success>.toSuccessGraph(
+    requests: List<GivenRequest>,
+    scope: ResolutionScope
+): GivenGraph.Success {
     val givensByScope = mutableMapOf<ResolutionScope, MutableMap<GivenRequest, GivenNode>>()
     fun ResolutionResult.Success.visit() {
         val givensByRequest = givensByScope.getOrPut(candidateResult.candidate.requestingScope) {
@@ -130,7 +134,7 @@ private fun List<ResolutionResult.Success>.toSuccessGraph(scope: ResolutionScope
             .forEach { it.visit() }
     }
     forEach { it.visit() }
-    return GivenGraph.Success(scope, givensByScope)
+    return GivenGraph.Success(requests, scope, givensByScope)
 }
 
 private fun List<ResolutionResult.Failure>.toErrorGraph(): GivenGraph.Error {

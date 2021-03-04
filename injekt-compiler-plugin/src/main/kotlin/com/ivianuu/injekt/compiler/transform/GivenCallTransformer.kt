@@ -154,10 +154,10 @@ class GivenCallTransformer(
 
     private fun ScopeContext.fillGivens(
         callable: CallableRef,
+        requests: List<GivenRequest>,
         call: IrFunctionAccessExpression,
         expressionProvider: (GivenRequest) -> IrExpression?
     ) {
-        val requests = callable.getGivenRequests(scope.declarationStore)
         if (callable.callable.dispatchReceiverParameter != null && call.dispatchReceiver == null) {
             call.dispatchReceiver = expressionProvider(
                 requests.singleOrNull { it.parameterName.asString() == "_dispatchReceiver" }
@@ -333,13 +333,7 @@ class GivenCallTransformer(
                         addValueParameter(
                             request.parameterName.asString(),
                             request.type.toIrType(pluginContext, declarationStore)
-                        ).apply {
-                            /*if (!request.required) {
-                                defaultValue = DeclarationIrBuilder(pluginContext, symbol).apply {
-                                    irExprBody(irNull())
-                                }
-                            }*/
-                        }
+                        )
                     }
 
                 this.body = DeclarationIrBuilder(pluginContext, symbol).run {
@@ -463,20 +457,15 @@ class GivenCallTransformer(
         return when (given.callable.callable) {
             is ClassConstructorDescriptor -> classExpression(
                 given,
-                given.type,
-                given.callable,
                 given.callable.callable,
                 expressionProvider
             )
             is PropertyDescriptor -> propertyExpression(
-                given.type,
                 given,
-                given.callable,
                 given.callable.callable,
                 expressionProvider
             )
             is FunctionDescriptor -> functionExpression(
-                given.callable,
                 given,
                 given.callable.callable,
                 expressionProvider
@@ -490,9 +479,7 @@ class GivenCallTransformer(
     }
 
     private fun ScopeContext.classExpression(
-        given: GivenNode,
-        type: TypeRef,
-        callable: CallableRef,
+        given: CallableGivenNode,
         descriptor: ClassConstructorDescriptor,
         expressionProvider: (GivenRequest) -> IrExpression?
     ): IrExpression {
@@ -509,25 +496,14 @@ class GivenCallTransformer(
             DeclarationIrBuilder(pluginContext, symbol)
                 .irCall(constructor.symbol)
                 .apply {
-                    val substitutionMap = getSubstitutionMap(scope.declarationStore, listOf(type to callable.originalType))
-                    callable.typeParameters
-                        .map {
-                            substitutionMap[it]
-                                ?: error("No substitution found for $it")
-                        }
-                        .forEachIndexed { index, typeArgument ->
-                            putTypeArgument(index, typeArgument.toIrType(pluginContext, declarationStore))
-                        }
-
-                    fillGivens(callable, this, expressionProvider)
+                    fillTypeParameters(given.callable)
+                    fillGivens(given.callable, given.dependencies, this, expressionProvider)
                 }
         }
     }
 
     private fun ScopeContext.propertyExpression(
-        type: TypeRef,
-        given: GivenNode,
-        callable: CallableRef,
+        given: CallableGivenNode,
         descriptor: PropertyDescriptor,
         expressionProvider: (GivenRequest) -> IrExpression?
     ): IrExpression {
@@ -536,22 +512,13 @@ class GivenCallTransformer(
         return DeclarationIrBuilder(pluginContext, symbol)
             .irCall(getter.symbol)
             .apply {
-                callable.typeParameters
-                    .map {
-                        callable.typeArguments[it]
-                            ?: error("No substitution found for $it")
-                    }
-                    .forEachIndexed { index, typeArgument ->
-                        putTypeArgument(index, typeArgument.toIrType(pluginContext, declarationStore))
-                    }
-
-                fillGivens(callable, this, expressionProvider)
+                fillTypeParameters(given.callable)
+                fillGivens(given.callable, given.dependencies, this, expressionProvider)
             }
     }
 
     private fun ScopeContext.functionExpression(
-        callable: CallableRef,
-        given: GivenNode,
+        given: CallableGivenNode,
         descriptor: FunctionDescriptor,
         expressionProvider: (GivenRequest) -> IrExpression?
     ): IrExpression {
@@ -559,16 +526,8 @@ class GivenCallTransformer(
         return DeclarationIrBuilder(pluginContext, symbol)
             .irCall(function.symbol)
             .apply {
-                callable.typeParameters
-                    .map {
-                        callable.typeArguments[it]
-                            ?: error("No substitution found for $it")
-                    }
-                    .forEachIndexed { index, typeArgument ->
-                        putTypeArgument(index, typeArgument.toIrType(pluginContext, declarationStore))
-                    }
-
-                fillGivens(callable, this, expressionProvider)
+                fillTypeParameters(given.callable)
+                fillGivens(given.callable, given.dependencies, this, expressionProvider)
             }
     }
 
@@ -600,6 +559,15 @@ class GivenCallTransformer(
                 )
             else -> error("Unexpected parent $descriptor $containingDeclaration")
         }
+    }
+
+    private fun IrFunctionAccessExpression.fillTypeParameters(callable: CallableRef) {
+        callable
+            .typeArguments
+            .values
+            .forEachIndexed { index, typeArgument ->
+                putTypeArgument(index, typeArgument.toIrType(pluginContext, declarationStore))
+            }
     }
 
     private fun ScopeContext.variableExpression(descriptor: VariableDescriptor): IrExpression {
@@ -716,6 +684,7 @@ class GivenCallTransformer(
                         result.symbol.descriptor
                             .toCallableRef(graph.scope.declarationStore)
                             .substitute(substitutionMap),
+                        graph.requests,
                         result,
                         scopeExpressionProvider
                     )
