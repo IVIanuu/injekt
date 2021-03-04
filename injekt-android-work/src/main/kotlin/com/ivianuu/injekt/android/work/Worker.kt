@@ -31,10 +31,7 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.android.AppContext
 import com.ivianuu.injekt.component.AppComponent
 import com.ivianuu.injekt.component.ChildComponentModule2
-import com.ivianuu.injekt.component.ChildComponentModule3
 import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.ComponentElementBinding
-import com.ivianuu.injekt.component.element
 import kotlin.reflect.KClass
 
 @Qualifier

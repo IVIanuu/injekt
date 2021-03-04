@@ -29,8 +29,6 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.psiUtil.isTopLevelKtOrJavaMember
-import org.jetbrains.kotlin.psi.psiUtil.startOffset
-import kotlin.math.absoluteValue
 
 fun KtElement.collectIndices(): List<Index> {
     val indices = mutableListOf<Index>()

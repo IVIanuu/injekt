@@ -20,7 +20,6 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.common.ForTypeKey
 import com.ivianuu.injekt.common.TypeKey
-import com.ivianuu.injekt.common.invoke
 import com.ivianuu.injekt.common.typeKeyOf
 
 class ChildComponentModule0<P : Component, C : Component>(

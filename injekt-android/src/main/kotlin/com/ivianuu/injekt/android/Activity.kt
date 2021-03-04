@@ -31,7 +31,6 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.component.ChildComponentModule1
 import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.ComponentElementBinding
 import com.ivianuu.injekt.component.element
 
 typealias ActivityComponent = Component

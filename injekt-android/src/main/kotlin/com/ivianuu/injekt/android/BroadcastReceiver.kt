@@ -20,14 +20,10 @@ import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.component.AppComponent
-import com.ivianuu.injekt.component.ChildComponentModule2
 import com.ivianuu.injekt.component.ChildComponentModule3
-import com.ivianuu.injekt.component.ChildComponentModule4
 import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.ComponentElementBinding
 import com.ivianuu.injekt.component.element
 
 typealias ReceiverComponent = Component

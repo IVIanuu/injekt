@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.gradle
 
-import com.android.build.gradle.BaseExtension
 import org.gradle.api.tasks.SourceSetContainer
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
