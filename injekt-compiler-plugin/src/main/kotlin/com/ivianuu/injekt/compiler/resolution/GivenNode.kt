@@ -39,8 +39,6 @@ sealed class GivenNode {
     abstract val dependencyScope: ResolutionScope?
     abstract val lazyDependencies: Boolean
     abstract val isFrameworkGiven: Boolean
-    abstract val requestingScope: ResolutionScope
-    var hasCircularDependency = false
     abstract val key: GivenKey
 }
 
@@ -61,13 +59,13 @@ class GivenKey(candidate: GivenNode, uniqueKey: Any) {
         other is GivenKey && other._hashCode == _hashCode
 
     override fun hashCode(): Int = _hashCode
+
 }
 
 class CallableGivenNode(
     override val type: TypeRef,
     override val dependencies: List<GivenRequest>,
     override val ownerScope: ResolutionScope,
-    override val requestingScope: ResolutionScope,
     val callable: CallableRef,
 ) : GivenNode() {
     override val callableFqName: FqName = if (callable.callable is ClassConstructorDescriptor)
@@ -89,7 +87,6 @@ class CallableGivenNode(
 class SetGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope,
-    override val requestingScope: ResolutionScope,
     override val dependencies: List<GivenRequest>,
 ) : GivenNode() {
     override val callableFqName: FqName = FqName("GivenSet<${type.render()}>")
@@ -108,8 +105,7 @@ class SetGivenNode(
 
 class DefaultGivenNode(
     override val type: TypeRef,
-    override val ownerScope: ResolutionScope,
-    override val requestingScope: ResolutionScope
+    override val ownerScope: ResolutionScope
 ) : GivenNode() {
     override val callContext: CallContext
         get() = CallContext.DEFAULT
@@ -131,7 +127,6 @@ class DefaultGivenNode(
 class ProviderGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope,
-    override val requestingScope: ResolutionScope,
     val declarationStore: DeclarationStore,
     val additionalContributions: List<CallableRef> = emptyList()
 ) : GivenNode() {
@@ -188,15 +183,13 @@ class ProviderGivenNode(
 
 fun CallableRef.toGivenNode(
     type: TypeRef,
-    ownerScope: ResolutionScope,
-    requestingScope: ResolutionScope
+    ownerScope: ResolutionScope
 ): CallableGivenNode {
-    val finalCallable = substitute(getSubstitutionMap(requestingScope.declarationStore, listOf(type to this.type)))
+    val finalCallable = substitute(getSubstitutionMap(ownerScope.declarationStore, listOf(type to this.type)))
     return CallableGivenNode(
         type,
         finalCallable.getGivenRequests(ownerScope.declarationStore),
         ownerScope,
-        requestingScope,
         finalCallable
     )
 }

@@ -91,9 +91,10 @@ class GivenCallChecker(
             is GivenGraph.Success -> {
                 currentFileHasGivenCalls = true
                 graph
-                    .givensByScope
+                    .resultsByScope
                     .values
                     .flatMap { it.values }
+                    .map { it.candidate }
                     .filterIsInstance<CallableGivenNode>()
                     .forEach { given ->
                         bindingTrace.record(

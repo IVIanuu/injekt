@@ -20,7 +20,7 @@ sealed class GivenGraph {
     data class Success(
         val requests: List<GivenRequest>,
         val scope: ResolutionScope,
-        val givensByScope: Map<ResolutionScope, Map<GivenRequest, GivenNode>>,
+        val resultsByScope: Map<ResolutionScope, Map<GivenRequest, CandidateResolutionResult.Success>>,
     ) : GivenGraph()
 
     data class Error(
@@ -31,16 +31,20 @@ sealed class GivenGraph {
 sealed class CandidateResolutionResult {
     abstract val request: GivenRequest
     abstract val candidate: GivenNode
+    abstract val scope: ResolutionScope
 
     data class Success(
         override val request: GivenRequest,
         override val candidate: GivenNode,
+        override val scope: ResolutionScope,
         val dependencyResults: List<ResolutionResult.Success>,
+        val hasCircularDependency: Boolean
     ) : CandidateResolutionResult()
 
     data class Failure(
         override val request: GivenRequest,
         override val candidate: GivenNode,
+        override val scope: ResolutionScope,
         val failure: ResolutionResult.Failure,
     ) : CandidateResolutionResult()
 }
@@ -123,13 +127,13 @@ private fun List<ResolutionResult.Success>.toSuccessGraph(
     requests: List<GivenRequest>,
     scope: ResolutionScope
 ): GivenGraph.Success {
-    val givensByScope = mutableMapOf<ResolutionScope, MutableMap<GivenRequest, GivenNode>>()
+    val givensByScope = mutableMapOf<ResolutionScope, MutableMap<GivenRequest, CandidateResolutionResult.Success>>()
     fun ResolutionResult.Success.visit() {
-        val givensByRequest = givensByScope.getOrPut(candidateResult.candidate.requestingScope) {
+        val givensByRequest = givensByScope.getOrPut(candidateResult.scope) {
             mutableMapOf()
         }
         if (request in givensByRequest) return
-        givensByRequest[request] = candidateResult.candidate
+        givensByRequest[request] = candidateResult
         candidateResult.dependencyResults
             .forEach { it.visit() }
     }
@@ -164,6 +168,7 @@ private fun ResolutionScope.computeForCandidate(
             return CandidateResolutionResult.Failure(
                 request,
                 candidate,
+                this,
                 ResolutionResult.Failure.DivergentGiven(request, emptyList()) // todo
             )
         }
@@ -171,9 +176,11 @@ private fun ResolutionScope.computeForCandidate(
 
     if (candidate.key in chain) {
         return CandidateResolutionResult.Success(
-            request,
-            candidate.also { candidate.hasCircularDependency = true },
-            emptyList()
+            request = request,
+            candidate = candidate,
+            scope = this,
+            dependencyResults = emptyList(),
+            hasCircularDependency = true
         )
     }
 
@@ -245,7 +252,7 @@ private fun ResolutionResult.fallbackToDefaultIfNeeded(
     is ResolutionResult.Success -> this
     is ResolutionResult.Failure -> if (request.required) this
     else ResolutionResult.Success(request, CandidateResolutionResult.Success(
-        request, DefaultGivenNode(request.type, scope, scope), emptyList()
+        request, DefaultGivenNode(request.type, scope), scope, emptyList(), false
     ))
 }
 
@@ -257,6 +264,7 @@ private fun ResolutionScope.resolveCandidate(
         return@computeForCandidate CandidateResolutionResult.Failure(
             request,
             candidate,
+            this,
             ResolutionResult.Failure.CallContextMismatch(request, callContext, candidate)
         )
     }
@@ -269,6 +277,7 @@ private fun ResolutionScope.resolveCandidate(
             is ResolutionResult.Failure -> return@computeForCandidate CandidateResolutionResult.Failure(
                 dependency,
                 candidate,
+                this,
                 result
             )
         }
@@ -276,7 +285,9 @@ private fun ResolutionScope.resolveCandidate(
     return@computeForCandidate CandidateResolutionResult.Success(
         request,
         candidate,
-        successDependencyResults
+        this,
+        successDependencyResults,
+        false
     )
 }
 

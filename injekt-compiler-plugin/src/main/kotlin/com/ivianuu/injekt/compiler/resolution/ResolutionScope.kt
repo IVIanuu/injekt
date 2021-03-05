@@ -36,23 +36,30 @@ class ResolutionScope(
     val resultsByRequest = mutableMapOf<GivenRequest, ResolutionResult>()
     val resultsByCandidate = mutableMapOf<GivenKey, CandidateResolutionResult>()
 
-    private val givens = mutableListOf<Pair<CallableRef, ResolutionScope>>()
-    private val givenSetElements = mutableListOf<CallableRef>()
-    private val macros = mutableListOf<MacroNode>()
+    private val givens = mutableListOf<CallableRef>()
+    private val setElements = mutableListOf<CallableRef>()
 
+    private val macros = mutableListOf<MacroNode>()
     private data class MacroNode(val callable: CallableRef) {
         val processedContributions = mutableSetOf<TypeRef>()
+        fun copy() = MacroNode(callable).also {
+            it.processedContributions += processedContributions
+        }
     }
 
+    private val allParents: List<ResolutionScope> = parent?.allScopes ?: emptyList()
+    private val allScopes: List<ResolutionScope> = allParents + this
+
     private val givensByType = mutableMapOf<TypeRef, List<GivenNode>>()
-    private val givenSetElementsByType = mutableMapOf<TypeRef, List<GivenRequest>>()
+    private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>>()
+    private val syntheticProviderSetElementsByType = mutableMapOf<TypeRef, List<TypeRef>>()
 
     private val initialize: Unit by unsafeLazy {
-        parent?.initialize
-
-        parent?.givens?.forEach { givens += it }
-        parent?.givenSetElements?.forEach { givenSetElements += it }
-        parent?.macros?.forEach { macros += it }
+        if (parent != null) {
+            parent.initialize
+            macros += parent.macros
+                .map { it.copy() }
+        }
 
         produceContributions()
             .distinctBy { it.type to it.callable.original }
@@ -61,19 +68,20 @@ class ResolutionScope(
                     declarationStore = declarationStore,
                     substitutionMap = emptyMap(),
                     addGiven = { callable ->
-                        givens += callable to this
+                        givens += callable
                         val typeWithMacroChain = callable.type
                             .copy(macroChain = listOf(callable.callable.fqNameSafe))
-                        givens += callable.copy(type = typeWithMacroChain) to this
+                        givens += callable.copy(type = typeWithMacroChain)
                     },
-                    addGivenSetElement = { givenSetElements += it },
+                    addGivenSetElement = { setElements += it },
                     addMacro = { macros += MacroNode(it) }
                 )
             }
 
-        givens
-            .filter { it.first.type.macroChain.isNotEmpty() }
-            .forEach { runMacros(it.first.type) }
+        allScopes
+            .flatMap { it.givens }
+            .filter { it.type.macroChain.isNotEmpty() }
+            .forEach { runMacros(it.type) }
     }
 
     private val setType = declarationStore.module.builtIns.set.defaultType
@@ -83,9 +91,17 @@ class ResolutionScope(
         initialize
         return givensByType.getOrPut(type) {
             buildList<GivenNode> {
+                if (parent != null) {
+                    this += parent.givensForType(type)
+                        .filter {
+                            !it.isFrameworkGiven ||
+                                    it.type.setKey != null
+                        }
+                }
+
                 this += givens
-                    .filter { it.first.type.isAssignableTo(declarationStore, type) }
-                    .map { it.first.toGivenNode(type, it.second, this@ResolutionScope) }
+                    .filter { it.type.isAssignableTo(declarationStore, type) }
+                    .map { it.toGivenNode(type, this@ResolutionScope) }
 
                 if (type.macroChain.isEmpty() &&
                     type.setKey == null &&
@@ -100,7 +116,6 @@ class ResolutionScope(
                     this += ProviderGivenNode(
                         type = type,
                         ownerScope = this@ResolutionScope,
-                        requestingScope = this@ResolutionScope,
                         declarationStore = declarationStore
                     )
                 }
@@ -109,11 +124,19 @@ class ResolutionScope(
                     type.setKey == null &&
                     type.isSubTypeOf(declarationStore, setType)) {
                     val setElementType = type.subtypeView(setType.classifier)!!.arguments.single()
-                    val elements = givenSetElementsForType(setElementType)
+                    val elements = (setElementsForType(setElementType)
+                        .takeIf { it.isNotEmpty() } ?: syntheticProviderGivensForType(setElementType))
+                        .mapIndexed { index, element ->
+                            GivenRequest(
+                                type = element,
+                                required = true,
+                                callableFqName = FqName("GivenSet"),
+                                parameterName = "element$index".asNameId()
+                            )
+                        }
                     this += SetGivenNode(
                         type = type,
                         ownerScope = this@ResolutionScope,
-                        requestingScope = this@ResolutionScope,
                         dependencies = elements
                     )
                 }
@@ -121,37 +144,19 @@ class ResolutionScope(
         }
     }
 
-    private fun givenSetElementsForType(type: TypeRef): List<GivenRequest> {
+    private fun syntheticProviderGivensForType(type: TypeRef): List<TypeRef> {
         initialize
-        return givenSetElementsByType.getOrPut(type) {
-            val exactSetElements = givenSetElements
-                .filter { it.type.isAssignableTo(declarationStore, type) }
-                .map { it.substitute(getSubstitutionMap(declarationStore, listOf(type to it.type))) }
-                .mapIndexed { index, callable ->
-                    val typeWithSetKey = type.copy(
-                        setKey = SetKey(type, callable)
-                    )
-                    givens += callable.copy(type = typeWithSetKey) to this
-                    GivenRequest(
-                        type = typeWithSetKey,
-                        required = true,
-                        callableFqName = FqName("GivenSet"),
-                        parameterName = "element$index".asNameId()
-                    )
-                }
-
-            if (exactSetElements.isNotEmpty()) return@getOrPut exactSetElements
-
+        return syntheticProviderSetElementsByType.getOrPut(type) {
             if (type.qualifiers.isEmpty() &&
                 (type.classifier.fqName.asString().startsWith("kotlin.Function")
                         || type.classifier.fqName.asString()
                     .startsWith("kotlin.coroutines.SuspendFunction")) &&
                 type.arguments.dropLast(1).all { it.contributionKind != null }) {
                 val providerReturnType = type.arguments.last()
-                givenSetElements
+                val thisElements = setElements
                     .filter { it.type.isAssignableTo(declarationStore, providerReturnType) }
                     .map { it.substitute(getSubstitutionMap(declarationStore, listOf(providerReturnType to it.type))) }
-                    .mapIndexed { index, callable ->
+                    .map { callable ->
                         val setKey = SetKey(type, callable)
                         val providerReturnTypeWithSetKey = providerReturnType.copy(setKey = setKey)
 
@@ -166,7 +171,6 @@ class ResolutionScope(
                             ProviderGivenNode(
                                 type = typeWithSetKey,
                                 ownerScope = this@ResolutionScope,
-                                requestingScope = this@ResolutionScope,
                                 declarationStore = declarationStore,
                                 additionalContributions = listOf(
                                     callable.copy(
@@ -177,16 +181,36 @@ class ResolutionScope(
                             )
                         )
 
-                        GivenRequest(
-                            type = typeWithSetKey,
-                            required = true,
-                            callableFqName = FqName("GivenSet"),
-                            parameterName = "element$index".asNameId()
-                        )
+                        typeWithSetKey
                     }
+
+                val parentElements = parent?.syntheticProviderGivensForType(type)
+                if (parentElements != null && parentElements.isNotEmpty()) {
+                    parentElements + thisElements
+                } else thisElements
             } else {
                 emptyList()
             }
+        }
+    }
+
+    private fun setElementsForType(type: TypeRef): List<TypeRef> {
+        initialize
+        return setElementsByType.getOrPut(type) {
+            val thisElements = setElements
+                .filter { it.type.isAssignableTo(declarationStore, type) }
+                .map { it.substitute(getSubstitutionMap(declarationStore, listOf(type to it.type))) }
+                .map { callable ->
+                    val typeWithSetKey = type.copy(
+                        setKey = SetKey(type, callable)
+                    )
+                    givens += callable.copy(type = typeWithSetKey)
+                    typeWithSetKey
+                }
+            val parentElements = parent?.setElementsForType(type)
+            if (parentElements != null && parentElements.isNotEmpty()) {
+                parentElements + thisElements
+            } else thisElements
         }
     }
 
@@ -218,8 +242,8 @@ class ResolutionScope(
             newContribution.collectContributions(
                 declarationStore = declarationStore,
                 substitutionMap = outputsSubstitutionMap,
-                addGiven = { givens += it to this },
-                addGivenSetElement = { givenSetElements += it },
+                addGiven = { givens += it },
+                addGivenSetElement = { setElements += it },
                 addMacro = { macros += MacroNode(it) }
             )
 
@@ -232,8 +256,8 @@ class ResolutionScope(
                 newContributionWithChain.collectContributions(
                     declarationStore = declarationStore,
                     substitutionMap = newContributionWithChain.typeArguments,
-                    addGiven = { givens += it to this },
-                    addGivenSetElement = { givenSetElements += it },
+                    addGiven = { givens += it },
+                    addGivenSetElement = { setElements += it },
                     addMacro = { macros += MacroNode(it) }
                 )
                 runMacros(newContributionWithChain.type)

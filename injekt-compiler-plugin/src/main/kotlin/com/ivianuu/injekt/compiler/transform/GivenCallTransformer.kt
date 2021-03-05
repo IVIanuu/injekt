@@ -82,7 +82,7 @@ class GivenCallTransformer(
 
         var parameterIndex = 0
 
-        val givensByRequestsByScope = mutableMapOf<ResolutionScope, Map<GivenRequest, GivenNode>>()
+        val givensByRequestsByScope = mutableMapOf<ResolutionScope, Map<GivenRequest, CandidateResolutionResult.Success>>()
 
         private val graphContextParents = buildList<ResolutionScope> {
             var current: ResolutionScope? = graph.scope.parent
@@ -115,9 +115,9 @@ class GivenCallTransformer(
 
     private fun ResolutionScope.getGivensByRequest(
         graphContext: GraphContext
-    ): Map<GivenRequest, GivenNode> = graphContext.givensByRequestsByScope.getOrPut(this) {
+    ): Map<GivenRequest, CandidateResolutionResult.Success> = graphContext.givensByRequestsByScope.getOrPut(this) {
         (parent?.getGivensByRequest(graphContext) ?: emptyMap()) +
-                (graphContext.graph.givensByScope[this] ?: emptyMap())
+                (graphContext.graph.resultsByScope[this] ?: emptyMap())
     }
 
     private inner class ScopeContext(
@@ -126,17 +126,17 @@ class GivenCallTransformer(
         val symbol: IrSymbol
     ) {
         val irScope = Scope(symbol)
-        val givensByRequest: Map<GivenRequest, GivenNode> = scope.getGivensByRequest(graphContext)
+        val givensByRequest: Map<GivenRequest, CandidateResolutionResult.Success> = scope.getGivensByRequest(graphContext)
         val statements =
             if (graphContext.graph.scope == scope) graphContext.statements else mutableListOf()
-        val initializingExpressions = mutableMapOf<GivenNode, GivenExpression?>()
+        val initializingExpressions = mutableMapOf<CandidateResolutionResult.Success, GivenExpression?>()
         val lambdasByProviderGiven: MutableMap<ProviderGivenNode, IrFunction> = scope.parent
             ?.let { graphContext.existingScopeContextOrNull(it)?.lambdasByProviderGiven }
             ?: mutableMapOf()
         val scopeExpressionProvider: (GivenRequest) -> IrExpression? = provider@ { request ->
             val given = givensByRequest[request]
                 ?: error("Wtf $request")
-            val scopeContext = graphContext.existingScopeContext(given.ownerScope)
+            val scopeContext = graphContext.existingScopeContext(given.candidate.ownerScope)
             scopeContext.initializingExpressions[given]?.run { return@provider get() }
             val expression = GivenExpression(given)
             scopeContext.initializingExpressions[given] = expression
@@ -166,7 +166,7 @@ class GivenCallTransformer(
             }
     }
 
-    private inner class GivenExpression(private val given: GivenNode) {
+    private inner class GivenExpression(private val given: CandidateResolutionResult.Success) {
         private var block: IrBlock? = null
         private var tmpVariable: IrVariable? = null
         private var finalExpression: IrExpression? = null
@@ -188,11 +188,11 @@ class GivenCallTransformer(
             initializing = true
 
             val rawExpression = wrapInFunctionIfNeeded(given) { expressionProvider ->
-                when (given) {
-                    is CallableGivenNode -> callableExpression(given, expressionProvider)
+                when (given.candidate) {
+                    is CallableGivenNode -> callableExpression(given.candidate, expressionProvider)
                     is DefaultGivenNode -> null
-                    is ProviderGivenNode -> providerExpression(given, expressionProvider)
-                    is SetGivenNode -> setExpression(given, expressionProvider)
+                    is ProviderGivenNode -> providerExpression(given.candidate, expressionProvider)
+                    is SetGivenNode -> setExpression(given.candidate, expressionProvider)
                 }
             }
 
@@ -215,54 +215,54 @@ class GivenCallTransformer(
         val function: IrFunction
     )
 
-    private fun GivenNode.canFunctionWrap(): Boolean = this !is ProviderGivenNode &&
-            dependencies.isNotEmpty() &&
+    private fun CandidateResolutionResult.Success.canFunctionWrap(): Boolean = candidate !is ProviderGivenNode &&
+            candidate.dependencies.isNotEmpty() &&
             !hasCircularDependency &&
-            dependencies.all { it.required }
+            candidate.dependencies.all { it.required }
 
     private fun ScopeContext.wrapInFunctionIfNeeded(
-        given: GivenNode,
+        given: CandidateResolutionResult.Success,
         expression: ((GivenRequest) -> IrExpression?) -> IrExpression?
     ): IrExpression? {
         if (!given.canFunctionWrap()) return expression(scopeExpressionProvider)
 
-        val wrappedExpression = graphContext.functionExpressions.getOrPut(given.key) {
-            val usages = graphContext.graph.givensByScope
+        val wrappedExpression = graphContext.functionExpressions.getOrPut(given.candidate.key) {
+            val usages = graphContext.graph.resultsByScope
                 .values
                 .flatMap { it.values }
                 .filter { it.canFunctionWrap() }
-                .filter { it.key == given.key }
+                .filter { it.candidate.key == given.candidate.key }
 
             if (usages.size == 1) return expression(scopeExpressionProvider)
 
             fun ResolutionScope.allScopes(): List<ResolutionScope> =
                 (parent?.allScopes() ?: emptyList()) + this
 
-            val hostingScope = given.requestingScope.allScopes()
+            val hostingScope = given.scope.allScopes()
                 .last { candidateScope ->
                     usages
                         .all { usage ->
-                            candidateScope in usage.requestingScope.allScopes()
+                            candidateScope in usage.scope.allScopes()
                         }
                 }
             val hostingScopeContext = graphContext.existingScopeContext(hostingScope)
 
-            val mergedDependencies = given.dependencies
+            val mergedDependencies = given.candidate.dependencies
                 .indices
                 .map { parameterIndex ->
                     usages
                         .map { usage ->
-                            val usageParameterRequest = usage.dependencies[parameterIndex]
-                            val givensByRequest = usage.requestingScope.getGivensByRequest(graphContext)
-                            usage.dependencies[parameterIndex] to (givensByRequest[usageParameterRequest]
+                            val usageParameterRequest = usage.candidate.dependencies[parameterIndex]
+                            val givensByRequest = usage.scope.getGivensByRequest(graphContext)
+                            usage.candidate.dependencies[parameterIndex] to (givensByRequest[usageParameterRequest]
                                 ?: error("Wtf"))
                         }
-                        .distinctBy { it.second.key }
+                        .distinctBy { it.second.candidate.key }
                 }
 
-            fun GivenNode.ensureAllInScope(scope: ResolutionScope): Boolean {
+            fun CandidateResolutionResult.Success.ensureAllInScope(scope: ResolutionScope): Boolean {
                 val allGivensByRequest = scope.getGivensByRequest(graphContext)
-                return dependencies
+                return candidate.dependencies
                     .map { allGivensByRequest[it] }
                     .all {
                         it != null && it.ensureAllInScope(scope)
@@ -283,12 +283,12 @@ class GivenCallTransformer(
             val function = IrFactoryImpl.buildFun {
                 origin = IrDeclarationOrigin.DEFINED
                 name = Name.special("<anonymous>")
-                returnType = given.type.toIrType(pluginContext, declarationStore)
+                returnType = given.candidate.type.toIrType(pluginContext, declarationStore)
                 visibility = DescriptorVisibilities.LOCAL
-                isSuspend = given.callContext == CallContext.SUSPEND
+                isSuspend = given.candidate.callContext == CallContext.SUSPEND
             }.apply {
                 parent = irScope.getLocalDeclarationParent()
-                if (given.callContext == CallContext.COMPOSABLE) {
+                if (given.candidate.callContext == CallContext.COMPOSABLE) {
                     annotations += DeclarationIrBuilder(pluginContext, symbol)
                         .irCallConstructor(
                             pluginContext.referenceConstructors(InjektFqNames.Composable)
