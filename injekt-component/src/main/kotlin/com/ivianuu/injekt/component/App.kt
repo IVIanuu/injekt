@@ -37,6 +37,5 @@ val @Given AppComponent.app: App
 
 private lateinit var _appComponent: AppComponent
 
-@Given
-val @Given App.appComponent: AppComponent
+val App.appComponent: AppComponent
     get() = _appComponent
