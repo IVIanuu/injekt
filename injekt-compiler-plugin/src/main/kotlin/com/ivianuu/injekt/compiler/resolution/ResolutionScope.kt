@@ -52,6 +52,7 @@ class ResolutionScope(
 
     private val givensByType = mutableMapOf<TypeRef, List<GivenNode>>()
     private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>>()
+    private val syntheticProviderSetElementsNodeFactoryByType = mutableMapOf<TypeRef, (ResolutionScope) -> List<ProviderGivenNode>>()
     private val syntheticProviderSetElementsByType = mutableMapOf<TypeRef, List<TypeRef>>()
 
     private val initialize: Unit by unsafeLazy {
@@ -93,10 +94,7 @@ class ResolutionScope(
             buildList<GivenNode> {
                 if (parent != null) {
                     this += parent.givensForType(type)
-                        .filter {
-                            !it.isFrameworkGiven ||
-                                    it.type.setKey != null
-                        }
+                        .filter { !it.isFrameworkGiven }
                 }
 
                 this += givens
@@ -153,7 +151,8 @@ class ResolutionScope(
                     .startsWith("kotlin.coroutines.SuspendFunction")) &&
                 type.arguments.dropLast(1).all { it.contributionKind != null }) {
                 val providerReturnType = type.arguments.last()
-                val thisElements = setElements
+
+                val thisElementCallables = setElements
                     .filter { it.type.isAssignableTo(declarationStore, providerReturnType) }
                     .map { it.substitute(getSubstitutionMap(declarationStore, listOf(providerReturnType to it.type))) }
                     .map { callable ->
@@ -167,27 +166,42 @@ class ResolutionScope(
                                 .dropLast(1) + providerReturnTypeWithSetKey
                         )
 
-                        givensByType[typeWithSetKey] = listOf(
-                            ProviderGivenNode(
-                                type = typeWithSetKey,
-                                ownerScope = this@ResolutionScope,
-                                declarationStore = declarationStore,
-                                additionalContributions = listOf(
-                                    callable.copy(
-                                        type = providerReturnTypeWithSetKey,
-                                        contributionKind = ContributionKind.VALUE
-                                    )
-                                )
-                            )
+                        typeWithSetKey to callable.copy(
+                            type = providerReturnTypeWithSetKey,
+                            contributionKind = ContributionKind.VALUE
                         )
-
-                        typeWithSetKey
                     }
 
-                val parentElements = parent?.syntheticProviderGivensForType(type)
-                if (parentElements != null && parentElements.isNotEmpty()) {
-                    parentElements + thisElements
-                } else thisElements
+                val thisFactory: ((ResolutionScope) -> List<ProviderGivenNode>)? = if (thisElementCallables.isEmpty()) null else ({ ownerScope ->
+                    thisElementCallables
+                        .map { (typeWithSetKey, callable) ->
+                            ProviderGivenNode(
+                                type = typeWithSetKey,
+                                ownerScope = ownerScope,
+                                declarationStore = declarationStore,
+                                additionalContributions = listOf(callable)
+                            )
+                        }
+                })
+
+                if (thisFactory != null) {
+                    syntheticProviderSetElementsNodeFactoryByType[type] = thisFactory
+                }
+
+                val thisNodes = thisFactory?.invoke(this) ?: emptyList()
+
+                val parentNodes = if (parent != null) {
+                    parent.syntheticProviderSetElementsNodeFactoryByType[type]
+                        ?.invoke(this)
+                } else null
+                val mergedNodes = if (parentNodes != null && parentNodes.isNotEmpty()) {
+                    parentNodes + thisNodes
+                } else thisNodes
+
+                mergedNodes
+                    .forEach { givensByType[it.type] = listOf(it) }
+
+                mergedNodes.map { it.type }
             } else {
                 emptyList()
             }
