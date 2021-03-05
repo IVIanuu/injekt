@@ -52,7 +52,7 @@ class ResolutionScope(
 
     private val givensByType = mutableMapOf<TypeRef, List<GivenNode>>()
     private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>>()
-    private val syntheticProviderSetElementsNodeFactoryByType = mutableMapOf<TypeRef, (ResolutionScope) -> List<ProviderGivenNode>>()
+    private val syntheticSetElementsByType = mutableMapOf<TypeRef, List<TypeRef>>()
     private val syntheticProviderSetElementsByType = mutableMapOf<TypeRef, List<TypeRef>>()
 
     private val initialize: Unit by unsafeLazy {
@@ -151,60 +151,45 @@ class ResolutionScope(
                     .startsWith("kotlin.coroutines.SuspendFunction")) &&
                 type.arguments.dropLast(1).all { it.contributionKind != null }) {
                 val providerReturnType = type.arguments.last()
-
-                val thisElementCallables = setElements
-                    .filter { it.type.isAssignableTo(declarationStore, providerReturnType) }
-                    .map { it.substitute(getSubstitutionMap(declarationStore, listOf(providerReturnType to it.type))) }
-                    .map { callable ->
-                        val setKey = SetKey(type, callable)
-                        val providerReturnTypeWithSetKey = providerReturnType.copy(setKey = setKey)
-
-                        val typeWithSetKey = type.copy(
-                            setKey = setKey,
-                            arguments = type
-                                .arguments
-                                .dropLast(1) + providerReturnTypeWithSetKey
+                syntheticSetElementsForType(providerReturnType)
+                    .map { element ->
+                        val elementProviderType = type.copy(
+                            setKey = element.setKey,
+                            arguments = type.arguments
+                                .dropLast(1) + element
                         )
-
-                        typeWithSetKey to callable.copy(
-                            type = providerReturnTypeWithSetKey,
-                            contributionKind = ContributionKind.VALUE
-                        )
-                    }
-
-                val thisFactory: ((ResolutionScope) -> List<ProviderGivenNode>)? = if (thisElementCallables.isEmpty()) null else ({ ownerScope ->
-                    thisElementCallables
-                        .map { (typeWithSetKey, callable) ->
+                        givensByType[elementProviderType] = listOf(
                             ProviderGivenNode(
-                                type = typeWithSetKey,
-                                ownerScope = ownerScope,
-                                declarationStore = declarationStore,
-                                additionalContributions = listOf(callable)
+                                elementProviderType,
+                                this,
+                                declarationStore
                             )
-                        }
-                })
+                        )
+                        elementProviderType
+                    }
+            } else emptyList()
+        }
+    }
 
-                if (thisFactory != null) {
-                    syntheticProviderSetElementsNodeFactoryByType[type] = thisFactory
+    private fun syntheticSetElementsForType(type: TypeRef): List<TypeRef> {
+        initialize
+        return syntheticSetElementsByType.getOrPut(type) {
+            (parent?.syntheticSetElementsForType(type) ?: emptyList()) + setElements
+                .filter { it.type.isAssignableTo(declarationStore, type) }
+                .map { it.substitute(getSubstitutionMap(declarationStore, listOf(type to it.type))) }
+                .map { callable ->
+                    val setKey = SetKey(type, callable)
+                    val typeWithSetKey = type.copy(setKey = setKey)
+
+                    givensByType[typeWithSetKey] = listOf(
+                        callable.toGivenNode(
+                            typeWithSetKey,
+                            this
+                        )
+                    )
+
+                    typeWithSetKey
                 }
-
-                val thisNodes = thisFactory?.invoke(this) ?: emptyList()
-
-                val parentNodes = if (parent != null) {
-                    parent.syntheticProviderSetElementsNodeFactoryByType[type]
-                        ?.invoke(this)
-                } else null
-                val mergedNodes = if (parentNodes != null && parentNodes.isNotEmpty()) {
-                    parentNodes + thisNodes
-                } else thisNodes
-
-                mergedNodes
-                    .forEach { givensByType[it.type] = listOf(it) }
-
-                mergedNodes.map { it.type }
-            } else {
-                emptyList()
-            }
         }
     }
 
