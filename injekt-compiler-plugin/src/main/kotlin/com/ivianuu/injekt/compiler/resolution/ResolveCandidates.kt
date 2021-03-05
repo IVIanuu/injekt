@@ -103,6 +103,7 @@ sealed class ResolutionResult {
 fun ResolutionScope.resolveGiven(requests: List<GivenRequest>): GivenGraph {
     val (successResults, failureResults) = requests
         .map { resolveRequest(it) }
+        .filter { it is ResolutionResult.Success || it.request.required }
         .let {
             it
                 .filterIsInstance<ResolutionResult.Success>() to
@@ -118,7 +119,7 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
     val result = resolveCandidates(
         request,
         givensForType(request.type)
-    ).fallbackToDefaultIfNeeded(this)
+    )
     resultsByRequest[request] = result
     return result
 }
@@ -246,16 +247,6 @@ private fun ResolutionScope.resolveCandidates(
     }
 }
 
-private fun ResolutionResult.fallbackToDefaultIfNeeded(
-    scope: ResolutionScope
-): ResolutionResult = when (this) {
-    is ResolutionResult.Success -> this
-    is ResolutionResult.Failure -> if (request.required) this
-    else ResolutionResult.Success(request, CandidateResolutionResult.Success(
-        request, DefaultGivenNode(request.type, scope), scope, emptyList(), false
-    ))
-}
-
 private fun ResolutionScope.resolveCandidate(
     request: GivenRequest,
     candidate: GivenNode,
@@ -274,12 +265,18 @@ private fun ResolutionScope.resolveCandidate(
     for (dependency in candidate.dependencies) {
         when (val result = dependencyScope.resolveRequest(dependency)) {
             is ResolutionResult.Success -> successDependencyResults += result
-            is ResolutionResult.Failure -> return@computeForCandidate CandidateResolutionResult.Failure(
-                dependency,
-                candidate,
-                this,
-                result
-            )
+            is ResolutionResult.Failure -> {
+                if (dependency.required) {
+                    return@computeForCandidate CandidateResolutionResult.Failure(
+                        dependency,
+                        candidate,
+                        this,
+                        result
+                    )
+                } else {
+                    println("haha")
+                }
+            }
         }
     }
     return@computeForCandidate CandidateResolutionResult.Success(

@@ -134,8 +134,7 @@ class GivenCallTransformer(
             ?.let { graphContext.existingScopeContextOrNull(it)?.lambdasByProviderGiven }
             ?: mutableMapOf()
         val scopeExpressionProvider: (GivenRequest) -> IrExpression? = provider@ { request ->
-            val given = givensByRequest[request]
-                ?: error("Wtf $request")
+            val given = givensByRequest[request] ?: return@provider null
             val scopeContext = graphContext.existingScopeContext(given.candidate.ownerScope)
             scopeContext.initializingExpressions[given]?.run { return@provider get() }
             val expression = GivenExpression(given)
@@ -190,7 +189,6 @@ class GivenCallTransformer(
             val rawExpression = wrapInFunctionIfNeeded(given) { expressionProvider ->
                 when (given.candidate) {
                     is CallableGivenNode -> callableExpression(given.candidate, expressionProvider)
-                    is DefaultGivenNode -> null
                     is ProviderGivenNode -> providerExpression(given.candidate, expressionProvider)
                     is SetGivenNode -> setExpression(given.candidate, expressionProvider)
                 }
