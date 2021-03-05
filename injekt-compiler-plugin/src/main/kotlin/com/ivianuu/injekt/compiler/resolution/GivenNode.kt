@@ -132,7 +132,8 @@ class ProviderGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope,
     override val requestingScope: ResolutionScope,
-    val declarationStore: DeclarationStore
+    val declarationStore: DeclarationStore,
+    val additionalContributions: List<CallableRef> = emptyList()
 ) : GivenNode() {
     override val callableFqName: FqName = FqName("Provider<${type.render()} $ownerScope>")
     override val dependencies: List<GivenRequest> = listOf(
@@ -163,7 +164,7 @@ class ProviderGivenNode(
                         .copy(
                             contributionKind = type.arguments[parameter.index].contributionKind
                         )
-                }
+                } + additionalContributions
         }
     )
 

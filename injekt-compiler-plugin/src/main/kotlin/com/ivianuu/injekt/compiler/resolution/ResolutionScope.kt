@@ -124,16 +124,14 @@ class ResolutionScope(
     private fun givenSetElementsForType(type: TypeRef): List<GivenRequest> {
         initialize
         return givenSetElementsByType.getOrPut(type) {
-            givenSetElements
+            val exactSetElements = givenSetElements
                 .filter { it.type.isAssignableTo(declarationStore, type) }
                 .map { it.substitute(getSubstitutionMap(declarationStore, listOf(type to it.type))) }
                 .mapIndexed { index, callable ->
                     val typeWithSetKey = type.copy(
                         setKey = SetKey(type, callable)
                     )
-                    givensByType[typeWithSetKey] = listOf(
-                        callable.toGivenNode(typeWithSetKey, this, this)
-                    )
+                    givens += callable.copy(type = typeWithSetKey) to this
                     GivenRequest(
                         type = typeWithSetKey,
                         required = true,
@@ -141,6 +139,54 @@ class ResolutionScope(
                         parameterName = "element$index".asNameId()
                     )
                 }
+
+            if (exactSetElements.isNotEmpty()) return@getOrPut exactSetElements
+
+            if (type.qualifiers.isEmpty() &&
+                (type.classifier.fqName.asString().startsWith("kotlin.Function")
+                        || type.classifier.fqName.asString()
+                    .startsWith("kotlin.coroutines.SuspendFunction")) &&
+                type.arguments.dropLast(1).all { it.contributionKind != null }) {
+                val providerReturnType = type.arguments.last()
+                givenSetElements
+                    .filter { it.type.isAssignableTo(declarationStore, providerReturnType) }
+                    .map { it.substitute(getSubstitutionMap(declarationStore, listOf(providerReturnType to it.type))) }
+                    .mapIndexed { index, callable ->
+                        val setKey = SetKey(type, callable)
+                        val providerReturnTypeWithSetKey = providerReturnType.copy(setKey = setKey)
+
+                        val typeWithSetKey = type.copy(
+                            setKey = setKey,
+                            arguments = type
+                                .arguments
+                                .dropLast(1) + providerReturnTypeWithSetKey
+                        )
+
+                        givensByType[typeWithSetKey] = listOf(
+                            ProviderGivenNode(
+                                type = typeWithSetKey,
+                                ownerScope = this@ResolutionScope,
+                                requestingScope = this@ResolutionScope,
+                                declarationStore = declarationStore,
+                                additionalContributions = listOf(
+                                    callable.copy(
+                                        type = providerReturnTypeWithSetKey,
+                                        contributionKind = ContributionKind.VALUE
+                                    )
+                                )
+                            )
+                        )
+
+                        GivenRequest(
+                            type = typeWithSetKey,
+                            required = true,
+                            callableFqName = FqName("GivenSet"),
+                            parameterName = "element$index".asNameId()
+                        )
+                    }
+            } else {
+                emptyList()
+            }
         }
     }
 
