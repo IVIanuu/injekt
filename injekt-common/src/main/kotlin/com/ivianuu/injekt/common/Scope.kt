@@ -20,14 +20,14 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Macro
 import com.ivianuu.injekt.Qualifier
 
-interface Scope {
+interface Scope : ScopeDisposable {
     operator fun <T : Any> get(key: Any): T?
     operator fun <T : Any> set(key: Any, value: T)
     operator fun minusAssign(key: Any)
+}
+
+interface ScopeDisposable {
     fun dispose()
-    interface Disposable {
-        fun dispose()
-    }
 }
 
 fun Scope(): Scope = ScopeImpl()
@@ -69,7 +69,7 @@ private class ScopeImpl(private val values: MutableMap<Any, Any> = mutableMapOf(
 
     override fun dispose() {
         values.values
-            .filterIsInstance<Scope.Disposable>()
+            .filterIsInstance<ScopeDisposable>()
             .forEach { it.dispose() }
         values.clear()
     }

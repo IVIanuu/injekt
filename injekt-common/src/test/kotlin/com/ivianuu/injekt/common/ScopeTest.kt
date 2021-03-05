@@ -45,14 +45,11 @@ class ScopeTest {
     fun testDispose() {
         val scope = Scope()
         var disposed = false
-        scope.set(
-            0,
-            object : Scope.Disposable {
-                override fun dispose() {
-                    disposed = true
-                }
+        scope[0] = object : ScopeDisposable {
+            override fun dispose() {
+                disposed = true
             }
-        )
+        }
 
         disposed.shouldBeFalse()
         scope.dispose()
