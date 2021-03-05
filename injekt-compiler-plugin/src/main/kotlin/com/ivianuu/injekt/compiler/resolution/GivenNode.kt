@@ -39,27 +39,6 @@ sealed class GivenNode {
     abstract val dependencyScope: ResolutionScope?
     abstract val lazyDependencies: Boolean
     abstract val isFrameworkGiven: Boolean
-    abstract val key: GivenKey
-}
-
-class GivenKey(candidate: GivenNode, uniqueKey: Any) {
-
-    private val _hashCode: Int
-    val candidate: GivenNode
-    init {
-        var hashCode = candidate.type.hashCode()
-        hashCode = 31 * hashCode + uniqueKey.hashCode()
-        hashCode = 31 * hashCode + candidate.dependencies.hashCode()
-        hashCode = 31 * hashCode + candidate.ownerScope.hashCode()
-        _hashCode = hashCode
-        this.candidate = candidate
-    }
-
-    override fun equals(other: Any?): Boolean =
-        other is GivenKey && other._hashCode == _hashCode
-
-    override fun hashCode(): Int = _hashCode
-
 }
 
 class CallableGivenNode(
@@ -81,7 +60,6 @@ class CallableGivenNode(
         get() = callable.originalType
     override val isFrameworkGiven: Boolean
         get() = false
-    override val key = GivenKey(this, callable)
 }
 
 class SetGivenNode(
@@ -100,7 +78,6 @@ class SetGivenNode(
         get() = type
     override val isFrameworkGiven: Boolean
         get() = true
-    override val key = GivenKey(this, "Set" to type)
 }
 
 class DefaultGivenNode(
@@ -121,7 +98,6 @@ class DefaultGivenNode(
         get() = false
     override val isFrameworkGiven: Boolean
         get() = true
-    override val key = GivenKey(this, "Default")
 }
 
 class ProviderGivenNode(
@@ -172,8 +148,6 @@ class ProviderGivenNode(
         get() = type
     override val isFrameworkGiven: Boolean
         get() = true
-
-    override val key = GivenKey(this, "Provider" to type)
 
     class ProviderParameterDescriptor(
         val given: ProviderGivenNode,

@@ -77,7 +77,7 @@ class GivenCallTransformer(
 
     private inner class GraphContext(val graph: GivenGraph.Success) {
         val statements = mutableListOf<IrStatement>()
-        val functionExpressions = mutableMapOf<GivenKey, WrappedExpression>()
+        val functionExpressions = mutableMapOf<GivenNode, WrappedExpression>()
         private val scopeContexts = mutableMapOf<ResolutionScope, ScopeContext>()
 
         var parameterIndex = 0
@@ -226,12 +226,12 @@ class GivenCallTransformer(
     ): IrExpression? {
         if (!given.canFunctionWrap()) return expression(scopeExpressionProvider)
 
-        val wrappedExpression = graphContext.functionExpressions.getOrPut(given.candidate.key) {
+        val wrappedExpression = graphContext.functionExpressions.getOrPut(given.candidate) {
             val usages = graphContext.graph.resultsByScope
                 .values
                 .flatMap { it.values }
                 .filter { it.canFunctionWrap() }
-                .filter { it.candidate.key == given.candidate.key }
+                .filter { it.candidate == given.candidate }
 
             if (usages.size == 1) return expression(scopeExpressionProvider)
 
@@ -257,7 +257,7 @@ class GivenCallTransformer(
                             usage.candidate.dependencies[parameterIndex] to (givensByRequest[usageParameterRequest]
                                 ?: error("Wtf"))
                         }
-                        .distinctBy { it.second.candidate.key }
+                        .distinctBy { it.second.candidate }
                 }
 
             fun CandidateResolutionResult.Success.ensureAllInScope(scope: ResolutionScope): Boolean {

@@ -155,15 +155,15 @@ private fun ResolutionScope.computeForCandidate(
     candidate: GivenNode,
     compute: () -> CandidateResolutionResult,
 ): CandidateResolutionResult {
-    resultsByCandidate[candidate.key]?.let { return it }
-    val subChain = mutableSetOf(candidate.key)
+    resultsByCandidate[candidate]?.let { return it }
+    val subChain = mutableSetOf(candidate)
     chain.reversed().forEach { prev ->
         subChain += prev
-        if (prev.candidate.callableFqName == candidate.callableFqName &&
-            prev.candidate.type.coveringSet == candidate.type.coveringSet &&
-            (prev.candidate.type.typeSize < candidate.type.typeSize ||
-                    (prev.candidate.type == candidate.type &&
-                            subChain.none { it.candidate.lazyDependencies }))
+        if (prev.callableFqName == candidate.callableFqName &&
+            prev.type.coveringSet == candidate.type.coveringSet &&
+            (prev.type.typeSize < candidate.type.typeSize ||
+                    (prev.type == candidate.type &&
+                            subChain.none { it.lazyDependencies }))
         ) {
             return CandidateResolutionResult.Failure(
                 request,
@@ -174,7 +174,7 @@ private fun ResolutionScope.computeForCandidate(
         }
     }
 
-    if (candidate.key in chain) {
+    if (candidate in chain) {
         return CandidateResolutionResult.Success(
             request = request,
             candidate = candidate,
@@ -184,10 +184,10 @@ private fun ResolutionScope.computeForCandidate(
         )
     }
 
-    chain += candidate.key
+    chain += candidate
     val result = compute()
-    resultsByCandidate[candidate.key] = result
-    chain -= candidate.key
+    resultsByCandidate[candidate] = result
+    chain -= candidate
     return result
 }
 
