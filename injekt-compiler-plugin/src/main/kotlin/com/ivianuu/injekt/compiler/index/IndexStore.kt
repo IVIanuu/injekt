@@ -25,18 +25,18 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 
 interface IndexStore {
-    val indices: List<Index>
+    val indices: Set<Index>
 }
 
 class CliIndexStore(private val module: ModuleDescriptor) : IndexStore {
 
-    override val indices: List<Index>
+    override val indices: Set<Index>
         get() = module.getPackage(InjektFqNames.IndexPackage)
             .memberScope
             .getContributedDescriptors(DescriptorKindFilter.VALUES)
             .filterIsInstance<PropertyDescriptor>()
             .filter { it.hasAnnotation(InjektFqNames.Index) }
-            .map { indexProperty ->
+            .mapTo(mutableSetOf()) { indexProperty ->
                 val annotation = indexProperty.annotations.findAnnotation(InjektFqNames.Index)!!
                 val fqName = annotation.allValueArguments["fqName".asNameId()]!!.value as String
                 val type = annotation.allValueArguments["type".asNameId()]!!.value as String

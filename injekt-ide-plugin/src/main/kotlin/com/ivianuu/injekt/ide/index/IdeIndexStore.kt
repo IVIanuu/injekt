@@ -24,12 +24,13 @@ import com.ivianuu.injekt.compiler.index.IndexStore
 import com.ivianuu.injekt.compiler.index.IndexStoreFactory
 import com.ivianuu.injekt.compiler.index.collectIndices
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.utils.addToStdlib.flattenTo
 
 object IdeIndexStore : IndexStore {
 
     private val indicesByFile = mutableMapOf<String, List<Index>>()
-    override val indices: List<Index>
-        get() = indicesByFile.values.flatten()
+    override val indices: Set<Index>
+        get() = indicesByFile.values.flattenTo(mutableSetOf())
 
     val cacheExecutor =
         AppExecutorUtil.createBoundedApplicationPoolExecutor("Injekt index worker", 1)

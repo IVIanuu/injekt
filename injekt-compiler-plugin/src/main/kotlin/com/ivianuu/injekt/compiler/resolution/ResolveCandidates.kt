@@ -228,6 +228,9 @@ private fun ResolutionScope.resolveCandidates(
         successes.singleOrNull()?.let {
             ResolutionResult.Success(request, it)
         } ?: ResolutionResult.Failure.CandidateAmbiguity(request, successes)
+            .also {
+                println()
+            }
     } else {
         ResolutionResult.Failure.CandidateFailures(request, failure!!)
     }

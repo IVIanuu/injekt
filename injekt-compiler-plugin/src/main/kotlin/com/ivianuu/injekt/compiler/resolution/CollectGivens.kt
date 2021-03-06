@@ -233,7 +233,6 @@ fun ClassDescriptor.getContributionConstructors(
         }
     }
 
-
 fun ClassDescriptor.allGivenTypes(declarationStore: DeclarationStore): List<TypeRef> = buildList<TypeRef> {
     val classifier = toClassifierRef(declarationStore)
     this += classifier.defaultType
