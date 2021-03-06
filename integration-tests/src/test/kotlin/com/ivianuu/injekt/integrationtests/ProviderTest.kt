@@ -18,6 +18,7 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.assertIrContainsText
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
@@ -142,6 +143,20 @@ class ProviderTest {
             )
         )
     )
+
+    @Test
+    fun testWrapsExpressionWithMultipleUsagesAndDependencies() = codegen(
+        """
+            @Given val foo = Foo()
+            @Given fun bar(@Given foo: Foo) = Bar(foo)
+            @Given fun <T> pair(@Given a: T, @Given b: T): Pair<T, T> = a to b
+            fun invoke() {
+                given<Pair<Bar, Bar>>()
+            }
+        """
+    ) {
+        assertIrContainsText("local fun <anonymous>(): Bar {")
+    }
 
     @Test
     fun testProviderModule() = codegen(

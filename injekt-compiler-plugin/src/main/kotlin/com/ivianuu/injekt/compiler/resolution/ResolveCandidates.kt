@@ -40,6 +40,7 @@ sealed class CandidateResolutionResult {
         override val scope: ResolutionScope,
         val dependencyResults: Map<GivenRequest, Success>
     ) : CandidateResolutionResult() {
+        var usages = 1
         val outerMostScope = scope.allScopes.first { candidateScope ->
             candidate.ownerScope.depth(candidateScope) >= 0 &&
                     candidateScope.callContext.canCall(candidate.callContext) &&
@@ -153,7 +154,10 @@ private fun ResolutionScope.computeForCandidate(
     candidate: GivenNode,
     compute: () -> CandidateResolutionResult,
 ): CandidateResolutionResult {
-    resultsByCandidate[candidate]?.let { return it }
+    resultsByCandidate[candidate]?.let {
+        if (it is CandidateResolutionResult.Success) it.usages++
+        return it
+    }
     val subChain = mutableSetOf(candidate)
     chain.reversed().forEach { prev ->
         subChain += prev
@@ -189,6 +193,7 @@ private fun ResolutionScope.computeForCandidate(
             val existingResult = computedResult.outerMostScope.providerResultsByType[candidate.type]
                 .safeAs<CandidateResolutionResult.Success>()
                 ?.takeIf { it.dependencyResults == computedResult.dependencyResults }
+                ?.also { it.usages++ }
             val resultToUse = existingResult ?: computedResult
             for (parent in allParentsReversed) {
                 if (existingResult != null && parent == computedResult.outerMostScope) break
@@ -200,6 +205,7 @@ private fun ResolutionScope.computeForCandidate(
         } else {
             val existingResult = computedResult.outerMostScope.resultsByCandidate[candidate]
                 .safeAs<CandidateResolutionResult.Success>()
+                ?.also { it.usages++ }
             val resultToUse = existingResult ?: computedResult
             for (parent in allParentsReversed) {
                 if (existingResult != null && parent == computedResult.outerMostScope) break

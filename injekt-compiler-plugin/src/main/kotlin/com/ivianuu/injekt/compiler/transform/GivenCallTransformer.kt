@@ -152,7 +152,8 @@ class GivenCallTransformer(
             result: CandidateResolutionResult.Success,
             rawExpressionProvider: ScopeContext.() -> IrExpression
         ): ScopeContext.() -> IrExpression {
-            return if (result.dependencyResults.isEmpty()) rawExpressionProvider
+            return if (result.dependencyResults.isEmpty() ||
+                    result.usages < 2) rawExpressionProvider
             else expressionsByResult.getOrPut(result) {
                 val function = IrFactoryImpl.buildFun {
                     origin = IrDeclarationOrigin.DEFINED
