@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
 
 class ResolutionScope(
     val name: String,
@@ -51,9 +52,9 @@ class ResolutionScope(
     private val allScopes: List<ResolutionScope> = allParents + this
 
     private val givensByType = mutableMapOf<TypeRef, List<GivenNode>>()
-    private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>>()
-    private val syntheticSetElementsByType = mutableMapOf<TypeRef, List<TypeRef>>()
-    private val syntheticProviderSetElementsByType = mutableMapOf<TypeRef, List<TypeRef>>()
+    private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>?>()
+    private val syntheticSetElementsByType = mutableMapOf<TypeRef, List<TypeRef>?>()
+    private val syntheticProviderSetElementsByType = mutableMapOf<TypeRef, List<TypeRef>?>()
 
     private val initialize: Unit by unsafeLazy {
         if (parent != null) {
@@ -91,9 +92,12 @@ class ResolutionScope(
         initialize
         return givensByType.getOrPut(type) {
             buildList<GivenNode> {
-                if (parent != null) {
-                    this += parent.givensForType(type)
-                        .filter { !it.isFrameworkGiven }
+                val allParentGivens = parent?.givensForType(type)
+                if (allParentGivens != null) {
+                    this += allParentGivens
+                        .filter {
+                            !it.isFrameworkGiven || it.type.setKey != null
+                        }
                 }
 
                 this += givens
@@ -122,8 +126,8 @@ class ResolutionScope(
                     type.isSubTypeOf(declarationStore, setType)) {
                     val setElementType = type.subtypeView(setType.classifier)!!.arguments.single()
                     val elements = (setElementsForType(setElementType)
-                        .takeIf { it.isNotEmpty() } ?: syntheticProviderGivensForType(setElementType))
-                        .mapIndexed { index, element ->
+                        ?: syntheticProviderGivensForType(setElementType))
+                        ?.mapIndexed { index, element ->
                             GivenRequest(
                                 type = element,
                                 required = true,
@@ -131,17 +135,32 @@ class ResolutionScope(
                                 parameterName = "element$index".asNameId()
                             )
                         }
-                    this += SetGivenNode(
-                        type = type,
-                        ownerScope = this@ResolutionScope,
-                        dependencies = elements
-                    )
+                    when {
+                        elements != null -> {
+                            this += SetGivenNode(
+                                type = type,
+                                ownerScope = this@ResolutionScope,
+                                dependencies = elements
+                            )
+                        }
+                        allParentGivens != null -> {
+                            allParentGivens.lastOrNull { it is SetGivenNode }
+                                ?.let { this += it }
+                        }
+                        else -> {
+                            this += SetGivenNode(
+                                type = type,
+                                ownerScope = this@ResolutionScope,
+                                dependencies = emptyList()
+                            )
+                        }
+                    }
                 }
             }
         }
     }
 
-    private fun syntheticProviderGivensForType(type: TypeRef): List<TypeRef> {
+    private fun syntheticProviderGivensForType(type: TypeRef): List<TypeRef>? {
         initialize
         return syntheticProviderSetElementsByType.getOrPut(type) {
             if (type.qualifiers.isEmpty() &&
@@ -151,7 +170,7 @@ class ResolutionScope(
                 type.arguments.dropLast(1).all { it.contributionKind != null }) {
                 val providerReturnType = type.arguments.last()
                 syntheticSetElementsForType(providerReturnType)
-                    .map { element ->
+                    ?.map { element ->
                         val elementProviderType = type.copy(
                             setKey = element.setKey,
                             arguments = type.arguments
@@ -166,14 +185,14 @@ class ResolutionScope(
                         )
                         elementProviderType
                     }
-            } else emptyList()
+            } else null
         }
     }
 
-    private fun syntheticSetElementsForType(type: TypeRef): List<TypeRef> {
+    private fun syntheticSetElementsForType(type: TypeRef): List<TypeRef>? {
         initialize
         return syntheticSetElementsByType.getOrPut(type) {
-            (parent?.syntheticSetElementsForType(type) ?: emptyList()) + setElements
+            val thisElements = setElements
                 .filter { it.type.isAssignableTo(declarationStore, type) }
                 .map { it.substitute(getSubstitutionMap(declarationStore, listOf(type to it.type))) }
                 .map { callable ->
@@ -189,10 +208,17 @@ class ResolutionScope(
 
                     typeWithSetKey
                 }
+                .takeIf { it.isNotEmpty() } ?: return@getOrPut null
+            val parentElements = allParents.reversed().firstNotNullResult {
+                it.syntheticSetElementsForType(type)
+            }
+            if (parentElements != null) {
+                parentElements + thisElements
+            } else thisElements
         }
     }
 
-    private fun setElementsForType(type: TypeRef): List<TypeRef> {
+    private fun setElementsForType(type: TypeRef): List<TypeRef>? {
         initialize
         return setElementsByType.getOrPut(type) {
             val thisElements = setElements
@@ -205,8 +231,11 @@ class ResolutionScope(
                     givens += callable.copy(type = typeWithSetKey)
                     typeWithSetKey
                 }
-            val parentElements = parent?.setElementsForType(type)
-            if (parentElements != null && parentElements.isNotEmpty()) {
+                .takeIf { it.isNotEmpty() } ?: return@getOrPut null
+            val parentElements = allParents.reversed().firstNotNullResult {
+                it.setElementsForType(type)
+            }
+            if (parentElements != null) {
                 parentElements + thisElements
             } else thisElements
         }
