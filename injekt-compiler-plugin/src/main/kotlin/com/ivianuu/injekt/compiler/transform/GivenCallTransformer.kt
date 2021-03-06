@@ -151,36 +151,39 @@ class GivenCallTransformer(
         private fun wrapExpression(
             result: CandidateResolutionResult.Success,
             rawExpressionProvider: ScopeContext.() -> IrExpression
-        ): ScopeContext.() -> IrExpression = expressionsByResult.getOrPut(result) {
-            val function = IrFactoryImpl.buildFun {
-                origin = IrDeclarationOrigin.DEFINED
-                name = Name.special("<anonymous>")
-                returnType = result.candidate.type.toIrType(pluginContext, declarationStore)
-                visibility = DescriptorVisibilities.LOCAL
-                isSuspend = scope.callContext == CallContext.SUSPEND
-            }.apply {
-                parent = irScope.getLocalDeclarationParent()
-                if (result.candidate.callContext == CallContext.COMPOSABLE) {
-                    annotations += DeclarationIrBuilder(pluginContext, symbol)
-                        .irCallConstructor(
-                            pluginContext.referenceConstructors(InjektFqNames.Composable)
-                                .single(),
-                            emptyList()
-                        )
-                }
-                this.body = DeclarationIrBuilder(pluginContext, symbol).run {
-                    irBlockBody {
-                        +irReturn(rawExpressionProvider())
+        ): ScopeContext.() -> IrExpression {
+            return if (result.dependencyResults.isEmpty()) rawExpressionProvider
+            else expressionsByResult.getOrPut(result) {
+                val function = IrFactoryImpl.buildFun {
+                    origin = IrDeclarationOrigin.DEFINED
+                    name = Name.special("<anonymous>")
+                    returnType = result.candidate.type.toIrType(pluginContext, declarationStore)
+                    visibility = DescriptorVisibilities.LOCAL
+                    isSuspend = scope.callContext == CallContext.SUSPEND
+                }.apply {
+                    parent = irScope.getLocalDeclarationParent()
+                    if (result.candidate.callContext == CallContext.COMPOSABLE) {
+                        annotations += DeclarationIrBuilder(pluginContext, symbol)
+                            .irCallConstructor(
+                                pluginContext.referenceConstructors(InjektFqNames.Composable)
+                                    .single(),
+                                emptyList()
+                            )
                     }
+                    this.body = DeclarationIrBuilder(pluginContext, symbol).run {
+                        irBlockBody {
+                            +irReturn(rawExpressionProvider())
+                        }
+                    }
+                    statements += this
                 }
-                statements += this
-            }
 
-            val expression: ScopeContext.() -> IrExpression = {
-                DeclarationIrBuilder(pluginContext, symbol)
-                    .irCall(function)
+                val expression: ScopeContext.() -> IrExpression = {
+                    DeclarationIrBuilder(pluginContext, symbol)
+                        .irCall(function)
+                }
+                expression
             }
-            expression
         }
     }
 
