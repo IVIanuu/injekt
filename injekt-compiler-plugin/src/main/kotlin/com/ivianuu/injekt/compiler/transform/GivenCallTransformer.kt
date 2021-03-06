@@ -71,16 +71,6 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
-private fun GivenGraph.Success.flattenResults(): List<CandidateResolutionResult.Success> {
-    val allResults = mutableListOf<CandidateResolutionResult.Success>()
-    fun CandidateResolutionResult.Success.visit() {
-        if (!allResults.add(this)) return
-        dependencyResults.forEach { it.value.visit() }
-    }
-    results.forEach { it.value.visit() }
-    return allResults
-}
-
 class GivenCallTransformer(
     private val declarationStore: DeclarationStore,
     private val pluginContext: IrPluginContext
