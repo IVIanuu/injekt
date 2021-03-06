@@ -36,8 +36,7 @@ sealed class CandidateResolutionResult {
         override val request: GivenRequest,
         override val candidate: GivenNode,
         override val scope: ResolutionScope,
-        val dependencyResults: Map<GivenRequest, Success>,
-        val hasCircularDependency: Boolean
+        val dependencyResults: Map<GivenRequest, Success>
     ) : CandidateResolutionResult()
 
     data class Failure(
@@ -166,8 +165,7 @@ private fun ResolutionScope.computeForCandidate(
             request = request,
             candidate = candidate,
             scope = this,
-            dependencyResults = emptyMap(),
-            hasCircularDependency = true
+            dependencyResults = emptyMap()
         )
     }
 
@@ -228,9 +226,6 @@ private fun ResolutionScope.resolveCandidates(
         successes.singleOrNull()?.let {
             ResolutionResult.Success(request, it)
         } ?: ResolutionResult.Failure.CandidateAmbiguity(request, successes)
-            .also {
-                println()
-            }
     } else {
         ResolutionResult.Failure.CandidateFailures(request, failure!!)
     }
@@ -270,8 +265,7 @@ private fun ResolutionScope.resolveCandidate(
         request,
         candidate,
         this,
-        successDependencyResults,
-        false
+        successDependencyResults
     )
 }
 
