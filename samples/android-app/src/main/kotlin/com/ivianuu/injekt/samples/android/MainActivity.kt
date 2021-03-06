@@ -59,6 +59,7 @@ class MainActivity : ComponentActivity() {
 class MainActivityComponent(
     @Given val activityScope: ComponentCoroutineScope<ActivityComponent>,
     @Given val retainedActivityScope: ComponentCoroutineScope<ActivityRetainedComponent>,
+    @Given database: Database,
     @Given keyUis: Set<KeyUiElement>
 ) {
     val homeUi = keyUis.toMap()[CounterKey::class]!!

@@ -41,6 +41,7 @@ sealed class CandidateResolutionResult {
         val dependencyResults: Map<GivenRequest, Success>
     ) : CandidateResolutionResult() {
         var usages = 1
+        var hasCircularDependency = false
         val outerMostScope = scope.allScopes.first { candidateScope ->
             candidate.ownerScope.depth(candidateScope) >= 0 &&
                     candidateScope.callContext.canCall(candidate.callContext) &&
@@ -182,7 +183,7 @@ private fun ResolutionScope.computeForCandidate(
             candidate = candidate,
             scope = this,
             dependencyResults = emptyMap()
-        )
+        ).also { it.hasCircularDependency = true }
     }
 
     chain += candidate

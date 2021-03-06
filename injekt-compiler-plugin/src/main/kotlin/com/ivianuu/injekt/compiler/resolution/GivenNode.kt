@@ -40,6 +40,7 @@ sealed class GivenNode {
     abstract val dependencyScope: ResolutionScope?
     abstract val lazyDependencies: Boolean
     abstract val isFrameworkGiven: Boolean
+    abstract val cache: Boolean
 }
 
 class CallableGivenNode(
@@ -61,6 +62,8 @@ class CallableGivenNode(
         get() = callable.originalType
     override val isFrameworkGiven: Boolean
         get() = false
+    override val cache: Boolean
+        get() = false
 }
 
 class SetGivenNode(
@@ -79,6 +82,8 @@ class SetGivenNode(
         get() = type
     override val isFrameworkGiven: Boolean
         get() = true
+    override val cache: Boolean
+        get() = false
 }
 
 class ProviderGivenNode(
@@ -128,6 +133,8 @@ class ProviderGivenNode(
     override val originalType: TypeRef
         get() = type
     override val isFrameworkGiven: Boolean
+        get() = true
+    override val cache: Boolean
         get() = true
 }
 
