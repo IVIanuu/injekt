@@ -42,14 +42,15 @@ sealed class CandidateResolutionResult {
     ) : CandidateResolutionResult() {
         var usages = 1
         var hasCircularDependency = false
-        val outerMostScope = scope.allScopes.first { candidateScope ->
-            candidate.ownerScope.depth(candidateScope) >= 0 &&
-                    candidateScope.callContext.canCall(candidate.callContext) &&
-                    (candidate.dependencyScope != null ||
-                            dependencyResults.all { (_, dependencyResult) ->
-                                dependencyResult.candidate.ownerScope.depth(candidateScope) >= 0 &&
-                                        candidateScope.callContext.canCall(dependencyResult.candidate.callContext)
-                            })
+        /*val flattenResults: List<Success> = mutableListOf<Success>().apply {
+            this += this@Success
+            this += dependencyResults
+                .flatMap { it.value.flattenResults }
+        }*/
+        val outerMostScope: ResolutionScope = kotlin.run {
+            scope.allScopes.firstOrNull { candidateScope ->
+                allDependenciesInScope(candidateScope, candidate.dependencyScope)
+            } ?: scope
         }
     }
 
@@ -60,6 +61,15 @@ sealed class CandidateResolutionResult {
         val failure: ResolutionResult.Failure,
     ) : CandidateResolutionResult()
 }
+
+private fun CandidateResolutionResult.Success.allDependenciesInScope(
+    a: ResolutionScope,
+    b: ResolutionScope?
+): Boolean = (candidate.ownerScope.depth(a) >= 0 ||
+        (b != null && candidate.ownerScope.depth(b) >= 0)) &&
+        dependencyResults.all {
+            it.value.allDependenciesInScope(a, candidate.dependencyScope)
+        }
 
 sealed class ResolutionResult {
     abstract val request: GivenRequest
