@@ -23,7 +23,7 @@ import org.junit.Test
 
 class FunctionWrappingTest {
 
-    @Test
+    //@Test
     fun testWrapsExpressionWithMultipleUsagesAndDependencies() = codegen(
         """
             @Given val foo = Foo()
@@ -37,7 +37,7 @@ class FunctionWrappingTest {
         assertIrContainsText("local fun <anonymous>(): Bar {")
     }
 
-    @Test
+    //@Test
     fun testDoesNotWrapExpressionWithMultipleUsagesButNoDependencies() = codegen(
         """
             @Given fun foo() = Foo()
@@ -50,7 +50,7 @@ class FunctionWrappingTest {
         assertIrNotContainsText("local fun <anonymous>(): Foo {")
     }
 
-    @Test
+    //@Test
     fun testDoesNotWrapFunctionWithDefaultParameters() = codegen(
         """
             @Given fun bar(@Given foo: Foo = Foo()) = Bar(foo)

@@ -108,6 +108,7 @@ class ProviderGivenNode(
                 .first()
                 .valueParameters
                 .map { ProviderParameterDescriptor(this, it) }
+                .onEach { parameterDescriptors += it }
                 .map { parameter ->
                     parameter
                         .toCallableRef(declarationStore = declarationStore)
@@ -117,6 +118,8 @@ class ProviderGivenNode(
                 }
         }
     )
+
+    val parameterDescriptors = mutableListOf<ProviderParameterDescriptor>()
 
     override val lazyDependencies: Boolean
         get() = true

@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
+import com.ivianuu.injekt.compiler.resolution.CandidateResolutionResult
 import com.ivianuu.injekt.compiler.resolution.ClassResolutionScope
 import com.ivianuu.injekt.compiler.resolution.ContributionKind
 import com.ivianuu.injekt.compiler.resolution.ExternalResolutionScope
@@ -30,6 +31,7 @@ import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.InternalResolutionScope
 import com.ivianuu.injekt.compiler.resolution.LocalDeclarationResolutionScope
+import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.ResolutionScope
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.contributionKind
@@ -90,19 +92,19 @@ class GivenCallChecker(
         when (graph) {
             is GivenGraph.Success -> {
                 currentFileHasGivenCalls = true
-                graph
-                    .resultsByScope
-                    .values
-                    .flatMap { it.values }
-                    .map { it.candidate }
-                    .filterIsInstance<CallableGivenNode>()
-                    .forEach { given ->
+                val visited = mutableSetOf<CandidateResolutionResult.Success>()
+                fun CandidateResolutionResult.Success.visit() {
+                    if (!visited.add(this)) return
+                    if (candidate is CallableGivenNode) {
                         bindingTrace.record(
                             InjektWritableSlices.USED_GIVEN,
-                            given.callable.callable,
+                            candidate.callable.callable,
                             Unit
                         )
                     }
+                    dependencyResults.forEach { it.value.visit() }
+                }
+                graph.results.forEach { it.value.visit() }
                 bindingTrace.record(
                     InjektWritableSlices.GIVEN_GRAPH,
                     SourcePosition(

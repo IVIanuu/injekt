@@ -18,9 +18,8 @@ package com.ivianuu.injekt.compiler.resolution
 
 sealed class GivenGraph {
     data class Success(
-        val requests: List<GivenRequest>,
         val scope: ResolutionScope,
-        val resultsByScope: Map<ResolutionScope, Map<GivenRequest, CandidateResolutionResult.Success>>,
+        val results: Map<GivenRequest, CandidateResolutionResult.Success>
     ) : GivenGraph()
 
     data class Error(
@@ -37,7 +36,7 @@ sealed class CandidateResolutionResult {
         override val request: GivenRequest,
         override val candidate: GivenNode,
         override val scope: ResolutionScope,
-        val dependencyResults: List<ResolutionResult.Success>,
+        val dependencyResults: Map<GivenRequest, Success>,
         val hasCircularDependency: Boolean
     ) : CandidateResolutionResult()
 
@@ -127,20 +126,7 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
 private fun List<ResolutionResult.Success>.toSuccessGraph(
     requests: List<GivenRequest>,
     scope: ResolutionScope
-): GivenGraph.Success {
-    val givensByScope = mutableMapOf<ResolutionScope, MutableMap<GivenRequest, CandidateResolutionResult.Success>>()
-    fun ResolutionResult.Success.visit() {
-        val givensByRequest = givensByScope.getOrPut(candidateResult.scope) {
-            mutableMapOf()
-        }
-        if (request in givensByRequest) return
-        givensByRequest[request] = candidateResult
-        candidateResult.dependencyResults
-            .forEach { it.visit() }
-    }
-    forEach { it.visit() }
-    return GivenGraph.Success(requests, scope, givensByScope)
-}
+): GivenGraph.Success = GivenGraph.Success(scope, requests.zip(map { it.candidateResult }).toMap())
 
 private fun List<ResolutionResult.Failure>.toErrorGraph(): GivenGraph.Error {
     val failuresByRequest = mutableMapOf<GivenRequest, MutableList<ResolutionResult.Failure>>()
@@ -180,7 +166,7 @@ private fun ResolutionScope.computeForCandidate(
             request = request,
             candidate = candidate,
             scope = this,
-            dependencyResults = emptyList(),
+            dependencyResults = emptyMap(),
             hasCircularDependency = true
         )
     }
@@ -260,11 +246,11 @@ private fun ResolutionScope.resolveCandidate(
         )
     }
 
-    val successDependencyResults = mutableListOf<ResolutionResult.Success>()
+    val successDependencyResults = mutableMapOf<GivenRequest, CandidateResolutionResult.Success>()
     val dependencyScope = candidate.dependencyScope ?: this
     for (dependency in candidate.dependencies) {
         when (val result = dependencyScope.resolveRequest(dependency)) {
-            is ResolutionResult.Success -> successDependencyResults += result
+            is ResolutionResult.Success -> successDependencyResults[dependency] = result.candidateResult
             is ResolutionResult.Failure -> {
                 if (dependency.required) {
                     return@computeForCandidate CandidateResolutionResult.Failure(
@@ -329,7 +315,7 @@ private fun ResolutionScope.compareResult(
 
         for (aDependency in a.dependencyResults) {
             for (bDependency in b.dependencyResults) {
-                diff += compareResult(aDependency.candidateResult, bDependency.candidateResult)
+                diff += compareResult(aDependency.value, bDependency.value)
             }
         }
         return when {

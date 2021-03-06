@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.DeclarationStore
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.resolution.*
@@ -31,7 +30,6 @@ import org.jetbrains.kotlin.cfg.index
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -39,36 +37,30 @@ import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.builders.Scope
-import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
-import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlock
-import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irCallConstructor
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
-import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSet
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.IrVariable
-import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.symbols.IrBindableSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.makeNullable
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class GivenCallTransformer(
     private val declarationStore: DeclarationStore,
@@ -76,13 +68,9 @@ class GivenCallTransformer(
 ) : IrElementTransformerVoid() {
 
     private inner class GraphContext(val graph: GivenGraph.Success) {
-        val statements = mutableListOf<IrStatement>()
-        val functionExpressions = mutableMapOf<GivenNode, WrappedExpression>()
         private val scopeContexts = mutableMapOf<ResolutionScope, ScopeContext>()
 
         var parameterIndex = 0
-
-        val givensByTypeByScope = mutableMapOf<ResolutionScope, Map<TypeRef, CandidateResolutionResult.Success>>()
 
         private val graphContextParents = buildList<ResolutionScope> {
             var current: ResolutionScope? = graph.scope.parent
@@ -98,67 +86,43 @@ class GivenCallTransformer(
         fun existingScopeContext(scope: ResolutionScope): ScopeContext =
             scopeContexts[scope.mapScopeIfNeeded()] ?: error("No existing scope context found for $scope")
 
-        fun existingScopeContextOrNull(scope: ResolutionScope): ScopeContext? =
-            scopeContexts[scope.mapScopeIfNeeded()]
-
         fun createScopeContext(scope: ResolutionScope, symbol: IrSymbol): ScopeContext {
             check(scopeContexts[scope.mapScopeIfNeeded()] == null) {
                 "Cannot create scope context twice"
             }
             return scopeContexts.getOrPut(scope.mapScopeIfNeeded()) {
-                ScopeContext(this, scope.mapScopeIfNeeded(), symbol)
+                ScopeContext(this, symbol)
             }.also {
                 check(it.symbol === symbol)
             }
         }
     }
 
-    private fun ResolutionScope.getGivensByType(
-        graphContext: GraphContext
-    ): Map<TypeRef, CandidateResolutionResult.Success> = graphContext.givensByTypeByScope.getOrPut(this) {
-        (parent?.getGivensByType(graphContext) ?: emptyMap()) +
-                (graphContext.graph.resultsByScope[this]
-                    ?.mapKeys { it.key.type } ?: emptyMap())
-    }
-
-    private inner class ScopeContext(
-        val graphContext: GraphContext,
-        val scope: ResolutionScope,
-        val symbol: IrSymbol
-    ) {
-        val irScope = Scope(symbol)
-        val givensByType: Map<TypeRef, CandidateResolutionResult.Success> = scope.getGivensByType(graphContext)
-        val statements =
-            if (graphContext.graph.scope == scope) graphContext.statements else mutableListOf()
-        val initializingExpressions = mutableMapOf<CandidateResolutionResult.Success, GivenExpression?>()
-        val lambdasByProviderGiven: MutableMap<ProviderGivenNode, IrFunction> = scope.parent
-            ?.let { graphContext.existingScopeContextOrNull(it)?.lambdasByProviderGiven }
-            ?: mutableMapOf()
-        val scopeExpressionProvider: (TypeRef) -> IrExpression? = provider@ { type ->
-            val given = givensByType[type] ?: return@provider null
-            val scopeContext = graphContext.existingScopeContext(given.candidate.ownerScope)
-            scopeContext.initializingExpressions[given]?.run { return@provider get() }
-            val expression = GivenExpression(given)
-            scopeContext.initializingExpressions[given] = expression
+    private inner class ScopeContext(val graphContext: GraphContext, val symbol: IrSymbol) {
+        val initializingExpressions = mutableMapOf<GivenNode, GivenExpression?>()
+        fun expressionFor(result: CandidateResolutionResult.Success): IrExpression? {
+            val scopeContext = graphContext.existingScopeContext(result.candidate.ownerScope)
+            scopeContext.initializingExpressions[result.candidate]?.run { return get() }
+            val expression = GivenExpression(result)
+            scopeContext.initializingExpressions[result.candidate] = expression
             val irExpression = expression.run { get() }
-            scopeContext.initializingExpressions -= given
-            irExpression
+            scopeContext.initializingExpressions -= result.candidate
+            return irExpression
         }
     }
 
-    private fun ScopeContext.fillGivens(
-        requests: List<GivenRequest>,
-        call: IrFunctionAccessExpression,
-        expressionProvider: (TypeRef) -> IrExpression?
+    private fun IrFunctionAccessExpression.fillGivens(
+        context: ScopeContext,
+        results: Map<GivenRequest, CandidateResolutionResult.Success>
     ) {
         var nonReceiverIndex = 0
-        requests
-            .forEach { request ->
-                val expression = expressionProvider(request.type)
+        results
+            .forEach { (request, result) ->
+                val expression = context.expressionFor(result)
                 when(request.parameterName.asString()) {
-                    "_dispatchReceiver" -> call.dispatchReceiver = expression
-                    "_extensionReceiver" -> call.extensionReceiver = expression
-                    else -> call.putValueArgument(
+                    "_dispatchReceiver" -> dispatchReceiver = expression
+                    "_extensionReceiver" -> extensionReceiver = expression
+                    else -> putValueArgument(
                         nonReceiverIndex++,
                         expression
                     )
@@ -166,7 +130,7 @@ class GivenCallTransformer(
             }
     }
 
-    private inner class GivenExpression(private val given: CandidateResolutionResult.Success) {
+    private inner class GivenExpression(private val result: CandidateResolutionResult.Success) {
         private var block: IrBlock? = null
         private var tmpVariable: IrVariable? = null
         private var finalExpression: IrExpression? = null
@@ -176,8 +140,15 @@ class GivenCallTransformer(
         fun ScopeContext.get(): IrExpression? {
             if (initializing) {
                 if (block == null) {
+                    val resultType = result.candidate.type.toIrType(pluginContext, declarationStore)
                     block = DeclarationIrBuilder(pluginContext, symbol)
-                        .irBlock { tmpVariable = irTemporary(irNull(), isMutable = true) } as IrBlock
+                        .irBlock(resultType = resultType) {
+                            tmpVariable = irTemporary(
+                                value = irNull(),
+                                isMutable = true,
+                                irType = resultType.makeNullable()
+                            )
+                        } as IrBlock
                 }
                 return DeclarationIrBuilder(pluginContext, symbol)
                     .irGet(tmpVariable!!)
@@ -187,19 +158,17 @@ class GivenCallTransformer(
 
             initializing = true
 
-            val rawExpression = wrapInFunctionIfNeeded(given) { expressionProvider ->
-                when (given.candidate) {
-                    is CallableGivenNode -> callableExpression(given.candidate, expressionProvider)
-                    is ProviderGivenNode -> providerExpression(given.candidate, expressionProvider)
-                    is SetGivenNode -> setExpression(given.candidate, expressionProvider)
-                }
+            val rawExpression = when (result.candidate) {
+                is CallableGivenNode -> callableExpression(result, result.candidate.cast())
+                is ProviderGivenNode -> providerExpression(result, result.candidate.cast())
+                is SetGivenNode -> setExpression(result, result.candidate.cast())
             }
 
             initializing = false
 
             finalExpression = if (block == null) rawExpression else {
                 with(DeclarationIrBuilder(pluginContext, symbol)) {
-                    block!!.statements += irSet(tmpVariable!!.symbol, rawExpression!!)
+                    block!!.statements += irSet(tmpVariable!!.symbol, rawExpression)
                     block!!.statements += irGet(tmpVariable!!)
                 }
                 block!!
@@ -209,170 +178,25 @@ class GivenCallTransformer(
         }
     }
 
-    private class WrappedExpression(
-        val unstableTypes: List<TypeRef>,
-        val function: IrFunction
-    )
-
-    private fun CandidateResolutionResult.Success.canFunctionWrap(): Boolean = candidate !is ProviderGivenNode &&
-            candidate.dependencies.isNotEmpty() &&
-            !hasCircularDependency &&
-            candidate.dependencies.all { it.required }
-
-    private fun ScopeContext.wrapInFunctionIfNeeded(
-        given: CandidateResolutionResult.Success,
-        expression: ((TypeRef) -> IrExpression?) -> IrExpression?
-    ): IrExpression? {
-        if (!given.canFunctionWrap()) return expression(scopeExpressionProvider)
-
-        val wrappedExpression = graphContext.functionExpressions.getOrPut(given.candidate) {
-            val usages = graphContext.graph.resultsByScope
-                .values
-                .flatMap { it.values }
-                .filter { it.canFunctionWrap() }
-                .filter { it.candidate == given.candidate }
-
-            if (usages.size == 1) return expression(scopeExpressionProvider)
-
-            fun ResolutionScope.allScopes(): List<ResolutionScope> =
-                (parent?.allScopes() ?: emptyList()) + this
-
-            val hostingScope = given.scope.allScopes()
-                .last { candidateScope ->
-                    usages
-                        .all { usage ->
-                            candidateScope in usage.scope.allScopes()
-                        }
-                }
-            val hostingScopeContext = graphContext.existingScopeContext(hostingScope)
-
-            val mergedDependencies = given.candidate.dependencies
-                .indices
-                .map { parameterIndex ->
-                    usages
-                        .map { usage ->
-                            val usageParameterRequest = usage.candidate.dependencies[parameterIndex]
-                            val givensByType = usage.scope.getGivensByType(graphContext)
-                            usage.candidate.dependencies[parameterIndex] to (givensByType[usageParameterRequest.type]
-                                ?: error("Wtf"))
-                        }
-                        .distinctBy { it.second.candidate }
-                }
-
-            fun CandidateResolutionResult.Success.ensureAllInScope(scope: ResolutionScope): Boolean {
-                val allGivensByRequest = scope.getGivensByType(graphContext)
-                return candidate.dependencies
-                    .map { allGivensByRequest[it.type] }
-                    .all {
-                        it != null && it.ensureAllInScope(scope)
-                    }
-            }
-
-            val (stableTypes, unstableTypes) = mergedDependencies
-                .partition {
-                    val singleDependencyNode = it.singleOrNull() ?: return@partition false
-                    singleDependencyNode.second.ensureAllInScope(hostingScope)
-                }
-                .let {
-                    it.first
-                        .map { it.first().first.type } to it.second
-                        .map { it.first().first.type }
-                }
-
-            val function = IrFactoryImpl.buildFun {
-                origin = IrDeclarationOrigin.DEFINED
-                name = Name.special("<anonymous>")
-                returnType = given.candidate.type.toIrType(pluginContext, declarationStore)
-                visibility = DescriptorVisibilities.LOCAL
-                isSuspend = given.candidate.callContext == CallContext.SUSPEND
-            }.apply {
-                parent = irScope.getLocalDeclarationParent()
-                if (given.candidate.callContext == CallContext.COMPOSABLE) {
-                    annotations += DeclarationIrBuilder(pluginContext, symbol)
-                        .irCallConstructor(
-                            pluginContext.referenceConstructors(InjektFqNames.Composable)
-                                .single(),
-                            emptyList()
-                        )
-                }
-                val valueParametersByDependency = unstableTypes
-                    .associateWith { type ->
-                        addValueParameter(
-                            "p${graphContext.parameterIndex++}",
-                            type.toIrType(pluginContext, declarationStore)
-                        )
-                    }
-
-                this.body = DeclarationIrBuilder(pluginContext, symbol).run {
-                    irBlockBody {
-                        +irReturn(
-                            expression { request ->
-                                when (request) {
-                                    in stableTypes -> {
-                                        scopeExpressionProvider(request)
-                                    }
-                                    in unstableTypes -> {
-                                        valueParametersByDependency[request]
-                                            ?.let { irGet(it) }
-                                            ?: error("Wtf $request")
-                                    }
-                                    else -> {
-                                        error("Unexpected request $request")
-                                    }
-                                }
-                            } ?: error("Wtf")
-                        )
-                    }
-                }
-
-                hostingScopeContext.statements += this
-            }
-
-            WrappedExpression(unstableTypes, function)
-        }
-
-        return DeclarationIrBuilder(
-            pluginContext,
-            symbol
-        ).irCall(wrappedExpression.function).apply {
-            wrappedExpression.unstableTypes
-                .forEachIndexed { index, dependency ->
-                    putValueArgument(index, scopeExpressionProvider(dependency))
-                }
-        }
-    }
-
     private fun ScopeContext.objectExpression(type: TypeRef): IrExpression =
         DeclarationIrBuilder(pluginContext, symbol)
             .irGetObject(pluginContext.referenceClass(type.classifier.fqName)!!)
 
     private fun ScopeContext.providerExpression(
-        given: ProviderGivenNode,
-        expressionProvider: (TypeRef) -> IrExpression?
-    ): IrExpression {
-        return DeclarationIrBuilder(pluginContext, symbol)
-            .irLambda(
-                given.type.toIrType(pluginContext, declarationStore),
-                parameterNameProvider = {
-                    "p${graphContext.parameterIndex++}"
-                }
-            ) { function ->
-                val dependencyScopeContext = graphContext.existingScopeContextOrNull(given.dependencyScope)
-                    ?: graphContext.createScopeContext(given.dependencyScope, function.symbol)
-                dependencyScopeContext.lambdasByProviderGiven[given] = function
-                val expression = with(dependencyScopeContext) {
-                    scopeExpressionProvider(given.dependencies.single().type)
-                        ?: error("Wtf")
-                }
-                if (dependencyScopeContext.statements.isEmpty()) expression
-                else {
-                    irBlock {
-                        dependencyScopeContext.statements.forEach { +it }
-                        +expression
-                    }
-                }
+        result: CandidateResolutionResult.Success,
+        given: ProviderGivenNode
+    ): IrExpression = DeclarationIrBuilder(pluginContext, symbol)
+        .irLambda(
+            given.type.toIrType(pluginContext, declarationStore),
+            parameterNameProvider = { "p${graphContext.parameterIndex++}" }
+        ) { function ->
+            given.parameterDescriptors.zip(function.valueParameters)
+                .forEach { parameterMap[it.first] = it.second }
+            val dependencyScopeContext = graphContext.createScopeContext(given.dependencyScope, function.symbol)
+            with(dependencyScopeContext) {
+                expressionFor(result.dependencyResults.values.single())!!
             }
-    }
+        }
 
     private val mutableSetOf = pluginContext.referenceFunctions(
         FqName("kotlin.collections.mutableSetOf")
@@ -389,13 +213,12 @@ class GivenCallTransformer(
     ).single()
 
     private fun ScopeContext.setExpression(
-        given: SetGivenNode,
-        expressionProvider: (TypeRef) -> IrExpression?
+        result: CandidateResolutionResult.Success,
+        given: SetGivenNode
     ): IrExpression {
         val elementType = given.type.fullyExpandedType.arguments.single()
 
         if (given.dependencies.isEmpty()) {
-
             return DeclarationIrBuilder(pluginContext, symbol)
                 .irCall(emptySet)
                 .apply { putTypeArgument(0, elementType.toIrType(pluginContext, declarationStore)) }
@@ -407,11 +230,11 @@ class GivenCallTransformer(
                     .apply { putTypeArgument(0, elementType.toIrType(pluginContext, declarationStore)) }
             )
 
-            given.dependencies
-                .forEach { dependency ->
+            result.dependencyResults
+                .forEach { dependencyResult ->
                     +irCall(setAddAll).apply {
                         dispatchReceiver = irGet(tmpSet)
-                        putValueArgument(0, expressionProvider(dependency.type))
+                        putValueArgument(0, expressionFor(dependencyResult.value))
                     }
                 }
 
@@ -420,61 +243,57 @@ class GivenCallTransformer(
     }
 
     private fun ScopeContext.callableExpression(
-        given: CallableGivenNode,
-        expressionProvider: (TypeRef) -> IrExpression?
-    ): IrExpression {
-        return when (given.callable.callable) {
-            is ClassConstructorDescriptor -> classExpression(
-                given,
-                given.callable.callable,
-                expressionProvider
-            )
-            is PropertyDescriptor -> propertyExpression(
-                given,
-                given.callable.callable,
-                expressionProvider
-            )
-            is FunctionDescriptor -> functionExpression(
-                given,
-                given.callable.callable,
-                expressionProvider
-            )
-            is ReceiverParameterDescriptor -> if (given.type.classifier.isObject) objectExpression(given.type)
-            else parameterExpression(given.callable.callable)
-            is ValueParameterDescriptor -> parameterExpression(given.callable.callable)
-            is VariableDescriptor -> variableExpression(given.callable.callable)
-            else -> error("Unsupported callable $given")
-        }
+        result: CandidateResolutionResult.Success,
+        given: CallableGivenNode
+    ): IrExpression = when (given.callable.callable) {
+        is ClassConstructorDescriptor -> classExpression(
+            result,
+            given,
+            given.callable.callable
+        )
+        is PropertyDescriptor -> propertyExpression(
+            result,
+            given,
+            given.callable.callable
+        )
+        is FunctionDescriptor -> functionExpression(
+            result,
+            given,
+            given.callable.callable
+        )
+        is ReceiverParameterDescriptor -> if (given.type.classifier.isObject) objectExpression(given.type)
+        else parameterExpression(given.callable.callable)
+        is ValueParameterDescriptor -> parameterExpression(given.callable.callable)
+        is VariableDescriptor -> variableExpression(given.callable.callable)
+        else -> error("Unsupported callable $given")
     }
 
     private fun ScopeContext.classExpression(
+        result: CandidateResolutionResult.Success,
         given: CallableGivenNode,
-        descriptor: ClassConstructorDescriptor,
-        expressionProvider: (TypeRef) -> IrExpression?
-    ): IrExpression {
-        return if (descriptor.constructedClass.kind == ClassKind.OBJECT) {
-            val clazz =
-                pluginContext.symbolTable.referenceClass(descriptor.constructedClass.original)
-                    .bind()
-            DeclarationIrBuilder(pluginContext, symbol)
-                .irGetObject(clazz)
-        } else {
-            val constructor =
-                pluginContext.symbolTable.referenceConstructor(descriptor.original).bind()
-                    .owner
-            DeclarationIrBuilder(pluginContext, symbol)
-                .irCall(constructor.symbol)
-                .apply {
-                    fillTypeParameters(given.callable)
-                    fillGivens(given.dependencies, this, expressionProvider)
-                }
-        }
+        descriptor: ClassConstructorDescriptor
+    ): IrExpression = if (descriptor.constructedClass.kind == ClassKind.OBJECT) {
+        val clazz =
+            pluginContext.symbolTable.referenceClass(descriptor.constructedClass.original)
+                .bind()
+        DeclarationIrBuilder(pluginContext, symbol)
+            .irGetObject(clazz)
+    } else {
+        val constructor =
+            pluginContext.symbolTable.referenceConstructor(descriptor.original).bind()
+                .owner
+        DeclarationIrBuilder(pluginContext, symbol)
+            .irCall(constructor.symbol)
+            .apply {
+                fillTypeParameters(given.callable)
+                fillGivens(this@classExpression, result.dependencyResults)
+            }
     }
 
     private fun ScopeContext.propertyExpression(
+        result: CandidateResolutionResult.Success,
         given: CallableGivenNode,
-        descriptor: PropertyDescriptor,
-        expressionProvider: (TypeRef) -> IrExpression?
+        descriptor: PropertyDescriptor
     ): IrExpression {
         val property = pluginContext.symbolTable.referenceProperty(descriptor.original).bind()
         val getter = property.owner.getter!!
@@ -482,32 +301,26 @@ class GivenCallTransformer(
             .irCall(getter.symbol)
             .apply {
                 fillTypeParameters(given.callable)
-                fillGivens(given.dependencies, this, expressionProvider)
+                fillGivens(this@propertyExpression, result.dependencyResults)
             }
     }
 
     private fun ScopeContext.functionExpression(
+        result: CandidateResolutionResult.Success,
         given: CallableGivenNode,
-        descriptor: FunctionDescriptor,
-        expressionProvider: (TypeRef) -> IrExpression?
+        descriptor: FunctionDescriptor
     ): IrExpression {
         val function = descriptor.irFunction()
         return DeclarationIrBuilder(pluginContext, symbol)
             .irCall(function.symbol)
             .apply {
                 fillTypeParameters(given.callable)
-                fillGivens(given.dependencies, this, expressionProvider)
+                fillGivens(this@functionExpression, result.dependencyResults)
             }
     }
 
-    private fun ScopeContext.parameterExpression(descriptor: ParameterDescriptor): IrExpression {
-        if (descriptor is ProviderGivenNode.ProviderParameterDescriptor) {
-            val parameter = lambdasByProviderGiven[descriptor.given]?.valueParameters?.get(descriptor.index)
-                ?: error("Wtf ${descriptor.given} -> $lambdasByProviderGiven")
-            return DeclarationIrBuilder(pluginContext, symbol).irGet(parameter)
-        }
-
-        return when (val containingDeclaration = descriptor.containingDeclaration) {
+    private fun ScopeContext.parameterExpression(descriptor: ParameterDescriptor): IrExpression =
+        when (val containingDeclaration = descriptor.containingDeclaration) {
             is ClassDescriptor -> receiverAccessors.last {
                 descriptor.type.constructor.declarationDescriptor == it.first.descriptor
             }.second()
@@ -519,7 +332,7 @@ class GivenCallTransformer(
                 )
             is FunctionDescriptor -> DeclarationIrBuilder(pluginContext, symbol)
                 .irGet(
-                    containingDeclaration.irFunction()
+                    parameterMap[descriptor] ?: containingDeclaration.irFunction()
                         .let { function ->
                             function.allParameters
                                 .filter { it != function.dispatchReceiverParameter }
@@ -528,7 +341,6 @@ class GivenCallTransformer(
                 )
             else -> error("Unexpected parent $descriptor $containingDeclaration")
         }
-    }
 
     private fun IrFunctionAccessExpression.fillTypeParameters(callable: CallableRef) {
         callable
@@ -539,10 +351,9 @@ class GivenCallTransformer(
             }
     }
 
-    private fun ScopeContext.variableExpression(descriptor: VariableDescriptor): IrExpression {
-        return DeclarationIrBuilder(pluginContext, symbol)
+    private fun ScopeContext.variableExpression(descriptor: VariableDescriptor): IrExpression =
+        DeclarationIrBuilder(pluginContext, symbol)
             .irGet(variables.single { it.descriptor == descriptor })
-    }
 
     private fun ClassConstructorDescriptor.irConstructor() =
         pluginContext.symbolTable.referenceConstructor(original).bind().owner
@@ -563,6 +374,8 @@ class GivenCallTransformer(
     private val receiverAccessors = mutableListOf<Pair<IrClass, () -> IrExpression>>()
 
     private val variables = mutableListOf<IrVariable>()
+
+    private val parameterMap = mutableMapOf<ParameterDescriptor, IrValueParameter>()
 
     private val fileStack = mutableListOf<IrFile>()
     override fun visitFile(declaration: IrFile): IrFile {
@@ -608,10 +421,9 @@ class GivenCallTransformer(
         return result
     }
 
-    override fun visitVariable(declaration: IrVariable): IrStatement {
-        return super.visitVariable(declaration)
+    override fun visitVariable(declaration: IrVariable): IrStatement =
+        super.visitVariable(declaration)
             .also { variables += declaration }
-    }
 
     override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
         val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
@@ -627,26 +439,12 @@ class GivenCallTransformer(
         try {
             graphContext
                 .createScopeContext(graph.scope, result.symbol)
-                .run {
-                    fillGivens(
-                        graph.requests,
-                        result,
-                        scopeExpressionProvider
-                    )
-                }
+                .run { result.fillGivens(this, graph.results) }
         } catch (e: Throwable) {
             throw RuntimeException("Wtf ${expression.dump()}", e)
         }
 
-        return if (graphContext.statements.isEmpty()) {
-            result
-        } else {
-            DeclarationIrBuilder(pluginContext, result.symbol)
-                .irBlock {
-                    graphContext.statements.forEach { +it }
-                    +result
-                }
-        }
+        return result
     }
 
 }
