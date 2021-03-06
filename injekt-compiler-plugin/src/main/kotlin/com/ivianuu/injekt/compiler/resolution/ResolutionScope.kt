@@ -63,7 +63,6 @@ class ResolutionScope(
         }
 
         produceContributions()
-            .distinctBy { it.type to it.callable.original }
             .forEach { contribution ->
                 contribution.collectContributions(
                     declarationStore = declarationStore,

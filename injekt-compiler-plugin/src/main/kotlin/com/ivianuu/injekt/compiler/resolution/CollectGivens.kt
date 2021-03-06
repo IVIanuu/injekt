@@ -171,14 +171,12 @@ fun CallableDescriptor.collectContributions(
     declarations += allParameters
         .mapNotNull { parameter ->
             val kind = parameter.contributionKind(declarationStore)
-            if (kind != null) parameter.toCallableRef(declarationStore)
-                .copy(contributionKind = kind)
+            if (kind != null || parameter == extensionReceiverParameter) parameter.toCallableRef(declarationStore)
+                .copy(contributionKind = kind ?: ContributionKind.VALUE)
             else null
         }
 
     extensionReceiverParameter?.let { receiver ->
-        declarations += receiver.toCallableRef(declarationStore)
-            .copy(contributionKind = ContributionKind.VALUE)
         declarations += receiver.type.memberScope.collectContributions(
             declarationStore,
             extensionReceiverParameter!!.type.toTypeRef(declarationStore),
