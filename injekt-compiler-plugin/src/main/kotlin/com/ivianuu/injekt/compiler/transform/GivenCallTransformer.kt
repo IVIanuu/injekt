@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.resolution.*
@@ -30,6 +31,7 @@ import org.jetbrains.kotlin.cfg.index
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -37,30 +39,47 @@ import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.builders.Scope
+import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlock
+import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irCallConstructor
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
+import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSet
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.IrVariable
+import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.symbols.IrBindableSymbol
-import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.makeNullable
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.utils.addToStdlib.cast
+
+private fun GivenGraph.Success.flattenResults(): List<CandidateResolutionResult.Success> {
+    val allResults = mutableListOf<CandidateResolutionResult.Success>()
+    fun CandidateResolutionResult.Success.visit() {
+        if (!allResults.add(this)) return
+        dependencyResults.forEach { it.value.visit() }
+    }
+    results.forEach { it.value.visit() }
+    return allResults
+}
 
 class GivenCallTransformer(
     private val declarationStore: DeclarationStore,
@@ -69,6 +88,7 @@ class GivenCallTransformer(
 
     private inner class GraphContext(val graph: GivenGraph.Success) {
         private val scopeContexts = mutableMapOf<ResolutionScope, ScopeContext>()
+        val statements = mutableListOf<IrStatement>()
 
         var parameterIndex = 0
 
@@ -84,30 +104,83 @@ class GivenCallTransformer(
             if (this in graphContextParents) graph.scope else this
 
         fun existingScopeContext(scope: ResolutionScope): ScopeContext =
-            scopeContexts[scope.mapScopeIfNeeded()] ?: error("No existing scope context found for $scope")
+            scopeContexts[scope.mapScopeIfNeeded()]
+                ?: error("No existing scope context found for ${scope.mapScopeIfNeeded()}")
 
-        fun createScopeContext(scope: ResolutionScope, symbol: IrSymbol): ScopeContext {
-            check(scopeContexts[scope.mapScopeIfNeeded()] == null) {
+        fun createScopeContext(scope: ResolutionScope, irScope: Scope): ScopeContext {
+            val finalScope = scope.mapScopeIfNeeded()
+            check(scopeContexts[finalScope] == null) {
                 "Cannot create scope context twice"
             }
-            return scopeContexts.getOrPut(scope.mapScopeIfNeeded()) {
-                ScopeContext(this, symbol)
+            return scopeContexts.getOrPut(finalScope) {
+                ScopeContext(this, finalScope, irScope)
             }.also {
-                check(it.symbol === symbol)
+                check(it.irScope === irScope)
             }
         }
     }
 
-    private inner class ScopeContext(val graphContext: GraphContext, val symbol: IrSymbol) {
-        val initializingExpressions = mutableMapOf<GivenNode, GivenExpression?>()
-        fun expressionFor(result: CandidateResolutionResult.Success): IrExpression? {
-            val scopeContext = graphContext.existingScopeContext(result.candidate.ownerScope)
-            scopeContext.initializingExpressions[result.candidate]?.run { return get() }
+    private inner class ScopeContext(
+        val graphContext: GraphContext,
+        val scope: ResolutionScope,
+        val irScope: Scope
+    ) {
+        val symbol = irScope.scopeOwnerSymbol
+        private val initializingExpressions = mutableMapOf<GivenNode, GivenExpression>()
+        private val expressionsByResult = mutableMapOf<CandidateResolutionResult.Success, ScopeContext.() -> IrExpression>()
+        val statements = if (scope == graphContext.graph.scope) graphContext.statements else mutableListOf()
+
+        fun expressionFor(result: CandidateResolutionResult.Success): IrExpression {
+            val scopeContext = graphContext.existingScopeContext(result.outerMostScope)
+            return scopeContext.expressionForImpl(result)(this)
+        }
+
+        private fun expressionForImpl(result: CandidateResolutionResult.Success): ScopeContext.() -> IrExpression {
+            initializingExpressions[result.candidate]?.run { return { get() } }
             val expression = GivenExpression(result)
-            scopeContext.initializingExpressions[result.candidate] = expression
-            val irExpression = expression.run { get() }
-            scopeContext.initializingExpressions -= result.candidate
+            initializingExpressions[result.candidate] = expression
+            val irExpression = expression.run {
+                wrapExpression(result) {
+                    get()
+                }
+            }
+            initializingExpressions -= result.candidate
             return irExpression
+        }
+
+        private fun wrapExpression(
+            result: CandidateResolutionResult.Success,
+            rawExpressionProvider: ScopeContext.() -> IrExpression
+        ): ScopeContext.() -> IrExpression = expressionsByResult.getOrPut(result) {
+            val function = IrFactoryImpl.buildFun {
+                origin = IrDeclarationOrigin.DEFINED
+                name = Name.special("<anonymous>")
+                returnType = result.candidate.type.toIrType(pluginContext, declarationStore)
+                visibility = DescriptorVisibilities.LOCAL
+                isSuspend = scope.callContext == CallContext.SUSPEND
+            }.apply {
+                parent = irScope.getLocalDeclarationParent()
+                if (result.candidate.callContext == CallContext.COMPOSABLE) {
+                    annotations += DeclarationIrBuilder(pluginContext, symbol)
+                        .irCallConstructor(
+                            pluginContext.referenceConstructors(InjektFqNames.Composable)
+                                .single(),
+                            emptyList()
+                        )
+                }
+                this.body = DeclarationIrBuilder(pluginContext, symbol).run {
+                    irBlockBody {
+                        +irReturn(rawExpressionProvider())
+                    }
+                }
+                statements += this
+            }
+
+            val expression: ScopeContext.() -> IrExpression = {
+                DeclarationIrBuilder(pluginContext, symbol)
+                    .irCall(function)
+            }
+            expression
         }
     }
 
@@ -137,7 +210,7 @@ class GivenCallTransformer(
 
         private var initializing = false
 
-        fun ScopeContext.get(): IrExpression? {
+        fun ScopeContext.get(): IrExpression {
             if (initializing) {
                 if (block == null) {
                     val resultType = result.candidate.type.toIrType(pluginContext, declarationStore)
@@ -174,7 +247,7 @@ class GivenCallTransformer(
                 block!!
             }
 
-            return finalExpression
+            return finalExpression!!
         }
     }
 
@@ -192,9 +265,17 @@ class GivenCallTransformer(
         ) { function ->
             given.parameterDescriptors.zip(function.valueParameters)
                 .forEach { parameterMap[it.first] = it.second }
-            val dependencyScopeContext = graphContext.createScopeContext(given.dependencyScope, function.symbol)
-            with(dependencyScopeContext) {
+            val dependencyScopeContext = graphContext.createScopeContext(given.dependencyScope, scope)
+            val expression = with(dependencyScopeContext) {
                 expressionFor(result.dependencyResults.values.single())!!
+            }
+
+            if (dependencyScopeContext.statements.isEmpty()) expression
+            else {
+                irBlock {
+                    dependencyScopeContext.statements.forEach { +it }
+                    +expression
+                }
             }
         }
 
@@ -436,15 +517,18 @@ class GivenCallTransformer(
                 )
         ] ?: return result
         val graphContext = GraphContext(graph)
-        try {
-            graphContext
-                .createScopeContext(graph.scope, result.symbol)
-                .run { result.fillGivens(this, graph.results) }
-        } catch (e: Throwable) {
-            throw RuntimeException("Wtf ${expression.dump()}", e)
-        }
-
-        return result
+        return DeclarationIrBuilder(pluginContext, result.symbol)
+            .irBlock {
+                try {
+                    graphContext
+                        .createScopeContext(graph.scope, scope)
+                        .run { result.fillGivens(this, graph.results) }
+                } catch (e: Throwable) {
+                    throw RuntimeException("Wtf ${expression.dump()}", e)
+                }
+                graphContext.statements.forEach { +it }
+                +result
+            }
     }
 
 }

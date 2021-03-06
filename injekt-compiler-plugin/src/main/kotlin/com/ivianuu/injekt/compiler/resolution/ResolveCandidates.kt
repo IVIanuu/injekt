@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+
 sealed class GivenGraph {
     data class Success(
         val scope: ResolutionScope,
@@ -37,7 +39,17 @@ sealed class CandidateResolutionResult {
         override val candidate: GivenNode,
         override val scope: ResolutionScope,
         val dependencyResults: Map<GivenRequest, Success>
-    ) : CandidateResolutionResult()
+    ) : CandidateResolutionResult() {
+        val outerMostScope = scope.allScopes.first { candidateScope ->
+            candidate.ownerScope.depth(candidateScope) >= 0 &&
+                    candidateScope.callContext.canCall(candidate.callContext) &&
+                    (candidate.dependencyScope != null ||
+                            dependencyResults.all { (_, dependencyResult) ->
+                                dependencyResult.candidate.ownerScope.depth(candidateScope) >= 0 &&
+                                        candidateScope.callContext.canCall(dependencyResult.candidate.callContext)
+                            })
+        }
+    }
 
     data class Failure(
         override val request: GivenRequest,
@@ -170,10 +182,39 @@ private fun ResolutionScope.computeForCandidate(
     }
 
     chain += candidate
-    val result = compute()
-    resultsByCandidate[candidate] = result
+    val computedResult = compute()
+    val finalResult = if (computedResult is CandidateResolutionResult.Success &&
+            computedResult.outerMostScope != this) {
+        if (candidate is ProviderGivenNode) {
+            val existingResult = computedResult.outerMostScope.providerResultsByType[candidate.type]
+                .safeAs<CandidateResolutionResult.Success>()
+                ?.takeIf { it.dependencyResults == computedResult.dependencyResults }
+            val resultToUse = existingResult ?: computedResult
+            for (parent in allParentsReversed) {
+                if (existingResult != null && parent == computedResult.outerMostScope) break
+                parent.resultsByCandidate[candidate] = resultToUse
+                parent.providerResultsByType[candidate.type] = resultToUse
+                if (existingResult == null && parent == computedResult.outerMostScope) break
+            }
+            resultToUse
+        } else {
+            val existingResult = computedResult.outerMostScope.resultsByCandidate[candidate]
+                .safeAs<CandidateResolutionResult.Success>()
+            val resultToUse = existingResult ?: computedResult
+            for (parent in allParentsReversed) {
+                if (existingResult != null && parent == computedResult.outerMostScope) break
+                parent.resultsByCandidate[candidate] = resultToUse
+                if (existingResult == null && parent == computedResult.outerMostScope) break
+            }
+            existingResult ?: computedResult
+        }
+    } else computedResult
+    resultsByCandidate[candidate] = finalResult
+    if (candidate is ProviderGivenNode) {
+        providerResultsByType[candidate.type] = finalResult
+    }
     chain -= candidate
-    return result
+    return finalResult
 }
 
 private fun ResolutionScope.resolveCandidates(

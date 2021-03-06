@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.transform.toKotlinType
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
@@ -107,7 +108,6 @@ class ProviderGivenNode(
                 .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
                 .first()
                 .valueParameters
-                .map { ProviderParameterDescriptor(this, it) }
                 .onEach { parameterDescriptors += it }
                 .map { parameter ->
                     parameter
@@ -119,22 +119,16 @@ class ProviderGivenNode(
         }
     )
 
-    val parameterDescriptors = mutableListOf<ProviderParameterDescriptor>()
+    val parameterDescriptors = mutableListOf<ParameterDescriptor>()
 
     override val lazyDependencies: Boolean
         get() = true
-
     override val callContext: CallContext
         get() = CallContext.DEFAULT
     override val originalType: TypeRef
         get() = type
     override val isFrameworkGiven: Boolean
         get() = true
-
-    class ProviderParameterDescriptor(
-        val given: ProviderGivenNode,
-        private val delegate: ValueParameterDescriptor
-    ) : ValueParameterDescriptor by delegate
 }
 
 fun CallableRef.toGivenNode(
