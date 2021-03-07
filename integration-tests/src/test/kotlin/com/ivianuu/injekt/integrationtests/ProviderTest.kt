@@ -145,20 +145,6 @@ class ProviderTest {
     )
 
     @Test
-    fun testWrapsExpressionWithMultipleUsagesAndDependencies() = codegen(
-        """
-            @Given val foo = Foo()
-            @Given fun bar(@Given foo: Foo) = Bar(foo)
-            @Given fun <T> pair(@Given a: T, @Given b: T): Pair<T, T> = a to b
-            fun invoke() {
-                given<Pair<Bar, Bar>>()
-            }
-        """
-    ) {
-        assertIrContainsText("local fun <anonymous>(): Bar {")
-    }
-
-    @Test
     fun testProviderModule() = codegen(
         """
             @Given fun bar(@Given foo: Foo) = Bar(foo)

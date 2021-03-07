@@ -35,7 +35,7 @@ class ExpressionWrappingTest {
             }
         """
     ) {
-        assertIrContainsText("local fun <anonymous>(): Bar {")
+        assertIrContainsText(1, "local fun <anonymous>(): Bar {")
     }
 
     @Test
@@ -75,7 +75,7 @@ class ExpressionWrappingTest {
         """
     ) {
         assertIrNotContainsText("local fun <anonymous>(): Function0<Foo> {")
-        assertIrContainsText("val tmp0: Function0<Foo> = local fun <anonymous>(): Foo {")
+        assertIrContainsText(1, "val tmp0: Function0<Foo> = local fun <anonymous>(): Foo {")
     }
 
     @Test

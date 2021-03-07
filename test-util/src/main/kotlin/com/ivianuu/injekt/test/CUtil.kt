@@ -203,13 +203,19 @@ inline fun KotlinCompilation.Result.irAssertions(block: (String) -> Unit) {
         .let(block)
 }
 
-fun KotlinCompilation.Result.assertIrContainsText(text: String) {
+fun KotlinCompilation.Result.assertIrContainsText(times: Int, text: String) {
     irAssertions {
-        assert(text in it) {
-            "'$text' not in source '$it'"
+        val matchesCount = it.countMatches(text)
+        assert(matchesCount == times) {
+            "expected '$it' $times but was found $matchesCount in '$it'"
         }
+
+
     }
 }
+
+fun String.countMatches(other: String): Int = split(other)
+    .dropLastWhile { it.isEmpty() }.size - 1
 
 fun KotlinCompilation.Result.assertIrNotContainsText(text: String) {
     irAssertions {
