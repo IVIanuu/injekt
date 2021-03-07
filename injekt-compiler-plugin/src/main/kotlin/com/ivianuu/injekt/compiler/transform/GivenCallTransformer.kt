@@ -283,7 +283,7 @@ class GivenCallTransformer(
                 .forEach { parameterMap[it.first] = it.second }
             val dependencyScopeContext = graphContext.createScopeContext(given.dependencyScope, scope)
             val expression = with(dependencyScopeContext) {
-                expressionFor(result.dependencyResults.values.single())!!
+                expressionFor(result.dependencyResults.values.single())
             }
 
             if (dependencyScopeContext.statements.isEmpty()) expression
@@ -299,7 +299,7 @@ class GivenCallTransformer(
         FqName("kotlin.collections.mutableSetOf")
     ).single { it.owner.valueParameters.isEmpty() }
 
-    private val setAddAll = mutableSetOf.owner.returnType
+    private val setAdd = mutableSetOf.owner.returnType
         .classOrNull!!
         .owner
         .functions
@@ -340,7 +340,7 @@ class GivenCallTransformer(
 
                 result.dependencyResults
                     .forEach { dependencyResult ->
-                        +irCall(setAddAll).apply {
+                        +irCall(setAdd).apply {
                             dispatchReceiver = irGet(tmpSet)
                             putValueArgument(0, expressionFor(dependencyResult.value))
                         }
