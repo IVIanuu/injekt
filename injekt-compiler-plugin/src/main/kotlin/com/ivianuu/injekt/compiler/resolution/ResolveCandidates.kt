@@ -203,7 +203,6 @@ private fun ResolutionScope.computeForCandidate(
         if (candidate is ProviderGivenNode) {
             val existingResult = computedResult.outerMostScope.providerResultsByType[candidate.type]
                 .safeAs<CandidateResolutionResult.Success>()
-                ?.takeIf { it.dependencyResults == computedResult.dependencyResults }
                 ?.also { it.usages++ }
             val resultToUse = existingResult ?: computedResult
             for (parent in allParentsReversed) {

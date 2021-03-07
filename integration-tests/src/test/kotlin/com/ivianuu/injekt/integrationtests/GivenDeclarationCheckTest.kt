@@ -37,17 +37,23 @@ class GivenDeclarationCheckTest {
     fun test() = codegen(
         """
             @Scoped<AppComponent>
-            @Given class Dep(@Given app: App)
+            @Given
+            class Dep(@Given app: App)
+
+            @Scoped<AppComponent>
+            @Given
+            class DepWrapper(@Given dep: Dep)
+
             fun invoke() {
                 "".initializeApp()   
             }
             @ComponentElementBinding<AppComponent>
             @Given
-            class MyComponent(@Given dep: Dep)
+            class MyComponent(@Given dep: Dep, @Given wrapper: DepWrapper)
 
-            @ComponentInitializerBinding
-            @Given
-            fun myInitializer(@Given dep: Dep): ComponentInitializer<AppComponent> = {}
+            //@ComponentInitializerBinding
+            //@Given
+            //fun myInitializer(@Given dep: Dep, @Given wrapper: DepWrapper): ComponentInitializer<AppComponent> = {}
         """
     )
 
@@ -110,7 +116,7 @@ class GivenDeclarationCheckTest {
 
             fun func2(@Given foo: Foo) {
                 foo
-            } 
+            }
         """
     ) {
         assertNoMessage("Parameter 'foo' is never used")
