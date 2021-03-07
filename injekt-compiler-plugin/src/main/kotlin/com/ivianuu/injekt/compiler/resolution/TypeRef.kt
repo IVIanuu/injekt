@@ -365,9 +365,9 @@ fun TypeRef.uniqueTypeName(depth: Int = 0): String {
         if (isStarProjection) append("star")
         else append(classifier.fqName.pathSegments().joinToString("_") { it.asString() })
         if (macroChain.isNotEmpty()) {
-            append(macroChain.joinToString("_", postfix = "_"))
+            append(macroChain.joinToString("_", prefix = "_", postfix = "_"))
         }
-        if (setKey != null) append("${setKey.hashCode()}_")
+        if (setKey != null) append("_${setKey.hashCode()}_")
         arguments.forEachIndexed { index, typeArgument ->
             if (index == 0) append("_")
             append(typeArgument.uniqueTypeName(depth + 1))
