@@ -44,16 +44,20 @@ class GivenDeclarationCheckTest {
             @Given
             class DepWrapper(@Given dep: Dep)
 
+            @Scoped<AppComponent>
+            @Given
+            class DepWrapper2(@Given dep: () -> Dep, @Given wrapper: () -> DepWrapper)
+
             fun invoke() {
                 "".initializeApp()   
             }
             @ComponentElementBinding<AppComponent>
             @Given
-            class MyComponent(@Given dep: Dep, @Given wrapper: DepWrapper)
+            class MyComponent(@Given dep: Dep, @Given wrapper: () -> () -> DepWrapper, @Given wrapper2: () -> DepWrapper2)
 
-            //@ComponentInitializerBinding
-            //@Given
-            //fun myInitializer(@Given dep: Dep, @Given wrapper: DepWrapper): ComponentInitializer<AppComponent> = {}
+            @ComponentInitializerBinding
+            @Given
+            fun myInitializer(@Given dep: Dep, @Given wrapper: () -> () -> DepWrapper, @Given wrapper2: () -> DepWrapper2): ComponentInitializer<AppComponent> = {}
         """
     )
 

@@ -30,46 +30,44 @@ sealed class GivenGraph {
 }
 
 sealed class CandidateResolutionResult {
-    abstract val request: GivenRequest
     abstract val candidate: GivenNode
-    abstract val scope: ResolutionScope
 
     data class Success(
-        override val request: GivenRequest,
         override val candidate: GivenNode,
-        override val scope: ResolutionScope,
         val dependencyResults: Map<GivenRequest, Success>
     ) : CandidateResolutionResult() {
         var usages = 1
         var hasCircularDependency = false
-        /*val flattenResults: List<Success> = mutableListOf<Success>().apply {
-            this += this@Success
-            this += dependencyResults
-                .flatMap { it.value.flattenResults }
-        }*/
         val outerMostScope: ResolutionScope = kotlin.run {
-            scope.allScopes.firstOrNull { candidateScope ->
-                allDependenciesInScope(candidateScope, candidate.dependencyScope)
-            } ?: scope
+            when {
+                dependencyResults.isEmpty() -> candidate.ownerScope
+                candidate.dependencyScope != null -> {
+                    val outerMostDependencyScope = dependencyResults.minByOrNull {
+                        it.value.outerMostScope.allParents.size
+                    }!!.value.outerMostScope
+                    if (outerMostDependencyScope == candidate.dependencyScope ||
+                        outerMostDependencyScope.allParents.size <
+                        candidate.ownerScope.allParents.size) {
+                        candidate.ownerScope
+                    } else outerMostDependencyScope
+                }
+                else -> {
+                    val outerMostDependencyScope = dependencyResults.minByOrNull {
+                        it.value.outerMostScope.allParents.size
+                    }!!.value.outerMostScope
+                    if (outerMostDependencyScope.allParents.size <
+                        candidate.ownerScope.allParents.size) candidate.ownerScope
+                    else outerMostDependencyScope
+                }
+            }
         }
     }
 
     data class Failure(
-        override val request: GivenRequest,
         override val candidate: GivenNode,
-        override val scope: ResolutionScope,
         val failure: ResolutionResult.Failure,
     ) : CandidateResolutionResult()
 }
-
-private fun CandidateResolutionResult.Success.allDependenciesInScope(
-    a: ResolutionScope,
-    b: ResolutionScope?
-): Boolean = (candidate.ownerScope.depth(a) >= 0 ||
-        (b != null && candidate.ownerScope.depth(b) >= 0)) &&
-        dependencyResults.all {
-            it.value.allDependenciesInScope(a, candidate.dependencyScope)
-        }
 
 sealed class ResolutionResult {
     abstract val request: GivenRequest
@@ -131,9 +129,8 @@ fun ResolutionScope.resolveGiven(requests: List<GivenRequest>): GivenGraph {
                 .filterIsInstance<ResolutionResult.Success>() to
                     it.filterIsInstance<ResolutionResult.Failure>()
         }
-    return if (failureResults.isEmpty()) {
-        successResults.toSuccessGraph(requests, this)
-    } else failureResults.toErrorGraph()
+    return if (failureResults.isEmpty()) successResults.toSuccessGraph(requests, this)
+    else failureResults.toErrorGraph()
 }
 
 private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult {
@@ -179,21 +176,15 @@ private fun ResolutionScope.computeForCandidate(
                             subChain.none { it.lazyDependencies }))
         ) {
             return CandidateResolutionResult.Failure(
-                request,
                 candidate,
-                this,
                 ResolutionResult.Failure.DivergentGiven(request, emptyList()) // todo
             )
         }
     }
 
     if (candidate in chain) {
-        return CandidateResolutionResult.Success(
-            request = request,
-            candidate = candidate,
-            scope = this,
-            dependencyResults = emptyMap()
-        ).also { it.hasCircularDependency = true }
+        return CandidateResolutionResult.Success(candidate, emptyMap())
+            .also { it.hasCircularDependency = true }
     }
 
     chain += candidate
@@ -294,9 +285,7 @@ private fun ResolutionScope.resolveCandidate(
 ): CandidateResolutionResult = computeForCandidate(request, candidate) {
     if (!callContext.canCall(candidate.callContext)) {
         return@computeForCandidate CandidateResolutionResult.Failure(
-            request,
             candidate,
-            this,
             ResolutionResult.Failure.CallContextMismatch(request, callContext, candidate)
         )
     }
@@ -309,21 +298,14 @@ private fun ResolutionScope.resolveCandidate(
             is ResolutionResult.Failure -> {
                 if (dependency.required) {
                     return@computeForCandidate CandidateResolutionResult.Failure(
-                        dependency,
                         candidate,
-                        this,
                         result
                     )
                 }
             }
         }
     }
-    return@computeForCandidate CandidateResolutionResult.Success(
-        request,
-        candidate,
-        this,
-        successDependencyResults
-    )
+    return@computeForCandidate CandidateResolutionResult.Success(candidate, successDependencyResults)
 }
 
 fun ResolutionScope.depth(scope: ResolutionScope): Int {
