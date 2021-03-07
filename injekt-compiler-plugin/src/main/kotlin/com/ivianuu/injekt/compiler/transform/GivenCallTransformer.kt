@@ -78,7 +78,6 @@ class GivenCallTransformer(
 ) : IrElementTransformerVoid() {
 
     private inner class GraphContext(val graph: GivenGraph.Success) {
-        private val scopeContexts = mutableMapOf<ResolutionScope, ScopeContext>()
         val statements = mutableListOf<IrStatement>()
 
         var parameterIndex = 0
@@ -91,27 +90,12 @@ class GivenCallTransformer(
             }
         }
 
-        private fun ResolutionScope.mapScopeIfNeeded() =
-            if (this in graphContextParents) graph.scope else this
-
-        fun existingScopeContext(scope: ResolutionScope): ScopeContext =
-            scopeContexts[scope.mapScopeIfNeeded()]
-                ?: error("No existing scope context found for ${scope.mapScopeIfNeeded()}")
-
-        fun createScopeContext(scope: ResolutionScope, irScope: Scope): ScopeContext {
-            val finalScope = scope.mapScopeIfNeeded()
-            check(scopeContexts[finalScope] == null) {
-                "Cannot create scope context twice"
-            }
-            return scopeContexts.getOrPut(finalScope) {
-                ScopeContext(this, finalScope, irScope)
-            }.also {
-                check(it.irScope === irScope)
-            }
-        }
+        fun mapScopeIfNeeded(scope: ResolutionScope) =
+            if (scope in graphContextParents) graph.scope else scope
     }
 
     private inner class ScopeContext(
+        val parent: ScopeContext?,
         val graphContext: GraphContext,
         val scope: ResolutionScope,
         val irScope: Scope
@@ -122,8 +106,15 @@ class GivenCallTransformer(
         val cachedExpressions = mutableMapOf<CandidateResolutionResult.Success, ScopeContext.() -> IrExpression>()
         val statements = if (scope == graphContext.graph.scope) graphContext.statements else mutableListOf()
 
+        private fun findScopeContext(scopeToFind: ResolutionScope): ScopeContext {
+            val finalScope = graphContext.mapScopeIfNeeded(scopeToFind)
+            if (finalScope == scope) return this@ScopeContext
+            return parent?.findScopeContext(finalScope)
+                ?: error("wtf")
+        }
+
         fun expressionFor(result: CandidateResolutionResult.Success): IrExpression {
-            val scopeContext = graphContext.existingScopeContext(result.outerMostScope)
+            val scopeContext = findScopeContext(result.outerMostScope)
             return scopeContext.expressionForImpl(result)
         }
 
@@ -281,7 +272,8 @@ class GivenCallTransformer(
         ) { function ->
             given.parameterDescriptors.zip(function.valueParameters)
                 .forEach { parameterMap[it.first] = it.second }
-            val dependencyScopeContext = graphContext.createScopeContext(given.dependencyScope, scope)
+            val dependencyScopeContext = ScopeContext(
+                this@providerExpression, graphContext, given.dependencyScope, scope)
             val expression = with(dependencyScopeContext) {
                 expressionFor(result.dependencyResults.values.single())
             }
@@ -548,9 +540,12 @@ class GivenCallTransformer(
         return DeclarationIrBuilder(pluginContext, result.symbol)
             .irBlock {
                 try {
-                    graphContext
-                        .createScopeContext(graph.scope, scope)
-                        .run { result.fillGivens(this, graph.results) }
+                    ScopeContext(
+                        parent = null,
+                        graphContext = graphContext,
+                        scope = graph.scope,
+                        irScope = scope
+                    ).run { result.fillGivens(this, graph.results) }
                 } catch (e: Throwable) {
                     throw RuntimeException("Wtf ${expression.dump()}", e)
                 }
