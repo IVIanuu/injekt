@@ -65,26 +65,34 @@ class ResolutionScope(
                 .map { it.copy() }
         }
 
+        var hasGivensOrMacros = false
+
         produceContributions()
             .forEach { contribution ->
                 contribution.collectContributions(
                     declarationStore = declarationStore,
                     substitutionMap = emptyMap(),
                     addGiven = { callable ->
+                        hasGivensOrMacros = true
                         givens += callable
                         val typeWithMacroChain = callable.type
                             .copy(macroChain = listOf(callable.callable.fqNameSafe))
                         givens += callable.copy(type = typeWithMacroChain)
                     },
                     addGivenSetElement = { setElements += it },
-                    addMacro = { macros += MacroNode(it) }
+                    addMacro = {
+                        hasGivensOrMacros = true
+                        macros += MacroNode(it)
+                    }
                 )
             }
 
-        allScopes
-            .flatMap { it.givens }
-            .filter { it.type.macroChain.isNotEmpty() }
-            .forEach { runMacros(it.type) }
+        if (hasGivensOrMacros) {
+            allScopes
+                .flatMap { it.givens }
+                .filter { it.type.macroChain.isNotEmpty() }
+                .forEach { runMacros(it.type) }
+        }
     }
 
     private val setType = declarationStore.module.builtIns.set.defaultType
