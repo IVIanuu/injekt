@@ -66,6 +66,7 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.makeNullable
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.isVararg
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -304,6 +305,10 @@ class GivenCallTransformer(
         .functions
         .single { it.name.asString() == "add" }
 
+    private val setOf = pluginContext.referenceFunctions(
+        FqName("kotlin.collections.setOf")
+    ).single { it.owner.valueParameters.singleOrNull()?.isVararg == false }
+
     private val emptySet = pluginContext.referenceFunctions(
         FqName("kotlin.collections.emptySet")
     ).single()
@@ -313,28 +318,36 @@ class GivenCallTransformer(
         given: SetGivenNode
     ): IrExpression {
         val elementType = given.type.fullyExpandedType.arguments.single()
-
-        if (given.dependencies.isEmpty()) {
-            return DeclarationIrBuilder(pluginContext, symbol)
+        return when  {
+            given.dependencies.isEmpty() -> DeclarationIrBuilder(pluginContext, symbol)
                 .irCall(emptySet)
-                .apply { putTypeArgument(0, elementType.toIrType(pluginContext, declarationStore)) }
-        }
-
-        return DeclarationIrBuilder(pluginContext, symbol).irBlock {
-            val tmpSet = irTemporary(
-                irCall(mutableSetOf)
-                    .apply { putTypeArgument(0, elementType.toIrType(pluginContext, declarationStore)) }
-            )
-
-            result.dependencyResults
-                .forEach { dependencyResult ->
-                    +irCall(setAddAll).apply {
-                        dispatchReceiver = irGet(tmpSet)
-                        putValueArgument(0, expressionFor(dependencyResult.value))
-                    }
+                .apply {
+                    putTypeArgument(0, elementType.toIrType(pluginContext, declarationStore))
                 }
+            given.dependencies.size == 1 -> DeclarationIrBuilder(pluginContext, symbol)
+                .irCall(setOf)
+                .apply {
+                    putTypeArgument(0, elementType.toIrType(pluginContext, declarationStore))
+                    putValueArgument(0, expressionFor(result.dependencyResults.values.single()))
+                }
+            else -> DeclarationIrBuilder(pluginContext, symbol).irBlock {
+                val tmpSet = irTemporary(
+                    irCall(mutableSetOf)
+                        .apply {
+                            putTypeArgument(0, elementType.toIrType(pluginContext, declarationStore))
+                        }
+                )
 
-            +irGet(tmpSet)
+                result.dependencyResults
+                    .forEach { dependencyResult ->
+                        +irCall(setAddAll).apply {
+                            dispatchReceiver = irGet(tmpSet)
+                            putValueArgument(0, expressionFor(dependencyResult.value))
+                        }
+                    }
+
+                +irGet(tmpSet)
+            }
         }
     }
 
