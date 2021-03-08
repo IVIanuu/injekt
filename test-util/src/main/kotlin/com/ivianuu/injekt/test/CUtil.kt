@@ -207,10 +207,8 @@ fun KotlinCompilation.Result.assertIrContainsText(times: Int, text: String) {
     irAssertions {
         val matchesCount = it.countMatches(text)
         assert(matchesCount == times) {
-            "expected '$it' $times but was found $matchesCount in '$it'"
+            "expected '$text' $times times but was found $matchesCount times in '$it'"
         }
-
-
     }
 }
 
