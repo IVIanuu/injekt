@@ -35,7 +35,21 @@ class ExpressionWrappingTest {
             }
         """
     ) {
-        assertIrContainsText(1, "local fun <anonymous>(): Bar {")
+        assertIrContainsText(1, "bar(foo = ")
+    }
+
+    @Test
+    fun testDoesFunctionWrapGivenWithMultipleUsagesInDifferentScopes() = codegen(
+        """
+            @Given val foo = Foo()
+            @Given fun bar(@Given foo: Foo) = Bar(foo)
+            @Given fun <T> pair(@Given a: T, @Given b: () -> T): Pair<T, () -> T> = a to b
+            fun invoke() {
+                given<Pair<Bar, () -> Bar>>()
+            }
+        """
+    ) {
+        assertIrContainsText(1, "bar(foo = ")
     }
 
     @Test

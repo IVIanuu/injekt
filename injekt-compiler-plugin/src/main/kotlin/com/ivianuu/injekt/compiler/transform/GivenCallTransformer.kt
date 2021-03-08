@@ -77,8 +77,6 @@ class GivenCallTransformer(
     private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
 
-    private val initializingExpressions = mutableMapOf<GivenNode, GivenExpression>()
-
     private inner class GraphContext(val graph: GivenGraph.Success) {
         val statements = mutableListOf<IrStatement>()
 
@@ -90,6 +88,17 @@ class GivenCallTransformer(
                 this += current
                 current = current.parent
             }
+        }
+
+        private val usagesByResult = mutableMapOf<CandidateResolutionResult.Success, Int>()
+        fun usagesFor(result: CandidateResolutionResult.Success): Int = usagesByResult.getOrPut(result) {
+            var usages = 0
+            fun CandidateResolutionResult.Success.visit() {
+                if (this == result) usages++
+                dependencyResults.values.forEach { it.visit() }
+            }
+            graph.results.values.forEach { it.visit() }
+            usages
         }
 
         fun mapScopeIfNeeded(scope: ResolutionScope) =
@@ -106,6 +115,8 @@ class GivenCallTransformer(
         val functionWrappedExpressions = mutableMapOf<CandidateResolutionResult.Success, ScopeContext.() -> IrExpression>()
         val cachedExpressions = mutableMapOf<CandidateResolutionResult.Success, ScopeContext.() -> IrExpression>()
         val statements = if (scope == graphContext.graph.scope) graphContext.statements else mutableListOf()
+        val initializingExpressions: MutableMap<GivenNode, GivenExpression> =
+            parent?.initializingExpressions ?: mutableMapOf()
 
         fun findScopeContext(scopeToFind: ResolutionScope): ScopeContext {
             val finalScope = graphContext.mapScopeIfNeeded(scopeToFind)
@@ -200,14 +211,15 @@ class GivenCallTransformer(
         }
     }
 
-    private fun CandidateResolutionResult.Success.shouldWrap(): Boolean =
-        dependencyResults.isNotEmpty() && !hasCircularDependency &&
-                !shouldCache() && usages > 1
+    private fun CandidateResolutionResult.Success.shouldWrap(
+        context: GraphContext
+    ): Boolean = dependencyResults.isNotEmpty() && !shouldCache(context) &&
+            context.usagesFor(this) > 1
 
     private fun ScopeContext.wrapExpressionInFunctionIfNeeded(
         result: CandidateResolutionResult.Success,
         rawExpressionProvider: () -> IrExpression
-    ): IrExpression = if (!result.shouldWrap()) rawExpressionProvider()
+    ): IrExpression = if (!result.shouldWrap(graphContext)) rawExpressionProvider()
     else with(findScopeContext(result.scope)) {
         functionWrappedExpressions.getOrPut(result) {
             val function = IrFactoryImpl.buildFun {
@@ -242,14 +254,15 @@ class GivenCallTransformer(
         }
     }.invoke(this)
 
-    private fun CandidateResolutionResult.Success.shouldCache(): Boolean =
-        candidate.cache && !hasCircularDependency && usages > 1
+    private fun CandidateResolutionResult.Success.shouldCache(
+        context: GraphContext
+    ): Boolean = candidate.cache && context.usagesFor(this) > 1
 
     private fun ScopeContext.cacheExpressionIfNeeded(
         result: CandidateResolutionResult.Success,
         rawExpressionProvider: () -> IrExpression
     ): IrExpression {
-        if (!result.shouldCache()) return rawExpressionProvider()
+        if (!result.shouldCache(graphContext)) return rawExpressionProvider()
         return with(findScopeContext(result.scope)) {
             cachedExpressions.getOrPut(result) {
                 val variable = irScope.createTemporaryVariable(rawExpressionProvider())

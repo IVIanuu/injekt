@@ -16,9 +16,6 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.unsafeLazy
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
-
 sealed class GivenGraph {
     data class Success(
         val scope: ResolutionScope,
@@ -35,54 +32,14 @@ sealed class CandidateResolutionResult {
 
     data class Success(
         override val candidate: GivenNode,
-        val request: GivenRequest,
         val scope: ResolutionScope,
         val dependencyResults: Map<GivenRequest, Success>
-    ) : CandidateResolutionResult() {
-        var usages = 1
-        var hasCircularDependency = false
-        val outerMostScope: ResolutionScope by unsafeLazy {
-            when {
-                dependencyResults.isEmpty() -> scope.allScopes.first {
-                    it.allParents.size >= candidate.ownerScope.allParents.size &&
-                            it.callContext.canCall(candidate.callContext)
-                }
-                candidate.dependencyScope != null -> scope
-                else -> {
-                    val dependencyScope = dependencyResults.maxByOrNull {
-                        it.value.outerMostScope.allParents.size
-                    }!!.value.outerMostScope
-                    when {
-                        dependencyScope.allParents.size <
-                                candidate.ownerScope.allParents.size -> scope.allScopes.first {
-                            it.allParents.size >= candidate.ownerScope.allParents.size &&
-                                    it.callContext.canCall(scope.callContext)
-                        }
-                        dependencyScope.callContext.canCall(scope.callContext) -> dependencyScope
-                        else -> scope.allScopes.first {
-                            it.allParents.size >= candidate.ownerScope.allParents.size &&
-                                    it.callContext.canCall(scope.callContext)
-                        }
-                    }
-                }
-            }
-        }
-    }
+    ) : CandidateResolutionResult()
 
     data class Failure(
         override val candidate: GivenNode,
         val failure: ResolutionResult.Failure,
     ) : CandidateResolutionResult()
-}
-
-private fun CandidateResolutionResult.Success.flattenResults(): Set<CandidateResolutionResult.Success> {
-    val allResults = mutableSetOf<CandidateResolutionResult.Success>()
-    fun CandidateResolutionResult.Success.visit() {
-        if (!allResults.add(this)) return
-        dependencyResults.forEach { it.value.visit() }
-    }
-    visit()
-    return allResults
 }
 
 sealed class ResolutionResult {
@@ -145,36 +102,8 @@ fun ResolutionScope.resolveGiven(requests: List<GivenRequest>): GivenGraph {
                 .filterIsInstance<ResolutionResult.Success>() to
                     it.filterIsInstance<ResolutionResult.Failure>()
         }
-    return if (failureResults.isEmpty()) successResults
-        .optimize()
-        .toSuccessGraph(requests, this)
+    return if (failureResults.isEmpty()) successResults.toSuccessGraph(requests, this)
     else failureResults.toErrorGraph()
-}
-
-private fun List<ResolutionResult.Success>.optimize(): List<ResolutionResult.Success> {
-    var next = this
-    var last = emptyList<ResolutionResult.Success>()
-    while (next != last) {
-        last = next
-        next = map {
-            val newCandidateResult = it.candidateResult.optimize()
-            if (newCandidateResult != it.candidateResult)  ResolutionResult.Success(
-                request = it.request,
-                candidateResult = newCandidateResult
-            ) else it
-        }
-    }
-    return next
-}
-
-private fun CandidateResolutionResult.Success.optimize(): CandidateResolutionResult.Success {
-    if (hasCircularDependency || scope == outerMostScope) return this
-    return outerMostScope.resolveRequest(request)
-        .let {
-            it.safeAs<ResolutionResult.Success>()
-                ?.candidateResult
-                ?: error("Wtf")
-        }
 }
 
 private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult {
@@ -206,10 +135,7 @@ private fun ResolutionScope.computeForCandidate(
     candidate: GivenNode,
     compute: () -> CandidateResolutionResult,
 ): CandidateResolutionResult {
-    resultsByCandidate[candidate]?.let {
-        if (it is CandidateResolutionResult.Success) it.usages++
-        return it
-    }
+    resultsByCandidate[candidate]?.let { return it }
     val subChain = mutableSetOf(candidate)
     chain.reversed().forEach { prev ->
         subChain += prev
@@ -226,18 +152,13 @@ private fun ResolutionScope.computeForCandidate(
         }
     }
 
-    if (candidate in chain) {
-        circularDependencies += candidate
-        return CandidateResolutionResult.Success(candidate, request, this, emptyMap())
-            .also { it.hasCircularDependency = true }
-    }
+    if (candidate in chain)
+        return CandidateResolutionResult.Success(candidate, this, emptyMap())
 
     chain += candidate
     val result = compute()
     resultsByCandidate[candidate] = result
     chain -= candidate
-    if (result is CandidateResolutionResult.Success &&
-        candidate in circularDependencies) result.hasCircularDependency = true
     return result
 }
 
@@ -322,10 +243,10 @@ private fun ResolutionScope.resolveCandidate(
             }
         }
     }
-    return@computeForCandidate CandidateResolutionResult.Success(candidate, request, this, successDependencyResults)
+    return@computeForCandidate CandidateResolutionResult.Success(candidate, this, successDependencyResults)
 }
 
-fun ResolutionScope.depth(scope: ResolutionScope): Int {
+private fun ResolutionScope.depth(scope: ResolutionScope): Int {
     var currentScope: ResolutionScope? = scope
     var depth = 0
     while (currentScope != null && currentScope != this) {

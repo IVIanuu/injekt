@@ -34,7 +34,6 @@ class ResolutionScope(
     produceContributions: () -> List<CallableRef>
 ) {
     val chain: MutableSet<GivenNode> = parent?.chain ?: mutableSetOf()
-    val circularDependencies = mutableSetOf<GivenNode>()
     val resultsByRequest = mutableMapOf<GivenRequest, ResolutionResult>()
     val resultsByCandidate = mutableMapOf<GivenNode, CandidateResolutionResult>()
 
@@ -49,8 +48,8 @@ class ResolutionScope(
         }
     }
 
-    val allParents: List<ResolutionScope> = parent?.allScopes ?: emptyList()
-    val allScopes: List<ResolutionScope> = allParents + this
+    private val allParents: List<ResolutionScope> = parent?.allScopes ?: emptyList()
+    private val allScopes: List<ResolutionScope> = allParents + this
 
     private val givensByType = mutableMapOf<TypeRef, List<GivenNode>>()
     private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>?>()

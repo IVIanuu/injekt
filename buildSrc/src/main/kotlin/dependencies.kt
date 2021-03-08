@@ -68,7 +68,6 @@ object Deps {
 
     const val autoService = "com.google.auto.service:auto-service:1.0-rc7"
 
-
     const val bintrayGradlePlugin =
         "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.5"
 
