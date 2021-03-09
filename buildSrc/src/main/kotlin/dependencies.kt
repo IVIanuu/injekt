@@ -82,7 +82,7 @@ object Deps {
     }
 
     object Injekt {
-        const val version = "0.0.1-dev477"
+        const val version = "0.0.1-dev481"
         const val gradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:$version"
     }
 

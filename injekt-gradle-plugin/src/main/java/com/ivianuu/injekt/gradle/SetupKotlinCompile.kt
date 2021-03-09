@@ -52,11 +52,13 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
         .also { it.mkdirs() }
 
     project.afterEvaluate {
+        val extension = project.extensions.getByType(InjektExtension::class.java)
         val cleanGeneratedFiles = project.tasks.create(
             "${name}InjektCleanGeneratedFiles", CleanGeneratedFiles::class.java)
         cleanGeneratedFiles.cacheDir = cacheDir
         cleanGeneratedFiles.dumpDir = dumpDir
         cleanGeneratedFiles.generatedSrcDir = srcDir
+        cleanGeneratedFiles.incrementalFixEnabled = extension.incrementalFixEnabled
         cleanGeneratedFiles.srcDirs = if (androidVariantData != null) {
             androidVariantData.sourceSets
                 .flatMap { it.javaDirectories }
@@ -80,7 +82,8 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
                 "gen dir $srcDir\n" +
                 "src dirs ${cleanGeneratedFiles.srcDirs.joinToString("\n")}\n" +
                 "compilation $compilation" +
-                "variant data $androidVariantData")
+                "variant data $androidVariantData\n" +
+                "incremental fix enabled ${extension.incrementalFixEnabled}")
     }
 
     return listOf(

@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.gradle
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
@@ -40,6 +41,9 @@ abstract class CleanGeneratedFiles : DefaultTask() {
 
     @get:InputFiles
     lateinit var srcDirs: List<File>
+
+    @get:Input
+    var incrementalFixEnabled = true
 
     @Suppress("unused")
     @get:OutputFile
@@ -83,7 +87,9 @@ abstract class CleanGeneratedFiles : DefaultTask() {
 
         val oldFilesWithGivenCalls = filesWithGivenCalls.toSet()
         val oldCacheEntries = cacheEntries.toMap()
+        var hasChanges = false
         inputs.outOfDate { details ->
+            hasChanges = true
             cacheEntries.remove(details.file.absolutePath)
                 ?.onEach {
                     log("clean files: Delete $it because ${details.file} has changed")
@@ -94,6 +100,7 @@ abstract class CleanGeneratedFiles : DefaultTask() {
                 }
         }
         inputs.removed { details ->
+            hasChanges = true
             cacheEntries.remove(details.file.absolutePath)
                 ?.onEach {
                     log("clean files: Delete $it because ${details.file} was removed")
@@ -135,19 +142,23 @@ abstract class CleanGeneratedFiles : DefaultTask() {
                 }
         }
 
-        filesWithGivenCalls
-            .map { File(it) }
-            .filter { it.exists() }
-            .forEach { fileWithGivenCall ->
-                val text = fileWithGivenCall.readText()
-                val newText = if (text.startsWith("// injekt-incremental-fix")) {
-                    "// injekt-incremental-fix ${System.currentTimeMillis()} injekt-end\n" + text.split("injekt-end\n")[1]
-                } else {
-                    "// injekt-incremental-fix ${System.currentTimeMillis()} injekt-end\n" + text
+        if (incrementalFixEnabled && hasChanges) {
+            filesWithGivenCalls
+                .map { File(it) }
+                .filter { it.exists() }
+                .forEach { fileWithGivenCall ->
+                    val text = fileWithGivenCall.readText()
+                    val newText = if (text.startsWith("// injekt-incremental-fix")) {
+                        "// injekt-incremental-fix ${System.currentTimeMillis()} injekt-end\n" + text.split("injekt-end\n")[1]
+                    } else {
+                        "// injekt-incremental-fix ${System.currentTimeMillis()} injekt-end\n" + text
+                    }
+                    log("clean files: Force recompilation of $fileWithGivenCall")
+                    fileWithGivenCall.writeText(newText)
                 }
-                log("clean files: Force recompilation of $fileWithGivenCall")
-                fileWithGivenCall.writeText(newText)
-            }
+        } else {
+            log("clean files: Do not force recompilation: is enabled: $incrementalFixEnabled, has changes: $hasChanges")
+        }
     }
 
 }
