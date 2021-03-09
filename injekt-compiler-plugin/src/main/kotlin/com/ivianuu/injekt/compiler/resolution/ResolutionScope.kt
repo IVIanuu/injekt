@@ -84,9 +84,7 @@ class ResolutionScope(
             }
 
         if (hasGivensOrMacros) {
-            allScopes
-                .flatMap { it.givens }
-                .filter { it.type.macroChain.isNotEmpty() }
+            allMacroCandidates
                 .forEach { runMacros(it.type) }
         }
     }
@@ -178,55 +176,58 @@ class ResolutionScope(
         }
     }
 
+    private val allMacroCandidates get() = allScopes
+        .flatMap { it.givens }
+        .filter { it.type.macroChain.isNotEmpty() }
+
     private fun runMacros(contribution: TypeRef) {
-        for (macro in macros) {
-            if (contribution in macro.processedContributions) continue
-            macro.processedContributions += contribution
+        for (macro in macros) runMacro(macro, contribution)
+    }
 
-            val macroType = macro.callable.typeParameters.first().defaultType
-            if (!contribution.copy(macroChain = emptyList()).isSubTypeOf(declarationStore, macroType)) continue
-            if (macro.callable.callable.fqNameSafe in contribution.macroChain) continue
+    private fun runMacro(macro: MacroNode, contribution: TypeRef) {
+        if (contribution in macro.processedContributions) return
+        macro.processedContributions += contribution
 
-            val inputsSubstitutionMap = getSubstitutionMap(
-                declarationStore,
-                listOf(contribution to macroType)
-            )
-            val outputsSubstitutionMap = getSubstitutionMap(
-                declarationStore,
-                listOf(contribution.copy(macroChain = emptyList()) to macroType)
-            )
-            val newContribution = macro.callable.substituteInputs(inputsSubstitutionMap)
-                .copy(
-                    isMacro = false,
-                    isFromMacro = true,
-                    typeArguments = inputsSubstitutionMap,
-                    type = macro.callable.type.substitute(outputsSubstitutionMap)
-                )
+        val macroType = macro.callable.typeParameters.first().defaultType
+        if (!contribution.copy(macroChain = emptyList()).isSubTypeOf(declarationStore, macroType)) return
+        if (macro.callable.callable.fqNameSafe in contribution.macroChain) return
 
-            newContribution.collectContributions(
-                declarationStore = declarationStore,
-                substitutionMap = outputsSubstitutionMap,
-                addGiven = { givens += it },
-                addGivenSetElement = { setElements += it },
-                addMacro = { macros += MacroNode(it) }
+        val inputsSubstitutionMap = getSubstitutionMap(
+            declarationStore,
+            listOf(contribution to macroType)
+        )
+        val outputsSubstitutionMap = getSubstitutionMap(
+            declarationStore,
+            listOf(contribution.copy(macroChain = emptyList()) to macroType)
+        )
+        val newContribution = macro.callable.substituteInputs(inputsSubstitutionMap)
+            .copy(
+                isMacro = false,
+                isFromMacro = true,
+                typeArguments = inputsSubstitutionMap,
+                type = macro.callable.type.substitute(outputsSubstitutionMap)
             )
 
-            if (newContribution.contributionKind == ContributionKind.VALUE) {
-                val newContributionWithChain = newContribution.copy(
-                    type = newContribution.type.copy(
+        newContribution.collectContributions(
+            declarationStore = declarationStore,
+            substitutionMap = outputsSubstitutionMap,
+            addGiven = { newGiven ->
+                givens += newGiven
+                val newGivenWithChain = newGiven.copy(
+                    type = newGiven.type.copy(
                         macroChain = contribution.macroChain + newContribution.callable.fqNameSafe
                     )
                 )
-                newContributionWithChain.collectContributions(
-                    declarationStore = declarationStore,
-                    substitutionMap = newContributionWithChain.typeArguments,
-                    addGiven = { givens += it },
-                    addGivenSetElement = { setElements += it },
-                    addMacro = { macros += MacroNode(it) }
-                )
-                runMacros(newContributionWithChain.type)
+                givens += newGivenWithChain
+                runMacros(newGivenWithChain.type)
+            },
+            addGivenSetElement = { setElements += it },
+            addMacro = { newMacroCallable ->
+                val newMacro = MacroNode(newMacroCallable)
+                macros += newMacro
+                allMacroCandidates.forEach { runMacro(newMacro, it.type) }
             }
-        }
+        )
     }
 
     override fun toString(): String = "ResolutionScope($name)"

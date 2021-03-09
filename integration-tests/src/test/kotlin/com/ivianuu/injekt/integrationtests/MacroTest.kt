@@ -182,16 +182,31 @@ class MacroTest {
     @Test
     fun testMacroChain() = codegen(
         """
-            @Qualifier annotation class Trigger
+            @Qualifier annotation class A
 
-            @Macro @FooTrigger @Given fun <T : @Trigger Any?> triggerImpl() = 0
+            @Macro @Module fun <T : @A S, S> aImpl() = AModule<S>()
 
-            @Qualifier annotation class FooTrigger
-            @Macro @Given fun <T : @FooTrigger Any?> fooTriggerImpl() = Foo()
+            class AModule<T> {
+                @B
+                @Given
+                fun my(@Given instance: T): T = instance
+            }
 
-            @Trigger @Given fun dummy() = 0L
+            @Qualifier annotation class B
+            @Macro @Module fun <T : @B S, S> bImpl() = BModule<T>()
+
+            class BModule<T> {
+                @C
+                @Given
+                fun my(@Given instance: T): Any? = instance
+            }
+
+            @Qualifier annotation class C
+            @Macro @GivenSetElement fun <T : @C Any?> cImpl() = Foo()
+
+            @A @Given fun dummy() = 0L
             
-            fun invoke() = given<Foo>()
+            fun invoke() = given<Set<Foo>>().single()
         """
     ) {
         assertTrue(invokeSingleFile() is Foo)
