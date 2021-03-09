@@ -26,8 +26,6 @@ import com.ivianuu.injekt.component.ComponentInitializer
 import com.ivianuu.injekt.component.ComponentInitializerBinding
 import com.ivianuu.injekt.component.initializeApp
 
-annotation class Lol
-
 class App : Application() {
     override fun onCreate() {
         initializeApp()
