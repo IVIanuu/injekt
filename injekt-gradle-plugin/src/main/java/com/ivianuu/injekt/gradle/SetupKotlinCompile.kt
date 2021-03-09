@@ -46,9 +46,9 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
 
     val srcDir = project.buildDir.resolve("generated/source/injekt/$sourceSetName")
         .also { it.mkdirs() }
-    val cacheDir = project.buildDir.resolve("injekt/cache")
+    val cacheDir = project.buildDir.resolve("injekt/cache/$sourceSetName")
         .also { it.mkdirs() }
-    val dumpDir = project.buildDir.resolve("injekt/dump")
+    val dumpDir = project.buildDir.resolve("injekt/dump/$sourceSetName")
         .also { it.mkdirs() }
 
     project.afterEvaluate {
