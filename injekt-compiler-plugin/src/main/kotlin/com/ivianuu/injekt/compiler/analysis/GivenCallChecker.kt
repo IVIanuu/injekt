@@ -74,8 +74,8 @@ class GivenCallChecker(
 
         val requests = call
             .valueArguments
+            .filterValues { it is DefaultValueArgument }
             .filterKeys { it.contributionKind(declarationStore) == ContributionKind.VALUE }
-            .filter { it.value is DefaultValueArgument }
             .map {
                 GivenRequest(
                     type = it.key.type.toTypeRef(declarationStore),
