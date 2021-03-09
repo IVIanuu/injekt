@@ -52,9 +52,7 @@ class ResolutionScope(
     val allScopes: List<ResolutionScope> = allParents + this
 
     private val givensByType = mutableMapOf<TypeRef, List<GivenNode>>()
-    private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>?>()
-    private val syntheticSetElementsByType = mutableMapOf<TypeRef, List<TypeRef>?>()
-    private val syntheticProviderSetElementsByType = mutableMapOf<TypeRef, List<TypeRef>?>()
+    private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>>()
 
     private val initialize: Unit by unsafeLazy {
         if (parent != null) {
@@ -100,20 +98,15 @@ class ResolutionScope(
         initialize
         return givensByType.getOrPut(type) {
             buildList<GivenNode> {
-                val allParentGivens = parent?.givensForType(type)
-                if (allParentGivens != null) {
-                    this += allParentGivens
-                        .filter {
-                            !it.isFrameworkGiven || it.type.setKey != null
-                        }
-                }
+                parent?.givensForType(type)
+                    ?.filter { !it.isFrameworkGiven }
+                    ?.let { this += it }
 
                 this += givens
                     .filter { it.type.isAssignableTo(declarationStore, type) }
                     .map { it.toGivenNode(type, this@ResolutionScope) }
 
                 if (type.macroChain.isEmpty() &&
-                    type.setKey == null &&
                     type.qualifiers.isEmpty() &&
                     (type.classifier.fqName.asString().startsWith("kotlin.Function")
                             || type.classifier.fqName.asString()
@@ -133,9 +126,25 @@ class ResolutionScope(
                     type.setKey == null &&
                     type.isSubTypeOf(declarationStore, setType)) {
                     val setElementType = type.subtypeView(setType.classifier)!!.arguments.single()
-                    val elements = (setElementsForType(setElementType)
-                        ?: syntheticProviderGivensForType(setElementType))
-                        ?.mapIndexed { index, element ->
+                    var elementTypes = setElementsForType(setElementType)
+                    if (elementTypes.isEmpty() &&
+                        setElementType.qualifiers.isEmpty() &&
+                        (setElementType.classifier.fqName.asString().startsWith("kotlin.Function")
+                                || setElementType.classifier.fqName.asString()
+                            .startsWith("kotlin.coroutines.SuspendFunction")) &&
+                        setElementType.arguments.dropLast(1).all { it.contributionKind != null }) {
+                        val providerReturnType = setElementType.arguments.last()
+                        elementTypes = setElementsForType(providerReturnType)
+                            .map { elementType ->
+                                setElementType.copy(
+                                    arguments = setElementType.arguments
+                                        .dropLast(1) + elementType
+                                )
+                            }
+                    }
+
+                    val elements = elementTypes
+                        .mapIndexed { index, element ->
                             GivenRequest(
                                 type = element,
                                 required = true,
@@ -143,93 +152,20 @@ class ResolutionScope(
                                 parameterName = "element$index".asNameId()
                             )
                         }
-                    when {
-                        elements != null -> {
-                            this += SetGivenNode(
-                                type = type,
-                                ownerScope = this@ResolutionScope,
-                                dependencies = elements
-                            )
-                        }
-                        allParentGivens != null -> {
-                            allParentGivens.lastOrNull { it is SetGivenNode }
-                                ?.let { this += it }
-                        }
-                        else -> {
-                            this += SetGivenNode(
-                                type = type,
-                                ownerScope = this@ResolutionScope,
-                                dependencies = emptyList()
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private fun syntheticProviderGivensForType(type: TypeRef): List<TypeRef>? {
-        initialize
-        return syntheticProviderSetElementsByType.getOrPut(type) {
-            if (type.qualifiers.isEmpty() &&
-                (type.classifier.fqName.asString().startsWith("kotlin.Function")
-                        || type.classifier.fqName.asString()
-                    .startsWith("kotlin.coroutines.SuspendFunction")) &&
-                type.arguments.dropLast(1).all { it.contributionKind != null }) {
-                val providerReturnType = type.arguments.last()
-                syntheticSetElementsForType(providerReturnType)
-                    ?.map { element ->
-                        val elementProviderType = type.copy(
-                            setKey = element.setKey,
-                            arguments = type.arguments
-                                .dropLast(1) + element
-                        )
-                        givensByType[elementProviderType] = listOf(
-                            ProviderGivenNode(
-                                elementProviderType,
-                                this,
-                                declarationStore
-                            )
-                        )
-                        elementProviderType
-                    }
-            } else null
-        }
-    }
-
-    private fun syntheticSetElementsForType(type: TypeRef): List<TypeRef>? {
-        initialize
-        return syntheticSetElementsByType.getOrPut(type) {
-            val thisElements = setElements
-                .filter { it.type.isAssignableTo(declarationStore, type) }
-                .map { it.substitute(getSubstitutionMap(declarationStore, listOf(type to it.type))) }
-                .map { callable ->
-                    val setKey = SetKey(type, callable)
-                    val typeWithSetKey = type.copy(setKey = setKey)
-
-                    givensByType[typeWithSetKey] = listOf(
-                        callable.toGivenNode(
-                            typeWithSetKey,
-                            this
-                        )
+                    this += SetGivenNode(
+                        type = type,
+                        ownerScope = this@ResolutionScope,
+                        dependencies = elements
                     )
-
-                    typeWithSetKey
                 }
-                .takeIf { it.isNotEmpty() } ?: return@getOrPut null
-            val parentElements = allParents.reversed().firstNotNullResult {
-                it.syntheticSetElementsForType(type)
             }
-            if (parentElements != null) {
-                parentElements + thisElements
-            } else thisElements
         }
     }
 
-    private fun setElementsForType(type: TypeRef): List<TypeRef>? {
+    private fun setElementsForType(type: TypeRef): List<TypeRef> {
         initialize
         return setElementsByType.getOrPut(type) {
-            val thisElements = setElements
+            (parent?.setElementsForType(type) ?: emptyList()) + setElements
                 .filter { it.type.isAssignableTo(declarationStore, type) }
                 .map { it.substitute(getSubstitutionMap(declarationStore, listOf(type to it.type))) }
                 .map { callable ->
@@ -239,13 +175,6 @@ class ResolutionScope(
                     givens += callable.copy(type = typeWithSetKey)
                     typeWithSetKey
                 }
-                .takeIf { it.isNotEmpty() } ?: return@getOrPut null
-            val parentElements = allParents.reversed().firstNotNullResult {
-                it.setElementsForType(type)
-            }
-            if (parentElements != null) {
-                parentElements + thisElements
-            } else thisElements
         }
     }
 
