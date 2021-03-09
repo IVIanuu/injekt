@@ -70,6 +70,7 @@ import org.jetbrains.kotlin.ir.util.isVararg
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class GivenCallTransformer(
@@ -144,17 +145,21 @@ class GivenCallTransformer(
         context: ScopeContext,
         results: Map<GivenRequest, CandidateResolutionResult.Success>
     ) {
-        var nonReceiverIndex = 0
         results
             .forEach { (request, result) ->
                 val expression = context.expressionFor(result)
                 when(request.parameterName.asString()) {
                     "_dispatchReceiver" -> dispatchReceiver = expression
                     "_extensionReceiver" -> extensionReceiver = expression
-                    else -> putValueArgument(
-                        nonReceiverIndex++,
-                        expression
-                    )
+                    else -> {
+                        putValueArgument(
+                            symbol.owner
+                                .valueParameters
+                                .first { it.name == request.parameterName }
+                                .index,
+                            expression
+                        )
+                    }
                 }
             }
     }
@@ -468,6 +473,10 @@ class GivenCallTransformer(
             .forEachIndexed { index, typeArgument ->
                 putTypeArgument(index, typeArgument.toIrType(pluginContext, declarationStore))
             }
+        if (symbol.descriptor.fqNameSafe.asString() ==
+            "com.ivianuu.essentials.app.appInitializerBindingImpl") {
+            println()
+        }
     }
 
     private fun ScopeContext.variableExpression(descriptor: VariableDescriptor): IrExpression =

@@ -48,8 +48,8 @@ class ResolutionScope(
         }
     }
 
-    private val allParents: List<ResolutionScope> = parent?.allScopes ?: emptyList()
-    private val allScopes: List<ResolutionScope> = allParents + this
+    val allParents: List<ResolutionScope> = parent?.allScopes ?: emptyList()
+    val allScopes: List<ResolutionScope> = allParents + this
 
     private val givensByType = mutableMapOf<TypeRef, List<GivenNode>>()
     private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>?>()
