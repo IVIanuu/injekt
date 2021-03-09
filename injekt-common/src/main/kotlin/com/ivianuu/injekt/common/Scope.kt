@@ -37,10 +37,10 @@ annotation class Scoped<S : Scope>
 
 @Macro
 @Given
-inline fun <@ForTypeKey T : @Scoped<U> S, @ForTypeKey S : Any, @ForTypeKey U : Scope> scopedImpl(
+inline fun <T : @Scoped<U> S, @ForTypeKey S : Any, U : Scope> scopedImpl(
     @Given scope: U,
     @Given factory: () -> T
-): S = scope(factory)
+): S = scope<S>(factory)
 
 inline operator fun <T : Any> Scope.invoke(key: Any, block: () -> T): T {
     get<T>(key)?.let { return it }
