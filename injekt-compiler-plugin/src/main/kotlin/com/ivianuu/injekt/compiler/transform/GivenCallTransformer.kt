@@ -95,7 +95,8 @@ class GivenCallTransformer(
         fun usagesFor(result: CandidateResolutionResult.Success): Int = usagesByResult.getOrPut(result) {
             var usages = 0
             fun CandidateResolutionResult.Success.visit() {
-                if (this == result) usages++
+                if (candidate.type == result.candidate.type &&
+                        outerMostScope == result.outerMostScope) usages++
                 dependencyResults.values.forEach { it.visit() }
             }
             graph.results.values.forEach { it.visit() }
@@ -113,11 +114,13 @@ class GivenCallTransformer(
         val irScope: Scope
     ) {
         val symbol = irScope.scopeOwnerSymbol
-        val functionWrappedExpressions = mutableMapOf<CandidateResolutionResult.Success, ScopeContext.() -> IrExpression>()
-        val cachedExpressions = mutableMapOf<CandidateResolutionResult.Success, ScopeContext.() -> IrExpression>()
+        val functionWrappedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
+        val cachedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
         val statements = if (scope == graphContext.graph.scope) graphContext.statements else mutableListOf()
         val initializingExpressions: MutableMap<GivenNode, GivenExpression> =
             parent?.initializingExpressions ?: mutableMapOf()
+        val parameterMap: MutableMap<ParameterDescriptor, IrValueParameter> =
+            parent?.parameterMap ?: mutableMapOf()
 
         fun findScopeContext(scopeToFind: ResolutionScope): ScopeContext {
             val finalScope = graphContext.mapScopeIfNeeded(scopeToFind)
@@ -218,15 +221,15 @@ class GivenCallTransformer(
 
     private fun CandidateResolutionResult.Success.shouldWrap(
         context: GraphContext
-    ): Boolean = dependencyResults.isNotEmpty() && !shouldCache(context) &&
-            context.usagesFor(this) > 1
+    ): Boolean = dependencyResults.isNotEmpty() &&
+            !candidate.cache && context.usagesFor(this) > 1
 
     private fun ScopeContext.wrapExpressionInFunctionIfNeeded(
         result: CandidateResolutionResult.Success,
         rawExpressionProvider: () -> IrExpression
     ): IrExpression = if (!result.shouldWrap(graphContext)) rawExpressionProvider()
-    else with(findScopeContext(result.scope)) {
-        functionWrappedExpressions.getOrPut(result) {
+    else with(findScopeContext(result.outerMostScope)) {
+        functionWrappedExpressions.getOrPut(result.candidate.type) {
             val function = IrFactoryImpl.buildFun {
                 origin = IrDeclarationOrigin.DEFINED
                 name = Name.special("<anonymous>")
@@ -268,8 +271,8 @@ class GivenCallTransformer(
         rawExpressionProvider: () -> IrExpression
     ): IrExpression {
         if (!result.shouldCache(graphContext)) return rawExpressionProvider()
-        return with(findScopeContext(result.scope)) {
-            cachedExpressions.getOrPut(result) {
+        return with(findScopeContext(result.outerMostScope)) {
+            cachedExpressions.getOrPut(result.candidate.type) {
                 val variable = irScope.createTemporaryVariable(rawExpressionProvider())
                 statements += variable
                 val expression: ScopeContext.() -> IrExpression = {
@@ -293,14 +296,18 @@ class GivenCallTransformer(
             given.type.toIrType(pluginContext, declarationStore),
             parameterNameProvider = { "p${graphContext.parameterIndex++}" }
         ) { function ->
-            given.parameterDescriptors.zip(function.valueParameters)
-                .forEach { parameterMap[it.first] = it.second }
             val dependencyScopeContext = ScopeContext(
                 this@providerExpression, graphContext, given.dependencyScope, scope)
             val expression = with(dependencyScopeContext) {
+                val previousParametersMap = parameterMap.toMap()
+                given.parameterDescriptors.zip(function.valueParameters)
+                    .forEach { parameterMap[it.first] = it.second }
                 expressionFor(result.dependencyResults.values.single())
+                    .also {
+                        parameterMap.clear()
+                        parameterMap.putAll(previousParametersMap)
+                    }
             }
-
             if (dependencyScopeContext.statements.isEmpty()) expression
             else {
                 irBlock {
@@ -502,8 +509,6 @@ class GivenCallTransformer(
     private val receiverAccessors = mutableListOf<Pair<IrClass, () -> IrExpression>>()
 
     private val variables = mutableListOf<IrVariable>()
-
-    private val parameterMap = mutableMapOf<ParameterDescriptor, IrValueParameter>()
 
     private val fileStack = mutableListOf<IrFile>()
     override fun visitFile(declaration: IrFile): IrFile {

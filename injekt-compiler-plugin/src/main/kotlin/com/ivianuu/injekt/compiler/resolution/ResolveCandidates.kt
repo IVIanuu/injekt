@@ -34,7 +34,47 @@ sealed class CandidateResolutionResult {
         override val candidate: GivenNode,
         val scope: ResolutionScope,
         val dependencyResults: Map<GivenRequest, Success>
-    ) : CandidateResolutionResult()
+    ) : CandidateResolutionResult() {
+        val outerMostScope: ResolutionScope = run {
+            when {
+                dependencyResults.isEmpty() -> scope.allScopes.first {
+                    it.allParents.size >= candidate.ownerScope.allParents.size &&
+                            it.callContext.canCall(candidate.callContext)
+                }
+                candidate.dependencyScope != null -> {
+                    val allOuterMostScopes = mutableListOf<ResolutionScope>()
+                    fun Success.visit() {
+                        allOuterMostScopes += outerMostScope
+                        dependencyResults.values.forEach { it.visit() }
+                    }
+                    dependencyResults.values.single().visit()
+                    allOuterMostScopes
+                        .sortedBy { it.allParents.size }
+                        .filter { it.allParents.size < candidate.dependencyScope!!.allParents.size }
+                        .lastOrNull {
+                            it.callContext.canCall(candidate.callContext)
+                        } ?: scope.allScopes.first()
+                }
+                else -> {
+                    val dependencyScope = dependencyResults.maxByOrNull {
+                        it.value.outerMostScope.allParents.size
+                    }!!.value.outerMostScope
+                    when {
+                        dependencyScope.allParents.size <
+                                candidate.ownerScope.allParents.size -> scope.allScopes.first {
+                            it.allParents.size >= candidate.ownerScope.allParents.size &&
+                                    it.callContext.canCall(scope.callContext)
+                        }
+                        dependencyScope.callContext.canCall(scope.callContext) -> dependencyScope
+                        else -> scope.allScopes.first {
+                            it.allParents.size >= candidate.ownerScope.allParents.size &&
+                                    it.callContext.canCall(scope.callContext)
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     data class Failure(
         override val candidate: GivenNode,
