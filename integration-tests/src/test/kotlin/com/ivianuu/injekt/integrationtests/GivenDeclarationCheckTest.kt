@@ -85,6 +85,54 @@ class GivenDeclarationCheckTest {
     }
 
     @Test
+    fun testGivenAnnotationClass() = codegen(
+        """
+            @Given annotation class MyAnnotation
+        """
+    ) {
+        assertCompileError("annotation class cannot be marked with @Given")
+    }
+
+    @Test
+    fun testGivenConstructorOnAnnotationClass() = codegen(
+        """
+            annotation class MyAnnotation @Given constructor()
+        """
+    ) {
+        assertCompileError("annotation class constructor cannot be marked with @Given")
+    }
+
+    @Test
+    fun testGivenTailrecFunction() = codegen(
+        """
+            tailrec fun factorial(n : Long, a : Long = 1) : Long {
+                return if (n == 1L) a
+                else factorial(n - 1, n * a)
+            }
+        """
+    ) {
+        assertCompileError("tailrec function cannot be marked with @Given")
+    }
+
+    @Test
+    fun testGivenEnumClass() = codegen(
+        """
+            @Given enum class MyEnum
+        """
+    ) {
+        assertCompileError("enum class cannot be marked with @Given")
+    }
+
+    @Test
+    fun testGivenAbstractClass() = codegen(
+        """
+            @Given abstract class MyAbstractClass
+        """
+    ) {
+        assertCompileError("abstract class cannot be marked with @Given")
+    }
+
+    @Test
     fun testNonGivenValueParameterOnGivenFunction() = codegen(
         """
             @Given fun bar(foo: Foo) = Bar(foo)

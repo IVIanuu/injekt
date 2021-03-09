@@ -80,6 +80,31 @@ interface InjektErrors {
                 .also { MAP.put(it, "class cannot have multiple @Given marked constructors") }
 
         @JvmField
+        val GIVEN_ANNOTATION_CLASS =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also { MAP.put(it, "annotation class cannot be marked with @Given") }
+
+        @JvmField
+        val GIVEN_CONSTRUCTOR_ON_ANNOTATION_CLASS =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also { MAP.put(it, "annotation class constructor cannot be marked with @Given") }
+
+        @JvmField
+        val GIVEN_ENUM_CLASS =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also { MAP.put(it, "enum class cannot be marked with @Given") }
+
+        @JvmField
+        val GIVEN_ABSTRACT_CLASS =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also { MAP.put(it, "abstract class cannot be marked with @Given") }
+
+        @JvmField
+        val GIVEN_TAILREC_FUNCTION =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also { MAP.put(it, "tailrec function cannot be marked with @Given") }
+
+        @JvmField
         val DECLARATION_WITH_MULTIPLE_CONTRIBUTIONS =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also { MAP.put(it, "declaration may be only annotated with one contribution annotation") }

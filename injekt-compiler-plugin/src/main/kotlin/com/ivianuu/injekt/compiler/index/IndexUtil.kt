@@ -28,6 +28,8 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
+import org.jetbrains.kotlin.psi.psiUtil.isPrivate
+import org.jetbrains.kotlin.psi.psiUtil.isProtected
 import org.jetbrains.kotlin.psi.psiUtil.isTopLevelKtOrJavaMember
 
 fun KtElement.collectIndices(): List<Index> {
@@ -65,6 +67,9 @@ private fun KtDeclaration.shouldBeIndexed(): Boolean {
         this !is KtProperty &&
         this !is KtConstructor<*>
     ) return false
+
+    if (isPrivate()) return false
+    if (isProtected()) return false
 
     if (this is KtClassOrObject && isLocal) return false
     if (this is KtProperty && !isTopLevel) return false

@@ -27,8 +27,10 @@ import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.builtins.isSuspendFunctionType
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
@@ -54,17 +56,56 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
             descriptor.allParameters
                 .filterNot { it === descriptor.dispatchReceiverParameter }
                 .checkParameters(declaration, descriptor, context.trace)
+            if (descriptor.isTailrec) {
+                context.trace.report(
+                    InjektErrors.GIVEN_TAILREC_FUNCTION
+                        .on(declaration)
+                )
+            }
         } else if (descriptor is ConstructorDescriptor) {
             checkMultipleContributions(descriptor, declaration, context.trace)
             descriptor.valueParameters
                 .checkParameters(declaration, if (descriptor.constructedClass.contributionKind(declarationStore) != null)
                     descriptor.constructedClass else descriptor, context.trace)
         } else if (descriptor is ClassDescriptor) {
+            val hasGivenAnnotation = descriptor.hasAnnotation(InjektFqNames.Given)
             checkMultipleContributions(descriptor, declaration, context.trace)
             val givenConstructors = descriptor.constructors
                 .filter { it.hasAnnotation(InjektFqNames.Given) }
 
-            if (descriptor.hasAnnotation(InjektFqNames.Given) &&
+            if (descriptor.kind == ClassKind.ANNOTATION_CLASS) {
+                if (hasGivenAnnotation) {
+                    context.trace.report(
+                        InjektErrors.GIVEN_ANNOTATION_CLASS
+                            .on(declaration)
+                    )
+                }
+
+                if (givenConstructors.isNotEmpty()) {
+                    context.trace.report(
+                        InjektErrors.GIVEN_CONSTRUCTOR_ON_ANNOTATION_CLASS
+                            .on(declaration)
+                    )
+                }
+            }
+
+            if (hasGivenAnnotation &&
+                descriptor.kind == ClassKind.ENUM_CLASS) {
+                context.trace.report(
+                    InjektErrors.GIVEN_ENUM_CLASS
+                        .on(declaration)
+                )
+            }
+
+            if (hasGivenAnnotation &&
+                    descriptor.modality == Modality.ABSTRACT) {
+                context.trace.report(
+                    InjektErrors.GIVEN_ABSTRACT_CLASS
+                        .on(declaration)
+                )
+            }
+
+            if (hasGivenAnnotation &&
                 givenConstructors.isNotEmpty()
             ) {
                 context.trace.report(
@@ -83,7 +124,7 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
             val givenSuperTypes = descriptor.defaultType.constructor.supertypes
                 .filter { it.contributionKind(declarationStore) == ContributionKind.VALUE }
 
-            if (givenSuperTypes.isNotEmpty() && !descriptor.hasAnnotation(InjektFqNames.Given) &&
+            if (givenSuperTypes.isNotEmpty() && !hasGivenAnnotation &&
                     givenConstructors.isEmpty()) {
                 context.trace.report(
                     InjektErrors.GIVEN_SUPER_TYPE_WITHOUT_GIVEN_CLASS
