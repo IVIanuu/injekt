@@ -74,17 +74,6 @@ class GivenDeclarationCheckTest {
     }
 
     @Test
-    fun testClassWithGivenSupertypeWithoutGiven() = codegen(
-        """
-            interface Dep
-
-            class DepImpl : @Given Dep
-        """
-    ) {
-        compilationShouldHaveFailed("class with a @Given super type must be marked with @Given or must have a @Given marked constructor")
-    }
-
-    @Test
     fun testGivenAnnotationClass() = codegen(
         """
             @Given annotation class MyAnnotation

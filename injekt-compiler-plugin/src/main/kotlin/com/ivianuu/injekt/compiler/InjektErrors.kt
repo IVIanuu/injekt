@@ -70,11 +70,6 @@ interface InjektErrors {
                 .also { MAP.put(it, "class cannot be marked with @Given if it has a @Given marked constructor") }
 
         @JvmField
-        val GIVEN_SUPER_TYPE_WITHOUT_GIVEN_CLASS =
-            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "class with a @Given super type must be marked with @Given or must have a @Given marked constructor") }
-
-        @JvmField
         val CLASS_WITH_MULTIPLE_GIVEN_CONSTRUCTORS =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also { MAP.put(it, "class cannot have multiple @Given marked constructors") }

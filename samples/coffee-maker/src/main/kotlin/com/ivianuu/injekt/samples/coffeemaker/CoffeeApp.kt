@@ -1,4 +1,4 @@
-// injekt-incremental-fix 1615362536113 injekt-end
+// injekt-incremental-fix 1615371825461 injekt-end
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -34,7 +34,8 @@ interface Heater {
     val isHot: Boolean
 }
 
-@Given object ElectricHeater : @Given Heater {
+@Given
+object ElectricHeater : Heater {
     private var heating: Boolean = false
 
     override fun on() {
@@ -54,7 +55,8 @@ interface Pump {
     fun pump()
 }
 
-@Given class Thermosiphon(@Given private val heater: Heater) : @Given Pump {
+@Given
+class Thermosiphon(@Given private val heater: Heater) : Pump {
     override fun pump() {
         if (heater.isHot) {
             println("=> => pumping => =>")

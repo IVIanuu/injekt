@@ -95,32 +95,6 @@ class QualifierTest {
     )
 
     @Test
-    fun testQualifiedClassWithGivenSuperType() = codegen(
-        """ 
-            @Given @Qualifier1 class Dep : @Given Any()
-            fun invoke() = given<@Qualifier1 Any>()
-            """
-    )
-
-    @Test
-    fun testQualifiedClassWithGivenSuperTypeMulti() = multiCodegen(
-        listOf(
-            source(
-                """ 
-                    @Given @Qualifier1 class Dep : @Given Any()
-            """
-            )
-        ),
-        listOf(
-            source(
-                """ 
-                    fun invoke() = given<@Qualifier1 Any>()
-            """
-            )
-        )
-    )
-
-    @Test
     fun testQualifiedFunction() = codegen(
         """ 
             @Given @Qualifier1 fun foo() = Foo()

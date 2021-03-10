@@ -121,17 +121,6 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
                 )
             }
 
-            val givenSuperTypes = descriptor.defaultType.constructor.supertypes
-                .filter { it.contributionKind(declarationStore) == ContributionKind.VALUE }
-
-            if (givenSuperTypes.isNotEmpty() && !hasGivenAnnotation &&
-                    givenConstructors.isEmpty()) {
-                context.trace.report(
-                    InjektErrors.GIVEN_SUPER_TYPE_WITHOUT_GIVEN_CLASS
-                        .on(declaration)
-                )
-            }
-
             descriptor.constructors
                 .forEach {
                     it.valueParameters

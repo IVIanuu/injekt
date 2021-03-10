@@ -72,7 +72,9 @@ class ResolutionScope(
                         hasGivensOrMacros = true
                         givens += callable
                         val typeWithMacroChain = callable.type
-                            .copy(macroChain = listOf(callable.callable.fqNameSafe))
+                            .copy(
+                                macroChain = listOf(callable.callable.fqNameSafe)
+                            )
                         givens += callable.copy(type = typeWithMacroChain)
                     },
                     addGivenSetElement = { setElements += it },
