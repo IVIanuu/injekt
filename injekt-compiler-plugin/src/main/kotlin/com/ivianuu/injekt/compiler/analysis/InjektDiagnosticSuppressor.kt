@@ -44,9 +44,7 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
 
         if (diagnostic.factory == Errors.FINAL_UPPER_BOUND) {
             val typeParameter = diagnostic.psiElement.parent as? KtTypeParameter
-            if (typeParameter?.parents?.firstIsInstanceOrNull<KtNamedFunction>()?.hasAnnotation(InjektFqNames.Macro) == true &&
-                    typeParameter.parent.safeAs<KtTypeParameterList>()
-                        ?.children?.getOrNull(0) == typeParameter) return true
+            if (typeParameter?.hasAnnotation(InjektFqNames.Given) == true) return true
         }
 
         if (diagnostic.factory == Errors.WRONG_ANNOTATION_TARGET) {

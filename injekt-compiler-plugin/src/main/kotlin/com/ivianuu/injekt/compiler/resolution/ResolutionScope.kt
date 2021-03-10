@@ -24,7 +24,6 @@ import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
 
 class ResolutionScope(
     val name: String,
@@ -40,10 +39,10 @@ class ResolutionScope(
     private val givens = mutableListOf<CallableRef>()
     private val setElements = mutableListOf<CallableRef>()
 
-    private val macros = mutableListOf<MacroNode>()
-    private data class MacroNode(val callable: CallableRef) {
+    private val constrainedContributions = mutableListOf<ConstrainedContributionNode>()
+    private data class ConstrainedContributionNode(val callable: CallableRef) {
         val processedContributions = mutableSetOf<TypeRef>()
-        fun copy() = MacroNode(callable).also {
+        fun copy() = ConstrainedContributionNode(callable).also {
             it.processedContributions += processedContributions
         }
     }
@@ -57,11 +56,11 @@ class ResolutionScope(
     private val initialize: Unit by unsafeLazy {
         if (parent != null) {
             parent.initialize
-            macros += parent.macros
+            constrainedContributions += parent.constrainedContributions
                 .map { it.copy() }
         }
 
-        var hasGivensOrMacros = false
+        var hasGivensOrConstrainedContributions = false
 
         produceContributions()
             .forEach { contribution ->
@@ -69,25 +68,25 @@ class ResolutionScope(
                     declarationStore = declarationStore,
                     substitutionMap = emptyMap(),
                     addGiven = { callable ->
-                        hasGivensOrMacros = true
+                        hasGivensOrConstrainedContributions = true
                         givens += callable
-                        val typeWithMacroChain = callable.type
+                        val typeWithChain = callable.type
                             .copy(
-                                macroChain = listOf(callable.callable.fqNameSafe)
+                                constrainedContributionChain = listOf(callable.callable.fqNameSafe)
                             )
-                        givens += callable.copy(type = typeWithMacroChain)
+                        givens += callable.copy(type = typeWithChain)
                     },
                     addGivenSetElement = { setElements += it },
-                    addMacro = {
-                        hasGivensOrMacros = true
-                        macros += MacroNode(it)
+                    addConstrainedContribution = {
+                        hasGivensOrConstrainedContributions = true
+                        constrainedContributions += ConstrainedContributionNode(it)
                     }
                 )
             }
 
-        if (hasGivensOrMacros) {
-            allMacroCandidates
-                .forEach { runMacros(it.type) }
+        if (hasGivensOrConstrainedContributions) {
+            allConstrainedContributionCandidates
+                .forEach { collectConstrainedContributions(it.type) }
         }
     }
 
@@ -106,7 +105,7 @@ class ResolutionScope(
                     .filter { it.type.isAssignableTo(declarationStore, type) }
                     .map { it.toGivenNode(type, this@ResolutionScope) }
 
-                if (type.macroChain.isEmpty() &&
+                if (type.constrainedContributionChain.isEmpty() &&
                     type.qualifiers.isEmpty() &&
                     (type.classifier.fqName.asString().startsWith("kotlin.Function")
                             || type.classifier.fqName.asString()
@@ -122,7 +121,7 @@ class ResolutionScope(
                     )
                 }
 
-                if (type.macroChain.isEmpty() &&
+                if (type.constrainedContributionChain.isEmpty() &&
                     type.setKey == null &&
                     type.isSubTypeOf(declarationStore, setType)) {
                     val setElementType = type.subtypeView(setType.classifier)!!.arguments.single()
@@ -178,36 +177,43 @@ class ResolutionScope(
         }
     }
 
-    private val allMacroCandidates get() = allScopes
+    private val allConstrainedContributionCandidates get() = allScopes
         .flatMap { it.givens }
-        .filter { it.type.macroChain.isNotEmpty() }
+        .filter { it.type.constrainedContributionChain.isNotEmpty() }
 
-    private fun runMacros(contribution: TypeRef) {
-        for (macro in macros) runMacro(macro, contribution)
+    private fun collectConstrainedContributions(contribution: TypeRef) {
+        for (constrainedContribution in constrainedContributions)
+            collectConstrainedContributions(constrainedContribution, contribution)
     }
 
-    private fun runMacro(macro: MacroNode, contribution: TypeRef) {
-        if (contribution in macro.processedContributions) return
-        macro.processedContributions += contribution
+    private fun collectConstrainedContributions(
+        constrainedContribution: ConstrainedContributionNode,
+        contribution: TypeRef
+    ) {
+        if (contribution in constrainedContribution.processedContributions) return
+        constrainedContribution.processedContributions += contribution
 
-        val macroType = macro.callable.typeParameters.first().defaultType
-        if (!contribution.copy(macroChain = emptyList()).isSubTypeOf(declarationStore, macroType)) return
-        if (macro.callable.callable.fqNameSafe in contribution.macroChain) return
+        val constraintType = constrainedContribution.callable.typeParameters.single {
+            it.isGivenConstraint
+        }.defaultType
+        if (!contribution.copy(constrainedContributionChain = emptyList())
+                .isSubTypeOf(declarationStore, constraintType)) return
+        if (constrainedContribution.callable.callable.fqNameSafe in
+            contribution.constrainedContributionChain) return
 
         val inputsSubstitutionMap = getSubstitutionMap(
             declarationStore,
-            listOf(contribution to macroType)
+            listOf(contribution to constraintType)
         )
         val outputsSubstitutionMap = getSubstitutionMap(
             declarationStore,
-            listOf(contribution.copy(macroChain = emptyList()) to macroType)
+            listOf(contribution.copy(constrainedContributionChain = emptyList()) to constraintType)
         )
-        val newContribution = macro.callable.substituteInputs(inputsSubstitutionMap)
+        val newContribution = constrainedContribution.callable.substituteInputs(inputsSubstitutionMap)
             .copy(
-                isMacro = false,
-                isFromMacro = true,
+                fromGivenConstraint = true,
                 typeArguments = inputsSubstitutionMap,
-                type = macro.callable.type.substitute(outputsSubstitutionMap)
+                type = constrainedContribution.callable.type.substitute(outputsSubstitutionMap)
             )
 
         newContribution.collectContributions(
@@ -217,17 +223,19 @@ class ResolutionScope(
                 givens += newGiven
                 val newGivenWithChain = newGiven.copy(
                     type = newGiven.type.copy(
-                        macroChain = contribution.macroChain + newContribution.callable.fqNameSafe
+                        constrainedContributionChain = contribution.constrainedContributionChain + newContribution.callable.fqNameSafe
                     )
                 )
                 givens += newGivenWithChain
-                runMacros(newGivenWithChain.type)
+                collectConstrainedContributions(newGivenWithChain.type)
             },
             addGivenSetElement = { setElements += it },
-            addMacro = { newMacroCallable ->
-                val newMacro = MacroNode(newMacroCallable)
-                macros += newMacro
-                allMacroCandidates.forEach { runMacro(newMacro, it.type) }
+            addConstrainedContribution = { newCallable ->
+                val newConstrainedContribution = ConstrainedContributionNode(newCallable)
+                constrainedContributions += newConstrainedContribution
+                allConstrainedContributionCandidates.forEach {
+                    collectConstrainedContributions(newConstrainedContribution, it.type)
+                }
             }
         )
     }

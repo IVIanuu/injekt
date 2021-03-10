@@ -370,10 +370,10 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     if (a.dependencies.size < b.dependencies.size) return -1
     if (b.dependencies.size < a.dependencies.size) return 1
 
-    val isAMacro = a is CallableGivenNode && a.callable.isFromMacro
-    val isBMacro = b is CallableGivenNode && b.callable.isFromMacro
-    if (!isAMacro && isBMacro) return -1
-    if (!isBMacro && isAMacro) return 1
+    val isAFromGivenConstraint = a is CallableGivenNode && a.callable.fromGivenConstraint
+    val isBFromGivenConstraint = b is CallableGivenNode && b.callable.fromGivenConstraint
+    if (!isAFromGivenConstraint && isBFromGivenConstraint) return -1
+    if (!isBFromGivenConstraint && isAFromGivenConstraint) return 1
 
     if (callContext == a.callContext &&
             callContext != b.callContext) return -1

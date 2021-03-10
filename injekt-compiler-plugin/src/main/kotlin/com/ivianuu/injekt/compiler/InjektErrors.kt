@@ -123,22 +123,32 @@ interface InjektErrors {
                 }
 
         @JvmField
-        val MACRO_WITHOUT_TYPE_PARAMETER =
+        val MULTIPLE_GIVEN_CONSTRAINTS =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also {
                     MAP.put(
                         it,
-                        "@Macro declaration must have at least one type parameter"
+                        "A declaration may have only one @Given type constraint"
                     )
                 }
 
         @JvmField
-        val MACRO_WITHOUT_CONTRIBUTION =
+        val GIVEN_CONSTRAINT_ON_NON_FUNCTION =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also {
                     MAP.put(
                         it,
-                        "@Macro declaration must have 1 contribution annotation"
+                        "A @Given type constraint is only supported on functions"
+                    )
+                }
+
+        @JvmField
+        val GIVEN_CONSTRAINT_WITHOUT_CONTRIBUTION =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "@Given type constraint declaration must have 1 contribution annotation"
                     )
                 }
 
