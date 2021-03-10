@@ -465,18 +465,7 @@ fun TypeRef.isAssignableTo(
     superType: TypeRef
 ): Boolean = declarationStore.isAssignableCache.getOrPut(MultiKey2(this, superType)) {
     if (isStarProjection || superType.isStarProjection) return@getOrPut true
-    if (classifier.fqName == superType.classifier.fqName) {
-        if (isMarkedNullable && !superType.isMarkedNullable) return@getOrPut false
-        if (!qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return@getOrPut false
-        if (macroChain != superType.macroChain) return@getOrPut false
-        if (setKey != superType.setKey) return@getOrPut false
-        if (isComposableType != superType.isComposableType) return@getOrPut false
-        if (arguments.zip(superType.arguments)
-                .any { (a, b) -> !a.isAssignableTo(declarationStore, b) }
-        )
-            return@getOrPut false
-        return@getOrPut true
-    }
+    if (isSubTypeOf(declarationStore, superType)) return@getOrPut true
     if (superType.classifier.isTypeParameter) {
         val superTypesAssignable = superType.superTypes.all { upperBound ->
             isSubTypeOf(declarationStore, upperBound)
@@ -525,13 +514,15 @@ fun TypeRef.isSubTypeOf(
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
         ) return@getOrPut false
+        if (macroChain != superType.macroChain) return@getOrPut false
+        if (setKey != superType.setKey) return@getOrPut false
         return@getOrPut true
     }
     val subTypeView = subtypeView(superType.classifier)
+        ?.let { if (macroChain.isNotEmpty()) it.copy(macroChain = macroChain) else it }
     if (subTypeView != null) {
-        if (subTypeView == superType && (!subTypeView.isMarkedNullable || superType.isMarkedNullable) &&
-            (superType.qualifiers.isEmpty() || subTypeView.qualifiers.isAssignableTo(declarationStore, superType.qualifiers))
-        ) return@getOrPut true
+        if (subTypeView == superType && (!subTypeView.isMarkedNullable || superType.isMarkedNullable))
+            return@getOrPut true
         if (subTypeView.isMarkedNullable && !superType.isMarkedNullable) return@getOrPut false
         if (!subTypeView.qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return@getOrPut false
         if (subTypeView.macroChain != superType.macroChain) return@getOrPut false
@@ -539,12 +530,13 @@ fun TypeRef.isSubTypeOf(
         if (isComposableType != superType.isComposableType) return@getOrPut false
         return@getOrPut subTypeView.arguments.zip(superType.arguments)
             .all { (subTypeArg, superTypeArg) ->
-                superTypeArg.superTypes.all {
-                    subTypeArg.isSubTypeOf(declarationStore, it)
-                }
+                subTypeArg.isSubTypeOf(declarationStore, superTypeArg)
             }
     } else if ((superType.classifier.isTypeParameter && !classifier.isTypeParameter) || (superType.classifier.isTypeAlias &&
                 !classifier.isTypeAlias)) {
+        if (superType.classifier.isTypeAlias &&
+                thisAndAllSuperTypes.none { it.classifier == superType.classifier })
+                    return@getOrPut false
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
         ) return@getOrPut false
@@ -553,10 +545,9 @@ fun TypeRef.isSubTypeOf(
         if (isComposableType != superType.isComposableType) return@getOrPut false
         return@getOrPut superType.superTypes.all { upperBound ->
             // todo should do this comparison without qualifiers?
-            val r = isSubTypeOf(declarationStore, upperBound) ||
+            isSubTypeOf(declarationStore, upperBound) ||
                     (superType.qualifiers.isNotEmpty() &&
                             copy(qualifiers = emptyList()).isSubTypeOf(declarationStore, upperBound))
-            r
         }
     }
     return@getOrPut false

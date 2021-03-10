@@ -95,8 +95,8 @@ class TypeRefTest {
     }
 
     @Test
-    fun testTypeAliasIsNotAssignableToExpandedType() = withAnalysisContext {
-        typeAlias(stringType) shouldNotBeAssignable stringType
+    fun testRandomTypeIsNotSubTypeOfTypeAliasWithAnyExpandedType() = withAnalysisContext {
+        stringType shouldNotBeAssignable typeAlias(anyType)
     }
 
     @Test
@@ -179,16 +179,6 @@ class TypeRefTest {
     @Test
     fun testSubTypeOfTypeParameterWithUpperBound() = withAnalysisContext {
         subType(stringType) shouldBeSubTypeOf typeParameter(stringType)
-    }
-
-    @Test
-    fun testSubTypeOfTypeAliasWithNonNullExpandedType() = withAnalysisContext {
-        subType(stringType) shouldBeSubTypeOf typeAlias(stringType)
-    }
-
-    @Test
-    fun testSubTypeOfTypeAliasWithNullableExpandedType() = withAnalysisContext {
-        subType(stringType) shouldBeSubTypeOf typeAlias(stringType.nullable())
     }
 
     @Test
@@ -353,6 +343,11 @@ class TypeRefTest {
         stringType shouldBe map[typeParameter2.classifier]
     }
 
+    @Test
+    fun testComparableStackOverflowBug() = withAnalysisContext {
+        floatType shouldNotBeSubTypeOf comparable.typeWith(intType)
+    }
+
     // todo type parameter multuple upper bounds
 
     private fun withAnalysisContext(
@@ -392,8 +387,10 @@ class TypeRefTest {
 
         val declarationStore = DeclarationStore(CliIndexStore(module), module)
 
+        val comparable = typeFor(StandardNames.FqNames.comparable)
         val anyType = typeFor(StandardNames.FqNames.any.toSafe())
         val anyNType = anyType.copy(isMarkedNullable = true)
+        val floatType = typeFor(StandardNames.FqNames._float.toSafe())
         val intType = typeFor(StandardNames.FqNames._int.toSafe())
         val stringType = typeFor(StandardNames.FqNames.string.toSafe())
         val charSequenceType = typeFor(StandardNames.FqNames.charSequence.toSafe())

@@ -51,7 +51,7 @@ class GivenResolutionTest {
         it.invokeSingleFile().shouldBeTypeOf<Foo>()
     }
 
-        @Test
+    @Test
     fun testResolvesInternalGiven() = codegen(
         """
             @Given val foo = Foo()
@@ -304,6 +304,17 @@ class GivenResolutionTest {
     ) {
         invokeSingleFile()
             .shouldBeTypeOf<Bar>()
+    }
+
+    @Test
+    fun testCanResolveSubTypeOfGiven() = codegen(
+        """
+            interface Repo
+            @Given class RepoImpl : Repo
+            fun invoke() = given<Repo>()
+        """
+    ) {
+        invokeSingleFile()
     }
 
     @Test

@@ -251,7 +251,8 @@ private fun ResolutionScope.resolveCandidates(
     return if (successes.isNotEmpty()) {
         successes.singleOrNull()?.let {
             ResolutionResult.Success(request, it)
-        } ?: ResolutionResult.Failure.CandidateAmbiguity(request, successes)
+        }
+            ?: ResolutionResult.Failure.CandidateAmbiguity(request, successes)
     } else {
         ResolutionResult.Failure.CandidateFailures(request, failure!!)
     }

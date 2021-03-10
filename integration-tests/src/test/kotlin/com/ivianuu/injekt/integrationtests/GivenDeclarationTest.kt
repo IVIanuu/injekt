@@ -86,35 +86,6 @@ class GivenDeclarationTest {
     }
 
     @Test
-    fun testGivenSuperTypeClass() = codegen(
-        """
-            interface Dep<T>
-            @Given class DepImpl<T>(@Given value: T) : @Given Dep<T>
-
-            @Given val foo = Foo()
-            fun invoke() = given<Dep<Foo>>()
-        """
-    ) {
-        invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.DepImpl"
-    }
-
-    @Test
-    fun testGivenSuperTypeClassWithGivenConstructor() = codegen(
-        """
-            interface Dep<T>
-            class DepImpl<T> : @Given Dep<T> {
-                @Given
-                constructor(@Given value: T)
-            }
-
-            @Given val foo = Foo()
-            fun invoke() = given<Dep<Foo>>()
-        """
-    ) {
-        invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.DepImpl"
-    }
-
-    @Test
     fun testGivenObject() = codegen(
         """
             @Given val foo = Foo()

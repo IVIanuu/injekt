@@ -223,24 +223,14 @@ fun ClassDescriptor.getContributionConstructors(
             }
         }
     }
-    .flatMap { declaration ->
-        if (declaration.contributionKind == ContributionKind.VALUE) {
-            allGivenTypes(declarationStore).map { type ->
-                declaration.copy(type = type, originalType = type)
-            }
+    .map {
+        if (it.type.classifier.qualifiers.isNotEmpty()) {
+            val typeWithQualifiers = it.type.copy(qualifiers = it.type.classifier.qualifiers + it.type.qualifiers)
+            it.copy(type = typeWithQualifiers, originalType = typeWithQualifiers)
         } else {
-            listOf(declaration)
+            it
         }
     }
-
-fun ClassDescriptor.allGivenTypes(declarationStore: DeclarationStore): List<TypeRef> = buildList<TypeRef> {
-    val classifier = toClassifierRef(declarationStore)
-    this += classifier.defaultType
-    this += defaultType.constructor.supertypes
-        .filter { it.hasAnnotation(InjektFqNames.Given) }
-        .map { it.toTypeRef(declarationStore) }
-        .map { it.copy(qualifiers = classifier.qualifiers + it.qualifiers) }
-}
 
 fun CallableRef.collectContributions(
     declarationStore: DeclarationStore,
