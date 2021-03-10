@@ -20,6 +20,7 @@ import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.compilationShouldBeOk
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
@@ -630,5 +631,87 @@ class GivenResolutionTest {
             fun invoke() = given<MyObject>()
         """
     )
+
+    @Test
+    fun testCannotResolveExternalInternalGiven() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Given internal val foo = Foo()
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke() = given<Foo>()
+                """
+            )
+        )
+    ) {
+        it.last().compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo")
+    }
+
+    @Test
+    fun testCannotResolvePrivateGivenFromOuterScope() = codegen(
+        """
+                @Given class FooHolder {
+                    @Given private val foo = Foo()
+                }
+                fun invoke() = given<Foo>()
+                """
+    ) {
+        compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo")
+    }
+
+    @Test
+    fun testCanResolvePrivateGivenFromInnerScope() = codegen(
+        """
+                @Given class FooHolder {
+                    @Given private val foo = Foo()
+                    fun invoke() = given<Foo>()
+                }
+                """
+    ) {
+        compilationShouldBeOk()
+    }
+
+    @Test
+    fun testCannotResolveProtectedGivenFromOuterScope() = codegen(
+        """
+                @Given open class FooHolder {
+                    @Given protected val foo = Foo()
+                }
+                fun invoke() = given<Foo>()
+                """
+    ) {
+        compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo")
+    }
+
+    @Test
+    fun testCanResolveProtectedGivenFromSameClass() = codegen(
+        """
+                @Given open class FooHolder {
+                    @Given protected val foo = Foo()
+                    fun invoke() = given<Foo>()
+                }
+                """
+    ) {
+        compilationShouldBeOk()
+    }
+
+    @Test
+    fun testCanResolveProtectedGivenFromSubClass() = codegen(
+        """
+                abstract class AbstractFooHolder {
+                    @Given protected val foo = Foo()
+                }
+                class FooHolderImpl : AbstractFooHolder() {
+                    fun invoke() = given<Foo>()
+                }
+                """
+    ) {
+        compilationShouldBeOk()
+    }
 
 }

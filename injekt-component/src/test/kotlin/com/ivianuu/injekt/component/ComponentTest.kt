@@ -1,4 +1,4 @@
-// injekt-incremental-fix 1615403061499 injekt-end
+// injekt-incremental-fix 1615411970400 injekt-end
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -18,7 +18,6 @@
 package com.ivianuu.injekt.component
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.common.typeKeyOf
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
