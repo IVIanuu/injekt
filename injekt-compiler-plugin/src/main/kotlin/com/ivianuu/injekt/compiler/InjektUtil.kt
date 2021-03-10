@@ -19,10 +19,9 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.analysis.GivenFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.CallableRef
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.ContributionKind
 import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.contributionKind
 import com.ivianuu.injekt.compiler.resolution.fullyAbbreviatedType
+import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
@@ -75,7 +74,7 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
     }
     if (annotationEntry != null) return annotationEntry
 
-    // Check if the simple name is used, e.g. `@Module`.
+    // Check if the simple name is used, e.g. `@Given`.
     val annotationEntryShort = annotationEntries
         .firstOrNull {
             it.shortName == fqName.shortName()
@@ -105,25 +104,15 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
 fun CallableDescriptor.getGivenParameters(
     declarationStore: DeclarationStore,
     substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
-): List<ParameterDescriptor> =
-    getContributionParameters(declarationStore, substitutionMap)
-        .filter { it.contributionKind == ContributionKind.VALUE }
-        .map { it.callable as ParameterDescriptor }
-
-fun CallableDescriptor.getContributionParameters(
-    declarationStore: DeclarationStore,
-    substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
 ): List<CallableRef> =
     allParameters
-        .mapNotNull { parameter ->
-            val kind = parameter.contributionKind(declarationStore) ?: if (substitutionMap.isNotEmpty()) {
-                parameter.type.toTypeRef(declarationStore).substitute(substitutionMap)
-                    .contributionKind
-            } else parameter.type.contributionKind(declarationStore)
-            if (kind != null) parameter.toCallableRef(declarationStore)
-                .copy(contributionKind = kind)
-            else null
+        .filter {
+            it.isGiven(declarationStore) ||
+                    (substitutionMap.isNotEmpty() &&
+                            it.type.toTypeRef(declarationStore).substitute(substitutionMap).isGiven) ||
+                    it.type.isGiven(declarationStore)
         }
+        .map { it.toCallableRef(declarationStore).copy(isGiven = true) }
 
 fun <D : DeclarationDescriptor> KtDeclaration.descriptor(
     bindingContext: BindingContext,

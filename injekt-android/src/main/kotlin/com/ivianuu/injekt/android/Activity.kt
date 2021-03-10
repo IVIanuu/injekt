@@ -28,14 +28,13 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.component.ChildComponentModule1
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.element
 
 typealias ActivityComponent = Component
 
-@Module
+@Given
 val activityComponentModule =
     ChildComponentModule1<ActivityRetainedComponent, ComponentActivity, ActivityComponent>()
 

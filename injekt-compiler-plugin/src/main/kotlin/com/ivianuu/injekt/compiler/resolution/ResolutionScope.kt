@@ -30,7 +30,8 @@ class ResolutionScope(
     val parent: ResolutionScope?,
     val declarationStore: DeclarationStore,
     val callContext: CallContext,
-    produceContributions: () -> List<CallableRef>
+    val owningDescriptor: DeclarationDescriptor?,
+    produceGivens: () -> List<CallableRef>
 ) {
     val chain: MutableSet<GivenNode> = parent?.chain ?: mutableSetOf()
     val resultsByRequest = mutableMapOf<GivenRequest, ResolutionResult>()
@@ -38,11 +39,11 @@ class ResolutionScope(
 
     private val givens = mutableListOf<CallableRef>()
 
-    private val constrainedContributions = mutableListOf<ConstrainedContributionNode>()
-    private data class ConstrainedContributionNode(val callable: CallableRef) {
-        val processedContributions = mutableSetOf<TypeRef>()
-        fun copy() = ConstrainedContributionNode(callable).also {
-            it.processedContributions += processedContributions
+    private val constrainedGivens = mutableListOf<ConstrainedGivenNode>()
+    private data class ConstrainedGivenNode(val callable: CallableRef) {
+        val processedCandidateTypes = mutableSetOf<TypeRef>()
+        fun copy() = ConstrainedGivenNode(callable).also {
+            it.processedCandidateTypes += processedCandidateTypes
         }
     }
 
@@ -55,36 +56,37 @@ class ResolutionScope(
     private val initialize: Unit by unsafeLazy {
         if (parent != null) {
             parent.initialize
-            constrainedContributions += parent.constrainedContributions
+            constrainedGivens += parent.constrainedGivens
                 .map { it.copy() }
         }
 
-        var hasGivensOrConstrainedContributions = false
+        var hasGivens = false
 
-        produceContributions()
-            .forEach { contribution ->
-                contribution.collectContributions(
+        produceGivens()
+            .forEach { given ->
+                given.collectGivens(
                     declarationStore = declarationStore,
+                    owningDescriptor = owningDescriptor,
                     substitutionMap = emptyMap(),
                     addGiven = { callable ->
-                        hasGivensOrConstrainedContributions = true
+                        hasGivens = true
                         givens += callable
                         val typeWithChain = callable.type
                             .copy(
-                                constrainedContributionChain = listOf(callable.callable.fqNameSafe)
+                                constrainedGivenChain = listOf(callable.callable.fqNameSafe)
                             )
                         givens += callable.copy(type = typeWithChain)
                     },
-                    addConstrainedContribution = {
-                        hasGivensOrConstrainedContributions = true
-                        constrainedContributions += ConstrainedContributionNode(it)
+                    addConstrainedGiven = {
+                        hasGivens = true
+                        constrainedGivens += ConstrainedGivenNode(it)
                     }
                 )
             }
 
-        if (hasGivensOrConstrainedContributions) {
-            allConstrainedContributionCandidates
-                .forEach { collectConstrainedContributions(it.type) }
+        if (hasGivens) {
+            allConstrainedGivensCandidates
+                .forEach { collectConstrainedGivens(it.type) }
         }
     }
 
@@ -103,14 +105,12 @@ class ResolutionScope(
                     .filter { it.type.isAssignableTo(declarationStore, type) }
                     .map { it.toGivenNode(type, this@ResolutionScope) }
 
-                if (type.constrainedContributionChain.isEmpty() &&
+                if (type.constrainedGivenChain.isEmpty() &&
                     type.qualifiers.isEmpty() &&
                     (type.classifier.fqName.asString().startsWith("kotlin.Function")
                             || type.classifier.fqName.asString()
                         .startsWith("kotlin.coroutines.SuspendFunction")) &&
-                    type.arguments.dropLast(1).all {
-                        it.contributionKind != null
-                    }
+                    type.arguments.dropLast(1).all { it.isGiven }
                 ) {
                     this += ProviderGivenNode(
                         type = type,
@@ -119,7 +119,7 @@ class ResolutionScope(
                     )
                 }
 
-                if (type.constrainedContributionChain.isEmpty() &&
+                if (type.constrainedGivenChain.isEmpty() &&
                     type.setKey == null &&
                     type.isSubTypeOf(declarationStore, setType)) {
                     val setElementType = type.subtypeView(setType.classifier)!!.arguments.single()
@@ -129,7 +129,7 @@ class ResolutionScope(
                         (setElementType.classifier.fqName.asString().startsWith("kotlin.Function")
                                 || setElementType.classifier.fqName.asString()
                             .startsWith("kotlin.coroutines.SuspendFunction")) &&
-                        setElementType.arguments.dropLast(1).all { it.contributionKind != null }) {
+                        setElementType.arguments.dropLast(1).all { it.isGiven }) {
                         val providerReturnType = setElementType.arguments.last()
                         elementTypes = setElementsForType(providerReturnType)
                             .map { elementType ->
@@ -175,63 +175,64 @@ class ResolutionScope(
         }
     }
 
-    private val allConstrainedContributionCandidates get() = allScopes
+    private val allConstrainedGivensCandidates get() = allScopes
         .flatMap { it.givens }
-        .filter { it.type.constrainedContributionChain.isNotEmpty() }
+        .filter { it.type.constrainedGivenChain.isNotEmpty() }
 
-    private fun collectConstrainedContributions(contribution: TypeRef) {
-        for (constrainedContribution in constrainedContributions)
-            collectConstrainedContributions(constrainedContribution, contribution)
+    private fun collectConstrainedGivens(candidateType: TypeRef) {
+        for (constrainedGiven in constrainedGivens)
+            collectConstrainedGivens(constrainedGiven, candidateType)
     }
 
-    private fun collectConstrainedContributions(
-        constrainedContribution: ConstrainedContributionNode,
-        contribution: TypeRef
+    private fun collectConstrainedGivens(
+        constrainedGiven: ConstrainedGivenNode,
+        candidateType: TypeRef
     ) {
-        if (contribution in constrainedContribution.processedContributions) return
-        constrainedContribution.processedContributions += contribution
+        if (candidateType in constrainedGiven.processedCandidateTypes) return
+        constrainedGiven.processedCandidateTypes += candidateType
 
-        val constraintType = constrainedContribution.callable.typeParameters.single {
+        val constraintType = constrainedGiven.callable.typeParameters.single {
             it.isGivenConstraint
         }.defaultType
-        if (!contribution.copy(constrainedContributionChain = emptyList())
+        if (!candidateType.copy(constrainedGivenChain = emptyList())
                 .isSubTypeOf(declarationStore, constraintType)) return
-        if (constrainedContribution.callable.callable.fqNameSafe in
-            contribution.constrainedContributionChain) return
+        if (constrainedGiven.callable.callable.fqNameSafe in
+            candidateType.constrainedGivenChain) return
 
         val inputsSubstitutionMap = getSubstitutionMap(
             declarationStore,
-            listOf(contribution to constraintType)
+            listOf(candidateType to constraintType)
         )
         val outputsSubstitutionMap = getSubstitutionMap(
             declarationStore,
-            listOf(contribution.copy(constrainedContributionChain = emptyList()) to constraintType)
+            listOf(candidateType.copy(constrainedGivenChain = emptyList()) to constraintType)
         )
-        val newContribution = constrainedContribution.callable.substituteInputs(inputsSubstitutionMap)
+        val newGiven = constrainedGiven.callable.substituteInputs(inputsSubstitutionMap)
             .copy(
                 fromGivenConstraint = true,
                 typeArguments = inputsSubstitutionMap,
-                type = constrainedContribution.callable.type.substitute(outputsSubstitutionMap)
+                type = constrainedGiven.callable.type.substitute(outputsSubstitutionMap)
             )
 
-        newContribution.collectContributions(
+        newGiven.collectGivens(
             declarationStore = declarationStore,
+            owningDescriptor = owningDescriptor,
             substitutionMap = outputsSubstitutionMap,
-            addGiven = { newGiven ->
-                givens += newGiven
-                val newGivenWithChain = newGiven.copy(
-                    type = newGiven.type.copy(
-                        constrainedContributionChain = contribution.constrainedContributionChain + newContribution.callable.fqNameSafe
+            addGiven = { newInnerGiven ->
+                givens += newInnerGiven
+                val newInnerGivenWithChain = newInnerGiven.copy(
+                    type = newInnerGiven.type.copy(
+                        constrainedGivenChain = candidateType.constrainedGivenChain + newInnerGiven.callable.fqNameSafe
                     )
                 )
-                givens += newGivenWithChain
-                collectConstrainedContributions(newGivenWithChain.type)
+                givens += newInnerGivenWithChain
+                collectConstrainedGivens(newInnerGivenWithChain.type)
             },
-            addConstrainedContribution = { newCallable ->
-                val newConstrainedContribution = ConstrainedContributionNode(newCallable)
-                constrainedContributions += newConstrainedContribution
-                allConstrainedContributionCandidates.forEach {
-                    collectConstrainedContributions(newConstrainedContribution, it.type)
+            addConstrainedGiven = { newCallable ->
+                val newConstrainedGiven = ConstrainedGivenNode(newCallable)
+                constrainedGivens += newConstrainedGiven
+                allConstrainedGivensCandidates.forEach {
+                    collectConstrainedGivens(newConstrainedGiven, it.type)
                 }
             }
         )
@@ -246,8 +247,9 @@ fun ExternalResolutionScope(declarationStore: DeclarationStore): ResolutionScope
     declarationStore = declarationStore,
     callContext = CallContext.DEFAULT,
     parent = null,
-    produceContributions = {
-        declarationStore.globalContributions
+    owningDescriptor = null,
+    produceGivens = {
+        declarationStore.globalGivens
             .filter { it.callable.isExternalDeclaration() }
             .filter { it.callable.visibility == DescriptorVisibilities.PUBLIC }
     }
@@ -261,8 +263,9 @@ fun InternalResolutionScope(
     declarationStore = declarationStore,
     callContext = CallContext.DEFAULT,
     parent = parent,
-    produceContributions = {
-        declarationStore.globalContributions
+    owningDescriptor = null,
+    produceGivens = {
+        declarationStore.globalGivens
             .filterNot { it.callable.isExternalDeclaration() }
     }
 )
@@ -276,14 +279,12 @@ fun ClassResolutionScope(
     declarationStore = declarationStore,
     callContext = CallContext.DEFAULT,
     parent = parent,
-    produceContributions = {
-        descriptor.unsubstitutedMemberScope
-            .collectContributions(
-                declarationStore,
-                descriptor.toClassifierRef(declarationStore).defaultType,
-                emptyMap()
-            ) + descriptor.thisAsReceiverParameter.toCallableRef(declarationStore)
-            .copy(contributionKind = ContributionKind.VALUE)
+    owningDescriptor = descriptor,
+    produceGivens = {
+        listOf(
+            descriptor.thisAsReceiverParameter.toCallableRef(declarationStore)
+                .copy(isGiven = true)
+        )
     }
 )
 
@@ -297,7 +298,8 @@ fun FunctionResolutionScope(
     declarationStore = declarationStore,
     callContext = lambdaType?.callContext ?: descriptor.callContext,
     parent = parent,
-    produceContributions = { descriptor.collectContributions(declarationStore) }
+    owningDescriptor = descriptor,
+    produceGivens = { descriptor.collectGivens(declarationStore) }
 )
 
 fun LocalDeclarationResolutionScope(
@@ -306,15 +308,13 @@ fun LocalDeclarationResolutionScope(
     declaration: DeclarationDescriptor
 ): ResolutionScope {
     val declarations: List<CallableRef> = when (declaration) {
-        is ClassDescriptor -> declaration.getContributionConstructors(declarationStore)
-        is CallableDescriptor -> declaration
-            .contributionKind(declarationStore)
-            ?.let {
-                listOf(
-                    declaration.toCallableRef(declarationStore)
-                        .copy(contributionKind = it)
-                )
-            }
+        is ClassDescriptor -> declaration.getGivenConstructors(declarationStore)
+        is CallableDescriptor -> if (declaration.isGiven(declarationStore)) {
+            listOf(
+                declaration.toCallableRef(declarationStore)
+                    .copy(isGiven = true)
+            )
+        } else emptyList()
         else -> null
     } ?: return parent
     return ResolutionScope(
@@ -322,6 +322,7 @@ fun LocalDeclarationResolutionScope(
         declarationStore = declarationStore,
         callContext = parent.callContext,
         parent = parent,
-        produceContributions = { declarations }
+        owningDescriptor = parent.owningDescriptor,
+        produceGivens = { declarations }
     )
 }

@@ -59,15 +59,15 @@ class DeclarationStore(
             .flatMap { propertyDescriptorsForFqName(it.fqName) }
     }
 
-    val globalContributions by unsafeLazy {
+    val globalGivens by unsafeLazy {
         classIndices
-            .flatMap { it.getContributionConstructors(this) } +
+            .flatMap { it.getGivenConstructors(this) } +
                 functionIndices
                     .map { it.toCallableRef(this) }
-                    .filter { it.contributionKind != null } +
+                    .filter { it.isGiven } +
                 propertyIndices
                     .map { it.toCallableRef(this) }
-                    .filter { it.contributionKind != null }
+                    .filter { it.isGiven }
     }
 
     val moshi = Moshi.Builder().build()!!

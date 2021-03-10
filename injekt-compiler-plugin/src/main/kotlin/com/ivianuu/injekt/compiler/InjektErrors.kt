@@ -55,13 +55,9 @@ interface InjektErrors {
 
         @JvmField
         val NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION =
-            DiagnosticFactory1.create<PsiElement, Name>(Severity.ERROR)
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also {
-                    MAP.put(
-                        it,
-                        "non @Given parameter on @{0} declaration",
-                        Renderers.TO_STRING
-                    )
+                    MAP.put(it, "non @Given parameter on @Given declaration")
                 }
 
         @JvmField
@@ -100,11 +96,6 @@ interface InjektErrors {
                 .also { MAP.put(it, "tailrec function cannot be marked with @Given") }
 
         @JvmField
-        val DECLARATION_WITH_MULTIPLE_CONTRIBUTIONS =
-            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "declaration may be only annotated with one contribution annotation") }
-
-        @JvmField
         val NON_FOR_TYPE_KEY_TYPE_PARAMETER_AS_FOR_TYPE_KEY =
             DiagnosticFactory1.create<PsiElement, TypeParameterDescriptor>(Severity.ERROR)
                 .also {
@@ -128,27 +119,17 @@ interface InjektErrors {
                 .also {
                     MAP.put(
                         it,
-                        "A declaration may have only one @Given type constraint"
+                        "a declaration may have only one @Given type constraint"
                     )
                 }
 
         @JvmField
-        val GIVEN_CONSTRAINT_ON_NON_FUNCTION =
+        val GIVEN_CONSTRAINT_ON_NON_GIVEN_FUNCTION =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also {
                     MAP.put(
                         it,
-                        "A @Given type constraint is only supported on functions"
-                    )
-                }
-
-        @JvmField
-        val GIVEN_CONSTRAINT_WITHOUT_CONTRIBUTION =
-            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also {
-                    MAP.put(
-                        it,
-                        "@Given type constraint declaration must have 1 contribution annotation"
+                        "a @Given type constraint is only supported on @Given functions"
                     )
                 }
 

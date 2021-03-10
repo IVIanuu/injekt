@@ -76,7 +76,7 @@ class PersistenceTest {
                 @Given fun provide(@Given value: S): T = value as T
             }
 
-            @Module val module = MyModule<String, CharSequence>()
+            @Given val module = MyModule<String, CharSequence>()
 
             @Given val value: CharSequence = "42"
 
@@ -95,7 +95,7 @@ class PersistenceTest {
                         @Given fun provide(@Given value: S): T = value as T
                     }
         
-                    @Module val module = MyModule<String, CharSequence>()
+                    @Given val module = MyModule<String, CharSequence>()
         
                     @Given val value: CharSequence = "42" 
                 """

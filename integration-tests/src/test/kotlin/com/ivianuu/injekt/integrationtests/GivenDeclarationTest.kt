@@ -318,13 +318,4 @@ class GivenDeclarationTest {
         """
     )
 
-    @Test
-    fun testMultipleContributionAnnotationsFails() = codegen(
-        """
-            @Given @Module fun foo() = Foo()
-        """
-    ) {
-        compilationShouldHaveFailed("declaration may be only annotated with one contribution annotation")
-    }
-
 }

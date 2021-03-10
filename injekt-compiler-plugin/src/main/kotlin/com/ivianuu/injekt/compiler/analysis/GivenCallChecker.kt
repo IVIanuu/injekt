@@ -24,7 +24,6 @@ import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.CandidateResolutionResult
 import com.ivianuu.injekt.compiler.resolution.ClassResolutionScope
-import com.ivianuu.injekt.compiler.resolution.ContributionKind
 import com.ivianuu.injekt.compiler.resolution.ExternalResolutionScope
 import com.ivianuu.injekt.compiler.resolution.FunctionResolutionScope
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
@@ -34,7 +33,7 @@ import com.ivianuu.injekt.compiler.resolution.LocalDeclarationResolutionScope
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.ResolutionScope
 import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.contributionKind
+import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.resolveGiven
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -75,7 +74,7 @@ class GivenCallChecker(
         val requests = call
             .valueArguments
             .filterValues { it is DefaultValueArgument }
-            .filterKeys { it.contributionKind(declarationStore) == ContributionKind.VALUE }
+            .filterKeys { it.isGiven(declarationStore) }
             .map {
                 GivenRequest(
                     type = it.key.type.toTypeRef(declarationStore),

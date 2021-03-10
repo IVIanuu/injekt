@@ -27,7 +27,7 @@ class ModuleTest {
     fun testClassModule() = codegen(
         """
             @Given val foo = Foo()
-            @Module class BarModule(@Given private val foo: Foo) {
+            @Given class BarModule(@Given private val foo: Foo) {
                 @Given val bar get() = Bar(foo)
             }
             fun invoke() = given<Bar>()
@@ -38,7 +38,7 @@ class ModuleTest {
     fun testObjectModule() = codegen(
         """
             @Given val foo = Foo()
-            @Module object BarModule {
+            @Given object BarModule {
                 @Given fun bar(@Given foo: Foo) = Bar(foo)
             }
             fun invoke() = given<Bar>()
@@ -56,7 +56,7 @@ class ModuleTest {
             @Given fun bar(@Given foo: Foo) = Bar(foo)
 
             inline fun <R> withModule(
-                block: (@Module MyModule) -> R
+                block: (@Given MyModule) -> R
             ): R = block(MyModule())
 
             fun invoke() = withModule { 
@@ -71,8 +71,8 @@ class ModuleTest {
             class MyModule<T>(private val instance: T) {
                 @Given fun provide() = instance to instance
             }
-            @Module val fooModule = MyModule(Foo())
-            @Module val stringModule = MyModule("__")
+            @Given val fooModule = MyModule(Foo())
+            @Given val stringModule = MyModule("__")
             fun invoke() = given<Pair<Foo, Foo>>()
         """
     )
@@ -86,8 +86,8 @@ class ModuleTest {
                         @Given fun provide() = instance to instance
                     }
 
-                    @Module val fooModule = MyModule(Foo())
-                    @Module val stringModule = MyModule("__")
+                    @Given val fooModule = MyModule(Foo())
+                    @Given val stringModule = MyModule("__")
                 """
             )
         ),
@@ -110,8 +110,8 @@ class ModuleTest {
                         @Given fun provide(): @MyQualifier<Int> Pair<T, T> = instance to instance
                     }
 
-                    @Module val fooModule = MyModule(Foo())
-                    @Module val stringModule = MyModule("__")
+                    @Given val fooModule = MyModule(Foo())
+                    @Given val stringModule = MyModule("__")
                 """
             )
         ),
@@ -127,7 +127,7 @@ class ModuleTest {
     @Test
     fun testGenericModuleClass() = codegen(
         """
-            @Module
+            @Given
             class MyModule<T> {
                 @Given fun provide(@Given instance: T) = instance to instance
             }
@@ -149,7 +149,7 @@ class ModuleTest {
                 @Given fun provide(@Given instance: T) = instance to instance
             }
 
-            @Module fun <T> myModule() = MyModule<T>()
+            @Given fun <T> myModule() = MyModule<T>()
 
             @Given val foo = Foo()
             @Given fun bar(@Given foo: Foo) = Bar(foo)

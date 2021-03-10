@@ -24,7 +24,6 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.android.AppContext
 import com.ivianuu.injekt.component.AppComponent
@@ -42,7 +41,7 @@ inline fun <@Given reified T : @WorkerBinding S, S : ListenableWorker> workerBin
 
 typealias WorkerComponent = Component
 
-@Module
+@Given
 val workerComponentModule =
     ChildComponentModule2<AppComponent, WorkerContext, WorkerParameters, WorkerComponent>()
 

@@ -14,24 +14,7 @@
  * limitations under the License.
  */
 
-@file:Suppress("NOTHING_TO_INLINE")
+package com.ivianuu.injekt.integrationtests
 
-package com.ivianuu.injekt
-
-@Target(
-    AnnotationTarget.CLASS,
-    AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.PROPERTY,
-    AnnotationTarget.LOCAL_VARIABLE,
-    AnnotationTarget.VALUE_PARAMETER,
-    AnnotationTarget.TYPE,
-    AnnotationTarget.TYPE_PARAMETER
-)
-annotation class Given
-
-@Suppress("NOTHING_TO_INLINE")
-inline fun <T> given(@Given value: T): T = value
-
-@Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class Qualifier
+class GivenAccessibilityTest {
+}
