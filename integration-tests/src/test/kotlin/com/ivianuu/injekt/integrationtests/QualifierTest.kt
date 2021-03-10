@@ -22,7 +22,7 @@ import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
 import io.kotest.matchers.types.shouldBeTypeOf
-import junit.framework.Assert.assertNotSame
+import io.kotest.matchers.types.shouldNotBeSameInstanceAs
 import org.junit.Test
 
 class QualifierTest {
@@ -39,7 +39,7 @@ class QualifierTest {
             """
     ) {
         val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
-        assertNotSame(foo1, foo2)
+        foo1 shouldNotBeSameInstanceAs foo2
     }
 
     @Test
@@ -54,7 +54,7 @@ class QualifierTest {
             """
     ) {
         val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
-        assertNotSame(foo1, foo2)
+        foo1 shouldNotBeSameInstanceAs foo2
     }
 
     @Test
