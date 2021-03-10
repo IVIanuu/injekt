@@ -24,10 +24,8 @@ object InjektFqNames {
 
     val Given = InjektPackage.child("Given".asNameId())
     val GivenSetElement = InjektPackage.child("GivenSetElement".asNameId())
-    val Macro = InjektPackage.child("Macro".asNameId())
     val Module = InjektPackage.child("Module".asNameId())
     val Qualifier = InjektPackage.child("Qualifier".asNameId())
-    val givenfun = InjektPackage.child("given".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
     val CallableInfo = InternalPackage.child("CallableInfo".asNameId())

@@ -47,8 +47,7 @@ data class CallableRef(
     val qualifiers: List<AnnotationRef>,
     val typeArguments: Map<ClassifierRef, TypeRef>,
     val contributionKind: ContributionKind?,
-    val isMacro: Boolean,
-    val isFromMacro: Boolean,
+    val fromGivenConstraint: Boolean,
     val callContext: CallContext
 )
 
@@ -103,8 +102,7 @@ fun CallableDescriptor.toCallableRef(
             .map { it to it.defaultType }
             .toMap(),
         contributionKind = contributionKind(declarationStore),
-        isMacro = hasAnnotation(InjektFqNames.Macro),
-        isFromMacro = false,
+        fromGivenConstraint = false,
         callContext = callContext
     ).let {
         if (applyCallableInfo && original.isExternalDeclaration()) it.apply(
@@ -148,9 +146,6 @@ fun MemberScope.collectContributions(
                         callable.toCallableRef(declarationStore)
                             .copy(contributionKind = kind)
                             .substitute(substitutionMap)
-                            .also {
-                                println(it)
-                            }
                     )
                 } ?: emptyList()
                 else -> emptyList()
@@ -240,10 +235,10 @@ fun CallableRef.collectContributions(
     substitutionMap: Map<ClassifierRef, TypeRef>,
     addGiven: (CallableRef) -> Unit,
     addGivenSetElement: (CallableRef) -> Unit,
-    addMacro: (CallableRef) -> Unit
+    addConstrainedContribution: (CallableRef) -> Unit
 ) {
-    if (isMacro) {
-        addMacro(this)
+    if (!fromGivenConstraint && typeParameters.any { it.isGivenConstraint }) {
+        addConstrainedContribution(this)
         return
     }
     when (contributionKind) {
@@ -263,7 +258,7 @@ fun CallableRef.collectContributions(
                         combinedSubstitutionMap,
                         addGiven,
                         addGivenSetElement,
-                        addMacro
+                        addConstrainedContribution
                     )
                 }
         }

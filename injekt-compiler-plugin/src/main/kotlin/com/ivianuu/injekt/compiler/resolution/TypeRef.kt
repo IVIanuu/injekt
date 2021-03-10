@@ -41,7 +41,8 @@ data class ClassifierRef(
     val isObject: Boolean = false,
     val isTypeAlias: Boolean = false,
     val descriptor: ClassifierDescriptor? = null,
-    val qualifiers: List<AnnotationRef> = emptyList()
+    val qualifiers: List<AnnotationRef> = emptyList(),
+    val isGivenConstraint: Boolean = false
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
     override fun hashCode(): Int = fqName.hashCode()
@@ -80,7 +81,8 @@ fun ClassifierDescriptor.toClassifierRef(
         isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
         isTypeAlias = this is TypeAliasDescriptor,
         descriptor = this,
-        qualifiers = qualifiers
+        qualifiers = qualifiers,
+        isGivenConstraint = this is TypeParameterDescriptor && hasAnnotation(InjektFqNames.Given)
     ).let {
         if (applyClassifierInfo && original.isExternalDeclaration()) it.apply(
             declarationStore,
@@ -98,7 +100,7 @@ sealed class TypeRef {
     abstract val contributionKind: ContributionKind?
     abstract val isStarProjection: Boolean
     abstract val qualifiers: List<AnnotationRef>
-    abstract val macroChain: List<FqName>
+    abstract val constrainedContributionChain: List<FqName>
     abstract val setKey: SetKey?
 
     private val typeName by unsafeLazy { uniqueTypeName() }
@@ -116,7 +118,7 @@ sealed class TypeRef {
         result = 31 * result + isComposable.hashCode()
         result = 31 * result + isStarProjection.hashCode()
         result = 31 * result + qualifiers.hashCode()
-        result = 31 * result + macroChain.hashCode()
+        result = 31 * result + constrainedContributionChain.hashCode()
         result = 31 * result + setKey.hashCode()
 
         result
@@ -216,7 +218,7 @@ class KotlinTypeRef(
         kotlinType.getAnnotatedAnnotations(InjektFqNames.Qualifier)
             .map { it.toAnnotationRef(declarationStore) }
     }
-    override val macroChain: List<FqName> get() = emptyList()
+    override val constrainedContributionChain: List<FqName> get() = emptyList()
     override val setKey: SetKey? get() = null
 }
 
@@ -234,7 +236,7 @@ class SimpleTypeRef(
     override val contributionKind: ContributionKind? = null,
     override val isStarProjection: Boolean = false,
     override val qualifiers: List<AnnotationRef> = emptyList(),
-    override val macroChain: List<FqName> = emptyList(),
+    override val constrainedContributionChain: List<FqName> = emptyList(),
     override val setKey: SetKey? = null
 ) : TypeRef() {
     init {
@@ -257,7 +259,7 @@ fun TypeRef.copy(
     contributionKind: ContributionKind? = this.contributionKind,
     isStarProjection: Boolean = this.isStarProjection,
     qualifiers: List<AnnotationRef> = this.qualifiers,
-    macroChain: List<FqName> = this.macroChain,
+    constrainedContributionChain: List<FqName> = this.constrainedContributionChain,
     setKey: SetKey? = this.setKey
 ) = SimpleTypeRef(
     classifier,
@@ -268,7 +270,7 @@ fun TypeRef.copy(
     contributionKind,
     isStarProjection,
     qualifiers,
-    macroChain,
+    constrainedContributionChain,
     setKey
 )
 
@@ -367,8 +369,8 @@ fun TypeRef.uniqueTypeName(depth: Int = 0): String {
         // if (includeNullability && isMarkedNullable) append("nullable_")
         if (isStarProjection) append("star")
         else append(classifier.fqName.pathSegments().joinToString("_") { it.asString() })
-        if (macroChain.isNotEmpty()) {
-            append(macroChain.joinToString("_", prefix = "_", postfix = "_"))
+        if (constrainedContributionChain.isNotEmpty()) {
+            append(constrainedContributionChain.joinToString("_", prefix = "_", postfix = "_"))
         }
         if (setKey != null) append("_${setKey.hashCode()}_")
         arguments.forEachIndexed { index, typeArgument ->
@@ -436,7 +438,7 @@ fun getSubstitutionMap(
                 if (baseSuperType.classifier.isTypeParameter) {
                     val thisTypeToUse = thisBaseTypeView ?: thisType
                     visitType(thisTypeToUse
-                        .copy(qualifiers = emptyList(), macroChain = emptyList(), setKey = null), baseSuperType)
+                        .copy(qualifiers = emptyList(), constrainedContributionChain = emptyList(), setKey = null), baseSuperType)
                     if (thisTypeToUse.qualifiers.isAssignableTo(declarationStore, baseSuperType.qualifiers)) {
                         thisTypeToUse.qualifiers.zip(baseSuperType.qualifiers)
                             .forEach { visitType(it.first.type, it.second.type) }
@@ -477,7 +479,7 @@ fun TypeRef.isAssignableTo(
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
         ) return@getOrPut false
-        if (macroChain != superType.macroChain) return@getOrPut false
+        if (constrainedContributionChain != superType.constrainedContributionChain) return@getOrPut false
         if (setKey != superType.setKey) return@getOrPut false
         return@getOrPut true
     } else if (classifier.isTypeParameter) {
@@ -488,7 +490,7 @@ fun TypeRef.isAssignableTo(
         if (qualifiers.isNotEmpty() &&
             !superType.qualifiers.isAssignableTo(declarationStore, qualifiers)
         ) return@getOrPut false
-        if (macroChain != superType.macroChain) return@getOrPut false
+        if (constrainedContributionChain != superType.constrainedContributionChain) return@getOrPut false
         if (setKey != superType.setKey) return@getOrPut false
         return@getOrPut true
     }
@@ -509,7 +511,7 @@ fun TypeRef.isSubTypeOf(
     if (classifier.fqName == superType.classifier.fqName) {
         if (isMarkedNullable && !superType.isMarkedNullable) return@getOrPut false
         if (!qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return@getOrPut false
-        if (macroChain != superType.macroChain) return@getOrPut false
+        if (constrainedContributionChain != superType.constrainedContributionChain) return@getOrPut false
         if (setKey != superType.setKey) return@getOrPut false
         if (isComposableType != superType.isComposableType) return@getOrPut false
         if (arguments.zip(superType.arguments)
@@ -523,7 +525,7 @@ fun TypeRef.isSubTypeOf(
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
         ) return@getOrPut false
-        if (macroChain != superType.macroChain) return@getOrPut false
+        if (constrainedContributionChain != superType.constrainedContributionChain) return@getOrPut false
         if (setKey != superType.setKey) return@getOrPut false
         return@getOrPut true
     }
@@ -533,7 +535,7 @@ fun TypeRef.isSubTypeOf(
             return@getOrPut true
         if (subTypeView.isMarkedNullable && !superType.isMarkedNullable) return@getOrPut false
         if (!subTypeView.qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return@getOrPut false
-        if (subTypeView.macroChain != superType.macroChain) return@getOrPut false
+        if (subTypeView.constrainedContributionChain != superType.constrainedContributionChain) return@getOrPut false
         if (subTypeView.setKey != superType.setKey) return@getOrPut false
         if (isComposableType != superType.isComposableType) return@getOrPut false
         return@getOrPut subTypeView.arguments.zip(superType.arguments)
@@ -548,7 +550,7 @@ fun TypeRef.isSubTypeOf(
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
         ) return@getOrPut false
-        if (macroChain != superType.macroChain) return@getOrPut false
+        if (constrainedContributionChain != superType.constrainedContributionChain) return@getOrPut false
         if (setKey != superType.setKey) return@getOrPut false
         if (isComposableType != superType.isComposableType) return@getOrPut false
         return@getOrPut superType.superTypes.all { upperBound ->
@@ -593,9 +595,9 @@ fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
         return null
     }
     val rawSubTypeView = superTypeWithMatchingClassifier() ?: return null
-    return if (macroChain.isNotEmpty() || qualifiers.isNotEmpty() || isMarkedNullable) {
+    return if (constrainedContributionChain.isNotEmpty() || qualifiers.isNotEmpty() || isMarkedNullable) {
         rawSubTypeView.copy(
-            macroChain = macroChain,
+            constrainedContributionChain = constrainedContributionChain,
             qualifiers = qualifiers + rawSubTypeView.qualifiers,
             isMarkedNullable = isMarkedNullable
         )

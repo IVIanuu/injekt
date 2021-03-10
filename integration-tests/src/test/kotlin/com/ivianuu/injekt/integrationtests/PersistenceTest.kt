@@ -120,7 +120,7 @@ class PersistenceTest {
                 """
                     var callCount = 0
                     @Qualifier annotation class MyQualifier
-                    @Macro @Given fun <T : FuncA> impl(@Given instance: T): @MyQualifier T {
+                    @Given fun <@Given T : FuncA> impl(@Given instance: T): @MyQualifier T {
                         return instance
                     }
 

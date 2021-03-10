@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Macro
 import com.ivianuu.injekt.Qualifier
 
 interface Scope : ScopeDisposable {
@@ -35,9 +34,8 @@ fun Scope(): Scope = ScopeImpl()
 @Qualifier
 annotation class Scoped<S : Scope>
 
-@Macro
 @Given
-inline fun <T : @Scoped<U> S, @ForTypeKey S : Any, U : Scope> scopedImpl(
+inline fun <@Given T : @Scoped<U> S, @ForTypeKey S : Any, U : Scope> scopedImpl(
     @Given scope: U,
     @Given factory: () -> T
 ): S = scope<S>(factory)

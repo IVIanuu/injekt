@@ -28,13 +28,13 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
-class MacroTest {
+class GivenConstraintTest {
 
     @Test
-    fun testMacroGiven() = codegen(
+    fun testGivenWithGivenConstraint() = codegen(
         """
             @Qualifier annotation class Trigger
-            @Macro @Given fun <T : @Trigger S, S> macroImpl(@Given instance: T): S = instance
+            @Given fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): S = instance
 
             @Trigger @Given fun foo() = Foo()
 
@@ -46,10 +46,10 @@ class MacroTest {
     }
 
     @Test
-    fun testMacroSetElement() = codegen(
+    fun testSetElementWithGivenConstraint() = codegen(
         """
             @Qualifier annotation class Trigger
-            @Macro @GivenSetElement fun <T : @Trigger S, S> macroImpl(@Given instance: T): S = instance
+            @GivenSetElement fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): S = instance
 
             @Trigger @Given fun foo() = Foo()
 
@@ -60,13 +60,13 @@ class MacroTest {
     }
 
     @Test
-    fun testMacroModule() = codegen(
+    fun testModuleWithGivenConstraint() = codegen(
         """
             class MyModule<T : S, S> {
                 @GivenSetElement fun intoSet(@Given instance: T): S = instance
             }
             @Qualifier annotation class Trigger
-            @Macro @Module fun <T : @Trigger S, S> macroImpl(@Given instance: T): MyModule<T, S> = MyModule()
+            @Module fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): MyModule<T, S> = MyModule()
 
             @Trigger @Given fun foo() = Foo()
             @Trigger @Given fun string() = ""
@@ -78,19 +78,37 @@ class MacroTest {
     }
 
     @Test
-    fun testMacroWithoutTypeParameter() = codegen(
+    fun testGivenConstraintWithContribution() = codegen(
         """
-            @Macro @Given fun macroImpl() = Unit
+            fun <@Given T> triggerImpl() = Unit
         """
     ) {
-        compilationShouldHaveFailed("type parameter")
+        compilationShouldHaveFailed("@Given type constraint declaration must have 1 contribution annotation")
     }
 
     @Test
-    fun testMacroWithQualifierWithTypeParameter() = codegen(
+    fun testGivenConstraintOnNonFunction() = codegen(
+        """
+            val <@Given T> T.prop get() = Unit
+        """
+    ) {
+        compilationShouldHaveFailed("A @Given type constraint is only supported on functions")
+    }
+
+    @Test
+    fun testMultipleGivenConstraints() = codegen(
+        """
+            @Given fun <@Given T, @Given S> triggerImpl() = Unit
+        """
+    ) {
+        compilationShouldHaveFailed("A declaration may have only one @Given type constraint")
+    }
+
+    @Test
+    fun testGivenConstraintWithQualifierWithTypeParameter() = codegen(
         """
             @Qualifier annotation class Trigger<S>
-            @Macro @Given fun <@ForTypeKey T : @Trigger<S> Any?, @ForTypeKey S> macroImpl() = 
+            @Given fun <@Given @ForTypeKey T : @Trigger<S> Any?, @ForTypeKey S> triggerImpl() = 
                 typeKeyOf<S>()
 
             @Trigger<Bar> @Given fun foo() = Foo()
@@ -102,12 +120,12 @@ class MacroTest {
     }
 
     @Test
-    fun testMacroWithQualifierWithTypeParameterMulti() = multiCodegen(
+    fun testGivenConstraintWithQualifierWithTypeParameterMulti() = multiCodegen(
         listOf(
             source(
                 """
                     @Qualifier annotation class Trigger<S>
-                    @Macro @Given fun <@ForTypeKey T : @Trigger<S> Any?, @ForTypeKey S> macroImpl() = 
+                    @Given fun <@Given @ForTypeKey T : @Trigger<S> Any?, @ForTypeKey S> triggerImpl() = 
                         typeKeyOf<S>()
                 """
             )
@@ -133,12 +151,12 @@ class MacroTest {
     }
 
     @Test
-    fun testMacroWithQualifierWithTypeParameterMulti2() = multiCodegen(
+    fun testGivenConstraintWithQualifierWithTypeParameterMulti2() = multiCodegen(
         listOf(
             source(
                 """
                     @Qualifier annotation class Trigger<S>
-                    @Macro @Given fun <@ForTypeKey T : @Trigger<S> Any?, @ForTypeKey S> macroImpl() = 
+                    @Given fun <@Given @ForTypeKey T : @Trigger<S> Any?, @ForTypeKey S> triggerImpl() = 
                         typeKeyOf<S>()
                 """
             )
@@ -167,10 +185,10 @@ class MacroTest {
     }
 
     @Test
-    fun testMacroClass() = codegen(
+    fun testGivenConstraintTriggeredByClass() = codegen(
         """
             @Qualifier annotation class Trigger
-            @Macro @Given fun <T : @Trigger S, S> macroImpl(@Given instance: T): S = instance
+            @Given fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): S = instance
 
             @Trigger @Given class NotAny
 
@@ -181,11 +199,11 @@ class MacroTest {
     }
 
     @Test
-    fun testMacroChain() = codegen(
+    fun testGivenConstraintChain() = codegen(
         """
             @Qualifier annotation class A
 
-            @Macro @Module fun <T : @A S, S> aImpl() = AModule<S>()
+            @Module fun <@Given T : @A S, S> aImpl() = AModule<S>()
 
             class AModule<T> {
                 @B
@@ -194,7 +212,7 @@ class MacroTest {
             }
 
             @Qualifier annotation class B
-            @Macro @Module fun <T : @B S, S> bImpl() = BModule<T>()
+            @Module fun <@Given T : @B S, S> bImpl() = BModule<T>()
 
             class BModule<T> {
                 @C
@@ -203,7 +221,7 @@ class MacroTest {
             }
 
             @Qualifier annotation class C
-            @Macro @GivenSetElement fun <T : @C Any?> cImpl() = Foo()
+            @GivenSetElement fun <@Given T : @C Any?> cImpl() = Foo()
 
             @A @Given fun dummy() = 0L
             
@@ -244,10 +262,10 @@ class MacroTest {
     }
 
     @Test
-    fun testMultipleMacrosWithSameType() = codegen(
+    fun testMultipleConstrainedContributionsWithSameType() = codegen(
         """
             @Qualifier annotation class Trigger
-            @Macro @GivenSetElement fun <T : @Trigger String> macroImpl(@Given instance: T): String = instance
+            @GivenSetElement fun <@Given T : @Trigger String> triggerImpl(@Given instance: T): String = instance
 
             @Trigger @Given fun a() = "a"
             @Trigger @Given fun b() = "b"
@@ -260,40 +278,40 @@ class MacroTest {
     }
 
     @Test
-    fun testMacroWithoutContributionsFails() = codegen(
+    fun testGivenConstraintWithoutContributionsFails() = codegen(
         """
             @Qualifier annotation class Trigger
-            @Macro fun <T : @Trigger String> macroImpl(): String = ""
+            fun <@Given T : @Trigger String> triggerImpl(): String = ""
         """
     ) {
-        compilationShouldHaveFailed("@Macro declaration must have 1 contribution annotation")
+        compilationShouldHaveFailed("@Given type constraint declaration must have 1 contribution annotation")
     }
 
     @Test
-    fun testMacroTypeParameterNotMarkedAsUnused() = codegen(
+    fun testGivenConstraintTypeParameterNotMarkedAsUnused() = codegen(
         """
             @Qualifier annotation class Trigger
-            @Macro @GivenSetElement fun <T : @Trigger String> macroImpl(): String = ""
+            @GivenSetElement fun <@Given T : @Trigger String> triggerImpl(): String = ""
         """
     ) {
         shouldNotContainMessage("Type parameter \"T\" is never used")
     }
 
     @Test
-    fun testNoFinalTypeWarningOnMacroTypeParameter() = codegen(
+    fun testNoFinalTypeWarningOnGivenConstraintTypeParameter() = codegen(
         """
             @Qualifier annotation class Trigger
-            @Macro @GivenSetElement fun <T : @Trigger String> macroImpl(): String = ""
+            @GivenSetElement fun <@Given T : @Trigger String> triggerImpl(): String = ""
         """
     ) {
         shouldNotContainMessage("'String' is a final type, and thus a value of the type parameter is predetermined")
     }
 
     @Test
-    fun testCanResolveTypeBasedOnMacroType() = codegen(
+    fun testCanResolveTypeBasedOnGivenConstraintType() = codegen(
         """
             @Qualifier annotation class Trigger
-            @Macro @Given fun <T : @Trigger S, S> macroImpl(
+            @Given fun <@Given T : @Trigger S, S> triggerImpl(
                 @Given pair: Pair<S, S>
             ): Int = 0
 
@@ -315,9 +333,8 @@ class MacroTest {
 
             @Qualifier annotation class UiDecoratorBinding
 
-            @Macro
             @GivenSetElement
-            fun <T : @UiDecoratorBinding S, @ForTypeKey S : UiDecorator> uiDecoratorBindingImpl(
+            fun <@Given T : @UiDecoratorBinding S, @ForTypeKey S : UiDecorator> uiDecoratorBindingImpl(
                 @Given instance: T
             ): UiDecorator = instance as UiDecorator
 

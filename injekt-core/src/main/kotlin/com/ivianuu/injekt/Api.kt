@@ -25,7 +25,8 @@ package com.ivianuu.injekt
     AnnotationTarget.PROPERTY,
     AnnotationTarget.LOCAL_VARIABLE,
     AnnotationTarget.VALUE_PARAMETER,
-    AnnotationTarget.TYPE
+    AnnotationTarget.TYPE,
+    AnnotationTarget.TYPE_PARAMETER
 )
 annotation class Given
 
@@ -51,9 +52,6 @@ annotation class GivenSetElement
     AnnotationTarget.TYPE
 )
 annotation class Module
-
-@Target(AnnotationTarget.FUNCTION)
-annotation class Macro
 
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Qualifier

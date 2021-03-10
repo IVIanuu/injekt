@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.component
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Macro
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.common.Scope
@@ -26,9 +25,8 @@ import com.ivianuu.injekt.common.Scoped
 @Qualifier
 annotation class Eager<S : Scope>
 
-@Macro
 @Module
-fun <T : @Eager<U> S, S : Any, U : Component> eagerImpl() = EagerModule<T, S, U>()
+fun <@Given T : @Eager<U> S, S : Any, U : Component> eagerImpl() = EagerModule<T, S, U>()
 
 class EagerModule<T : S, S : Any, U : Component> {
 
