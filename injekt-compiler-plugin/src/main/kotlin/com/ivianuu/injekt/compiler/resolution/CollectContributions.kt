@@ -52,23 +52,23 @@ data class CallableRef(
     val callContext: CallContext
 )
 
-fun CallableRef.substitute(substitutionMap: Map<ClassifierRef, TypeRef>): CallableRef {
-    if (substitutionMap.isEmpty()) return this
+fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
+    if (map.isEmpty()) return this
     return copy(
-        type = type.substitute(substitutionMap),
+        type = type.substitute(map),
         parameterTypes = parameterTypes
-            .mapValues { it.value.substitute(substitutionMap) },
+            .mapValues { it.value.substitute(map) },
         typeArguments = typeArguments
-            .mapValues { it.value.substitute(substitutionMap) }
+            .mapValues { it.value.substitute(map) }
     )
 }
 
-fun CallableRef.substituteInputs(substitutionMap: Map<ClassifierRef, TypeRef>): CallableRef {
-    if (substitutionMap.isEmpty()) return this
+fun CallableRef.substituteInputs(map: Map<ClassifierRef, TypeRef>): CallableRef {
+    if (map.isEmpty()) return this
     return copy(
-        parameterTypes = parameterTypes.mapValues { it.value.substitute(substitutionMap) },
+        parameterTypes = parameterTypes.mapValues { it.value.substitute(map) },
         typeArguments = typeArguments
-            .mapValues { it.value.substitute(substitutionMap) }
+            .mapValues { it.value.substitute(map) }
     )
 }
 
@@ -148,6 +148,9 @@ fun MemberScope.collectContributions(
                         callable.toCallableRef(declarationStore)
                             .copy(contributionKind = kind)
                             .substitute(substitutionMap)
+                            .also {
+                                println(it)
+                            }
                     )
                 } ?: emptyList()
                 else -> emptyList()
@@ -248,14 +251,16 @@ fun CallableRef.collectContributions(
         ContributionKind.SET_ELEMENT -> addGivenSetElement(this)
         ContributionKind.MODULE -> {
             addGiven(this)
+            val combinedSubstitutionMap = substitutionMap + type.classifier.typeParameters
+                .zip(type.arguments)
             callable
                 .returnType!!
                 .memberScope
-                .collectContributions(declarationStore, type, substitutionMap)
+                .collectContributions(declarationStore, type, combinedSubstitutionMap)
                 .forEach {
                     it.collectContributions(
                         declarationStore,
-                        substitutionMap,
+                        combinedSubstitutionMap,
                         addGiven,
                         addGivenSetElement,
                         addMacro

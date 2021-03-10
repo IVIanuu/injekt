@@ -18,7 +18,10 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.compilationShouldBeOk
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.irShouldContain
+import com.ivianuu.injekt.test.irShouldNotContain
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -190,4 +193,31 @@ class QualifierTest {
             .shouldBeTypeOf<Foo>()
     }
 
+    // todo rewrite test
+    @Test
+    fun testSubstitutesQualifierTypeParameters() = codegen(
+        """
+            @Eager<AppComponent> 
+            @Given 
+            fun foo() = Foo()
+
+            typealias ChildComponent = Component
+
+            @Module
+            val childComponentModule = ChildComponentModule0<AppComponent, ChildComponent>()
+
+            @ComponentElementBinding<ChildComponent>
+            @Given
+            class MyElement(@Given val foo: Foo)
+
+            fun invoke() {
+                val component = ComponentBuilder<AppComponent>()
+            }
+        """
+    ) {
+        compilationShouldBeOk()
+        irShouldNotContain("scopedImpl<Foo, Foo, U>(")
+    }
+
 }
+

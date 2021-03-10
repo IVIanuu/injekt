@@ -30,6 +30,11 @@ data class AnnotationRef(
     val arguments: Map<Name, ConstantValue<*>>
 )
 
+fun AnnotationRef.substitute(map: Map<ClassifierRef, TypeRef>): AnnotationRef {
+    if (map.isEmpty()) return this
+    return copy(type = type.substitute(map))
+}
+
 fun AnnotationDescriptor.toAnnotationRef(declarationStore: DeclarationStore): AnnotationRef {
     return AnnotationRef(
         type = type.toTypeRef(declarationStore),

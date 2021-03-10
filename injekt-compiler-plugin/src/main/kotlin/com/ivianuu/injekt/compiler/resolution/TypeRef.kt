@@ -274,15 +274,15 @@ fun TypeRef.copy(
 
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
     if (map.isEmpty()) return this
-    map[classifier]?.let {
-        return it.copy(
+    map[classifier]?.let { substitution ->
+        return substitution.copy(
             // we copy nullability to support T : Any? -> String
-            isMarkedNullable = if (!isStarProjection) isMarkedNullable else it.isMarkedNullable,
+            isMarkedNullable = if (!isStarProjection) isMarkedNullable else substitution.isMarkedNullable,
             // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
-            qualifiers = qualifiers + it.qualifiers,
+            qualifiers = qualifiers.map { it.substitute(map) } + substitution.qualifiers,
             // we copy given kind to support @Given C -> @Given String
             // fallback to substitution given kind
-            contributionKind = contributionKind ?: it.contributionKind
+            contributionKind = contributionKind ?: substitution.contributionKind
         )
     }
 
@@ -290,7 +290,10 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
         !classifier.isTypeParameter
     ) return this
 
-    val substituted = copy(arguments = arguments.map { it.substitute(map) })
+    val substituted = copy(
+        arguments = arguments.map { it.substitute(map) },
+        qualifiers = qualifiers.map { it.substitute(map) }
+    )
 
     if (classifier.isTypeParameter && substituted == this) {
         classifier

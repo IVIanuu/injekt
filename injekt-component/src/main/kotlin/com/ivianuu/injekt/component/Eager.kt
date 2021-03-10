@@ -20,24 +20,17 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Macro
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.common.ForTypeKey
 import com.ivianuu.injekt.common.Scope
 import com.ivianuu.injekt.common.Scoped
-import com.ivianuu.injekt.common.TypeKey
-import com.ivianuu.injekt.common.typeKeyOf
 
 @Qualifier
 annotation class Eager<S : Scope>
 
 @Macro
 @Module
-fun <T : @Eager<U> S, @ForTypeKey S : Any, U : Component> eagerImpl() =
-    EagerModule<T, S, U>(typeKeyOf())
+fun <T : @Eager<U> S, S : Any, U : Component> eagerImpl() = EagerModule<T, S, U>()
 
-class EagerModule<T : S, S : Any, U : Component>(
-    @PublishedApi
-    internal val key: TypeKey<S>
-) {
+class EagerModule<T : S, S : Any, U : Component> {
 
     @Scoped<U>
     @Given
