@@ -321,7 +321,7 @@ class GivenDeclarationTest {
     @Test
     fun testMultipleContributionAnnotationsFails() = codegen(
         """
-            @Given @GivenSetElement fun foo() = Foo()
+            @Given @Module fun foo() = Foo()
         """
     ) {
         compilationShouldHaveFailed("declaration may be only annotated with one contribution annotation")

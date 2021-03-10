@@ -167,7 +167,6 @@ class TypeKeyTransformer(
 
             val typeAnnotations = listOfNotNull(
                 if (hasAnnotation(InjektFqNames.Given)) "@Given" else null,
-                if (hasAnnotation(InjektFqNames.GivenSetElement)) "@GivenSetElement" else null,
                 if (hasAnnotation(InjektFqNames.Module)) "@Module" else null,
                 if (hasAnnotation(InjektFqNames.Composable)) "@Composable" else null,
                 *getAnnotatedAnnotations(InjektFqNames.Qualifier)

@@ -72,7 +72,7 @@ fun CallableRef.substituteInputs(map: Map<ClassifierRef, TypeRef>): CallableRef 
 }
 
 enum class ContributionKind {
-    VALUE, SET_ELEMENT, MODULE
+    VALUE, MODULE
 }
 
 fun CallableDescriptor.toCallableRef(
@@ -155,7 +155,6 @@ fun MemberScope.collectContributions(
 
 fun Annotated.contributionKind(declarationStore: DeclarationStore): ContributionKind? = when {
     hasAnnotation(InjektFqNames.Given) -> ContributionKind.VALUE
-    hasAnnotation(InjektFqNames.GivenSetElement) -> ContributionKind.SET_ELEMENT
     hasAnnotation(InjektFqNames.Module) -> ContributionKind.MODULE
     this is ClassConstructorDescriptor -> constructedClass.contributionKind(declarationStore)
     else -> null
@@ -191,7 +190,6 @@ fun ParameterDescriptor.contributionKind(declarationStore: DeclarationStore): Co
         ?: getUserData(DslMarkerUtils.FunctionTypeAnnotationsKey)?.let { userData ->
         when {
             userData.hasAnnotation(InjektFqNames.Given) -> ContributionKind.VALUE
-            userData.hasAnnotation(InjektFqNames.GivenSetElement) -> ContributionKind.SET_ELEMENT
             userData.hasAnnotation(InjektFqNames.Module) -> ContributionKind.MODULE
             else -> null
         }
@@ -234,7 +232,6 @@ fun CallableRef.collectContributions(
     declarationStore: DeclarationStore,
     substitutionMap: Map<ClassifierRef, TypeRef>,
     addGiven: (CallableRef) -> Unit,
-    addGivenSetElement: (CallableRef) -> Unit,
     addConstrainedContribution: (CallableRef) -> Unit
 ) {
     if (!fromGivenConstraint && typeParameters.any { it.isGivenConstraint }) {
@@ -243,7 +240,6 @@ fun CallableRef.collectContributions(
     }
     when (contributionKind) {
         ContributionKind.VALUE -> addGiven(this)
-        ContributionKind.SET_ELEMENT -> addGivenSetElement(this)
         ContributionKind.MODULE -> {
             addGiven(this)
             val combinedSubstitutionMap = substitutionMap + type.classifier.typeParameters
@@ -257,7 +253,6 @@ fun CallableRef.collectContributions(
                         declarationStore,
                         combinedSubstitutionMap,
                         addGiven,
-                        addGivenSetElement,
                         addConstrainedContribution
                     )
                 }

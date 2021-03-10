@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.component
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.common.ForTypeKey
 import com.ivianuu.injekt.common.TypeKey
 import com.ivianuu.injekt.common.typeKeyOf
@@ -25,7 +24,7 @@ import com.ivianuu.injekt.common.typeKeyOf
 class ChildComponentModule0<P : Component, C : Component>(
     private val childComponentFactoryKey: TypeKey<() -> C>
 ) {
-    @GivenSetElement
+    @Given
     fun factoryElement(
         @Given parent: P,
         @Given componentBuilder: () -> Component.Builder<C>
@@ -52,7 +51,7 @@ class ChildComponentModule1<P : Component, P1, C : Component>(
     private val p1Key: TypeKey<P1>,
     private val childComponentFactoryKey: TypeKey<(P1) -> C>
 ) {
-    @GivenSetElement
+    @Given
     fun factoryElement(
         @Given parent: P,
         @Given componentBuilder: Component.Builder<C>
@@ -85,7 +84,7 @@ class ChildComponentModule2<P : Component, P1, P2, C : Component>(
     private val p2Key: TypeKey<P2>,
     private val childComponentFactoryKey: TypeKey<(P1, P2) -> C>
 ) {
-    @GivenSetElement
+    @Given
     fun factoryElement(
         @Given parent: P,
         @Given componentBuilder: Component.Builder<C>
@@ -127,7 +126,7 @@ class ChildComponentModule3<P : Component, P1, P2, P3, C : Component>(
     private val p3Key: TypeKey<P3>,
     private val childComponentFactoryKey: TypeKey<(P1, P2, P3) -> C>
 ) {
-    @GivenSetElement
+    @Given
     fun factoryElement(
         @Given parent: P,
         @Given componentBuilder: Component.Builder<C>
@@ -176,7 +175,7 @@ class ChildComponentModule4<P : Component, P1, P2, P3, P4, C : Component>(
     private val p4Key: TypeKey<P4>,
     private val childComponentFactoryKey: TypeKey<(P1, P2, P3, P4) -> C>
 ) {
-    @GivenSetElement
+    @Given
     fun factoryElement(
         @Given parent: P,
         @Given componentBuilder: Component.Builder<C>
@@ -232,7 +231,7 @@ class ChildComponentModule5<P : Component, P1, P2, P3, P4, P5, C : Component>(
     private val p5Key: TypeKey<P5>,
     private val childComponentFactoryKey: TypeKey<(P1, P2, P3, P4, P5) -> C>
 ) {
-    @GivenSetElement
+    @Given
     fun factoryElement(
         @Given parent: P,
         @Given componentBuilder: Component.Builder<C>

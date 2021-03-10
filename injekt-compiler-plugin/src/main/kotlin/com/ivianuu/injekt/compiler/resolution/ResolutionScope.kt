@@ -37,7 +37,6 @@ class ResolutionScope(
     val resultsByCandidate = mutableMapOf<GivenNode, CandidateResolutionResult>()
 
     private val givens = mutableListOf<CallableRef>()
-    private val setElements = mutableListOf<CallableRef>()
 
     private val constrainedContributions = mutableListOf<ConstrainedContributionNode>()
     private data class ConstrainedContributionNode(val callable: CallableRef) {
@@ -76,7 +75,6 @@ class ResolutionScope(
                             )
                         givens += callable.copy(type = typeWithChain)
                     },
-                    addGivenSetElement = { setElements += it },
                     addConstrainedContribution = {
                         hasGivensOrConstrainedContributions = true
                         constrainedContributions += ConstrainedContributionNode(it)
@@ -164,7 +162,7 @@ class ResolutionScope(
     private fun setElementsForType(type: TypeRef): List<TypeRef> {
         initialize
         return setElementsByType.getOrPut(type) {
-            (parent?.setElementsForType(type) ?: emptyList()) + setElements
+            (parent?.setElementsForType(type) ?: emptyList()) + givens
                 .filter { it.type.isAssignableTo(declarationStore, type) }
                 .map { it.substitute(getSubstitutionMap(declarationStore, listOf(type to it.type))) }
                 .map { callable ->
@@ -229,7 +227,6 @@ class ResolutionScope(
                 givens += newGivenWithChain
                 collectConstrainedContributions(newGivenWithChain.type)
             },
-            addGivenSetElement = { setElements += it },
             addConstrainedContribution = { newCallable ->
                 val newConstrainedContribution = ConstrainedContributionNode(newCallable)
                 constrainedContributions += newConstrainedContribution
