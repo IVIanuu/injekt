@@ -16,10 +16,9 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.assertIrContainsText
-import com.ivianuu.injekt.test.assertIrNotContainsText
+import com.ivianuu.injekt.test.irShouldContain
+import com.ivianuu.injekt.test.irShouldNotContain
 import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.invokeSingleFile
 import org.junit.Test
 
 class ExpressionWrappingTest {
@@ -35,7 +34,7 @@ class ExpressionWrappingTest {
             }
         """
     ) {
-        assertIrContainsText(1, "bar(foo = ")
+        irShouldContain(1, "bar(foo = ")
     }
 
     @Test
@@ -49,7 +48,7 @@ class ExpressionWrappingTest {
             }
         """
     ) {
-        assertIrContainsText(1, "bar(foo = ")
+        irShouldContain(1, "bar(foo = ")
     }
 
     @Test
@@ -62,7 +61,7 @@ class ExpressionWrappingTest {
             }
         """
     ) {
-        assertIrNotContainsText("local fun <anonymous>(): Bar {")
+        irShouldNotContain("local fun <anonymous>(): Bar {")
     }
 
     @Test
@@ -75,7 +74,7 @@ class ExpressionWrappingTest {
             }
         """
     ) {
-        assertIrNotContainsText("local fun <anonymous>(): Foo {")
+        irShouldNotContain("local fun <anonymous>(): Foo {")
     }
 
     @Test
@@ -88,8 +87,8 @@ class ExpressionWrappingTest {
             }
         """
     ) {
-        assertIrNotContainsText("local fun <anonymous>(): Function0<Foo> {")
-        assertIrContainsText(1, "val tmp0: Function0<Foo> = local fun <anonymous>(): Foo {")
+        irShouldNotContain("local fun <anonymous>(): Function0<Foo> {")
+        irShouldContain(1, "val tmp0: Function0<Foo> = local fun <anonymous>(): Foo {")
     }
 
     @Test
@@ -101,7 +100,7 @@ class ExpressionWrappingTest {
             }
         """
     ) {
-        assertIrNotContainsText("val tmp0: Function0<Foo> = local fun <anonymous>(): Foo {")
+        irShouldNotContain("val tmp0: Function0<Foo> = local fun <anonymous>(): Foo {")
     }
 
     /*@Test

@@ -23,9 +23,9 @@ import com.ivianuu.injekt.test.CommandB
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
-import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertSame
-import junit.framework.Assert.assertTrue
+import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import org.junit.Test
 
 class GivenSetTest {
@@ -39,9 +39,13 @@ class GivenSetTest {
         """
     ) {
         val set = invokeSingleFile<Set<Command>>().toList()
-        assertEquals(2, set.size)
-        assertTrue(set.any { it is CommandA })
-        assertTrue(set.any { it is CommandB })
+        2 shouldBe set.size
+        set
+            .filterIsInstance<CommandA>()
+            .shouldHaveSize(1)
+        set
+            .filterIsInstance<CommandB>()
+            .shouldHaveSize(1)
     }
 
     @Test
@@ -58,11 +62,17 @@ class GivenSetTest {
         """
     ) {
         val (parentSet, childSet) = invokeSingleFile<Pair<Set<Command>, Set<Command>>>().toList()
-        assertEquals(1, parentSet.size)
-        assertTrue(parentSet.any { it is CommandA })
-        assertEquals(2, childSet.size)
-        assertTrue(childSet.any { it is CommandA })
-        assertTrue(childSet.any { it is CommandB })
+        1 shouldBe parentSet.size
+        parentSet
+            .filterIsInstance<CommandA>()
+            .shouldHaveSize(1)
+        2 shouldBe childSet.size
+        childSet
+            .filterIsInstance<CommandA>()
+            .shouldHaveSize(1)
+        childSet
+            .filterIsInstance<CommandB>()
+            .shouldHaveSize(1)
     }
 
     @Test
@@ -71,7 +81,7 @@ class GivenSetTest {
             fun invoke() = given<Set<Command>>()
         """
     ) {
-        assertEquals(emptySet<Command>(), invokeSingleFile())
+        emptySet<Command>() shouldBe invokeSingleFile()
     }
 
     @Test
@@ -84,11 +94,11 @@ class GivenSetTest {
         """
     ) {
         val set = invokeSingleFile<Set<(Foo) -> Bar>>().toList()
-        assertEquals(1, set.size)
+        1 shouldBe set.size
         val provider = set.single()
         val foo = Foo()
         val bar = provider(foo)
-        assertSame(foo, bar.foo)
+        foo shouldBeSameInstanceAs bar.foo
     }
 
     @Test
@@ -108,11 +118,20 @@ class GivenSetTest {
         """
     ) {
         val (parentSet, childSet) = invokeSingleFile<Pair<Set<() -> Command>, Set<() -> Command>>>().toList()
-        assertEquals(1, parentSet.size)
-        assertTrue(parentSet.any { it() is CommandA })
-        assertEquals(2, childSet.size)
-        assertTrue(childSet.any { it() is CommandA })
-        assertTrue(childSet.any { it() is CommandB })
+        1 shouldBe parentSet.size
+        parentSet
+            .map { it() }
+            .filterIsInstance<CommandA>()
+            .shouldHaveSize(1)
+        2 shouldBe childSet.size
+        childSet
+            .map { it() }
+            .filterIsInstance<CommandA>()
+            .shouldHaveSize(1)
+        childSet
+            .map { it() }
+            .filterIsInstance<CommandB>()
+            .shouldHaveSize(1)
     }
 
     @Test
@@ -131,7 +150,7 @@ class GivenSetTest {
     ) {
         val explicitProvider: () -> Foo = { Foo() }
         val set = invokeSingleFile<Set<() -> Foo>>(explicitProvider)
-        assertSame(explicitProvider, set.single())
+        explicitProvider shouldBeSameInstanceAs set.single()
     }
 
 }

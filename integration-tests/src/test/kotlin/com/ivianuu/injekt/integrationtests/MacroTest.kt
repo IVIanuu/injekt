@@ -17,15 +17,15 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.assertCompileError
-import com.ivianuu.injekt.test.assertNoMessage
+import com.ivianuu.injekt.test.compilationShouldHaveFailed
+import com.ivianuu.injekt.test.shouldNotContainMessage
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
-import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertFalse
-import junit.framework.Assert.assertTrue
+import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
 class MacroTest {
@@ -41,7 +41,8 @@ class MacroTest {
             fun invoke() = given<Foo>()
         """
     ) {
-        assertTrue(invokeSingleFile() is Foo)
+        invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
     }
 
     @Test
@@ -55,7 +56,7 @@ class MacroTest {
             fun invoke() = given<Set<Foo>>()
         """
     ) {
-        assertEquals(1, invokeSingleFile<Set<Foo>>().size)
+        1 shouldBe invokeSingleFile<Set<Foo>>().size
     }
 
     @Test
@@ -73,7 +74,7 @@ class MacroTest {
             fun invoke() = given<Set<Foo>>()
         """
     ) {
-        assertEquals(1, invokeSingleFile<Set<Foo>>().size)
+        1 shouldBe invokeSingleFile<Set<Foo>>().size
     }
 
     @Test
@@ -82,7 +83,7 @@ class MacroTest {
             @Macro @Given fun macroImpl() = Unit
         """
     ) {
-        assertCompileError("type parameter")
+        compilationShouldHaveFailed("type parameter")
     }
 
     @Test
@@ -97,7 +98,7 @@ class MacroTest {
             fun invoke() = given<TypeKey<Bar>>().value
         """
     ) {
-        assertEquals("com.ivianuu.injekt.test.Bar", invokeSingleFile())
+        "com.ivianuu.injekt.test.Bar" shouldBe invokeSingleFile()
     }
 
     @Test
@@ -128,7 +129,7 @@ class MacroTest {
             )
         )
     ) {
-        assertEquals("com.ivianuu.injekt.test.Bar", it.invokeSingleFile())
+        "com.ivianuu.injekt.test.Bar" shouldBe it.invokeSingleFile()
     }
 
     @Test
@@ -162,7 +163,7 @@ class MacroTest {
             )
         )
     ) {
-        assertEquals("com.ivianuu.injekt.test.Bar", it.invokeSingleFile())
+        "com.ivianuu.injekt.test.Bar" shouldBe it.invokeSingleFile()
     }
 
     @Test
@@ -209,7 +210,8 @@ class MacroTest {
             fun invoke() = given<Set<Foo>>().single()
         """
     ) {
-        assertTrue(invokeSingleFile() is Foo)
+        invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
     }
 
     @Test
@@ -237,7 +239,8 @@ class MacroTest {
             )
         )
     ) {
-        assertTrue(it.invokeSingleFile() is Foo)
+        it.invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
     }
 
     @Test
@@ -252,7 +255,8 @@ class MacroTest {
             fun invoke() = given<Set<String>>()
         """
     ) {
-        assertEquals(setOf("a", "b"), invokeSingleFile())
+        invokeSingleFile<Set<String>>()
+            .shouldContainExactly("a", "b")
     }
 
     @Test
@@ -262,7 +266,7 @@ class MacroTest {
             @Macro fun <T : @Trigger String> macroImpl(): String = ""
         """
     ) {
-        assertCompileError("@Macro declaration must have 1 contribution annotation")
+        compilationShouldHaveFailed("@Macro declaration must have 1 contribution annotation")
     }
 
     @Test
@@ -272,7 +276,7 @@ class MacroTest {
             @Macro @GivenSetElement fun <T : @Trigger String> macroImpl(): String = ""
         """
     ) {
-        assertNoMessage("Type parameter \"T\" is never used")
+        shouldNotContainMessage("Type parameter \"T\" is never used")
     }
 
     @Test
@@ -282,9 +286,7 @@ class MacroTest {
             @Macro @GivenSetElement fun <T : @Trigger String> macroImpl(): String = ""
         """
     ) {
-        assertFalse(
-            "'String' is a final type, and thus a value of the type parameter is predetermined" in messages
-        )
+        shouldNotContainMessage("'String' is a final type, and thus a value of the type parameter is predetermined")
     }
 
     @Test
@@ -328,7 +330,7 @@ class MacroTest {
             fun invoke() = given<Set<UiDecorator>>().size
         """
     ) {
-        assertEquals(1, invokeSingleFile())
+        1 shouldBe invokeSingleFile()
     }
 
 }

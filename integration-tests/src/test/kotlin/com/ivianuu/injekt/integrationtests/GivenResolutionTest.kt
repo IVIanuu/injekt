@@ -18,14 +18,14 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.assertCompileError
+import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
-import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertSame
-import junit.framework.Assert.assertTrue
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
 class GivenResolutionTest {
@@ -48,17 +48,17 @@ class GivenResolutionTest {
             )
         )
     ) {
-        assertTrue(it.invokeSingleFile() is Foo)
+        it.invokeSingleFile().shouldBeTypeOf<Foo>()
     }
 
-    @Test
+        @Test
     fun testResolvesInternalGiven() = codegen(
         """
             @Given val foo = Foo()
             fun invoke() = given<Foo>()
         """
     ) {
-        assertTrue(invokeSingleFile() is Foo)
+            invokeSingleFile().shouldBeTypeOf<Foo>()
     }
 
     @Test
@@ -88,7 +88,7 @@ class GivenResolutionTest {
         val internal = Foo()
         val external = Foo()
         val result = it.invokeSingleFile(internal, external)
-        assertSame(result, internal)
+        result shouldBeSameInstanceAs internal
     }
 
     @Test
@@ -110,7 +110,7 @@ class GivenResolutionTest {
         val internal = Foo()
         val objectFoo = Foo()
         val result = invokeSingleFile(internal, objectFoo)
-        assertSame(objectFoo, result)
+        objectFoo shouldBeSameInstanceAs result
     }
 
     @Test
@@ -126,7 +126,7 @@ class GivenResolutionTest {
             fun invoke() = MyClass().resolve()
         """
     ) {
-        assertTrue(invokeSingleFile() is Foo)
+        invokeSingleFile().shouldBeTypeOf<Foo>()
     }
 
     @Test
@@ -150,7 +150,7 @@ class GivenResolutionTest {
         val internal = Foo()
         val companionFoo = Foo()
         val result = invokeSingleFile(internal, companionFoo)
-        assertSame(companionFoo, result)
+        companionFoo shouldBeSameInstanceAs result
     }
 
     @Test
@@ -163,7 +163,7 @@ class GivenResolutionTest {
             fun invoke() = MyClass().resolve()
         """
     ) {
-        assertTrue(invokeSingleFile() is Foo)
+        invokeSingleFile().shouldBeTypeOf<Foo>()
     }
 
     @Test
@@ -177,7 +177,7 @@ class GivenResolutionTest {
             fun invoke() = MyClass().resolve()
         """
     ) {
-        assertTrue(invokeSingleFile() is Foo)
+        invokeSingleFile().shouldBeTypeOf<Foo>()
     }
 
     @Test
@@ -197,7 +197,7 @@ class GivenResolutionTest {
         val internal = Foo()
         val classFoo = Foo()
         val result = invokeSingleFile(internal, classFoo)
-        assertSame(classFoo, result)
+        classFoo shouldBeSameInstanceAs result
     }
 
     @Test
@@ -219,7 +219,7 @@ class GivenResolutionTest {
         val classFoo = Foo()
         val companionFoo = Foo()
         val result = invokeSingleFile(classFoo, companionFoo)
-        assertSame(classFoo, result)
+        classFoo shouldBeSameInstanceAs result
     }
 
     // todo class constructor given in init
@@ -237,7 +237,7 @@ class GivenResolutionTest {
         val internal = Foo()
         val functionFoo = Foo()
         val result = invokeSingleFile(internal, functionFoo)
-        assertSame(functionFoo, result)
+        functionFoo shouldBeSameInstanceAs result
     }
 
     @Test
@@ -255,7 +255,7 @@ class GivenResolutionTest {
         val classFoo = Foo()
         val functionFoo = Foo()
         val result = invokeSingleFile(classFoo, functionFoo)
-        assertSame(functionFoo, result)
+        functionFoo shouldBeSameInstanceAs result
     }
 
     @Test
@@ -271,7 +271,7 @@ class GivenResolutionTest {
         val internal = Foo()
         val functionFoo = Foo()
         val result = invokeSingleFile(functionFoo, internal)
-        assertSame(functionFoo, result)
+        functionFoo shouldBeSameInstanceAs result
     }
 
     @Test
@@ -291,7 +291,7 @@ class GivenResolutionTest {
         val classFoo = Foo()
         val functionFoo = Foo()
         val result = invokeSingleFile(classFoo, functionFoo)
-        assertSame(functionFoo, result)
+        functionFoo shouldBeSameInstanceAs result
     }
 
     @Test
@@ -302,7 +302,8 @@ class GivenResolutionTest {
             fun invoke() = given<Bar>()
         """
     ) {
-        assertTrue(invokeSingleFile() is Bar)
+        invokeSingleFile()
+            .shouldBeTypeOf<Bar>()
     }
 
     @Test
@@ -323,7 +324,7 @@ class GivenResolutionTest {
             )
         )
     ) {
-        it.last().assertCompileError("no given argument found of type com.ivianuu.injekt.test.Foo")
+        it.last().compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo")
     }
 
     @Test
@@ -334,7 +335,7 @@ class GivenResolutionTest {
             }
         """
     ) {
-        assertCompileError("no given argument found of type kotlin.String")
+        compilationShouldHaveFailed("no given argument found of type kotlin.String")
     }
 
     @Test
@@ -344,7 +345,7 @@ class GivenResolutionTest {
             fun invoke() = given<Bar>()
         """
     ) {
-        assertCompileError(" no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
+        compilationShouldHaveFailed(" no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
     }
 
     @Test
@@ -366,7 +367,7 @@ class GivenResolutionTest {
         )
     ) {
         it.last()
-            .assertCompileError(" no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
+            .compilationShouldHaveFailed(" no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
     }
 
     @Test
@@ -377,7 +378,7 @@ class GivenResolutionTest {
         """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile(foo))
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
     @Test
@@ -388,7 +389,7 @@ class GivenResolutionTest {
         """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile(foo))
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
     @Test
@@ -399,7 +400,7 @@ class GivenResolutionTest {
             fun invoke() = given<String>()
         """
     ) {
-        assertEquals("a", invokeSingleFile())
+        "a" shouldBe invokeSingleFile()
     }
 
     @Test
@@ -410,7 +411,7 @@ class GivenResolutionTest {
             fun invoke() = given<String>()
         """
     ) {
-        assertCompileError("ambiguous given arguments of type kotlin.String for parameter value of function com.ivianuu.injekt.given")
+        compilationShouldHaveFailed("ambiguous given arguments of type kotlin.String for parameter value of function com.ivianuu.injekt.given")
     }
 
     @Test
@@ -422,7 +423,7 @@ class GivenResolutionTest {
             fun invoke() = given<String>()
         """
     ) {
-        assertEquals("a", invokeSingleFile())
+        "a" shouldBe invokeSingleFile()
     }
 
     @Test
@@ -433,7 +434,7 @@ class GivenResolutionTest {
             fun invoke() = given<List<String>>()
         """
     ) {
-        assertEquals(listOf("a", "b", "c"), invokeSingleFile())
+        listOf("a", "b", "c") shouldBe invokeSingleFile()
     }
 
     @Test
@@ -445,7 +446,7 @@ class GivenResolutionTest {
             fun invoke() = given<String>()
         """
     ) {
-        assertEquals("a", invokeSingleFile())
+        "a" shouldBe invokeSingleFile()
     }
 
     @Test
@@ -461,7 +462,7 @@ class GivenResolutionTest {
         """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile(foo))
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
     @Test
@@ -473,7 +474,7 @@ class GivenResolutionTest {
         """
     ) {
         val (foo) = invokeSingleFile<List<Any>>()
-        assertTrue(foo is Foo)
+        foo.shouldBeTypeOf<Foo>()
     }
 
     @Test
@@ -530,7 +531,7 @@ class GivenResolutionTest {
             """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile(foo))
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
     @Test
@@ -556,7 +557,7 @@ class GivenResolutionTest {
             """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile(foo))
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
     @Test
@@ -569,7 +570,7 @@ class GivenResolutionTest {
         """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile<Any>(foo))
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
     @Test
@@ -608,7 +609,7 @@ class GivenResolutionTest {
             fun invoke() = given<MyObject>()
         """
     ) {
-        assertCompileError("no given argument")
+        compilationShouldHaveFailed("no given argument")
     }
 
     @Test

@@ -18,12 +18,11 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.assertIrContainsText
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
-import junit.framework.Assert.assertTrue
+import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
 class ProviderTest {
@@ -37,7 +36,8 @@ class ProviderTest {
             }
         """
     ) {
-        assertTrue(invokeSingleFile() is Foo)
+        invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
     }
 
     @Test
@@ -47,7 +47,8 @@ class ProviderTest {
             fun invoke() = given<(@Given Foo) -> Bar>()(Foo())
         """
     ) {
-        assertTrue(invokeSingleFile() is Bar)
+        invokeSingleFile()
+            .shouldBeTypeOf<Bar>()
     }
 
     @Test
@@ -162,7 +163,8 @@ class ProviderTest {
             fun invoke(): Foo = runBlocking { given<suspend () -> Foo>()() }
         """
     ) {
-        assertTrue(invokeSingleFile() is Foo)
+        invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
     }
 
     @Test

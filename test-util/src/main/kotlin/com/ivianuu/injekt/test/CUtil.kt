@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("UNCHECKED_CAST")
+
 package com.ivianuu.injekt.test
 
 import androidx.compose.compiler.plugins.kotlin.ComposeCommandLineProcessor
@@ -23,9 +25,9 @@ import com.ivianuu.injekt.compiler.InjektComponentRegistrar
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
-import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertFalse
-import junit.framework.Assert.assertTrue
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.name.FqName
 import java.net.URLClassLoader
@@ -69,7 +71,7 @@ fun singleSource(
 fun codegen(
     @Language("kotlin") source: String,
     config: KotlinCompilation.() -> Unit = {},
-    assertions: KotlinCompilation.Result.() -> Unit = { assertOk() },
+    assertions: KotlinCompilation.Result.() -> Unit = { compilationShouldBeOk() },
 ) = codegen(
     singleSource(source),
     config = config,
@@ -79,7 +81,7 @@ fun codegen(
 fun codegen(
     vararg sources: SourceFile,
     config: KotlinCompilation.() -> Unit = {},
-    assertions: KotlinCompilation.Result.() -> Unit = { assertOk() },
+    assertions: KotlinCompilation.Result.() -> Unit = { compilationShouldBeOk() },
 ) {
     val result = compile {
         this.sources = sources.toList()
@@ -92,7 +94,11 @@ fun codegen(
 fun multiCodegen(
     vararg sources: List<SourceFile>,
     config: KotlinCompilation.(Int) -> Unit = {},
-    assertions: (List<KotlinCompilation.Result>) -> Unit = { it.forEach { it.assertOk() } },
+    assertions: (List<KotlinCompilation.Result>) -> Unit = { results ->
+        results.forEach { result ->
+            result.compilationShouldBeOk()
+        }
+    },
 ) {
     val prevCompilations = mutableListOf<KotlinCompilation>()
     val results = sources.mapIndexed { index, sourceFiles ->
@@ -136,8 +142,8 @@ fun compile(block: KotlinCompilation.() -> Unit = {}) = compilation(
     block
 ).compile()
 
-fun KotlinCompilation.Result.assertOk() {
-    assertEquals(KotlinCompilation.ExitCode.OK, exitCode)
+fun KotlinCompilation.Result.compilationShouldBeOk() {
+    exitCode shouldBe KotlinCompilation.ExitCode.OK
 }
 
 @JvmName("invokeSingleFileTypeless")
@@ -169,25 +175,26 @@ fun <T> KotlinCompilation.Result.invokeSingleFile(vararg args: Any?): T {
 private fun ClassLoader.getSingleClass(): KClass<*> =
     loadClass("com.ivianuu.injekt.integrationtests.FileKt").kotlin
 
-fun KotlinCompilation.Result.assertCompileError(
+fun KotlinCompilation.Result.compilationShouldHaveFailed(
     message: String? = null,
 ) {
-    assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, exitCode)
-    message?.let { assertTrue(messages.toLowerCase().contains(it.toLowerCase())) }
+    exitCode shouldBe KotlinCompilation.ExitCode.COMPILATION_ERROR
+    message?.let { shouldContainMessage(message) }
 }
 
-fun KotlinCompilation.Result.assertMessage(
+fun KotlinCompilation.Result.shouldContainMessage(
     message: String,
 ) {
-    assertTrue(message in messages)
+    messages shouldContain message
 }
 
-fun KotlinCompilation.Result.assertNoMessage(message: String) {
-    assertFalse(message in messages)
+fun KotlinCompilation.Result.shouldNotContainMessage(message: String) {
+    messages shouldNotContain message
 }
 
+@Suppress("Assert")
 inline fun KotlinCompilation.Result.irAssertions(block: (String) -> Unit) {
-    assertOk()
+    compilationShouldBeOk()
     outputDirectory
         .parentFile
         .resolve("injekt/dump")
@@ -203,7 +210,8 @@ inline fun KotlinCompilation.Result.irAssertions(block: (String) -> Unit) {
         .let(block)
 }
 
-fun KotlinCompilation.Result.assertIrContainsText(times: Int, text: String) {
+@Suppress("Assert")
+fun KotlinCompilation.Result.irShouldContain(times: Int, text: String) {
     irAssertions {
         val matchesCount = it.countMatches(text)
         assert(matchesCount == times) {
@@ -212,10 +220,11 @@ fun KotlinCompilation.Result.assertIrContainsText(times: Int, text: String) {
     }
 }
 
-fun String.countMatches(other: String): Int = split(other)
+private fun String.countMatches(other: String): Int = split(other)
     .dropLastWhile { it.isEmpty() }.size - 1
 
-fun KotlinCompilation.Result.assertIrNotContainsText(text: String) {
+@Suppress("Assert")
+fun KotlinCompilation.Result.irShouldNotContain(text: String) {
     irAssertions {
         assert(text !in it) {
             "'$text' in source '$it'"

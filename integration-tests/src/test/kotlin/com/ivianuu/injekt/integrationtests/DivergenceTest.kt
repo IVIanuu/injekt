@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.assertCompileError
+import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
@@ -49,7 +49,7 @@ class DivergenceTest {
             }
         """
     ) {
-        assertCompileError("divergent")
+        compilationShouldHaveFailed("divergent")
     }
 
     @Test
@@ -61,7 +61,7 @@ class DivergenceTest {
             }
         """
     ) {
-        assertCompileError("divergent")
+        compilationShouldHaveFailed("divergent")
     }
 
     @Test
@@ -72,7 +72,7 @@ class DivergenceTest {
             fun invoke() = given<String>()
         """
     ) {
-        assertCompileError("divergent")
+        compilationShouldHaveFailed("divergent")
     }
 
     @Test
@@ -93,7 +93,7 @@ class DivergenceTest {
             )
         )
     ) {
-        it.last().assertCompileError("divergent")
+        it.last().compilationShouldHaveFailed("divergent")
     }
 
     @Test
@@ -134,7 +134,7 @@ class DivergenceTest {
             fun invoke() = given<A>()
         """
     ) {
-        assertCompileError("divergent")
+        compilationShouldHaveFailed("divergent")
     }
 
     @Test
@@ -144,7 +144,7 @@ class DivergenceTest {
             fun invoke() = given<String>()
         """
     ) {
-        assertCompileError("divergent")
+        compilationShouldHaveFailed("divergent")
     }
 
     @Test
@@ -167,7 +167,7 @@ class DivergenceTest {
             fun invoke() = given<C>()
        """
     ) {
-        assertCompileError("divergent")
+        compilationShouldHaveFailed("divergent")
     }
 
     @Test

@@ -16,9 +16,9 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.assertCompileError
-import com.ivianuu.injekt.test.assertMessage
-import com.ivianuu.injekt.test.assertNoMessage
+import com.ivianuu.injekt.test.compilationShouldHaveFailed
+import com.ivianuu.injekt.test.shouldContainMessage
+import com.ivianuu.injekt.test.shouldNotContainMessage
 import com.ivianuu.injekt.test.codegen
 import org.junit.Test
 
@@ -30,7 +30,7 @@ class GivenDeclarationCheckTest {
             @Given class Dep @Given constructor()
         """
     ) {
-        assertCompileError("class cannot be marked with @Given if it has a @Given marked constructor")
+        compilationShouldHaveFailed("class cannot be marked with @Given if it has a @Given marked constructor")
     }
 
     @Test
@@ -70,7 +70,7 @@ class GivenDeclarationCheckTest {
             }
         """
     ) {
-        assertCompileError("class cannot have multiple @Given marked constructors")
+        compilationShouldHaveFailed("class cannot have multiple @Given marked constructors")
     }
 
     @Test
@@ -81,7 +81,7 @@ class GivenDeclarationCheckTest {
             class DepImpl : @Given Dep
         """
     ) {
-        assertCompileError("class with a @Given super type must be marked with @Given or must have a @Given marked constructor")
+        compilationShouldHaveFailed("class with a @Given super type must be marked with @Given or must have a @Given marked constructor")
     }
 
     @Test
@@ -90,7 +90,7 @@ class GivenDeclarationCheckTest {
             @Given annotation class MyAnnotation
         """
     ) {
-        assertCompileError("annotation class cannot be marked with @Given")
+        compilationShouldHaveFailed("annotation class cannot be marked with @Given")
     }
 
     @Test
@@ -99,7 +99,7 @@ class GivenDeclarationCheckTest {
             annotation class MyAnnotation @Given constructor()
         """
     ) {
-        assertCompileError("annotation class constructor cannot be marked with @Given")
+        compilationShouldHaveFailed("annotation class constructor cannot be marked with @Given")
     }
 
     @Test
@@ -111,7 +111,7 @@ class GivenDeclarationCheckTest {
             }
         """
     ) {
-        assertCompileError("tailrec function cannot be marked with @Given")
+        compilationShouldHaveFailed("tailrec function cannot be marked with @Given")
     }
 
     @Test
@@ -120,7 +120,7 @@ class GivenDeclarationCheckTest {
             @Given enum class MyEnum
         """
     ) {
-        assertCompileError("enum class cannot be marked with @Given")
+        compilationShouldHaveFailed("enum class cannot be marked with @Given")
     }
 
     @Test
@@ -129,7 +129,7 @@ class GivenDeclarationCheckTest {
             @Given abstract class MyAbstractClass
         """
     ) {
-        assertCompileError("abstract class cannot be marked with @Given")
+        compilationShouldHaveFailed("abstract class cannot be marked with @Given")
     }
 
     @Test
@@ -138,7 +138,7 @@ class GivenDeclarationCheckTest {
             @Given fun bar(foo: Foo) = Bar(foo)
         """
     ) {
-        assertCompileError("Non @Given parameter")
+        compilationShouldHaveFailed("non @Given parameter")
     }
 
     @Test
@@ -147,16 +147,7 @@ class GivenDeclarationCheckTest {
             @Given class MyBar(foo: Foo)
         """
     ) {
-        assertCompileError("Non @Given parameter")
-    }
-
-    @Test
-    fun testGivenLambdaWithNonGivenParameter() = codegen(
-            """
-            val lambda: @Given (Foo) -> Bar = { Bar(it) }
-        """
-    ) {
-        assertCompileError("Non @Given parameter")
+        compilationShouldHaveFailed("non @Given parameter")
     }
 
     @Test
@@ -171,7 +162,7 @@ class GivenDeclarationCheckTest {
             }
         """
     ) {
-        assertNoMessage("Parameter 'foo' is never used")
+        shouldNotContainMessage("Parameter 'foo' is never used")
     }
 
     @Test
@@ -185,7 +176,7 @@ class GivenDeclarationCheckTest {
             } 
         """
     ) {
-        assertMessage("Parameter 'foo' is never used")
+        shouldContainMessage("Parameter 'foo' is never used")
     }
 
 }

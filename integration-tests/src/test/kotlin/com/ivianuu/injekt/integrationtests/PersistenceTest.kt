@@ -16,13 +16,13 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.assertMessage
-import com.ivianuu.injekt.test.assertNoMessage
+import com.ivianuu.injekt.test.shouldContainMessage
+import com.ivianuu.injekt.test.shouldNotContainMessage
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
-import junit.framework.Assert.assertEquals
+import io.kotest.matchers.shouldBe
 import org.junit.Test
 
 class PersistenceTest {
@@ -83,7 +83,7 @@ class PersistenceTest {
             fun invoke() = given<String>()
         """
     ) {
-        assertEquals("42", invokeSingleFile())
+        "42" shouldBe invokeSingleFile()
     }
 
     @Test
@@ -110,7 +110,7 @@ class PersistenceTest {
             )
         )
     ) {
-        assertEquals("42", it.invokeSingleFile())
+        "42" shouldBe it.invokeSingleFile()
     }
 
     @Test
@@ -144,8 +144,8 @@ class PersistenceTest {
         )
     ) {
         with(it.last()) {
-            assertNoMessage("no given argument found of type @com.ivianuu.injekt.integrationtests.MyQualifier() com.ivianuu.injekt.integrationtests.FuncA for parameter value of function com.ivianuu.injekt.given")
-            assertMessage("no given argument found of type @com.ivianuu.injekt.integrationtests.MyQualifier() com.ivianuu.injekt.integrationtests.FuncB for parameter value of function com.ivianuu.injekt.given")
+            shouldNotContainMessage("no given argument found of type @com.ivianuu.injekt.integrationtests.MyQualifier() com.ivianuu.injekt.integrationtests.FuncA for parameter value of function com.ivianuu.injekt.given")
+            shouldContainMessage("no given argument found of type @com.ivianuu.injekt.integrationtests.MyQualifier() com.ivianuu.injekt.integrationtests.FuncB for parameter value of function com.ivianuu.injekt.given")
         }
     }
 

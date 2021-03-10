@@ -17,12 +17,12 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.common.TypeKey
-import com.ivianuu.injekt.test.assertCompileError
+import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
-import junit.framework.Assert.assertEquals
+import io.kotest.matchers.shouldBe
 import org.junit.Test
 
 class TypeKeyTest {
@@ -33,8 +33,7 @@ class TypeKeyTest {
            fun invoke() = typeKeyOf<String>() 
         """
     ) {
-        assertEquals("kotlin.String",
-            invokeSingleFile<TypeKey<String>>().value)
+        invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String"
     }
 
     @Test
@@ -44,8 +43,7 @@ class TypeKeyTest {
             fun invoke() = listTypeKeyOf<String>() 
         """
     ) {
-        assertEquals("kotlin.collections.List<kotlin.String>",
-            invokeSingleFile<TypeKey<List<String>>>().value)
+        invokeSingleFile<TypeKey<List<String>>>().value shouldBe "kotlin.collections.List<kotlin.String>"
     }
 
     @Test
@@ -60,8 +58,7 @@ class TypeKeyTest {
             fun invoke() = KeyFactory.listTypeKeyOf<String>() 
         """
     ) {
-        assertEquals("kotlin.collections.List<kotlin.String>",
-            invokeSingleFile<TypeKey<List<String>>>().value)
+        invokeSingleFile<TypeKey<List<String>>>().value shouldBe "kotlin.collections.List<kotlin.String>"
     }
 
     @Test
@@ -82,9 +79,7 @@ class TypeKeyTest {
             )
         )
     ) {
-        assertEquals("kotlin.collections.List<kotlin.String>",
-            it.invokeSingleFile<TypeKey<List<String>>>().value
-        )
+        it.invokeSingleFile<TypeKey<List<String>>>().value shouldBe "kotlin.collections.List<kotlin.String>"
     }
 
     @Test
@@ -93,7 +88,7 @@ class TypeKeyTest {
            fun <T> invoke() = typeKeyOf<T>() 
         """
     ) {
-        assertCompileError()
+        compilationShouldHaveFailed()
     }
 
 }

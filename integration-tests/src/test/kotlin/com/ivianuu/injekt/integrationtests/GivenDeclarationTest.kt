@@ -18,12 +18,12 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.assertCompileError
+import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
-import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertSame
-import junit.framework.Assert.assertTrue
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
 class GivenDeclarationTest {
@@ -35,7 +35,8 @@ class GivenDeclarationTest {
             fun invoke() = given<Foo>()
         """
     ) {
-        assertTrue(invokeSingleFile<Any>() is Foo)
+        invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
     }
 
     @Test
@@ -45,7 +46,8 @@ class GivenDeclarationTest {
             fun invoke() = given<Foo>()
         """
     ) {
-        assertTrue(invokeSingleFile<Any>() is Foo)
+        invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
     }
 
     @Test
@@ -56,8 +58,7 @@ class GivenDeclarationTest {
             fun invoke() = given<Dep>()
         """
     ) {
-        assertEquals("com.ivianuu.injekt.integrationtests.Dep",
-            invokeSingleFile<Any>().javaClass.name)
+        invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
     }
 
     @Test
@@ -68,8 +69,7 @@ class GivenDeclarationTest {
             fun invoke() = given<Dep>()
         """
     ) {
-        assertEquals("com.ivianuu.injekt.integrationtests.Dep",
-            invokeSingleFile<Any>().javaClass.name)
+        invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
     }
 
     @Test
@@ -82,8 +82,7 @@ class GivenDeclarationTest {
             fun invoke() = given<Dep>()
         """
     ) {
-        assertEquals("com.ivianuu.injekt.integrationtests.Dep",
-            invokeSingleFile<Any>().javaClass.name)
+        invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
     }
 
     @Test
@@ -96,8 +95,7 @@ class GivenDeclarationTest {
             fun invoke() = given<Dep<Foo>>()
         """
     ) {
-        assertEquals("com.ivianuu.injekt.integrationtests.DepImpl",
-            invokeSingleFile<Any>().javaClass.name)
+        invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.DepImpl"
     }
 
     @Test
@@ -113,8 +111,7 @@ class GivenDeclarationTest {
             fun invoke() = given<Dep<Foo>>()
         """
     ) {
-        assertEquals("com.ivianuu.injekt.integrationtests.DepImpl",
-            invokeSingleFile<Any>().javaClass.name)
+        invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.DepImpl"
     }
 
     @Test
@@ -129,8 +126,7 @@ class GivenDeclarationTest {
             fun invoke() = given<Dep>()
         """
     ) {
-        assertEquals("com.ivianuu.injekt.integrationtests.Dep",
-            invokeSingleFile<Any>().javaClass.name)
+        invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
     }
 
     @Test
@@ -148,8 +144,7 @@ class GivenDeclarationTest {
             fun invoke() = given<Dep.Companion>()
         """
     ) {
-        assertEquals("com.ivianuu.injekt.integrationtests.Dep\$Companion",
-            invokeSingleFile<Any>().javaClass.name)
+        invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep\$Companion"
     }
 
     @Test
@@ -159,7 +154,8 @@ class GivenDeclarationTest {
             fun invoke(@Given foo: Foo) = given<Bar>()
         """
     ) {
-        assertTrue(invokeSingleFile<Any>(Foo()) is Bar)
+        invokeSingleFile(Foo())
+            .shouldBeTypeOf<Bar>()
     }
 
     @Test
@@ -169,7 +165,8 @@ class GivenDeclarationTest {
             fun invoke(@Given foo: Foo) = given<Bar>()
         """
     ) {
-        assertTrue(invokeSingleFile<Any>(Foo()) is Bar)
+        invokeSingleFile(Foo())
+            .shouldBeTypeOf<Bar>()
     }
     @Test
     fun testGivenValueParameter() = codegen(
@@ -178,7 +175,7 @@ class GivenDeclarationTest {
         """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile<Any>(foo))
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
     @Test
@@ -188,7 +185,7 @@ class GivenDeclarationTest {
         """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile<Any>(foo))
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
     @Test
@@ -201,7 +198,7 @@ class GivenDeclarationTest {
         """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile<Any>(foo))
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
     @Test
@@ -214,7 +211,7 @@ class GivenDeclarationTest {
         """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile<Any>(foo))
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
     @Test
@@ -227,7 +224,7 @@ class GivenDeclarationTest {
         """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile<Any>(foo))
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
     @Test
@@ -241,7 +238,7 @@ class GivenDeclarationTest {
         """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile<Any>(foo))
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
     @Test
@@ -254,7 +251,7 @@ class GivenDeclarationTest {
         """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile<Any>(foo))
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
     @Test
@@ -268,7 +265,7 @@ class GivenDeclarationTest {
         """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile<Any>(foo))
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
     @Test
@@ -281,7 +278,7 @@ class GivenDeclarationTest {
         """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile<Any>(foo))
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
     @Test
@@ -301,8 +298,8 @@ class GivenDeclarationTest {
         val a = Foo()
         val b = Foo()
         val result = invokeSingleFile<Pair<Foo, Foo>>(a, b)
-        assertSame(a, result.first)
-        assertSame(b, result.second)
+        a shouldBeSameInstanceAs result.first
+        b shouldBeSameInstanceAs result.second
     }
 
     @Test
@@ -315,7 +312,7 @@ class GivenDeclarationTest {
         """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile(foo))
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
     @Test
@@ -328,7 +325,7 @@ class GivenDeclarationTest {
         """
     ) {
         val foo = Foo()
-        assertSame(foo, invokeSingleFile(foo))
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
     @Test
@@ -338,7 +335,8 @@ class GivenDeclarationTest {
             fun invoke() = runBlocking { given<Foo>() }
         """
     ) {
-        assertTrue(invokeSingleFile<Any>() is Foo)
+        invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
     }
 
     @Test
@@ -355,7 +353,7 @@ class GivenDeclarationTest {
             @Given @GivenSetElement fun foo() = Foo()
         """
     ) {
-        assertCompileError("Declaration may be only annotated with one contribution annotation")
+        compilationShouldHaveFailed("declaration may be only annotated with one contribution annotation")
     }
 
 }

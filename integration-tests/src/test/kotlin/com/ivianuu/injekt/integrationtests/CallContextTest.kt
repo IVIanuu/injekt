@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.assertCompileError
+import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.codegen
 import org.junit.Test
 
@@ -30,7 +30,7 @@ class CallContextTest {
             @Composable fun invoke() = given<Bar>()
         """
     ) {
-        assertCompileError("current call context is COMPOSABLE but com.ivianuu.injekt.integrationtests.bar is SUSPEND")
+        compilationShouldHaveFailed("current call context is COMPOSABLE but com.ivianuu.injekt.integrationtests.bar is SUSPEND")
     }
 
     @Test
@@ -52,7 +52,7 @@ class CallContextTest {
             }
         """
     ) {
-        assertCompileError("current call context is SUSPEND but com.ivianuu.injekt.integrationtests.bar is COMPOSABLE")
+        compilationShouldHaveFailed("current call context is SUSPEND but com.ivianuu.injekt.integrationtests.bar is COMPOSABLE")
     }
 
     @Test

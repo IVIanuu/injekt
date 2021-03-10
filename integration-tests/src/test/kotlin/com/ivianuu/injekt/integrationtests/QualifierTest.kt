@@ -21,8 +21,8 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
+import io.kotest.matchers.types.shouldBeTypeOf
 import junit.framework.Assert.assertNotSame
-import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class QualifierTest {
@@ -137,7 +137,8 @@ class QualifierTest {
             fun invoke() = given<@MyQualifier<String> Foo>()
             """
     ) {
-        assertTrue(invokeSingleFile() is Foo)
+        invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
     }
 
     @Test
@@ -159,7 +160,8 @@ class QualifierTest {
             )
         )
     ) {
-        assertTrue(it.invokeSingleFile() is Foo)
+        it.invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
     }
 
     @Test
@@ -171,7 +173,8 @@ class QualifierTest {
             fun invoke() = given<@MyQualifier<String> Foo>()
             """
     ) {
-        assertTrue(invokeSingleFile() is Foo)
+        invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
     }
 
     @Test
@@ -193,7 +196,8 @@ class QualifierTest {
             )
         )
     ) {
-        assertTrue(it.invokeSingleFile() is Foo)
+        it.invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
     }
 
     @Test
@@ -208,7 +212,8 @@ class QualifierTest {
             fun invoke() = given<Foo>()
             """
     ) {
-        assertTrue(invokeSingleFile() is Foo)
+        invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
     }
 
 }

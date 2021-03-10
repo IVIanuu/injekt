@@ -31,7 +31,7 @@ import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.resolution.typeWith
 import com.ivianuu.injekt.test.codegen
-import junit.framework.Assert.assertEquals
+import io.kotest.matchers.shouldBe
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -290,14 +290,14 @@ class TypeRefTest {
     fun testGetSubstitutionMap() = withAnalysisContext {
         val superType = typeParameter()
         val map = getSubstitutionMap(declarationStore, listOf(stringType to superType))
-        assertEquals(stringType, map[superType.classifier])
+        stringType shouldBe map[superType.classifier]
     }
 
     @Test
     fun testGetSubstitutionMapWithNestedGenerics() = withAnalysisContext {
         val superType = typeParameter()
         val map = getSubstitutionMap(declarationStore, listOf(listType.typeWith(stringType) to listType.typeWith(superType)))
-        assertEquals(stringType, map[superType.classifier])
+        stringType shouldBe map[superType.classifier]
     }
 
     @Test
@@ -306,7 +306,7 @@ class TypeRefTest {
         val qualifiedSuperType = unqualifiedSuperType.qualified(qualifier1())
         val substitutionType = stringType.qualified(qualifier1())
         val map = getSubstitutionMap(declarationStore, listOf(substitutionType to qualifiedSuperType))
-        assertEquals(stringType, map[unqualifiedSuperType.classifier])
+        stringType shouldBe map[unqualifiedSuperType.classifier]
     }
 
     @Test
@@ -334,8 +334,8 @@ class TypeRefTest {
             )
         )
         val map = getSubstitutionMap(declarationStore, listOf(substitutionType to superType))
-        assertEquals(stringType, map[typeParameter1.classifier])
-        assertEquals(intType, map[typeParameter2.classifier])
+        stringType shouldBe map[typeParameter1.classifier]
+        intType shouldBe map[typeParameter2.classifier]
     }
 
     @Test
@@ -349,8 +349,8 @@ class TypeRefTest {
                 charSequenceType to typeParameter1
             )
         )
-        assertEquals(charSequenceType, map[typeParameter1.classifier])
-        assertEquals(stringType, map[typeParameter2.classifier])
+        charSequenceType shouldBe map[typeParameter1.classifier]
+        stringType shouldBe map[typeParameter2.classifier]
     }
 
     // todo type parameter multuple upper bounds

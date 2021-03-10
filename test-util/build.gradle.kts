@@ -35,6 +35,8 @@ dependencies {
     api(Deps.Kotlin.compilerEmbeddable)
     api(Deps.kotlinCompileTesting)
 
+    api(Deps.kotestAssertions)
+
     api(Deps.junit)
     api(Deps.AndroidX.Test.core)
     api(Deps.AndroidX.Test.junit)
