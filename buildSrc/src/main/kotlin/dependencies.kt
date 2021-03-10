@@ -31,7 +31,7 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev482"
+    const val version = "${Build.versionName}-dev484"
 }
 
 object Deps {
@@ -45,7 +45,7 @@ object Deps {
         }
 
         object Compose {
-            const val version = "1.0.0-beta01"
+            const val version = "1.0.0-beta02"
             const val compiler = "androidx.compose.compiler:compiler:$version"
             const val material = "androidx.compose.material:material:$version"
             const val runtime = "androidx.compose.runtime:runtime:$version"
@@ -89,7 +89,7 @@ object Deps {
     const val junit = "junit:junit:4.12"
 
     object Kotlin {
-        private const val version = "1.4.30"
+        private const val version = "1.4.31"
         const val compiler = "org.jetbrains.kotlin:kotlin-compiler:$version"
         const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
         const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"

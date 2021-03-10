@@ -25,7 +25,7 @@
         android:name="com.ivianuu.injekt.samples.android.App"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:theme="@android:style/Theme.Material.NoActionBar">
         <activity android:name="com.ivianuu.injekt.samples.android.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
