@@ -70,11 +70,9 @@ class InfoTransformer(
 
     @Suppress("NewApi")
     override fun visitFunction(declaration: IrFunction): IrStatement {
-        if (declaration.hasAnnotation(InjektFqNames.Given) ||
-            declaration.hasAnnotation(InjektFqNames.Module) || (
+        if (declaration.hasAnnotation(InjektFqNames.Given) || (
                     declaration is IrConstructor &&
-                            (declaration.constructedClass.hasAnnotation(InjektFqNames.Given) ||
-                                    declaration.constructedClass.hasAnnotation(InjektFqNames.Module)))) {
+                            declaration.constructedClass.hasAnnotation(InjektFqNames.Given))) {
                 val annotation = DeclarationIrBuilder(pluginContext, declaration.symbol)
                     .run {
                         irCall(
@@ -104,8 +102,7 @@ class InfoTransformer(
 
     @Suppress("NewApi")
     override fun visitProperty(declaration: IrProperty): IrStatement {
-        if (declaration.hasAnnotation(InjektFqNames.Given) ||
-            declaration.hasAnnotation(InjektFqNames.Module)) {
+        if (declaration.hasAnnotation(InjektFqNames.Given)) {
             declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
                 .run {
                     irCall(

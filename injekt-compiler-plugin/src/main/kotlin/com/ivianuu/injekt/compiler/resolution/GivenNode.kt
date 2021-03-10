@@ -104,9 +104,10 @@ class ProviderGivenNode(
     override val dependencyScope = ResolutionScope(
         "Provider<${type.render()} $ownerScope>",
         parent = ownerScope,
+        owningDescriptor = ownerScope.owningDescriptor,
         declarationStore = declarationStore,
         callContext = type.callContext,
-        produceContributions = {
+        produceGivens = {
             type
                 .toKotlinType(declarationStore)
                 .memberScope
@@ -117,9 +118,7 @@ class ProviderGivenNode(
                 .map { parameter ->
                     parameter
                         .toCallableRef(declarationStore = declarationStore)
-                        .copy(
-                            contributionKind = type.arguments[parameter.index].contributionKind
-                        )
+                        .copy(isGiven = type.arguments[parameter.index].isGiven)
                 }
         }
     )
@@ -158,8 +157,8 @@ fun CallableRef.getGivenRequests(declarationStore: DeclarationStore): List<Given
         }
         .filter {
             it === callable.dispatchReceiverParameter ||
-                    it.contributionKind(declarationStore) == ContributionKind.VALUE ||
-                    parameterTypes[it.injektName()]!!.contributionKind == ContributionKind.VALUE
+                    it.isGiven(declarationStore) ||
+                    parameterTypes[it.injektName()]!!.isGiven
         }
         .map {
             val name = it.injektName()

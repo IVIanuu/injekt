@@ -151,7 +151,7 @@ class ProviderTest {
             @Given fun bar(@Given foo: Foo) = Bar(foo)
             class FooModule(@Given val foo: Foo)
             fun invoke(): Bar {
-                return given<(@Module FooModule) -> Bar>()(FooModule(Foo()))
+                return given<(@Given FooModule) -> Bar>()(FooModule(Foo()))
             }
         """
     )

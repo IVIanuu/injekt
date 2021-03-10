@@ -24,7 +24,6 @@ import com.ivianuu.injekt.compiler.resolution.CallableRef
 import com.ivianuu.injekt.compiler.resolution.CharValue
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.ConstantValue
-import com.ivianuu.injekt.compiler.resolution.ContributionKind
 import com.ivianuu.injekt.compiler.resolution.DoubleValue
 import com.ivianuu.injekt.compiler.resolution.EnumValue
 import com.ivianuu.injekt.compiler.resolution.FloatValue
@@ -59,7 +58,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
     val type: PersistedTypeRef,
     val typeParameters: List<PersistedClassifierRef>,
     val parameterTypes: Map<String, PersistedTypeRef>,
-    val parameterContributionKinds: Map<String, ContributionKind?>,
+    val givenParameters: Set<String>,
     val qualifiers: List<PersistedAnnotationRef>
 )
 
@@ -68,7 +67,7 @@ fun CallableRef.toPersistedCallableInfo(declarationStore: DeclarationStore) = Pe
     typeParameters = typeParameters.map { it.toPersistedClassifierRef(declarationStore) },
     parameterTypes = parameterTypes
         .mapValues { it.value.toPersistedTypeRef(declarationStore) },
-    parameterContributionKinds = parameterContributionKinds,
+    givenParameters = givenParameters,
     qualifiers = qualifiers.map { it.toPersistedAnnotationRef(declarationStore) }
 )
 
@@ -92,7 +91,7 @@ fun CallableRef.apply(
             },
             parameterTypes = info.parameterTypes
                 .mapValues { it.value.toTypeRef(declarationStore) },
-            parameterContributionKinds = info.parameterContributionKinds,
+            givenParameters = info.givenParameters,
             qualifiers = info.qualifiers.map { it.toAnnotationRef(declarationStore) }
         ).substitute(substitutionMap)
     }
@@ -119,7 +118,7 @@ fun ClassifierRef.toPersistedClassifierInfo(declarationStore: DeclarationStore) 
     val isStarProjection: Boolean,
     val isMarkedNullable: Boolean,
     val isComposable: Boolean,
-    val contributionKind: ContributionKind?,
+    val isGiven: Boolean,
     val variance: Variance
 )
 
@@ -130,7 +129,7 @@ fun TypeRef.toPersistedTypeRef(declarationStore: DeclarationStore): PersistedTyp
     isStarProjection = isStarProjection,
     isMarkedNullable = isMarkedNullable,
     isComposable = isComposable,
-    contributionKind = contributionKind,
+    isGiven = isGiven,
     variance = variance
 )
 
@@ -144,7 +143,7 @@ fun PersistedTypeRef.toTypeRef(declarationStore: DeclarationStore): TypeRef {
             arguments = arguments.map { it.toTypeRef(declarationStore) },
             isMarkedNullable = isMarkedNullable,
             isComposable = isComposable,
-            contributionKind = contributionKind,
+            isGiven = isGiven,
             variance = variance
         )
 }

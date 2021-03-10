@@ -112,7 +112,7 @@ fun testGetDependencyReturnsNullIfNotExists() {
 
     @Test
     fun testChildComponentModule() {
-        @Module
+        @Given
         val childComponentModule = ChildComponentModule1<TestComponent1, String, TestComponent2>()
 
         val parentComponent = ComponentBuilder<TestComponent1>().build()

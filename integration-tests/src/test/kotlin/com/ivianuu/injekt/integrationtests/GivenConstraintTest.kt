@@ -66,7 +66,7 @@ class GivenConstraintTest {
                 @Given fun intoSet(@Given instance: T): S = instance
             }
             @Qualifier annotation class Trigger
-            @Module fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): MyModule<T, S> = MyModule()
+            @Given fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): MyModule<T, S> = MyModule()
 
             @Trigger @Given fun foo() = Foo()
             @Trigger @Given fun string() = ""
@@ -78,12 +78,12 @@ class GivenConstraintTest {
     }
 
     @Test
-    fun testGivenConstraintWithContribution() = codegen(
+    fun testGivenConstraintOnNonGivenFunction() = codegen(
         """
             fun <@Given T> triggerImpl() = Unit
         """
     ) {
-        compilationShouldHaveFailed("@Given type constraint declaration must have 1 contribution annotation")
+        compilationShouldHaveFailed("a @Given type constraint is only supported on @Given functions")
     }
 
     @Test
@@ -92,7 +92,7 @@ class GivenConstraintTest {
             val <@Given T> T.prop get() = Unit
         """
     ) {
-        compilationShouldHaveFailed("A @Given type constraint is only supported on functions")
+        compilationShouldHaveFailed("a @Given type constraint is only supported on @Given functions")
     }
 
     @Test
@@ -101,7 +101,7 @@ class GivenConstraintTest {
             @Given fun <@Given T, @Given S> triggerImpl() = Unit
         """
     ) {
-        compilationShouldHaveFailed("A declaration may have only one @Given type constraint")
+        compilationShouldHaveFailed("a declaration may have only one @Given type constraint")
     }
 
     @Test
@@ -164,7 +164,7 @@ class GivenConstraintTest {
         listOf(
             source(
                 """
-                    @Module
+                    @Given
                     object FooModule {
                         @Given fun fooModule(): @Trigger<Bar> Foo = Foo()
                     }
@@ -203,7 +203,7 @@ class GivenConstraintTest {
         """
             @Qualifier annotation class A
 
-            @Module fun <@Given T : @A S, S> aImpl() = AModule<S>()
+            @Given fun <@Given T : @A S, S> aImpl() = AModule<S>()
 
             class AModule<T> {
                 @B
@@ -212,7 +212,7 @@ class GivenConstraintTest {
             }
 
             @Qualifier annotation class B
-            @Module fun <@Given T : @B S, S> bImpl() = BModule<T>()
+            @Given fun <@Given T : @B S, S> bImpl() = BModule<T>()
 
             class BModule<T> {
                 @C
@@ -275,16 +275,6 @@ class GivenConstraintTest {
     ) {
         invokeSingleFile<Set<String>>()
             .shouldContainExactly("a", "b")
-    }
-
-    @Test
-    fun testGivenConstraintWithoutContributionsFails() = codegen(
-        """
-            @Qualifier annotation class Trigger
-            fun <@Given T : @Trigger String> triggerImpl(): String = ""
-        """
-    ) {
-        compilationShouldHaveFailed("@Given type constraint declaration must have 1 contribution annotation")
     }
 
     @Test

@@ -76,6 +76,5 @@ private fun KtDeclaration.shouldBeIndexed(): Boolean {
     if (this !is KtConstructor<*> &&
         this is KtFunction && !isTopLevelKtOrJavaMember()) return false
 
-    return hasAnnotation(InjektFqNames.Given) ||
-            hasAnnotation(InjektFqNames.Module)
+    return hasAnnotation(InjektFqNames.Given)
 }

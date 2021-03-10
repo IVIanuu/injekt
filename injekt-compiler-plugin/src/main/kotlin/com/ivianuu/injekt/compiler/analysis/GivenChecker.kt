@@ -20,18 +20,15 @@ import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.resolution.ContributionKind
-import com.ivianuu.injekt.compiler.resolution.contributionKind
+import com.ivianuu.injekt.compiler.resolution.isGiven
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.builtins.isSuspendFunctionType
-import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -39,9 +36,6 @@ import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueDescriptor
-import org.jetbrains.kotlin.descriptors.VariableDescriptor
-import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
-import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -59,7 +53,6 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
 
         if (descriptor is SimpleFunctionDescriptor) {
             checkTypeParameters(descriptor.typeParameters, context.trace)
-            checkMultipleContributions(descriptor, declaration, context.trace)
             descriptor.allParameters
                 .filterNot { it === descriptor.dispatchReceiverParameter }
                 .checkParameters(declaration, descriptor, context.trace)
@@ -72,10 +65,9 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
             val givenConstraints = descriptor.typeParameters.filter {
                 it.hasAnnotation(InjektFqNames.Given)
             }
-            if (givenConstraints.isNotEmpty() &&
-                    descriptor.contributionKind(declarationStore) == null) {
+            if (givenConstraints.isNotEmpty() && !descriptor.isGiven(declarationStore)) {
                 context.trace.report(
-                    InjektErrors.GIVEN_CONSTRAINT_WITHOUT_CONTRIBUTION
+                    InjektErrors.GIVEN_CONSTRAINT_ON_NON_GIVEN_FUNCTION
                         .on(declaration)
                 )
             }
@@ -86,14 +78,12 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
                 )
             }
         } else if (descriptor is ConstructorDescriptor) {
-            checkMultipleContributions(descriptor, declaration, context.trace)
             descriptor.valueParameters
-                .checkParameters(declaration, if (descriptor.constructedClass.contributionKind(declarationStore) != null)
+                .checkParameters(declaration, if (descriptor.constructedClass.isGiven(declarationStore))
                     descriptor.constructedClass else descriptor, context.trace)
         } else if (descriptor is ClassDescriptor) {
             checkTypeParameters(descriptor.declaredTypeParameters, context.trace)
             val hasGivenAnnotation = descriptor.hasAnnotation(InjektFqNames.Given)
-            checkMultipleContributions(descriptor, declaration, context.trace)
             val givenConstructors = descriptor.constructors
                 .filter { it.hasAnnotation(InjektFqNames.Given) }
 
@@ -154,25 +144,13 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
             checkTypeParameters(descriptor.typeParameters, context.trace)
             if (descriptor.hasAnnotation(InjektFqNames.Given) &&
                 descriptor.extensionReceiverParameter != null &&
-                descriptor.extensionReceiverParameter?.type?.contributionKind(
-                    declarationStore
-                ) == null
+                descriptor.extensionReceiverParameter?.type?.isGiven(declarationStore) != true
             ) {
-                checkMultipleContributions(descriptor, declaration, context.trace)
                 context.trace.report(
                     InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
-                        .on(
-                            descriptor.extensionReceiverParameter?.findPsi() ?: declaration,
-                            when {
-                                descriptor.hasAnnotation(InjektFqNames.Given) -> InjektFqNames.Given.shortName()
-                                descriptor.hasAnnotation(InjektFqNames.Module) -> InjektFqNames.Module.shortName()
-                                else -> error("")
-                            }
-                        )
+                        .on(descriptor.extensionReceiverParameter?.findPsi() ?: declaration)
                 )
             }
-        } else if (descriptor is VariableDescriptor) {
-            checkMultipleContributions(descriptor, declaration, context.trace)
         } else if (descriptor is TypeAliasDescriptor) {
             checkTypeParameters(descriptor.declaredTypeParameters, context.trace)
         }
@@ -186,26 +164,10 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
             if (it.hasAnnotation(InjektFqNames.Given) &&
                 it.containingDeclaration !is SimpleFunctionDescriptor) {
                 trace.report(
-                    InjektErrors.GIVEN_CONSTRAINT_ON_NON_FUNCTION
+                    InjektErrors.GIVEN_CONSTRAINT_ON_NON_GIVEN_FUNCTION
                         .on(it.findPsi()!!)
                 )
             }
-        }
-    }
-
-    private fun checkMultipleContributions(
-        descriptor: DeclarationDescriptor,
-        declaration: KtDeclaration,
-        trace: BindingTrace
-    ) {
-        if (descriptor.annotations.count {
-                it.fqName == InjektFqNames.Given ||
-                        it.fqName == InjektFqNames.Module
-        } > 1) {
-            trace.report(
-                InjektErrors.DECLARATION_WITH_MULTIPLE_CONTRIBUTIONS
-                    .on(declaration)
-            )
         }
     }
 
@@ -221,20 +183,12 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
         } ?: return
         if ((type.isFunctionType ||
                     type.isSuspendFunctionType) &&
-            (type.hasAnnotation(InjektFqNames.Given) ||
-                    type.hasAnnotation(InjektFqNames.Module)) &&
+            type.hasAnnotation(InjektFqNames.Given) &&
             type.arguments.dropLast(1)
-                .any { it.type.contributionKind(declarationStore) == null }) {
+                .any { !it.type.isGiven(declarationStore) }) {
             trace.report(
                 InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
-                    .on(
-                        declaration,
-                        when {
-                            type.hasAnnotation(InjektFqNames.Given) -> InjektFqNames.Given.shortName()
-                            type.hasAnnotation(InjektFqNames.Module) -> InjektFqNames.Module.shortName()
-                            else -> error("")
-                        }
-                    )
+                    .on(declaration)
             )
         }
     }
@@ -245,27 +199,18 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
         trace: BindingTrace,
     ) {
         if (descriptor.hasAnnotation(InjektFqNames.Given) ||
-            descriptor.hasAnnotation(InjektFqNames.Module) ||
-            (descriptor is ConstructorDescriptor && (
-                    descriptor.constructedClass.hasAnnotation(InjektFqNames.Given) ||
-                            descriptor.constructedClass.hasAnnotation(InjektFqNames.Module)))
+            (descriptor is ConstructorDescriptor &&
+                    descriptor.constructedClass.hasAnnotation(InjektFqNames.Given))
         ) {
             this
                 .filter {
-                    it.contributionKind(declarationStore) == null &&
-                            it.type.contributionKind(declarationStore) == null
+                    !it.isGiven(declarationStore) &&
+                            !it.type.isGiven(declarationStore)
                 }
                 .forEach {
                     trace.report(
                         InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
-                            .on(
-                                it.findPsi() ?: declaration,
-                                when {
-                                    descriptor.hasAnnotation(InjektFqNames.Given) -> InjektFqNames.Given.shortName()
-                                    descriptor.hasAnnotation(InjektFqNames.Module) -> InjektFqNames.Module.shortName()
-                                    else -> error("")
-                                }
-                            )
+                            .on(it.findPsi() ?: declaration)
                     )
                 }
         }

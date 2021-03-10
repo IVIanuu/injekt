@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.android
 
 import androidx.activity.ComponentActivity
-import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.component.AppComponent
 import com.ivianuu.injekt.component.ChildComponentModule0
 import com.ivianuu.injekt.component.Component
@@ -25,7 +25,7 @@ import com.ivianuu.injekt.component.element
 
 typealias ActivityRetainedComponent = Component
 
-@Module
+@Given
 val activityRetainedComponentModule =
     ChildComponentModule0<AppComponent, ActivityRetainedComponent>()
 

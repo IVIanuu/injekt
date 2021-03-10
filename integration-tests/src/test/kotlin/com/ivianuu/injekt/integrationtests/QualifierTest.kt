@@ -203,7 +203,7 @@ class QualifierTest {
 
             typealias ChildComponent = Component
 
-            @Module
+            @Given
             val childComponentModule = ChildComponentModule0<AppComponent, ChildComponent>()
 
             @ComponentElementBinding<ChildComponent>

@@ -22,7 +22,6 @@ import android.app.Service
 import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.component.AppComponent
 import com.ivianuu.injekt.component.ChildComponentModule1
 import com.ivianuu.injekt.component.Component
@@ -30,7 +29,7 @@ import com.ivianuu.injekt.component.element
 
 typealias ServiceComponent = Component
 
-@Module
+@Given
 val serviceComponentModule =
     ChildComponentModule1<AppComponent, Service, ServiceComponent>()
 
