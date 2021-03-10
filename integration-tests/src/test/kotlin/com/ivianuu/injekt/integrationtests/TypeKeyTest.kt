@@ -37,6 +37,15 @@ class TypeKeyTest {
     }
 
     @Test
+    fun testNullableTypeKeyOf() = codegen(
+        """
+           fun invoke() = typeKeyOf<String?>() 
+        """
+    ) {
+        invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String?"
+    }
+
+    @Test
     fun testForTypeKeyTypeParameter() = codegen(
         """
             inline fun <@ForTypeKey T> listTypeKeyOf() = typeKeyOf<List<T>>()
@@ -44,6 +53,26 @@ class TypeKeyTest {
         """
     ) {
         invokeSingleFile<TypeKey<List<String>>>().value shouldBe "kotlin.collections.List<kotlin.String>"
+    }
+
+    @Test
+    fun testTypeKeyOfWithTypeAliasWithNullableExpandedType() = codegen(
+        """
+            typealias MyAlias = String?
+            fun invoke() = typeKeyOf<MyAlias>() 
+        """
+    ) {
+        invokeSingleFile<TypeKey<Any>>().value shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
+    }
+
+    @Test
+    fun testTypeKeyOfWithNullableTypeAlias() = codegen(
+        """
+            typealias MyAlias = String
+            fun invoke() = typeKeyOf<MyAlias?>()
+        """
+    ) {
+        invokeSingleFile<TypeKey<Any>>().value shouldBe "com.ivianuu.injekt.integrationtests.MyAlias?"
     }
 
     @Test
@@ -80,15 +109,6 @@ class TypeKeyTest {
         )
     ) {
         it.invokeSingleFile<TypeKey<List<String>>>().value shouldBe "kotlin.collections.List<kotlin.String>"
-    }
-
-    @Test
-    fun testNonForTypeKeyTypeParameterCannotBeUsedForForTypeKey() = codegen(
-        """
-           fun <T> invoke() = typeKeyOf<T>() 
-        """
-    ) {
-        compilationShouldHaveFailed()
     }
 
 }

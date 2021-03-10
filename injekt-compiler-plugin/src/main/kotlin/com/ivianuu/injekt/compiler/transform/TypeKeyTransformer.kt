@@ -218,7 +218,9 @@ class TypeKeyTransformer(
                 expressions += builder.irString(">")
             }
 
-            if (hasQuestionMark) expressions += builder.irString("?")
+            if ((abbreviation != null && abbreviation!!.hasQuestionMark) ||
+                (abbreviation == null && hasQuestionMark))
+                    expressions += builder.irString("?")
         }
 
         collectExpressions()
