@@ -66,6 +66,16 @@ class TypeKeyTest {
     }
 
     @Test
+    fun testTypeKeyOfWithTypeAlias() = codegen(
+        """
+            typealias MyAlias = String
+            fun invoke() = typeKeyOf<MyAlias>() 
+        """
+    ) {
+        invokeSingleFile<TypeKey<Any>>().value shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
+    }
+
+    @Test
     fun testTypeKeyOfWithNullableTypeAlias() = codegen(
         """
             typealias MyAlias = String
