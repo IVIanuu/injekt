@@ -344,6 +344,17 @@ class TypeRefTest {
     }
 
     @Test
+    fun testSubTypeWithTypeParameterIsAssignableToSuperTypeWithOtherTypeParameterButSameSuperTypes() = withAnalysisContext {
+        mutableListType.typeWith(typeParameter()) shouldBeAssignable listType.typeWith(typeParameter())
+    }
+
+    @Test
+    fun testQualifiedSubTypeWithTypeParameterIsNotAssignableToSuperTypeWithOtherTypeParameterButSameSuperTypes() = withAnalysisContext {
+        mutableListType.typeWith(typeParameter())
+            .qualified(qualifier1()) shouldNotBeAssignable listType.typeWith(typeParameter())
+    }
+
+    @Test
     fun testComparableStackOverflowBug() = withAnalysisContext {
         floatType shouldNotBeSubTypeOf comparable.typeWith(intType)
     }
@@ -395,6 +406,7 @@ class TypeRefTest {
         val stringType = typeFor(StandardNames.FqNames.string.toSafe())
         val charSequenceType = typeFor(StandardNames.FqNames.charSequence.toSafe())
         val listType = typeFor(StandardNames.FqNames.list)
+        val mutableListType = typeFor(StandardNames.FqNames.mutableList)
         val starProjectedType = STAR_PROJECTION_TYPE
 
         fun composableFunction(parameterCount: Int) = typeFor(

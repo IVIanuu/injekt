@@ -489,6 +489,12 @@ fun TypeRef.isAssignableTo(
         if (setKey != superType.setKey) return@getOrPut false
         return@getOrPut true
     }
+
+    val subTypeView = subtypeView(superType.classifier)
+    if (subTypeView != null &&
+        subTypeView != this &&
+        subTypeView.isAssignableTo(declarationStore, superType)) return@getOrPut true
+
     return@getOrPut false
 }
 
@@ -519,7 +525,6 @@ fun TypeRef.isSubTypeOf(
         return@getOrPut true
     }
     val subTypeView = subtypeView(superType.classifier)
-        ?.let { if (macroChain.isNotEmpty()) it.copy(macroChain = macroChain) else it }
     if (subTypeView != null) {
         if (subTypeView == superType && (!subTypeView.isMarkedNullable || superType.isMarkedNullable))
             return@getOrPut true
@@ -576,9 +581,20 @@ val KotlinType.fullyAbbreviatedType: KotlinType
 
 fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
     if (this.classifier == classifier) return this
-    expandedType?.subtypeView(classifier)?.let { return it }
-    for (superType in superTypes) {
-        superType.subtypeView(classifier)?.let { return it }
+    fun TypeRef.superTypeWithMatchingClassifier(): TypeRef? {
+        if (this.classifier == classifier) return this
+        expandedType?.subtypeView(classifier)?.let { return it }
+        for (superType in superTypes) {
+            superType.subtypeView(classifier)?.let { return it }
+        }
+        return null
     }
-    return null
+    val rawSubTypeView = superTypeWithMatchingClassifier() ?: return null
+    return if (macroChain.isNotEmpty() || qualifiers.isNotEmpty() || isMarkedNullable) {
+        rawSubTypeView.copy(
+            macroChain = macroChain,
+            qualifiers = qualifiers + rawSubTypeView.qualifiers,
+            isMarkedNullable = isMarkedNullable
+        )
+    } else rawSubTypeView
 }
