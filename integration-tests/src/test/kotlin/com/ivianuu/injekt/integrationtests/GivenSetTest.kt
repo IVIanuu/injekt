@@ -33,8 +33,8 @@ class GivenSetTest {
     @Test
     fun testSimpleSet() = codegen(
         """
-            @GivenSetElement fun commandA(): Command = CommandA()
-            @GivenSetElement fun commandB(): Command = CommandB() 
+            @Given fun commandA(): Command = CommandA()
+            @Given fun commandB(): Command = CommandB() 
             fun invoke() = given<Set<Command>>()
         """
     ) {
@@ -51,10 +51,10 @@ class GivenSetTest {
     @Test
     fun testNestedSet() = codegen(
         """
-            @GivenSetElement fun commandA(): Command = CommandA()
+            @Given fun commandA(): Command = CommandA()
 
             class InnerObject {
-                @GivenSetElement fun commandB(): Command = CommandB()
+                @Given fun commandB(): Command = CommandB()
                 val set = given<Set<Command>>()
             }
 
@@ -87,7 +87,7 @@ class GivenSetTest {
     @Test
     fun testImplicitProviderSet() = codegen(
         """
-            @GivenSetElement
+            @Given
             fun bar(@Given foo: Foo) = Bar(foo)
 
             fun invoke() = given<Set<(@Given Foo) -> Bar>>()
@@ -104,13 +104,13 @@ class GivenSetTest {
     @Test
     fun testNestedImplicitProviderSet() = codegen(
         """
-            @GivenSetElement
+            @Given
             fun bar(@Given foo: Foo): Any = Bar(foo)
 
-            @GivenSetElement fun commandA(): Command = CommandA()
+            @Given fun commandA(): Command = CommandA()
 
             class InnerObject {
-                @GivenSetElement fun commandB(): Command = CommandB()
+                @Given fun commandB(): Command = CommandB()
                 val set = given<Set<() -> Command>>()
             }
 
@@ -137,10 +137,10 @@ class GivenSetTest {
     @Test
     fun testPrefersExplicitProviderSetOverImplicitProviderSet() = codegen(
         """
-            @GivenSetElement
+            @Given
             lateinit var explicitProviderElement: () -> Foo
 
-            @GivenSetElement
+            @Given
             val nonProviderElement = Foo()
             fun invoke(explicitProvider: () -> Foo): Set<() -> Foo> {
                 explicitProviderElement = explicitProvider

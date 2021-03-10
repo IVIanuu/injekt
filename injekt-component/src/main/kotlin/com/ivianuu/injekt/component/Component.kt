@@ -19,7 +19,6 @@
 package com.ivianuu.injekt.component
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.common.ForTypeKey
 import com.ivianuu.injekt.common.Scope
@@ -65,7 +64,7 @@ typealias ComponentElement<@Suppress("unused") C> = Pair<TypeKey<*>, () -> Any?>
 @Qualifier
 annotation class ComponentElementBinding<C : Component>
 
-@GivenSetElement
+@Given
 fun <@Given T : @ComponentElementBinding<C> S, @ForTypeKey S, @ForTypeKey C : Component>
         componentElementBindingImpl(@Given factory: () -> T): ComponentElement<C> =
     typeKeyOf<S>() to factory as () -> Any?
@@ -75,7 +74,7 @@ typealias ComponentInitializer<C> = (C) -> Unit
 @Qualifier
 annotation class ComponentInitializerBinding
 
-@GivenSetElement
+@Given
 fun <@Given T : @ComponentInitializerBinding ComponentInitializer<C>, C : Component>
         componentInitializerBindingImpl(
     @Given initializer: T): ComponentInitializer<C> = initializer

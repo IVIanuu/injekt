@@ -18,14 +18,14 @@ package com.ivianuu.injekt.samples.android
 
 import androidx.compose.runtime.Composable
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.Qualifier
 import kotlin.reflect.KClass
 
 typealias KeyUiElement = Pair<KClass<*>, @Composable () -> Unit>
 
-@Qualifier annotation class KeyUiBinding<K : Any>
+@Qualifier
+annotation class KeyUiBinding<K : Any>
 
-@GivenSetElement
+@Given
 inline fun <@Given reified T : @KeyUiBinding<K> @Composable () -> Unit, reified K : Any>
         keyUiBinding(@Given instance: T): KeyUiElement = K::class to instance

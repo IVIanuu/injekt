@@ -24,7 +24,6 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenSetElement
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.android.AppContext
@@ -36,7 +35,7 @@ import kotlin.reflect.KClass
 @Qualifier
 annotation class WorkerBinding
 
-@GivenSetElement
+@Given
 inline fun <@Given reified T : @WorkerBinding S, S : ListenableWorker> workerBindingImpl(
     @Given noinline provider: (@Given WorkerComponent) -> T
 ): WorkerElement = T::class to provider

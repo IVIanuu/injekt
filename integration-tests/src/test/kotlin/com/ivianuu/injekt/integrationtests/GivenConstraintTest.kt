@@ -49,7 +49,7 @@ class GivenConstraintTest {
     fun testSetElementWithGivenConstraint() = codegen(
         """
             @Qualifier annotation class Trigger
-            @GivenSetElement fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): S = instance
+            @Given fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): S = instance
 
             @Trigger @Given fun foo() = Foo()
 
@@ -63,7 +63,7 @@ class GivenConstraintTest {
     fun testModuleWithGivenConstraint() = codegen(
         """
             class MyModule<T : S, S> {
-                @GivenSetElement fun intoSet(@Given instance: T): S = instance
+                @Given fun intoSet(@Given instance: T): S = instance
             }
             @Qualifier annotation class Trigger
             @Module fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): MyModule<T, S> = MyModule()
@@ -221,7 +221,7 @@ class GivenConstraintTest {
             }
 
             @Qualifier annotation class C
-            @GivenSetElement fun <@Given T : @C Any?> cImpl() = Foo()
+            @Given fun <@Given T : @C Any?> cImpl() = Foo()
 
             @A @Given fun dummy() = 0L
             
@@ -265,7 +265,7 @@ class GivenConstraintTest {
     fun testMultipleConstrainedContributionsWithSameType() = codegen(
         """
             @Qualifier annotation class Trigger
-            @GivenSetElement fun <@Given T : @Trigger String> triggerImpl(@Given instance: T): String = instance
+            @Given fun <@Given T : @Trigger String> triggerImpl(@Given instance: T): String = instance
 
             @Trigger @Given fun a() = "a"
             @Trigger @Given fun b() = "b"
@@ -333,7 +333,7 @@ class GivenConstraintTest {
 
             @Qualifier annotation class UiDecoratorBinding
 
-            @GivenSetElement
+            @Given
             fun <@Given T : @UiDecoratorBinding S, @ForTypeKey S : UiDecorator> uiDecoratorBindingImpl(
                 @Given instance: T
             ): UiDecorator = instance as UiDecorator
