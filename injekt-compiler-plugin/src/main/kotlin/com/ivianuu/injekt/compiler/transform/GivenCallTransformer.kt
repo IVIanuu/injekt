@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.resolution.*
-import com.ivianuu.injekt.compiler.toMap
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.backend.common.ir.allParameters
