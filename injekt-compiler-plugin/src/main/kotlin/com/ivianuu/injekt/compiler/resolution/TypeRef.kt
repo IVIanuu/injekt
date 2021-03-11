@@ -439,7 +439,7 @@ fun getSubstitutionMap(
 
     substitutionMap.forEach { (baseClassifier, thisType) ->
         baseClassifier.defaultType.superTypes
-            .map { thisType.subtypeView(it.classifier) to it }
+            .map { thisType.subtypeView(declarationStore, it.classifier) to it }
             .forEach { (thisBaseTypeView, baseSuperType) ->
                 if (baseSuperType.classifier.isTypeParameter) {
                     val thisTypeToUse = thisBaseTypeView ?: thisType
@@ -505,7 +505,7 @@ fun TypeRef.isAssignableTo(
         return@getOrPut true
     }
 
-    val subTypeView = subtypeView(superType.classifier)
+    val subTypeView = subtypeView(declarationStore, superType.classifier)
     if (subTypeView != null &&
         subTypeView != this &&
         subTypeView.isAssignableTo(declarationStore, superType)) return@getOrPut true
@@ -539,7 +539,7 @@ fun TypeRef.isSubTypeOf(
         if (setKey != superType.setKey) return@getOrPut false
         return@getOrPut true
     }
-    val subTypeView = subtypeView(superType.classifier)
+    val subTypeView = subtypeView(declarationStore, superType.classifier)
     if (subTypeView != null) {
         if (subTypeView == superType && (!subTypeView.isMarkedNullable || superType.isMarkedNullable))
             return@getOrPut true
@@ -596,13 +596,16 @@ val KotlinType.fullyAbbreviatedType: KotlinType
         return if (abbreviatedType != null && abbreviatedType != this) abbreviatedType.fullyAbbreviatedType else this
     }
 
-fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
-    if (this.classifier == classifier) return this
+fun TypeRef.subtypeView(
+    declarationStore: DeclarationStore,
+    classifier: ClassifierRef
+): TypeRef? = declarationStore.subTypeViewCache.getOrPut(MultiKey2(this, classifier)) {
+    if (this.classifier == classifier) return@getOrPut this
     fun TypeRef.superTypeWithMatchingClassifier(): TypeRef? {
         if (this.classifier == classifier) return this
-        expandedType?.subtypeView(classifier)?.let { return it }
+        expandedType?.subtypeView(declarationStore, classifier)?.let { return it }
         for (superType in superTypes) {
-            superType.subtypeView(classifier)?.let { return it }
+            superType.subtypeView(declarationStore, classifier)?.let { return it }
         }
         return null
     }

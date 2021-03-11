@@ -123,8 +123,8 @@ class ResolutionScope(
                 ownerScope = this@ResolutionScope,
                 declarationStore = declarationStore
             )
-        } else if (type.isSubTypeOf(declarationStore, declarationStore.setType)) {
-            val setElementType = type.subtypeView(declarationStore.setType.classifier)!!.arguments.single()
+        } else if (type.classifier == declarationStore.setType.classifier) {
+            val setElementType = type.arguments.single()
             var elementTypes = setElementsForType(setElementType)
             if (elementTypes.isEmpty() &&
                 setElementType.qualifiers.isEmpty() &&
