@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.caches.resolve.KotlinCacheService
 import org.jetbrains.kotlin.idea.resolve.ResolutionFacade
 import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
@@ -94,6 +95,10 @@ private fun ResolutionFacade.intercepted() = object : ResolutionFacade by this {
         bindingContext: BindingContext,
         elements: Collection<KtElement>,
     ): BindingContext {
+        val files = elements
+            .filterIsInstance<KtFile>()
+            .distinct()
+        if (files.isEmpty()) return bindingContext
         val bindingTrace = DelegatingBindingTrace(
             bindingContext,
             "Given call checker trace"
@@ -101,9 +106,8 @@ private fun ResolutionFacade.intercepted() = object : ResolutionFacade by this {
 
         val checker = GivenCallChecker(bindingTrace, declarationStore, null)
 
-        elements
-            .map { it.containingKtFile }
-            .distinct()
+
+        files
             .forEach { element ->
                 println("run checker on $element")
                 try {
