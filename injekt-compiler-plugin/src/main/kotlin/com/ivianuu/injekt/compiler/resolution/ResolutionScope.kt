@@ -40,12 +40,18 @@ class ResolutionScope(
     private val givens = mutableListOf<CallableRef>()
 
     private val constrainedGivens = mutableListOf<ConstrainedGivenNode>()
+    private val constrainedGivenCandidates = mutableListOf<ConstrainedGivenCandidate>()
+
     private data class ConstrainedGivenNode(val callable: CallableRef) {
         val processedCandidateTypes = mutableSetOf<TypeRef>()
         fun copy() = ConstrainedGivenNode(callable).also {
             it.processedCandidateTypes += processedCandidateTypes
         }
     }
+    private data class ConstrainedGivenCandidate(
+        val type: TypeRef,
+        val typeWithoutChain: TypeRef
+    )
 
     val allParents: List<ResolutionScope> = parent?.allScopes ?: emptyList()
     val allScopes: List<ResolutionScope> = allParents + this
@@ -58,6 +64,7 @@ class ResolutionScope(
             parent.initialize
             constrainedGivens += parent.constrainedGivens
                 .map { it.copy() }
+            constrainedGivenCandidates += parent.constrainedGivenCandidates
         }
 
         var hasGivens = false
@@ -76,6 +83,10 @@ class ResolutionScope(
                                 constrainedGivenChain = listOf(callable.callable.fqNameSafe)
                             )
                         givens += callable.copy(type = typeWithChain)
+                        constrainedGivenCandidates += ConstrainedGivenCandidate(
+                            type = typeWithChain,
+                            typeWithoutChain = callable.type
+                        )
                     },
                     addConstrainedGiven = {
                         hasGivens = true
@@ -85,8 +96,9 @@ class ResolutionScope(
             }
 
         if (hasGivens) {
-            allConstrainedGivensCandidates
-                .forEach { collectConstrainedGivens(it.type) }
+            constrainedGivenCandidates
+                .toList()
+                .forEach { collectConstrainedGivens(it) }
         }
     }
 
@@ -165,37 +177,32 @@ class ResolutionScope(
         }
     }
 
-    private val allConstrainedGivensCandidates get() = allScopes
-        .flatMap { it.givens }
-        .filter { it.type.constrainedGivenChain.isNotEmpty() }
-
-    private fun collectConstrainedGivens(candidateType: TypeRef) {
+    private fun collectConstrainedGivens(candidate: ConstrainedGivenCandidate) {
         for (constrainedGiven in constrainedGivens)
-            collectConstrainedGivens(constrainedGiven, candidateType)
+            collectConstrainedGivens(constrainedGiven, candidate)
     }
 
     private fun collectConstrainedGivens(
         constrainedGiven: ConstrainedGivenNode,
-        candidateType: TypeRef
+        candidate: ConstrainedGivenCandidate
     ) {
-        if (candidateType in constrainedGiven.processedCandidateTypes) return
-        constrainedGiven.processedCandidateTypes += candidateType
+        if (candidate.type in constrainedGiven.processedCandidateTypes) return
+        constrainedGiven.processedCandidateTypes += candidate.type
+        if (constrainedGiven.callable.callable.fqNameSafe in candidate.type.constrainedGivenChain) return
 
         val constraintType = constrainedGiven.callable.typeParameters.single {
             it.isGivenConstraint
         }.defaultType
-        if (!candidateType.copy(constrainedGivenChain = emptyList())
+        if (!candidate.typeWithoutChain
                 .isSubTypeOf(declarationStore, constraintType)) return
-        if (constrainedGiven.callable.callable.fqNameSafe in
-            candidateType.constrainedGivenChain) return
 
         val inputsSubstitutionMap = getSubstitutionMap(
             declarationStore,
-            listOf(candidateType to constraintType)
+            listOf(candidate.type to constraintType)
         )
         val outputsSubstitutionMap = getSubstitutionMap(
             declarationStore,
-            listOf(candidateType.copy(constrainedGivenChain = emptyList()) to constraintType)
+            listOf(candidate.typeWithoutChain to constraintType)
         )
         val newGiven = constrainedGiven.callable.substituteInputs(inputsSubstitutionMap)
             .copy(
@@ -212,18 +219,26 @@ class ResolutionScope(
                 givens += newInnerGiven
                 val newInnerGivenWithChain = newInnerGiven.copy(
                     type = newInnerGiven.type.copy(
-                        constrainedGivenChain = candidateType.constrainedGivenChain + newInnerGiven.callable.fqNameSafe
+                        constrainedGivenChain = candidate.type.constrainedGivenChain +
+                                newInnerGiven.callable.fqNameSafe
                     )
                 )
                 givens += newInnerGivenWithChain
-                collectConstrainedGivens(newInnerGivenWithChain.type)
+                val newCandidate = ConstrainedGivenCandidate(
+                    type = newInnerGivenWithChain.type,
+                    typeWithoutChain = newInnerGiven.type
+                )
+                constrainedGivenCandidates += newCandidate
+                collectConstrainedGivens(newCandidate)
             },
             addConstrainedGiven = { newCallable ->
                 val newConstrainedGiven = ConstrainedGivenNode(newCallable)
                 constrainedGivens += newConstrainedGiven
-                allConstrainedGivensCandidates.forEach {
-                    collectConstrainedGivens(newConstrainedGiven, it.type)
-                }
+                constrainedGivenCandidates
+                    .toList()
+                    .forEach {
+                        collectConstrainedGivens(newConstrainedGiven, it)
+                    }
             }
         )
     }
