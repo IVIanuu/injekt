@@ -187,6 +187,11 @@ sealed class TypeRef {
         classifier.superTypes
             .map { it.substitute(substitutionMap) }
     }
+
+    val unqualified: TypeRef by unsafeLazy {
+        if (qualifiers.isEmpty() && constrainedGivenChain.isEmpty() && setKey == null) this
+        else copy(qualifiers = emptyList(), constrainedGivenChain = emptyList(), setKey = null)
+    }
 }
 
 class KotlinTypeRef(
@@ -260,7 +265,7 @@ fun TypeRef.copy(
     qualifiers: List<AnnotationRef> = this.qualifiers,
     constrainedGivenChain: List<FqName> = this.constrainedGivenChain,
     setKey: SetKey? = this.setKey
-) = SimpleTypeRef(
+): SimpleTypeRef = SimpleTypeRef(
     classifier,
     isMarkedNullable,
     arguments,
@@ -421,7 +426,7 @@ fun getSubstitutionMap(
                 }
                 allMatch
             }) {
-            visitType(thisType.copy(qualifiers = emptyList()), baseType.copy(qualifiers = emptyList()))
+            visitType(thisType.unqualified, baseType.unqualified)
             thisType.qualifiers.forEachWith(baseType.qualifiers) { a, b -> visitType(a.type, b.type) }
             return
         }
@@ -438,8 +443,7 @@ fun getSubstitutionMap(
             .forEach { (thisBaseTypeView, baseSuperType) ->
                 if (baseSuperType.classifier.isTypeParameter) {
                     val thisTypeToUse = thisBaseTypeView ?: thisType
-                    visitType(thisTypeToUse
-                        .copy(qualifiers = emptyList(), constrainedGivenChain = emptyList(), setKey = null), baseSuperType)
+                    visitType(thisTypeToUse.unqualified, baseSuperType)
                     if (thisTypeToUse.qualifiers.isAssignableTo(declarationStore, baseSuperType.qualifiers)) {
                         thisTypeToUse.qualifiers.forEachWith(baseSuperType.qualifiers) { a, b ->
                             visitType(a.type, b.type)
@@ -563,7 +567,7 @@ fun TypeRef.isSubTypeOf(
             // todo should do this comparison without qualifiers?
             isSubTypeOf(declarationStore, upperBound) ||
                     (superType.qualifiers.isNotEmpty() &&
-                            copy(qualifiers = emptyList()).isSubTypeOf(declarationStore, upperBound))
+                            unqualified.isSubTypeOf(declarationStore, upperBound))
         }
     }
     return@getOrPut false
@@ -603,7 +607,10 @@ fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
         return null
     }
     val rawSubTypeView = superTypeWithMatchingClassifier() ?: return null
-    return if (constrainedGivenChain.isNotEmpty() || qualifiers.isNotEmpty() || isMarkedNullable) {
+    return if ((constrainedGivenChain.isNotEmpty() &&
+                constrainedGivenChain != rawSubTypeView.constrainedGivenChain) ||
+        (qualifiers.isNotEmpty() && qualifiers != rawSubTypeView.qualifiers) ||
+        (isMarkedNullable && isMarkedNullable != rawSubTypeView.isMarkedNullable)) {
         rawSubTypeView.copy(
             constrainedGivenChain = constrainedGivenChain,
             qualifiers = qualifiers + rawSubTypeView.qualifiers,

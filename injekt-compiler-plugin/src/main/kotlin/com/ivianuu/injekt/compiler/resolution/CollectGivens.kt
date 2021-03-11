@@ -84,7 +84,8 @@ fun CallableDescriptor.toCallableRef(
     val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
         .map { it.toAnnotationRef(declarationStore) }
     val type = returnType!!.toTypeRef(declarationStore).let {
-        it.copy(qualifiers = qualifiers + it.qualifiers)
+        if (qualifiers.isNotEmpty()) it.copy(qualifiers = qualifiers + it.qualifiers)
+        else it
     }
     val typeParameters = typeParameters
         .map { it.toClassifierRef(declarationStore) }
