@@ -39,7 +39,7 @@ class GivenSetTest {
         """
     ) {
         val set = invokeSingleFile<Set<Command>>().toList()
-        2 shouldBe set.size
+        set.size shouldBe 2
         set
             .filterIsInstance<CommandA>()
             .shouldHaveSize(1)
@@ -62,11 +62,11 @@ class GivenSetTest {
         """
     ) {
         val (parentSet, childSet) = invokeSingleFile<Pair<Set<Command>, Set<Command>>>().toList()
-        1 shouldBe parentSet.size
+        parentSet.size shouldBe 1
         parentSet
             .filterIsInstance<CommandA>()
             .shouldHaveSize(1)
-        2 shouldBe childSet.size
+        childSet.size shouldBe 2
         childSet
             .filterIsInstance<CommandA>()
             .shouldHaveSize(1)
@@ -94,7 +94,7 @@ class GivenSetTest {
         """
     ) {
         val set = invokeSingleFile<Set<(Foo) -> Bar>>().toList()
-        1 shouldBe set.size
+        set.size shouldBe 1
         val provider = set.single()
         val foo = Foo()
         val bar = provider(foo)
@@ -118,12 +118,12 @@ class GivenSetTest {
         """
     ) {
         val (parentSet, childSet) = invokeSingleFile<Pair<Set<() -> Command>, Set<() -> Command>>>().toList()
-        1 shouldBe parentSet.size
+        parentSet.size shouldBe 1
         parentSet
             .map { it() }
             .filterIsInstance<CommandA>()
             .shouldHaveSize(1)
-        2 shouldBe childSet.size
+        childSet.size shouldBe 2
         childSet
             .map { it() }
             .filterIsInstance<CommandA>()

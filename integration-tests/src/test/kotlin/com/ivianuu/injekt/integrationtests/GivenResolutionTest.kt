@@ -44,7 +44,6 @@ class GivenResolutionTest {
         listOf(
             source(
                 """
-                    import givens.*
                     fun invoke() = given<Foo>()
                 """,
                 name = "File.kt"

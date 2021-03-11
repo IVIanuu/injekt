@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.forEachWith
+import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.unsafeLazy
 
 sealed class GivenGraph {
@@ -368,6 +369,13 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
         val depthB = b.ownerScope.depth(this)
         if (depthA < depthB) return -1
         if (depthB < depthA) return 1
+    }
+
+    if (a is CallableGivenNode && b is CallableGivenNode) {
+        if (!a.callable.callable.isExternalDeclaration() &&
+                b.callable.callable.isExternalDeclaration()) return -1
+        if (!b.callable.callable.isExternalDeclaration() &&
+            a.callable.callable.isExternalDeclaration()) return 1
     }
 
     val diff = compareType(a.originalType, b.originalType)

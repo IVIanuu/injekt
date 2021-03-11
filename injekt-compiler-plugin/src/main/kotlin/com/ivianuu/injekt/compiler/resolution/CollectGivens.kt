@@ -126,21 +126,21 @@ fun MemberScope.collectGivens(
         ?.filter { it.isGiven(declarationStore) }
         ?.map { it.name } ?: emptyList())
     return getContributedDescriptors()
-        .flatMap { callable ->
-            when (callable) {
-                is ClassDescriptor -> callable.getGivenConstructors(declarationStore)
+        .flatMap { declaration ->
+            when (declaration) {
+                is ClassDescriptor -> declaration.getGivenConstructors(declarationStore)
                     .map { it.substitute(substitutionMap) }
-                is PropertyDescriptor -> if (callable.isGiven(declarationStore) ||
-                        callable.name in givenPrimaryConstructorParameters) {
+                is PropertyDescriptor -> if (declaration.isGiven(declarationStore) ||
+                        declaration.name in givenPrimaryConstructorParameters) {
                     listOf(
-                        callable.toCallableRef(declarationStore)
+                        declaration.toCallableRef(declarationStore)
                             .copy(isGiven = true)
                             .substitute(substitutionMap)
                     )
                 } else emptyList()
-                is FunctionDescriptor -> if (callable.isGiven(declarationStore)) {
+                is FunctionDescriptor -> if (declaration.isGiven(declarationStore)) {
                     listOf(
-                        callable.toCallableRef(declarationStore)
+                        declaration.toCallableRef(declarationStore)
                             .copy(isGiven = true)
                             .substitute(substitutionMap)
                     )
@@ -153,6 +153,8 @@ fun MemberScope.collectGivens(
                     it.callable.visibility == DescriptorVisibilities.LOCAL ||
                     (it.callable.visibility == DescriptorVisibilities.INTERNAL &&
                             !it.callable.original.isExternalDeclaration()) ||
+                    (it.callable is ClassConstructorDescriptor &&
+                            it.type.classifier.isObject) ||
                     it.callable.parents.any {
                         it == owningDescriptor
                     }
