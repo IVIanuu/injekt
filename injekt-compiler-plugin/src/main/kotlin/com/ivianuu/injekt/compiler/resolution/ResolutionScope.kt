@@ -20,9 +20,9 @@ import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ResolutionScope(
@@ -247,31 +247,38 @@ class ResolutionScope(
 
 }
 
-fun ExternalResolutionScope(declarationStore: DeclarationStore): ResolutionScope = ResolutionScope(
-    name = "EXTERNAL",
+fun PackageResolutionScope(
+    declarationStore: DeclarationStore,
+    fqName: FqName
+) = ResolutionScope(
+    name = "PACKAGE $fqName",
     declarationStore = declarationStore,
     callContext = CallContext.DEFAULT,
     parent = null,
     owningDescriptor = null,
-    produceGivens = {
-        declarationStore.globalGivens
-            .filter { it.callable.isExternalDeclaration() }
-            .filter { it.callable.visibility == DescriptorVisibilities.PUBLIC }
-    }
+    produceGivens = { collectGivensInPackage(declarationStore, fqName) }
 )
 
-fun InternalResolutionScope(
+fun FileResolutionScope(
     parent: ResolutionScope,
     declarationStore: DeclarationStore,
-): ResolutionScope = ResolutionScope(
-    name = "INTERNAL",
+    file: KtFile
+) = ResolutionScope(
+    name = "FILE ${file.virtualFilePath}",
     declarationStore = declarationStore,
     callContext = CallContext.DEFAULT,
     parent = parent,
     owningDescriptor = null,
     produceGivens = {
-        declarationStore.globalGivens
-            .filterNot { it.callable.isExternalDeclaration() }
+        file.importDirectives
+            .mapNotNull { it.importPath }
+            .flatMap { import ->
+                if (import.isAllUnder) {
+                    collectGivensInPackage(declarationStore, import.fqName)
+                } else {
+                    collectGivensWithFqName(declarationStore, import.fqName)
+                }
+            }
     }
 )
 
@@ -279,7 +286,7 @@ fun ClassResolutionScope(
     declarationStore: DeclarationStore,
     descriptor: ClassDescriptor,
     parent: ResolutionScope,
-): ResolutionScope = ResolutionScope(
+) = ResolutionScope(
     name = "CLASS(${descriptor.fqNameSafe})",
     declarationStore = declarationStore,
     callContext = CallContext.DEFAULT,

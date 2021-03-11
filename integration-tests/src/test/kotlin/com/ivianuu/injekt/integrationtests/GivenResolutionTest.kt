@@ -27,12 +27,13 @@ import com.ivianuu.injekt.test.source
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.kotest.matchers.types.shouldBeTypeOf
+import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
 class GivenResolutionTest {
 
     @Test
-    fun testResolvesExternalGiven() = multiCodegen(
+    fun testResolvesExternalGivenInSamePackage() = multiCodegen(
         listOf(
             source(
                 """
@@ -43,6 +44,7 @@ class GivenResolutionTest {
         listOf(
             source(
                 """
+                    import givens.*
                     fun invoke() = given<Foo>()
                 """,
                 name = "File.kt"
@@ -53,7 +55,49 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testResolvesInternalGiven() = codegen(
+    fun testResolvesExternalGivenInDifferentPackage() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Given val foo = Foo()
+                """,
+                packageFqName = FqName("givens")
+            )
+        ),
+        listOf(
+            source(
+                """
+                    import givens.*
+                    fun invoke() = given<Foo>()
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        it.invokeSingleFile().shouldBeTypeOf<Foo>()
+    }
+
+    @Test
+    fun testResolvesInternalGivenFromDifferentPackage() = codegen(
+        source(
+            """
+                @Given val foo = Foo()
+            """,
+            packageFqName = FqName("givens")
+        ),
+        source(
+            """
+                import givens.*
+                fun invoke() = given<Foo>()
+            """,
+            name = "File.kt"
+        )
+    ) {
+        invokeSingleFile().shouldBeTypeOf<Foo>()
+    }
+
+    @Test
+    fun testResolvesGivenInSamePackageAndSameFile() = codegen(
         """
             @Given val foo = Foo()
             fun invoke() = given<Foo>()

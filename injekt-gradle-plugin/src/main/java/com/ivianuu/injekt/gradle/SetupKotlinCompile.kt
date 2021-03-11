@@ -44,8 +44,6 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
             invoke(androidVariantData) as String
         } ?: compilation.compilationName
 
-    val srcDir = project.buildDir.resolve("generated/source/injekt/$sourceSetName")
-        .also { it.mkdirs() }
     val cacheDir = project.buildDir.resolve("injekt/cache/$sourceSetName")
         .also { it.mkdirs() }
     val dumpDir = project.buildDir.resolve("injekt/dump/$sourceSetName")
@@ -57,21 +55,19 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
             "${name}InjektCleanGeneratedFiles", CleanGeneratedFiles::class.java)
         cleanGeneratedFiles.cacheDir = cacheDir
         cleanGeneratedFiles.dumpDir = dumpDir
-        cleanGeneratedFiles.generatedSrcDir = srcDir
         cleanGeneratedFiles.incrementalFixEnabled = extension.incrementalFixEnabled
         cleanGeneratedFiles.srcDirs = if (androidVariantData != null) {
             androidVariantData.sourceSets
                 .flatMap { it.javaDirectories }
                 .flatMap {
                     it.walkTopDown()
-                        .onEnter { it != srcDir }
                         .toList()
                 }
         } else {
             project.extensions.findByType(SourceSetContainer::class.java)!!
                 .findByName(sourceSetName)
                 ?.allSource
-                ?.filterNot { it.absolutePath.startsWith(srcDir.absolutePath) }
+                ?.toList()
                 ?: emptyList()
         }
         dependsOn(cleanGeneratedFiles)
@@ -79,7 +75,6 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
         log("Setup in ${project.name} $name\n" +
                 "source set $sourceSetName\n" +
                 "cache dir $cacheDir\n" +
-                "gen dir $srcDir\n" +
                 "src dirs ${cleanGeneratedFiles.srcDirs.joinToString("\n")}\n" +
                 "compilation $compilation" +
                 "variant data $androidVariantData\n" +
@@ -87,10 +82,6 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
     }
 
     return listOf(
-        SubpluginOption(
-            key = "srcDir",
-            value = srcDir.absolutePath
-        ),
         SubpluginOption(
             key = "cacheDir",
             value = cacheDir.absolutePath

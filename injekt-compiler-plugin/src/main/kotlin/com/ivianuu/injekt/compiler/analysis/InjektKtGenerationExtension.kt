@@ -18,13 +18,8 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.CacheDir
 import com.ivianuu.injekt.compiler.DeclarationStore
-import com.ivianuu.injekt.compiler.FileManager
-import com.ivianuu.injekt.compiler.SrcDir
-import com.ivianuu.injekt.compiler.index.CliIndexStore
-import com.ivianuu.injekt.compiler.index.IndexGenerator
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -34,41 +29,13 @@ import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
 import org.jetbrains.kotlin.resolve.TopDownAnalysisMode
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 
-class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : AnalysisHandlerExtension {
+class InjektKtGenerationExtension(cacheDir: CacheDir) : AnalysisHandlerExtension {
 
-    private val fileManager = FileManager(srcDir, cacheDir)
     private val givenCallFileManager = GivenCallFileManager(cacheDir)
-
-    private var generatedCode = false
 
     private lateinit var lazyTopDownAnalyzer: LazyTopDownAnalyzer
 
-    override fun doAnalysis(
-        project: Project,
-        module: ModuleDescriptor,
-        projectContext: ProjectContext,
-        files: Collection<KtFile>,
-        bindingTrace: BindingTrace,
-        componentProvider: ComponentProvider,
-    ): AnalysisResult? {
-        files as ArrayList<KtFile>
-        if (generatedCode) return null
-
-        lazyTopDownAnalyzer = componentProvider.get()
-        val tmpFiles = files.toList()
-        files.clear()
-        files += fileManager.preGenerate(tmpFiles)
-
-        val filesToProcess = files.toList()
-        IndexGenerator(fileManager).generate(filesToProcess)
-        fileManager.postGenerate()
-        generatedCode = true
-        return AnalysisResult.RetryWithAdditionalRoots(
-            bindingTrace.bindingContext, module, emptyList(), fileManager.newFiles, addToEnvironment = true
-        )
-    }
-
-    private var completedOnce = false
+    private var completed = false
 
     override fun analysisCompleted(
         project: Project,
@@ -76,34 +43,29 @@ class InjektKtGenerationExtension(srcDir: SrcDir, cacheDir: CacheDir) : Analysis
         bindingTrace: BindingTrace,
         files: Collection<KtFile>,
     ): AnalysisResult? {
-        if (generatedCode && !completedOnce) {
-            completedOnce = true
-        } else if (generatedCode && completedOnce) {
-            try {
-                lazyTopDownAnalyzer.analyzeDeclarations(
-                    TopDownAnalysisMode.TopLevelDeclarations,
-                    files
-                )
-            } catch (e: Throwable) {
-            }
-            try {
-                lazyTopDownAnalyzer.analyzeDeclarations(
-                    TopDownAnalysisMode.LocalDeclarations,
-                    files
-                )
-            } catch (e: Throwable) {
-            }
-            val checker = GivenCallChecker(
-                bindingTrace,
-                DeclarationStore(
-                    CliIndexStore(module),
-                    module
-                ),
-                givenCallFileManager
+        if (completed) return null
+        completed = true
+        try {
+            lazyTopDownAnalyzer.analyzeDeclarations(
+                TopDownAnalysisMode.TopLevelDeclarations,
+                files
             )
-            files.forEach { it.accept(checker) }
-            givenCallFileManager.flush()
+        } catch (e: Throwable) {
         }
+        try {
+            lazyTopDownAnalyzer.analyzeDeclarations(
+                TopDownAnalysisMode.LocalDeclarations,
+                files
+            )
+        } catch (e: Throwable) {
+        }
+        val checker = GivenCallChecker(
+            bindingTrace,
+            DeclarationStore(module),
+            givenCallFileManager
+        )
+        files.forEach { it.accept(checker) }
+        givenCallFileManager.flush()
         return null
     }
 }

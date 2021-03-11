@@ -18,7 +18,6 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.index.CliIndexStore
 import com.ivianuu.injekt.compiler.resolution.AnnotationRef
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
@@ -396,7 +395,7 @@ class TypeRefTest {
 
     class AnalysisContext(val module: ModuleDescriptor) {
 
-        val declarationStore = DeclarationStore(CliIndexStore(module), module)
+        val declarationStore = DeclarationStore(module)
 
         val comparable = typeFor(StandardNames.FqNames.comparable)
         val anyType = typeFor(StandardNames.FqNames.any.toSafe())

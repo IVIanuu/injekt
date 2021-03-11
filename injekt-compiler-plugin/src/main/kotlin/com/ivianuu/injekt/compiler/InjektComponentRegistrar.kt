@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.analysis.GivenCallResolutionInterceptorExtens
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektKtGenerationExtension
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
-import com.ivianuu.injekt.compiler.index.CliIndexStoreFactory
 import com.ivianuu.injekt.compiler.transform.InjektIrDumper
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -56,11 +55,11 @@ class InjektComponentRegistrar : ComponentRegistrar {
 
         AnalysisHandlerExtension.registerExtension(
             project,
-            InjektKtGenerationExtension(srcDir(configuration), cacheDir(configuration))
+            InjektKtGenerationExtension(cacheDir(configuration))
         )
         StorageComponentContainerContributor.registerExtension(
             project,
-            InjektStorageComponentContainerContributor(CliIndexStoreFactory)
+            InjektStorageComponentContainerContributor()
         )
         IrGenerationExtension.registerExtensionWithLoadingOrder(
             project,
@@ -74,7 +73,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
         )
         CandidateInterceptor.registerExtension(
             project,
-            GivenCallResolutionInterceptorExtension(CliIndexStoreFactory)
+            GivenCallResolutionInterceptorExtension()
         )
         @Suppress("DEPRECATION")
         Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)

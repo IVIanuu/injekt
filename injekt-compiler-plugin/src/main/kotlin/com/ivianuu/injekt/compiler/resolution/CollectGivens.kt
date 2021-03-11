@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.calls.DslMarkerUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
@@ -114,11 +115,11 @@ fun CallableDescriptor.toCallableRef(declarationStore: DeclarationStore): Callab
 
 fun MemberScope.collectGivens(
     declarationStore: DeclarationStore,
-    type: TypeRef,
+    type: TypeRef?,
     owningDescriptor: DeclarationDescriptor?,
     substitutionMap: Map<ClassifierRef, TypeRef>
 ): List<CallableRef> {
-    val givenPrimaryConstructorParameters = (type.classifier.descriptor
+    val givenPrimaryConstructorParameters = (type?.classifier?.descriptor
         ?.safeAs<ClassDescriptor>()
         ?.unsubstitutedPrimaryConstructor
         ?.valueParameters
@@ -233,4 +234,28 @@ fun CallableRef.collectGivens(
                 addConstrainedGiven
             )
         }
+}
+
+fun collectGivensWithFqName(
+    declarationStore: DeclarationStore,
+    fqName: FqName
+): List<CallableRef> = declarationStore.givensByFqName.getOrPut(fqName) {
+    val givens = mutableListOf<CallableRef>()
+    declarationStore.classifierDescriptorForFqName(fqName)
+        ?.safeAs<ClassDescriptor>()
+        ?.getGivenConstructors(declarationStore)
+        ?.let { givens += it }
+    collectGivensInPackage(declarationStore, fqName)
+        .filter { it.callable.name == fqName.shortName() }
+        .let { givens += it }
+    givens
+}
+
+fun collectGivensInPackage(
+    declarationStore: DeclarationStore,
+    fqName: FqName
+): List<CallableRef> = declarationStore.givensForPackage.getOrPut(fqName) {
+    declarationStore.memberScopeForFqName(fqName)
+        ?.collectGivens(declarationStore, null, null, emptyMap())
+        ?: emptyList()
 }

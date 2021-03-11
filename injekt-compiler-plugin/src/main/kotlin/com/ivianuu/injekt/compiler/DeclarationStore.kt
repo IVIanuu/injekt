@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.index.IndexStore
 import com.ivianuu.injekt.compiler.resolution.*
 import com.squareup.moshi.Moshi
 import org.jetbrains.kotlin.descriptors.*
@@ -28,47 +27,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.Base64
 
 @Suppress("NewApi")
-class DeclarationStore(
-    private val indexStore: IndexStore,
-    val module: ModuleDescriptor
-) {
-
-    private val allIndices by unsafeLazy { indexStore.indices }
-
-    private val classIndices by unsafeLazy {
-        allIndices
-            .filter { it.type == "class" }
-            .mapNotNull {
-                try {
-                    classDescriptorForFqName(it.fqName)
-                } catch (e: Throwable) {
-                    null
-                }
-            }
-    }
-
-    private val functionIndices by unsafeLazy {
-        allIndices
-            .filter { it.type == "function" }
-            .flatMap { functionDescriptorsForFqName(it.fqName) }
-    }
-
-    private val propertyIndices by unsafeLazy {
-        allIndices
-            .filter { it.type == "property" }
-            .flatMap { propertyDescriptorsForFqName(it.fqName) }
-    }
-
-    val globalGivens by unsafeLazy {
-        classIndices
-            .flatMap { it.getGivenConstructors(this) } +
-                functionIndices
-                    .map { it.toCallableRef(this) }
-                    .filter { it.isGiven } +
-                propertyIndices
-                    .map { it.toCallableRef(this) }
-                    .filter { it.isGiven }
-    }
+class DeclarationStore(val module: ModuleDescriptor) {
 
     val moshi = Moshi.Builder().build()!!
 
@@ -131,12 +90,12 @@ class DeclarationStore(
                     ?.toPersistedClassifierInfo()
         }
 
-    private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor>()
-    fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor {
+    private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor?>()
+    fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor? {
         return classifierDescriptorByFqName.getOrPut(fqName) {
             memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
                 fqName.shortName(), NoLookupLocation.FROM_BACKEND
-            ) ?: error("Could not get for '$fqName'")
+            )
         }
     }
 
@@ -204,6 +163,9 @@ class DeclarationStore(
             classDescriptor.unsubstitutedMemberScope
         }
     }
+
+    val givensForPackage = mutableMapOf<FqName, List<CallableRef>>()
+    val givensByFqName = mutableMapOf<FqName, List<CallableRef>>()
 
     val setType by unsafeLazy {
         module.builtIns.set.defaultType.toTypeRef(this)

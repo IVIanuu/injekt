@@ -280,7 +280,7 @@ fun PersistedConstantValue.toConstantValue(declarationStore: DeclarationStore): 
         declarationStore.module.builtIns.doubleType.toTypeRef(declarationStore)
     )
     is PersistedEnumValue -> {
-        val enumClassifier = declarationStore.classifierDescriptorForFqName(FqName(enumClassifierFqName))
+        val enumClassifier = declarationStore.classifierDescriptorForFqName(FqName(enumClassifierFqName))!!
             .toClassifierRef(declarationStore)
         EnumValue(enumClassifier to enumValue.asNameId(), enumClassifier.defaultType)
     }
@@ -293,7 +293,7 @@ fun PersistedConstantValue.toConstantValue(declarationStore: DeclarationStore): 
         declarationStore.module.builtIns.intType.toTypeRef(declarationStore)
     )
     is PersistedKClassValue -> KClassValue(
-        declarationStore.classifierDescriptorForFqName(FqName(classifierFqName))
+        declarationStore.classifierDescriptorForFqName(FqName(classifierFqName))!!
             .toClassifierRef(declarationStore),
         type.toTypeRef(declarationStore)
     )
@@ -311,25 +311,25 @@ fun PersistedConstantValue.toConstantValue(declarationStore: DeclarationStore): 
     )
     is PersistedUByteValue -> UByteValue(
         value,
-        declarationStore.classifierDescriptorForFqName(FqName("kotlin.UByte"))
+        declarationStore.classifierDescriptorForFqName(FqName("kotlin.UByte"))!!
             .toClassifierRef(declarationStore)
             .defaultType
     )
     is PersistedUIntValue -> UIntValue(
         value,
-        declarationStore.classifierDescriptorForFqName(FqName("kotlin.UInt"))
+        declarationStore.classifierDescriptorForFqName(FqName("kotlin.UInt"))!!
             .toClassifierRef(declarationStore)
             .defaultType
     )
     is PersistedULongValue -> ULongValue(
         value,
-        declarationStore.classifierDescriptorForFqName(FqName("kotlin.ULong"))
+        declarationStore.classifierDescriptorForFqName(FqName("kotlin.ULong"))!!
             .toClassifierRef(declarationStore)
             .defaultType
     )
     is PersistedUShortValue -> UShortValue(
         value,
-        declarationStore.classifierDescriptorForFqName(FqName("kotlin.UShort"))
+        declarationStore.classifierDescriptorForFqName(FqName("kotlin.UShort"))!!
             .toClassifierRef(declarationStore)
             .defaultType
     )

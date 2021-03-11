@@ -36,10 +36,6 @@ abstract class CleanGeneratedFiles : DefaultTask() {
     lateinit var dumpDir: File
 
     @get:InputFiles
-    @get:Optional
-    lateinit var generatedSrcDir: File
-
-    @get:InputFiles
     lateinit var srcDirs: List<File>
 
     @get:Input
@@ -89,8 +85,7 @@ abstract class CleanGeneratedFiles : DefaultTask() {
         val oldCacheEntries = cacheEntries.toMap()
         var hasChanges = false
         inputs.outOfDate { details ->
-            hasChanges = generatedSrcDir.absolutePath !in details.file.absolutePath &&
-                    dumpDir.absolutePath !in details.file.absolutePath
+            hasChanges = dumpDir.absolutePath !in details.file.absolutePath
             cacheEntries.remove(details.file.absolutePath)
                 ?.onEach {
                     log("clean files: Delete $it because ${details.file} has changed")
@@ -101,8 +96,7 @@ abstract class CleanGeneratedFiles : DefaultTask() {
                 }
         }
         inputs.removed { details ->
-            hasChanges = generatedSrcDir.absolutePath !in details.file.absolutePath &&
-                    dumpDir.absolutePath !in details.file.absolutePath
+            hasChanges = dumpDir.absolutePath !in details.file.absolutePath
             cacheEntries.remove(details.file.absolutePath)
                 ?.onEach {
                     log("clean files: Delete $it because ${details.file} was removed")

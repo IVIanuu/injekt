@@ -24,12 +24,12 @@ import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.CandidateResolutionResult
 import com.ivianuu.injekt.compiler.resolution.ClassResolutionScope
-import com.ivianuu.injekt.compiler.resolution.ExternalResolutionScope
+import com.ivianuu.injekt.compiler.resolution.FileResolutionScope
 import com.ivianuu.injekt.compiler.resolution.FunctionResolutionScope
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
-import com.ivianuu.injekt.compiler.resolution.InternalResolutionScope
 import com.ivianuu.injekt.compiler.resolution.LocalDeclarationResolutionScope
+import com.ivianuu.injekt.compiler.resolution.PackageResolutionScope
 import com.ivianuu.injekt.compiler.resolution.ResolutionScope
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.isGiven
@@ -38,6 +38,7 @@ import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
@@ -120,16 +121,25 @@ class GivenCallChecker(
         }
     }
 
-    private var scope = InternalResolutionScope(
-        ExternalResolutionScope(declarationStore),
-        declarationStore
-    )
+    private var scope: ResolutionScope? = null
+
+    private val packageScopes = mutableMapOf<FqName, ResolutionScope>()
 
     private var currentFileHasGivenCalls = false
 
     override fun visitKtFile(file: KtFile) {
         currentFileHasGivenCalls = false
-        super.visitKtFile(file)
+        inScope({
+            FileResolutionScope(
+                packageScopes.getOrPut(file.packageFqName) {
+                    PackageResolutionScope(declarationStore, file.packageFqName)
+                },
+                declarationStore,
+                file
+            )
+        }) {
+            super.visitKtFile(file)
+        }
         givenCallFileManager?.setFileHasGivenCalls(
             file.virtualFilePath, currentFileHasGivenCalls)
     }
@@ -149,7 +159,7 @@ class GivenCallChecker(
             ClassResolutionScope(
                 declarationStore,
                 declaration.descriptor(bindingTrace.bindingContext) ?: return,
-                scope
+                scope!!
             )
         }) {
             super.visitObjectDeclaration(declaration)
@@ -163,7 +173,7 @@ class GivenCallChecker(
                 ClassResolutionScope(
                     declarationStore,
                     it.descriptor(bindingTrace.bindingContext) ?: return,
-                    scope
+                    scope!!
                 )
             }
             ?: scope
@@ -171,14 +181,14 @@ class GivenCallChecker(
             ClassResolutionScope(
                 declarationStore,
                 descriptor,
-                parentScope
+                parentScope!!
             )
         }) {
             super.visitClass(klass)
         }
         if (klass.isLocal) scope = LocalDeclarationResolutionScope(
             declarationStore,
-            scope,
+            scope!!,
             descriptor
         )
     }
@@ -198,7 +208,7 @@ class GivenCallChecker(
                 function.descriptor<FunctionDescriptor>(bindingTrace.bindingContext) ?: return
             scope = LocalDeclarationResolutionScope(
                 declarationStore,
-                scope,
+                scope!!,
                 descriptor
             )
         }
@@ -220,7 +230,7 @@ class GivenCallChecker(
         inScope({
             FunctionResolutionScope(
                 declarationStore,
-                scope,
+                scope!!,
                 function.descriptor(bindingTrace.bindingContext) ?: return,
                 lambdaType
             )
@@ -231,7 +241,7 @@ class GivenCallChecker(
         // capture the current scope here because
         // the scope might change because of local declarations
         val current = scope
-        inScope({ current }) { super.visitBlockExpression(expression) }
+        inScope({ current!! }) { super.visitBlockExpression(expression) }
     }
 
     override fun visitProperty(property: KtProperty) {
@@ -245,7 +255,7 @@ class GivenCallChecker(
             } ?: return
             scope = LocalDeclarationResolutionScope(
                 declarationStore,
-                scope,
+                scope!!,
                 descriptor
             )
         }
@@ -253,7 +263,7 @@ class GivenCallChecker(
 
     override fun visitCallExpression(expression: KtCallExpression) {
         super.visitCallExpression(expression)
-        scope.check(expression.getResolvedCall(bindingTrace.bindingContext) ?: return,
+        scope!!.check(expression.getResolvedCall(bindingTrace.bindingContext) ?: return,
             expression)
     }
 

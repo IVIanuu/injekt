@@ -31,7 +31,6 @@ import com.intellij.util.messages.Topic
 import com.ivianuu.injekt.compiler.analysis.GivenCallResolutionInterceptorExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
-import com.ivianuu.injekt.ide.index.IdeIndexStoreFactory
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.extensions.internal.CandidateInterceptor
 import org.jetbrains.kotlin.idea.KotlinFileType
@@ -47,11 +46,11 @@ class AppInitializer : ApplicationInitializedListener {
         app?.projectOpened { project ->
             StorageComponentContainerContributor.registerExtension(
                 project,
-                InjektStorageComponentContainerContributor(IdeIndexStoreFactory)
+                InjektStorageComponentContainerContributor()
             )
             CandidateInterceptor.registerExtension(
                 project,
-                GivenCallResolutionInterceptorExtension(IdeIndexStoreFactory)
+                GivenCallResolutionInterceptorExtension()
             )
 
             @Suppress("DEPRECATION")
