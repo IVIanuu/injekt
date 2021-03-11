@@ -91,7 +91,7 @@ sealed class TypeRef {
     abstract val classifier: ClassifierRef
     abstract val isMarkedNullable: Boolean
     abstract val arguments: List<TypeRef>
-    abstract val isComposable: Boolean
+    abstract val isMarkedComposable: Boolean
     abstract val isGiven: Boolean
     abstract val isStarProjection: Boolean
     abstract val qualifiers: List<AnnotationRef>
@@ -110,7 +110,7 @@ sealed class TypeRef {
         // todo result = 31 * result + isMarkedNullable.hashCode()
         result = 31 * result + arguments.hashCode()
         // todo result result = 31 * result + variance.hashCode()
-        result = 31 * result + isComposable.hashCode()
+        result = 31 * result + isMarkedComposable.hashCode()
         result = 31 * result + isStarProjection.hashCode()
         result = 31 * result + qualifiers.hashCode()
         result = 31 * result + constrainedGivenChain.hashCode()
@@ -160,8 +160,14 @@ sealed class TypeRef {
         classifiers
     }
 
+    val isNullableType: Boolean by unsafeLazy {
+        isMarkedNullable ||
+                superTypes.any { it.isNullableType }
+    }
+
     val isComposableType: Boolean by unsafeLazy {
-        thisAndAllSuperTypes.any { it.isComposable }
+        isMarkedComposable ||
+                superTypes.any { it.isComposableType }
     }
 
     val superTypes: List<TypeRef> by unsafeLazy {
@@ -187,7 +193,7 @@ class KotlinTypeRef(
     override val classifier: ClassifierRef by unsafeLazy {
         finalType.constructor.declarationDescriptor!!.toClassifierRef(declarationStore)
     }
-    override val isComposable: Boolean by unsafeLazy {
+    override val isMarkedComposable: Boolean by unsafeLazy {
         kotlinType.hasAnnotation(InjektFqNames.Composable) &&
                 kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
     }
@@ -218,7 +224,7 @@ class SimpleTypeRef(
     override val classifier: ClassifierRef,
     override val isMarkedNullable: Boolean = false,
     override val arguments: List<TypeRef> = emptyList(),
-    override val isComposable: Boolean = false,
+    override val isMarkedComposable: Boolean = false,
     override val isGiven: Boolean = false,
     override val isStarProjection: Boolean = false,
     override val qualifiers: List<AnnotationRef> = emptyList(),
@@ -243,7 +249,7 @@ fun TypeRef.copy(
     classifier: ClassifierRef = this.classifier,
     isMarkedNullable: Boolean = this.isMarkedNullable,
     arguments: List<TypeRef> = this.arguments,
-    isComposable: Boolean = this.isComposable,
+    isComposable: Boolean = this.isMarkedComposable,
     isGiven: Boolean = this.isGiven,
     isStarProjection: Boolean = this.isStarProjection,
     qualifiers: List<AnnotationRef> = this.qualifiers,
@@ -323,7 +329,7 @@ fun TypeRef.render(depth: Int = 0): String {
                     it.arguments.toList().joinToString { "${it.first}=${it.second}" }
                 })"
             } + listOfNotNull(
-                if (isComposable) "@${InjektFqNames.Composable}" else null,
+                if (isMarkedComposable) "@${InjektFqNames.Composable}" else null,
             )
 
             if (annotations.isNotEmpty()) {
@@ -359,7 +365,7 @@ fun TypeRef.uniqueTypeName(depth: Int = 0): String {
             append(it.arguments.hashCode())
             append("_")
         }
-        if (isComposable) append("composable_")
+        if (isMarkedComposable) append("composable_")
         if (isStarProjection) append("star")
         else append(classifier.fqName.pathSegments().joinToString("_") { it.asString() })
         if (constrainedGivenChain.isNotEmpty()) {
@@ -507,11 +513,11 @@ fun TypeRef.isSubTypeOf(
     superType: TypeRef
 ): Boolean = declarationStore.isSubTypeCache.getOrPut(MultiKey2(this, superType)) {
     if (isStarProjection) return@getOrPut true
+    if (isNullableType && !superType.isNullableType) return@getOrPut false
+    if (constrainedGivenChain != superType.constrainedGivenChain) return@getOrPut false
+    if (setKey != superType.setKey) return@getOrPut false
     if (classifier.fqName == superType.classifier.fqName) {
-        if (isMarkedNullable && !superType.isMarkedNullable) return@getOrPut false
         if (!qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return@getOrPut false
-        if (constrainedGivenChain != superType.constrainedGivenChain) return@getOrPut false
-        if (setKey != superType.setKey) return@getOrPut false
         if (isComposableType != superType.isComposableType) return@getOrPut false
         arguments.forEachWith(superType.arguments) { a, b ->
             if (!a.isAssignableTo(declarationStore, b))
@@ -520,22 +526,15 @@ fun TypeRef.isSubTypeOf(
         return@getOrPut true
     }
     if (superType.classifier.fqName == InjektFqNames.Any) {
-        if (isMarkedNullable && !superType.isMarkedNullable) return@getOrPut false
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
         ) return@getOrPut false
-        if (constrainedGivenChain != superType.constrainedGivenChain) return@getOrPut false
-        if (setKey != superType.setKey) return@getOrPut false
         return@getOrPut true
     }
     val subTypeView = subtypeView(declarationStore, superType.classifier)
     if (subTypeView != null) {
-        if (subTypeView == superType && (!subTypeView.isMarkedNullable || superType.isMarkedNullable))
-            return@getOrPut true
-        if (subTypeView.isMarkedNullable && !superType.isMarkedNullable) return@getOrPut false
+        if (subTypeView == superType) return@getOrPut true
         if (!subTypeView.qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return@getOrPut false
-        if (subTypeView.constrainedGivenChain != superType.constrainedGivenChain) return@getOrPut false
-        if (subTypeView.setKey != superType.setKey) return@getOrPut false
         if (isComposableType != superType.isComposableType) return@getOrPut false
         subTypeView.arguments.forEachWith(superType.arguments) { a, b ->
             if (!a.isSubTypeOf(declarationStore, b)) return@getOrPut false
@@ -549,8 +548,6 @@ fun TypeRef.isSubTypeOf(
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
         ) return@getOrPut false
-        if (constrainedGivenChain != superType.constrainedGivenChain) return@getOrPut false
-        if (setKey != superType.setKey) return@getOrPut false
         if (isComposableType != superType.isComposableType) return@getOrPut false
         return@getOrPut superType.superTypes.all { upperBound ->
             // todo should do this comparison without qualifiers?

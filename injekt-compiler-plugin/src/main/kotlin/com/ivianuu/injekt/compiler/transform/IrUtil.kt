@@ -113,7 +113,7 @@ fun TypeRef.toKotlinType(declarationStore: DeclarationStore): SimpleType {
                     it.toKotlinType(declarationStore)
                 )
             })
-            .makeComposableAsSpecified(isComposable)
+            .makeComposableAsSpecified(isMarkedComposable)
             .makeNullableAsSpecified(isMarkedNullable)
     }
 }

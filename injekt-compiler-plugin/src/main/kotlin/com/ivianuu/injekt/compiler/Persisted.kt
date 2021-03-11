@@ -129,7 +129,7 @@ data class PersistedTypeRef(
     val arguments: List<PersistedTypeRef>,
     val isStarProjection: Boolean,
     val isMarkedNullable: Boolean,
-    val isComposable: Boolean,
+    val isMarkedComposable: Boolean,
     val isGiven: Boolean
 )
 
@@ -139,7 +139,7 @@ fun TypeRef.toPersistedTypeRef(declarationStore: DeclarationStore): PersistedTyp
     arguments = arguments.map { it.toPersistedTypeRef(declarationStore) },
     isStarProjection = isStarProjection,
     isMarkedNullable = isMarkedNullable,
-    isComposable = isComposable,
+    isMarkedComposable = isMarkedComposable,
     isGiven = isGiven
 )
 
@@ -152,7 +152,7 @@ fun PersistedTypeRef.toTypeRef(declarationStore: DeclarationStore): TypeRef {
             qualifiers = qualifiers.map { it.toAnnotationRef(declarationStore) },
             arguments = arguments.map { it.toTypeRef(declarationStore) },
             isMarkedNullable = isMarkedNullable,
-            isComposable = isComposable,
+            isComposable = isMarkedComposable,
             isGiven = isGiven
         )
 }
