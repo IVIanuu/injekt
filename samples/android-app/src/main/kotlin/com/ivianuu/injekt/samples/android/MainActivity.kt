@@ -19,6 +19,8 @@ package com.ivianuu.injekt.samples.android
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.darkColors
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityRetainedComponent
@@ -50,7 +52,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        setContent { component.homeUi() }
+        setContent {
+            MaterialTheme(colors = darkColors()) {
+                component.homeUi()
+            }
+        }
     }
 }
 

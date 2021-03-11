@@ -29,7 +29,6 @@ class InjektCommandLineProcessor : CommandLineProcessor {
     override val pluginId = "com.ivianuu.injekt"
 
     override val pluginOptions = listOf(
-        SrcDirOption,
         CacheDirOption,
         DumpDirOption
     )
@@ -40,18 +39,12 @@ class InjektCommandLineProcessor : CommandLineProcessor {
         configuration: CompilerConfiguration,
     ) {
         when (option.optionName) {
-            SrcDirOption.optionName -> configuration.put(SrcDirKey, value)
             CacheDirOption.optionName -> configuration.put(CacheDirKey, value)
             DumpDirOption.optionName -> configuration.put(DumpDirKey, value)
         }
     }
 }
 
-val SrcDirOption = CliOption(
-    optionName = "srcDir",
-    valueDescription = "srcDir",
-    description = "srcDir"
-)
 val CacheDirOption = CliOption(
     optionName = "cacheDir",
     valueDescription = "cacheDir",
@@ -62,13 +55,6 @@ val DumpDirOption = CliOption(
     valueDescription = "dumpDir",
     description = "dumpDir"
 )
-
-val SrcDirKey = CompilerConfigurationKey<String>("srcDir")
-typealias SrcDir = File
-
-fun srcDir(configuration: CompilerConfiguration): SrcDir =
-    File(configuration.getNotNull(SrcDirKey))
-        .also { it.mkdirs() }
 
 val CacheDirKey = CompilerConfigurationKey<String>("cacheDir")
 typealias CacheDir = File

@@ -20,7 +20,6 @@ import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldBeOk
 import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.irShouldContain
 import com.ivianuu.injekt.test.irShouldNotContain
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source

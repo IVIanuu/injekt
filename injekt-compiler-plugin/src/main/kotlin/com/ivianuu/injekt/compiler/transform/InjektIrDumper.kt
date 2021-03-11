@@ -18,7 +18,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.CacheDir
 import com.ivianuu.injekt.compiler.DumpDir
-import com.ivianuu.injekt.compiler.FileManager
+import com.ivianuu.injekt.compiler.DumpFileManager
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -32,7 +32,7 @@ class InjektIrDumper(
     private val dumpDir: DumpDir,
 ) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val fileManager = FileManager(dumpDir, cacheDir)
+        val fileManager = DumpFileManager(dumpDir, cacheDir)
         moduleFragment.files.forEach {
             val file = File(it.fileEntry.name)
             val content = try {

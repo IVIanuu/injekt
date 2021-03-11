@@ -22,62 +22,50 @@ import com.intellij.psi.PsiFile
 import com.intellij.testFramework.registerServiceInstance
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.analysis.GivenCallChecker
-import com.ivianuu.injekt.compiler.index.IndexStoreFactory
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.analyzer.ModuleInfo
 import org.jetbrains.kotlin.caches.resolve.KotlinCacheService
 import org.jetbrains.kotlin.idea.resolve.ResolutionFacade
 import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
 
-fun Application.registerGivenCallCheckerRunner(
-    project: Project,
-    indexStoreFactory: IndexStoreFactory
-) {
+fun Application.registerGivenCallCheckerRunner(project: Project) {
     val existing = project.getService(KotlinCacheService::class.java)
     project.registerServiceInstance(
         KotlinCacheService::class.java,
-        existing.intercepted(indexStoreFactory)
+        existing.intercepted()
     )
 }
 
-private fun KotlinCacheService.intercepted(
-    indexStoreFactory: IndexStoreFactory
-) = object : KotlinCacheService by this {
+private fun KotlinCacheService.intercepted() = object : KotlinCacheService by this {
     override fun getResolutionFacade(elements: List<KtElement>) =
         this@intercepted.getResolutionFacade(elements)
-            .intercepted(indexStoreFactory)
+            .intercepted()
 
     override fun getResolutionFacade(
         elements: List<KtElement>,
         platform: TargetPlatform,
     ) = this@intercepted.getResolutionFacade(elements, platform)
-        .intercepted(indexStoreFactory)
+        .intercepted()
 
     override fun getResolutionFacadeByFile(
         file: PsiFile,
         platform: TargetPlatform,
     ) = this@intercepted.getResolutionFacadeByFile(file, platform)
-        ?.intercepted(indexStoreFactory)
+        ?.intercepted()
 
     override fun getResolutionFacadeByModuleInfo(
         moduleInfo: ModuleInfo,
         platform: TargetPlatform,
     ) = this@intercepted.getResolutionFacadeByModuleInfo(moduleInfo, platform)
-        ?.intercepted(indexStoreFactory)
+        ?.intercepted()
 }
 
-private fun ResolutionFacade.intercepted(
-    indexStoreFactory: IndexStoreFactory
-) = object : ResolutionFacade by this {
-
-    private val declarationStore = DeclarationStore(
-        indexStoreFactory(moduleDescriptor),
-        moduleDescriptor
-    )
+private fun ResolutionFacade.intercepted() = object : ResolutionFacade by this {
 
     override fun analyze(
         elements: Collection<KtElement>,
@@ -105,14 +93,19 @@ private fun ResolutionFacade.intercepted(
         bindingContext: BindingContext,
         elements: Collection<KtElement>,
     ): BindingContext {
+        val files = elements
+            .filterIsInstance<KtFile>()
+            .distinct()
+        if (files.isEmpty()) return bindingContext
         val bindingTrace = DelegatingBindingTrace(
             bindingContext,
             "Given call checker trace"
         )
 
-        val checker = GivenCallChecker(bindingTrace, declarationStore, null)
+        val checker = GivenCallChecker(bindingTrace,
+            DeclarationStore(moduleDescriptor), null)
 
-        elements
+        files
             .forEach { element ->
                 println("run checker on $element")
                 try {
@@ -122,6 +115,7 @@ private fun ResolutionFacade.intercepted(
                 }
             }
 
+        latestBindingContext = bindingTrace.bindingContext
         return bindingTrace.bindingContext
     }
 }

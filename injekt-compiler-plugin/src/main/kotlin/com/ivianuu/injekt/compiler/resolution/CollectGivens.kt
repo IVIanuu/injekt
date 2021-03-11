@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.calls.DslMarkerUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
@@ -114,32 +115,32 @@ fun CallableDescriptor.toCallableRef(declarationStore: DeclarationStore): Callab
 
 fun MemberScope.collectGivens(
     declarationStore: DeclarationStore,
-    type: TypeRef,
+    type: TypeRef?,
     owningDescriptor: DeclarationDescriptor?,
     substitutionMap: Map<ClassifierRef, TypeRef>
 ): List<CallableRef> {
-    val givenPrimaryConstructorParameters = (type.classifier.descriptor
+    val givenPrimaryConstructorParameters = (type?.classifier?.descriptor
         ?.safeAs<ClassDescriptor>()
         ?.unsubstitutedPrimaryConstructor
         ?.valueParameters
         ?.filter { it.isGiven(declarationStore) }
         ?.map { it.name } ?: emptyList())
     return getContributedDescriptors()
-        .flatMap { callable ->
-            when (callable) {
-                is ClassDescriptor -> callable.getGivenConstructors(declarationStore)
+        .flatMap { declaration ->
+            when (declaration) {
+                is ClassDescriptor -> declaration.getGivenConstructors(declarationStore)
                     .map { it.substitute(substitutionMap) }
-                is PropertyDescriptor -> if (callable.isGiven(declarationStore) ||
-                        callable.name in givenPrimaryConstructorParameters) {
+                is PropertyDescriptor -> if (declaration.isGiven(declarationStore) ||
+                        declaration.name in givenPrimaryConstructorParameters) {
                     listOf(
-                        callable.toCallableRef(declarationStore)
+                        declaration.toCallableRef(declarationStore)
                             .copy(isGiven = true)
                             .substitute(substitutionMap)
                     )
                 } else emptyList()
-                is FunctionDescriptor -> if (callable.isGiven(declarationStore)) {
+                is FunctionDescriptor -> if (declaration.isGiven(declarationStore)) {
                     listOf(
-                        callable.toCallableRef(declarationStore)
+                        declaration.toCallableRef(declarationStore)
                             .copy(isGiven = true)
                             .substitute(substitutionMap)
                     )
@@ -152,6 +153,8 @@ fun MemberScope.collectGivens(
                     it.callable.visibility == DescriptorVisibilities.LOCAL ||
                     (it.callable.visibility == DescriptorVisibilities.INTERNAL &&
                             !it.callable.original.isExternalDeclaration()) ||
+                    (it.callable is ClassConstructorDescriptor &&
+                            it.type.classifier.isObject) ||
                     it.callable.parents.any {
                         it == owningDescriptor
                     }
@@ -233,4 +236,28 @@ fun CallableRef.collectGivens(
                 addConstrainedGiven
             )
         }
+}
+
+fun collectGivensWithFqName(
+    declarationStore: DeclarationStore,
+    fqName: FqName
+): List<CallableRef> = declarationStore.givensByFqName.getOrPut(fqName) {
+    val givens = mutableListOf<CallableRef>()
+    declarationStore.classifierDescriptorForFqName(fqName)
+        ?.safeAs<ClassDescriptor>()
+        ?.getGivenConstructors(declarationStore)
+        ?.let { givens += it }
+    collectGivensInPackage(declarationStore, fqName.parent())
+        .filter { it.callable.name == fqName.shortName() }
+        .let { givens += it }
+    givens
+}
+
+fun collectGivensInPackage(
+    declarationStore: DeclarationStore,
+    fqName: FqName
+): List<CallableRef> = declarationStore.givensForPackage.getOrPut(fqName) {
+    declarationStore.memberScopeForFqName(fqName)
+        ?.collectGivens(declarationStore, null, null, emptyMap())
+        ?: emptyList()
 }

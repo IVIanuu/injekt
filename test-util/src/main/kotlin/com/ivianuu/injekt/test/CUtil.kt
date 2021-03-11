@@ -122,11 +122,6 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
     kotlincArguments += "-XXLanguage:+NewInference"
     pluginOptions += PluginOption(
         "com.ivianuu.injekt",
-        "srcDir",
-        workingDir.resolve("injekt/generated/src/main").absolutePath
-    )
-    pluginOptions += PluginOption(
-        "com.ivianuu.injekt",
         "cacheDir",
         workingDir.resolve("injekt/cache").absolutePath
     )

@@ -18,13 +18,11 @@ package com.ivianuu.injekt.samples.android
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.common.ForTypeKey
-import com.ivianuu.injekt.common.Scope
 import com.ivianuu.injekt.common.ScopeDisposable
 import com.ivianuu.injekt.common.invoke
 import com.ivianuu.injekt.component.Component
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.DisposableHandle
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlin.coroutines.CoroutineContext

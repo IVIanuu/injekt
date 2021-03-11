@@ -17,12 +17,11 @@
 package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
-class FileManager(
-    private val srcDir: SrcDir,
-    private val cacheDir: CacheDir,
+class DumpFileManager(
+    private val dumpDir: DumpDir,
+    private val cacheDir: CacheDir
 ) {
     private val originatingFilePaths = mutableMapOf<File, String>()
 
@@ -40,50 +39,13 @@ class FileManager(
         }
         .toMutableSet()
 
-    fun preGenerate(files: List<KtFile>): List<KtFile> {
-        val finalFiles = mutableListOf<KtFile>()
-
-        files.forEach { file ->
-            val originatingFilePath = cacheEntries
-                .singleOrNull { it.second == file.virtualFilePath }
-                ?.first
-                ?: file.text
-                    .lines()
-                    .firstOrNull()
-                    ?.split("// injekt" + "_")
-                    ?.getOrNull(1)
-                    ?.takeIf { it.isNotEmpty() }
-            if (originatingFilePath == null) {
-                finalFiles += file
-                return@forEach
-            }
-
-            val compilingOriginatingFile = files.singleOrNull {
-                it.virtualFilePath == originatingFilePath
-            }
-
-            if (compilingOriginatingFile != null ||
-                    !File(originatingFilePath).exists()) {
-                File(file.virtualFilePath).delete()
-                cacheEntries.removeAll {
-                    it.second == file.virtualFilePath
-                }
-                return@forEach
-            }
-
-            finalFiles += file
-        }
-
-        return finalFiles.distinctBy { it.virtualFilePath }
-    }
-
     fun generateFile(
         packageFqName: FqName,
         fileName: String,
         originatingFile: String?,
         code: String,
     ) {
-        val newFile = srcDir
+        val newFile = dumpDir
             .resolve(packageFqName.asString().replace(".", "/"))
             .also { it.mkdirs() }
             .resolve(fileName)

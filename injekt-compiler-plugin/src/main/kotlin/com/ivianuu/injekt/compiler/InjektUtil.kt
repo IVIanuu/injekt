@@ -132,10 +132,6 @@ fun DeclarationDescriptor.isExternalDeclaration(): Boolean = this is Deserialize
         (this is GivenFunctionDescriptor && invokeDescriptor.isExternalDeclaration()) ||
         this is DeserializedTypeParameterDescriptor
 
-val isIde: Boolean = Project::class.java.name == "com.intellij.openapi.project.Project"
-val isCli: Boolean =
-    !isIde && Project::class.java.name == "org.jetbrains.kotlin.com.intellij.openapi.project.Project"
-
 fun String.asNameId() = Name.identifier(this)
 
 fun <T> unsafeLazy(init: () -> T) = lazy(LazyThreadSafetyMode.NONE, init)

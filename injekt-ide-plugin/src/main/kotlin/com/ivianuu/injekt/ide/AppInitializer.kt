@@ -23,20 +23,12 @@ import com.intellij.openapi.extensions.Extensions
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.project.ProjectManagerListener
-import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiManager
-import com.intellij.psi.search.FileTypeIndex
 import com.intellij.util.messages.Topic
 import com.ivianuu.injekt.compiler.analysis.GivenCallResolutionInterceptorExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
-import com.ivianuu.injekt.ide.index.IdeIndexStoreFactory
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.extensions.internal.CandidateInterceptor
-import org.jetbrains.kotlin.idea.KotlinFileType
-import org.jetbrains.kotlin.idea.search.projectScope
-import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 
 @Suppress("UnstableApiUsage")
@@ -47,19 +39,18 @@ class AppInitializer : ApplicationInitializedListener {
         app?.projectOpened { project ->
             StorageComponentContainerContributor.registerExtension(
                 project,
-                InjektStorageComponentContainerContributor(IdeIndexStoreFactory)
+                InjektStorageComponentContainerContributor()
             )
             CandidateInterceptor.registerExtension(
                 project,
-                GivenCallResolutionInterceptorExtension(IdeIndexStoreFactory)
+                GivenCallResolutionInterceptorExtension()
             )
 
             @Suppress("DEPRECATION")
             Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
                 .registerExtension(InjektDiagnosticSuppressor())
 
-            //app.registerIndexStoreRunner(project)
-            //app.registerGivenCallCheckerRunner(project, IdeIndexStoreFactory)
+            app.registerGivenCallCheckerRunner(project)
         }
     }
 }
@@ -72,20 +63,3 @@ fun Application.projectOpened(opened: (Project) -> Unit): Unit =
         override fun projectOpened(project: Project): Unit =
             opened(project)
     })
-
-@Suppress("UNCHECKED_CAST")
-fun <F : PsiFile> List<VirtualFile>.files(project: Project): List<F> =
-    mapNotNull { PsiManager.getInstance(project).findFile(it) as? F }
-
-fun Project.ktFiles(): List<VirtualFile> =
-    FileTypeIndex.getFiles(KotlinFileType.INSTANCE, projectScope()).filterNotNull()
-
-fun VirtualFile.relevantFile(): Boolean =
-    isValid &&
-            this.fileType is KotlinFileType &&
-            (isInLocalFileSystem || ApplicationManager.getApplication().isUnitTestMode)
-
-fun Project.relevantFiles(): List<KtFile> =
-    ktFiles()
-        .filter { it.relevantFile() && it.isInLocalFileSystem }
-        .files(this)

@@ -121,17 +121,6 @@ sealed class TypeRef {
 
     override fun hashCode(): Int = _hashCode
 
-    val thisAndAllSuperTypes: Set<TypeRef> by unsafeLazy {
-        val types = mutableSetOf<TypeRef>()
-        fun visit(type: TypeRef) {
-            if (type in types) return
-            types += type
-            type.superTypes.forEach { visit(it) }
-        }
-        visit(this)
-        types
-    }
-
     val typeSize: Int by unsafeLazy {
         var typeSize = 0
         val seen = mutableSetOf<TypeRef>()
