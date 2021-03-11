@@ -1,4 +1,3 @@
-// injekt-incremental-fix 1615413834674 injekt-end
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -25,6 +24,10 @@ import com.ivianuu.injekt.component.AppComponent
 import com.ivianuu.injekt.component.ComponentInitializer
 import com.ivianuu.injekt.component.ComponentInitializerBinding
 import com.ivianuu.injekt.component.initializeApp
+import com.ivianuu.injekt.component.*
+import com.ivianuu.injekt.android.*
+import com.ivianuu.injekt.android.work.*
+import com.ivianuu.injekt.common.*
 
 class App : Application() {
     override fun onCreate() {

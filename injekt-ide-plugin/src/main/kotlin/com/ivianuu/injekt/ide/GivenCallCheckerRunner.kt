@@ -102,6 +102,8 @@ private fun ResolutionFacade.intercepted() = object : ResolutionFacade by this {
         val checker = GivenCallChecker(bindingTrace, declarationStore, null)
 
         elements
+            .map { it.containingKtFile }
+            .distinct()
             .forEach { element ->
                 println("run checker on $element")
                 try {
@@ -111,6 +113,7 @@ private fun ResolutionFacade.intercepted() = object : ResolutionFacade by this {
                 }
             }
 
+        latestBindingContext = bindingTrace.bindingContext
         return bindingTrace.bindingContext
     }
 }

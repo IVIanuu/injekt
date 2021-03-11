@@ -35,6 +35,7 @@ import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.resolveGiven
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
@@ -100,6 +101,8 @@ class GivenCallChecker(
                             candidate.callable.callable,
                             Unit
                         )
+                        usedGivensByFile.getOrPut(reportOn.containingKtFile) { mutableListOf() } +=
+                            candidate.callable.callable
                     }
                     dependencyResults.forEach { it.value.visit() }
                 }
@@ -125,6 +128,8 @@ class GivenCallChecker(
 
     private val packageScopes = mutableMapOf<FqName, ResolutionScope>()
 
+    private val usedGivensByFile = mutableMapOf<KtFile, MutableList<CallableDescriptor>>()
+
     private var currentFileHasGivenCalls = false
 
     override fun visitKtFile(file: KtFile) {
@@ -142,6 +147,13 @@ class GivenCallChecker(
         }
         givenCallFileManager?.setFileHasGivenCalls(
             file.virtualFilePath, currentFileHasGivenCalls)
+        usedGivensByFile[file]?.let {
+            bindingTrace.record(
+                InjektWritableSlices.USED_GIVENS_FOR_FILE,
+                file,
+                it
+            )
+        }
     }
 
     private inline fun inScope(scope: () -> ResolutionScope, block: () -> Unit) {

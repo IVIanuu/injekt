@@ -26,18 +26,13 @@
     The Injekt idea plugin
     ]]></description>
 
-    <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
-         on how to target different products -->
-    <!-- uncomment to enable plugin in all products
-    <depends>com.intellij.modules.lang</depends>
-    -->
-
     <depends>com.intellij.gradle</depends>
     <depends>com.intellij.java</depends>
     <depends>org.jetbrains.kotlin</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <applicationInitializedListener implementation="com.ivianuu.injekt.ide.AppInitializer" />
+        <lang.inspectionSuppressor language="kotlin" implementationClass="com.ivianuu.injekt.ide.InjektInspectionSuppressor"/>
     </extensions>
 
 </idea-plugin>

@@ -70,9 +70,6 @@ class ResolutionScope(
         var hasGivens = false
 
         produceGivens()
-            .also {
-                println()
-            }
             .forEach { given ->
                 given.collectGivens(
                     declarationStore = declarationStore,
