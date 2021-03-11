@@ -213,6 +213,9 @@ inline fun <A, B> List<A>.forEachWith(
     other: List<B>,
     action: (A, B) -> Unit
 ) {
+    check(size == other.size) {
+        "Size not equal this: $this other: $other"
+    }
     for (i in indices) action(this[i], other[i])
 }
 
