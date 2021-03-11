@@ -124,9 +124,6 @@ class DeclarationStore(val module: ModuleDescriptor) {
         }
     }
 
-    private fun classDescriptorForFqName(fqName: FqName): ClassDescriptor =
-        classifierDescriptorForFqName(fqName) as ClassDescriptor
-
     private val functionDescriptorsByFqName = mutableMapOf<FqName, List<FunctionDescriptor>>()
     fun functionDescriptorsForFqName(fqName: FqName): List<FunctionDescriptor> {
         return functionDescriptorsByFqName.getOrPut(fqName) {

@@ -67,8 +67,6 @@ private fun KotlinCacheService.intercepted() = object : KotlinCacheService by th
 
 private fun ResolutionFacade.intercepted() = object : ResolutionFacade by this {
 
-    private val declarationStore = DeclarationStore(moduleDescriptor)
-
     override fun analyze(
         elements: Collection<KtElement>,
         bodyResolveMode: BodyResolveMode,
@@ -104,8 +102,8 @@ private fun ResolutionFacade.intercepted() = object : ResolutionFacade by this {
             "Given call checker trace"
         )
 
-        val checker = GivenCallChecker(bindingTrace, declarationStore, null)
-
+        val checker = GivenCallChecker(bindingTrace,
+            DeclarationStore(moduleDescriptor), null)
 
         files
             .forEach { element ->

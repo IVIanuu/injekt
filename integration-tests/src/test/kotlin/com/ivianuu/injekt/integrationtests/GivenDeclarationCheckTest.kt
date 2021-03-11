@@ -16,10 +16,10 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.shouldContainMessage
 import com.ivianuu.injekt.test.shouldNotContainMessage
-import com.ivianuu.injekt.test.codegen
 import org.junit.Test
 
 class GivenDeclarationCheckTest {

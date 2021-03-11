@@ -87,9 +87,7 @@ class GivenCallChecker(
 
         if (requests.isEmpty()) return
 
-        val graph = resolveGiven(requests)
-
-        when (graph) {
+        when (val graph = resolveGiven(requests)) {
             is GivenGraph.Success -> {
                 currentFileHasGivenCalls = true
                 val visited = mutableSetOf<CandidateResolutionResult.Success>()

@@ -16,11 +16,11 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.shouldContainMessage
-import com.ivianuu.injekt.test.shouldNotContainMessage
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.shouldContainMessage
+import com.ivianuu.injekt.test.shouldNotContainMessage
 import com.ivianuu.injekt.test.source
 import io.kotest.matchers.shouldBe
 import org.junit.Test

@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
 class DumpFileManager(
