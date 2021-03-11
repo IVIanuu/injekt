@@ -247,7 +247,7 @@ fun collectGivensWithFqName(
         ?.safeAs<ClassDescriptor>()
         ?.getGivenConstructors(declarationStore)
         ?.let { givens += it }
-    collectGivensInPackage(declarationStore, fqName)
+    collectGivensInPackage(declarationStore, fqName.parent())
         .filter { it.callable.name == fqName.shortName() }
         .let { givens += it }
     givens

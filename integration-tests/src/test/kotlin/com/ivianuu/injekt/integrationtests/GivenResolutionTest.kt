@@ -77,7 +77,7 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testResolvesInternalGivenFromDifferentPackage() = codegen(
+    fun testResolvesInternalGivenFromDifferentPackageWithAllUnderImport() = codegen(
         source(
             """
                 @Given val foo = Foo()
@@ -87,6 +87,25 @@ class GivenResolutionTest {
         source(
             """
                 import givens.*
+                fun invoke() = given<Foo>()
+            """,
+            name = "File.kt"
+        )
+    ) {
+        invokeSingleFile().shouldBeTypeOf<Foo>()
+    }
+
+    @Test
+    fun testResolvesInternalGivenFromDifferentPackage() = codegen(
+        source(
+            """
+                @Given val foo = Foo()
+            """,
+            packageFqName = FqName("givens")
+        ),
+        source(
+            """
+                import givens.foo
                 fun invoke() = given<Foo>()
             """,
             name = "File.kt"
