@@ -157,7 +157,7 @@ fun IrType.getAnnotatedAnnotations(annotation: FqName): List<IrConstructorCall> 
 
 fun DeclarationDescriptor.uniqueKey(declarationStore: DeclarationStore): String {
     val original = this.original
-    return declarationStore.uniqueKeys.getOrPut(original) {
+    return declarationStore.uniqueKeysCache.getOrPut(original) {
         when (original) {
             is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
                 original.valueParameters

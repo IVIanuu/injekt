@@ -25,18 +25,15 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
-import org.jetbrains.kotlin.com.intellij.icons.AllIcons.Nodes.Public
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.descriptors.DescriptorVisibility
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.resolve.calls.DslMarkerUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
@@ -64,7 +61,9 @@ fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
         parameterTypes = parameterTypes
             .mapValues { it.value.substitute(map) },
         typeArguments = typeArguments
-            .mapValues { it.value.substitute(map) }
+            .mapValues { it.value.substitute(map) },
+        qualifiers = qualifiers
+            .map { it.substitute(map) }
     )
 }
 
@@ -77,43 +76,41 @@ fun CallableRef.substituteInputs(map: Map<ClassifierRef, TypeRef>): CallableRef 
     )
 }
 
-fun CallableDescriptor.toCallableRef(
-    declarationStore: DeclarationStore,
-    applyCallableInfo: Boolean = true
-): CallableRef {
-    val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
-        .map { it.toAnnotationRef(declarationStore) }
-    val type = returnType!!.toTypeRef(declarationStore).let {
-        if (qualifiers.isNotEmpty()) it.copy(qualifiers = qualifiers + it.qualifiers)
-        else it
+fun CallableDescriptor.toCallableRef(declarationStore: DeclarationStore): CallableRef =
+    declarationStore.callablesCache.getOrPut(this) {
+        val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
+            .map { it.toAnnotationRef(declarationStore) }
+        val type = returnType!!.toTypeRef(declarationStore).let {
+            if (qualifiers.isNotEmpty()) it.copy(qualifiers = qualifiers + it.qualifiers)
+            else it
+        }
+        val typeParameters = typeParameters
+            .map { it.toClassifierRef(declarationStore) }
+        CallableRef(
+            callable = this,
+            type = type,
+            originalType = type,
+            typeParameters = typeParameters,
+            parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)
+                .map { it.injektName() to it.type.toTypeRef(declarationStore) }
+                .toMap(),
+            givenParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
+                .filter { it.isGiven(declarationStore) }
+                .mapTo(mutableSetOf()) { it.injektName() },
+            qualifiers = qualifiers,
+            typeArguments = typeParameters
+                .map { it to it.defaultType }
+                .toMap(),
+            isGiven = isGiven(declarationStore),
+            fromGivenConstraint = false,
+            callContext = callContext
+        ).let {
+            if (original.isExternalDeclaration()) it.apply(
+                declarationStore,
+                declarationStore.callableInfoFor(it.callable)
+            ) else it
+        }
     }
-    val typeParameters = typeParameters
-        .map { it.toClassifierRef(declarationStore) }
-    return CallableRef(
-        callable = this,
-        type = type,
-        originalType = type,
-        typeParameters = typeParameters,
-        parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-            .map { it.injektName() to it.type.toTypeRef(declarationStore) }
-            .toMap(),
-        givenParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-            .filter { it.isGiven(declarationStore) }
-            .mapTo(mutableSetOf()) { it.injektName() },
-        qualifiers = qualifiers,
-        typeArguments = typeParameters
-            .map { it to it.defaultType }
-            .toMap(),
-        isGiven = isGiven(declarationStore),
-        fromGivenConstraint = false,
-        callContext = callContext
-    ).let {
-        if (applyCallableInfo && original.isExternalDeclaration()) it.apply(
-            declarationStore,
-            declarationStore.callableInfoFor(it.callable)
-        ) else it
-    }
-}
 
 fun MemberScope.collectGivens(
     declarationStore: DeclarationStore,

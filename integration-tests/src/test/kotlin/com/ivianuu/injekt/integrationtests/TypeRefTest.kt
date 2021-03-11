@@ -442,7 +442,7 @@ class TypeRefTest {
             fqName: FqName = FqName("Alias${id++}"),
         ) = ClassifierRef(
             fqName = fqName,
-            expandedType = expandedType,
+            superTypes = listOf(expandedType),
             isTypeAlias = true
         ).defaultType
 

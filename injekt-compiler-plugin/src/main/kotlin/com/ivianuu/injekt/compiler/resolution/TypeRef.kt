@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.types.getAbbreviation
 import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
@@ -36,7 +35,6 @@ data class ClassifierRef(
     val fqName: FqName,
     val typeParameters: List<ClassifierRef> = emptyList(),
     val superTypes: List<TypeRef> = emptyList(),
-    val expandedType: TypeRef? = null,
     val isTypeParameter: Boolean = false,
     val isObject: Boolean = false,
     val isTypeAlias: Boolean = false,
@@ -58,25 +56,23 @@ data class ClassifierRef(
 
 fun KotlinType.toTypeRef(
     declarationStore: DeclarationStore,
-    variance: Variance = Variance.INVARIANT,
     isStarProjection: Boolean = false
-): TypeRef = KotlinTypeRef(this, variance, isStarProjection, declarationStore)
+): TypeRef = if (isStarProjection) STAR_PROJECTION_TYPE
+else KotlinTypeRef(this, isStarProjection, declarationStore)
 
 fun ClassifierDescriptor.toClassifierRef(
-    declarationStore: DeclarationStore,
-    applyClassifierInfo: Boolean = true
-): ClassifierRef {
+    declarationStore: DeclarationStore
+): ClassifierRef = declarationStore.classifiersCache.getOrPut(original) {
     val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
         ?.toTypeRef(declarationStore)
     val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
         .map { it.toAnnotationRef(declarationStore) }
-    return ClassifierRef(
+    ClassifierRef(
         fqName = original.fqNameSafe,
         typeParameters = (original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
             ?.map { it.toClassifierRef(declarationStore) } ?: emptyList(),
         superTypes = if (expandedType != null) listOf(expandedType) else typeConstructor.supertypes
             .map { it.toTypeRef(declarationStore) },
-        expandedType = expandedType,
         isTypeParameter = this is TypeParameterDescriptor,
         isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
         isTypeAlias = this is TypeAliasDescriptor,
@@ -84,7 +80,7 @@ fun ClassifierDescriptor.toClassifierRef(
         qualifiers = qualifiers,
         isGivenConstraint = this is TypeParameterDescriptor && hasAnnotation(InjektFqNames.Given)
     ).let {
-        if (applyClassifierInfo && original.isExternalDeclaration()) it.apply(
+        if (original.isExternalDeclaration()) it.apply(
             declarationStore,
             declarationStore.classifierInfoFor(it)
         ) else it
@@ -95,7 +91,6 @@ sealed class TypeRef {
     abstract val classifier: ClassifierRef
     abstract val isMarkedNullable: Boolean
     abstract val arguments: List<TypeRef>
-    abstract val variance: Variance
     abstract val isComposable: Boolean
     abstract val isGiven: Boolean
     abstract val isStarProjection: Boolean
@@ -131,7 +126,6 @@ sealed class TypeRef {
         fun visit(type: TypeRef) {
             if (type in types) return
             types += type
-            type.expandedType?.let { visit(it) }
             type.superTypes.forEach { visit(it) }
         }
         visit(this)
@@ -166,16 +160,6 @@ sealed class TypeRef {
         classifiers
     }
 
-    val TypeRef.expandedType: TypeRef? by unsafeLazy {
-        classifier.expandedType?.let {
-            val substitutionMap = classifier.typeParameters
-                .zip(arguments)
-                .toMap()
-            it.substitute(substitutionMap)
-                .copy(isMarkedNullable = isMarkedNullable)
-        }
-    }
-
     val isComposableType: Boolean by unsafeLazy {
         thisAndAllSuperTypes.any { it.isComposable }
     }
@@ -196,7 +180,6 @@ sealed class TypeRef {
 
 class KotlinTypeRef(
     val kotlinType: KotlinType,
-    override val variance: Variance = Variance.INVARIANT,
     override val isStarProjection: Boolean = false,
     val declarationStore: DeclarationStore
 ) : TypeRef() {
@@ -216,7 +199,7 @@ class KotlinTypeRef(
     override val arguments: List<TypeRef> by unsafeLazy {
         finalType.arguments
             .take(classifier.typeParameters.size)
-            .map { it.type.toTypeRef(declarationStore, it.projectionKind, it.isStarProjection) }
+            .map { it.type.toTypeRef(declarationStore, it.isStarProjection) }
     }
     override val qualifiers: List<AnnotationRef> by unsafeLazy {
         kotlinType.getAnnotatedAnnotations(InjektFqNames.Qualifier)
@@ -235,7 +218,6 @@ class SimpleTypeRef(
     override val classifier: ClassifierRef,
     override val isMarkedNullable: Boolean = false,
     override val arguments: List<TypeRef> = emptyList(),
-    override val variance: Variance = Variance.INVARIANT,
     override val isComposable: Boolean = false,
     override val isGiven: Boolean = false,
     override val isStarProjection: Boolean = false,
@@ -244,6 +226,9 @@ class SimpleTypeRef(
     override val setKey: SetKey? = null
 ) : TypeRef() {
     init {
+        check(qualifiers.distinctBy { it.type.classifier.fqName }.size == qualifiers.size) {
+            "Duplicated qualifiers ${render()}"
+        }
         check(arguments.size == classifier.typeParameters.size) {
             "Argument size mismatch ${classifier.fqName} " +
                     "params: ${classifier.typeParameters.map { it.fqName }} " +
@@ -258,7 +243,6 @@ fun TypeRef.copy(
     classifier: ClassifierRef = this.classifier,
     isMarkedNullable: Boolean = this.isMarkedNullable,
     arguments: List<TypeRef> = this.arguments,
-    variance: Variance = this.variance,
     isComposable: Boolean = this.isComposable,
     isGiven: Boolean = this.isGiven,
     isStarProjection: Boolean = this.isStarProjection,
@@ -269,7 +253,6 @@ fun TypeRef.copy(
     classifier,
     isMarkedNullable,
     arguments,
-    variance,
     isComposable,
     isGiven,
     isStarProjection,
@@ -284,8 +267,19 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
         return substitution.copy(
             // we copy nullability to support T : Any? -> String
             isMarkedNullable = if (!isStarProjection) isMarkedNullable else substitution.isMarkedNullable,
-            // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
-            qualifiers = qualifiers.map { it.substitute(map) } + substitution.qualifiers,
+            // we keep qualifiers to support @MyQualifier T -> @MyQualifier String
+            // but we also add the substitution qualifiers to support T -> @MyQualifier String
+            // in case of an overlap we replace the original qualifier with substitution qualifier
+            qualifiers = (qualifiers
+                .map { qualifier ->
+                    substitution.qualifiers.singleOrNull {
+                        it.type.classifier == qualifier.type.classifier
+                    } ?: qualifier
+                }
+                .map { it.substitute(map) } + substitution.qualifiers
+                .filter { qualifier ->
+                    qualifiers.none { it.type.classifier == qualifier.type.classifier }
+                }),
             // we copy given kind to support @Given C -> @Given String
             // fallback to substitution given
             isGiven = isGiven || substitution.isGiven
@@ -346,10 +340,6 @@ fun TypeRef.render(depth: Int = 0): String {
             if (arguments.isNotEmpty()) {
                 append("<")
                 arguments.forEachIndexed { index, typeArgument ->
-                    if (typeArgument.variance != Variance.INVARIANT &&
-                        !typeArgument.isStarProjection
-                    )
-                        append("${typeArgument.variance.label} ")
                     append(typeArgument.render(depth = depth + 1))
                     if (index != arguments.lastIndex) append(", ")
                 }
@@ -370,7 +360,6 @@ fun TypeRef.uniqueTypeName(depth: Int = 0): String {
             append("_")
         }
         if (isComposable) append("composable_")
-        // if (includeNullability && isMarkedNullable) append("nullable_")
         if (isStarProjection) append("star")
         else append(classifier.fqName.pathSegments().joinToString("_") { it.asString() })
         if (constrainedGivenChain.isNotEmpty()) {
@@ -380,7 +369,7 @@ fun TypeRef.uniqueTypeName(depth: Int = 0): String {
         arguments.forEachIndexed { index, typeArgument ->
             if (index == 0) append("_")
             append(typeArgument.uniqueTypeName(depth + 1))
-            if (index != arguments.lastIndex) append("_")
+            if (index != arguments.lastIndex) append("_/_")
         }
     }
 }
@@ -392,7 +381,7 @@ fun KotlinType.uniqueTypeName(depth: Int = 0): String {
         arguments.forEachIndexed { index, typeArgument ->
             if (index == 0) append("_")
             append(typeArgument.type.uniqueTypeName(depth + 1))
-            if (index != arguments.lastIndex) append("_")
+            if (index != arguments.lastIndex) append("_/_")
         }
     }
 }
@@ -588,7 +577,7 @@ fun AnnotationRef.isAssignableTo(declarationStore: DeclarationStore, superQualif
 }
 
 val TypeRef.fullyExpandedType: TypeRef
-    get() = expandedType?.fullyExpandedType ?: this
+    get() = if (classifier.isTypeAlias) superTypes.single().fullyExpandedType else this
 
 val KotlinType.fullyAbbreviatedType: KotlinType
     get() {
@@ -603,7 +592,6 @@ fun TypeRef.subtypeView(
     if (this.classifier == classifier) return@getOrPut this
     fun TypeRef.superTypeWithMatchingClassifier(): TypeRef? {
         if (this.classifier == classifier) return this
-        expandedType?.subtypeView(declarationStore, classifier)?.let { return it }
         for (superType in superTypes) {
             superType.subtypeView(declarationStore, classifier)?.let { return it }
         }
