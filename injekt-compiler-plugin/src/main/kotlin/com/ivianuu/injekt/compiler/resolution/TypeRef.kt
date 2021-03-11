@@ -475,37 +475,42 @@ fun TypeRef.isAssignableTo(
     superType: TypeRef
 ): Boolean = declarationStore.isAssignableCache.getOrPut(MultiKey2(this, superType)) {
     if (isStarProjection || superType.isStarProjection) return@getOrPut true
+    if (constrainedGivenChain != superType.constrainedGivenChain) return@getOrPut false
+    if (setKey != superType.setKey) return@getOrPut false
+    if (superType.classifier.isTypeParameter)
+        return@getOrPut isSubTypeOfTypeParameter(declarationStore, superType)
+    if (classifier.isTypeParameter)
+        return@getOrPut superType.isSubTypeOfTypeParameter(declarationStore, this)
     if (isSubTypeOf(declarationStore, superType)) return@getOrPut true
-    if (superType.classifier.isTypeParameter) {
-        val superTypesAssignable = superType.superTypes.all { upperBound ->
-            isSubTypeOf(declarationStore, upperBound)
-        }
-        if (!superTypesAssignable) return@getOrPut false
-        if (superType.qualifiers.isNotEmpty() &&
-            !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
-        ) return@getOrPut false
-        if (constrainedGivenChain != superType.constrainedGivenChain) return@getOrPut false
-        if (setKey != superType.setKey) return@getOrPut false
-        return@getOrPut true
-    } else if (classifier.isTypeParameter) {
-        val superTypesAssignable = superTypes.all { upperBound ->
-            superType.isSubTypeOf(declarationStore, upperBound)
-        }
-        if (!superTypesAssignable) return@getOrPut false
-        if (qualifiers.isNotEmpty() &&
-            !superType.qualifiers.isAssignableTo(declarationStore, qualifiers)
-        ) return@getOrPut false
-        if (constrainedGivenChain != superType.constrainedGivenChain) return@getOrPut false
-        if (setKey != superType.setKey) return@getOrPut false
-        return@getOrPut true
-    }
-
-    val subTypeView = subtypeView(declarationStore, superType.classifier)
-    if (subTypeView != null &&
-        subTypeView != this &&
-        subTypeView.isAssignableTo(declarationStore, superType)) return@getOrPut true
-
     return@getOrPut false
+}
+
+private fun TypeRef.isSubTypeOfTypeParameter(
+    declarationStore: DeclarationStore,
+    typeParameter: TypeRef
+): Boolean {
+    val superTypesAssignable = typeParameter.superTypes.all { upperBound ->
+        isSubTypeOf(declarationStore, upperBound)
+    }
+    if (!superTypesAssignable) return false
+    if (typeParameter.qualifiers.isNotEmpty() &&
+        !qualifiers.isAssignableTo(declarationStore, typeParameter.qualifiers)
+    ) return false
+    return true
+}
+
+private fun TypeRef.isSubTypeOfSameClassifier(
+    declarationStore: DeclarationStore,
+    superType: TypeRef
+): Boolean {
+    if (this == superType) return true
+    if (!qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return false
+    if (isComposableType != superType.isComposableType) return false
+    arguments.forEachWith(superType.arguments) { a, b ->
+        if (!a.isAssignableTo(declarationStore, b))
+            return false
+    }
+    return true
 }
 
 fun TypeRef.isSubTypeOf(
@@ -516,41 +521,21 @@ fun TypeRef.isSubTypeOf(
     if (isNullableType && !superType.isNullableType) return@getOrPut false
     if (constrainedGivenChain != superType.constrainedGivenChain) return@getOrPut false
     if (setKey != superType.setKey) return@getOrPut false
-    if (classifier.fqName == superType.classifier.fqName) {
-        if (!qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return@getOrPut false
-        if (isComposableType != superType.isComposableType) return@getOrPut false
-        arguments.forEachWith(superType.arguments) { a, b ->
-            if (!a.isAssignableTo(declarationStore, b))
-                return@getOrPut false
-        }
-        return@getOrPut true
-    }
-    if (superType.classifier.fqName == InjektFqNames.Any) {
-        if (superType.qualifiers.isNotEmpty() &&
-            !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
-        ) return@getOrPut false
-        return@getOrPut true
-    }
+    if (superType.classifier.fqName == InjektFqNames.Any)
+        return@getOrPut superType.qualifiers.isEmpty() ||
+                qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
+    if (classifier == superType.classifier)
+        return@getOrPut isSubTypeOfSameClassifier(declarationStore, superType)
+
     val subTypeView = subtypeView(declarationStore, superType.classifier)
-    if (subTypeView != null) {
-        if (subTypeView == superType) return@getOrPut true
-        if (!subTypeView.qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return@getOrPut false
-        if (isComposableType != superType.isComposableType) return@getOrPut false
-        subTypeView.arguments.forEachWith(superType.arguments) { a, b ->
-            if (!a.isSubTypeOf(declarationStore, b)) return@getOrPut false
-        }
-        return@getOrPut true
-    } else if ((superType.classifier.isTypeParameter && !classifier.isTypeParameter) || (superType.classifier.isTypeAlias &&
-                !classifier.isTypeAlias)) {
-        if (superType.classifier.isTypeAlias &&
-                thisAndAllSuperTypes.none { it.classifier == superType.classifier })
-                    return@getOrPut false
+    if (subTypeView != null)
+        return@getOrPut subTypeView.isSubTypeOfSameClassifier(declarationStore, superType)
+
+    if (superType.classifier.isTypeParameter) {
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
         ) return@getOrPut false
-        if (isComposableType != superType.isComposableType) return@getOrPut false
         return@getOrPut superType.superTypes.all { upperBound ->
-            // todo should do this comparison without qualifiers?
             isSubTypeOf(declarationStore, upperBound) ||
                     (superType.qualifiers.isNotEmpty() &&
                             unqualified.isSubTypeOf(declarationStore, upperBound))
