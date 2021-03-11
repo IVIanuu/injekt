@@ -213,6 +213,19 @@ fun ParameterDescriptor.injektName(): String {
     }
 }
 
+inline fun <A, B> List<A>.forEachWith(
+    other: List<B>,
+    action: (A, B) -> Unit
+) {
+    for (i in indices) action(this[i], other[i])
+}
+
+fun <K, V> List<K>.toMap(values: List<V>): Map<K, V> {
+    val map = mutableMapOf<K, V>()
+    forEachWith(values) { key, value -> map[key] = value }
+    return map
+}
+
 data class MultiKey2<P1, P2>(val p1: P1, val p2: P2)
 data class MultiKey3<P1, P2, P3>(val p1: P1, val p2: P2, val p3: P3)
 data class MultiKey4<P1, P2, P3, P4>(val p1: P1, val p2: P2, val p3: P3, val p4: P4)

@@ -20,7 +20,9 @@ import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.injekt.compiler.toMap
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.backend.common.ir.allParameters
@@ -300,8 +302,8 @@ class GivenCallTransformer(
                 this@providerExpression, graphContext, given.dependencyScope, scope)
             val expression = with(dependencyScopeContext) {
                 val previousParametersMap = parameterMap.toMap()
-                given.parameterDescriptors.zip(function.valueParameters)
-                    .forEach { parameterMap[it.first] = it.second }
+                given.parameterDescriptors
+                    .forEachWith(function.valueParameters) { a, b -> parameterMap[a] = b }
                 expressionFor(result.dependencyResults.values.single())
                     .also {
                         parameterMap.clear()

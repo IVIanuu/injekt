@@ -407,20 +407,22 @@ fun getSubstitutionMap(
         visitedTypes += thisType
         visitedTypes += baseType
         if (!baseType.classifier.isTypeParameter) {
-            thisType.arguments.zip(baseType.arguments)
-                .forEach { visitType(it.first, it.second) }
+            thisType.arguments.forEachWith(baseType.arguments) { a, b -> visitType(a, b) }
             return
         }
 
         if (thisType.qualifiers.isNotEmpty() &&
             thisType.qualifiers.size == baseType.qualifiers.size &&
-            thisType.qualifiers.zip(baseType.qualifiers).all { (a, b) ->
-                a.type.classifier == b.type.classifier &&
-                        a.arguments == b.arguments
+            run {
+                var allMatch = true
+                thisType.qualifiers.forEachWith(baseType.qualifiers) { a, b ->
+                    allMatch = allMatch || a.type.classifier == b.type.classifier &&
+                            a.arguments == b.arguments
+                }
+                allMatch
             }) {
             visitType(thisType.copy(qualifiers = emptyList()), baseType.copy(qualifiers = emptyList()))
-            thisType.qualifiers.zip(baseType.qualifiers)
-                .forEach { visitType(it.first.type, it.second.type) }
+            thisType.qualifiers.forEachWith(baseType.qualifiers) { a, b -> visitType(a.type, b.type) }
             return
         }
 
@@ -439,23 +441,28 @@ fun getSubstitutionMap(
                     visitType(thisTypeToUse
                         .copy(qualifiers = emptyList(), constrainedGivenChain = emptyList(), setKey = null), baseSuperType)
                     if (thisTypeToUse.qualifiers.isAssignableTo(declarationStore, baseSuperType.qualifiers)) {
-                        thisTypeToUse.qualifiers.zip(baseSuperType.qualifiers)
-                            .forEach { visitType(it.first.type, it.second.type) }
+                        thisTypeToUse.qualifiers.forEachWith(baseSuperType.qualifiers) { a, b ->
+                            visitType(a.type, b.type)
+
+                        }
                     }
                 } else {
                     visitType(thisBaseTypeView ?: thisType, baseSuperType)
                 }
 
-                thisBaseTypeView?.arguments?.zip(baseSuperType.arguments)
-                    ?.forEach { visitType(it.first, it.second) }
+                thisBaseTypeView?.arguments?.forEachWith(baseSuperType.arguments) { a, b ->
+                    visitType(a, b)
+                }
 
                 if (thisType.qualifiers.isAssignableTo(declarationStore, baseSuperType.qualifiers)) {
-                    thisType.qualifiers.zip(baseSuperType.qualifiers)
-                        .forEach { visitType(it.first.type, it.second.type) }
+                    thisType.qualifiers.forEachWith(baseSuperType.qualifiers) { a, b ->
+                        visitType(a.type, b.type)
+                    }
                 }
                 if (thisBaseTypeView?.qualifiers?.isAssignableTo(declarationStore, baseSuperType.qualifiers) == true) {
-                    thisBaseTypeView.qualifiers.zip(baseSuperType.qualifiers)
-                        .forEach { visitType(it.first.type, it.second.type) }
+                    thisBaseTypeView.qualifiers.forEachWith(baseSuperType.qualifiers) { a, b ->
+                        visitType(a.type, b.type)
+                    }
                 }
             }
     }
@@ -513,10 +520,10 @@ fun TypeRef.isSubTypeOf(
         if (constrainedGivenChain != superType.constrainedGivenChain) return@getOrPut false
         if (setKey != superType.setKey) return@getOrPut false
         if (isComposableType != superType.isComposableType) return@getOrPut false
-        if (arguments.zip(superType.arguments)
-                .any { (a, b) -> !a.isAssignableTo(declarationStore, b) }
-        )
-            return@getOrPut false
+        arguments.forEachWith(superType.arguments) { a, b ->
+            if (!a.isAssignableTo(declarationStore, b))
+                return@getOrPut false
+        }
         return@getOrPut true
     }
     if (superType.classifier.fqName == InjektFqNames.Any) {
@@ -537,10 +544,10 @@ fun TypeRef.isSubTypeOf(
         if (subTypeView.constrainedGivenChain != superType.constrainedGivenChain) return@getOrPut false
         if (subTypeView.setKey != superType.setKey) return@getOrPut false
         if (isComposableType != superType.isComposableType) return@getOrPut false
-        return@getOrPut subTypeView.arguments.zip(superType.arguments)
-            .all { (subTypeArg, superTypeArg) ->
-                subTypeArg.isSubTypeOf(declarationStore, superTypeArg)
-            }
+        subTypeView.arguments.forEachWith(superType.arguments) { a, b ->
+            if (!a.isSubTypeOf(declarationStore, b)) return@getOrPut false
+        }
+        return@getOrPut true
     } else if ((superType.classifier.isTypeParameter && !classifier.isTypeParameter) || (superType.classifier.isTypeAlias &&
                 !classifier.isTypeAlias)) {
         if (superType.classifier.isTypeAlias &&
@@ -564,9 +571,11 @@ fun TypeRef.isSubTypeOf(
 
 fun List<AnnotationRef>.isAssignableTo(declarationStore: DeclarationStore, superQualifiers: List<AnnotationRef>): Boolean {
     if (size != superQualifiers.size) return false
-    return zip(superQualifiers).all { (thisQualifier, superQualifier) ->
-        thisQualifier.isAssignableTo(declarationStore, superQualifier)
+    forEachWith(superQualifiers) { a, b ->
+        if (!a.isAssignableTo(declarationStore, b))
+            return false
     }
+    return true
 }
 
 fun AnnotationRef.isAssignableTo(declarationStore: DeclarationStore, superQualifier: AnnotationRef): Boolean {

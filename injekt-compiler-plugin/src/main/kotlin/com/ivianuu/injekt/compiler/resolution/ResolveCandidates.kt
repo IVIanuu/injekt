@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.unsafeLazy
 
 sealed class GivenGraph {
@@ -409,9 +410,7 @@ private fun compareType(a: TypeRef, b: TypeRef): Int {
     if (a.classifier != b.classifier) return 0
 
     var diff = 0
-    for (i in a.arguments.indices) {
-        val aTypeArgument = a.arguments[i]
-        val bTypeArgument = b.arguments[i]
+    a.arguments.forEachWith(b.arguments) { aTypeArgument, bTypeArgument ->
         diff += compareType(aTypeArgument, bTypeArgument)
     }
 

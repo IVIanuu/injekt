@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.toMap
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.backend.common.ir.allParameters
@@ -376,8 +377,7 @@ fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
         fn.body = body?.deepCopyWithSymbols(this)
         val parameterMapping = allParameters
             .map { it.symbol }
-            .zip(fn.allParameters)
-            .toMap()
+            .toMap(fn.allParameters)
         fn.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitGetValue(expression: IrGetValue): IrExpression {
                 return parameterMapping[expression.symbol]
