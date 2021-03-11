@@ -202,4 +202,8 @@ class DeclarationStore(
         }
     }
 
+    val setType by unsafeLazy {
+        module.builtIns.set.defaultType.toTypeRef(this)
+    }
+
 }

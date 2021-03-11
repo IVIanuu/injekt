@@ -602,3 +602,7 @@ fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
         )
     } else rawSubTypeView
 }
+
+val TypeRef.isFunctionType: Boolean get() =
+    classifier.fqName.asString().startsWith("kotlin.Function") ||
+            classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")

@@ -90,79 +90,69 @@ class ResolutionScope(
         }
     }
 
-    private val setType = declarationStore.module.builtIns.set.defaultType
-        .toTypeRef(declarationStore)
-
     fun givensForType(type: TypeRef): List<GivenNode> {
         initialize
+        if (givens.isEmpty()) return emptyList()
         return givensByType.getOrPut(type) {
-            buildList<GivenNode> {
-                parent?.givensForType(type)
-                    ?.filter { !it.isFrameworkGiven }
-                    ?.let { this += it }
+            givens
+                .filter { it.type.isAssignableTo(declarationStore, type) }
+                .map { it.toGivenNode(type, this@ResolutionScope) }
+        }
+    }
 
-                this += givens
-                    .filter { it.type.isAssignableTo(declarationStore, type) }
-                    .map { it.toGivenNode(type, this@ResolutionScope) }
-
-                if (type.constrainedGivenChain.isEmpty() &&
-                    type.qualifiers.isEmpty() &&
-                    (type.classifier.fqName.asString().startsWith("kotlin.Function")
-                            || type.classifier.fqName.asString()
-                        .startsWith("kotlin.coroutines.SuspendFunction")) &&
-                    type.arguments.dropLast(1).all { it.isGiven }
-                ) {
-                    this += ProviderGivenNode(
-                        type = type,
-                        ownerScope = this@ResolutionScope,
-                        declarationStore = declarationStore
-                    )
-                }
-
-                if (type.constrainedGivenChain.isEmpty() &&
-                    type.setKey == null &&
-                    type.isSubTypeOf(declarationStore, setType)) {
-                    val setElementType = type.subtypeView(setType.classifier)!!.arguments.single()
-                    var elementTypes = setElementsForType(setElementType)
-                    if (elementTypes.isEmpty() &&
-                        setElementType.qualifiers.isEmpty() &&
-                        (setElementType.classifier.fqName.asString().startsWith("kotlin.Function")
-                                || setElementType.classifier.fqName.asString()
-                            .startsWith("kotlin.coroutines.SuspendFunction")) &&
-                        setElementType.arguments.dropLast(1).all { it.isGiven }) {
-                        val providerReturnType = setElementType.arguments.last()
-                        elementTypes = setElementsForType(providerReturnType)
-                            .map { elementType ->
-                                setElementType.copy(
-                                    arguments = setElementType.arguments
-                                        .dropLast(1) + elementType
-                                )
-                            }
+    fun frameworkGivensForType(type: TypeRef): GivenNode? {
+        if (type.constrainedGivenChain.isNotEmpty() ||
+            type.qualifiers.isNotEmpty() ||
+            type.setKey != null) return null
+        initialize
+        return if (type.isFunctionType && type.arguments.dropLast(1).all { it.isGiven }) {
+            ProviderGivenNode(
+                type = type,
+                ownerScope = this@ResolutionScope,
+                declarationStore = declarationStore
+            )
+        } else if (type.isSubTypeOf(declarationStore, declarationStore.setType)) {
+            val setElementType = type.subtypeView(declarationStore.setType.classifier)!!.arguments.single()
+            var elementTypes = setElementsForType(setElementType)
+            if (elementTypes.isEmpty() &&
+                setElementType.qualifiers.isEmpty() &&
+                setElementType.isFunctionType &&
+                setElementType.arguments.dropLast(1).all { it.isGiven }) {
+                val providerReturnType = setElementType.arguments.last()
+                elementTypes = setElementsForType(providerReturnType)
+                    .map { elementType ->
+                        setElementType.copy(
+                            arguments = setElementType.arguments
+                                .dropLast(1) + elementType
+                        )
                     }
+            }
 
-                    val elements = elementTypes
-                        .mapIndexed { index, element ->
-                            GivenRequest(
-                                type = element,
-                                required = true,
-                                callableFqName = FqName("GivenSet"),
-                                parameterName = "element$index".asNameId()
-                            )
-                        }
-                    this += SetGivenNode(
-                        type = type,
-                        ownerScope = this@ResolutionScope,
-                        dependencies = elements
+            val elements = elementTypes
+                .mapIndexed { index, element ->
+                    GivenRequest(
+                        type = element,
+                        required = true,
+                        callableFqName = FqName("GivenSet"),
+                        parameterName = "element$index".asNameId()
                     )
                 }
-            }
+            SetGivenNode(
+                type = type,
+                ownerScope = this@ResolutionScope,
+                dependencies = elements
+            )
+        } else {
+            null
         }
     }
 
     private fun setElementsForType(type: TypeRef): List<TypeRef> {
         initialize
+        val parentSetElements = parent?.setElementsForType(type) ?: emptyList()
+        if (givens.isEmpty()) return parentSetElements
         return setElementsByType.getOrPut(type) {
-            (parent?.setElementsForType(type) ?: emptyList()) + givens
+            parentSetElements + givens
                 .filter { it.type.isAssignableTo(declarationStore, type) }
                 .map { it.substitute(getSubstitutionMap(declarationStore, listOf(type to it.type))) }
                 .map { callable ->

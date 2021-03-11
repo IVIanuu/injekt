@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.compiler.unsafeLazy
+
 sealed class GivenGraph {
     data class Success(
         val scope: ResolutionScope,
@@ -35,7 +37,7 @@ sealed class CandidateResolutionResult {
         val scope: ResolutionScope,
         val dependencyResults: Map<GivenRequest, Success>
     ) : CandidateResolutionResult() {
-        val outerMostScope: ResolutionScope = run {
+        val outerMostScope: ResolutionScope by unsafeLazy {
             when {
                 dependencyResults.isEmpty() -> scope.allScopes.first {
                     it.allParents.size >= candidate.ownerScope.allParents.size &&
@@ -87,7 +89,7 @@ sealed class ResolutionResult {
 
     data class Success(
         override val request: GivenRequest,
-        val candidateResult: CandidateResolutionResult.Success,
+        val candidateResult: CandidateResolutionResult.Success
     ) : ResolutionResult()
 
     sealed class Failure : ResolutionResult() {
@@ -148,11 +150,18 @@ fun ResolutionScope.resolveGiven(requests: List<GivenRequest>): GivenGraph {
 
 private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult {
     resultsByRequest[request]?.let { return it }
-    val result = resolveCandidates(
-        request,
-        givensForType(request.type)
-    )
-    resultsByRequest[request] = result
+    var current: ResolutionScope? = this
+    var result: ResolutionResult? = null
+    while (current != null) {
+        result = resolveCandidates(request, current.givensForType(request.type))
+        if (result !is ResolutionResult.Failure.NoCandidates) break
+        else current = current.parent
+    }
+    if (result is ResolutionResult.Failure.NoCandidates) {
+        result = resolveCandidates(request,
+            listOfNotNull(frameworkGivensForType(request.type)))
+    }
+    resultsByRequest[request] = result!!
     return result
 }
 
