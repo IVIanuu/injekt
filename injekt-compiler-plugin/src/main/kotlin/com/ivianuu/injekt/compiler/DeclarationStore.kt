@@ -75,7 +75,9 @@ class DeclarationStore(
     val isAssignableCache = mutableMapOf<Any, Boolean>()
     val isSubTypeCache = mutableMapOf<Any, Boolean>()
     val subTypeViewCache = mutableMapOf<Any, TypeRef?>()
-    val uniqueKeys = mutableMapOf<DeclarationDescriptor, String>()
+    val uniqueKeysCache = mutableMapOf<DeclarationDescriptor, String>()
+    val classifiersCache = mutableMapOf<ClassifierDescriptor, ClassifierRef>()
+    val callablesCache = mutableMapOf<CallableDescriptor, CallableRef>()
 
     private val callableInfosByDeclaration = mutableMapOf<Any, PersistedCallableInfo?>()
     fun callableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? =

@@ -30,7 +30,6 @@ import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.InternalResolutionScope
 import com.ivianuu.injekt.compiler.resolution.LocalDeclarationResolutionScope
-import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.ResolutionScope
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.isGiven

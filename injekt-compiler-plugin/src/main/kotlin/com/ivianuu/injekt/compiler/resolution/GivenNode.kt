@@ -91,7 +91,7 @@ class ProviderGivenNode(
     override val ownerScope: ResolutionScope,
     val declarationStore: DeclarationStore
 ) : GivenNode() {
-    override val callableFqName: FqName = FqName("Provider<${type.render()} $ownerScope>")
+    override val callableFqName: FqName = FqName("Provider<${type.render()}>")
     override val dependencies: List<GivenRequest> = listOf(
         GivenRequest(
             type = type.arguments.last(),

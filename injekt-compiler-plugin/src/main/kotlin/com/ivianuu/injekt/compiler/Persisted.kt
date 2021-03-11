@@ -41,20 +41,21 @@ import com.ivianuu.injekt.compiler.resolution.UShortValue
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
 import com.ivianuu.injekt.compiler.resolution.substitute
-import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.resolution.typeWith
 import com.squareup.moshi.JsonClass
 import dev.zacsweers.moshix.sealed.annotations.TypeLabel
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-@JsonClass(generateAdapter = true) data class PersistedCallableInfo(
+@JsonClass(generateAdapter = true)
+data class PersistedCallableInfo(
     val type: PersistedTypeRef,
     val typeParameters: List<PersistedClassifierRef>,
     val parameterTypes: Map<String, PersistedTypeRef>,
@@ -77,11 +78,15 @@ fun CallableRef.apply(
 ): CallableRef {
     return if (info == null || !callable.isExternalDeclaration()) this
     else {
-        val original = callable.original.toCallableRef(declarationStore, false)
+        val original = callable.original
         val substitutionMap = getSubstitutionMap(
             declarationStore,
-            listOf(type to original.type) +
-                    parameterTypes.values.zip(original.parameterTypes.values)
+            listOf(type to original.returnType!!.toTypeRef(declarationStore)) +
+                    parameterTypes.values
+                        .zip(
+                            (if (original is ConstructorDescriptor) original.valueParameters else original.allParameters)
+                                .map { it.type.toTypeRef(declarationStore) }
+                        )
         )
         copy(
             type = info.type.toTypeRef(declarationStore),
@@ -97,29 +102,28 @@ fun CallableRef.apply(
     }
 }
 
-@JsonClass(generateAdapter = true) data class PersistedClassifierInfo(
+@JsonClass(generateAdapter = true)
+data class PersistedClassifierInfo(
     val fqName: String,
     val qualifiers: List<PersistedAnnotationRef>,
-    val superTypes: List<PersistedTypeRef>,
-    val expandedType: PersistedTypeRef?
+    val superTypes: List<PersistedTypeRef>
 )
 
 fun ClassifierRef.toPersistedClassifierInfo(declarationStore: DeclarationStore) = PersistedClassifierInfo(
     fqName = descriptor!!.fqNameSafe.asString(),
     qualifiers = qualifiers.map { it.toPersistedAnnotationRef(declarationStore) },
-    superTypes = superTypes.map { it.toPersistedTypeRef(declarationStore) },
-    expandedType = expandedType?.toPersistedTypeRef(declarationStore)
+    superTypes = superTypes.map { it.toPersistedTypeRef(declarationStore) }
 )
 
-@JsonClass(generateAdapter = true) data class PersistedTypeRef(
+@JsonClass(generateAdapter = true)
+data class PersistedTypeRef(
     val classifierKey: String,
     val qualifiers: List<PersistedAnnotationRef>,
     val arguments: List<PersistedTypeRef>,
     val isStarProjection: Boolean,
     val isMarkedNullable: Boolean,
     val isComposable: Boolean,
-    val isGiven: Boolean,
-    val variance: Variance
+    val isGiven: Boolean
 )
 
 fun TypeRef.toPersistedTypeRef(declarationStore: DeclarationStore): PersistedTypeRef = PersistedTypeRef(
@@ -129,8 +133,7 @@ fun TypeRef.toPersistedTypeRef(declarationStore: DeclarationStore): PersistedTyp
     isStarProjection = isStarProjection,
     isMarkedNullable = isMarkedNullable,
     isComposable = isComposable,
-    isGiven = isGiven,
-    variance = variance
+    isGiven = isGiven
 )
 
 fun PersistedTypeRef.toTypeRef(declarationStore: DeclarationStore): TypeRef {
@@ -143,15 +146,14 @@ fun PersistedTypeRef.toTypeRef(declarationStore: DeclarationStore): TypeRef {
             arguments = arguments.map { it.toTypeRef(declarationStore) },
             isMarkedNullable = isMarkedNullable,
             isComposable = isComposable,
-            isGiven = isGiven,
-            variance = variance
+            isGiven = isGiven
         )
 }
 
-@JsonClass(generateAdapter = true) data class PersistedClassifierRef(
+@JsonClass(generateAdapter = true)
+data class PersistedClassifierRef(
     val key: String,
     val superTypes: List<PersistedTypeRef>,
-    val expandedType: PersistedTypeRef?,
     val qualifiers: List<PersistedAnnotationRef>
 )
 
@@ -168,7 +170,6 @@ fun ClassifierRef.toPersistedClassifierRef(
             ?: descriptor.uniqueKey(declarationStore)
      } else descriptor!!.uniqueKey(declarationStore),
     superTypes = superTypes.map { it.toPersistedTypeRef(declarationStore) },
-    expandedType = expandedType?.toPersistedTypeRef(declarationStore),
     qualifiers = qualifiers.map { it.toPersistedAnnotationRef(declarationStore) }
 )
 
@@ -177,7 +178,6 @@ fun PersistedClassifierRef.toClassifierRef(declarationStore: DeclarationStore): 
         .toClassifierRef(declarationStore)
         .copy(
             superTypes = superTypes.map { it.toTypeRef(declarationStore) },
-            expandedType = expandedType?.toTypeRef(declarationStore),
             qualifiers = qualifiers.map { it.toAnnotationRef(declarationStore) }
         )
 }
@@ -185,8 +185,7 @@ fun PersistedClassifierRef.toClassifierRef(declarationStore: DeclarationStore): 
 fun PersistedClassifierRef.toPersistedClassifierInfo() = PersistedClassifierInfo(
     fqName = key.split(":")[1],
     qualifiers = qualifiers,
-    superTypes = superTypes,
-    expandedType = expandedType
+    superTypes = superTypes
 )
 
 fun ClassifierRef.apply(
@@ -196,8 +195,7 @@ fun ClassifierRef.apply(
     return if (info == null || !descriptor!!.isExternalDeclaration()) this
     else copy(
         qualifiers = info.qualifiers.map { it.toAnnotationRef(declarationStore) },
-        superTypes = info.superTypes.map { it.toTypeRef(declarationStore) },
-        expandedType = info.expandedType?.toTypeRef(declarationStore)
+        superTypes = info.superTypes.map { it.toTypeRef(declarationStore) }
     )
 }
 

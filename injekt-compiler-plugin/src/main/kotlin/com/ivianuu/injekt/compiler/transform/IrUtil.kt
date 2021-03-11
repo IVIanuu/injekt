@@ -84,6 +84,7 @@ import org.jetbrains.kotlin.serialization.deserialization.descriptors.Descriptor
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
+import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.withAbbreviation
 
@@ -102,13 +103,13 @@ fun TypeRef.toIrType(
 fun TypeRef.toKotlinType(declarationStore: DeclarationStore): SimpleType {
     if (isStarProjection) return declarationStore.module.builtIns.anyType
     return if (classifier.isTypeAlias) {
-        expandedType!!.toKotlinType(declarationStore)
+        superTypes.single().toKotlinType(declarationStore)
             .withAbbreviation(toAbbreviation(declarationStore))
     } else {
         classifier.descriptor!!.original.defaultType
             .replace(newArguments = arguments.map {
                 TypeProjectionImpl(
-                    it.variance,
+                    Variance.INVARIANT,
                     it.toKotlinType(declarationStore)
                 )
             })
@@ -122,7 +123,7 @@ fun TypeRef.toAbbreviation(declarationStore: DeclarationStore): SimpleType {
     return defaultType
         .replace(newArguments = arguments.map {
             TypeProjectionImpl(
-                it.variance,
+                Variance.INVARIANT,
                 it.toKotlinType(declarationStore)
             )
         })

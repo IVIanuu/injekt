@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.render
+import com.ivianuu.injekt.compiler.resolution.uniqueTypeName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
@@ -189,7 +190,7 @@ private fun GivenGraph.Error.render(): String = buildString {
             }
             is ResolutionResult.Failure.NoCandidates -> {
                 appendLine("${indent()}no given argument found of type " +
-                        "${request.type.render()} for parameter ${request.parameterName} of function ${request.callableFqName}")
+                        "${request.type.uniqueTypeName()} for parameter ${request.parameterName} of function ${request.callableFqName}")
             }
         }
     }
