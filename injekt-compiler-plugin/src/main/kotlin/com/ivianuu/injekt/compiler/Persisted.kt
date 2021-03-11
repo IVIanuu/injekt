@@ -41,6 +41,7 @@ import com.ivianuu.injekt.compiler.resolution.UShortValue
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
 import com.ivianuu.injekt.compiler.resolution.substitute
+import com.ivianuu.injekt.compiler.resolution.toAnnotationRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.resolution.typeWith
@@ -76,12 +77,18 @@ fun CallableRef.apply(
     declarationStore: DeclarationStore,
     info: PersistedCallableInfo?
 ): CallableRef {
-    return if (info == null || !callable.isExternalDeclaration()) this
+    return if (info == null || !callable.original.isExternalDeclaration()) this
     else {
         val original = callable.original
+        val originalQualifiers = original.getAnnotatedAnnotations(InjektFqNames.Qualifier)
+            .map { it.toAnnotationRef(declarationStore) }
+        val originalType = original.returnType!!.toTypeRef(declarationStore).let {
+            if (originalQualifiers.isNotEmpty()) it.copy(qualifiers = originalQualifiers + it.qualifiers)
+            else it
+        }
         val substitutionMap = getSubstitutionMap(
             declarationStore,
-            listOf(type to original.returnType!!.toTypeRef(declarationStore)) +
+            listOf(type to originalType) +
                     parameterTypes.values
                         .zip(
                             (if (original is ConstructorDescriptor) original.valueParameters else original.allParameters)

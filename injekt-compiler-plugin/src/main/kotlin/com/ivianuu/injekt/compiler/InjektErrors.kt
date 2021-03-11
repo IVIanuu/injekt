@@ -190,7 +190,7 @@ private fun GivenGraph.Error.render(): String = buildString {
             }
             is ResolutionResult.Failure.NoCandidates -> {
                 appendLine("${indent()}no given argument found of type " +
-                        "${request.type.uniqueTypeName()} for parameter ${request.parameterName} of function ${request.callableFqName}")
+                        "${request.type.render()} for parameter ${request.parameterName} of function ${request.callableFqName}")
             }
         }
     }

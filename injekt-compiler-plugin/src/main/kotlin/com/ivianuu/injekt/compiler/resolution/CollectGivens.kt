@@ -61,7 +61,9 @@ fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
         parameterTypes = parameterTypes
             .mapValues { it.value.substitute(map) },
         typeArguments = typeArguments
-            .mapValues { it.value.substitute(map) }
+            .mapValues { it.value.substitute(map) },
+        qualifiers = qualifiers
+            .map { it.substitute(map) }
     )
 }
 

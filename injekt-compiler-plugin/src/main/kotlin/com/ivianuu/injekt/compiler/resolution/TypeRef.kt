@@ -227,7 +227,7 @@ class SimpleTypeRef(
 ) : TypeRef() {
     init {
         check(qualifiers.distinctBy { it.type.classifier.fqName }.size == qualifiers.size) {
-            "Duplicated qualifiers"
+            "Duplicated qualifiers ${render()}"
         }
         check(arguments.size == classifier.typeParameters.size) {
             "Argument size mismatch ${classifier.fqName} " +
@@ -267,9 +267,19 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
         return substitution.copy(
             // we copy nullability to support T : Any? -> String
             isMarkedNullable = if (!isStarProjection) isMarkedNullable else substitution.isMarkedNullable,
-            // we copy qualifiers to support @MyQualifier T -> @MyQualifier String
-            qualifiers = (qualifiers.map { it.substitute(map) } + substitution.qualifiers)
-                .distinctBy { it.type.classifier.fqName },
+            // we keep qualifiers to support @MyQualifier T -> @MyQualifier String
+            // but we also add the substitution qualifiers to support T -> @MyQualifier String
+            // in case of an overlap we replace the original qualifier with substitution qualifier
+            qualifiers = (qualifiers
+                .map { qualifier ->
+                    substitution.qualifiers.singleOrNull {
+                        it.type.classifier == qualifier.type.classifier
+                    } ?: qualifier
+                }
+                .map { it.substitute(map) } + substitution.qualifiers
+                .filter { qualifier ->
+                    qualifiers.none { it.type.classifier == qualifier.type.classifier }
+                }),
             // we copy given kind to support @Given C -> @Given String
             // fallback to substitution given
             isGiven = isGiven || substitution.isGiven
