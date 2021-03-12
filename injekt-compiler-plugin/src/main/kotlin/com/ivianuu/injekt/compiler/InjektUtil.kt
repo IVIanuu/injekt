@@ -27,7 +27,6 @@ import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.resolution.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
-import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -229,3 +228,6 @@ data class MultiKey2<P1, P2>(val p1: P1, val p2: P2)
 data class MultiKey3<P1, P2, P3>(val p1: P1, val p2: P2, val p3: P3)
 data class MultiKey4<P1, P2, P3, P4>(val p1: P1, val p2: P2, val p3: P3, val p4: P4)
 data class MultiKey5<P1, P2, P3, P4, P5>(val p1: P1, val p2: P2, val p3: P3, val p4: P4, val p5: P5)
+
+private var currentFrameworkKey = 0
+fun generateFrameworkKey() = currentFrameworkKey++.toString()

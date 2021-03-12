@@ -78,13 +78,11 @@ class ResolutionScope(
                     addGiven = { callable ->
                         hasGivens = true
                         givens += callable
-                        val typeWithChain = callable.type
-                            .copy(
-                                constrainedGivenChain = listOf(callable.callable.fqNameSafe)
-                            )
-                        givens += callable.copy(type = typeWithChain)
+                        val typeWithFrameworkKey = callable.type
+                            .copy(frameworkKey = generateFrameworkKey())
+                        givens += callable.copy(type = typeWithFrameworkKey)
                         constrainedGivenCandidates += ConstrainedGivenCandidate(
-                            type = typeWithChain,
+                            type = typeWithFrameworkKey,
                             typeWithoutChain = callable.type
                         )
                     },
@@ -113,9 +111,8 @@ class ResolutionScope(
                     .filter { it.type.isAssignableTo(declarationStore, type) }
                     .map { it.toGivenNode(type, this@ResolutionScope) }
 
-                if (type.constrainedGivenChain.isEmpty() &&
-                    type.qualifiers.isEmpty() &&
-                    type.setKey == null) {
+                if (type.qualifiers.isEmpty() &&
+                    type.frameworkKey == null) {
                     if (type.isFunctionType && type.arguments.dropLast(1).all { it.isGiven }) {
                         this += ProviderGivenNode(
                             type = type,
@@ -168,11 +165,11 @@ class ResolutionScope(
                 .filter { it.type.isAssignableTo(declarationStore, type) }
                 .map { it.substitute(getSubstitutionMap(declarationStore, listOf(type to it.type))) }
                 .map { callable ->
-                    val typeWithSetKey = type.copy(
-                        setKey = SetKey(type, callable)
+                    val typeWithFrameworkKey = type.copy(
+                        frameworkKey = generateFrameworkKey()
                     )
-                    givens += callable.copy(type = typeWithSetKey)
-                    typeWithSetKey
+                    givens += callable.copy(type = typeWithFrameworkKey)
+                    typeWithFrameworkKey
                 }
         }
     }
@@ -188,7 +185,6 @@ class ResolutionScope(
     ) {
         if (candidate.type in constrainedGiven.processedCandidateTypes) return
         constrainedGiven.processedCandidateTypes += candidate.type
-        if (constrainedGiven.callable.callable.fqNameSafe in candidate.type.constrainedGivenChain) return
 
         val constraintType = constrainedGiven.callable.typeParameters.single {
             it.isGivenConstraint
@@ -219,8 +215,7 @@ class ResolutionScope(
                 givens += newInnerGiven
                 val newInnerGivenWithChain = newInnerGiven.copy(
                     type = newInnerGiven.type.copy(
-                        constrainedGivenChain = candidate.type.constrainedGivenChain +
-                                newInnerGiven.callable.fqNameSafe
+                        frameworkKey = generateFrameworkKey()
                     )
                 )
                 givens += newInnerGivenWithChain

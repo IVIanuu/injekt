@@ -95,8 +95,7 @@ sealed class TypeRef {
     abstract val isGiven: Boolean
     abstract val isStarProjection: Boolean
     abstract val qualifiers: List<AnnotationRef>
-    abstract val constrainedGivenChain: List<FqName>
-    abstract val setKey: SetKey?
+    abstract val frameworkKey: String?
 
     private val typeName by unsafeLazy { uniqueTypeName() }
 
@@ -113,8 +112,7 @@ sealed class TypeRef {
         result = 31 * result + isMarkedComposable.hashCode()
         result = 31 * result + isStarProjection.hashCode()
         result = 31 * result + qualifiers.hashCode()
-        result = 31 * result + constrainedGivenChain.hashCode()
-        result = 31 * result + setKey.hashCode()
+        result = 31 * result + frameworkKey.hashCode()
 
         result
     }
@@ -168,8 +166,8 @@ sealed class TypeRef {
     }
 
     val unqualified: TypeRef by unsafeLazy {
-        if (qualifiers.isEmpty() && constrainedGivenChain.isEmpty() && setKey == null) this
-        else copy(qualifiers = emptyList(), constrainedGivenChain = emptyList(), setKey = null)
+        if (qualifiers.isEmpty() && frameworkKey == null) this
+        else copy(qualifiers = emptyList(), frameworkKey = null)
     }
 }
 
@@ -200,14 +198,9 @@ class KotlinTypeRef(
         kotlinType.getAnnotatedAnnotations(InjektFqNames.Qualifier)
             .map { it.toAnnotationRef(declarationStore) }
     }
-    override val constrainedGivenChain: List<FqName> get() = emptyList()
-    override val setKey: SetKey? get() = null
+    override val frameworkKey: String?
+        get() = null
 }
-
-data class SetKey(
-    val type: TypeRef,
-    val callable: CallableRef
-)
 
 class SimpleTypeRef(
     override val classifier: ClassifierRef,
@@ -217,8 +210,7 @@ class SimpleTypeRef(
     override val isGiven: Boolean = false,
     override val isStarProjection: Boolean = false,
     override val qualifiers: List<AnnotationRef> = emptyList(),
-    override val constrainedGivenChain: List<FqName> = emptyList(),
-    override val setKey: SetKey? = null
+    override val frameworkKey: String? = null
 ) : TypeRef() {
     init {
         check(qualifiers.distinctBy { it.type.classifier.fqName }.size == qualifiers.size) {
@@ -242,8 +234,7 @@ fun TypeRef.copy(
     isGiven: Boolean = this.isGiven,
     isStarProjection: Boolean = this.isStarProjection,
     qualifiers: List<AnnotationRef> = this.qualifiers,
-    constrainedGivenChain: List<FqName> = this.constrainedGivenChain,
-    setKey: SetKey? = this.setKey
+    frameworkKey: String? = this.frameworkKey
 ): SimpleTypeRef = SimpleTypeRef(
     classifier,
     isMarkedNullable,
@@ -252,8 +243,7 @@ fun TypeRef.copy(
     isGiven,
     isStarProjection,
     qualifiers,
-    constrainedGivenChain,
-    setKey
+    frameworkKey
 )
 
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
@@ -357,10 +347,10 @@ fun TypeRef.uniqueTypeName(depth: Int = 0): String {
         if (isMarkedComposable) append("composable_")
         if (isStarProjection) append("star")
         else append(classifier.fqName.pathSegments().joinToString("_") { it.asString() })
-        if (constrainedGivenChain.isNotEmpty()) {
-            append(constrainedGivenChain.joinToString("_", prefix = "_", postfix = "_"))
+        if (frameworkKey != null) {
+            append("_")
+            append(frameworkKey)
         }
-        if (setKey != null) append("_${setKey.hashCode()}_")
         arguments.forEachIndexed { index, typeArgument ->
             if (index == 0) append("_")
             append(typeArgument.uniqueTypeName(depth + 1))
@@ -465,8 +455,7 @@ fun TypeRef.isAssignableTo(
     superType: TypeRef
 ): Boolean = declarationStore.isAssignableCache.getOrPut(MultiKey2(this, superType)) {
     if (isStarProjection || superType.isStarProjection) return@getOrPut true
-    if (constrainedGivenChain != superType.constrainedGivenChain) return@getOrPut false
-    if (setKey != superType.setKey) return@getOrPut false
+    if (frameworkKey != superType.frameworkKey) return@getOrPut false
     if (superType.classifier.isTypeParameter)
         return@getOrPut isSubTypeOfTypeParameter(declarationStore, superType)
     if (classifier.isTypeParameter)
@@ -509,8 +498,7 @@ fun TypeRef.isSubTypeOf(
 ): Boolean = declarationStore.isSubTypeCache.getOrPut(MultiKey2(this, superType)) {
     if (isStarProjection) return@getOrPut true
     if (isNullableType && !superType.isNullableType) return@getOrPut false
-    if (constrainedGivenChain != superType.constrainedGivenChain) return@getOrPut false
-    if (setKey != superType.setKey) return@getOrPut false
+    if (frameworkKey != superType.frameworkKey) return@getOrPut false
     if (superType.classifier.fqName == InjektFqNames.Any)
         return@getOrPut superType.qualifiers.isEmpty() ||
                 qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
@@ -570,12 +558,12 @@ fun TypeRef.subtypeView(
         return null
     }
     val rawSubTypeView = superTypeWithMatchingClassifier() ?: return null
-    return if ((constrainedGivenChain.isNotEmpty() &&
-                constrainedGivenChain != rawSubTypeView.constrainedGivenChain) ||
+    return if ((frameworkKey != null &&
+                frameworkKey != rawSubTypeView.frameworkKey) ||
         (qualifiers.isNotEmpty() && qualifiers != rawSubTypeView.qualifiers) ||
         (isMarkedNullable && isMarkedNullable != rawSubTypeView.isMarkedNullable)) {
         rawSubTypeView.copy(
-            constrainedGivenChain = constrainedGivenChain,
+            frameworkKey = frameworkKey,
             qualifiers = qualifiers + rawSubTypeView.qualifiers,
             isMarkedNullable = isMarkedNullable
         )
