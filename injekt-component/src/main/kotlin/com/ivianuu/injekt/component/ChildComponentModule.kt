@@ -27,10 +27,10 @@ class ChildComponentModule0<P : Component, C : Component>(
     @Given
     fun factoryElement(
         @Given parent: P,
-        @Given componentBuilder: () -> Component.Builder<C>
+        @Given builderProvider: () -> Component.Builder<C>
     ): ComponentElement<P> = childComponentFactoryKey to {
         val factory: () -> C = {
-            componentBuilder()
+            builderProvider()
                 .dependency(parent)
                 .build()
         }
@@ -54,10 +54,10 @@ class ChildComponentModule1<P : Component, P1, C : Component>(
     @Given
     fun factoryElement(
         @Given parent: P,
-        @Given componentBuilder: Component.Builder<C>
+        @Given builderProvider: () -> Component.Builder<C>
     ): ComponentElement<P> = childComponentFactoryKey to {
         val factory: (P1) -> C = { p1 ->
-            componentBuilder
+            builderProvider()
                 .dependency(parent)
                 .element(p1Key) { p1 }
                 .build()
@@ -87,10 +87,10 @@ class ChildComponentModule2<P : Component, P1, P2, C : Component>(
     @Given
     fun factoryElement(
         @Given parent: P,
-        @Given componentBuilder: Component.Builder<C>
+        @Given builderProvider: () -> Component.Builder<C>
     ): ComponentElement<P> = childComponentFactoryKey to {
         val factory: (P1, P2) -> C = { p1, p2 ->
-            componentBuilder
+            builderProvider()
                 .dependency(parent)
                 .element(p1Key) { p1 }
                 .element(p2Key) { p2 }
@@ -129,10 +129,10 @@ class ChildComponentModule3<P : Component, P1, P2, P3, C : Component>(
     @Given
     fun factoryElement(
         @Given parent: P,
-        @Given componentBuilder: Component.Builder<C>
+        @Given builderProvider: () -> Component.Builder<C>
     ): ComponentElement<P> = childComponentFactoryKey to {
         val factory: (P1, P2, P3) -> C = { p1, p2, p3 ->
-            componentBuilder
+            builderProvider()
                 .dependency(parent)
                 .element(p1Key) { p1 }
                 .element(p2Key) { p2 }
@@ -178,10 +178,10 @@ class ChildComponentModule4<P : Component, P1, P2, P3, P4, C : Component>(
     @Given
     fun factoryElement(
         @Given parent: P,
-        @Given componentBuilder: Component.Builder<C>
+        @Given builderProvider: () -> Component.Builder<C>
     ): ComponentElement<P> = childComponentFactoryKey to {
         val factory: (P1, P2, P3, P4) -> C = { p1, p2, p3, p4 ->
-            componentBuilder
+            builderProvider()
                 .dependency(parent)
                 .element(p1Key) { p1 }
                 .element(p2Key) { p2 }
@@ -234,10 +234,10 @@ class ChildComponentModule5<P : Component, P1, P2, P3, P4, P5, C : Component>(
     @Given
     fun factoryElement(
         @Given parent: P,
-        @Given componentBuilder: Component.Builder<C>
+        @Given builderProvider: () -> Component.Builder<C>
     ): ComponentElement<P> = childComponentFactoryKey to {
         val factory: (P1, P2, P3, P4, P5) -> C = { p1, p2, p3, p4, p5 ->
-            componentBuilder
+            builderProvider()
                 .dependency(parent)
                 .element(p1Key) { p1 }
                 .element(p2Key) { p2 }
