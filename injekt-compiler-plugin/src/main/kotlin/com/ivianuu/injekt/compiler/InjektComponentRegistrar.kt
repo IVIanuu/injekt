@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler
 import com.google.auto.service.AutoService
 import com.ivianuu.injekt.compiler.analysis.GivenCallResolutionInterceptorExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
-import com.ivianuu.injekt.compiler.analysis.InjektKtGenerationExtension
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
 import com.ivianuu.injekt.compiler.transform.InjektIrDumper
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
@@ -53,13 +52,9 @@ class InjektComponentRegistrar : ComponentRegistrar {
         val isGenerateKaptStubs = kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
         if (isGenerateKaptStubs) return
 
-        AnalysisHandlerExtension.registerExtension(
-            project,
-            InjektKtGenerationExtension(cacheDir(configuration))
-        )
         StorageComponentContainerContributor.registerExtension(
             project,
-            InjektStorageComponentContainerContributor()
+            InjektStorageComponentContainerContributor(null)
         )
         IrGenerationExtension.registerExtensionWithLoadingOrder(
             project,
@@ -69,7 +64,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
         IrGenerationExtension.registerExtensionWithLoadingOrder(
             project,
             LoadingOrder.LAST,
-            InjektIrDumper(cacheDir(configuration), dumpDir(configuration))
+            InjektIrDumper(FileManager(dumpDir(configuration), cacheDir(configuration)))
         )
         CandidateInterceptor.registerExtension(
             project,

@@ -21,6 +21,7 @@ import com.squareup.moshi.Moshi
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -161,8 +162,7 @@ class DeclarationStore(val module: ModuleDescriptor) {
         }
     }
 
-    val givensForPackage = mutableMapOf<FqName, List<CallableRef>>()
-    val givensByFqName = mutableMapOf<FqName, List<CallableRef>>()
+    val givensByScope = mutableMapOf<HierarchicalScope, List<CallableRef>>()
 
     val setType by unsafeLazy {
         module.builtIns.set.defaultType.toTypeRef(this)

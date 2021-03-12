@@ -17,20 +17,21 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
+import org.jetbrains.kotlin.resolve.scopes.LexicalScope
+import org.jetbrains.kotlin.resolve.scopes.utils.parents
+import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
+import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstance
 
 class ResolutionScope(
     val name: String,
     val parent: ResolutionScope?,
     val declarationStore: DeclarationStore,
     val callContext: CallContext,
-    val owningDescriptor: DeclarationDescriptor?,
+    val ownerDescriptor: DeclarationDescriptor?,
     produceGivens: () -> List<CallableRef>
 ) {
     val chain: MutableSet<GivenNode> = parent?.chain ?: mutableSetOf()
@@ -73,7 +74,7 @@ class ResolutionScope(
             .forEach { given ->
                 given.collectGivens(
                     declarationStore = declarationStore,
-                    owningDescriptor = owningDescriptor,
+                    ownerDescriptor = ownerDescriptor,
                     substitutionMap = emptyMap(),
                     addGiven = { callable ->
                         hasGivens = true
@@ -209,7 +210,7 @@ class ResolutionScope(
 
         newGiven.collectGivens(
             declarationStore = declarationStore,
-            owningDescriptor = owningDescriptor,
+            ownerDescriptor = ownerDescriptor,
             substitutionMap = outputsSubstitutionMap,
             addGiven = { newInnerGiven ->
                 givens += newInnerGiven
@@ -242,82 +243,17 @@ class ResolutionScope(
 
 }
 
-fun FileResolutionScope(
+fun HierarchicalResolutionScope(
     declarationStore: DeclarationStore,
-    file: KtFile
+    scope: HierarchicalScope,
+    bindingContext: BindingContext
 ) = ResolutionScope(
-    name = "FILE ${file.virtualFilePath}",
+    name = "Hierarchical $scope",
     declarationStore = declarationStore,
-    callContext = CallContext.DEFAULT,
+    callContext = scope.callContext(bindingContext),
     parent = null,
-    owningDescriptor = null,
-    produceGivens = {
-        collectGivensInPackage(declarationStore, file.packageFqName) + file.importDirectives
-            .mapNotNull { it.importPath }
-            .filter { it.fqName != file.packageFqName }
-            .flatMap { import ->
-                if (import.isAllUnder) {
-                    collectGivensInPackage(declarationStore, import.fqName)
-                } else {
-                    collectGivensWithFqName(declarationStore, import.fqName)
-                }
-            }
-    }
+    ownerDescriptor = scope.parentsWithSelf
+        .firstIsInstance<LexicalScope>()
+        .ownerDescriptor,
+    produceGivens = { scope.collectGivens(declarationStore) }
 )
-
-fun ClassResolutionScope(
-    declarationStore: DeclarationStore,
-    descriptor: ClassDescriptor,
-    parent: ResolutionScope,
-) = ResolutionScope(
-    name = "CLASS(${descriptor.fqNameSafe})",
-    declarationStore = declarationStore,
-    callContext = CallContext.DEFAULT,
-    parent = parent,
-    owningDescriptor = descriptor,
-    produceGivens = {
-        listOf(
-            descriptor.thisAsReceiverParameter.toCallableRef(declarationStore)
-                .copy(isGiven = true)
-        )
-    }
-)
-
-fun FunctionResolutionScope(
-    declarationStore: DeclarationStore,
-    parent: ResolutionScope,
-    descriptor: FunctionDescriptor,
-    lambdaType: TypeRef?,
-) = ResolutionScope(
-    name = "FUN(${descriptor.fqNameSafe})",
-    declarationStore = declarationStore,
-    callContext = lambdaType?.callContext ?: descriptor.callContext,
-    parent = parent,
-    owningDescriptor = descriptor,
-    produceGivens = { descriptor.collectGivens(declarationStore) }
-)
-
-fun LocalDeclarationResolutionScope(
-    declarationStore: DeclarationStore,
-    parent: ResolutionScope,
-    declaration: DeclarationDescriptor
-): ResolutionScope {
-    val declarations: List<CallableRef> = when (declaration) {
-        is ClassDescriptor -> declaration.getGivenConstructors(declarationStore)
-        is CallableDescriptor -> if (declaration.isGiven(declarationStore)) {
-            listOf(
-                declaration.toCallableRef(declarationStore)
-                    .copy(isGiven = true)
-            )
-        } else emptyList()
-        else -> null
-    } ?: return parent
-    return ResolutionScope(
-        name = "LOCAL",
-        declarationStore = declarationStore,
-        callContext = parent.callContext,
-        parent = parent,
-        owningDescriptor = parent.owningDescriptor,
-        produceGivens = { declarations }
-    )
-}

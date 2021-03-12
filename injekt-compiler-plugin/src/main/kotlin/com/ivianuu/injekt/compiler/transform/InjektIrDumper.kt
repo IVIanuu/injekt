@@ -18,7 +18,8 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.CacheDir
 import com.ivianuu.injekt.compiler.DumpDir
-import com.ivianuu.injekt.compiler.DumpFileManager
+import com.ivianuu.injekt.compiler.FileManager
+import com.ivianuu.injekt.compiler.InjektWritableSlices
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -27,16 +28,17 @@ import org.jetbrains.kotlin.ir.util.KotlinLikeDumpOptions
 import org.jetbrains.kotlin.ir.util.dumpKotlinLike
 import java.io.File
 
-class InjektIrDumper(
-    private val cacheDir: CacheDir,
-    private val dumpDir: DumpDir,
-) : IrGenerationExtension {
+class InjektIrDumper(private val fileManager: FileManager) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val fileManager = DumpFileManager(dumpDir, cacheDir)
-        moduleFragment.files.forEach {
-            val file = File(it.fileEntry.name)
+        moduleFragment.files.forEach { irFile ->
+            fileManager.markFileSeen(irFile.fileEntry.name)
+            if (pluginContext.bindingContext[InjektWritableSlices.GIVEN_CALLS_IN_FILE,
+                        irFile.fileEntry.name] != null) {
+                fileManager.markGivenCallInFile(irFile.fileEntry.name)
+            }
+            val file = File(irFile.fileEntry.name)
             val content = try {
-                it.dumpKotlinLike(
+                irFile.dumpKotlinLike(
                     KotlinLikeDumpOptions(
                         useNamedArguments = true,
                         printFakeOverridesStrategy = FakeOverridesStrategy.NONE
@@ -46,7 +48,7 @@ class InjektIrDumper(
                 e.stackTraceToString()
             }
             fileManager.generateFile(
-                it.fqName,
+                irFile.fqName,
                 file.name.removeSuffix(".kt"),
                 file.absolutePath,
                 content

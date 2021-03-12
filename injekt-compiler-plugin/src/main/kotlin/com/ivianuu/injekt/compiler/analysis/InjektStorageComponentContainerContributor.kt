@@ -22,8 +22,11 @@ import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.platform.TargetPlatform
+import org.jetbrains.kotlin.resolve.BindingContext
 
-class InjektStorageComponentContainerContributor : StorageComponentContainerContributor {
+class InjektStorageComponentContainerContributor(
+    private val bindingContextCollector: ((BindingContext) -> Unit)?
+) : StorageComponentContainerContributor {
     override fun registerModuleComponents(
         container: StorageComponentContainer,
         platform: TargetPlatform,
@@ -32,5 +35,6 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
         val declarationStore = DeclarationStore(moduleDescriptor)
         container.useInstance(GivenChecker(declarationStore))
         container.useInstance(TypeKeyChecker())
+        container.useInstance(GivenCallChecker(declarationStore, bindingContextCollector))
     }
 }

@@ -106,9 +106,9 @@ class ProviderGivenNode(
         ResolutionScope(
             "Provider<${type.render()} $ownerScope>",
             parent = ownerScope,
-            owningDescriptor = ownerScope.owningDescriptor,
             declarationStore = declarationStore,
             callContext = type.callContext,
+            ownerDescriptor = ownerScope.ownerDescriptor,
             produceGivens = {
                 type
                     .toKotlinType(declarationStore)

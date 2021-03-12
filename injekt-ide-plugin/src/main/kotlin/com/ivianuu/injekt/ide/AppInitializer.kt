@@ -35,31 +35,26 @@ import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 class AppInitializer : ApplicationInitializedListener {
     override fun componentsInitialized() {
         val app = ApplicationManager.getApplication()
+        app
+            .messageBus.connect(app)
+            .subscribe(
+                ProjectManager.TOPIC,
+                object : ProjectManagerListener {
+                    override fun projectOpened(project: Project) {
+                        StorageComponentContainerContributor.registerExtension(
+                            project,
+                            InjektStorageComponentContainerContributor { latestBindingContext = it }
+                        )
+                        CandidateInterceptor.registerExtension(
+                            project,
+                            GivenCallResolutionInterceptorExtension()
+                        )
 
-        app?.projectOpened { project ->
-            StorageComponentContainerContributor.registerExtension(
-                project,
-                InjektStorageComponentContainerContributor()
+                        @Suppress("DEPRECATION")
+                        Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
+                            .registerExtension(InjektDiagnosticSuppressor())
+                    }
+                }
             )
-            CandidateInterceptor.registerExtension(
-                project,
-                GivenCallResolutionInterceptorExtension()
-            )
-
-            @Suppress("DEPRECATION")
-            Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
-                .registerExtension(InjektDiagnosticSuppressor())
-
-            //app.registerGivenCallCheckerRunner(project)
-        }
     }
 }
-
-fun <A : Any> Application.registerTopic(topic: Topic<A>, listeners: A): Unit =
-    messageBus.connect(this).subscribe(topic, listeners)
-
-fun Application.projectOpened(opened: (Project) -> Unit): Unit =
-    registerTopic(ProjectManager.TOPIC, object : ProjectManagerListener {
-        override fun projectOpened(project: Project): Unit =
-            opened(project)
-    })

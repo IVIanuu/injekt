@@ -361,7 +361,7 @@ class GivenResolutionTest {
     fun testDerivedGiven() = codegen(
         """
             @Given val foo = Foo()
-            @Given val bar = Bar(given())
+            @Given val bar: Bar = Bar(given())
             fun invoke() = given<Bar>()
         """
     ) {

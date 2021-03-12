@@ -19,15 +19,13 @@ package com.ivianuu.injekt.compiler
 import org.jetbrains.kotlin.name.FqName
 import java.io.File
 
-class DumpFileManager(
+class FileManager(
     private val dumpDir: DumpDir,
-    private val cacheDir: CacheDir
+    cacheDir: CacheDir
 ) {
     private val originatingFilePaths = mutableMapOf<File, String>()
 
     private val cacheFile = cacheDir.resolve("file_pairs")
-
-    val newFiles = mutableListOf<File>()
 
     private val cacheEntries = if (!cacheFile.exists()) mutableSetOf()
     else cacheFile.readText()
@@ -39,6 +37,24 @@ class DumpFileManager(
         }
         .toMutableSet()
 
+    private val givenCallsFile = cacheDir.resolve("given_calls_file")
+
+    private val filesWithGivenCalls = if (!givenCallsFile.exists()) mutableSetOf()
+    else givenCallsFile.readText()
+        .split("\n")
+        .filter { it.isNotEmpty() }
+        .toMutableSet()
+
+    private val seenFiles = mutableSetOf<String>()
+
+    fun markFileSeen(filePath: String) {
+        seenFiles += filePath
+    }
+
+    fun markGivenCallInFile(filePath: String) {
+        filesWithGivenCalls += filePath
+    }
+
     fun generateFile(
         packageFqName: FqName,
         fileName: String,
@@ -49,7 +65,6 @@ class DumpFileManager(
             .resolve(packageFqName.asString().replace(".", "/"))
             .also { it.mkdirs() }
             .resolve(fileName)
-            .also { newFiles += it }
         if (originatingFile != null) {
             originatingFilePaths[newFile] = originatingFile
         }
@@ -76,6 +91,17 @@ class DumpFileManager(
                     cacheFile.createNewFile()
                 }
                 cacheFile.writeText(it)
+            }
+
+        filesWithGivenCalls
+            .filter { it !in seenFiles || it in filesWithGivenCalls }
+            .joinToString("\n")
+            .let {
+                if (!givenCallsFile.exists()) {
+                    givenCallsFile.parentFile.mkdirs()
+                    givenCallsFile.createNewFile()
+                }
+                givenCallsFile.writeText(it)
             }
     }
 
