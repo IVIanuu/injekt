@@ -33,134 +33,108 @@ class DeclarationStore(val module: ModuleDescriptor) {
 
     val moshi = Moshi.Builder().build()!!
 
-    val isAssignableCache = WeakHashMap<Any, Boolean>()
-    val isSubTypeCache = WeakHashMap<Any, Boolean>()
-    val subTypeViewCache = WeakHashMap<Any, TypeRef?>()
-    val uniqueKeysCache = WeakHashMap<DeclarationDescriptor, String>()
-    val classifiersCache = WeakHashMap<ClassifierDescriptor, ClassifierRef>()
-    val callablesCache = WeakHashMap<CallableDescriptor, CallableRef>()
-
-    private val callableInfosByDeclaration = mutableMapOf<Any, PersistedCallableInfo?>()
-    fun callableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? =
-        callableInfosByDeclaration.getOrPut(callable.original) {
-            val annotations = if (callable is ConstructorDescriptor &&
-                    callable.constructedClass.unsubstitutedPrimaryConstructor?.original == callable.original) {
-                callable.constructedClass.annotations
-            } else {
-                callable.annotations
+    fun callableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? {
+        val annotations = if (callable is ConstructorDescriptor &&
+            callable.constructedClass.unsubstitutedPrimaryConstructor?.original == callable.original) {
+            callable.constructedClass.annotations
+        } else {
+            callable.annotations
+        }
+        return annotations
+            .findAnnotation(InjektFqNames.CallableInfo)
+            ?.allValueArguments
+            ?.get("value".asNameId())
+            ?.value
+            ?.cast<String>()
+            ?.let { encoded ->
+                val json = Base64.getDecoder()
+                    .decode(encoded)
+                    .decodeToString()
+                val info = moshi.adapter(PersistedCallableInfo::class.java).fromJson(json)!!
+                info
             }
-            annotations
-                .findAnnotation(InjektFqNames.CallableInfo)
-                ?.allValueArguments
-                ?.get("value".asNameId())
-                ?.value
-                ?.cast<String>()
-                ?.let { encoded ->
-                    val json = Base64.getDecoder()
-                        .decode(encoded)
-                        .decodeToString()
-                    val info = moshi.adapter(PersistedCallableInfo::class.java).fromJson(json)!!
-                    info
-                }
-        }
+    }
 
-    private val classifierInfosByDeclaration = mutableMapOf<Any, PersistedClassifierInfo?>()
-    fun classifierInfoFor(classifier: ClassifierRef): PersistedClassifierInfo? =
-        classifierInfosByDeclaration.getOrPut(classifier.descriptor!!.original) {
-            classifier.descriptor
-                .annotations
-                .findAnnotation(InjektFqNames.ClassifierInfo)
-                ?.allValueArguments
-                ?.get("value".asNameId())
-                ?.value
-                ?.cast<String>()
-                ?.let { encoded ->
-                    val json = Base64.getDecoder()
-                        .decode(encoded)
-                        .decodeToString()
-                    moshi.adapter(PersistedClassifierInfo::class.java).fromJson(json)!!
+    fun classifierInfoFor(classifier: ClassifierRef): PersistedClassifierInfo? {
+        return classifier.descriptor!!
+            .annotations
+            .findAnnotation(InjektFqNames.ClassifierInfo)
+            ?.allValueArguments
+            ?.get("value".asNameId())
+            ?.value
+            ?.cast<String>()
+            ?.let { encoded ->
+                val json = Base64.getDecoder()
+                    .decode(encoded)
+                    .decodeToString()
+                moshi.adapter(PersistedClassifierInfo::class.java).fromJson(json)!!
+            }
+            ?: classifier.descriptor
+                .containingDeclaration
+                .safeAs<CallableDescriptor>()
+                ?.let { callableInfoFor(it) }
+                ?.typeParameters
+                ?.singleOrNull {
+                    val fqName = FqName(it.key.split(":")[1])
+                    fqName == classifier.fqName
                 }
-                ?: classifier.descriptor
-                    .containingDeclaration
-                    .safeAs<CallableDescriptor>()
-                    ?.let { callableInfoFor(it) }
-                    ?.typeParameters
-                    ?.singleOrNull {
-                        val fqName = FqName(it.key.split(":")[1])
-                        fqName == classifier.fqName
-                    }
-                    ?.toPersistedClassifierInfo()
-        }
+                ?.toPersistedClassifierInfo()
+    }
 
-    private val classifierDescriptorByFqName = mutableMapOf<FqName, ClassifierDescriptor?>()
     fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor? {
-        return classifierDescriptorByFqName.getOrPut(fqName) {
-            memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
-                fqName.shortName(), NoLookupLocation.FROM_BACKEND
-            )
-        }
+        return memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
+            fqName.shortName(), NoLookupLocation.FROM_BACKEND
+        )
     }
 
-    private val classifierDescriptorByKey = mutableMapOf<String, ClassifierDescriptor>()
     fun classifierDescriptorForKey(key: String): ClassifierDescriptor {
-        return classifierDescriptorByKey.getOrPut(key) {
-            val fqName = FqName(key.split(":")[1])
-            return@getOrPut memberScopeForFqName(fqName.parent())?.getContributedClassifier(
-                fqName.shortName(), NoLookupLocation.FROM_BACKEND
-            )?.takeIf { it.uniqueKey(this) == key }
-                ?: functionDescriptorsForFqName(fqName.parent())
-                    .flatMap { it.typeParameters }
-                    .firstOrNull {
-                        it.uniqueKey(this) == key
-                    }
-                ?: propertyDescriptorsForFqName(fqName.parent())
-                    .flatMap { it.typeParameters }
-                    .firstOrNull {
-                        it.uniqueKey(this) == key
-                    }
-                ?: classifierDescriptorForFqName(fqName.parent())
-                    .safeAs<ClassifierDescriptorWithTypeParameters>()
-                    ?.declaredTypeParameters
-                    ?.firstOrNull { it.uniqueKey(this) == key }
-                ?: error("Could not get for $fqName $key")
-        }
+        val fqName = FqName(key.split(":")[1])
+        return memberScopeForFqName(fqName.parent())?.getContributedClassifier(
+            fqName.shortName(), NoLookupLocation.FROM_BACKEND
+        )?.takeIf { it.uniqueKey(this) == key }
+            ?: functionDescriptorsForFqName(fqName.parent())
+                .flatMap { it.typeParameters }
+                .firstOrNull {
+                    it.uniqueKey(this) == key
+                }
+            ?: propertyDescriptorsForFqName(fqName.parent())
+                .flatMap { it.typeParameters }
+                .firstOrNull {
+                    it.uniqueKey(this) == key
+                }
+            ?: classifierDescriptorForFqName(fqName.parent())
+                .safeAs<ClassifierDescriptorWithTypeParameters>()
+                ?.declaredTypeParameters
+                ?.firstOrNull { it.uniqueKey(this) == key }
+            ?: error("Could not get for $fqName $key")
     }
 
-    private val functionDescriptorsByFqName = mutableMapOf<FqName, List<FunctionDescriptor>>()
     fun functionDescriptorsForFqName(fqName: FqName): List<FunctionDescriptor> {
-        return functionDescriptorsByFqName.getOrPut(fqName) {
-            memberScopeForFqName(fqName.parent())?.getContributedFunctions(
-                fqName.shortName(), NoLookupLocation.FROM_BACKEND
-            )?.toList() ?: emptyList()
-        }
+        return memberScopeForFqName(fqName.parent())?.getContributedFunctions(
+            fqName.shortName(), NoLookupLocation.FROM_BACKEND
+        )?.toList() ?: emptyList()
     }
 
-    private val propertyDescriptorsByFqName = mutableMapOf<FqName, List<PropertyDescriptor>>()
     private fun propertyDescriptorsForFqName(fqName: FqName): List<PropertyDescriptor> {
-        return propertyDescriptorsByFqName.getOrPut(fqName) {
-            memberScopeForFqName(fqName.parent())?.getContributedVariables(
-                fqName.shortName(), NoLookupLocation.FROM_BACKEND
-            )?.toList() ?: emptyList()
-        }
+        return memberScopeForFqName(fqName.parent())?.getContributedVariables(
+            fqName.shortName(), NoLookupLocation.FROM_BACKEND
+        )?.toList() ?: emptyList()
     }
 
-    private val memberScopeByFqName = mutableMapOf<FqName, MemberScope?>()
     fun memberScopeForFqName(fqName: FqName): MemberScope? {
-        return memberScopeByFqName.getOrPut(fqName) {
-            val pkg = module.getPackage(fqName)
+        val pkg = module.getPackage(fqName)
 
-            if (fqName.isRoot || pkg.fragments.isNotEmpty()) return@getOrPut pkg.memberScope
+        if (fqName.isRoot || pkg.fragments.isNotEmpty()) return pkg.memberScope
 
-            val parentMemberScope = memberScopeForFqName(fqName.parent()) ?: return@getOrPut null
+        val parentMemberScope = memberScopeForFqName(fqName.parent()) ?: return null
 
-            val classDescriptor =
-                parentMemberScope.getContributedClassifier(
-                    fqName.shortName(),
-                    NoLookupLocation.FROM_BACKEND
-                ) as? ClassDescriptor ?: return@getOrPut null
+        val classDescriptor =
+            parentMemberScope.getContributedClassifier(
+                fqName.shortName(),
+                NoLookupLocation.FROM_BACKEND
+            ) as? ClassDescriptor ?: return null
 
-            classDescriptor.unsubstitutedMemberScope
-        }
+        return classDescriptor.unsubstitutedMemberScope
     }
 
     val setType by unsafeLazy {

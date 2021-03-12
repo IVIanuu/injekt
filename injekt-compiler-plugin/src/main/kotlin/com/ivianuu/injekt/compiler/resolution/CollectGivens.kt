@@ -84,42 +84,41 @@ fun CallableRef.substituteInputs(map: Map<ClassifierRef, TypeRef>): CallableRef 
     )
 }
 
-fun CallableDescriptor.toCallableRef(declarationStore: DeclarationStore): CallableRef =
-    declarationStore.callablesCache.getOrPut(this) {
-        val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
-            .map { it.toAnnotationRef(declarationStore) }
-        val type = returnType!!.toTypeRef(declarationStore).let {
-            if (qualifiers.isNotEmpty()) it.copy(qualifiers = qualifiers + it.qualifiers)
-            else it
-        }
-        val typeParameters = typeParameters
-            .map { it.toClassifierRef(declarationStore) }
-        CallableRef(
-            callable = this,
-            type = type,
-            originalType = type,
-            typeParameters = typeParameters,
-            parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-                .map { it.injektName() to it.type.toTypeRef(declarationStore) }
-                .toMap(),
-            givenParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-                .filter { it.isGiven(declarationStore) }
-                .mapTo(mutableSetOf()) { it.injektName() },
-            qualifiers = qualifiers,
-            typeArguments = typeParameters
-                .map { it to it.defaultType }
-                .toMap(),
-            isGiven = isGiven(declarationStore),
-            fromGivenConstraint = false,
-            depth = 0,
-            callContext = callContext
-        ).let {
-            if (original.isExternalDeclaration()) it.apply(
-                declarationStore,
-                declarationStore.callableInfoFor(it.callable)
-            ) else it
-        }
+fun CallableDescriptor.toCallableRef(declarationStore: DeclarationStore): CallableRef {
+    val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
+        .map { it.toAnnotationRef(declarationStore) }
+    val type = returnType!!.toTypeRef(declarationStore).let {
+        if (qualifiers.isNotEmpty()) it.copy(qualifiers = qualifiers + it.qualifiers)
+        else it
     }
+    val typeParameters = typeParameters
+        .map { it.toClassifierRef(declarationStore) }
+    return CallableRef(
+        callable = this,
+        type = type,
+        originalType = type,
+        typeParameters = typeParameters,
+        parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)
+            .map { it.injektName() to it.type.toTypeRef(declarationStore) }
+            .toMap(),
+        givenParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
+            .filter { it.isGiven(declarationStore) }
+            .mapTo(mutableSetOf()) { it.injektName() },
+        qualifiers = qualifiers,
+        typeArguments = typeParameters
+            .map { it to it.defaultType }
+            .toMap(),
+        isGiven = isGiven(declarationStore),
+        fromGivenConstraint = false,
+        depth = 0,
+        callContext = callContext
+    ).let {
+        if (original.isExternalDeclaration()) it.apply(
+            declarationStore,
+            declarationStore.callableInfoFor(it.callable)
+        ) else it
+    }
+}
 
 fun MemberScope.collectGivens(
     declarationStore: DeclarationStore,

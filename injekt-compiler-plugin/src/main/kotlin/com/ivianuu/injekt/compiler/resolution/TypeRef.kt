@@ -62,12 +62,12 @@ else KotlinTypeRef(this, isStarProjection, declarationStore)
 
 fun ClassifierDescriptor.toClassifierRef(
     declarationStore: DeclarationStore
-): ClassifierRef = declarationStore.classifiersCache.getOrPut(original) {
+): ClassifierRef {
     val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
         ?.toTypeRef(declarationStore)
     val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
         .map { it.toAnnotationRef(declarationStore) }
-    ClassifierRef(
+    return ClassifierRef(
         fqName = original.fqNameSafe,
         typeParameters = (original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
             ?.map { it.toClassifierRef(declarationStore) } ?: emptyList(),
@@ -453,15 +453,15 @@ fun getSubstitutionMap(
 fun TypeRef.isAssignableTo(
     declarationStore: DeclarationStore,
     superType: TypeRef
-): Boolean = declarationStore.isAssignableCache.getOrPut(MultiKey2(this, superType)) {
-    if (isStarProjection || superType.isStarProjection) return@getOrPut true
-    if (frameworkKey != superType.frameworkKey) return@getOrPut false
+): Boolean {
+    if (isStarProjection || superType.isStarProjection) return true
+    if (frameworkKey != superType.frameworkKey) return false
     if (superType.classifier.isTypeParameter)
-        return@getOrPut isSubTypeOfTypeParameter(declarationStore, superType)
+        return isSubTypeOfTypeParameter(declarationStore, superType)
     if (classifier.isTypeParameter)
-        return@getOrPut superType.isSubTypeOfTypeParameter(declarationStore, this)
-    if (isSubTypeOf(declarationStore, superType)) return@getOrPut true
-    return@getOrPut false
+        return superType.isSubTypeOfTypeParameter(declarationStore, this)
+    if (isSubTypeOf(declarationStore, superType)) return true
+    return false
 }
 
 private fun TypeRef.isSubTypeOfTypeParameter(
@@ -495,31 +495,31 @@ private fun TypeRef.isSubTypeOfSameClassifier(
 fun TypeRef.isSubTypeOf(
     declarationStore: DeclarationStore,
     superType: TypeRef
-): Boolean = declarationStore.isSubTypeCache.getOrPut(MultiKey2(this, superType)) {
-    if (isStarProjection) return@getOrPut true
-    if (isNullableType && !superType.isNullableType) return@getOrPut false
-    if (frameworkKey != superType.frameworkKey) return@getOrPut false
+): Boolean {
+    if (isStarProjection) return true
+    if (isNullableType && !superType.isNullableType) return false
+    if (frameworkKey != superType.frameworkKey) return false
     if (superType.classifier.fqName == InjektFqNames.Any)
-        return@getOrPut superType.qualifiers.isEmpty() ||
+        return superType.qualifiers.isEmpty() ||
                 qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
     if (classifier == superType.classifier)
-        return@getOrPut isSubTypeOfSameClassifier(declarationStore, superType)
+        return isSubTypeOfSameClassifier(declarationStore, superType)
 
     val subTypeView = subtypeView(declarationStore, superType.classifier)
     if (subTypeView != null)
-        return@getOrPut subTypeView.isSubTypeOfSameClassifier(declarationStore, superType)
+        return subTypeView.isSubTypeOfSameClassifier(declarationStore, superType)
 
     if (superType.classifier.isTypeParameter) {
         if (superType.qualifiers.isNotEmpty() &&
             !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
-        ) return@getOrPut false
-        return@getOrPut superType.superTypes.all { upperBound ->
+        ) return false
+        return superType.superTypes.all { upperBound ->
             isSubTypeOf(declarationStore, upperBound) ||
                     (superType.qualifiers.isNotEmpty() &&
                             unqualified.isSubTypeOf(declarationStore, upperBound))
         }
     }
-    return@getOrPut false
+    return false
 }
 
 fun List<AnnotationRef>.isAssignableTo(declarationStore: DeclarationStore, superQualifiers: List<AnnotationRef>): Boolean {
@@ -548,8 +548,8 @@ val KotlinType.fullyAbbreviatedType: KotlinType
 fun TypeRef.subtypeView(
     declarationStore: DeclarationStore,
     classifier: ClassifierRef
-): TypeRef? = declarationStore.subTypeViewCache.getOrPut(MultiKey2(this, classifier)) {
-    if (this.classifier == classifier) return@getOrPut this
+): TypeRef? {
+    if (this.classifier == classifier) return this
     fun TypeRef.superTypeWithMatchingClassifier(): TypeRef? {
         if (this.classifier == classifier) return this
         for (superType in superTypes) {

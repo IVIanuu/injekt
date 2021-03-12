@@ -152,44 +152,42 @@ fun IrType.getAnnotatedAnnotations(annotation: FqName): List<IrConstructorCall> 
 
 fun DeclarationDescriptor.uniqueKey(declarationStore: DeclarationStore): String {
     val original = this.original
-    return declarationStore.uniqueKeysCache.getOrPut(original) {
-        when (original) {
-            is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
-                original.valueParameters
-                    .joinToString(",") {
-                        it.type
-                            .fullyAbbreviatedType
-                            .uniqueTypeName()
-                    }
-            }"
-            is ClassDescriptor -> "class:$fqNameSafe"
-            is FunctionDescriptor -> "function:$fqNameSafe:${
-                listOfNotNull(
-                    original.dispatchReceiverParameter, original.extensionReceiverParameter)
-                    .plus(original.valueParameters)
-                    .joinToString(",") {
-                        it.type
-                            .fullyAbbreviatedType
-                            .uniqueTypeName()
-                    }
-            }"
-            is PropertyDescriptor -> "property:$fqNameSafe:${
-                listOfNotNull(
-                    original.dispatchReceiverParameter, original.extensionReceiverParameter)
-                    .joinToString(",") {
-                        it.type
-                            .fullyAbbreviatedType
-                            .uniqueTypeName()
-                    }
-            }"
-            is TypeAliasDescriptor -> "typealias:$fqNameSafe"
-            is TypeParameterDescriptor ->
-                "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey(declarationStore)}"
-            is ParameterDescriptor -> ""
-            is ValueParameterDescriptor -> ""
-            is VariableDescriptor -> ""
-            else -> error("Unexpected declaration $this")
-        }
+    return when (original) {
+        is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
+            original.valueParameters
+                .joinToString(",") {
+                    it.type
+                        .fullyAbbreviatedType
+                        .uniqueTypeName()
+                }
+        }"
+        is ClassDescriptor -> "class:$fqNameSafe"
+        is FunctionDescriptor -> "function:$fqNameSafe:${
+            listOfNotNull(
+                original.dispatchReceiverParameter, original.extensionReceiverParameter)
+                .plus(original.valueParameters)
+                .joinToString(",") {
+                    it.type
+                        .fullyAbbreviatedType
+                        .uniqueTypeName()
+                }
+        }"
+        is PropertyDescriptor -> "property:$fqNameSafe:${
+            listOfNotNull(
+                original.dispatchReceiverParameter, original.extensionReceiverParameter)
+                .joinToString(",") {
+                    it.type
+                        .fullyAbbreviatedType
+                        .uniqueTypeName()
+                }
+        }"
+        is TypeAliasDescriptor -> "typealias:$fqNameSafe"
+        is TypeParameterDescriptor ->
+            "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey(declarationStore)}"
+        is ParameterDescriptor -> ""
+        is ValueParameterDescriptor -> ""
+        is VariableDescriptor -> ""
+        else -> error("Unexpected declaration $this")
     }
 }
 
@@ -223,11 +221,6 @@ fun <K, V> List<K>.toMap(values: List<V>): Map<K, V> {
     forEachWith(values) { key, value -> map[key] = value }
     return map
 }
-
-data class MultiKey2<P1, P2>(val p1: P1, val p2: P2)
-data class MultiKey3<P1, P2, P3>(val p1: P1, val p2: P2, val p3: P3)
-data class MultiKey4<P1, P2, P3, P4>(val p1: P1, val p2: P2, val p3: P3, val p4: P4)
-data class MultiKey5<P1, P2, P3, P4, P5>(val p1: P1, val p2: P2, val p3: P3, val p4: P4, val p5: P5)
 
 private var currentFrameworkKey = 0
 fun generateFrameworkKey() = currentFrameworkKey++.toString()
