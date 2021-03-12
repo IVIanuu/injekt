@@ -381,27 +381,6 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testCannotResolveExternalInternalMarkedGiven() = multiCodegen(
-        listOf(
-            source(
-                """
-                    @Given internal val foo = Foo()
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    fun invoke() = given<Foo>() 
-                """,
-                name = "File.kt"
-            )
-        )
-    ) {
-        it.last().compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo")
-    }
-
-    @Test
     fun testUnresolvedGiven() = codegen(
         """
             fun invoke() {
