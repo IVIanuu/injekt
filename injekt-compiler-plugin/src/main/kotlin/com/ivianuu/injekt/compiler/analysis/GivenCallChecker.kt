@@ -29,7 +29,6 @@ import com.ivianuu.injekt.compiler.resolution.FunctionResolutionScope
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.LocalDeclarationResolutionScope
-import com.ivianuu.injekt.compiler.resolution.PackageResolutionScope
 import com.ivianuu.injekt.compiler.resolution.ResolutionScope
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.isGiven
@@ -124,23 +123,13 @@ class GivenCallChecker(
 
     private var scope: ResolutionScope? = null
 
-    private val packageScopes = mutableMapOf<FqName, ResolutionScope>()
-
     private val usedGivensByFile = mutableMapOf<KtFile, MutableList<CallableDescriptor>>()
 
     private var currentFileHasGivenCalls = false
 
     override fun visitKtFile(file: KtFile) {
         currentFileHasGivenCalls = false
-        inScope({
-            FileResolutionScope(
-                packageScopes.getOrPut(file.packageFqName) {
-                    PackageResolutionScope(declarationStore, file.packageFqName)
-                },
-                declarationStore,
-                file
-            )
-        }) {
+        inScope({ FileResolutionScope(declarationStore, file) }) {
             super.visitKtFile(file)
         }
         givenCallFileManager?.setFileHasGivenCalls(

@@ -247,30 +247,17 @@ class ResolutionScope(
 
 }
 
-fun PackageResolutionScope(
-    declarationStore: DeclarationStore,
-    fqName: FqName
-) = ResolutionScope(
-    name = "PACKAGE $fqName",
-    declarationStore = declarationStore,
-    callContext = CallContext.DEFAULT,
-    parent = null,
-    owningDescriptor = null,
-    produceGivens = { collectGivensInPackage(declarationStore, fqName) }
-)
-
 fun FileResolutionScope(
-    parent: ResolutionScope,
     declarationStore: DeclarationStore,
     file: KtFile
 ) = ResolutionScope(
     name = "FILE ${file.virtualFilePath}",
     declarationStore = declarationStore,
     callContext = CallContext.DEFAULT,
-    parent = parent,
+    parent = null,
     owningDescriptor = null,
     produceGivens = {
-        file.importDirectives
+        collectGivensInPackage(declarationStore, file.packageFqName) + file.importDirectives
             .mapNotNull { it.importPath }
             .filter { it.fqName != file.packageFqName }
             .flatMap { import ->
