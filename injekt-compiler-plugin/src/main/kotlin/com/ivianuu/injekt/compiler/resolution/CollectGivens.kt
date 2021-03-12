@@ -259,12 +259,14 @@ fun HierarchicalScope.collectGivens(
     val allScopes = parentsWithSelf.toList()
 
     val importScopes = allScopes
-        .filterIsInstance<LazyImportScope>()
+        .filterIsInstance<ImportingScope>()
         .filter { scope ->
-            val scopeString = scope.toString()
-            "LazyImportScope: Explicit imports in LazyFileScope for file" in scopeString
-                    || ("LazyImportScope: All under imports in LazyFileScope for file" in scopeString &&
-                    !scopeString.endsWith("(invisible classes only)"))
+            if (scope is LazyImportScope) {
+                val scopeString = scope.toString()
+                "LazyImportScope: Explicit imports in LazyFileScope for file" in scopeString
+                        || ("LazyImportScope: All under imports in LazyFileScope for file" in scopeString &&
+                        !scopeString.endsWith("(invisible classes only)"))
+            } else true
         }
         .toList()
 
