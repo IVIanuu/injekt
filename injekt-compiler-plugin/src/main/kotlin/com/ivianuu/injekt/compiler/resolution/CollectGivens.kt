@@ -38,10 +38,13 @@ import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.resolve.calls.DslMarkerUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
+import org.jetbrains.kotlin.resolve.lazy.LazyImportScope
 import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
+import org.jetbrains.kotlin.resolve.scopes.ImportingScope
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.resolve.scopes.LexicalScopeKind
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
+import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 data class CallableRef(
@@ -55,6 +58,7 @@ data class CallableRef(
     val typeArguments: Map<ClassifierRef, TypeRef>,
     val isGiven: Boolean,
     val fromGivenConstraint: Boolean,
+    val depth: Int,
     val callContext: CallContext
 )
 
@@ -107,6 +111,7 @@ fun CallableDescriptor.toCallableRef(declarationStore: DeclarationStore): Callab
                 .toMap(),
             isGiven = isGiven(declarationStore),
             fromGivenConstraint = false,
+            depth = 0,
             callContext = callContext
         ).let {
             if (original.isExternalDeclaration()) it.apply(
@@ -120,6 +125,7 @@ fun MemberScope.collectGivens(
     declarationStore: DeclarationStore,
     type: TypeRef?,
     ownerDescriptor: DeclarationDescriptor?,
+    depth: Int,
     substitutionMap: Map<ClassifierRef, TypeRef>
 ): List<CallableRef> {
     val givenPrimaryConstructorParameters = (type?.classifier?.descriptor
@@ -132,33 +138,37 @@ fun MemberScope.collectGivens(
         .flatMap { declaration ->
             when (declaration) {
                 is ClassDescriptor -> declaration.getGivenConstructors(declarationStore)
-                    .map { it.substitute(substitutionMap) }
+                    .map {
+                        it
+                            .copy(isGiven = true, depth = depth)
+                            .substitute(substitutionMap)
+                    }
                 is PropertyDescriptor -> if (declaration.isGiven(declarationStore) ||
                         declaration.name in givenPrimaryConstructorParameters) {
                     listOf(
                         declaration.toCallableRef(declarationStore)
-                            .copy(isGiven = true)
+                            .copy(isGiven = true, depth = depth)
                             .substitute(substitutionMap)
                     )
                 } else emptyList()
                 is FunctionDescriptor -> if (declaration.isGiven(declarationStore)) {
                     listOf(
                         declaration.toCallableRef(declarationStore)
-                            .copy(isGiven = true)
+                            .copy(isGiven = true, depth = depth)
                             .substitute(substitutionMap)
                     )
                 } else emptyList()
                 else -> emptyList()
             }
         }
-        .filter {
-            it.callable.visibility == DescriptorVisibilities.PUBLIC ||
-                    it.callable.visibility == DescriptorVisibilities.LOCAL ||
-                    (it.callable.visibility == DescriptorVisibilities.INTERNAL &&
-                            !it.callable.original.isExternalDeclaration()) ||
-                    (it.callable is ClassConstructorDescriptor &&
-                            it.type.classifier.isObject) ||
-                    it.callable.parents.any {
+        .filter { callable ->
+            callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
+                    callable.callable.visibility == DescriptorVisibilities.LOCAL ||
+                    (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
+                            !callable.callable.original.isExternalDeclaration()) ||
+                    (callable.callable is ClassConstructorDescriptor &&
+                            callable.type.classifier.isObject) ||
+                    callable.callable.parents.any {
                         it == ownerDescriptor
                     }
         }
@@ -215,6 +225,7 @@ fun ClassDescriptor.getGivenConstructors(
 fun CallableRef.collectGivens(
     declarationStore: DeclarationStore,
     ownerDescriptor: DeclarationDescriptor?,
+    depth: Int,
     substitutionMap: Map<ClassifierRef, TypeRef>,
     addGiven: (CallableRef) -> Unit,
     addConstrainedGiven: (CallableRef) -> Unit
@@ -229,11 +240,12 @@ fun CallableRef.collectGivens(
     callable
         .returnType!!
         .memberScope
-        .collectGivens(declarationStore, type, ownerDescriptor, combinedSubstitutionMap)
+        .collectGivens(declarationStore, type, ownerDescriptor, depth, combinedSubstitutionMap)
         .forEach {
             it.collectGivens(
                 declarationStore,
                 ownerDescriptor,
+                depth,
                 combinedSubstitutionMap,
                 addGiven,
                 addConstrainedGiven
@@ -244,33 +256,56 @@ fun CallableRef.collectGivens(
 fun HierarchicalScope.collectGivens(
     declarationStore: DeclarationStore
 ): List<CallableRef> {
-    var current: HierarchicalScope? = this
-    val givens = mutableListOf<CallableRef>()
-    while (current != null) {
-        givens += declarationStore.givensByScope.getOrPut(current) {
-            current!!.collectGivensInScope(declarationStore)
+    val allScopes = parentsWithSelf.toList()
+
+    val importScopes = allScopes
+        .filterIsInstance<LazyImportScope>()
+        .filter { scope ->
+            val scopeString = scope.toString()
+            "LazyImportScope: Explicit imports in LazyFileScope for file" in scopeString
+                    || ("LazyImportScope: All under imports in LazyFileScope for file" in scopeString &&
+                    !scopeString.endsWith("(invisible classes only)"))
         }
-        current = current.parent
-    }
-    return givens.distinctBy { it.callable }
+        .toList()
+
+    var depth = 0
+    return parentsWithSelf
+        .toList()
+        .reversed()
+        .filter { it !is ImportingScope || it in importScopes }
+        .flatMap { scope ->
+            depth++
+            scope.collectGivensInScope(
+                if (scope is ImportingScope) 0 else depth,
+                declarationStore
+            ) { depth++ }
+        }
+        .distinctBy { it.callable }
 }
 
 private fun HierarchicalScope.collectGivensInScope(
-    declarationStore: DeclarationStore
+    depth: Int,
+    declarationStore: DeclarationStore,
+    bumpDepth: () -> Unit
 ): List<CallableRef> {
     return if (this is LexicalScope &&
             ownerDescriptor is ClassDescriptor &&
             kind == LexicalScopeKind.CLASS_MEMBER_SCOPE) {
         val clazz = ownerDescriptor as ClassDescriptor
-        listOf(
+        listOfNotNull(
+            clazz.companionObjectDescriptor?.thisAsReceiverParameter
+                ?.toCallableRef(declarationStore)
+                ?.copy(isGiven = true, depth = depth)
+                ?.also { bumpDepth() },
             clazz.thisAsReceiverParameter.toCallableRef(declarationStore)
-                .copy(isGiven = true)
+                .copy(isGiven = true, depth = depth + 1)
         )
     } else if (this is LexicalScope &&
         ownerDescriptor is FunctionDescriptor &&
         kind == LexicalScopeKind.FUNCTION_INNER_SCOPE) {
         val function = ownerDescriptor as FunctionDescriptor
         function.collectGivens(declarationStore)
+            .map { it.copy(depth = depth) }
     } else {
         getContributedDescriptors()
             .flatMap { declaration ->
@@ -291,5 +326,6 @@ private fun HierarchicalScope.collectGivensInScope(
                     else -> emptyList()
                 }
             }
+            .map { it.copy(depth = depth) }
     }
 }

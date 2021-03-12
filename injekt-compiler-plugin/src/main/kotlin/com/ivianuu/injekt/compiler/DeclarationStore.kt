@@ -26,18 +26,19 @@ import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.Base64
+import java.util.WeakHashMap
 
 @Suppress("NewApi")
 class DeclarationStore(val module: ModuleDescriptor) {
 
     val moshi = Moshi.Builder().build()!!
 
-    val isAssignableCache = mutableMapOf<Any, Boolean>()
-    val isSubTypeCache = mutableMapOf<Any, Boolean>()
-    val subTypeViewCache = mutableMapOf<Any, TypeRef?>()
-    val uniqueKeysCache = mutableMapOf<DeclarationDescriptor, String>()
-    val classifiersCache = mutableMapOf<ClassifierDescriptor, ClassifierRef>()
-    val callablesCache = mutableMapOf<CallableDescriptor, CallableRef>()
+    val isAssignableCache = WeakHashMap<Any, Boolean>()
+    val isSubTypeCache = WeakHashMap<Any, Boolean>()
+    val subTypeViewCache = WeakHashMap<Any, TypeRef?>()
+    val uniqueKeysCache = WeakHashMap<DeclarationDescriptor, String>()
+    val classifiersCache = WeakHashMap<ClassifierDescriptor, ClassifierRef>()
+    val callablesCache = WeakHashMap<CallableDescriptor, CallableRef>()
 
     private val callableInfosByDeclaration = mutableMapOf<Any, PersistedCallableInfo?>()
     fun callableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? =
@@ -161,8 +162,6 @@ class DeclarationStore(val module: ModuleDescriptor) {
             classDescriptor.unsubstitutedMemberScope
         }
     }
-
-    val givensByScope = mutableMapOf<HierarchicalScope, List<CallableRef>>()
 
     val setType by unsafeLazy {
         module.builtIns.set.defaultType.toTypeRef(this)

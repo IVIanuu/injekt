@@ -288,24 +288,6 @@ private fun ResolutionScope.resolveCandidate(
     return@computeForCandidate CandidateResolutionResult.Success(candidate, this, successDependencyResults)
 }
 
-private fun ResolutionScope.depth(scope: ResolutionScope): Int {
-    var currentScope: ResolutionScope? = scope
-    var depth = 0
-    while (currentScope != null && currentScope != this) {
-        depth++
-        currentScope = currentScope.parent
-    }
-    if (currentScope == null) {
-        currentScope = this
-        depth = 0
-        while (currentScope != null && currentScope != scope) {
-            depth--
-            currentScope = currentScope.parent
-        }
-    }
-    return depth
-}
-
 private fun ResolutionScope.compareResult(
     a: CandidateResolutionResult?,
     b: CandidateResolutionResult?,
@@ -355,10 +337,8 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     b!!
 
     if (!a.isFrameworkGiven && !b.isFrameworkGiven) {
-        val depthA = a.ownerScope.depth(this)
-        val depthB = b.ownerScope.depth(this)
-        if (depthA < depthB) return -1
-        if (depthB < depthA) return 1
+        if (a.depth > b.depth) return -1
+        if (b.depth > a.depth) return 1
     }
 
     if (a is CallableGivenNode && b is CallableGivenNode) {

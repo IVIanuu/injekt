@@ -32,6 +32,7 @@ class ResolutionScope(
     val declarationStore: DeclarationStore,
     val callContext: CallContext,
     val ownerDescriptor: DeclarationDescriptor?,
+    var depth: Int = -1,
     produceGivens: () -> List<CallableRef>
 ) {
     val chain: MutableSet<GivenNode> = parent?.chain ?: mutableSetOf()
@@ -75,6 +76,7 @@ class ResolutionScope(
                 given.collectGivens(
                     declarationStore = declarationStore,
                     ownerDescriptor = ownerDescriptor,
+                    depth = given.depth,
                     substitutionMap = emptyMap(),
                     addGiven = { callable ->
                         hasGivens = true
@@ -98,6 +100,10 @@ class ResolutionScope(
             constrainedGivenCandidates
                 .toList()
                 .forEach { collectConstrainedGivens(it) }
+        }
+
+        if (depth == -1) {
+            depth = givens.maxByOrNull { it.depth }?.depth ?: -1
         }
     }
 
@@ -205,12 +211,14 @@ class ResolutionScope(
             .copy(
                 fromGivenConstraint = true,
                 typeArguments = inputsSubstitutionMap,
+                depth = depth,
                 type = constrainedGiven.callable.type.substitute(outputsSubstitutionMap)
             )
 
         newGiven.collectGivens(
             declarationStore = declarationStore,
             ownerDescriptor = ownerDescriptor,
+            depth = depth,
             substitutionMap = outputsSubstitutionMap,
             addGiven = { newInnerGiven ->
                 givens += newInnerGiven

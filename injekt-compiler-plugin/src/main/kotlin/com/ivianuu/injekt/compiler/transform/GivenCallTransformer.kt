@@ -481,10 +481,6 @@ class GivenCallTransformer(
             .forEachIndexed { index, typeArgument ->
                 putTypeArgument(index, typeArgument.toIrType(pluginContext, declarationStore))
             }
-        if (symbol.descriptor.fqNameSafe.asString() ==
-            "com.ivianuu.essentials.app.appInitializerBindingImpl") {
-            println()
-        }
     }
 
     private fun ScopeContext.variableExpression(descriptor: VariableDescriptor): IrExpression =
