@@ -148,7 +148,7 @@ class ResolutionScope(
                                 GivenRequest(
                                     type = element,
                                     required = true,
-                                    callableFqName = FqName("GivenSet"),
+                                    callableFqName = FqName("com.ivianuu.injekt.givenSetOf"),
                                     parameterName = "element$index".asNameId()
                                 )
                             }

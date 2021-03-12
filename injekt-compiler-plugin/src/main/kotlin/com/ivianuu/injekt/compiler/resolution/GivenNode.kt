@@ -97,7 +97,7 @@ class ProviderGivenNode(
     override val ownerScope: ResolutionScope,
     val declarationStore: DeclarationStore
 ) : GivenNode() {
-    override val callableFqName: FqName = FqName("Provider<${type.render()}>")
+    override val callableFqName: FqName = FqName("com.ivianuu.injekt.givenProviderOf")
     override val dependencies: List<GivenRequest> = listOf(
         GivenRequest(
             type = type.arguments.last(),

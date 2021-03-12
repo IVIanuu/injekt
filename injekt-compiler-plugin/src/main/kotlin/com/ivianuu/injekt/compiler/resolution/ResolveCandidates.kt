@@ -26,16 +26,16 @@ sealed class GivenGraph {
         val results: Map<GivenRequest, CandidateResolutionResult.Success>
     ) : GivenGraph()
 
-    data class Error(
-        val failures: Map<GivenRequest, List<ResolutionResult.Failure>>,
-    ) : GivenGraph()
+    data class Error(val failures: Map<GivenRequest, ResolutionResult.Failure>) : GivenGraph()
 }
 
 sealed class CandidateResolutionResult {
+    abstract val request: GivenRequest
     abstract val candidate: GivenNode
 
     data class Success(
         override val candidate: GivenNode,
+        override val request: GivenRequest,
         val scope: ResolutionScope,
         val dependencyResults: Map<GivenRequest, Success>
     ) : CandidateResolutionResult() {
@@ -81,6 +81,7 @@ sealed class CandidateResolutionResult {
     }
 
     data class Failure(
+        override val request: GivenRequest,
         override val candidate: GivenNode,
         val failure: ResolutionResult.Failure,
     ) : CandidateResolutionResult()
@@ -116,15 +117,16 @@ sealed class ResolutionResult {
 
         data class DivergentGiven(
             override val request: GivenRequest,
-            val chain: List<GivenRequest>
+            val candidate: GivenNode
         ) : Failure() {
             override val failureOrdering: Int
                 get() = 1
         }
 
-        data class CandidateFailures(
+        data class CandidateFailure(
             override val request: GivenRequest,
-            val candidateFailure: CandidateResolutionResult.Failure,
+            val candidate: GivenNode,
+            val candidateFailure: Failure,
         ) : Failure() {
             override val failureOrdering: Int
                 get() = 1
@@ -162,14 +164,8 @@ private fun List<ResolutionResult.Success>.toSuccessGraph(
     scope: ResolutionScope
 ): GivenGraph.Success = GivenGraph.Success(scope, requests.zip(map { it.candidateResult }).toMap())
 
-private fun List<ResolutionResult.Failure>.toErrorGraph(): GivenGraph.Error {
-    val failuresByRequest = mutableMapOf<GivenRequest, MutableList<ResolutionResult.Failure>>()
-    fun ResolutionResult.Failure.visit() {
-        failuresByRequest.getOrPut(request) { mutableListOf() } += this
-    }
-    forEach { it.visit() }
-    return GivenGraph.Error(failuresByRequest)
-}
+private fun List<ResolutionResult.Failure>.toErrorGraph(): GivenGraph.Error =
+    GivenGraph.Error(associateBy { it.request })
 
 private fun ResolutionScope.computeForCandidate(
     request: GivenRequest,
@@ -187,14 +183,15 @@ private fun ResolutionScope.computeForCandidate(
                             subChain.none { it.lazyDependencies }))
         ) {
             return CandidateResolutionResult.Failure(
+                request,
                 candidate,
-                ResolutionResult.Failure.DivergentGiven(request, emptyList()) // todo
+                ResolutionResult.Failure.DivergentGiven(request, candidate)
             )
         }
     }
 
     if (candidate in chain)
-        return CandidateResolutionResult.Success(candidate, this, emptyMap())
+        return CandidateResolutionResult.Success(candidate, request, this, emptyMap())
 
     chain += candidate
     val result = compute()
@@ -215,7 +212,7 @@ private fun ResolutionScope.resolveCandidates(
             is CandidateResolutionResult.Success ->
                 ResolutionResult.Success(request, candidateResult)
             is CandidateResolutionResult.Failure ->
-                ResolutionResult.Failure.CandidateFailures(request, candidateResult)
+                ResolutionResult.Failure.CandidateFailure(request, candidateResult.candidate, candidateResult.failure)
         }
     }
 
@@ -255,7 +252,7 @@ private fun ResolutionScope.resolveCandidates(
         }
             ?: ResolutionResult.Failure.CandidateAmbiguity(request, successes)
     } else {
-        ResolutionResult.Failure.CandidateFailures(request, failure!!)
+        ResolutionResult.Failure.CandidateFailure(request, failure!!.candidate, failure.failure)
     }
 }
 
@@ -265,6 +262,7 @@ private fun ResolutionScope.resolveCandidate(
 ): CandidateResolutionResult = computeForCandidate(request, candidate) {
     if (!callContext.canCall(candidate.callContext)) {
         return@computeForCandidate CandidateResolutionResult.Failure(
+            request,
             candidate,
             ResolutionResult.Failure.CallContextMismatch(request, callContext, candidate)
         )
@@ -278,6 +276,7 @@ private fun ResolutionScope.resolveCandidate(
             is ResolutionResult.Failure -> {
                 if (dependency.required) {
                     return@computeForCandidate CandidateResolutionResult.Failure(
+                        request,
                         candidate,
                         result
                     )
@@ -285,7 +284,7 @@ private fun ResolutionScope.resolveCandidate(
             }
         }
     }
-    return@computeForCandidate CandidateResolutionResult.Success(candidate, this, successDependencyResults)
+    return@computeForCandidate CandidateResolutionResult.Success(candidate, request, this, successDependencyResults)
 }
 
 private fun ResolutionScope.compareResult(
