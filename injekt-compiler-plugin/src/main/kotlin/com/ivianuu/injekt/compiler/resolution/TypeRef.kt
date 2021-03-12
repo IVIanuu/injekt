@@ -396,9 +396,8 @@ fun getSubstitutionMap(
         visitedTypes += thisType
         visitedTypes += baseType
         if (!baseType.classifier.isTypeParameter) {
-            if (thisType.classifier == baseType.classifier) {
-                thisType.arguments.forEachWith(baseType.arguments) { a, b -> visitType(a, b) }
-            }
+            thisType.subtypeView(declarationStore, baseType.classifier)
+                ?.arguments?.forEachWith(baseType.arguments) { a, b -> visitType(a, b) }
             return
         }
 
@@ -440,10 +439,8 @@ fun getSubstitutionMap(
                     visitType(thisBaseTypeView ?: thisType, baseSuperType)
                 }
 
-                if (thisBaseTypeView?.classifier == baseSuperType.classifier) {
-                    thisBaseTypeView.arguments.forEachWith(baseSuperType.arguments) { a, b ->
-                        visitType(a, b)
-                    }
+                thisBaseTypeView?.arguments?.forEachWith(baseSuperType.arguments) { a, b ->
+                    visitType(a, b)
                 }
 
                 if (thisType.qualifiers.isAssignableTo(declarationStore, baseSuperType.qualifiers)) {

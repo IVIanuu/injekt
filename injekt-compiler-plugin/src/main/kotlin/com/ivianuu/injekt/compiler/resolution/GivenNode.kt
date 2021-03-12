@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringGiven
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.transform.toKotlinType
+import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
@@ -101,27 +102,29 @@ class ProviderGivenNode(
         )
     )
 
-    override val dependencyScope = ResolutionScope(
-        "Provider<${type.render()} $ownerScope>",
-        parent = ownerScope,
-        owningDescriptor = ownerScope.owningDescriptor,
-        declarationStore = declarationStore,
-        callContext = type.callContext,
-        produceGivens = {
-            type
-                .toKotlinType(declarationStore)
-                .memberScope
-                .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
-                .first()
-                .valueParameters
-                .onEach { parameterDescriptors += it }
-                .map { parameter ->
-                    parameter
-                        .toCallableRef(declarationStore = declarationStore)
-                        .copy(isGiven = type.arguments[parameter.index].isGiven)
-                }
-        }
-    )
+    override val dependencyScope by unsafeLazy {
+        ResolutionScope(
+            "Provider<${type.render()} $ownerScope>",
+            parent = ownerScope,
+            owningDescriptor = ownerScope.owningDescriptor,
+            declarationStore = declarationStore,
+            callContext = type.callContext,
+            produceGivens = {
+                type
+                    .toKotlinType(declarationStore)
+                    .memberScope
+                    .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
+                    .first()
+                    .valueParameters
+                    .onEach { parameterDescriptors += it }
+                    .map { parameter ->
+                        parameter
+                            .toCallableRef(declarationStore = declarationStore)
+                            .copy(isGiven = type.arguments[parameter.index].isGiven)
+                    }
+            }
+        )
+    }
 
     val parameterDescriptors = mutableListOf<ParameterDescriptor>()
 

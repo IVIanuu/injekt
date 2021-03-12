@@ -152,18 +152,8 @@ fun ResolutionScope.resolveGiven(requests: List<GivenRequest>): GivenGraph {
 
 private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult {
     resultsByRequest[request]?.let { return it }
-    var current: ResolutionScope? = this
-    var result: ResolutionResult? = null
-    while (current != null) {
-        result = resolveCandidates(request, current.givensForType(request.type))
-        if (result !is ResolutionResult.Failure.NoCandidates) break
-        else current = current.parent
-    }
-    if (result is ResolutionResult.Failure.NoCandidates) {
-        result = resolveCandidates(request,
-            listOfNotNull(frameworkGivensForType(request.type)))
-    }
-    resultsByRequest[request] = result!!
+    val result = resolveCandidates(request, givensForType(request.type))
+    resultsByRequest[request] = result
     return result
 }
 

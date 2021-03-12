@@ -104,58 +104,58 @@ class ResolutionScope(
 
     fun givensForType(type: TypeRef): List<GivenNode> {
         initialize
-        if (givens.isEmpty()) return emptyList()
         return givensByType.getOrPut(type) {
-            givens
-                .filter { it.type.isAssignableTo(declarationStore, type) }
-                .map { it.toGivenNode(type, this@ResolutionScope) }
-        }
-    }
+            buildList<GivenNode> {
+                parent?.givensForType(type)
+                    ?.filterNot { it.isFrameworkGiven }
+                    ?.let { this += it }
+                this += givens
+                    .filter { it.type.isAssignableTo(declarationStore, type) }
+                    .map { it.toGivenNode(type, this@ResolutionScope) }
 
-    fun frameworkGivensForType(type: TypeRef): GivenNode? {
-        if (type.constrainedGivenChain.isNotEmpty() ||
-            type.qualifiers.isNotEmpty() ||
-            type.setKey != null) return null
-        initialize
-        return if (type.isFunctionType && type.arguments.dropLast(1).all { it.isGiven }) {
-            ProviderGivenNode(
-                type = type,
-                ownerScope = this@ResolutionScope,
-                declarationStore = declarationStore
-            )
-        } else if (type.classifier == declarationStore.setType.classifier) {
-            val setElementType = type.arguments.single()
-            var elementTypes = setElementsForType(setElementType)
-            if (elementTypes.isEmpty() &&
-                setElementType.qualifiers.isEmpty() &&
-                setElementType.isFunctionType &&
-                setElementType.arguments.dropLast(1).all { it.isGiven }) {
-                val providerReturnType = setElementType.arguments.last()
-                elementTypes = setElementsForType(providerReturnType)
-                    .map { elementType ->
-                        setElementType.copy(
-                            arguments = setElementType.arguments
-                                .dropLast(1) + elementType
+                if (type.constrainedGivenChain.isEmpty() &&
+                    type.qualifiers.isEmpty() &&
+                    type.setKey == null) {
+                    if (type.isFunctionType && type.arguments.dropLast(1).all { it.isGiven }) {
+                        this += ProviderGivenNode(
+                            type = type,
+                            ownerScope = this@ResolutionScope,
+                            declarationStore = declarationStore
+                        )
+                    } else if (type.classifier == declarationStore.setType.classifier) {
+                        val setElementType = type.arguments.single()
+                        var elementTypes = setElementsForType(setElementType)
+                        if (elementTypes.isEmpty() &&
+                            setElementType.qualifiers.isEmpty() &&
+                            setElementType.isFunctionType &&
+                            setElementType.arguments.dropLast(1).all { it.isGiven }) {
+                            val providerReturnType = setElementType.arguments.last()
+                            elementTypes = setElementsForType(providerReturnType)
+                                .map { elementType ->
+                                    setElementType.copy(
+                                        arguments = setElementType.arguments
+                                            .dropLast(1) + elementType
+                                    )
+                                }
+                        }
+
+                        val elements = elementTypes
+                            .mapIndexed { index, element ->
+                                GivenRequest(
+                                    type = element,
+                                    required = true,
+                                    callableFqName = FqName("GivenSet"),
+                                    parameterName = "element$index".asNameId()
+                                )
+                            }
+                        this += SetGivenNode(
+                            type = type,
+                            ownerScope = this@ResolutionScope,
+                            dependencies = elements
                         )
                     }
-            }
-
-            val elements = elementTypes
-                .mapIndexed { index, element ->
-                    GivenRequest(
-                        type = element,
-                        required = true,
-                        callableFqName = FqName("GivenSet"),
-                        parameterName = "element$index".asNameId()
-                    )
                 }
-            SetGivenNode(
-                type = type,
-                ownerScope = this@ResolutionScope,
-                dependencies = elements
-            )
-        } else {
-            null
+            }
         }
     }
 

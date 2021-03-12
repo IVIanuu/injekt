@@ -30,6 +30,8 @@ import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.resolution.typeWith
 import com.ivianuu.injekt.test.codegen
+import io.kotest.matchers.maps.shouldContain
+import io.kotest.matchers.maps.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.builtins.StandardNames
@@ -343,6 +345,15 @@ class TypeRefTest {
     }
 
     @Test
+    fun testGetSubstitutionMapWithSubClass() = withAnalysisContext {
+        val classType = classType(listType.typeWith(stringType))
+        val typeParameter = typeParameter()
+        val map = getSubstitutionMap(declarationStore, listOf(classType to listType.typeWith(typeParameter)))
+        map.shouldHaveSize(1)
+        map.shouldContain(typeParameter.classifier, stringType)
+    }
+
+    @Test
     fun testSubTypeWithTypeParameterIsAssignableToSuperTypeWithOtherTypeParameterButSameSuperTypes() = withAnalysisContext {
         mutableListType.typeWith(typeParameter()) shouldBeAssignable listType.typeWith(typeParameter())
     }
@@ -443,6 +454,14 @@ class TypeRefTest {
             fqName = fqName,
             superTypes = listOf(expandedType),
             isTypeAlias = true
+        ).defaultType
+
+        fun classType(
+            vararg superTypes: TypeRef,
+            fqName: FqName = FqName("ClassType${id++}"),
+        ) = ClassifierRef(
+            fqName = fqName,
+            superTypes = superTypes.toList()
         ).defaultType
 
         fun typeParameter(

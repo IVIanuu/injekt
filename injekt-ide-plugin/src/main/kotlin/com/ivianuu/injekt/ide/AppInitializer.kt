@@ -50,7 +50,7 @@ class AppInitializer : ApplicationInitializedListener {
             Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
                 .registerExtension(InjektDiagnosticSuppressor())
 
-            app.registerGivenCallCheckerRunner(project)
+            //app.registerGivenCallCheckerRunner(project)
         }
     }
 }
