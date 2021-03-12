@@ -64,6 +64,7 @@ dependencies {
     implementation(Deps.autoService)
     kapt(Deps.autoService)
     api(Deps.Kotlin.compilerEmbeddable)
+    compileOnly(Deps.AndroidX.Compose.compiler)
     implementation(Deps.Kotlin.stdlib)
     implementation(Deps.Moshi.moshi)
     implementation(Deps.Moshi.adapters)

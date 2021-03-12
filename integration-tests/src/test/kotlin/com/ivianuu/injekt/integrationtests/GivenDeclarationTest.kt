@@ -99,7 +99,9 @@ class GivenDeclarationTest {
         invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
     }
 
-    @Test
+    // todo given nested class
+
+    // todo @Test
     fun testGivenCompanionObject() = codegen(
         """
             @Given val foo = Foo()

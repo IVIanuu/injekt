@@ -42,6 +42,7 @@ sealed class GivenNode {
     abstract val lazyDependencies: Boolean
     abstract val isFrameworkGiven: Boolean
     abstract val cache: Boolean
+    abstract val depth: Int
 }
 
 class CallableGivenNode(
@@ -65,6 +66,8 @@ class CallableGivenNode(
         get() = false
     override val cache: Boolean
         get() = false
+    override val depth: Int
+        get() = callable.depth
 }
 
 class SetGivenNode(
@@ -85,6 +88,8 @@ class SetGivenNode(
         get() = true
     override val cache: Boolean
         get() = false
+    override val depth: Int
+        get() = ownerScope.depth
 }
 
 class ProviderGivenNode(
@@ -106,9 +111,10 @@ class ProviderGivenNode(
         ResolutionScope(
             "Provider<${type.render()} $ownerScope>",
             parent = ownerScope,
-            owningDescriptor = ownerScope.owningDescriptor,
             declarationStore = declarationStore,
             callContext = type.callContext,
+            ownerDescriptor = ownerScope.ownerDescriptor,
+            depth = ownerScope.depth + 1,
             produceGivens = {
                 type
                     .toKotlinType(declarationStore)
@@ -120,7 +126,7 @@ class ProviderGivenNode(
                     .map { parameter ->
                         parameter
                             .toCallableRef(declarationStore = declarationStore)
-                            .copy(isGiven = type.arguments[parameter.index].isGiven)
+                            .copy(isGiven = true, depth = ownerScope.depth + 1)
                     }
             }
         )
@@ -138,6 +144,8 @@ class ProviderGivenNode(
         get() = true
     override val cache: Boolean
         get() = true
+    override val depth: Int
+        get() = 0
 }
 
 fun CallableRef.toGivenNode(

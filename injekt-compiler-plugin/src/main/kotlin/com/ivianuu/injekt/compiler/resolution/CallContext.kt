@@ -16,11 +16,16 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import androidx.compose.compiler.plugins.kotlin.isComposableCallable
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.backend.common.descriptors.isSuspend
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
+import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 
 enum class CallContext {
     DEFAULT, COMPOSABLE, SUSPEND
@@ -45,3 +50,23 @@ val TypeRef.callContext: CallContext
             .startsWith("kotlin.coroutines.SuspendFunction") -> CallContext.SUSPEND
         else -> CallContext.DEFAULT
     }
+
+private var composeCompilerInClasspath = try {
+    Class.forName("androidx.compose.compiler.plugins.kotlin.analysis.ComposeWritableSlices")
+    true
+} catch (e: ClassNotFoundException) {
+    false
+}
+
+fun HierarchicalScope.callContext(bindingContext: BindingContext): CallContext {
+    return generateSequence(this) { it.parent }
+        .filterIsInstance<LexicalScope>()
+        .mapNotNull { it.ownerDescriptor as? FunctionDescriptor }
+        .firstOrNull()
+        ?.let {
+            if (composeCompilerInClasspath && it.isComposableCallable(bindingContext)) {
+                CallContext.COMPOSABLE
+            } else it.callContext
+        }
+        ?: CallContext.DEFAULT
+}

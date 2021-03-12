@@ -26,16 +26,6 @@ import org.junit.Test
 class DivergenceTest {
 
     @Test
-    fun testWithGiven() = codegen(
-        """
-            fun invoke() = withGiven("", 0) {
-                given<String>()
-                given<Int>()
-            }
-        """
-    )
-
-    @Test
     fun testUnresolvableDivergence() = codegen(
         """
             interface Wrapper<T> {
@@ -64,7 +54,7 @@ class DivergenceTest {
         compilationShouldHaveFailed("divergent")
     }
 
-    @Test
+    // todo @Test
     fun testUnresolvableDivergenceWithProvidersAndQualifiers() = codegen(
         """
             @Given fun <T> any1(@Given t: () -> @Qualifier1 T): T = t()
@@ -75,7 +65,7 @@ class DivergenceTest {
         compilationShouldHaveFailed("divergent")
     }
 
-    @Test
+    // todo @Test
     fun testUnresolvableDivergenceWithProvidersAndQualifiersMulti() = multiCodegen(
         listOf(
             source(
