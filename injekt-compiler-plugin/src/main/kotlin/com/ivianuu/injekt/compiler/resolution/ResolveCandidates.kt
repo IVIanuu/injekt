@@ -27,6 +27,7 @@ sealed class GivenGraph {
     ) : GivenGraph()
 
     data class Error(
+        val scope: ResolutionScope,
         val failureRequest: GivenRequest,
         val failure: ResolutionResult.Failure
     ) : GivenGraph()
@@ -101,7 +102,6 @@ sealed class ResolutionResult {
         }
 
         data class DependencyFailure(
-            val candidate: GivenNode,
             val dependencyRequest: GivenRequest,
             val dependencyFailure: Failure,
         ) : Failure() {
@@ -131,7 +131,7 @@ fun ResolutionScope.resolveRequests(requests: List<GivenRequest>): GivenGraph {
         }
     }
     return if (failure == null) GivenGraph.Success(this, successes)
-    else GivenGraph.Error(failureRequest!!, failure)
+    else GivenGraph.Error(this, failureRequest!!, failure)
 }
 
 private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult {
@@ -234,7 +234,6 @@ private fun ResolutionScope.resolveCandidate(
             is ResolutionResult.Failure -> {
                 if (dependency.required) {
                     return@computeForCandidate ResolutionResult.Failure.DependencyFailure(
-                        candidate,
                         dependency,
                         dependencyResult
                     )

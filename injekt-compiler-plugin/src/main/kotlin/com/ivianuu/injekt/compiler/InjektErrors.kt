@@ -16,9 +16,12 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.resolution.CallContext
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
+import com.ivianuu.injekt.compiler.resolution.callContext
+import com.ivianuu.injekt.compiler.resolution.isFunctionType
 import com.ivianuu.injekt.compiler.resolution.render
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
@@ -170,12 +173,25 @@ private fun GivenGraph.Error.render(): String = buildString {
 
     when (unwrappedFailure) {
         is ResolutionResult.Failure.CallContextMismatch -> {
-            appendLine("current call context is ${unwrappedFailure.actualCallContext.name.toLowerCase()} but" +
-                    " call context of function ${unwrappedFailure.candidate.callableFqName} is ${unwrappedFailure.candidate.callContext.name.toLowerCase()}")
+            if (failure == unwrappedFailure) {
+                appendLine("given argument ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.render()} " +
+                        "for parameter ${failureRequest.parameterName} of function ${failureRequest.callableFqName} " +
+                        "is a ${unwrappedFailure.candidate.callContext.name.toLowerCase()} function " +
+                        "but current call context is ${unwrappedFailure.actualCallContext.name.toLowerCase()}")
+            } else {
+                appendLine("call context mismatch")
+            }
         }
         is ResolutionResult.Failure.CandidateAmbiguity -> {
-            appendLine("ambiguous given arguments of type ${unwrappedFailureRequest.type.render()} " +
-                    "for parameter ${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}")
+            if (failure == unwrappedFailure) {
+                appendLine("ambiguous given arguments:\n${unwrappedFailure.candidateResults.joinToString("\n") {
+                    it.candidate.callableFqName.asString()
+                }}\ndo all match type ${unwrappedFailureRequest.type.render()} for parameter " +
+                        "${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}")
+            } else {
+                appendLine("ambiguous given arguments of type ${unwrappedFailureRequest.type.render()} " +
+                        "for parameter ${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}")
+            }
         }
         is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
         is ResolutionResult.Failure.NoCandidates,
@@ -194,9 +210,12 @@ private fun GivenGraph.Error.render(): String = buildString {
 
         fun printCall(
             request: GivenRequest,
-            failure: ResolutionResult.Failure
+            failure: ResolutionResult.Failure,
+            callContext: CallContext
         ) {
-            val isProvider = request.callableFqName.asString() == "com.ivianuu.injekt.givenProviderOf"
+            val isProvider = request.callableFqName.asString()
+                .startsWith("com.ivianuu.injekt.") && request.callableFqName.asString()
+                .endsWith("roviderOf")
             append("${request.callableFqName}")
             if (isProvider) {
                 appendLine(" {")
@@ -204,17 +223,16 @@ private fun GivenGraph.Error.render(): String = buildString {
                 appendLine("(")
             }
             withIndent {
-                /*if (isProvider) {
-                    if (unwrappedFailure is ResolutionResult.Failure.CallContextMismatch) {
-                        appendLine("${indent()}/* ${failure..callContext.name.toLowerCase()} call context */")
-                    }
-                }*/
+                if (isProvider && unwrappedFailure is ResolutionResult.Failure.CallContextMismatch) {
+                    appendLine("${indent()}/* ${callContext.name.toLowerCase()} call context */")
+                }
                 append(indent())
                 if (!isProvider) {
                     append("${request.parameterName} = ")
                 }
                 if (failure is ResolutionResult.Failure.DependencyFailure) {
-                    printCall(failure.dependencyRequest, failure.dependencyFailure)
+                    printCall(failure.dependencyRequest, failure.dependencyFailure,
+                    if (isProvider) request.type.callContext else callContext)
                 } else {
                     append("/* ")
                     when (failure) {
@@ -222,7 +240,7 @@ private fun GivenGraph.Error.render(): String = buildString {
                             append("${failure.candidate.callContext.name.toLowerCase()} call:")
                         }
                         is ResolutionResult.Failure.CandidateAmbiguity -> {
-                            append("ambiguous: all ${failure.candidateResults.joinToString(", ") {
+                            append("ambiguous: ${failure.candidateResults.joinToString(", ") {
                                 it.candidate.callableFqName.asString() 
                             }} do match type ${request.type.render()}")
                         }
@@ -248,10 +266,15 @@ private fun GivenGraph.Error.render(): String = buildString {
 
         withIndent {
             if (unwrappedFailure is ResolutionResult.Failure.CallContextMismatch) {
-                appendLine("/* ${unwrappedFailure.actualCallContext.name.toLowerCase()} call context */")
+                appendLine("${indent()}/* ${scope.callContext.name.toLowerCase()} call context */")
             }
             append(indent())
-            printCall(failureRequest, failure)
+            printCall(
+                failureRequest,
+                failure,
+                if (failureRequest.type.isFunctionType) failureRequest.type.callContext
+                else scope.callContext
+            )
         }
         appendLine()
 
@@ -260,13 +283,9 @@ private fun GivenGraph.Error.render(): String = buildString {
                 appendLine("but call context was ${unwrappedFailure.actualCallContext.name.toLowerCase()}")
             }
             is ResolutionResult.Failure.CandidateAmbiguity -> {
-                /*withIndent {
-                    candidateResults
-                        .map { it.candidate }
-                        .forEach { candidate ->
-                            appendLine("${indent()}${candidate.callableFqName}")
-                        }
-                }*/
+                appendLine("but ${unwrappedFailure.candidateResults.joinToString("\n") {
+                    it.candidate.callableFqName.asString()
+                }}\ndo all match type ${unwrappedFailureRequest.type.render()}")
             }
             is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
             is ResolutionResult.Failure.DivergentGiven -> {

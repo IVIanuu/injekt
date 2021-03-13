@@ -27,10 +27,10 @@ class CallContextTest {
         """
             @Given suspend fun foo() = Foo()
             @Given suspend fun bar(@Given foo: Foo) = Bar(foo)
-            @Composable fun invoke() = given<() -> @Composable () -> Bar>()
+            @Composable fun invoke() = given<Bar>()
         """
     ) {
-        compilationShouldHaveFailed("current call context is composable but call context of function com.ivianuu.injekt.integrationtests.bar is suspend")
+        compilationShouldHaveFailed("given argument com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.given is a suspend function but current call context is composable")
     }
 
     @Test
@@ -52,7 +52,7 @@ class CallContextTest {
             }
         """
     ) {
-        compilationShouldHaveFailed("current call context is suspend but call context of function com.ivianuu.injekt.integrationtests.bar is composable")
+        compilationShouldHaveFailed("given argument com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.given is a composable function but current call context is suspend")
     }
 
     @Test

@@ -464,7 +464,10 @@ class GivenResolutionTest {
             fun invoke() = given<String>()
         """
     ) {
-        compilationShouldHaveFailed("ambiguous given arguments of type kotlin.String for parameter value of function com.ivianuu.injekt.given")
+        compilationShouldHaveFailed("ambiguous given arguments:\n" +
+                "com.ivianuu.injekt.integrationtests.a\n" +
+                "com.ivianuu.injekt.integrationtests.b\n" +
+                "do all match type kotlin.String for parameter value of function com.ivianuu.injekt.given")
     }
 
     @Test
