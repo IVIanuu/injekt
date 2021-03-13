@@ -36,29 +36,20 @@ annotation class WorkerBinding
 
 @Given
 inline fun <@Given reified T : @WorkerBinding S, S : ListenableWorker> workerBindingImpl(
-    @Given noinline provider: (@Given WorkerComponent) -> T
+    @Given noinline provider: (@Given WorkerContext, @Given WorkerParameters) -> T
 ): WorkerElement = T::class to provider
-
-typealias WorkerComponent = Component
-
-@Given
-val workerComponentModule =
-    ChildComponentModule2<AppComponent, WorkerContext, WorkerParameters, WorkerComponent>()
 
 typealias WorkerContext = Context
 
 internal typealias WorkerElement =
-        Pair<KClass<out ListenableWorker>, (@Given WorkerComponent) -> ListenableWorker>
+        Pair<KClass<out ListenableWorker>, (@Given WorkerContext, @Given WorkerParameters) -> ListenableWorker>
 
 @Given
 val @Given AppContext.workManager: WorkManager
     get() = WorkManager.getInstance(this)
 
 @Given
-class InjektWorkerFactory(
-    @Given workersFactory: () -> Set<WorkerElement>,
-    @Given private val workerComponentFactory: (WorkerContext, WorkerParameters) -> WorkerComponent,
-) : @Given WorkerFactory() {
+class InjektWorkerFactory(@Given workersFactory: () -> Set<WorkerElement>) : WorkerFactory() {
     private val workers by lazy { workersFactory().toMap() }
     override fun createWorker(
         appContext: Context,
@@ -66,7 +57,6 @@ class InjektWorkerFactory(
         workerParameters: WorkerParameters,
     ): ListenableWorker? {
         val workerFactory = workers[Class.forName(workerClassName).kotlin] ?: return null
-        val component = workerComponentFactory(appContext, workerParameters)
-        return workerFactory(component)
+        return workerFactory(appContext, workerParameters)
     }
 }

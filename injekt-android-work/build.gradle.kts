@@ -37,5 +37,7 @@ dependencies {
     api(Deps.AndroidX.work)
     testImplementation(Deps.AndroidX.Test.core)
     testImplementation(Deps.AndroidX.Test.junit)
+    testImplementation(Deps.kotestAssertions)
+    testImplementation(Deps.mockk)
     testImplementation(Deps.roboelectric)
 }

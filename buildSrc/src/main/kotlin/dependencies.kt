@@ -104,6 +104,8 @@ object Deps {
     const val mavenGradlePlugin =
         "com.github.dcendents:android-maven-gradle-plugin:2.1"
 
+    const val mockk = "io.mockk:mockk:1.10.0"
+
     object Moshi {
         private const val version = "1.9.2"
         const val adapters = "com.squareup.moshi:moshi-adapters:$version"

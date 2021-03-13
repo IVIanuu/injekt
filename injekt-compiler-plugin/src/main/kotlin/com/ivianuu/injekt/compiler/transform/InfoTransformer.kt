@@ -26,6 +26,8 @@ import com.ivianuu.injekt.compiler.toPersistedCallableInfo
 import com.ivianuu.injekt.compiler.toPersistedClassifierInfo
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
@@ -47,7 +49,8 @@ class InfoTransformer(
 
     @Suppress("NewApi")
     override fun visitClass(declaration: IrClass): IrStatement {
-        if (declaration.hasAnnotation(InjektFqNames.Given)) {
+        if (declaration.hasAnnotation(InjektFqNames.Given) &&
+                declaration.visibility == DescriptorVisibilities.PUBLIC) {
             declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
                 .run {
                     irCall(
@@ -70,9 +73,11 @@ class InfoTransformer(
 
     @Suppress("NewApi")
     override fun visitFunction(declaration: IrFunction): IrStatement {
-        if (declaration.hasAnnotation(InjektFqNames.Given) || (
-                    declaration is IrConstructor &&
-                            declaration.constructedClass.hasAnnotation(InjektFqNames.Given))) {
+        if ((declaration.hasAnnotation(InjektFqNames.Given) &&
+                    declaration.visibility == DescriptorVisibilities.PUBLIC) || (
+                    (declaration is IrConstructor &&
+                            declaration.constructedClass.hasAnnotation(InjektFqNames.Given) &&
+                            declaration.constructedClass.visibility == DescriptorVisibilities.PUBLIC))) {
                 val annotation = DeclarationIrBuilder(pluginContext, declaration.symbol)
                     .run {
                         irCall(
@@ -102,7 +107,8 @@ class InfoTransformer(
 
     @Suppress("NewApi")
     override fun visitProperty(declaration: IrProperty): IrStatement {
-        if (declaration.hasAnnotation(InjektFqNames.Given)) {
+        if (declaration.hasAnnotation(InjektFqNames.Given) &&
+                declaration.visibility == DescriptorVisibilities.PUBLIC) {
             declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
                 .run {
                     irCall(
