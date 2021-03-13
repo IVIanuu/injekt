@@ -79,9 +79,7 @@ fun sampleUi(
 @Scoped<ActivityRetainedComponent>
 @Given
 class CounterViewModel(@Given private val repo: CounterRepo) : ScopeDisposable {
-
     val state: Flow<Int> get() = repo.counterState
-
     private val scope = CoroutineScope(Dispatchers.Default)
 
     fun inc() {
@@ -99,5 +97,4 @@ class CounterViewModel(@Given private val repo: CounterRepo) : ScopeDisposable {
     override fun dispose() {
         scope.cancel()
     }
-
 }

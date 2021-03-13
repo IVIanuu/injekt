@@ -26,7 +26,6 @@ import kotlinx.coroutines.flow.first
 @Scoped<AppComponent>
 @Given
 class CounterRepo(@Given private val storage: CounterStorage) {
-
     val counterState: Flow<Int>
         get() = storage.counterState
 
@@ -37,5 +36,4 @@ class CounterRepo(@Given private val storage: CounterStorage) {
     suspend fun dec() {
         storage.updateCounter(counterState.first() - 1)
     }
-
 }

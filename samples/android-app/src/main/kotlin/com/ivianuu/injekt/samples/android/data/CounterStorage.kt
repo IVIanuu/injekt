@@ -27,14 +27,11 @@ import kotlinx.coroutines.sync.withLock
 @Scoped<AppComponent>
 @Given
 class CounterStorage {
-
     private val _counterState = MutableStateFlow(0)
     val counterState: Flow<Int> by this::_counterState
-
     private val counterMutex = Mutex()
 
     suspend fun updateCounter(value: Int) = counterMutex.withLock {
         _counterState.value = value
     }
-
 }
