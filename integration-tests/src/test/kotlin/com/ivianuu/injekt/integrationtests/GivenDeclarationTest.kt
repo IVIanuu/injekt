@@ -85,6 +85,20 @@ class GivenDeclarationTest {
     }
 
     @Test
+    fun testNestedGivenClass() = codegen(
+        """
+            import com.ivianuu.injekt.integrationtests.Outer.Dep
+            @Given val foo = Foo()
+            class Outer {
+                @Given class Dep(@Given val foo: Foo)
+            }
+            fun invoke() = given<Outer.Dep>()
+        """
+    ) {
+        invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Outer\$Dep"
+    }
+
+    @Test
     fun testGivenObject() = codegen(
         """
             @Given val foo = Foo()
