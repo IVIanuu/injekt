@@ -113,7 +113,7 @@ fun TypeRef.toKotlinType(declarationStore: DeclarationStore): SimpleType {
                     it.toKotlinType(declarationStore)
                 )
             })
-            .makeComposableAsSpecified(isMarkedComposable)
+            .makeComposableAsSpecified(declarationStore, isMarkedComposable)
             .makeNullableAsSpecified(isMarkedNullable)
     }
 }
@@ -131,13 +131,16 @@ fun TypeRef.toAbbreviation(declarationStore: DeclarationStore): SimpleType {
         .makeNullableAsSpecified(isMarkedNullable)
 }
 
-private fun SimpleType.makeComposableAsSpecified(isComposable: Boolean): SimpleType {
+private fun SimpleType.makeComposableAsSpecified(
+    declarationStore: DeclarationStore,
+    isComposable: Boolean
+): SimpleType {
     return replaceAnnotations(
         if (isComposable) {
             Annotations.create(
                 listOf(
                     AnnotationDescriptorImpl(
-                        constructor.declarationDescriptor!!.module
+                        declarationStore.module
                             .findClassAcrossModuleDependencies(
                                 ClassId.topLevel(InjektFqNames.Composable)
                         )!!.defaultType,
