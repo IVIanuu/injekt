@@ -98,9 +98,9 @@ class GivenCallChecker(
                             existingUsedGivensForFile + candidate.callable.callable
                         )
                     }
-                    dependencyResults.forEach { it.visit() }
+                    dependencyResults.forEach { it.value.visit() }
                 }
-                graph.results.forEach { it.visit() }
+                graph.results.forEach { it.value.visit() }
 
                 context.trace.record(
                     InjektWritableSlices.GIVEN_GRAPH,

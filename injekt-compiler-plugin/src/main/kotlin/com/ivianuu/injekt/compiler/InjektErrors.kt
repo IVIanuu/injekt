@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
+import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.render
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
@@ -157,15 +158,15 @@ private fun GivenGraph.Error.render(): String = buildString {
         repeat(indent) { append("    ") }
     }
 
-    fun ResolutionResult.Failure.unwrapCandidateFailure(): ResolutionResult.Failure {
+    fun ResolutionResult.Failure.unwrapDependencyFailure(
+        request: GivenRequest
+    ): Pair<GivenRequest, ResolutionResult.Failure> {
         return if (this is ResolutionResult.Failure.DependencyFailure)
-            candidateFailure.unwrapCandidateFailure()
-        else this
+            dependencyFailure.unwrapDependencyFailure(dependencyRequest)
+        else request to this
     }
 
-    val wrappedFailure = failures.first()
-
-    val unwrappedFailure = wrappedFailure.unwrapCandidateFailure()
+    val (unwrappedFailureRequest, unwrappedFailure) = failure.unwrapDependencyFailure(failureRequest)
 
     when (unwrappedFailure) {
         is ResolutionResult.Failure.CallContextMismatch -> {
@@ -173,27 +174,30 @@ private fun GivenGraph.Error.render(): String = buildString {
                     " call context of function ${unwrappedFailure.candidate.callableFqName} is ${unwrappedFailure.candidate.callContext.name.toLowerCase()}")
         }
         is ResolutionResult.Failure.CandidateAmbiguity -> {
-            appendLine("ambiguous given arguments of type ${unwrappedFailure.request.type.render()} " +
-                    "for parameter ${unwrappedFailure.request.parameterName} of function ${unwrappedFailure.request.callableFqName}")
+            appendLine("ambiguous given arguments of type ${unwrappedFailureRequest.type.render()} " +
+                    "for parameter ${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}")
         }
         is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
         is ResolutionResult.Failure.NoCandidates,
         is ResolutionResult.Failure.DivergentGiven-> {
             appendLine("no given argument found of type " +
-                    "${unwrappedFailure.request.type.render()} for parameter " +
-                    "${unwrappedFailure.request.parameterName} of function " +
-                    "${unwrappedFailure.request.callableFqName}")
+                    "${unwrappedFailureRequest.type.render()} for parameter " +
+                    "${unwrappedFailureRequest.parameterName} of function " +
+                    "${unwrappedFailureRequest.callableFqName}")
         }
     }
 
 
-    if (wrappedFailure is ResolutionResult.Failure.DependencyFailure) {
+    if (failure is ResolutionResult.Failure.DependencyFailure) {
         appendLine("I found:")
         appendLine()
 
-        fun printCall(failure: ResolutionResult.Failure) {
-            val isProvider = failure.request.callableFqName.asString() == "com.ivianuu.injekt.givenProviderOf"
-            append("${failure.request.callableFqName}")
+        fun printCall(
+            request: GivenRequest,
+            failure: ResolutionResult.Failure
+        ) {
+            val isProvider = request.callableFqName.asString() == "com.ivianuu.injekt.givenProviderOf"
+            append("${request.callableFqName}")
             if (isProvider) {
                 appendLine(" {")
             } else {
@@ -207,10 +211,10 @@ private fun GivenGraph.Error.render(): String = buildString {
                 }*/
                 append(indent())
                 if (!isProvider) {
-                    append("${failure.request.parameterName} = ")
+                    append("${request.parameterName} = ")
                 }
                 if (failure is ResolutionResult.Failure.DependencyFailure) {
-                    printCall(failure.candidateFailure)
+                    printCall(failure.dependencyRequest, failure.dependencyFailure)
                 } else {
                     append("/* ")
                     when (failure) {
@@ -220,7 +224,7 @@ private fun GivenGraph.Error.render(): String = buildString {
                         is ResolutionResult.Failure.CandidateAmbiguity -> {
                             append("ambiguous: all ${failure.candidateResults.joinToString(", ") {
                                 it.candidate.callableFqName.asString() 
-                            }} do match type ${failure.request.type.render()}")
+                            }} do match type ${request.type.render()}")
                         }
                         is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
                         is ResolutionResult.Failure.NoCandidates,
@@ -230,7 +234,7 @@ private fun GivenGraph.Error.render(): String = buildString {
                     if (failure is ResolutionResult.Failure.CallContextMismatch) {
                         appendLine("${failure.candidate.callableFqName}()")
                     } else {
-                        appendLine("given<${failure.request.type.render()}>()")
+                        appendLine("given<${request.type.render()}>()")
                     }
                 }
             }
@@ -247,7 +251,7 @@ private fun GivenGraph.Error.render(): String = buildString {
                 appendLine("/* ${unwrappedFailure.actualCallContext.name.toLowerCase()} call context */")
             }
             append(indent())
-            printCall(wrappedFailure)
+            printCall(failureRequest, failure)
         }
         appendLine()
 
@@ -267,10 +271,10 @@ private fun GivenGraph.Error.render(): String = buildString {
             is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
             is ResolutionResult.Failure.DivergentGiven -> {
                 appendLine("but given ${unwrappedFailure.candidate.callableFqName} " +
-                        "produces a diverging search when trying to match type ${unwrappedFailure.request.type.render()}")
+                        "produces a diverging search when trying to match type ${unwrappedFailureRequest.type.render()}")
             }
             is ResolutionResult.Failure.NoCandidates -> {
-                appendLine("but no givens were found that match type ${unwrappedFailure.request.type.render()}")
+                appendLine("but no givens were found that match type ${unwrappedFailureRequest.type.render()}")
             }
         }
     }

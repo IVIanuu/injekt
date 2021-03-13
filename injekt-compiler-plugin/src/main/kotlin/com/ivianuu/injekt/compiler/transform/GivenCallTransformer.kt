@@ -98,9 +98,9 @@ class GivenCallTransformer(
             fun ResolutionResult.Success.visit() {
                 if (candidate.type == result.candidate.type &&
                         outerMostScope == result.outerMostScope) usages++
-                dependencyResults.forEach { it.visit() }
+                dependencyResults.forEach { it.value.visit() }
             }
-            graph.results.forEach { it.visit() }
+            graph.results.forEach { it.value.visit() }
             usages
         }
 
@@ -147,19 +147,19 @@ class GivenCallTransformer(
 
     private fun IrFunctionAccessExpression.fillGivens(
         context: ScopeContext,
-        results: List<ResolutionResult.Success>
+        results: Map<GivenRequest, ResolutionResult.Success>
     ) {
         results
-            .forEach { result ->
+            .forEach { (request, result) ->
                 val expression = context.expressionFor(result)
-                when(result.request.parameterName.asString()) {
+                when(request.parameterName.asString()) {
                     "_dispatchReceiver" -> dispatchReceiver = expression
                     "_extensionReceiver" -> extensionReceiver = expression
                     else -> {
                         putValueArgument(
                             symbol.owner
                                 .valueParameters
-                                .first { it.name == result.request.parameterName }
+                                .first { it.name == request.parameterName }
                                 .index,
                             expression
                         )
@@ -303,7 +303,7 @@ class GivenCallTransformer(
                 val previousParametersMap = parameterMap.toMap()
                 given.parameterDescriptors
                     .forEachWith(function.valueParameters) { a, b -> parameterMap[a] = b }
-                expressionFor(result.dependencyResults.single())
+                expressionFor(result.dependencyResults.values.single())
                     .also {
                         parameterMap.clear()
                         parameterMap.putAll(previousParametersMap)
@@ -351,7 +351,7 @@ class GivenCallTransformer(
                 .irCall(setOf)
                 .apply {
                     putTypeArgument(0, elementType.toIrType(pluginContext, declarationStore))
-                    putValueArgument(0, expressionFor(result.dependencyResults.single()))
+                    putValueArgument(0, expressionFor(result.dependencyResults.values.single()))
                 }
             else -> DeclarationIrBuilder(pluginContext, symbol).irBlock {
                 val tmpSet = irTemporary(
@@ -365,7 +365,7 @@ class GivenCallTransformer(
                     .forEach { dependencyResult ->
                         +irCall(setAdd).apply {
                             dispatchReceiver = irGet(tmpSet)
-                            putValueArgument(0, expressionFor(dependencyResult))
+                            putValueArgument(0, expressionFor(dependencyResult.value))
                         }
                     }
 

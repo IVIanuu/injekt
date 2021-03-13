@@ -23,20 +23,20 @@ import com.ivianuu.injekt.compiler.unsafeLazy
 sealed class GivenGraph {
     data class Success(
         val scope: ResolutionScope,
-        val results: List<ResolutionResult.Success>
+        val results: Map<GivenRequest, ResolutionResult.Success>
     ) : GivenGraph()
 
-    data class Error(val failures: List<ResolutionResult.Failure>) : GivenGraph()
+    data class Error(
+        val failureRequest: GivenRequest,
+        val failure: ResolutionResult.Failure
+    ) : GivenGraph()
 }
 
 sealed class ResolutionResult {
-    abstract val request: GivenRequest
-
     data class Success(
-        override val request: GivenRequest,
         val candidate: GivenNode,
         val scope: ResolutionScope,
-        val dependencyResults: List<Success>
+        val dependencyResults: Map<GivenRequest, Success>
     ) : ResolutionResult() {
         val outerMostScope: ResolutionScope by unsafeLazy {
             when {
@@ -48,9 +48,9 @@ sealed class ResolutionResult {
                     val allOuterMostScopes = mutableListOf<ResolutionScope>()
                     fun Success.visit() {
                         allOuterMostScopes += outerMostScope
-                        dependencyResults.forEach { it.visit() }
+                        dependencyResults.forEach { it.value.visit() }
                     }
-                    dependencyResults.single().visit()
+                    dependencyResults.values.single().visit()
                     allOuterMostScopes
                         .sortedBy { it.allParents.size }
                         .filter { it.allParents.size < candidate.dependencyScope!!.allParents.size }
@@ -60,8 +60,8 @@ sealed class ResolutionResult {
                 }
                 else -> {
                     val dependencyScope = dependencyResults.maxByOrNull {
-                        it.outerMostScope.allParents.size
-                    }!!.outerMostScope
+                        it.value.outerMostScope.allParents.size
+                    }!!.value.outerMostScope
                     when {
                         dependencyScope.allParents.size <
                                 candidate.ownerScope.allParents.size -> scope.allScopes.first {
@@ -82,16 +82,12 @@ sealed class ResolutionResult {
     sealed class Failure : ResolutionResult() {
         abstract val failureOrdering: Int
 
-        data class CandidateAmbiguity(
-            override val request: GivenRequest,
-            val candidateResults: List<Success>,
-        ) : Failure() {
+        data class CandidateAmbiguity(val candidateResults: List<Success>) : Failure() {
             override val failureOrdering: Int
                 get() = 0
         }
 
         data class CallContextMismatch(
-            override val request: GivenRequest,
             val actualCallContext: CallContext,
             val candidate: GivenNode,
         ) : Failure() {
@@ -99,24 +95,21 @@ sealed class ResolutionResult {
                 get() = 1
         }
 
-        data class DivergentGiven(
-            override val request: GivenRequest,
-            val candidate: GivenNode
-        ) : Failure() {
+        data class DivergentGiven(val candidate: GivenNode) : Failure() {
             override val failureOrdering: Int
                 get() = 1
         }
 
         data class DependencyFailure(
-            override val request: GivenRequest,
             val candidate: GivenNode,
-            val candidateFailure: Failure,
+            val dependencyRequest: GivenRequest,
+            val dependencyFailure: Failure,
         ) : Failure() {
             override val failureOrdering: Int
                 get() = 1
         }
 
-        data class NoCandidates(override val request: GivenRequest) : Failure() {
+        object NoCandidates : Failure() {
             override val failureOrdering: Int
                 get() = 2
         }
@@ -124,33 +117,35 @@ sealed class ResolutionResult {
 }
 
 fun ResolutionScope.resolveRequests(requests: List<GivenRequest>): GivenGraph {
-    val (successResults, failureResults) = requests
-        .map { resolveRequest(it) }
-        .filter { it is ResolutionResult.Success || it.request.required }
-        .let {
-            it
-                .filterIsInstance<ResolutionResult.Success>() to
-                    it.filterIsInstance<ResolutionResult.Failure>()
+    val successes = mutableMapOf<GivenRequest, ResolutionResult.Success>()
+    var failureRequest: GivenRequest? = null
+    var failure: ResolutionResult.Failure? = null
+    for (request in requests) {
+        when (val result = resolveRequest(request)) {
+            is ResolutionResult.Success -> successes[request] = result
+            is ResolutionResult.Failure ->
+                if (request.required && compareResult(result, failure) < 0) {
+                    failureRequest = request
+                    failure = result
+                }
         }
-    return if (failureResults.isEmpty()) GivenGraph.Success(this, successResults)
-    else GivenGraph.Error(
-        failureResults
-            .sortedWith { a, b -> compareResult(a, b) }
-    )
+    }
+    return if (failure == null) GivenGraph.Success(this, successes)
+    else GivenGraph.Error(failureRequest!!, failure)
 }
 
 private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult {
-    resultsByRequest[request]?.let { return it }
-    val result = resolveCandidates(request, givensForType(request.type))
-    resultsByRequest[request] = result
+    resultsByType[request.type]?.let { return it }
+    val result = resolveCandidates(givensForType(request.type))
+    resultsByType[request.type] = result
     return result
 }
 
 private fun ResolutionScope.computeForCandidate(
-    request: GivenRequest,
     candidate: GivenNode,
     compute: () -> ResolutionResult,
 ): ResolutionResult {
+    resultsByCandidate[candidate]?.let { return it }
     if (chain.isNotEmpty()) {
         var lazyDependencies = false
         for (i in chain.lastIndex downTo 0) {
@@ -161,29 +156,31 @@ private fun ResolutionScope.computeForCandidate(
                 (prev.type.typeSize < candidate.type.typeSize ||
                         (prev.type == candidate.type && !lazyDependencies))
             ) {
-                return ResolutionResult.Failure.DivergentGiven(request, candidate)
+                val result = ResolutionResult.Failure.DivergentGiven(candidate)
+                resultsByCandidate[candidate] = result
+                return result
             }
         }
     }
 
     if (candidate in chain)
-        return ResolutionResult.Success(request, candidate, this, emptyList())
+        return ResolutionResult.Success(candidate, this, emptyMap())
 
     chain += candidate
     val result = compute()
+    resultsByCandidate[candidate] = result
     chain -= candidate
     return result
 }
 
 private fun ResolutionScope.resolveCandidates(
-    request: GivenRequest,
     candidates: List<GivenNode>,
 ): ResolutionResult {
-    if (candidates.isEmpty()) return ResolutionResult.Failure.NoCandidates(request)
+    if (candidates.isEmpty()) return ResolutionResult.Failure.NoCandidates
 
     if (candidates.size == 1) {
         val candidate = candidates.single()
-        return resolveCandidate(request, candidate)
+        return resolveCandidate(candidate)
     }
 
     val successes = mutableListOf<ResolutionResult.Success>()
@@ -198,7 +195,7 @@ private fun ResolutionScope.resolveCandidates(
             break
         }
 
-        when (val candidateResult = resolveCandidate(request, candidate)) {
+        when (val candidateResult = resolveCandidate(candidate)) {
             is ResolutionResult.Success -> {
                 val firstSuccessResult = successes.firstOrNull()
                 when (compareResult(candidateResult, firstSuccessResult)) {
@@ -218,35 +215,34 @@ private fun ResolutionScope.resolveCandidates(
 
     return if (successes.isNotEmpty()) {
         successes.singleOrNull()
-            ?: ResolutionResult.Failure.CandidateAmbiguity(request, successes)
+            ?: ResolutionResult.Failure.CandidateAmbiguity(successes)
     } else failure!!
 }
 
 private fun ResolutionScope.resolveCandidate(
-    request: GivenRequest,
-    candidate: GivenNode,
-): ResolutionResult = computeForCandidate(request, candidate) {
+    candidate: GivenNode
+): ResolutionResult = computeForCandidate(candidate) {
     if (!callContext.canCall(candidate.callContext)) {
-        return@computeForCandidate ResolutionResult.Failure.CallContextMismatch(request, callContext, candidate)
+        return@computeForCandidate ResolutionResult.Failure.CallContextMismatch(callContext, candidate)
     }
 
-    val successDependencyResults = mutableListOf<ResolutionResult.Success>()
+    val successDependencyResults = mutableMapOf<GivenRequest, ResolutionResult.Success>()
     val dependencyScope = candidate.dependencyScope ?: this
     for (dependency in candidate.dependencies) {
         when (val dependencyResult = dependencyScope.resolveRequest(dependency)) {
-            is ResolutionResult.Success -> successDependencyResults += dependencyResult
+            is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
             is ResolutionResult.Failure -> {
                 if (dependency.required) {
                     return@computeForCandidate ResolutionResult.Failure.DependencyFailure(
-                        request,
                         candidate,
+                        dependency,
                         dependencyResult
                     )
                 }
             }
         }
     }
-    return@computeForCandidate ResolutionResult.Success(request, candidate, this, successDependencyResults)
+    return@computeForCandidate ResolutionResult.Success(candidate, this, successDependencyResults)
 }
 
 private fun ResolutionScope.compareResult(
@@ -274,7 +270,7 @@ private fun ResolutionScope.compareResult(
 
         for (aDependency in a.dependencyResults) {
             for (bDependency in b.dependencyResults) {
-                diff += compareResult(aDependency, bDependency)
+                diff += compareResult(aDependency.value, bDependency.value)
             }
         }
         return when {
