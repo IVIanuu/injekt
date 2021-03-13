@@ -31,6 +31,9 @@ import com.ivianuu.injekt.component.ChildComponentModule2
 import com.ivianuu.injekt.component.Component
 import kotlin.reflect.KClass
 
+/**
+ * Registers the annotated given [ListenableWorker] in the [InjektWorkerFactory]
+ */
 @Qualifier
 annotation class WorkerBinding
 

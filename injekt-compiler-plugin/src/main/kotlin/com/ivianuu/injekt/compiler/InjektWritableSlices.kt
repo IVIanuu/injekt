@@ -17,8 +17,10 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
+import com.ivianuu.injekt.compiler.resolution.ResolutionScope
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
 import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
 import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
 
@@ -28,6 +30,7 @@ object InjektWritableSlices {
     val USED_GIVEN = BasicWritableSlice<CallableDescriptor, Unit>(RewritePolicy.DO_NOTHING)
     val GIVEN_CALLS_IN_FILE = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
     val USED_GIVENS_FOR_FILE = BasicWritableSlice<KtFile, List<CallableDescriptor>>(RewritePolicy.DO_NOTHING)
+    val RESOLUTION_SCOPE_FOR_SCOPE = BasicWritableSlice<HierarchicalScope, ResolutionScope>(RewritePolicy.DO_NOTHING)
 }
 
 data class SourcePosition(

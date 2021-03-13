@@ -70,8 +70,7 @@ class GivenCallChecker(
 
         if (requests.isEmpty()) return
 
-        val scope = HierarchicalResolutionScope(declarationStore, context.scope,
-            context.trace.bindingContext)
+        val scope = HierarchicalResolutionScope(declarationStore, context.scope, context.trace)
 
         when (val graph = scope.resolveRequests(requests)) {
             is GivenGraph.Success -> {

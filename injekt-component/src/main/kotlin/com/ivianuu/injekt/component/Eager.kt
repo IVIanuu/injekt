@@ -18,11 +18,14 @@ package com.ivianuu.injekt.component
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.common.Scope
 import com.ivianuu.injekt.common.Scoped
 
+/**
+ * Converts a [@Eager<C> T] to a [T] which is scoped to the lifecycle of [C] and will be instantiated
+ * as soon as the hosting [Component] get's initialized
+ */
 @Qualifier
-annotation class Eager<S : Scope>
+annotation class Eager<C : Component>
 
 @Given
 fun <@Given T : @Eager<U> S, S : Any, U : Component> eagerImpl() = EagerModule<T, S, U>()

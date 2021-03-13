@@ -18,11 +18,17 @@ package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Given
 
+/**
+ * Converts a [Set<Pair<K, V>] to a [Map<K, V>]
+ */
 @Given
 inline fun <K, V> setOfPairsToMap(
     @Given pairs: Set<Pair<K, V>>
 ): Map<K, V> = pairs.toMap()
 
+/**
+ * Converts a () -> T to a [Lazy<T>]
+ */
 @Given
 inline fun <T> providerToLazy(@Given crossinline provider: () -> T): Lazy<T> = lazy {
     provider()

@@ -20,6 +20,10 @@ import com.ivianuu.injekt.Given
 
 typealias AppComponent = Component
 
+/**
+ * Initializes the [AppComponent] with [elementsFactory] and [initializersFactory]
+ * And can then be accessed via [appComponent]
+ */
 fun App.initializeApp(
     @Given elementsFactory: (@Given AppComponent) -> Set<ComponentElement<AppComponent>>,
     @Given initializersFactory: (@Given AppComponent) -> Set<ComponentInitializer<AppComponent>>

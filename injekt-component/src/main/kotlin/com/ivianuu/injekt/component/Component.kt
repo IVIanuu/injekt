@@ -25,15 +25,40 @@ import com.ivianuu.injekt.common.Scope
 import com.ivianuu.injekt.common.TypeKey
 import com.ivianuu.injekt.common.typeKeyOf
 
+/**
+ * A hierarchical construct with a lifecycle which hosts a map of keys to elements
+ * which can be retrieved via [Component.elementOrNull] or [Component.element]
+ */
 interface Component : Scope {
+    /**
+     * The exact type key of this component
+     */
     val key: TypeKey<Component>
 
+    /**
+     * Returns the element [T] for [key] or null
+     */
     fun <T> elementOrNull(key: TypeKey<T>): T?
 
+    /**
+     * Construct a [Component] instance
+     */
     interface Builder<C : Component> {
+        /**
+         * Adds [parent] as a dependency
+         */
         fun <T : Component> dependency(parent: T): Builder<C>
+        /**
+         * Registers a element for [key] which will be provided by [factory]
+         */
         fun <T> element(key: TypeKey<T>, factory: () -> T): Builder<C>
+        /**
+         * Registers the [initializer]
+         */
         fun initializer(initializer: ComponentInitializer<C>): Builder<C>
+        /**
+         * Returns the configured [Component] instance
+         */
         fun build(): C
     }
 }
@@ -41,9 +66,15 @@ interface Component : Scope {
 fun <@ForTypeKey T> Component.element(): T =
     element(typeKeyOf())
 
+/**
+ * Returns the element [T] for [key] or throws
+ */
 fun <T> Component.element(key: TypeKey<T>): T = elementOrNull(key)
     ?: error("No element for for $key in ${this.key}")
 
+/**
+ * Returns a new [Component.Builder] instance
+ */
 @Given
 fun <@ForTypeKey C : Component> ComponentBuilder(
     @Given elementsFactory: (@Given C) -> Set<ComponentElement<C>>,
@@ -59,6 +90,20 @@ fun <C : Component, @ForTypeKey T> Component.Builder<C>.element(factory: () -> T
 
 typealias ComponentElement<@Suppress("unused") C> = Pair<TypeKey<*>, () -> Any?>
 
+/**
+ * Registers the declaration a element in the [Component] [C]
+ *
+ * Example:
+ * ```
+ * @ComponentElementBinding<AppComponent>
+ * @Given
+ * class MyAppDeps(@Given api: Api, @Given database: Database)
+ *
+ * fun runApp(@Given appComponent: AppComponent) {
+ *    val deps = appComponent.element<MyAppDeps>()
+ * }
+ * ```
+ */
 @Qualifier
 annotation class ComponentElementBinding<C : Component>
 
@@ -67,6 +112,16 @@ fun <@Given T : @ComponentElementBinding<C> S, @ForTypeKey S, @ForTypeKey C : Co
         componentElementBindingImpl(@Given factory: () -> T): ComponentElement<C> =
     typeKeyOf<S>() to factory as () -> Any?
 
+/**
+ * Will get invoked once [Component] [C] is initialized
+ *
+ * Example:
+ * ```
+ * @Given fun imageLoaderInitializer(@Given app: App): ComponentInitializer<AppComponent> = {
+ *     ImageLoader.init(app)
+ * }
+ * ```
+ */
 typealias ComponentInitializer<C> = (C) -> Unit
 
 @PublishedApi

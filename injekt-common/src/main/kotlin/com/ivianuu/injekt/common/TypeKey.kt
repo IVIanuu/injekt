@@ -16,9 +16,18 @@
 
 package com.ivianuu.injekt.common
 
+/**
+ * A key for a injekt type which can be used as a map key or similar
+ */
 data class TypeKey<out T>(val value: String)
 
+/**
+ * Returns a [TypeKey] for [T]
+ */
 fun <@ForTypeKey T> typeKeyOf(): TypeKey<T> = error("Intrinsic")
 
+/**
+ * Allows to retrieve a [TypeKey] for this type parameter
+ */
 @Target(AnnotationTarget.TYPE_PARAMETER)
 annotation class ForTypeKey
