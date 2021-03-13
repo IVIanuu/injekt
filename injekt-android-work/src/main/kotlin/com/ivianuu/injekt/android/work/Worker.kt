@@ -26,7 +26,6 @@ import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.android.AppContext
-import kotlin.reflect.KClass
 
 /**
  * Registers the annotated given [ListenableWorker] in the [InjektWorkerFactory]
@@ -37,7 +36,7 @@ annotation class WorkerBinding
 @Given
 inline fun <@Given reified T : @WorkerBinding S, S : ListenableWorker> workerBindingImpl(
     @Given noinline provider: (@Given WorkerContext, @Given WorkerParameters) -> T
-): Pair<KClass<out ListenableWorker>, SingleWorkerFactory> = T::class to provider
+): Pair<String, SingleWorkerFactory> = T::class.java.name to provider
 
 typealias WorkerContext = Context
 
@@ -50,14 +49,14 @@ val @Given AppContext.workManager: WorkManager
 
 @Given
 class InjektWorkerFactory(
-    @Given private val workers: Map<KClass<out ListenableWorker>, SingleWorkerFactory>
+    @Given private val workers: Map<String, SingleWorkerFactory>
 ) : WorkerFactory() {
     override fun createWorker(
         appContext: Context,
         workerClassName: String,
         workerParameters: WorkerParameters,
     ): ListenableWorker? {
-        val workerFactory = workers[Class.forName(workerClassName).kotlin] ?: return null
+        val workerFactory = workers[workerClassName] ?: return null
         return workerFactory(appContext, workerParameters)
     }
 }

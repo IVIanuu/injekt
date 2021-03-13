@@ -1,4 +1,4 @@
-// injekt-incremental-fix 1615671635129 injekt-end
+// injekt-incremental-fix 1615671950518 injekt-end
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -37,7 +37,7 @@ class WorkerBindingTest {
     @Test
     fun testWorkerBinding() {
         val workerFactory = given<WorkerFactory>()
-        workerFactory.createWorker(mockk(), TestWorker::class.java.canonicalName!!, mockk())
+        workerFactory.createWorker(mockk(), TestWorker::class.java.name, mockk())
             .shouldNotBeNull()
     }
 
