@@ -32,17 +32,17 @@ import com.ivianuu.injekt.component.ChildComponentModule1
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.element
 
-typealias ActivityComponent = Component
-
-@Given
-val activityComponentModule =
-    ChildComponentModule1<ActivityRetainedComponent, ComponentActivity, ActivityComponent>()
-
 val ComponentActivity.activityComponent: ActivityComponent
     get() = lifecycle.component {
         activityRetainedComponent
             .element<(ComponentActivity) -> ActivityComponent>()(this)
     }
+
+typealias ActivityComponent = Component
+
+@Given
+val activityComponentModule =
+    ChildComponentModule1<ActivityRetainedComponent, ComponentActivity, ActivityComponent>()
 
 typealias ActivityContext = Context
 

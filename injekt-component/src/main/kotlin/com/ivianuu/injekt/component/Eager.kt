@@ -31,7 +31,7 @@ class EagerModule<T : S, S : Any, U : Component> {
 
     @Scoped<U>
     @Given
-    inline fun provide(@Given instance: T): S = instance
+    inline fun scopedInstance(@Given instance: T): S = instance
 
     @ComponentInitializerBinding
     @Given

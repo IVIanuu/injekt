@@ -29,7 +29,7 @@ interface ScopeDisposable {
     fun dispose()
 }
 
-fun Scope(): Scope = ScopeImpl()
+fun Scope(): Scope = ScopeImpl(mutableMapOf())
 
 @Qualifier
 annotation class Scoped<S : Scope>
@@ -53,7 +53,7 @@ inline operator fun <T : Any> Scope.invoke(key: Any, block: () -> T): T {
 inline operator fun <@ForTypeKey T : Any> Scope.invoke(block: () -> T): T =
     this(typeKeyOf<T>(), block)
 
-private class ScopeImpl(private val values: MutableMap<Any, Any> = mutableMapOf()) : Scope {
+private class ScopeImpl(private val values: MutableMap<Any, Any>) : Scope {
     @Suppress("UNCHECKED_CAST")
     override fun <T : Any> get(key: Any): T? = values[key] as? T
 

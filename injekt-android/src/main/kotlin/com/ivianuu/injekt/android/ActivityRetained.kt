@@ -23,13 +23,13 @@ import com.ivianuu.injekt.component.ChildComponentModule0
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.element
 
+val ComponentActivity.activityRetainedComponent: ActivityRetainedComponent
+    get() = viewModelStore.component {
+        application.appComponent.element<() -> ActivityRetainedComponent>()()
+    }
+
 typealias ActivityRetainedComponent = Component
 
 @Given
 val activityRetainedComponentModule =
     ChildComponentModule0<AppComponent, ActivityRetainedComponent>()
-
-val ComponentActivity.activityRetainedComponent: ActivityRetainedComponent
-    get() = viewModelStore.component {
-        application.appComponent.element<() -> ActivityRetainedComponent>()()
-    }

@@ -27,14 +27,14 @@ import com.ivianuu.injekt.component.ChildComponentModule1
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.element
 
+fun Service.createServiceComponent(): ServiceComponent =
+    application.appComponent.element<(Service) -> ServiceComponent>()(this)
+
 typealias ServiceComponent = Component
 
 @Given
 val serviceComponentModule =
     ChildComponentModule1<AppComponent, Service, ServiceComponent>()
-
-fun Service.createServiceComponent(): ServiceComponent =
-    application.appComponent.element<(Service) -> ServiceComponent>()(this)
 
 typealias ServiceContext = Context
 

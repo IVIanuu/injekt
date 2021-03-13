@@ -47,7 +47,7 @@ val workerComponentModule =
 
 typealias WorkerContext = Context
 
-typealias WorkerElement =
+internal typealias WorkerElement =
         Pair<KClass<out ListenableWorker>, (@Given WorkerComponent) -> ListenableWorker>
 
 @Given

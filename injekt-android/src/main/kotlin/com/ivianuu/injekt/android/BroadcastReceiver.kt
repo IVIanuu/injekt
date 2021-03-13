@@ -26,12 +26,6 @@ import com.ivianuu.injekt.component.ChildComponentModule3
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.element
 
-typealias ReceiverComponent = Component
-
-@Given
-val receiverComponentModule =
-    ChildComponentModule3<AppComponent, BroadcastReceiver, ReceiverContext, ReceiverIntent, ReceiverComponent>()
-
 fun BroadcastReceiver.createReceiverComponent(
     context: Context,
     intent: Intent,
@@ -39,6 +33,12 @@ fun BroadcastReceiver.createReceiverComponent(
     .appComponent
     .element<(BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent>()
     .invoke(this, context, intent)
+
+typealias ReceiverComponent = Component
+
+@Given
+val receiverComponentModule =
+    ChildComponentModule3<AppComponent, BroadcastReceiver, ReceiverContext, ReceiverIntent, ReceiverComponent>()
 
 typealias ReceiverContext = Context
 

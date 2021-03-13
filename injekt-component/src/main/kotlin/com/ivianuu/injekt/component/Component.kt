@@ -41,10 +41,8 @@ interface Component : Scope {
 fun <@ForTypeKey T> Component.element(): T =
     element(typeKeyOf())
 
-fun <T> Component.element(key: TypeKey<T>): T {
-    return elementOrNull(key)
-        ?: error("No element for for $key in ${this.key}")
-}
+fun <T> Component.element(key: TypeKey<T>): T = elementOrNull(key)
+    ?: error("No element for for $key in ${this.key}")
 
 @Given
 fun <@ForTypeKey C : Component> ComponentBuilder(
@@ -70,14 +68,6 @@ fun <@Given T : @ComponentElementBinding<C> S, @ForTypeKey S, @ForTypeKey C : Co
     typeKeyOf<S>() to factory as () -> Any?
 
 typealias ComponentInitializer<C> = (C) -> Unit
-
-@Qualifier
-annotation class ComponentInitializerBinding
-
-@Given
-fun <@Given T : @ComponentInitializerBinding ComponentInitializer<C>, C : Component>
-        componentInitializerBindingImpl(
-    @Given initializer: T): ComponentInitializer<C> = initializer
 
 @PublishedApi
 internal class ComponentImpl(
