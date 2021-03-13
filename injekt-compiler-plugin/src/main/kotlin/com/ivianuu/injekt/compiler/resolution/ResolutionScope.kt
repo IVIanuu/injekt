@@ -35,9 +35,9 @@ class ResolutionScope(
     var depth: Int = -1,
     produceGivens: () -> List<CallableRef>
 ) {
-    val chain: MutableSet<GivenNode> = parent?.chain ?: mutableSetOf()
-    val resultsByRequest = mutableMapOf<GivenRequest, ResolutionResult>()
-    val resultsByCandidate = mutableMapOf<GivenNode, CandidateResolutionResult>()
+    val chain: MutableList<GivenNode> = parent?.chain ?: mutableListOf()
+    val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
+    val resultsByCandidate = mutableMapOf<GivenNode, ResolutionResult>()
 
     private val givens = mutableListOf<CallableRef>()
 
@@ -148,7 +148,7 @@ class ResolutionScope(
                                 GivenRequest(
                                     type = element,
                                     required = true,
-                                    callableFqName = FqName("GivenSet"),
+                                    callableFqName = FqName("com.ivianuu.injekt.givenSetOf"),
                                     parameterName = "element$index".asNameId()
                                 )
                             }

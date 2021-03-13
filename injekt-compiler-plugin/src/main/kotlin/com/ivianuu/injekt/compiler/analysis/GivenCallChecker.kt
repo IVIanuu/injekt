@@ -21,12 +21,12 @@ import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
-import com.ivianuu.injekt.compiler.resolution.CandidateResolutionResult
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.HierarchicalResolutionScope
+import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.isGiven
-import com.ivianuu.injekt.compiler.resolution.resolveGiven
+import com.ivianuu.injekt.compiler.resolution.resolveRequests
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -73,15 +73,15 @@ class GivenCallChecker(
         val scope = HierarchicalResolutionScope(declarationStore, context.scope,
             context.trace.bindingContext)
 
-        when (val graph = scope.resolveGiven(requests)) {
+        when (val graph = scope.resolveRequests(requests)) {
             is GivenGraph.Success -> {
                 context.trace.record(
                     InjektWritableSlices.GIVEN_CALLS_IN_FILE,
                     callExpression.containingKtFile.virtualFilePath,
                     Unit
                 )
-                val visited = mutableSetOf<CandidateResolutionResult.Success>()
-                fun CandidateResolutionResult.Success.visit() {
+                val visited = mutableSetOf<ResolutionResult.Success>()
+                fun ResolutionResult.Success.visit() {
                     if (!visited.add(this)) return
                     if (candidate is CallableGivenNode) {
                         context.trace.record(

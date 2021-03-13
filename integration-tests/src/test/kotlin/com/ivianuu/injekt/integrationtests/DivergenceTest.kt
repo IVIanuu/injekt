@@ -39,7 +39,7 @@ class DivergenceTest {
             }
         """
     ) {
-        compilationShouldHaveFailed("divergent")
+        compilationShouldHaveFailed("diverging")
     }
 
     @Test
@@ -51,7 +51,7 @@ class DivergenceTest {
             }
         """
     ) {
-        compilationShouldHaveFailed("divergent")
+        compilationShouldHaveFailed("diverging")
     }
 
     // todo @Test
@@ -62,7 +62,7 @@ class DivergenceTest {
             fun invoke() = given<String>()
         """
     ) {
-        compilationShouldHaveFailed("divergent")
+        compilationShouldHaveFailed("diverging")
     }
 
     // todo @Test
@@ -83,7 +83,7 @@ class DivergenceTest {
             )
         )
     ) {
-        it.last().compilationShouldHaveFailed("divergent")
+        it.last().compilationShouldHaveFailed("diverging")
     }
 
     @Test
@@ -124,7 +124,7 @@ class DivergenceTest {
             fun invoke() = given<A>()
         """
     ) {
-        compilationShouldHaveFailed("divergent")
+        compilationShouldHaveFailed("diverging")
     }
 
     @Test
@@ -134,7 +134,7 @@ class DivergenceTest {
             fun invoke() = given<String>()
         """
     ) {
-        compilationShouldHaveFailed("divergent")
+        compilationShouldHaveFailed("diverging")
     }
 
     @Test
@@ -157,7 +157,7 @@ class DivergenceTest {
             fun invoke() = given<C>()
        """
     ) {
-        compilationShouldHaveFailed("divergent")
+        compilationShouldHaveFailed("diverging")
     }
 
     // todo @Test

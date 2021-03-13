@@ -75,7 +75,7 @@ class SetGivenNode(
     override val ownerScope: ResolutionScope,
     override val dependencies: List<GivenRequest>,
 ) : GivenNode() {
-    override val callableFqName: FqName = FqName("GivenSet<${type.render()}>")
+    override val callableFqName: FqName = FqName("com.ivianuu.injekt.givenSetOf<${type.render()}>")
     override val callContext: CallContext
         get() = CallContext.DEFAULT
     override val dependencyScope: ResolutionScope?
@@ -97,7 +97,11 @@ class ProviderGivenNode(
     override val ownerScope: ResolutionScope,
     val declarationStore: DeclarationStore
 ) : GivenNode() {
-    override val callableFqName: FqName = FqName("Provider<${type.render()}>")
+    override val callableFqName: FqName = when (type.callContext) {
+        CallContext.DEFAULT -> FqName("com.ivianuu.injekt.providerOf")
+        CallContext.COMPOSABLE -> FqName("com.ivianuu.injekt.composableProviderOf")
+        CallContext.SUSPEND -> FqName("com.ivianuu.injekt.suspendProviderOf")
+    }
     override val dependencies: List<GivenRequest> = listOf(
         GivenRequest(
             type = type.arguments.last(),

@@ -303,12 +303,17 @@ fun TypeRef.render(depth: Int = 0): String {
     if (depth > 15) return ""
     return buildString {
         fun TypeRef.inner() {
-            val annotations = qualifiers.map {
-                "@${it.type.render()}(${
-                    it.arguments.toList().joinToString { "${it.first}=${it.second}" }
-                })"
+            val annotations = qualifiers.map { qualifier ->
+                "@${qualifier.type.render()}${
+                    if (qualifier.arguments.isNotEmpty()) {
+                        qualifier.arguments.toList()
+                            .joinToString(prefix = "(", postfix = ")") { (argName, argValue) ->
+                                "${argName}=${argValue}"
+                            }
+                    } else ""
+                }"
             } + listOfNotNull(
-                if (isMarkedComposable) "@${InjektFqNames.Composable}" else null,
+                if (isMarkedComposable) "@Composable" else null,
             )
 
             if (annotations.isNotEmpty()) {
