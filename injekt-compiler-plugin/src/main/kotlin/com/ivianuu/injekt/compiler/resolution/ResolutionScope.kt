@@ -22,7 +22,6 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
-import org.jetbrains.kotlin.resolve.scopes.utils.parents
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstance
 
@@ -46,13 +45,14 @@ class ResolutionScope(
 
     private data class ConstrainedGivenNode(val callable: CallableRef) {
         val processedCandidateTypes = mutableSetOf<TypeRef>()
+        val resultingFrameworkKeys = mutableSetOf<String>()
         fun copy() = ConstrainedGivenNode(callable).also {
             it.processedCandidateTypes += processedCandidateTypes
         }
     }
     private data class ConstrainedGivenCandidate(
         val type: TypeRef,
-        val typeWithoutChain: TypeRef
+        val rawType: TypeRef
     )
 
     val allParents: List<ResolutionScope> = parent?.allScopes ?: emptyList()
@@ -86,7 +86,7 @@ class ResolutionScope(
                         givens += callable.copy(type = typeWithFrameworkKey)
                         constrainedGivenCandidates += ConstrainedGivenCandidate(
                             type = typeWithFrameworkKey,
-                            typeWithoutChain = callable.type
+                            rawType = callable.type
                         )
                     },
                     addConstrainedGiven = {
@@ -191,12 +191,13 @@ class ResolutionScope(
         candidate: ConstrainedGivenCandidate
     ) {
         if (candidate.type in constrainedGiven.processedCandidateTypes) return
+        if (candidate.type.frameworkKey in constrainedGiven.resultingFrameworkKeys) return
         constrainedGiven.processedCandidateTypes += candidate.type
 
         val constraintType = constrainedGiven.callable.typeParameters.single {
             it.isGivenConstraint
         }.defaultType
-        if (!candidate.typeWithoutChain
+        if (!candidate.rawType
                 .isSubTypeOf(declarationStore, constraintType)) return
 
         val inputsSubstitutionMap = getSubstitutionMap(
@@ -205,7 +206,7 @@ class ResolutionScope(
         )
         val outputsSubstitutionMap = getSubstitutionMap(
             declarationStore,
-            listOf(candidate.typeWithoutChain to constraintType)
+            listOf(candidate.rawType to constraintType)
         )
         val newGiven = constrainedGiven.callable.substituteInputs(inputsSubstitutionMap)
             .copy(
@@ -222,15 +223,16 @@ class ResolutionScope(
             substitutionMap = outputsSubstitutionMap,
             addGiven = { newInnerGiven ->
                 givens += newInnerGiven
-                val newInnerGivenWithChain = newInnerGiven.copy(
+                val newInnerGivenWithFrameworkKey = newInnerGiven.copy(
                     type = newInnerGiven.type.copy(
                         frameworkKey = generateFrameworkKey()
+                            .also { constrainedGiven.resultingFrameworkKeys += it }
                     )
                 )
-                givens += newInnerGivenWithChain
+                givens += newInnerGivenWithFrameworkKey
                 val newCandidate = ConstrainedGivenCandidate(
-                    type = newInnerGivenWithChain.type,
-                    typeWithoutChain = newInnerGiven.type
+                    type = newInnerGivenWithFrameworkKey.type,
+                    rawType = newInnerGiven.type
                 )
                 constrainedGivenCandidates += newCandidate
                 collectConstrainedGivens(newCandidate)

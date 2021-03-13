@@ -20,7 +20,9 @@ import com.ivianuu.injekt.compiler.DeclarationStore
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.resolution.isAssignableTo
 import com.ivianuu.injekt.compiler.resolution.isGiven
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.builtins.isSuspendFunctionType
@@ -76,6 +78,17 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
                     InjektErrors.MULTIPLE_GIVEN_CONSTRAINTS
                         .on(declaration)
                 )
+            }
+            if (givenConstraints.size == 1) {
+                val constraintType = givenConstraints.single()
+                    .defaultType.toTypeRef(declarationStore)
+                val returnType = descriptor.returnType!!.toTypeRef(declarationStore)
+                if (returnType.isAssignableTo(declarationStore, constraintType)) {
+                    context.trace.report(
+                        InjektErrors.DIVERGENT_GIVEN_CONSTRAINT
+                            .on(declaration)
+                    )
+                }
             }
         } else if (descriptor is ConstructorDescriptor) {
             descriptor.valueParameters

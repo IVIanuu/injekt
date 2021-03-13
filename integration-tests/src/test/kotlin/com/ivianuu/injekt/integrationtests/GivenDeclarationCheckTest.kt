@@ -55,7 +55,6 @@ class GivenDeclarationCheckTest {
             @Given
             class MyComponent(@Given dep: Dep, @Given wrapper: () -> () -> DepWrapper, @Given wrapper2: () -> DepWrapper2)
 
-            @ComponentInitializerBinding
             @Given
             fun myInitializer(@Given dep: Dep, @Given wrapper: () -> () -> DepWrapper, @Given wrapper2: () -> DepWrapper2): ComponentInitializer<AppComponent> = {}
         """

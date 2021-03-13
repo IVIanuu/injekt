@@ -135,6 +135,16 @@ interface InjektErrors {
                     )
                 }
 
+        @JvmField
+        val DIVERGENT_GIVEN_CONSTRAINT =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "constrained given return type must not be assignable to the constraint type"
+                    )
+                }
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,
