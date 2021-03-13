@@ -14,28 +14,19 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.component
+package com.ivianuu.injekt.samples.android.ui
 
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
+import androidx.compose.material.darkColors
+import androidx.compose.runtime.Composable
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.common.Scope
-import com.ivianuu.injekt.common.Scoped
 
-@Qualifier
-annotation class Eager<S : Scope>
+typealias SampleTheme = @Composable (@Composable () -> Unit) -> Unit
 
 @Given
-fun <@Given T : @Eager<U> S, S : Any, U : Component> eagerImpl() = EagerModule<T, S, U>()
-
-class EagerModule<T : S, S : Any, U : Component> {
-
-    @Scoped<U>
-    @Given
-    inline fun scopedInstance(@Given instance: T): S = instance
-
-    @Given
-    fun initializer(@Given factory: () -> S): ComponentInitializer<U> = {
-        factory()
+fun sampleTheme(): SampleTheme = { content ->
+    MaterialTheme(colors = darkColors()) {
+        Surface(content = content)
     }
-
 }

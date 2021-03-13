@@ -22,11 +22,11 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:name="com.ivianuu.injekt.samples.android.App"
+        android:name=".app.App"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar">
-        <activity android:name="com.ivianuu.injekt.samples.android.MainActivity">
+        <activity android:name="com.ivianuu.injekt.samples.android.app.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

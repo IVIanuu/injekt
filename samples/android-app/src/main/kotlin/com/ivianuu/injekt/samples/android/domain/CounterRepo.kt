@@ -14,33 +14,28 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.samples.android
+package com.ivianuu.injekt.samples.android.domain
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.android.AppContext
 import com.ivianuu.injekt.common.Scoped
 import com.ivianuu.injekt.component.AppComponent
-import java.io.File
-
-typealias DatabaseFile = File
-
-@Scoped<AppComponent>
-@Given
-fun databaseFile(@Given context: AppContext): DatabaseFile = context.cacheDir!!
+import com.ivianuu.injekt.samples.android.data.CounterStorage
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 
 @Scoped<AppComponent>
 @Given
-class Database(@Given private val file: DatabaseFile)
+class CounterRepo(@Given private val storage: CounterStorage) {
 
-@Scoped<AppComponent>
-@Given
-class Repo(@Given private val api: Api) {
-    fun refresh() {
+    val counterState: Flow<Int>
+        get() = storage.counterState
+
+    suspend fun inc() {
+        storage.updateCounter(counterState.first() + 1)
     }
-}
 
-fun refreshRepo(@Given repo: Repo) {
-    repo.refresh()
-}
+    suspend fun dec() {
+        storage.updateCounter(counterState.first() - 1)
+    }
 
-@Given object Api
+}

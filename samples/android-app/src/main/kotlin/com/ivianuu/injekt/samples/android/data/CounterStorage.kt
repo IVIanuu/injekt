@@ -14,18 +14,27 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.samples.android
+package com.ivianuu.injekt.samples.android.data
 
-import androidx.compose.runtime.Composable
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Qualifier
-import kotlin.reflect.KClass
+import com.ivianuu.injekt.common.Scoped
+import com.ivianuu.injekt.component.AppComponent
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
-typealias KeyUiElement = Pair<KClass<*>, @Composable () -> Unit>
-
-@Qualifier
-annotation class KeyUiBinding<K : Any>
-
+@Scoped<AppComponent>
 @Given
-inline fun <@Given reified T : @KeyUiBinding<K> @Composable () -> Unit, reified K : Any>
-        keyUiBinding(@Given instance: T): KeyUiElement = K::class to instance
+class CounterStorage {
+
+    private val _counterState = MutableStateFlow(0)
+    val counterState: Flow<Int> by this::_counterState
+
+    private val counterMutex = Mutex()
+
+    suspend fun updateCounter(value: Int) = counterMutex.withLock {
+        _counterState.value = value
+    }
+
+}

@@ -1,4 +1,4 @@
-// injekt-incremental-fix 1615499624200 injekt-end
+// injekt-incremental-fix 1615643617286 injekt-end
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -15,34 +15,21 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.samples.android
+package com.ivianuu.injekt.samples.android.app
 
 import android.app.Application
-import androidx.work.WorkerFactory
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.android.AppContext
-import com.ivianuu.injekt.component.AppComponent
-import com.ivianuu.injekt.component.ComponentInitializer
-import com.ivianuu.injekt.component.ComponentInitializerBinding
 import com.ivianuu.injekt.component.initializeApp
 import com.ivianuu.injekt.component.*
 import com.ivianuu.injekt.common.*
 import com.ivianuu.injekt.android.*
-import com.ivianuu.injekt.android.work.*
+import com.ivianuu.injekt.samples.android.data.*
+import com.ivianuu.injekt.samples.android.domain.*
+import com.ivianuu.injekt.samples.android.ui.*
 
 class App : Application() {
     override fun onCreate() {
+        // kick start injekt here
         initializeApp()
         super.onCreate()
     }
-}
-
-@ComponentInitializerBinding
-@Given
-fun myAppComponentInitializer(
-    @Given appContext: AppContext,
-    @Given database: Database,
-    @Given workerFactory: WorkerFactory
-): ComponentInitializer<AppComponent> = {
-    initializeWorkers()
 }
