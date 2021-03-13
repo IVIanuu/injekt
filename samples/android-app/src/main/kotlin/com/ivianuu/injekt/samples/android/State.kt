@@ -48,7 +48,8 @@ typealias Actions<A> = Flow<A>
 inline val <A> @Given ActionChannel<A>.actions: Actions<A>
     get() = consumeAsFlow()
 
-@Qualifier annotation class UiState
+@Qualifier
+annotation class UiState
 
 @Given
 @Composable

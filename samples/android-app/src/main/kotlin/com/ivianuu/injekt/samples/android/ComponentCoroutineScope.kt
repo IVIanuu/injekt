@@ -29,7 +29,8 @@ import kotlin.coroutines.CoroutineContext
 
 typealias ComponentCoroutineScope<C> = CoroutineScope
 
-@Given fun <@ForTypeKey C : Component> storageCoroutineScope(@Given component: C): ComponentCoroutineScope<C> =
+@Given
+fun <@ForTypeKey C : Component> storageCoroutineScope(@Given component: C): ComponentCoroutineScope<C> =
     component {
         object : CoroutineScope, ScopeDisposable {
             override val coroutineContext: CoroutineContext = Job() + Dispatchers.Default
