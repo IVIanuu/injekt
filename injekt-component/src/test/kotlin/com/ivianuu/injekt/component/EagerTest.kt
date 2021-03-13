@@ -1,4 +1,4 @@
-// injekt-incremental-fix 1615412993602 injekt-end
+// injekt-incremental-fix 1615647377329 injekt-end
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -20,13 +20,13 @@ package com.ivianuu.injekt.component
 import com.ivianuu.injekt.Given
 import io.kotest.matchers.shouldBe
 import org.junit.Test
+import com.ivianuu.injekt.common.*
 
 class EagerTest {
 
     @Test
     fun testEager() {
         var callCount = 0
-        @Given
         class Foo
         @Eager<AppComponent>
         @Given

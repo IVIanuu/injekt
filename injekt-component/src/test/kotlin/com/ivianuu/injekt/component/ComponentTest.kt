@@ -1,4 +1,4 @@
-// injekt-incremental-fix 1615412993602 injekt-end
+// injekt-incremental-fix 1615647377329 injekt-end
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -19,6 +19,7 @@ package com.ivianuu.injekt.component
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.common.typeKeyOf
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import org.junit.Test
@@ -90,23 +91,32 @@ fun testGetDependencyReturnsNullIfNotExists() {
     fun testElementBinding() {
         @ComponentElementBinding<TestComponent1>
         @Given
-        fun something(@Given component: TestComponent1) = component to component
+        fun element(@Given component: TestComponent1) = component to component
+        @ComponentElementBinding<TestComponent2>
+        @Given
+        fun otherElement() = 0
         val component = ComponentBuilder<TestComponent1>().build()
         component.element<Pair<TestComponent1, TestComponent1>>().first shouldBeSameInstanceAs component
+        component.elementOrNull(typeKeyOf<Int>()).shouldBeNull()
     }
 
     @Test
     fun testComponentInitializer() {
         var called = false
-        @ComponentInitializerBinding
         @Given
-        fun something(@Given component: TestComponent1): ComponentInitializer<TestComponent1> = {
+        fun initializer(@Given component: TestComponent1): ComponentInitializer<TestComponent1> = {
             called = true
+        }
+        var otherCalled = false
+        @Given
+        fun otherInitializer(): ComponentInitializer<TestComponent2> = {
+            otherCalled = true
         }
         val builder = ComponentBuilder<TestComponent1>()
         called shouldBe false
         val component = builder.build()
         called shouldBe true
+        otherCalled shouldBe false
     }
 
     @Test
