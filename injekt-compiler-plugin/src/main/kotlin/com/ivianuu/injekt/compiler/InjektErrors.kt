@@ -17,9 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
-import com.ivianuu.injekt.compiler.resolution.GivenNode
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
-import com.ivianuu.injekt.compiler.resolution.callContext
 import com.ivianuu.injekt.compiler.resolution.render
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
@@ -160,14 +158,14 @@ private fun GivenGraph.Error.render(): String = buildString {
     }
 
     fun ResolutionResult.Failure.unwrapCandidateFailure(): ResolutionResult.Failure {
-        return if (this is ResolutionResult.Failure.CandidateFailure)
+        return if (this is ResolutionResult.Failure.DependencyFailure)
             candidateFailure.unwrapCandidateFailure()
         else this
     }
 
-    val wrappedFailure = failures.entries.first()
+    val wrappedFailure = failures.first()
 
-    val unwrappedFailure = wrappedFailure.value.unwrapCandidateFailure()
+    val unwrappedFailure = wrappedFailure.unwrapCandidateFailure()
 
     when (unwrappedFailure) {
         is ResolutionResult.Failure.CallContextMismatch -> {
@@ -178,7 +176,7 @@ private fun GivenGraph.Error.render(): String = buildString {
             appendLine("ambiguous given arguments of type ${unwrappedFailure.request.type.render()} " +
                     "for parameter ${unwrappedFailure.request.parameterName} of function ${unwrappedFailure.request.callableFqName}")
         }
-        is ResolutionResult.Failure.CandidateFailure -> throw AssertionError()
+        is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
         is ResolutionResult.Failure.NoCandidates,
         is ResolutionResult.Failure.DivergentGiven-> {
             appendLine("no given argument found of type " +
@@ -189,14 +187,11 @@ private fun GivenGraph.Error.render(): String = buildString {
     }
 
 
-    if (wrappedFailure.value is ResolutionResult.Failure.CandidateFailure) {
+    if (wrappedFailure is ResolutionResult.Failure.DependencyFailure) {
         appendLine("I found:")
         appendLine()
 
-        fun printCall(
-            failure: ResolutionResult.Failure,
-            candidate: GivenNode?
-        ) {
+        fun printCall(failure: ResolutionResult.Failure) {
             val isProvider = failure.request.callableFqName.asString() == "com.ivianuu.injekt.givenProviderOf"
             append("${failure.request.callableFqName}")
             if (isProvider) {
@@ -205,17 +200,17 @@ private fun GivenGraph.Error.render(): String = buildString {
                 appendLine("(")
             }
             withIndent {
-                if (isProvider) {
+                /*if (isProvider) {
                     if (unwrappedFailure is ResolutionResult.Failure.CallContextMismatch) {
-                        appendLine("${indent()}/* ${candidate!!.type.callContext.name.toLowerCase()} call context */")
+                        appendLine("${indent()}/* ${failure..callContext.name.toLowerCase()} call context */")
                     }
-                }
+                }*/
                 append(indent())
                 if (!isProvider) {
                     append("${failure.request.parameterName} = ")
                 }
-                if (failure is ResolutionResult.Failure.CandidateFailure) {
-                    printCall(failure.candidateFailure, failure.candidate)
+                if (failure is ResolutionResult.Failure.DependencyFailure) {
+                    printCall(failure.candidateFailure)
                 } else {
                     append("/* ")
                     when (failure) {
@@ -227,7 +222,7 @@ private fun GivenGraph.Error.render(): String = buildString {
                                 it.candidate.callableFqName.asString() 
                             }} do match type ${failure.request.type.render()}")
                         }
-                        is ResolutionResult.Failure.CandidateFailure -> throw AssertionError()
+                        is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
                         is ResolutionResult.Failure.NoCandidates,
                         is ResolutionResult.Failure.DivergentGiven -> append("missing:")
                     }
@@ -252,7 +247,7 @@ private fun GivenGraph.Error.render(): String = buildString {
                 appendLine("/* ${unwrappedFailure.actualCallContext.name.toLowerCase()} call context */")
             }
             append(indent())
-            printCall(wrappedFailure.value, null)
+            printCall(wrappedFailure)
         }
         appendLine()
 
@@ -269,7 +264,7 @@ private fun GivenGraph.Error.render(): String = buildString {
                         }
                 }*/
             }
-            is ResolutionResult.Failure.CandidateFailure -> throw AssertionError()
+            is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
             is ResolutionResult.Failure.DivergentGiven -> {
                 appendLine("but given ${unwrappedFailure.candidate.callableFqName} " +
                         "produces a diverging search when trying to match type ${unwrappedFailure.request.type.render()}")

@@ -35,9 +35,8 @@ class ResolutionScope(
     var depth: Int = -1,
     produceGivens: () -> List<CallableRef>
 ) {
-    val chain: MutableSet<GivenNode> = parent?.chain ?: mutableSetOf()
+    val chain: MutableList<GivenNode> = parent?.chain ?: mutableListOf()
     val resultsByRequest = mutableMapOf<GivenRequest, ResolutionResult>()
-    val resultsByCandidate = mutableMapOf<GivenNode, CandidateResolutionResult>()
 
     private val givens = mutableListOf<CallableRef>()
 

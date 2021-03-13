@@ -92,15 +92,15 @@ class GivenCallTransformer(
             }
         }
 
-        private val usagesByResult = mutableMapOf<CandidateResolutionResult.Success, Int>()
-        fun usagesFor(result: CandidateResolutionResult.Success): Int = usagesByResult.getOrPut(result) {
+        private val usagesByResult = mutableMapOf<ResolutionResult.Success, Int>()
+        fun usagesFor(result: ResolutionResult.Success): Int = usagesByResult.getOrPut(result) {
             var usages = 0
-            fun CandidateResolutionResult.Success.visit() {
+            fun ResolutionResult.Success.visit() {
                 if (candidate.type == result.candidate.type &&
                         outerMostScope == result.outerMostScope) usages++
-                dependencyResults.values.forEach { it.visit() }
+                dependencyResults.forEach { it.visit() }
             }
-            graph.results.values.forEach { it.visit() }
+            graph.results.forEach { it.visit() }
             usages
         }
 
@@ -130,12 +130,12 @@ class GivenCallTransformer(
                 ?: error("wtf")
         }
 
-        fun expressionFor(result: CandidateResolutionResult.Success): IrExpression {
+        fun expressionFor(result: ResolutionResult.Success): IrExpression {
             val scopeContext = findScopeContext(result.scope)
             return scopeContext.expressionForImpl(result)
         }
 
-        private fun expressionForImpl(result: CandidateResolutionResult.Success): IrExpression {
+        private fun expressionForImpl(result: ResolutionResult.Success): IrExpression {
             initializingExpressions[result.candidate]?.run { return get() }
             val expression = GivenExpression(result)
             initializingExpressions[result.candidate] = expression
@@ -147,19 +147,19 @@ class GivenCallTransformer(
 
     private fun IrFunctionAccessExpression.fillGivens(
         context: ScopeContext,
-        results: Map<GivenRequest, CandidateResolutionResult.Success>
+        results: List<ResolutionResult.Success>
     ) {
         results
-            .forEach { (request, result) ->
+            .forEach { result ->
                 val expression = context.expressionFor(result)
-                when(request.parameterName.asString()) {
+                when(result.request.parameterName.asString()) {
                     "_dispatchReceiver" -> dispatchReceiver = expression
                     "_extensionReceiver" -> extensionReceiver = expression
                     else -> {
                         putValueArgument(
                             symbol.owner
                                 .valueParameters
-                                .first { it.name == request.parameterName }
+                                .first { it.name == result.request.parameterName }
                                 .index,
                             expression
                         )
@@ -168,7 +168,7 @@ class GivenCallTransformer(
             }
     }
 
-    private inner class GivenExpression(private val result: CandidateResolutionResult.Success) {
+    private inner class GivenExpression(private val result: ResolutionResult.Success) {
         private var block: IrBlock? = null
         private var tmpVariable: IrVariable? = null
         private var finalExpression: IrExpression? = null
@@ -220,13 +220,13 @@ class GivenCallTransformer(
         }
     }
 
-    private fun CandidateResolutionResult.Success.shouldWrap(
+    private fun ResolutionResult.Success.shouldWrap(
         context: GraphContext
     ): Boolean = dependencyResults.isNotEmpty() &&
             !candidate.cache && context.usagesFor(this) > 1
 
     private fun ScopeContext.wrapExpressionInFunctionIfNeeded(
-        result: CandidateResolutionResult.Success,
+        result: ResolutionResult.Success,
         rawExpressionProvider: () -> IrExpression
     ): IrExpression = if (!result.shouldWrap(graphContext)) rawExpressionProvider()
     else with(findScopeContext(result.outerMostScope)) {
@@ -263,12 +263,12 @@ class GivenCallTransformer(
         }
     }.invoke(this)
 
-    private fun CandidateResolutionResult.Success.shouldCache(
+    private fun ResolutionResult.Success.shouldCache(
         context: GraphContext
     ): Boolean = candidate.cache && context.usagesFor(this) > 1
 
     private fun ScopeContext.cacheExpressionIfNeeded(
-        result: CandidateResolutionResult.Success,
+        result: ResolutionResult.Success,
         rawExpressionProvider: () -> IrExpression
     ): IrExpression {
         if (!result.shouldCache(graphContext)) return rawExpressionProvider()
@@ -290,7 +290,7 @@ class GivenCallTransformer(
             .irGetObject(pluginContext.referenceClass(type.classifier.fqName)!!)
 
     private fun ScopeContext.providerExpression(
-        result: CandidateResolutionResult.Success,
+        result: ResolutionResult.Success,
         given: ProviderGivenNode
     ): IrExpression = DeclarationIrBuilder(pluginContext, symbol)
         .irLambda(
@@ -303,7 +303,7 @@ class GivenCallTransformer(
                 val previousParametersMap = parameterMap.toMap()
                 given.parameterDescriptors
                     .forEachWith(function.valueParameters) { a, b -> parameterMap[a] = b }
-                expressionFor(result.dependencyResults.values.single())
+                expressionFor(result.dependencyResults.single())
                     .also {
                         parameterMap.clear()
                         parameterMap.putAll(previousParametersMap)
@@ -337,7 +337,7 @@ class GivenCallTransformer(
     ).single()
 
     private fun ScopeContext.setExpression(
-        result: CandidateResolutionResult.Success,
+        result: ResolutionResult.Success,
         given: SetGivenNode
     ): IrExpression {
         val elementType = given.type.fullyExpandedType.arguments.single()
@@ -351,7 +351,7 @@ class GivenCallTransformer(
                 .irCall(setOf)
                 .apply {
                     putTypeArgument(0, elementType.toIrType(pluginContext, declarationStore))
-                    putValueArgument(0, expressionFor(result.dependencyResults.values.single()))
+                    putValueArgument(0, expressionFor(result.dependencyResults.single()))
                 }
             else -> DeclarationIrBuilder(pluginContext, symbol).irBlock {
                 val tmpSet = irTemporary(
@@ -365,7 +365,7 @@ class GivenCallTransformer(
                     .forEach { dependencyResult ->
                         +irCall(setAdd).apply {
                             dispatchReceiver = irGet(tmpSet)
-                            putValueArgument(0, expressionFor(dependencyResult.value))
+                            putValueArgument(0, expressionFor(dependencyResult))
                         }
                     }
 
@@ -375,7 +375,7 @@ class GivenCallTransformer(
     }
 
     private fun ScopeContext.callableExpression(
-        result: CandidateResolutionResult.Success,
+        result: ResolutionResult.Success,
         given: CallableGivenNode
     ): IrExpression = when (given.callable.callable) {
         is ClassConstructorDescriptor -> classExpression(
@@ -401,7 +401,7 @@ class GivenCallTransformer(
     }
 
     private fun ScopeContext.classExpression(
-        result: CandidateResolutionResult.Success,
+        result: ResolutionResult.Success,
         given: CallableGivenNode,
         descriptor: ClassConstructorDescriptor
     ): IrExpression = if (descriptor.constructedClass.kind == ClassKind.OBJECT) {
@@ -423,7 +423,7 @@ class GivenCallTransformer(
     }
 
     private fun ScopeContext.propertyExpression(
-        result: CandidateResolutionResult.Success,
+        result: ResolutionResult.Success,
         given: CallableGivenNode,
         descriptor: PropertyDescriptor
     ): IrExpression {
@@ -438,7 +438,7 @@ class GivenCallTransformer(
     }
 
     private fun ScopeContext.functionExpression(
-        result: CandidateResolutionResult.Success,
+        result: ResolutionResult.Success,
         given: CallableGivenNode,
         descriptor: FunctionDescriptor
     ): IrExpression {
