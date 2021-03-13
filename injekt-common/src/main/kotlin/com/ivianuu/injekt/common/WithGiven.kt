@@ -21,7 +21,7 @@ import com.ivianuu.injekt.Given
 /**
  * Calls the specified function [block] and returns it's result with [a] as given
  */
-inline fun <A, R> withGiven(a: A, block: @Given (A) -> R): R = block(a)
+inline fun <A, R> withGiven(a: A, block: (@Given A) -> R): R = block(a)
 
 class GivenTuple2<A, B>(@Given val a: A, @Given val b: B)
 
