@@ -26,9 +26,6 @@ import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.android.AppContext
-import com.ivianuu.injekt.component.AppComponent
-import com.ivianuu.injekt.component.ChildComponentModule2
-import com.ivianuu.injekt.component.Component
 import kotlin.reflect.KClass
 
 /**
@@ -40,20 +37,21 @@ annotation class WorkerBinding
 @Given
 inline fun <@Given reified T : @WorkerBinding S, S : ListenableWorker> workerBindingImpl(
     @Given noinline provider: (@Given WorkerContext, @Given WorkerParameters) -> T
-): WorkerElement = T::class to provider
+): Pair<KClass<out ListenableWorker>, SingleWorkerFactory> = T::class to provider
 
 typealias WorkerContext = Context
 
-internal typealias WorkerElement =
-        Pair<KClass<out ListenableWorker>, (@Given WorkerContext, @Given WorkerParameters) -> ListenableWorker>
+internal typealias SingleWorkerFactory =
+            (WorkerContext, WorkerParameters) -> ListenableWorker
 
 @Given
 val @Given AppContext.workManager: WorkManager
     get() = WorkManager.getInstance(this)
 
 @Given
-class InjektWorkerFactory(@Given workersFactory: () -> Set<WorkerElement>) : WorkerFactory() {
-    private val workers by lazy { workersFactory().toMap() }
+class InjektWorkerFactory(
+    @Given private val workers: Map<KClass<out ListenableWorker>, SingleWorkerFactory>
+) : WorkerFactory() {
     override fun createWorker(
         appContext: Context,
         workerClassName: String,

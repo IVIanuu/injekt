@@ -1,4 +1,4 @@
-// injekt-incremental-fix 1615646580035 injekt-end
+// injekt-incremental-fix 1615671635129 injekt-end
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -28,6 +28,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import com.ivianuu.injekt.common.*
 
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)
