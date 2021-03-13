@@ -40,6 +40,8 @@ dependencies {
     api(Deps.AndroidX.Lifecycle.runtime)
     testImplementation(Deps.AndroidX.Test.core)
     testImplementation(Deps.AndroidX.Test.junit)
+    testImplementation(Deps.kotestAssertions)
+    testImplementation(Deps.mockk)
     testImplementation(Deps.roboelectric)
 
     implementation(Deps.AndroidX.Compose.runtime)

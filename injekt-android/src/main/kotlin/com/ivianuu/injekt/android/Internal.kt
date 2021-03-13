@@ -48,7 +48,7 @@ internal fun <T : Component> Lifecycle.component(init: () -> T): T {
                         synchronized(componentsByLifecycle) {
                             componentsByLifecycle
                                 .remove(this@component)
-                        }?.dispose()
+                        }!!.dispose()
                     }
                 }
             }

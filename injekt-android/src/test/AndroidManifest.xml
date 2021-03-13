@@ -14,4 +14,11 @@
   ~ limitations under the License.
   -->
 
-<manifest package="com.ivianuu.injekt.samples.android"></manifest>
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.ivianuu.injekt.android">
+    <application>
+        <activity
+            android:name=".AndroidTestActivity"/>
+    </application>
+</manifest>
