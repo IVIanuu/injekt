@@ -226,6 +226,11 @@ private fun TypeRef.forEachUniqueSuperTypeUntil(action: (TypeRef) -> Boolean) {
     superTypes.forEach { visit(it) }
 }
 
+fun TypeRef.forEachType(action: (TypeRef) -> Unit) {
+    action(this)
+    arguments.forEach { it.forEachType(action) }
+}
+
 class KotlinTypeRef(
     private val kotlinType: KotlinType,
     override val isStarProjection: Boolean = false,

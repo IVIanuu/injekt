@@ -21,6 +21,8 @@ import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.forEachType
 import com.ivianuu.injekt.compiler.resolution.isAssignableTo
 import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
@@ -38,12 +40,12 @@ import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class GivenChecker(private val context: InjektContext) : DeclarationChecker {
@@ -54,6 +56,9 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     ) {
         if (descriptor is SimpleFunctionDescriptor) {
             if (descriptor.isGiven(this.context, context.trace)) {
+                checkUnresolvableGivenTypeParameters(declaration,
+                    descriptor.typeParameters, descriptor.returnType!!, context.trace)
+
                 descriptor.allParameters
                     .filterNot { it === descriptor.dispatchReceiverParameter }
                     .checkGivenCallableHasOnlyGivenParameters(declaration, context.trace)
@@ -97,6 +102,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                         )
                     }
                 }
+
             } else {
                 checkGivenTypeParametersOnNonGivenFunction(descriptor.typeParameters, context.trace)
             }
@@ -160,16 +166,13 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
             if (hasGivenAnnotation &&
                 givenConstructors.isNotEmpty()
             ) {
-                givenConstructors
-                    .forEach {
-                        context.trace.report(
-                            InjektErrors.GIVEN_ON_CLASS_WITH_GIVEN_CONSTRUCTOR
-                                .on(
-                                    declaration.findAnnotation(InjektFqNames.Given)
-                                        ?: declaration
-                                )
+                context.trace.report(
+                    InjektErrors.GIVEN_ON_CLASS_WITH_GIVEN_CONSTRUCTOR
+                        .on(
+                            declaration.findAnnotation(InjektFqNames.Given)
+                                ?: declaration
                         )
-                    }
+                )
             }
 
             if (givenConstructors.size > 1) {
@@ -184,28 +187,62 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
             }
         } else if (descriptor is PropertyDescriptor) {
             checkGivenTypeParametersOnNonGivenFunction(descriptor.typeParameters, context.trace)
-            if (descriptor.hasAnnotation(InjektFqNames.Given) &&
-                descriptor.extensionReceiverParameter != null &&
-                descriptor.extensionReceiverParameter?.type?.isGiven(this.context, context.trace) != true
-            ) {
-                context.trace.report(
-                    InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
-                        .on(
-                            declaration.safeAs<KtProperty>()
-                                ?.receiverTypeReference
-                                ?: declaration
-                        )
-                )
+            if (descriptor.hasAnnotation(InjektFqNames.Given)) {
+                checkUnresolvableGivenTypeParameters(declaration,
+                    descriptor.typeParameters, descriptor.returnType!!, context.trace)
+                if (descriptor.extensionReceiverParameter != null &&
+                    descriptor.extensionReceiverParameter?.type?.isGiven(this.context, context.trace) != true
+                ) {
+                    context.trace.report(
+                        InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
+                            .on(
+                                declaration.safeAs<KtProperty>()
+                                    ?.receiverTypeReference
+                                    ?: declaration
+                            )
+                    )
+                }
             }
         } else if (descriptor is TypeAliasDescriptor) {
             checkGivenTypeParametersOnNonGivenFunction(descriptor.declaredTypeParameters, context.trace)
         }
     }
 
+    private fun checkUnresolvableGivenTypeParameters(
+        declaration: KtDeclaration,
+        typeParameters: List<TypeParameterDescriptor>,
+        returnType: KotlinType,
+        trace: BindingTrace
+    ) {
+        if (typeParameters.isEmpty()) return
+        val typeParameterTypes = typeParameters
+            .filterNot { it.hasAnnotation(InjektFqNames.Given) }
+            .mapTo(mutableSetOf()) { it.defaultType.toTypeRef(context, trace) }
+        val seenTypeParameterTypes = mutableSetOf<TypeRef>()
+        returnType.toTypeRef(context, trace)
+            .forEachType {
+                if (it in typeParameterTypes)
+                    seenTypeParameterTypes += it
+            }
+        typeParameterTypes
+            .filter { it !in seenTypeParameterTypes }
+            .map { unresolvableTypeParameter ->
+                typeParameters
+                    .single { it.name == unresolvableTypeParameter.classifier.fqName.shortName() }
+            }
+            .forEach {
+                trace.report(
+                    InjektErrors.GIVEN_WITH_UNRESOLVABLE_TYPE_PARAMETER
+                        .on(it.findPsi() ?: declaration)
+                )
+            }
+    }
+
     private fun checkGivenTypeParametersOnNonGivenFunction(
         typeParameters: List<TypeParameterDescriptor>,
         trace: BindingTrace
     ) {
+        if (typeParameters.isEmpty()) return
         typeParameters
             .filter { it.hasAnnotation(InjektFqNames.Given) }
             .forEach { typeParameter ->
@@ -220,6 +257,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         declaration: KtDeclaration,
         trace: BindingTrace,
     ) {
+        if (isEmpty()) return
         this
             .filter { !it.isGiven(context, trace) }
             .forEach {

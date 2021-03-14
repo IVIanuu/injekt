@@ -145,6 +145,16 @@ interface InjektErrors {
                     )
                 }
 
+        @JvmField
+        val GIVEN_WITH_UNRESOLVABLE_TYPE_PARAMETER =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "type parameter of a given must be used in the return or must be itself marked with @Given"
+                    )
+                }
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,

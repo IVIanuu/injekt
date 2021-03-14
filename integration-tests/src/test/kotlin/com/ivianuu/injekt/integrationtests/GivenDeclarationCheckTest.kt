@@ -167,4 +167,13 @@ class GivenDeclarationCheckTest {
         shouldContainMessage("Parameter 'foo' is never used")
     }
 
+    @Test
+    fun testGivenWithUnresolvableTypeParameter() = codegen(
+        """
+            @Given
+            fun <S> func(): String = ""
+        """
+    ) {
+        compilationShouldHaveFailed("type parameter of a given must be used in the return or must be marked with @Given")
+    }
 }
