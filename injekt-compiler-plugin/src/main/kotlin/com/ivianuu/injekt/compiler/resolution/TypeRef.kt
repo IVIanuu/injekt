@@ -24,7 +24,6 @@ import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
-import com.ivianuu.injekt.compiler.prepare
 import com.ivianuu.injekt.compiler.toMap
 import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.builtins.StandardNames
@@ -70,10 +69,9 @@ fun KotlinType.toTypeRef(
     isStarProjection: Boolean = false
 ): TypeRef = if (isStarProjection) STAR_PROJECTION_TYPE
 else {
-    val finalType = prepare()
-    val key = System.identityHashCode(finalType)
+    val key = System.identityHashCode(this)
     trace?.get(InjektWritableSlices.TYPE_REF_FOR_TYPE, key)?.let { return it }
-    KotlinTypeRef(finalType, isStarProjection, context, trace)
+    KotlinTypeRef(this, isStarProjection, context, trace)
         .also { trace?.record(InjektWritableSlices.TYPE_REF_FOR_TYPE, key, it) }
 }
 
@@ -90,8 +88,8 @@ fun ClassifierDescriptor.toClassifierRef(
         fqName = original.fqNameSafe,
         typeParameters = (original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
             ?.map { it.toClassifierRef(context, trace) } ?: emptyList(),
-        superTypes = if (expandedType != null) listOf(expandedType) else typeConstructor.supertypes
-            .map { it.toTypeRef(context, trace) },
+        superTypes = if (expandedType != null) listOf(expandedType)
+        else typeConstructor.supertypes.map { it.toTypeRef(context, trace) },
         isTypeParameter = this is TypeParameterDescriptor,
         isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
         isTypeAlias = this is TypeAliasDescriptor,
@@ -212,7 +210,7 @@ sealed class TypeRef {
 
 }
 
-private fun TypeRef.forEachUniqueSuperTypeUntil(action: (TypeRef) -> Boolean) {
+fun TypeRef.forEachUniqueSuperTypeUntil(action: (TypeRef) -> Boolean) {
     val seen = mutableSetOf(this)
     var complete = false
     fun visit(type: TypeRef) {
@@ -229,6 +227,7 @@ private fun TypeRef.forEachUniqueSuperTypeUntil(action: (TypeRef) -> Boolean) {
 fun TypeRef.forEachType(action: (TypeRef) -> Unit) {
     action(this)
     arguments.forEach { it.forEachType(action) }
+    qualifiers.forEach { it.type.forEachType(action) }
 }
 
 class KotlinTypeRef(

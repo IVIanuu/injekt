@@ -21,10 +21,12 @@ import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.forEachType
+import com.ivianuu.injekt.compiler.resolution.forEachUniqueSuperTypeUntil
 import com.ivianuu.injekt.compiler.resolution.isAssignableTo
 import com.ivianuu.injekt.compiler.resolution.isGiven
+import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -215,21 +217,28 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         trace: BindingTrace
     ) {
         if (typeParameters.isEmpty()) return
-        val typeParameterTypes = typeParameters
-            .filterNot { it.hasAnnotation(InjektFqNames.Given) }
-            .mapTo(mutableSetOf()) { it.defaultType.toTypeRef(context, trace) }
-        val seenTypeParameterTypes = mutableSetOf<TypeRef>()
+        val allTypeParameterRefs = typeParameters
+            .map { it.toClassifierRef(context, trace) }
+        val nonConstraintTypeParameterRefs = allTypeParameterRefs
+            .filterNot { it.isGivenConstraint }
+        if (nonConstraintTypeParameterRefs.isEmpty()) return
+        val usedNonConstraintTypeParameterRefs = mutableSetOf<ClassifierRef>()
         returnType.toTypeRef(context, trace)
             .forEachType {
-                if (it in typeParameterTypes)
-                    seenTypeParameterTypes += it
+                if (it.classifier in nonConstraintTypeParameterRefs)
+                    usedNonConstraintTypeParameterRefs += it.classifier
             }
-        typeParameterTypes
-            .filter { it !in seenTypeParameterTypes }
-            .map { unresolvableTypeParameter ->
-                typeParameters
-                    .single { it.name == unresolvableTypeParameter.classifier.fqName.shortName() }
+        allTypeParameterRefs
+            .forEach { typeParameterSuperType ->
+                typeParameterSuperType.defaultType.forEachUniqueSuperTypeUntil {
+                    if (it.classifier in nonConstraintTypeParameterRefs)
+                        usedNonConstraintTypeParameterRefs += it.classifier
+                    false
+                }
             }
+        nonConstraintTypeParameterRefs
+            .filter { it !in usedNonConstraintTypeParameterRefs }
+            .map { it.descriptor!! }
             .forEach {
                 trace.report(
                     InjektErrors.GIVEN_WITH_UNRESOLVABLE_TYPE_PARAMETER

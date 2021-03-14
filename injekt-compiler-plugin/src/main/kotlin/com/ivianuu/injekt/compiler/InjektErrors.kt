@@ -151,7 +151,7 @@ interface InjektErrors {
                 .also {
                     MAP.put(
                         it,
-                        "type parameter of a given must be used in the return or must be itself marked with @Given"
+                        "type parameter of a given must be used in the return type or in a upper bound of another type parameter or must be itself marked with @Given"
                     )
                 }
 

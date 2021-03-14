@@ -96,15 +96,6 @@ fun <D : DeclarationDescriptor> KtDeclaration.descriptor(
     bindingContext: BindingContext,
 ) = bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
 
-fun KotlinType.prepare(): KotlinType {
-    var tmp = refineType()
-    if (constructor is IntersectionTypeConstructor) {
-        tmp = CommonSupertypes.commonSupertype(constructor.supertypes)
-    }
-    tmp = tmp.upperIfFlexible()
-    return tmp
-}
-
 fun DeclarationDescriptor.isExternalDeclaration(): Boolean = this is DeserializedDescriptor ||
         (this is PropertyAccessorDescriptor && correspondingProperty.isExternalDeclaration()) ||
         (this is GivenFunctionDescriptor && invokeDescriptor.isExternalDeclaration()) ||

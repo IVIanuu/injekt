@@ -174,6 +174,15 @@ class GivenDeclarationCheckTest {
             fun <S> func(): String = ""
         """
     ) {
-        compilationShouldHaveFailed("type parameter of a given must be used in the return or must be marked with @Given")
+        compilationShouldHaveFailed("type parameter of a given must be used in the return type or in a upper bound of another type parameter or must be itself marked with @Given")
     }
+
+    @Test
+    fun testGivenWithResolvableTypeParameter() = codegen(
+        """
+            @Given
+            fun <@Given T : S, S : Int> lol() {
+            }
+        """
+    )
 }
