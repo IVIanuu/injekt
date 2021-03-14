@@ -63,39 +63,39 @@ interface InjektErrors {
                 }
 
         @JvmField
-        val GIVEN_CLASS_WITH_GIVEN_CONSTRUCTOR =
+        val GIVEN_ON_CLASS_WITH_GIVEN_CONSTRUCTOR =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also { MAP.put(it, "class cannot be marked with @Given if it has a @Given marked constructor") }
 
         @JvmField
         val CLASS_WITH_MULTIPLE_GIVEN_CONSTRUCTORS =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "class cannot have multiple @Given marked constructors") }
+                .also { MAP.put(it, "class cannot have multiple @Given constructors") }
 
         @JvmField
         val GIVEN_ANNOTATION_CLASS =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "annotation class cannot be marked with @Given") }
+                .also { MAP.put(it, "annotation class cannot be @Given") }
 
         @JvmField
         val GIVEN_CONSTRUCTOR_ON_ANNOTATION_CLASS =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "annotation class constructor cannot be marked with @Given") }
+                .also { MAP.put(it, "annotation class constructor cannot be @Given") }
 
         @JvmField
         val GIVEN_ENUM_CLASS =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "enum class cannot be marked with @Given") }
+                .also { MAP.put(it, "enum class cannot be @Given") }
 
         @JvmField
         val GIVEN_ABSTRACT_CLASS =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "abstract class cannot be marked with @Given") }
+                .also { MAP.put(it, "@Given class cannot be abstract") }
 
         @JvmField
         val GIVEN_TAILREC_FUNCTION =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "tailrec function cannot be marked with @Given") }
+                .also { MAP.put(it, "@Given function cannot be tail recursive") }
 
         @JvmField
         val NON_FOR_TYPE_KEY_TYPE_PARAMETER_AS_FOR_TYPE_KEY =

@@ -19,8 +19,11 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.resolution.isAssignableTo
 import com.ivianuu.injekt.compiler.resolution.isGiven
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -33,10 +36,15 @@ import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtFunction
+import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     override fun check(
@@ -53,7 +61,11 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                 if (descriptor.isTailrec) {
                     context.trace.report(
                         InjektErrors.GIVEN_TAILREC_FUNCTION
-                            .on(declaration)
+                            .on(
+                                declaration.modifierList
+                                    ?.getModifier(KtTokens.TAILREC_KEYWORD)
+                                    ?: declaration
+                            )
                     )
                 }
 
@@ -61,23 +73,30 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                     it.hasAnnotation(InjektFqNames.Given)
                 }
                 if (givenConstraints.size > 1) {
-                    context.trace.report(
-                        InjektErrors.MULTIPLE_GIVEN_CONSTRAINTS
-                            .on(declaration)
-                    )
+                    descriptor
+                        .typeParameters
+                        .filter { it.hasAnnotation(InjektFqNames.Given) }
+                        .drop(1)
+                        .forEach {
+                            context.trace.report(
+                                InjektErrors.MULTIPLE_GIVEN_CONSTRAINTS
+                                    .on(it.findPsi() ?: declaration)
+                            )
+                        }
                 }
 
-                /*if (givenConstraints.size == 1) {
-                val constraintType = givenConstraints.single()
-                    .defaultType.toTypeRef(this.context, context.trace)
-                val returnType = descriptor.returnType!!.toTypeRef(this.context, context.trace)
-                if (returnType.isAssignableTo(this.context, constraintType)) {
-                    context.trace.report(
-                        InjektErrors.DIVERGENT_GIVEN_CONSTRAINT
-                            .on(declaration)
-                    )
+                if (givenConstraints.size == 1) {
+                    val constraintType = givenConstraints.single()
+                        .defaultType.toTypeRef(this.context, context.trace)
+                    val returnType = descriptor.returnType!!.toTypeRef(this.context, context.trace)
+                    if (returnType.isAssignableTo(this.context, constraintType)) {
+                        context.trace.report(
+                            InjektErrors.DIVERGENT_GIVEN_CONSTRAINT
+                                .on(declaration.safeAs<KtNamedFunction>()?.typeReference
+                                    ?: givenConstraints.single().findPsi() ?: declaration)
+                        )
+                    }
                 }
-            }*/
             } else {
                 checkGivenTypeParametersOnNonGivenFunction(descriptor.typeParameters, context.trace)
             }
@@ -97,15 +116,21 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                 if (hasGivenAnnotation) {
                     context.trace.report(
                         InjektErrors.GIVEN_ANNOTATION_CLASS
-                            .on(declaration)
+                            .on(
+                                declaration.findAnnotation(InjektFqNames.Given)
+                                    ?: declaration
+                            )
                     )
                 }
 
                 if (givenConstructors.isNotEmpty()) {
-                    context.trace.report(
-                        InjektErrors.GIVEN_CONSTRUCTOR_ON_ANNOTATION_CLASS
-                            .on(declaration)
-                    )
+                    givenConstructors
+                        .forEach {
+                            context.trace.report(
+                                InjektErrors.GIVEN_CONSTRUCTOR_ON_ANNOTATION_CLASS
+                                    .on(it.findPsi() ?: declaration)
+                            )
+                        }
                 }
             }
 
@@ -113,7 +138,10 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                 descriptor.kind == ClassKind.ENUM_CLASS) {
                 context.trace.report(
                     InjektErrors.GIVEN_ENUM_CLASS
-                        .on(declaration)
+                        .on(
+                            declaration.findAnnotation(InjektFqNames.Given)
+                                ?: declaration
+                        )
                 )
             }
 
@@ -121,24 +149,38 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                     descriptor.modality == Modality.ABSTRACT) {
                 context.trace.report(
                     InjektErrors.GIVEN_ABSTRACT_CLASS
-                        .on(declaration)
+                        .on(
+                            declaration.modifierList
+                                ?.getModifier(KtTokens.ABSTRACT_KEYWORD)
+                                ?: declaration
+                        )
                 )
             }
 
             if (hasGivenAnnotation &&
                 givenConstructors.isNotEmpty()
             ) {
-                context.trace.report(
-                    InjektErrors.GIVEN_CLASS_WITH_GIVEN_CONSTRUCTOR
-                        .on(declaration)
-                )
+                givenConstructors
+                    .forEach {
+                        context.trace.report(
+                            InjektErrors.GIVEN_ON_CLASS_WITH_GIVEN_CONSTRUCTOR
+                                .on(
+                                    declaration.findAnnotation(InjektFqNames.Given)
+                                        ?: declaration
+                                )
+                        )
+                    }
             }
 
             if (givenConstructors.size > 1) {
-                context.trace.report(
-                    InjektErrors.CLASS_WITH_MULTIPLE_GIVEN_CONSTRUCTORS
-                        .on(declaration)
-                )
+                givenConstructors
+                    .drop(1)
+                    .forEach {
+                        context.trace.report(
+                            InjektErrors.CLASS_WITH_MULTIPLE_GIVEN_CONSTRUCTORS
+                                .on(it.findPsi() ?: declaration)
+                        )
+                    }
             }
         } else if (descriptor is PropertyDescriptor) {
             checkGivenTypeParametersOnNonGivenFunction(descriptor.typeParameters, context.trace)
@@ -148,7 +190,11 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
             ) {
                 context.trace.report(
                     InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
-                        .on(descriptor.extensionReceiverParameter?.findPsi() ?: declaration)
+                        .on(
+                            declaration.safeAs<KtProperty>()
+                                ?.receiverTypeReference
+                                ?: declaration
+                        )
                 )
             }
         } else if (descriptor is TypeAliasDescriptor) {
@@ -160,13 +206,13 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         typeParameters: List<TypeParameterDescriptor>,
         trace: BindingTrace
     ) {
-        typeParameters.forEach {
-            if (it.hasAnnotation(InjektFqNames.Given)) {
+        typeParameters
+            .filter { it.hasAnnotation(InjektFqNames.Given) }
+            .forEach { typeParameter ->
                 trace.report(
                     InjektErrors.GIVEN_CONSTRAINT_ON_NON_GIVEN_FUNCTION
-                        .on(it.findPsi()!!)
+                        .on(typeParameter.findPsi()!!)
                 )
-            }
         }
     }
 
