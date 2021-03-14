@@ -185,4 +185,14 @@ class GivenDeclarationCheckTest {
             }
         """
     )
+
+    @Test
+    fun testGivenWithResolvableTypeParameterInQualifier() = codegen(
+        """
+            @Qualifier annotation class MyQualifier<T>
+            @Given
+            fun <@Given T : @MyQualifier<U> S, S, U> lol() {
+            }
+        """
+    )
 }

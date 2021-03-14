@@ -23,7 +23,6 @@ import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.forEachType
-import com.ivianuu.injekt.compiler.resolution.forEachUniqueSuperTypeUntil
 import com.ivianuu.injekt.compiler.resolution.isAssignableTo
 import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
@@ -229,12 +228,14 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                     usedNonConstraintTypeParameterRefs += it.classifier
             }
         allTypeParameterRefs
-            .forEach { typeParameterSuperType ->
-                typeParameterSuperType.defaultType.forEachUniqueSuperTypeUntil {
-                    if (it.classifier in nonConstraintTypeParameterRefs)
-                        usedNonConstraintTypeParameterRefs += it.classifier
-                    false
-                }
+            .forEach { typeParameterRef ->
+                typeParameterRef.superTypes
+                    .forEach { typeParameterSuperType ->
+                        typeParameterSuperType.forEachType {
+                            if (it.classifier in nonConstraintTypeParameterRefs)
+                                usedNonConstraintTypeParameterRefs += it.classifier
+                        }
+                    }
             }
         nonConstraintTypeParameterRefs
             .filter { it !in usedNonConstraintTypeParameterRefs }
