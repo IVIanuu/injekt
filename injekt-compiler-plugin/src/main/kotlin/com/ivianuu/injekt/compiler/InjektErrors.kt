@@ -93,6 +93,11 @@ interface InjektErrors {
                 .also { MAP.put(it, "@Given class cannot be abstract") }
 
         @JvmField
+        val GIVEN_INNER_CLASS =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also { MAP.put(it, "@Given class cannot be inner") }
+
+        @JvmField
         val GIVEN_TAILREC_FUNCTION =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also { MAP.put(it, "@Given function cannot be tail recursive") }

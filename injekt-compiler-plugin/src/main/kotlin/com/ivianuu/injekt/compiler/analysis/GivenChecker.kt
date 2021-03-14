@@ -164,6 +164,17 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                 )
             }
 
+            if (hasGivenAnnotation && descriptor.isInner) {
+                context.trace.report(
+                    InjektErrors.GIVEN_INNER_CLASS
+                        .on(
+                            declaration.modifierList
+                                ?.getModifier(KtTokens.INNER_KEYWORD)
+                                ?: declaration
+                        )
+                )
+            }
+
             if (hasGivenAnnotation &&
                 givenConstructors.isNotEmpty()
             ) {

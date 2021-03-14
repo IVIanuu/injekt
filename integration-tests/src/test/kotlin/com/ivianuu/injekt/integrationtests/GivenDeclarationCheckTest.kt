@@ -121,6 +121,18 @@ class GivenDeclarationCheckTest {
     }
 
     @Test
+    fun testGivenInnerClass() = codegen(
+        """
+            class MyOuterClass {
+                @Given
+                inner class MyInnerClass
+            }
+        """
+    ) {
+        compilationShouldHaveFailed("@Given class cannot be inner")
+    }
+
+    @Test
     fun testNonGivenValueParameterOnGivenFunction() = codegen(
         """
             @Given fun bar(foo: Foo) = Bar(foo)
