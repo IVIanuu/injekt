@@ -16,9 +16,6 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.CacheDir
-import com.ivianuu.injekt.compiler.DumpDir
-import com.ivianuu.injekt.compiler.FileManager
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext

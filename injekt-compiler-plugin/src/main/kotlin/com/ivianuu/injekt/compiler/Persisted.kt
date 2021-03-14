@@ -64,47 +64,47 @@ data class PersistedCallableInfo(
     val qualifiers: List<PersistedAnnotationRef>
 )
 
-fun CallableRef.toPersistedCallableInfo(declarationStore: DeclarationStore) = PersistedCallableInfo(
-    type = type.toPersistedTypeRef(declarationStore),
-    typeParameters = typeParameters.map { it.toPersistedClassifierRef(declarationStore) },
+fun CallableRef.toPersistedCallableInfo(context: InjektContext) = PersistedCallableInfo(
+    type = type.toPersistedTypeRef(context),
+    typeParameters = typeParameters.map { it.toPersistedClassifierRef(context) },
     parameterTypes = parameterTypes
-        .mapValues { it.value.toPersistedTypeRef(declarationStore) },
+        .mapValues { it.value.toPersistedTypeRef(context) },
     givenParameters = givenParameters,
-    qualifiers = qualifiers.map { it.toPersistedAnnotationRef(declarationStore) }
+    qualifiers = qualifiers.map { it.toPersistedAnnotationRef(context) }
 )
 
 fun CallableRef.apply(
-    declarationStore: DeclarationStore,
+    context: InjektContext,
     info: PersistedCallableInfo?
 ): CallableRef {
     return if (info == null || !callable.original.isExternalDeclaration()) this
     else {
         val original = callable.original
         val originalQualifiers = original.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-            .map { it.toAnnotationRef(declarationStore) }
-        val originalType = original.returnType!!.toTypeRef(declarationStore).let {
+            .map { it.toAnnotationRef(context) }
+        val originalType = original.returnType!!.toTypeRef(context).let {
             if (originalQualifiers.isNotEmpty()) it.copy(qualifiers = originalQualifiers + it.qualifiers)
             else it
         }
         val substitutionMap = getSubstitutionMap(
-            declarationStore,
+            context,
             listOf(type to originalType) +
                     parameterTypes.values
                         .zip(
                             (if (original is ConstructorDescriptor) original.valueParameters else original.allParameters)
-                                .map { it.type.toTypeRef(declarationStore) }
+                                .map { it.type.toTypeRef(context) }
                         )
         )
         copy(
-            type = info.type.toTypeRef(declarationStore),
-            originalType = info.type.toTypeRef(declarationStore),
+            type = info.type.toTypeRef(context),
+            originalType = info.type.toTypeRef(context),
             typeParameters = info.typeParameters.map {
-                it.toClassifierRef(declarationStore)
+                it.toClassifierRef(context)
             },
             parameterTypes = info.parameterTypes
-                .mapValues { it.value.toTypeRef(declarationStore) },
+                .mapValues { it.value.toTypeRef(context) },
             givenParameters = info.givenParameters,
-            qualifiers = info.qualifiers.map { it.toAnnotationRef(declarationStore) }
+            qualifiers = info.qualifiers.map { it.toAnnotationRef(context) }
         ).substitute(substitutionMap)
     }
 }
@@ -116,10 +116,10 @@ data class PersistedClassifierInfo(
     val superTypes: List<PersistedTypeRef>
 )
 
-fun ClassifierRef.toPersistedClassifierInfo(declarationStore: DeclarationStore) = PersistedClassifierInfo(
+fun ClassifierRef.toPersistedClassifierInfo(context: InjektContext) = PersistedClassifierInfo(
     fqName = descriptor!!.fqNameSafe.asString(),
-    qualifiers = qualifiers.map { it.toPersistedAnnotationRef(declarationStore) },
-    superTypes = superTypes.map { it.toPersistedTypeRef(declarationStore) }
+    qualifiers = qualifiers.map { it.toPersistedAnnotationRef(context) },
+    superTypes = superTypes.map { it.toPersistedTypeRef(context) }
 )
 
 @JsonClass(generateAdapter = true)
@@ -133,24 +133,24 @@ data class PersistedTypeRef(
     val isGiven: Boolean
 )
 
-fun TypeRef.toPersistedTypeRef(declarationStore: DeclarationStore): PersistedTypeRef = PersistedTypeRef(
-    classifierKey = classifier.descriptor?.uniqueKey(declarationStore) ?: "",
-    qualifiers = qualifiers.map { it.toPersistedAnnotationRef(declarationStore) },
-    arguments = arguments.map { it.toPersistedTypeRef(declarationStore) },
+fun TypeRef.toPersistedTypeRef(context: InjektContext): PersistedTypeRef = PersistedTypeRef(
+    classifierKey = classifier.descriptor?.uniqueKey(context) ?: "",
+    qualifiers = qualifiers.map { it.toPersistedAnnotationRef(context) },
+    arguments = arguments.map { it.toPersistedTypeRef(context) },
     isStarProjection = isStarProjection,
     isMarkedNullable = isMarkedNullable,
     isMarkedComposable = isMarkedComposable,
     isGiven = isGiven
 )
 
-fun PersistedTypeRef.toTypeRef(declarationStore: DeclarationStore): TypeRef {
+fun PersistedTypeRef.toTypeRef(context: InjektContext): TypeRef {
     if (isStarProjection) return STAR_PROJECTION_TYPE
-    val classifier = declarationStore.classifierDescriptorForKey(classifierKey)
-        .toClassifierRef(declarationStore)
+    val classifier = context.classifierDescriptorForKey(classifierKey)
+        .toClassifierRef(context)
     return classifier.defaultType
         .copy(
-            qualifiers = qualifiers.map { it.toAnnotationRef(declarationStore) },
-            arguments = arguments.map { it.toTypeRef(declarationStore) },
+            qualifiers = qualifiers.map { it.toAnnotationRef(context) },
+            arguments = arguments.map { it.toTypeRef(context) },
             isMarkedNullable = isMarkedNullable,
             isComposable = isMarkedComposable,
             isGiven = isGiven
@@ -165,7 +165,7 @@ data class PersistedClassifierRef(
 )
 
 fun ClassifierRef.toPersistedClassifierRef(
-    declarationStore: DeclarationStore
+    context: InjektContext
 ) = PersistedClassifierRef(
     key = if (descriptor is TypeParameterDescriptor) {
         descriptor.containingDeclaration
@@ -173,19 +173,19 @@ fun ClassifierRef.toPersistedClassifierRef(
             ?.constructedClass
             ?.declaredTypeParameters
             ?.single { it.name == descriptor.name }
-            ?.uniqueKey(declarationStore)
-            ?: descriptor.uniqueKey(declarationStore)
-     } else descriptor!!.uniqueKey(declarationStore),
-    superTypes = superTypes.map { it.toPersistedTypeRef(declarationStore) },
-    qualifiers = qualifiers.map { it.toPersistedAnnotationRef(declarationStore) }
+            ?.uniqueKey(context)
+            ?: descriptor.uniqueKey(context)
+     } else descriptor!!.uniqueKey(context),
+    superTypes = superTypes.map { it.toPersistedTypeRef(context) },
+    qualifiers = qualifiers.map { it.toPersistedAnnotationRef(context) }
 )
 
-fun PersistedClassifierRef.toClassifierRef(declarationStore: DeclarationStore): ClassifierRef {
-    return declarationStore.classifierDescriptorForKey(key)
-        .toClassifierRef(declarationStore)
+fun PersistedClassifierRef.toClassifierRef(context: InjektContext): ClassifierRef {
+    return context.classifierDescriptorForKey(key)
+        .toClassifierRef(context)
         .copy(
-            superTypes = superTypes.map { it.toTypeRef(declarationStore) },
-            qualifiers = qualifiers.map { it.toAnnotationRef(declarationStore) }
+            superTypes = superTypes.map { it.toTypeRef(context) },
+            qualifiers = qualifiers.map { it.toAnnotationRef(context) }
         )
 }
 
@@ -196,13 +196,13 @@ fun PersistedClassifierRef.toPersistedClassifierInfo() = PersistedClassifierInfo
 )
 
 fun ClassifierRef.apply(
-    declarationStore: DeclarationStore,
+    context: InjektContext,
     info: PersistedClassifierInfo?
 ): ClassifierRef {
     return if (info == null || !descriptor!!.isExternalDeclaration()) this
     else copy(
-        qualifiers = info.qualifiers.map { it.toAnnotationRef(declarationStore) },
-        superTypes = info.superTypes.map { it.toTypeRef(declarationStore) }
+        qualifiers = info.qualifiers.map { it.toAnnotationRef(context) },
+        superTypes = info.superTypes.map { it.toTypeRef(context) }
     )
 }
 
@@ -212,28 +212,28 @@ fun ClassifierRef.apply(
     val arguments: Map<String, PersistedConstantValue>
 )
 
-fun AnnotationRef.toPersistedAnnotationRef(declarationStore: DeclarationStore): PersistedAnnotationRef {
+fun AnnotationRef.toPersistedAnnotationRef(context: InjektContext): PersistedAnnotationRef {
     return PersistedAnnotationRef(
-        type = type.toPersistedTypeRef(declarationStore),
+        type = type.toPersistedTypeRef(context),
         arguments = arguments
             .mapKeys { it.key.asString() }
-            .mapValues { it.value.toPersistedConstantValue(declarationStore) }
+            .mapValues { it.value.toPersistedConstantValue(context) }
     )
 }
 
-fun PersistedAnnotationRef.toAnnotationRef(declarationStore: DeclarationStore) = AnnotationRef(
-    type.toTypeRef(declarationStore),
+fun PersistedAnnotationRef.toAnnotationRef(context: InjektContext) = AnnotationRef(
+    type.toTypeRef(context),
     arguments
         .mapKeys { it.key.asNameId() }
-        .mapValues { it.value.toConstantValue(declarationStore) }
+        .mapValues { it.value.toConstantValue(context) }
 )
 
 fun ConstantValue<*>.toPersistedConstantValue(
-    declarationStore: DeclarationStore
+    context: InjektContext
 ): PersistedConstantValue = when (this) {
     is ArrayValue -> PersistedArrayValue(
-        value.map { it.toPersistedConstantValue(declarationStore) },
-        type.arguments.single().toPersistedTypeRef(declarationStore)
+        value.map { it.toPersistedConstantValue(context) },
+        type.arguments.single().toPersistedTypeRef(context)
     )
     is BooleanValue -> PersistedBooleanValue(value)
     is ByteValue -> PersistedByteValue(value)
@@ -244,7 +244,7 @@ fun ConstantValue<*>.toPersistedConstantValue(
     is IntValue -> PersistedIntValue(value)
     is KClassValue -> PersistedKClassValue(
         value.fqName.asString(),
-        type.toPersistedTypeRef(declarationStore)
+        type.toPersistedTypeRef(context)
     )
     is LongValue -> PersistedLongValue(value)
     is ShortValue -> PersistedShortValue(value)
@@ -255,82 +255,82 @@ fun ConstantValue<*>.toPersistedConstantValue(
     is UShortValue -> PersistedUShortValue(value)
 }
 
-fun PersistedConstantValue.toConstantValue(declarationStore: DeclarationStore): ConstantValue<*> = when (this) {
+fun PersistedConstantValue.toConstantValue(context: InjektContext): ConstantValue<*> = when (this) {
     is PersistedArrayValue -> ArrayValue(
-        value = value.map { it.toConstantValue(declarationStore) },
-        type = declarationStore.module.builtIns.array
+        value = value.map { it.toConstantValue(context) },
+        type = context.module.builtIns.array
             .defaultType
-            .toTypeRef(declarationStore)
-            .typeWith(listOf(elementType.toTypeRef(declarationStore)))
+            .toTypeRef(context)
+            .typeWith(listOf(elementType.toTypeRef(context)))
     )
     is PersistedBooleanValue -> BooleanValue(
         value,
-        declarationStore.module.builtIns.booleanType.toTypeRef(declarationStore)
+        context.module.builtIns.booleanType.toTypeRef(context)
     )
     is PersistedByteValue -> ByteValue(
         value,
-        declarationStore.module.builtIns.byteType.toTypeRef(declarationStore)
+        context.module.builtIns.byteType.toTypeRef(context)
     )
     is PersistedCharValue -> CharValue(
         value,
-        declarationStore.module.builtIns.charType.toTypeRef(declarationStore)
+        context.module.builtIns.charType.toTypeRef(context)
     )
     is PersistedDoubleValue -> DoubleValue(
         value,
-        declarationStore.module.builtIns.doubleType.toTypeRef(declarationStore)
+        context.module.builtIns.doubleType.toTypeRef(context)
     )
     is PersistedEnumValue -> {
-        val enumClassifier = declarationStore.classifierDescriptorForFqName(FqName(enumClassifierFqName))!!
-            .toClassifierRef(declarationStore)
+        val enumClassifier = context.classifierDescriptorForFqName(FqName(enumClassifierFqName))!!
+            .toClassifierRef(context)
         EnumValue(enumClassifier to enumValue.asNameId(), enumClassifier.defaultType)
     }
     is PersistedFloatValue -> FloatValue(
         value,
-        declarationStore.module.builtIns.floatType.toTypeRef(declarationStore)
+        context.module.builtIns.floatType.toTypeRef(context)
     )
     is PersistedIntValue -> IntValue(
         value,
-        declarationStore.module.builtIns.intType.toTypeRef(declarationStore)
+        context.module.builtIns.intType.toTypeRef(context)
     )
     is PersistedKClassValue -> KClassValue(
-        declarationStore.classifierDescriptorForFqName(FqName(classifierFqName))!!
-            .toClassifierRef(declarationStore),
-        type.toTypeRef(declarationStore)
+        context.classifierDescriptorForFqName(FqName(classifierFqName))!!
+            .toClassifierRef(context),
+        type.toTypeRef(context)
     )
     is PersistedLongValue -> LongValue(
         value,
-        declarationStore.module.builtIns.longType.toTypeRef(declarationStore)
+        context.module.builtIns.longType.toTypeRef(context)
     )
     is PersistedShortValue -> ShortValue(
         value,
-        declarationStore.module.builtIns.shortType.toTypeRef(declarationStore)
+        context.module.builtIns.shortType.toTypeRef(context)
     )
     is PersistedStringValue -> StringValue(
         value,
-        declarationStore.module.builtIns.stringType.toTypeRef(declarationStore)
+        context.module.builtIns.stringType.toTypeRef(context)
     )
     is PersistedUByteValue -> UByteValue(
         value,
-        declarationStore.classifierDescriptorForFqName(FqName("kotlin.UByte"))!!
-            .toClassifierRef(declarationStore)
+        context.classifierDescriptorForFqName(FqName("kotlin.UByte"))!!
+            .toClassifierRef(context)
             .defaultType
     )
     is PersistedUIntValue -> UIntValue(
         value,
-        declarationStore.classifierDescriptorForFqName(FqName("kotlin.UInt"))!!
-            .toClassifierRef(declarationStore)
+        context.classifierDescriptorForFqName(FqName("kotlin.UInt"))!!
+            .toClassifierRef(context)
             .defaultType
     )
     is PersistedULongValue -> ULongValue(
         value,
-        declarationStore.classifierDescriptorForFqName(FqName("kotlin.ULong"))!!
-            .toClassifierRef(declarationStore)
+        context.classifierDescriptorForFqName(FqName("kotlin.ULong"))!!
+            .toClassifierRef(context)
             .defaultType
     )
     is PersistedUShortValue -> UShortValue(
         value,
-        declarationStore.classifierDescriptorForFqName(FqName("kotlin.UShort"))!!
-            .toClassifierRef(declarationStore)
+        context.classifierDescriptorForFqName(FqName("kotlin.UShort"))!!
+            .toClassifierRef(context)
             .defaultType
     )
 }

@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.analysis.GivenFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.CallableRef
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.fullyAbbreviatedType
 import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
@@ -59,6 +58,7 @@ import org.jetbrains.kotlin.serialization.deserialization.descriptors.Deserializ
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.types.upperIfFlexible
 
 internal fun KtAnnotated.hasAnnotation(fqName: FqName): Boolean = findAnnotation(fqName) != null
@@ -101,17 +101,17 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
 }
 
 fun CallableDescriptor.getGivenParameters(
-    declarationStore: DeclarationStore,
+    context: InjektContext,
     substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
 ): List<CallableRef> =
     allParameters
         .filter {
-            it.isGiven(declarationStore) ||
+            it.isGiven(context) ||
                     (substitutionMap.isNotEmpty() &&
-                            it.type.toTypeRef(declarationStore).substitute(substitutionMap).isGiven) ||
-                    it.type.isGiven(declarationStore)
+                            it.type.toTypeRef(context).substitute(substitutionMap).isGiven) ||
+                    it.type.isGiven(context)
         }
-        .map { it.toCallableRef(declarationStore).copy(isGiven = true) }
+        .map { it.toCallableRef(context).copy(isGiven = true) }
 
 fun <D : DeclarationDescriptor> KtDeclaration.descriptor(
     bindingContext: BindingContext,
@@ -150,7 +150,7 @@ fun IrType.getAnnotatedAnnotations(annotation: FqName): List<IrConstructorCall> 
         inner.hasAnnotation(annotation)
     }
 
-fun DeclarationDescriptor.uniqueKey(declarationStore: DeclarationStore): String {
+fun DeclarationDescriptor.uniqueKey(context: InjektContext): String {
     val original = this.original
     return when (original) {
         is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
@@ -183,13 +183,19 @@ fun DeclarationDescriptor.uniqueKey(declarationStore: DeclarationStore): String 
         }"
         is TypeAliasDescriptor -> "typealias:$fqNameSafe"
         is TypeParameterDescriptor ->
-            "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey(declarationStore)}"
+            "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey(context)}"
         is ParameterDescriptor -> ""
         is ValueParameterDescriptor -> ""
         is VariableDescriptor -> ""
         else -> error("Unexpected declaration $this")
     }
 }
+
+private val KotlinType.fullyAbbreviatedType: KotlinType
+    get() {
+        val abbreviatedType = getAbbreviatedType()
+        return if (abbreviatedType != null && abbreviatedType != this) abbreviatedType.fullyAbbreviatedType else this
+    }
 
 fun ParameterDescriptor.injektName(): String {
     val callable = containingDeclaration as? CallableDescriptor

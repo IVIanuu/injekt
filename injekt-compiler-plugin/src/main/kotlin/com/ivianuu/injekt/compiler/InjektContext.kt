@@ -21,6 +21,7 @@ import com.squareup.moshi.Moshi
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -29,9 +30,13 @@ import java.util.Base64
 import java.util.WeakHashMap
 
 @Suppress("NewApi")
-class DeclarationStore(val module: ModuleDescriptor) {
+class InjektContext(val module: ModuleDescriptor) {
 
     val moshi = Moshi.Builder().build()!!
+
+    val setType by unsafeLazy {
+        module.builtIns.set.defaultType.toTypeRef(this)
+    }
 
     fun callableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? {
         val annotations = if (callable is ConstructorDescriptor &&
@@ -135,10 +140,6 @@ class DeclarationStore(val module: ModuleDescriptor) {
             ) as? ClassDescriptor ?: return null
 
         return classDescriptor.unsubstitutedMemberScope
-    }
-
-    val setType by unsafeLazy {
-        module.builtIns.set.defaultType.toTypeRef(this)
     }
 
 }

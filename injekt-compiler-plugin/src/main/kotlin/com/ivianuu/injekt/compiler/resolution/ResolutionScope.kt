@@ -19,7 +19,7 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
@@ -28,7 +28,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstance
 class ResolutionScope(
     val name: String,
     val parent: ResolutionScope?,
-    val declarationStore: DeclarationStore,
+    val context: InjektContext,
     val callContext: CallContext,
     val ownerDescriptor: DeclarationDescriptor?,
     var depth: Int = -1,
@@ -74,7 +74,7 @@ class ResolutionScope(
         produceGivens()
             .forEach { given ->
                 given.collectGivens(
-                    declarationStore = declarationStore,
+                    context = context,
                     ownerDescriptor = ownerDescriptor,
                     depth = given.depth,
                     substitutionMap = emptyMap(),
@@ -115,7 +115,7 @@ class ResolutionScope(
                     ?.filterNot { it.isFrameworkGiven }
                     ?.let { this += it }
                 this += givens
-                    .filter { it.type.isAssignableTo(declarationStore, type) }
+                    .filter { it.type.isAssignableTo(context, type) }
                     .map { it.toGivenNode(type, this@ResolutionScope) }
 
                 if (type.qualifiers.isEmpty() &&
@@ -124,9 +124,9 @@ class ResolutionScope(
                         this += ProviderGivenNode(
                             type = type,
                             ownerScope = this@ResolutionScope,
-                            declarationStore = declarationStore
+                            context = context
                         )
-                    } else if (type.classifier == declarationStore.setType.classifier) {
+                    } else if (type.classifier == context.setType.classifier) {
                         val setElementType = type.arguments.single()
                         var elementTypes = setElementsForType(setElementType)
                         if (elementTypes.isEmpty() &&
@@ -169,8 +169,8 @@ class ResolutionScope(
         if (givens.isEmpty()) return parentSetElements
         return setElementsByType.getOrPut(type) {
             parentSetElements + givens
-                .filter { it.type.isAssignableTo(declarationStore, type) }
-                .map { it.substitute(getSubstitutionMap(declarationStore, listOf(type to it.type))) }
+                .filter { it.type.isAssignableTo(context, type) }
+                .map { it.substitute(getSubstitutionMap(context, listOf(type to it.type))) }
                 .map { callable ->
                     val typeWithFrameworkKey = type.copy(
                         frameworkKey = generateFrameworkKey()
@@ -198,14 +198,14 @@ class ResolutionScope(
             it.isGivenConstraint
         }.defaultType
         if (!candidate.rawType
-                .isSubTypeOf(declarationStore, constraintType)) return
+                .isSubTypeOf(context, constraintType)) return
 
         val inputsSubstitutionMap = getSubstitutionMap(
-            declarationStore,
+            context,
             listOf(candidate.type to constraintType)
         )
         val outputsSubstitutionMap = getSubstitutionMap(
-            declarationStore,
+            context,
             listOf(candidate.rawType to constraintType)
         )
         val newGiven = constrainedGiven.callable.substituteInputs(inputsSubstitutionMap)
@@ -217,7 +217,7 @@ class ResolutionScope(
             )
 
         newGiven.collectGivens(
-            declarationStore = declarationStore,
+            context = context,
             ownerDescriptor = ownerDescriptor,
             depth = depth,
             substitutionMap = outputsSubstitutionMap,
@@ -254,16 +254,19 @@ class ResolutionScope(
 }
 
 fun HierarchicalResolutionScope(
-    declarationStore: DeclarationStore,
+    context: InjektContext,
     scope: HierarchicalScope,
-    bindingContext: BindingContext
-) = ResolutionScope(
-    name = "Hierarchical $scope",
-    declarationStore = declarationStore,
-    callContext = scope.callContext(bindingContext),
-    parent = null,
-    ownerDescriptor = scope.parentsWithSelf
-        .firstIsInstance<LexicalScope>()
-        .ownerDescriptor,
-    produceGivens = { scope.collectGivens(declarationStore) }
-)
+    trace: BindingTrace
+): ResolutionScope {
+    trace[InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, scope]?.let { return it }
+    return ResolutionScope(
+        name = "Hierarchical $scope",
+        context = context,
+        callContext = scope.callContext(trace.bindingContext),
+        parent = null,
+        ownerDescriptor = scope.parentsWithSelf
+            .firstIsInstance<LexicalScope>()
+            .ownerDescriptor,
+        produceGivens = { scope.collectGivens(context) }
+    ).also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, scope, it) }
+}

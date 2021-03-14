@@ -45,7 +45,7 @@ val CallableDescriptor.callContext: CallContext
 
 val TypeRef.callContext: CallContext
     get() = when {
-        fullyExpandedType.isMarkedComposable -> CallContext.COMPOSABLE
+        isComposableType -> CallContext.COMPOSABLE
         classifier.fqName.asString()
             .startsWith("kotlin.coroutines.SuspendFunction") -> CallContext.SUSPEND
         else -> CallContext.DEFAULT

@@ -20,7 +20,6 @@ package com.ivianuu.injekt
 
 /**
  * Considers the annotated declaration in the current scope when resolving given arguments
- *
  */
 @Target(
     AnnotationTarget.CLASS,
@@ -45,7 +44,6 @@ inline fun <T> given(@Given value: T): T = value
  * to distinct types
  *
  * For example:
- *
  * ```
  * @Qualifier
  * annotation class UserId
@@ -66,7 +64,6 @@ inline fun <T> given(@Given value: T): T = value
  *     // username = "Foo"
  * }
  * ```
- *
  */
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Qualifier

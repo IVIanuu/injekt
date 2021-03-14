@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.CacheDir
+import com.ivianuu.injekt.compiler.DumpDir
 import org.jetbrains.kotlin.name.FqName
 import java.io.File
 

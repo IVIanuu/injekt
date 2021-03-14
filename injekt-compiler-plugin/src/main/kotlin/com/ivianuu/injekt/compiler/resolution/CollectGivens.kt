@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.apply
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
@@ -84,44 +84,44 @@ fun CallableRef.substituteInputs(map: Map<ClassifierRef, TypeRef>): CallableRef 
     )
 }
 
-fun CallableDescriptor.toCallableRef(declarationStore: DeclarationStore): CallableRef {
+fun CallableDescriptor.toCallableRef(context: InjektContext): CallableRef {
     val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
-        .map { it.toAnnotationRef(declarationStore) }
-    val type = returnType!!.toTypeRef(declarationStore).let {
+        .map { it.toAnnotationRef(context) }
+    val type = returnType!!.toTypeRef(context).let {
         if (qualifiers.isNotEmpty()) it.copy(qualifiers = qualifiers + it.qualifiers)
         else it
     }
     val typeParameters = typeParameters
-        .map { it.toClassifierRef(declarationStore) }
+        .map { it.toClassifierRef(context) }
     return CallableRef(
         callable = this,
         type = type,
         originalType = type,
         typeParameters = typeParameters,
         parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-            .map { it.injektName() to it.type.toTypeRef(declarationStore) }
+            .map { it.injektName() to it.type.toTypeRef(context) }
             .toMap(),
         givenParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-            .filter { it.isGiven(declarationStore) }
+            .filter { it.isGiven(context) }
             .mapTo(mutableSetOf()) { it.injektName() },
         qualifiers = qualifiers,
         typeArguments = typeParameters
             .map { it to it.defaultType }
             .toMap(),
-        isGiven = isGiven(declarationStore),
+        isGiven = isGiven(context),
         fromGivenConstraint = false,
         depth = 0,
         callContext = callContext
     ).let {
         if (original.isExternalDeclaration()) it.apply(
-            declarationStore,
-            declarationStore.callableInfoFor(it.callable)
+            context,
+            context.callableInfoFor(it.callable)
         ) else it
     }
 }
 
 fun MemberScope.collectGivens(
-    declarationStore: DeclarationStore,
+    context: InjektContext,
     type: TypeRef?,
     ownerDescriptor: DeclarationDescriptor?,
     depth: Int,
@@ -131,28 +131,28 @@ fun MemberScope.collectGivens(
         ?.safeAs<ClassDescriptor>()
         ?.unsubstitutedPrimaryConstructor
         ?.valueParameters
-        ?.filter { it.isGiven(declarationStore) }
+        ?.filter { it.isGiven(context) }
         ?.map { it.name } ?: emptyList())
     return getContributedDescriptors()
         .flatMap { declaration ->
             when (declaration) {
-                is ClassDescriptor -> declaration.getGivenConstructors(declarationStore)
+                is ClassDescriptor -> declaration.getGivenConstructors(context)
                     .map {
                         it
                             .copy(isGiven = true, depth = depth)
                             .substitute(substitutionMap)
                     }
-                is PropertyDescriptor -> if (declaration.isGiven(declarationStore) ||
+                is PropertyDescriptor -> if (declaration.isGiven(context) ||
                         declaration.name in givenPrimaryConstructorParameters) {
                     listOf(
-                        declaration.toCallableRef(declarationStore)
+                        declaration.toCallableRef(context)
                             .copy(isGiven = true, depth = depth)
                             .substitute(substitutionMap)
                     )
                 } else emptyList()
-                is FunctionDescriptor -> if (declaration.isGiven(declarationStore)) {
+                is FunctionDescriptor -> if (declaration.isGiven(context)) {
                     listOf(
-                        declaration.toCallableRef(declarationStore)
+                        declaration.toCallableRef(context)
                             .copy(isGiven = true, depth = depth)
                             .substitute(substitutionMap)
                     )
@@ -173,43 +173,43 @@ fun MemberScope.collectGivens(
         }
 }
 
-fun Annotated.isGiven(declarationStore: DeclarationStore): Boolean =
+fun Annotated.isGiven(context: InjektContext): Boolean =
     hasAnnotation(InjektFqNames.Given) ||
-            (this is ClassConstructorDescriptor && constructedClass.isGiven(declarationStore))
+            (this is ClassConstructorDescriptor && constructedClass.isGiven(context))
 
-fun CallableDescriptor.collectGivens(declarationStore: DeclarationStore): List<CallableRef> {
+fun CallableDescriptor.collectGivens(context: InjektContext): List<CallableRef> {
     val declarations = mutableListOf<CallableRef>()
 
     declarations += allParameters
-        .filter { it.isGiven(declarationStore) || it == extensionReceiverParameter }
-        .map { it.toCallableRef(declarationStore).copy(isGiven = true) }
+        .filter { it.isGiven(context) || it == extensionReceiverParameter }
+        .map { it.toCallableRef(context).copy(isGiven = true) }
 
     return declarations
 }
 
-fun ParameterDescriptor.isGiven(declarationStore: DeclarationStore): Boolean {
-    return (this as Annotated).isGiven(declarationStore) ||
-            type.isGiven(declarationStore) ||
+fun ParameterDescriptor.isGiven(context: InjektContext): Boolean {
+    return (this as Annotated).isGiven(context) ||
+            type.isGiven(context) ||
             getUserData(DslMarkerUtils.FunctionTypeAnnotationsKey)
                 ?.hasAnnotation(InjektFqNames.Given) == true ||
-            getGivenParameters(declarationStore)
+            getGivenParameters(context)
                 .firstOrNull { it.callable == this }
                 ?.isGiven == true ||
             containingDeclaration.safeAs<FunctionDescriptor>()
                 ?.takeIf { it.isExternalDeclaration() }
-                ?.let { declarationStore.callableInfoFor(it) }
+                ?.let { context.callableInfoFor(it) }
                 ?.let { name.asString() in it.givenParameters } == true
 }
 
 fun ClassDescriptor.getGivenConstructors(
-    declarationStore: DeclarationStore
+    context: InjektContext
 ): List<CallableRef> = constructors
     .filter { constructor ->
-        constructor.isGiven(declarationStore) ||
-                (constructor.isPrimary && isGiven(declarationStore))
+        constructor.isGiven(context) ||
+                (constructor.isPrimary && isGiven(context))
     }
     .map {
-        it.toCallableRef(declarationStore)
+        it.toCallableRef(context)
             .copy(isGiven = true)
     }
     .map {
@@ -222,7 +222,7 @@ fun ClassDescriptor.getGivenConstructors(
     }
 
 fun CallableRef.collectGivens(
-    declarationStore: DeclarationStore,
+    context: InjektContext,
     ownerDescriptor: DeclarationDescriptor?,
     depth: Int,
     substitutionMap: Map<ClassifierRef, TypeRef>,
@@ -239,10 +239,10 @@ fun CallableRef.collectGivens(
     callable
         .returnType!!
         .memberScope
-        .collectGivens(declarationStore, type, ownerDescriptor, depth, combinedSubstitutionMap)
+        .collectGivens(context, type, ownerDescriptor, depth, combinedSubstitutionMap)
         .forEach {
             it.collectGivens(
-                declarationStore,
+                context,
                 ownerDescriptor,
                 depth,
                 combinedSubstitutionMap,
@@ -253,7 +253,7 @@ fun CallableRef.collectGivens(
 }
 
 fun HierarchicalScope.collectGivens(
-    declarationStore: DeclarationStore
+    context: InjektContext
 ): List<CallableRef> {
     val allScopes = parentsWithSelf.toList()
 
@@ -278,7 +278,7 @@ fun HierarchicalScope.collectGivens(
             depth++
             scope.collectGivensInScope(
                 if (scope is ImportingScope) 0 else depth,
-                declarationStore
+                context
             ) { depth++ }
         }
         .distinctBy { it.callable }
@@ -286,7 +286,7 @@ fun HierarchicalScope.collectGivens(
 
 private fun HierarchicalScope.collectGivensInScope(
     depth: Int,
-    declarationStore: DeclarationStore,
+    context: InjektContext,
     bumpDepth: () -> Unit
 ): List<CallableRef> {
     return if (this is LexicalScope &&
@@ -295,34 +295,34 @@ private fun HierarchicalScope.collectGivensInScope(
         val clazz = ownerDescriptor as ClassDescriptor
         listOfNotNull(
             clazz.companionObjectDescriptor?.thisAsReceiverParameter
-                ?.toCallableRef(declarationStore)
+                ?.toCallableRef(context)
                 ?.copy(isGiven = true, depth = depth)
                 ?.also { bumpDepth() },
-            clazz.thisAsReceiverParameter.toCallableRef(declarationStore)
+            clazz.thisAsReceiverParameter.toCallableRef(context)
                 .copy(isGiven = true, depth = depth + 1)
         )
     } else if (this is LexicalScope &&
         ownerDescriptor is FunctionDescriptor &&
         kind == LexicalScopeKind.FUNCTION_INNER_SCOPE) {
         val function = ownerDescriptor as FunctionDescriptor
-        function.collectGivens(declarationStore)
+        function.collectGivens(context)
             .map { it.copy(depth = depth) }
     } else {
         getContributedDescriptors()
             .flatMap { declaration ->
                 when (declaration) {
-                    is ClassDescriptor -> declaration.getGivenConstructors(declarationStore)
-                    is PropertyDescriptor -> if (declaration.isGiven(declarationStore)) {
+                    is ClassDescriptor -> declaration.getGivenConstructors(context)
+                    is PropertyDescriptor -> if (declaration.isGiven(context)) {
                         listOf(
-                            declaration.toCallableRef(declarationStore)
+                            declaration.toCallableRef(context)
                                 .copy(isGiven = true)
                         )
                     } else emptyList()
-                    is FunctionDescriptor -> if (declaration.isGiven(declarationStore)) {
-                        listOf(declaration.toCallableRef(declarationStore))
+                    is FunctionDescriptor -> if (declaration.isGiven(context)) {
+                        listOf(declaration.toCallableRef(context))
                     } else emptyList()
-                    is VariableDescriptor -> if (declaration.isGiven(declarationStore)) {
-                        listOf(declaration.toCallableRef(declarationStore))
+                    is VariableDescriptor -> if (declaration.isGiven(context)) {
+                        listOf(declaration.toCallableRef(context))
                     } else emptyList()
                     else -> emptyList()
                 }

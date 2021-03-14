@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
@@ -71,11 +71,10 @@ import org.jetbrains.kotlin.ir.util.isVararg
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class GivenCallTransformer(
-    private val declarationStore: DeclarationStore,
+    private val context: InjektContext,
     private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
 
@@ -178,7 +177,7 @@ class GivenCallTransformer(
         fun ScopeContext.get(): IrExpression {
             if (initializing) {
                 if (block == null) {
-                    val resultType = result.candidate.type.toIrType(pluginContext, declarationStore)
+                    val resultType = result.candidate.type.toIrType(pluginContext, context)
                     block = DeclarationIrBuilder(pluginContext, symbol)
                         .irBlock(resultType = resultType) {
                             tmpVariable = irTemporary(
@@ -234,7 +233,7 @@ class GivenCallTransformer(
             val function = IrFactoryImpl.buildFun {
                 origin = IrDeclarationOrigin.DEFINED
                 name = Name.special("<anonymous>")
-                returnType = result.candidate.type.toIrType(pluginContext, declarationStore)
+                returnType = result.candidate.type.toIrType(pluginContext, context)
                 visibility = DescriptorVisibilities.LOCAL
                 isSuspend = scope.callContext == CallContext.SUSPEND
             }.apply {
@@ -294,7 +293,7 @@ class GivenCallTransformer(
         given: ProviderGivenNode
     ): IrExpression = DeclarationIrBuilder(pluginContext, symbol)
         .irLambda(
-            given.type.toIrType(pluginContext, declarationStore),
+            given.type.toIrType(pluginContext, context),
             parameterNameProvider = { "p${graphContext.parameterIndex++}" }
         ) { function ->
             val dependencyScopeContext = ScopeContext(
@@ -340,24 +339,24 @@ class GivenCallTransformer(
         result: ResolutionResult.Success,
         given: SetGivenNode
     ): IrExpression {
-        val elementType = given.type.fullyExpandedType.arguments.single()
+        val elementType = given.type.arguments.single()
         return when  {
             given.dependencies.isEmpty() -> DeclarationIrBuilder(pluginContext, symbol)
                 .irCall(emptySet)
                 .apply {
-                    putTypeArgument(0, elementType.toIrType(pluginContext, declarationStore))
+                    putTypeArgument(0, elementType.toIrType(pluginContext, context))
                 }
             given.dependencies.size == 1 -> DeclarationIrBuilder(pluginContext, symbol)
                 .irCall(setOf)
                 .apply {
-                    putTypeArgument(0, elementType.toIrType(pluginContext, declarationStore))
+                    putTypeArgument(0, elementType.toIrType(pluginContext, context))
                     putValueArgument(0, expressionFor(result.dependencyResults.values.single()))
                 }
             else -> DeclarationIrBuilder(pluginContext, symbol).irBlock {
                 val tmpSet = irTemporary(
                     irCall(mutableSetOf)
                         .apply {
-                            putTypeArgument(0, elementType.toIrType(pluginContext, declarationStore))
+                            putTypeArgument(0, elementType.toIrType(pluginContext, this@GivenCallTransformer.context))
                         }
                 )
 
@@ -479,7 +478,7 @@ class GivenCallTransformer(
             .typeArguments
             .values
             .forEachIndexed { index, typeArgument ->
-                putTypeArgument(index, typeArgument.toIrType(pluginContext, declarationStore))
+                putTypeArgument(index, typeArgument.toIrType(pluginContext, context))
             }
     }
 

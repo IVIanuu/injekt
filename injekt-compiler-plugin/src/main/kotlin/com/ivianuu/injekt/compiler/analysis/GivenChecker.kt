@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -44,7 +44,7 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
-class GivenChecker(private val declarationStore: DeclarationStore) : DeclarationChecker {
+class GivenChecker(private val context: InjektContext) : DeclarationChecker {
 
     override fun check(
         declaration: KtDeclaration,
@@ -67,7 +67,7 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
             val givenConstraints = descriptor.typeParameters.filter {
                 it.hasAnnotation(InjektFqNames.Given)
             }
-            if (givenConstraints.isNotEmpty() && !descriptor.isGiven(declarationStore)) {
+            if (givenConstraints.isNotEmpty() && !descriptor.isGiven(this.context)) {
                 context.trace.report(
                     InjektErrors.GIVEN_CONSTRAINT_ON_NON_GIVEN_FUNCTION
                         .on(declaration)
@@ -81,9 +81,9 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
             }
             if (givenConstraints.size == 1) {
                 val constraintType = givenConstraints.single()
-                    .defaultType.toTypeRef(declarationStore)
-                val returnType = descriptor.returnType!!.toTypeRef(declarationStore)
-                if (returnType.isAssignableTo(declarationStore, constraintType)) {
+                    .defaultType.toTypeRef(this.context)
+                val returnType = descriptor.returnType!!.toTypeRef(this.context)
+                if (returnType.isAssignableTo(this.context, constraintType)) {
                     context.trace.report(
                         InjektErrors.DIVERGENT_GIVEN_CONSTRAINT
                             .on(declaration)
@@ -92,7 +92,7 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
             }
         } else if (descriptor is ConstructorDescriptor) {
             descriptor.valueParameters
-                .checkParameters(declaration, if (descriptor.constructedClass.isGiven(declarationStore))
+                .checkParameters(declaration, if (descriptor.constructedClass.isGiven(this.context))
                     descriptor.constructedClass else descriptor, context.trace)
         } else if (descriptor is ClassDescriptor) {
             checkTypeParameters(descriptor.declaredTypeParameters, context.trace)
@@ -157,7 +157,7 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
             checkTypeParameters(descriptor.typeParameters, context.trace)
             if (descriptor.hasAnnotation(InjektFqNames.Given) &&
                 descriptor.extensionReceiverParameter != null &&
-                descriptor.extensionReceiverParameter?.type?.isGiven(declarationStore) != true
+                descriptor.extensionReceiverParameter?.type?.isGiven(this.context) != true
             ) {
                 context.trace.report(
                     InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
@@ -198,7 +198,7 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
                     type.isSuspendFunctionType) &&
             type.hasAnnotation(InjektFqNames.Given) &&
             type.arguments.dropLast(1)
-                .any { !it.type.isGiven(declarationStore) }) {
+                .any { !it.type.isGiven(context) }) {
             trace.report(
                 InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
                     .on(declaration)
@@ -217,8 +217,8 @@ class GivenChecker(private val declarationStore: DeclarationStore) : Declaration
         ) {
             this
                 .filter {
-                    !it.isGiven(declarationStore) &&
-                            !it.type.isGiven(declarationStore)
+                    !it.isGiven(context) &&
+                            !it.type.isGiven(context)
                 }
                 .forEach {
                     trace.report(

@@ -676,7 +676,7 @@ class GivenResolutionTest {
         """
     )
 
-    @Test
+    // todo @Test
     fun testCannotResolveExternalInternalGiven() = multiCodegen(
         listOf(
             source(
@@ -708,7 +708,7 @@ class GivenResolutionTest {
         compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo")
     }
 
-    @Test
+    // todo @Test
     fun testCanResolvePrivateGivenFromInnerScope() = codegen(
         """
                 @Given class FooHolder {
@@ -732,7 +732,7 @@ class GivenResolutionTest {
         compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo")
     }
 
-    @Test
+    // todo @Test
     fun testCanResolveProtectedGivenFromSameClass() = codegen(
         """
                 @Given open class FooHolder {
@@ -744,7 +744,7 @@ class GivenResolutionTest {
         compilationShouldBeOk()
     }
 
-    @Test
+    // todo @Test
     fun testCanResolveProtectedGivenFromSubClass() = codegen(
         """
                 abstract class AbstractFooHolder {

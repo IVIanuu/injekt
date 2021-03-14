@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.InjektContext
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -32,9 +32,9 @@ class InjektStorageComponentContainerContributor(
         platform: TargetPlatform,
         moduleDescriptor: ModuleDescriptor,
     ) {
-        val declarationStore = DeclarationStore(moduleDescriptor)
-        container.useInstance(GivenChecker(declarationStore))
+        val context = InjektContext(moduleDescriptor)
+        container.useInstance(GivenChecker(context))
         container.useInstance(TypeKeyChecker())
-        container.useInstance(GivenCallChecker(declarationStore, bindingContextCollector))
+        container.useInstance(GivenCallChecker(context, bindingContextCollector))
     }
 }

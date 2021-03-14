@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.PersistedCallableInfo
 import com.ivianuu.injekt.compiler.PersistedClassifierInfo
@@ -27,7 +27,6 @@ import com.ivianuu.injekt.compiler.toPersistedClassifierInfo
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
@@ -43,7 +42,7 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import java.util.Base64
 
 class InfoTransformer(
-    private val declarationStore: DeclarationStore,
+    private val context: InjektContext,
     private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
 
@@ -58,10 +57,10 @@ class InfoTransformer(
                             .constructors
                             .single()
                     ).apply {
-                        val info = declaration.descriptor.toClassifierRef(declarationStore)
-                            .toPersistedClassifierInfo(declarationStore)
+                        val info = declaration.descriptor.toClassifierRef(this@InfoTransformer.context)
+                            .toPersistedClassifierInfo(this@InfoTransformer.context)
                         val value = Base64.getEncoder()
-                            .encode(declarationStore.moshi.adapter(PersistedClassifierInfo::class.java)
+                            .encode(this@InfoTransformer.context.moshi.adapter(PersistedClassifierInfo::class.java)
                                 .toJson(info).toByteArray())
                             .decodeToString()
                         putValueArgument(0, irString(value))
@@ -85,10 +84,10 @@ class InfoTransformer(
                                 .constructors
                                 .single()
                         ).apply {
-                            val info = declaration.descriptor.toCallableRef(declarationStore)
-                                .toPersistedCallableInfo(declarationStore)
+                            val info = declaration.descriptor.toCallableRef(this@InfoTransformer.context)
+                                .toPersistedCallableInfo(this@InfoTransformer.context)
                             val value = Base64.getEncoder()
-                                .encode(declarationStore.moshi.adapter(PersistedCallableInfo::class.java)
+                                .encode(this@InfoTransformer.context.moshi.adapter(PersistedCallableInfo::class.java)
                                     .toJson(info).toByteArray())
                                 .decodeToString()
                             putValueArgument(0, irString(value))
@@ -116,10 +115,10 @@ class InfoTransformer(
                             .constructors
                             .single()
                     ).apply {
-                        val info = declaration.descriptor.toCallableRef(declarationStore)
-                            .toPersistedCallableInfo(declarationStore)
+                        val info = declaration.descriptor.toCallableRef(this@InfoTransformer.context)
+                            .toPersistedCallableInfo(this@InfoTransformer.context)
                         val value = Base64.getEncoder()
-                            .encode(declarationStore.moshi.adapter(PersistedCallableInfo::class.java)
+                            .encode(this@InfoTransformer.context.moshi.adapter(PersistedCallableInfo::class.java)
                                 .toJson(info).toByteArray())
                             .decodeToString()
                         putValueArgument(0, irString(value))

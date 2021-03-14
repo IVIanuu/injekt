@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.getGivenParameters
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.extensions.internal.CallResolutionInterceptorExtension
@@ -32,7 +32,7 @@ import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValueWithSmartCastI
 @Suppress("INVISIBLE_REFERENCE", "EXPERIMENTAL_IS_NOT_ENABLED")
 @OptIn(org.jetbrains.kotlin.extensions.internal.InternalNonStableExtensionPoints::class)
 class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtension {
-    private var declarationStore: DeclarationStore? = null
+    private var context: InjektContext? = null
     override fun interceptFunctionCandidates(
         candidates: Collection<FunctionDescriptor>,
         scopeTower: ImplicitScopeTower,
@@ -48,11 +48,11 @@ class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtensi
 
         if (newCandidates.isEmpty()) newCandidates += candidates
             .map {
-                if (declarationStore?.module != it.module) {
-                    declarationStore = DeclarationStore(it.module)
+                if (context?.module != it.module) {
+                    context = InjektContext(it.module)
                 }
-                if (it.getGivenParameters(declarationStore!!).isNotEmpty()) {
-                    it.toGivenFunctionDescriptor(declarationStore!!)
+                if (it.getGivenParameters(context!!).isNotEmpty()) {
+                    it.toGivenFunctionDescriptor(context!!)
                 } else {
                     it
                 }

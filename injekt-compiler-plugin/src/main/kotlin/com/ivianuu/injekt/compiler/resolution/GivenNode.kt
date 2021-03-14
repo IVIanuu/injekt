@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringGiven
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektName
@@ -95,7 +95,7 @@ class SetGivenNode(
 class ProviderGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope,
-    val declarationStore: DeclarationStore
+    val context: InjektContext
 ) : GivenNode() {
     override val callableFqName: FqName = when (type.callContext) {
         CallContext.DEFAULT -> FqName("com.ivianuu.injekt.providerOf")
@@ -115,13 +115,13 @@ class ProviderGivenNode(
         ResolutionScope(
             "Provider<${type.render()} $ownerScope>",
             parent = ownerScope,
-            declarationStore = declarationStore,
+            context = context,
             callContext = type.callContext,
             ownerDescriptor = ownerScope.ownerDescriptor,
             depth = ownerScope.depth + 1,
             produceGivens = {
                 type
-                    .toKotlinType(declarationStore)
+                    .toKotlinType(context)
                     .memberScope
                     .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
                     .first()
@@ -129,7 +129,7 @@ class ProviderGivenNode(
                     .onEach { parameterDescriptors += it }
                     .map { parameter ->
                         parameter
-                            .toCallableRef(declarationStore = declarationStore)
+                            .toCallableRef(context = context)
                             .copy(isGiven = true, depth = ownerScope.depth + 1)
                     }
             }
@@ -156,23 +156,23 @@ fun CallableRef.toGivenNode(
     type: TypeRef,
     ownerScope: ResolutionScope
 ): CallableGivenNode {
-    val finalCallable = substitute(getSubstitutionMap(ownerScope.declarationStore, listOf(type to this.type)))
+    val finalCallable = substitute(getSubstitutionMap(ownerScope.context, listOf(type to this.type)))
     return CallableGivenNode(
         type,
-        finalCallable.getGivenRequests(ownerScope.declarationStore),
+        finalCallable.getGivenRequests(ownerScope.context),
         ownerScope,
         finalCallable
     )
 }
 
-fun CallableRef.getGivenRequests(declarationStore: DeclarationStore): List<GivenRequest> {
+fun CallableRef.getGivenRequests(context: InjektContext): List<GivenRequest> {
     return callable.allParameters
         .filter {
             callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
         }
         .filter {
             it === callable.dispatchReceiverParameter ||
-                    it.isGiven(declarationStore) ||
+                    it.isGiven(context) ||
                     parameterTypes[it.injektName()]!!.isGiven
         }
         .map {

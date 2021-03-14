@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.resolution.AnnotationRef
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
@@ -280,14 +280,14 @@ class TypeRefTest {
     @Test
     fun testGetSubstitutionMap() = withAnalysisContext {
         val superType = typeParameter()
-        val map = getSubstitutionMap(declarationStore, listOf(stringType to superType))
+        val map = getSubstitutionMap(context, listOf(stringType to superType))
         stringType shouldBe map[superType.classifier]
     }
 
     @Test
     fun testGetSubstitutionMapWithNestedGenerics() = withAnalysisContext {
         val superType = typeParameter()
-        val map = getSubstitutionMap(declarationStore, listOf(listType.typeWith(stringType) to listType.typeWith(superType)))
+        val map = getSubstitutionMap(context, listOf(listType.typeWith(stringType) to listType.typeWith(superType)))
         stringType shouldBe map[superType.classifier]
     }
 
@@ -296,7 +296,7 @@ class TypeRefTest {
         val unqualifiedSuperType = typeParameter()
         val qualifiedSuperType = unqualifiedSuperType.qualified(qualifier1())
         val substitutionType = stringType.qualified(qualifier1())
-        val map = getSubstitutionMap(declarationStore, listOf(substitutionType to qualifiedSuperType))
+        val map = getSubstitutionMap(context, listOf(substitutionType to qualifiedSuperType))
         stringType shouldBe map[unqualifiedSuperType.classifier]
     }
 
@@ -324,9 +324,9 @@ class TypeRefTest {
                 emptyMap()
             )
         )
-        val map = getSubstitutionMap(declarationStore, listOf(substitutionType to superType))
-        stringType shouldBe map[typeParameter1.classifier]
-        intType shouldBe map[typeParameter2.classifier]
+        val map = getSubstitutionMap(context, listOf(substitutionType to superType))
+        map[typeParameter1.classifier] shouldBe stringType
+        map[typeParameter2.classifier] shouldBe intType
     }
 
     @Test
@@ -334,21 +334,21 @@ class TypeRefTest {
         val typeParameter1 = typeParameter()
         val typeParameter2 = typeParameter(typeParameter1)
         val map = getSubstitutionMap(
-            declarationStore,
+            context,
             listOf(
                 listType.typeWith(stringType) to listType.typeWith(typeParameter2),
                 charSequenceType to typeParameter1
             )
         )
-        charSequenceType shouldBe map[typeParameter1.classifier]
-        stringType shouldBe map[typeParameter2.classifier]
+        map[typeParameter1.classifier] shouldBe charSequenceType
+        map[typeParameter2.classifier] shouldBe stringType
     }
 
     @Test
     fun testGetSubstitutionMapWithSubClass() = withAnalysisContext {
         val classType = classType(listType.typeWith(stringType))
         val typeParameter = typeParameter()
-        val map = getSubstitutionMap(declarationStore, listOf(classType to listType.typeWith(typeParameter)))
+        val map = getSubstitutionMap(context, listOf(classType to listType.typeWith(typeParameter)))
         map.shouldHaveSize(1)
         map.shouldContain(typeParameter.classifier, stringType)
     }
@@ -406,7 +406,7 @@ class TypeRefTest {
 
     class AnalysisContext(val module: ModuleDescriptor) {
 
-        val declarationStore = DeclarationStore(module)
+        val context = InjektContext(module)
 
         val comparable = typeFor(StandardNames.FqNames.comparable)
         val anyType = typeFor(StandardNames.FqNames.any.toSafe())
@@ -482,28 +482,28 @@ class TypeRefTest {
 
         fun typeFor(fqName: FqName) = module.findClassifierAcrossModuleDependencies(
             ClassId.topLevel(fqName)
-        )!!.defaultType.toTypeRef(declarationStore)
+        )!!.defaultType.toTypeRef(context)
 
         infix fun TypeRef.shouldBeAssignable(other: TypeRef) {
-            if (!isAssignableTo(declarationStore, other)) {
+            if (!isAssignableTo(context, other)) {
                 throw AssertionError("'$this' is not assignable to '$other'")
             }
         }
 
         infix fun TypeRef.shouldNotBeAssignable(other: TypeRef) {
-            if (isAssignableTo(declarationStore, other)) {
+            if (isAssignableTo(context, other)) {
                 throw AssertionError("'$this' is assignable to '$other'")
             }
         }
 
         infix fun TypeRef.shouldBeSubTypeOf(other: TypeRef) {
-            if (!isSubTypeOf(declarationStore, other)) {
+            if (!isSubTypeOf(context, other)) {
                 throw AssertionError("'$this' is not sub type of '$other'")
             }
         }
 
         infix fun TypeRef.shouldNotBeSubTypeOf(other: TypeRef) {
-            if (isSubTypeOf(declarationStore, other)) {
+            if (isSubTypeOf(context, other)) {
                 throw AssertionError("'$this' is sub type of '$other'")
             }
         }

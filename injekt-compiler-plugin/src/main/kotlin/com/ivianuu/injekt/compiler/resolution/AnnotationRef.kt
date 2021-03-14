@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.transform.toKotlinType
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
@@ -35,26 +35,26 @@ fun AnnotationRef.substitute(map: Map<ClassifierRef, TypeRef>): AnnotationRef {
     return copy(type = type.substitute(map))
 }
 
-fun AnnotationDescriptor.toAnnotationRef(declarationStore: DeclarationStore): AnnotationRef {
+fun AnnotationDescriptor.toAnnotationRef(context: InjektContext): AnnotationRef {
     return AnnotationRef(
-        type = type.toTypeRef(declarationStore),
+        type = type.toTypeRef(context),
         arguments = allValueArguments
-            .mapValues { it.value.toInjektConstantValue(declarationStore) }
+            .mapValues { it.value.toInjektConstantValue(context) }
     )
 }
 
-fun AnnotationRef.toAnnotationDescriptor(declarationStore: DeclarationStore) = AnnotationDescriptorImpl(
-    type.toKotlinType(declarationStore),
-    arguments.mapValues { it.value.toKotlinConstantValue(declarationStore) },
+fun AnnotationRef.toAnnotationDescriptor(context: InjektContext) = AnnotationDescriptorImpl(
+    type.toKotlinType(context),
+    arguments.mapValues { it.value.toKotlinConstantValue(context) },
     SourceElement.NO_SOURCE
 )
 
 fun ConstantValue<*>.toKotlinConstantValue(
-    declarationStore: DeclarationStore
+    context: InjektContext
 ): org.jetbrains.kotlin.resolve.constants.ConstantValue<*> = when (this) {
     is ArrayValue -> org.jetbrains.kotlin.resolve.constants.ArrayValue(
-        value.map { it.toKotlinConstantValue(declarationStore) }
-    ) { type.toKotlinType(declarationStore) }
+        value.map { it.toKotlinConstantValue(context) }
+    ) { type.toKotlinType(context) }
     is BooleanValue -> org.jetbrains.kotlin.resolve.constants.BooleanValue(value)
     is ByteValue -> org.jetbrains.kotlin.resolve.constants.ByteValue(value)
     is CharValue -> org.jetbrains.kotlin.resolve.constants.CharValue(value)
@@ -65,7 +65,7 @@ fun ConstantValue<*>.toKotlinConstantValue(
     is FloatValue -> org.jetbrains.kotlin.resolve.constants.FloatValue(value)
     is IntValue -> org.jetbrains.kotlin.resolve.constants.IntValue(value)
     is KClassValue -> org.jetbrains.kotlin.resolve.constants.KClassValue.create(
-        value.defaultType.toKotlinType(declarationStore))!!
+        value.defaultType.toKotlinType(context))!!
     is LongValue -> org.jetbrains.kotlin.resolve.constants.LongValue(value)
     is ShortValue -> org.jetbrains.kotlin.resolve.constants.ShortValue(value)
     is StringValue -> org.jetbrains.kotlin.resolve.constants.StringValue(value)
@@ -76,48 +76,48 @@ fun ConstantValue<*>.toKotlinConstantValue(
 }
 
 fun org.jetbrains.kotlin.resolve.constants.ConstantValue<*>.toInjektConstantValue(
-    declarationStore: DeclarationStore
+    context: InjektContext
 ): ConstantValue<*> = when (this) {
     is org.jetbrains.kotlin.resolve.constants.ArrayValue -> ArrayValue(
-        value = value.map { it.toInjektConstantValue(declarationStore) },
-        type = getType(declarationStore.module).toTypeRef(declarationStore)
+        value = value.map { it.toInjektConstantValue(context) },
+        type = getType(context.module).toTypeRef(context)
     )
     is org.jetbrains.kotlin.resolve.constants.BooleanValue -> BooleanValue(
-        value, getType(declarationStore.module).toTypeRef(declarationStore))
+        value, getType(context.module).toTypeRef(context))
     is org.jetbrains.kotlin.resolve.constants.ByteValue -> ByteValue(
-        value, getType(declarationStore.module).toTypeRef(declarationStore))
+        value, getType(context.module).toTypeRef(context))
     is org.jetbrains.kotlin.resolve.constants.CharValue -> CharValue(
-        value, getType(declarationStore.module).toTypeRef(declarationStore))
+        value, getType(context.module).toTypeRef(context))
     is org.jetbrains.kotlin.resolve.constants.DoubleValue -> DoubleValue(
-        value, getType(declarationStore.module).toTypeRef(declarationStore))
+        value, getType(context.module).toTypeRef(context))
     is org.jetbrains.kotlin.resolve.constants.EnumValue -> EnumValue(
-        declarationStore.module.findClassifierAcrossModuleDependencies(
+        context.module.findClassifierAcrossModuleDependencies(
             enumClassId
-        )!!.toClassifierRef(declarationStore) to enumEntryName,
-        getType(declarationStore.module).toTypeRef(declarationStore)
+        )!!.toClassifierRef(context) to enumEntryName,
+        getType(context.module).toTypeRef(context)
     )
     is org.jetbrains.kotlin.resolve.constants.FloatValue -> FloatValue(
-        value, getType(declarationStore.module).toTypeRef(declarationStore))
+        value, getType(context.module).toTypeRef(context))
     is org.jetbrains.kotlin.resolve.constants.IntValue -> IntValue(
-        value, getType(declarationStore.module).toTypeRef(declarationStore))
+        value, getType(context.module).toTypeRef(context))
     is org.jetbrains.kotlin.resolve.constants.KClassValue -> KClassValue(
-        getArgumentType(declarationStore.module).toTypeRef(declarationStore).classifier,
-        getType(declarationStore.module).toTypeRef(declarationStore)
+        getArgumentType(context.module).toTypeRef(context).classifier,
+        getType(context.module).toTypeRef(context)
     )
     is org.jetbrains.kotlin.resolve.constants.LongValue -> LongValue(
-        value, getType(declarationStore.module).toTypeRef(declarationStore))
+        value, getType(context.module).toTypeRef(context))
     is org.jetbrains.kotlin.resolve.constants.ShortValue -> ShortValue(
-        value, getType(declarationStore.module).toTypeRef(declarationStore))
+        value, getType(context.module).toTypeRef(context))
     is org.jetbrains.kotlin.resolve.constants.StringValue -> StringValue(
-        value, getType(declarationStore.module).toTypeRef(declarationStore))
+        value, getType(context.module).toTypeRef(context))
     is org.jetbrains.kotlin.resolve.constants.UByteValue -> UByteValue(
-        value, getType(declarationStore.module).toTypeRef(declarationStore))
+        value, getType(context.module).toTypeRef(context))
     is org.jetbrains.kotlin.resolve.constants.UIntValue -> UIntValue(
-        value, getType(declarationStore.module).toTypeRef(declarationStore))
+        value, getType(context.module).toTypeRef(context))
     is org.jetbrains.kotlin.resolve.constants.ULongValue -> ULongValue(
-        value, getType(declarationStore.module).toTypeRef(declarationStore))
+        value, getType(context.module).toTypeRef(context))
     is org.jetbrains.kotlin.resolve.constants.UShortValue -> UShortValue(
-        value, getType(declarationStore.module).toTypeRef(declarationStore))
+        value, getType(context.module).toTypeRef(context))
     else -> error("Unexpected constant value $this")
 }
 

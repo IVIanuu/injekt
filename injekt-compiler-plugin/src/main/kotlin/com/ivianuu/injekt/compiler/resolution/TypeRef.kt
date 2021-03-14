@@ -55,24 +55,24 @@ data class ClassifierRef(
 }
 
 fun KotlinType.toTypeRef(
-    declarationStore: DeclarationStore,
+    context: InjektContext,
     isStarProjection: Boolean = false
 ): TypeRef = if (isStarProjection) STAR_PROJECTION_TYPE
-else KotlinTypeRef(this, isStarProjection, declarationStore)
+else KotlinTypeRef(this, isStarProjection, context)
 
 fun ClassifierDescriptor.toClassifierRef(
-    declarationStore: DeclarationStore
+    context: InjektContext
 ): ClassifierRef {
     val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
-        ?.toTypeRef(declarationStore)
+        ?.toTypeRef(context)
     val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
-        .map { it.toAnnotationRef(declarationStore) }
+        .map { it.toAnnotationRef(context) }
     return ClassifierRef(
         fqName = original.fqNameSafe,
         typeParameters = (original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
-            ?.map { it.toClassifierRef(declarationStore) } ?: emptyList(),
+            ?.map { it.toClassifierRef(context) } ?: emptyList(),
         superTypes = if (expandedType != null) listOf(expandedType) else typeConstructor.supertypes
-            .map { it.toTypeRef(declarationStore) },
+            .map { it.toTypeRef(context) },
         isTypeParameter = this is TypeParameterDescriptor,
         isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
         isTypeAlias = this is TypeAliasDescriptor,
@@ -81,8 +81,8 @@ fun ClassifierDescriptor.toClassifierRef(
         isGivenConstraint = this is TypeParameterDescriptor && hasAnnotation(InjektFqNames.Given)
     ).let {
         if (original.isExternalDeclaration()) it.apply(
-            declarationStore,
-            declarationStore.classifierInfoFor(it)
+            context,
+            context.classifierInfoFor(it)
         ) else it
     }
 }
@@ -162,7 +162,14 @@ sealed class TypeRef {
             .zip(arguments)
             .toMap()
         classifier.superTypes
-            .map { it.substitute(substitutionMap) }
+            .map { superType ->
+                superType.substitute(substitutionMap)
+                    .let {
+                        if (qualifiers.isNotEmpty()) it.copy(qualifiers = (qualifiers + it.qualifiers)
+                            .distinctBy { it.type.classifier })
+                        else it
+                    }
+            }
     }
 
     val unqualified: TypeRef by unsafeLazy {
@@ -174,29 +181,29 @@ sealed class TypeRef {
 class KotlinTypeRef(
     val kotlinType: KotlinType,
     override val isStarProjection: Boolean = false,
-    val declarationStore: DeclarationStore
+    val context: InjektContext
 ) : TypeRef() {
     private val finalType by unsafeLazy { kotlinType.getAbbreviation() ?: kotlinType.prepare() }
     override val classifier: ClassifierRef by unsafeLazy {
-        finalType.constructor.declarationDescriptor!!.toClassifierRef(declarationStore)
+        finalType.constructor.declarationDescriptor!!.toClassifierRef(context)
     }
     override val isMarkedComposable: Boolean by unsafeLazy {
         kotlinType.hasAnnotation(InjektFqNames.Composable) &&
                 kotlinType.getAbbreviatedType()?.expandedType?.hasAnnotation(InjektFqNames.Composable) != true
     }
     override val isGiven: Boolean
-        get() = finalType.isGiven(declarationStore) || kotlinType.isGiven(declarationStore)
+        get() = finalType.isGiven(context) || kotlinType.isGiven(context)
     override val isMarkedNullable: Boolean by unsafeLazy {
         kotlinType.isMarkedNullable
     }
     override val arguments: List<TypeRef> by unsafeLazy {
         finalType.arguments
             .take(classifier.typeParameters.size)
-            .map { it.type.toTypeRef(declarationStore, it.isStarProjection) }
+            .map { it.type.toTypeRef(context, it.isStarProjection) }
     }
     override val qualifiers: List<AnnotationRef> by unsafeLazy {
         kotlinType.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-            .map { it.toAnnotationRef(declarationStore) }
+            .map { it.toAnnotationRef(context) }
     }
     override val frameworkKey: String?
         get() = null
@@ -377,7 +384,7 @@ fun KotlinType.uniqueTypeName(depth: Int = 0): String {
 }
 
 fun getSubstitutionMap(
-    declarationStore: DeclarationStore,
+    context: InjektContext,
     pairs: List<Pair<TypeRef, TypeRef>>
 ): Map<ClassifierRef, TypeRef> {
     val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
@@ -391,7 +398,7 @@ fun getSubstitutionMap(
         visitedTypes += thisType
         visitedTypes += baseType
         if (!baseType.classifier.isTypeParameter) {
-            thisType.subtypeView(declarationStore, baseType.classifier)
+            thisType.subtypeView(baseType.classifier)
                 ?.arguments?.forEachWith(baseType.arguments) { a, b -> visitType(a, b) }
             return
         }
@@ -406,8 +413,8 @@ fun getSubstitutionMap(
                 }
                 allMatch
             }) {
-            visitType(thisType.unqualified, baseType.unqualified)
             thisType.qualifiers.forEachWith(baseType.qualifiers) { a, b -> visitType(a.type, b.type) }
+            visitType(thisType.unqualified, baseType.unqualified)
             return
         }
 
@@ -419,17 +426,16 @@ fun getSubstitutionMap(
 
     substitutionMap.forEach { (baseClassifier, thisType) ->
         baseClassifier.defaultType.superTypes
-            .map { thisType.subtypeView(declarationStore, it.classifier) to it }
+            .map { thisType.subtypeView(it.classifier) to it }
             .forEach { (thisBaseTypeView, baseSuperType) ->
                 if (baseSuperType.classifier.isTypeParameter) {
                     val thisTypeToUse = thisBaseTypeView ?: thisType
-                    visitType(thisTypeToUse.unqualified, baseSuperType)
-                    if (thisTypeToUse.qualifiers.isAssignableTo(declarationStore, baseSuperType.qualifiers)) {
+                    if (thisTypeToUse.qualifiers.isAssignableTo(context, baseSuperType.qualifiers)) {
                         thisTypeToUse.qualifiers.forEachWith(baseSuperType.qualifiers) { a, b ->
                             visitType(a.type, b.type)
-
                         }
                     }
+                    visitType(thisTypeToUse, baseSuperType)
                 } else {
                     visitType(thisBaseTypeView ?: thisType, baseSuperType)
                 }
@@ -438,12 +444,12 @@ fun getSubstitutionMap(
                     visitType(a, b)
                 }
 
-                if (thisType.qualifiers.isAssignableTo(declarationStore, baseSuperType.qualifiers)) {
+                if (thisType.qualifiers.isAssignableTo(context, baseSuperType.qualifiers)) {
                     thisType.qualifiers.forEachWith(baseSuperType.qualifiers) { a, b ->
                         visitType(a.type, b.type)
                     }
                 }
-                if (thisBaseTypeView?.qualifiers?.isAssignableTo(declarationStore, baseSuperType.qualifiers) == true) {
+                if (thisBaseTypeView?.qualifiers?.isAssignableTo(context, baseSuperType.qualifiers) == true) {
                     thisBaseTypeView.qualifiers.forEachWith(baseSuperType.qualifiers) { a, b ->
                         visitType(a.type, b.type)
                     }
@@ -456,49 +462,49 @@ fun getSubstitutionMap(
 }
 
 fun TypeRef.isAssignableTo(
-    declarationStore: DeclarationStore,
+    context: InjektContext,
     superType: TypeRef
 ): Boolean {
     if (isStarProjection || superType.isStarProjection) return true
     if (frameworkKey != superType.frameworkKey) return false
     if (superType.classifier.isTypeParameter)
-        return isSubTypeOfTypeParameter(declarationStore, superType)
+        return isSubTypeOfTypeParameter(context, superType)
     if (classifier.isTypeParameter)
-        return superType.isSubTypeOfTypeParameter(declarationStore, this)
-    if (isSubTypeOf(declarationStore, superType)) return true
+        return superType.isSubTypeOfTypeParameter(context, this)
+    if (isSubTypeOf(context, superType)) return true
     return false
 }
 
 private fun TypeRef.isSubTypeOfTypeParameter(
-    declarationStore: DeclarationStore,
+    context: InjektContext,
     typeParameter: TypeRef
 ): Boolean {
     val superTypesAssignable = typeParameter.superTypes.all { upperBound ->
-        isSubTypeOf(declarationStore, upperBound)
+        isSubTypeOf(context, upperBound)
     }
     if (!superTypesAssignable) return false
     if (typeParameter.qualifiers.isNotEmpty() &&
-        !qualifiers.isAssignableTo(declarationStore, typeParameter.qualifiers)
+        !qualifiers.isAssignableTo(context, typeParameter.qualifiers)
     ) return false
     return true
 }
 
 private fun TypeRef.isSubTypeOfSameClassifier(
-    declarationStore: DeclarationStore,
+    context: InjektContext,
     superType: TypeRef
 ): Boolean {
     if (this == superType) return true
-    if (!qualifiers.isAssignableTo(declarationStore, superType.qualifiers)) return false
+    if (!qualifiers.isAssignableTo(context, superType.qualifiers)) return false
     if (isComposableType != superType.isComposableType) return false
     arguments.forEachWith(superType.arguments) { a, b ->
-        if (!a.isAssignableTo(declarationStore, b))
+        if (!a.isAssignableTo(context, b))
             return false
     }
     return true
 }
 
 fun TypeRef.isSubTypeOf(
-    declarationStore: DeclarationStore,
+    context: InjektContext,
     superType: TypeRef
 ): Boolean {
     if (isStarProjection) return true
@@ -506,73 +512,43 @@ fun TypeRef.isSubTypeOf(
     if (frameworkKey != superType.frameworkKey) return false
     if (superType.classifier.fqName == InjektFqNames.Any)
         return superType.qualifiers.isEmpty() ||
-                qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
+                qualifiers.isAssignableTo(context, superType.qualifiers)
     if (classifier == superType.classifier)
-        return isSubTypeOfSameClassifier(declarationStore, superType)
+        return isSubTypeOfSameClassifier(context, superType)
 
-    val subTypeView = subtypeView(declarationStore, superType.classifier)
+    val subTypeView = subtypeView(superType.classifier)
     if (subTypeView != null)
-        return subTypeView.isSubTypeOfSameClassifier(declarationStore, superType)
+        return subTypeView.isSubTypeOfSameClassifier(context, superType)
 
     if (superType.classifier.isTypeParameter) {
         if (superType.qualifiers.isNotEmpty() &&
-            !qualifiers.isAssignableTo(declarationStore, superType.qualifiers)
+            !qualifiers.isAssignableTo(context, superType.qualifiers)
         ) return false
-        return superType.superTypes.all { upperBound ->
-            isSubTypeOf(declarationStore, upperBound) ||
-                    (superType.qualifiers.isNotEmpty() &&
-                            unqualified.isSubTypeOf(declarationStore, upperBound))
-        }
+        return superType.superTypes.all { isSubTypeOf(context, it) }
     }
     return false
 }
 
-fun List<AnnotationRef>.isAssignableTo(declarationStore: DeclarationStore, superQualifiers: List<AnnotationRef>): Boolean {
+fun List<AnnotationRef>.isAssignableTo(context: InjektContext, superQualifiers: List<AnnotationRef>): Boolean {
     if (size != superQualifiers.size) return false
     forEachWith(superQualifiers) { a, b ->
-        if (!a.isAssignableTo(declarationStore, b))
+        if (!a.isAssignableTo(context, b))
             return false
     }
     return true
 }
 
-fun AnnotationRef.isAssignableTo(declarationStore: DeclarationStore, superQualifier: AnnotationRef): Boolean {
-    if (!type.isAssignableTo(declarationStore, superQualifier.type)) return false
+fun AnnotationRef.isAssignableTo(context: InjektContext, superQualifier: AnnotationRef): Boolean {
+    if (!type.isAssignableTo(context, superQualifier.type)) return false
     return arguments == superQualifier.arguments
 }
 
-val TypeRef.fullyExpandedType: TypeRef
-    get() = if (classifier.isTypeAlias) superTypes.single().fullyExpandedType else this
-
-val KotlinType.fullyAbbreviatedType: KotlinType
-    get() {
-        val abbreviatedType = getAbbreviatedType()
-        return if (abbreviatedType != null && abbreviatedType != this) abbreviatedType.fullyAbbreviatedType else this
-    }
-
-fun TypeRef.subtypeView(
-    declarationStore: DeclarationStore,
-    classifier: ClassifierRef
-): TypeRef? {
+fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
     if (this.classifier == classifier) return this
-    fun TypeRef.superTypeWithMatchingClassifier(): TypeRef? {
-        if (this.classifier == classifier) return this
-        for (superType in superTypes) {
-            superType.subtypeView(declarationStore, classifier)?.let { return it }
-        }
-        return null
+    for (superType in superTypes) {
+        superType.subtypeView(classifier)?.let { return it }
     }
-    val rawSubTypeView = superTypeWithMatchingClassifier() ?: return null
-    return if ((frameworkKey != null &&
-                frameworkKey != rawSubTypeView.frameworkKey) ||
-        (qualifiers.isNotEmpty() && qualifiers != rawSubTypeView.qualifiers) ||
-        (isMarkedNullable && isMarkedNullable != rawSubTypeView.isMarkedNullable)) {
-        rawSubTypeView.copy(
-            frameworkKey = frameworkKey,
-            qualifiers = qualifiers + rawSubTypeView.qualifiers,
-            isMarkedNullable = isMarkedNullable
-        )
-    } else rawSubTypeView
+    return null
 }
 
 val TypeRef.isFunctionType: Boolean get() =

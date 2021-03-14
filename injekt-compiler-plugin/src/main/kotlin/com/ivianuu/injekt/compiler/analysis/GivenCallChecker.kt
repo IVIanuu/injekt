@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
@@ -40,7 +40,7 @@ import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class GivenCallChecker(
-    private val declarationStore: DeclarationStore,
+    private val context: InjektContext,
     private val bindingContextCollector: ((BindingContext) -> Unit)?
 ) : CallChecker {
 
@@ -58,10 +58,10 @@ class GivenCallChecker(
         val requests = resolvedCall
             .valueArguments
             .filterValues { it is DefaultValueArgument }
-            .filterKeys { it.isGiven(declarationStore) }
+            .filterKeys { it.isGiven(this.context) }
             .map {
                 GivenRequest(
-                    type = it.key.type.toTypeRef(declarationStore),
+                    type = it.key.type.toTypeRef(this.context),
                     required = !it.key.hasDefaultValueIgnoringGiven,
                     callableFqName = resultingDescriptor.fqNameSafe,
                     parameterName = it.key.name
@@ -70,7 +70,7 @@ class GivenCallChecker(
 
         if (requests.isEmpty()) return
 
-        val scope = HierarchicalResolutionScope(declarationStore, context.scope, context.trace.bindingContext)
+        val scope = HierarchicalResolutionScope(this.context, context.scope, context.trace)
 
         when (val graph = scope.resolveRequests(requests)) {
             is GivenGraph.Success -> {

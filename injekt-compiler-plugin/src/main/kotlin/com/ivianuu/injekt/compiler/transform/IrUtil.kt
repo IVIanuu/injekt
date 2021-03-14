@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.DeclarationStore
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.toMap
@@ -79,7 +79,6 @@ import org.jetbrains.kotlin.resolve.constants.ShortValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DescriptorWithContainerSource
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
@@ -90,9 +89,9 @@ import org.jetbrains.kotlin.types.withAbbreviation
 
 fun TypeRef.toIrType(
     pluginContext: IrPluginContext,
-    declarationStore: DeclarationStore
+    context: InjektContext
 ): IrType =
-    pluginContext.typeTranslator.translateType(toKotlinType(declarationStore))
+    pluginContext.typeTranslator.translateType(toKotlinType(context))
         .also {
             it.classifierOrNull?.let {
                 (pluginContext as IrPluginContextImpl)
@@ -100,31 +99,31 @@ fun TypeRef.toIrType(
             }
         }
 
-fun TypeRef.toKotlinType(declarationStore: DeclarationStore): SimpleType {
-    if (isStarProjection) return declarationStore.module.builtIns.anyType
+fun TypeRef.toKotlinType(context: InjektContext): SimpleType {
+    if (isStarProjection) return context.module.builtIns.anyType
     return if (classifier.isTypeAlias) {
-        superTypes.single().toKotlinType(declarationStore)
-            .withAbbreviation(toAbbreviation(declarationStore))
+        superTypes.single().toKotlinType(context)
+            .withAbbreviation(toAbbreviation(context))
     } else {
         classifier.descriptor!!.original.defaultType
             .replace(newArguments = arguments.map {
                 TypeProjectionImpl(
                     Variance.INVARIANT,
-                    it.toKotlinType(declarationStore)
+                    it.toKotlinType(context)
                 )
             })
-            .makeComposableAsSpecified(declarationStore, isMarkedComposable)
+            .makeComposableAsSpecified(context, isMarkedComposable)
             .makeNullableAsSpecified(isMarkedNullable)
     }
 }
 
-fun TypeRef.toAbbreviation(declarationStore: DeclarationStore): SimpleType {
+fun TypeRef.toAbbreviation(context: InjektContext): SimpleType {
     val defaultType = classifier.descriptor!!.defaultType
     return defaultType
         .replace(newArguments = arguments.map {
             TypeProjectionImpl(
                 Variance.INVARIANT,
-                it.toKotlinType(declarationStore)
+                it.toKotlinType(context)
             )
         })
 
@@ -132,7 +131,7 @@ fun TypeRef.toAbbreviation(declarationStore: DeclarationStore): SimpleType {
 }
 
 private fun SimpleType.makeComposableAsSpecified(
-    declarationStore: DeclarationStore,
+    context: InjektContext,
     isComposable: Boolean
 ): SimpleType {
     return replaceAnnotations(
@@ -140,7 +139,7 @@ private fun SimpleType.makeComposableAsSpecified(
             Annotations.create(
                 listOf(
                     AnnotationDescriptorImpl(
-                        declarationStore.module
+                        context.module
                             .findClassAcrossModuleDependencies(
                                 ClassId.topLevel(InjektFqNames.Composable)
                         )!!.defaultType,
