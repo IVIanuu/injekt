@@ -293,8 +293,8 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     b!!
 
     if (!a.isFrameworkGiven && !b.isFrameworkGiven) {
-        if (a.depth > b.depth) return -1
-        if (b.depth > a.depth) return 1
+        if (a.ownerScope.allParents.size > b.ownerScope.allParents.size) return -1
+        if (b.ownerScope.allParents.size > a.ownerScope.allParents.size) return 1
     }
 
     if (a is CallableGivenNode && b is CallableGivenNode) {

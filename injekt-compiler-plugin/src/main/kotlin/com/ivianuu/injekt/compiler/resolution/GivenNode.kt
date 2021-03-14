@@ -43,7 +43,6 @@ sealed class GivenNode {
     abstract val lazyDependencies: Boolean
     abstract val isFrameworkGiven: Boolean
     abstract val cache: Boolean
-    abstract val depth: Int
 }
 
 class CallableGivenNode(
@@ -67,8 +66,6 @@ class CallableGivenNode(
         get() = false
     override val cache: Boolean
         get() = false
-    override val depth: Int
-        get() = callable.depth
 }
 
 class SetGivenNode(
@@ -89,8 +86,6 @@ class SetGivenNode(
         get() = true
     override val cache: Boolean
         get() = false
-    override val depth: Int
-        get() = ownerScope.depth
 }
 
 class ProviderGivenNode(
@@ -120,7 +115,6 @@ class ProviderGivenNode(
             callContext = type.callContext,
             ownerDescriptor = ownerScope.ownerDescriptor,
             trace = ownerScope.trace,
-            depth = ownerScope.depth + 1,
             produceGivens = {
                 type
                     .toKotlinType(context)
@@ -132,7 +126,7 @@ class ProviderGivenNode(
                     .map { parameter ->
                         parameter
                             .toCallableRef(context, ownerScope.trace)
-                            .copy(isGiven = true, depth = ownerScope.depth + 1)
+                            .copy(isGiven = true,)
                     }
             }
         )
@@ -150,8 +144,6 @@ class ProviderGivenNode(
         get() = true
     override val cache: Boolean
         get() = true
-    override val depth: Int
-        get() = 0
 }
 
 fun CallableRef.toGivenNode(

@@ -17,11 +17,18 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.lazy.LazyImportScope
 import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
+import org.jetbrains.kotlin.resolve.scopes.ImportingScope
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
+import org.jetbrains.kotlin.resolve.scopes.LexicalScopeKind
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstance
 
@@ -32,7 +39,6 @@ class ResolutionScope(
     val callContext: CallContext,
     val ownerDescriptor: DeclarationDescriptor?,
     val trace: BindingTrace,
-    var depth: Int = -1,
     produceGivens: () -> List<CallableRef>
 ) {
     val chain: MutableList<GivenNode> = parent?.chain ?: mutableListOf()
@@ -77,7 +83,6 @@ class ResolutionScope(
                 given.collectGivens(
                     context = context,
                     ownerDescriptor = ownerDescriptor,
-                    depth = given.depth,
                     substitutionMap = emptyMap(),
                     trace = trace,
                     addGiven = { callable ->
@@ -102,10 +107,6 @@ class ResolutionScope(
             constrainedGivenCandidates
                 .toList()
                 .forEach { collectConstrainedGivens(it) }
-        }
-
-        if (depth == -1) {
-            depth = givens.maxByOrNull { it.depth }?.depth ?: -1
         }
     }
 
@@ -214,14 +215,12 @@ class ResolutionScope(
             .copy(
                 fromGivenConstraint = true,
                 typeArguments = inputsSubstitutionMap,
-                depth = depth,
                 type = constrainedGiven.callable.type.substitute(outputsSubstitutionMap)
             )
 
         newGiven.collectGivens(
             context = context,
             ownerDescriptor = ownerDescriptor,
-            depth = depth,
             substitutionMap = outputsSubstitutionMap,
             trace = trace,
             addGiven = { newInnerGiven ->
@@ -262,15 +261,120 @@ fun HierarchicalResolutionScope(
     trace: BindingTrace
 ): ResolutionScope {
     trace[InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, scope]?.let { return it }
-    return ResolutionScope(
-        name = "Hierarchical $scope",
-        context = context,
-        callContext = scope.callContext(trace.bindingContext),
-        parent = null,
-        ownerDescriptor = scope.parentsWithSelf
-            .firstIsInstance<LexicalScope>()
-            .ownerDescriptor,
-        trace = trace,
-        produceGivens = { scope.collectGivens(context, trace) }
-    ).also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, scope, it) }
+
+    val allScopes = scope.parentsWithSelf.toList()
+
+    val importScopes = allScopes
+        .filterIsInstance<ImportingScope>()
+        .filter { scope ->
+            if (scope is LazyImportScope) {
+                val scopeString = scope.toString()
+                "LazyImportScope: Explicit imports in LazyFileScope for file" in scopeString
+                        || ("LazyImportScope: All under imports in LazyFileScope for file" in scopeString &&
+                        !scopeString.endsWith("(invisible classes only)"))
+            } else true
+        }
+        .toList()
+
+    val importsResolutionScope = trace.get(InjektWritableSlices.IMPORT_RESOLUTION_SCOPE, importScopes)
+        ?: ResolutionScope(
+            name = "IMPORTS $scope",
+            context = context,
+            callContext = CallContext.DEFAULT,
+            parent = null,
+            ownerDescriptor = null,
+            trace = trace,
+            produceGivens = {
+                importScopes
+                    .flatMap { it.collectGivensInScope(context, trace) }
+            }
+        ).also { trace.record(InjektWritableSlices.IMPORT_RESOLUTION_SCOPE, importScopes, it) }
+
+    return allScopes
+        .filter { it !in importScopes }
+        .reversed()
+        .filter {
+            it is LexicalScope && (
+                    (it.ownerDescriptor is ClassDescriptor &&
+                            it.kind == LexicalScopeKind.CLASS_MEMBER_SCOPE) ||
+                            (it.ownerDescriptor is FunctionDescriptor &&
+                                    it.kind == LexicalScopeKind.FUNCTION_INNER_SCOPE) ||
+                            it.kind == LexicalScopeKind.CODE_BLOCK
+                    )
+        }
+        .fold(importsResolutionScope) { parent, next ->
+            when {
+                next is LexicalScope && next.ownerDescriptor is ClassDescriptor -> {
+                    val clazz = next.ownerDescriptor as ClassDescriptor
+                    val companionScope = clazz.companionObjectDescriptor
+                        ?.let { companionDescriptor ->
+                            trace.get(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, companionDescriptor)
+                                ?: ResolutionScope(
+                                    name = "CLASS COMPANION ${clazz.fqNameSafe}",
+                                    context = context,
+                                    callContext = next.callContext(trace.bindingContext),
+                                    parent = parent,
+                                    ownerDescriptor = companionDescriptor,
+                                    trace = trace,
+                                    produceGivens = {
+                                        listOf(
+                                            companionDescriptor
+                                                .thisAsReceiverParameter
+                                                .toCallableRef(context, trace)
+                                                .copy(isGiven = true)
+                                        )
+                                    }
+                                ).also { trace.record(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, companionDescriptor, it) }
+                        }
+                    trace.get(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, clazz)
+                        ?: ResolutionScope(
+                            name = "CLASS ${clazz.fqNameSafe}",
+                            context = context,
+                            callContext = next.callContext(trace.bindingContext),
+                            parent = companionScope ?: parent,
+                            ownerDescriptor = clazz,
+                            trace = trace,
+                            produceGivens = {
+                                listOf(
+                                    clazz.thisAsReceiverParameter.toCallableRef(context, trace)
+                                        .copy(isGiven = true)
+                                )
+                            }
+                        ).also { trace.record(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, clazz, it) }
+                }
+                next is LexicalScope && next.ownerDescriptor is FunctionDescriptor &&
+                next.kind == LexicalScopeKind.FUNCTION_INNER_SCOPE -> {
+                    val function = next.ownerDescriptor as FunctionDescriptor
+                    trace.get(InjektWritableSlices.FUNCTION_RESOLUTION_SCOPE, function)
+                        ?: ResolutionScope(
+                            name = "FUNCTION ${function.fqNameSafe}",
+                            context = context,
+                            callContext = function.callContext,
+                            parent = parent,
+                            ownerDescriptor = function,
+                            trace = trace,
+                            produceGivens = {
+                                function.allParameters
+                                    .filter { it.isGiven(context, trace) || it === function.extensionReceiverParameter }
+                                    .map { it.toCallableRef(context, trace).copy(isGiven = true) }
+                            }
+                        ).also { trace.record(InjektWritableSlices.FUNCTION_RESOLUTION_SCOPE, function, it) }
+                }
+                else -> {
+                    trace.get(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, next)
+                        ?: ResolutionScope(
+                            name = "Hierarchical $next",
+                            context = context,
+                            callContext = next.callContext(trace.bindingContext),
+                            parent = parent,
+                            ownerDescriptor = next.parentsWithSelf
+                                .firstIsInstance<LexicalScope>()
+                                .ownerDescriptor,
+                            trace = trace,
+                            produceGivens = { next.collectGivensInScope(context, trace) }
+                        ).also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, next, it) }
+                }
+            }
+        }
+        .also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, scope, it) }
 }

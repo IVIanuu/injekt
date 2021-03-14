@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.resolution.TypeRef
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
 import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
@@ -35,6 +36,11 @@ object InjektWritableSlices {
     val USED_GIVEN = BasicWritableSlice<CallableDescriptor, Unit>(RewritePolicy.DO_NOTHING)
     val GIVEN_CALLS_IN_FILE = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
     val USED_GIVENS_FOR_FILE = BasicWritableSlice<KtFile, List<CallableDescriptor>>(RewritePolicy.DO_NOTHING)
+    val IMPORT_RESOLUTION_SCOPE = BasicWritableSlice<List<HierarchicalScope>, ResolutionScope>(
+        RewritePolicy.DO_NOTHING)
+    val CLASS_RESOLUTION_SCOPE = BasicWritableSlice<ClassDescriptor, ResolutionScope>(RewritePolicy.DO_NOTHING)
+    val FUNCTION_RESOLUTION_SCOPE = BasicWritableSlice<FunctionDescriptor, ResolutionScope>(
+        RewritePolicy.DO_NOTHING)
     val RESOLUTION_SCOPE_FOR_SCOPE = BasicWritableSlice<HierarchicalScope, ResolutionScope>(RewritePolicy.DO_NOTHING)
     val CALLABLE_REF_FOR_DESCRIPTOR = BasicWritableSlice<CallableDescriptor, CallableRef>(
         RewritePolicy.DO_NOTHING)
