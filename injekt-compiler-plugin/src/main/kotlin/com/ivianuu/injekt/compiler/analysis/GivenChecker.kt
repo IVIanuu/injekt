@@ -20,13 +20,8 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.resolution.isAssignableTo
 import com.ivianuu.injekt.compiler.resolution.isGiven
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
-import org.jetbrains.kotlin.builtins.isFunctionType
-import org.jetbrains.kotlin.builtins.isSuspendFunctionType
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -37,7 +32,6 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.descriptors.ValueDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -45,57 +39,56 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
 class GivenChecker(private val context: InjektContext) : DeclarationChecker {
-
     override fun check(
         declaration: KtDeclaration,
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext,
     ) {
-        checkType(descriptor, declaration, context.trace)
-
         if (descriptor is SimpleFunctionDescriptor) {
-            checkTypeParameters(descriptor.typeParameters, context.trace)
-            descriptor.allParameters
-                .filterNot { it === descriptor.dispatchReceiverParameter }
-                .checkParameters(declaration, descriptor, context.trace)
-            if (descriptor.isTailrec) {
-                context.trace.report(
-                    InjektErrors.GIVEN_TAILREC_FUNCTION
-                        .on(declaration)
-                )
-            }
-            val givenConstraints = descriptor.typeParameters.filter {
-                it.hasAnnotation(InjektFqNames.Given)
-            }
-            if (givenConstraints.isNotEmpty() && !descriptor.isGiven(this.context)) {
-                context.trace.report(
-                    InjektErrors.GIVEN_CONSTRAINT_ON_NON_GIVEN_FUNCTION
-                        .on(declaration)
-                )
-            }
-            if (givenConstraints.size > 1) {
-                context.trace.report(
-                    InjektErrors.MULTIPLE_GIVEN_CONSTRAINTS
-                        .on(declaration)
-                )
-            }
-            if (givenConstraints.size == 1) {
+            if (descriptor.isGiven(this.context, context.trace)) {
+                descriptor.allParameters
+                    .filterNot { it === descriptor.dispatchReceiverParameter }
+                    .checkGivenCallableHasOnlyGivenParameters(declaration, context.trace)
+
+                if (descriptor.isTailrec) {
+                    context.trace.report(
+                        InjektErrors.GIVEN_TAILREC_FUNCTION
+                            .on(declaration)
+                    )
+                }
+
+                val givenConstraints = descriptor.typeParameters.filter {
+                    it.hasAnnotation(InjektFqNames.Given)
+                }
+                if (givenConstraints.size > 1) {
+                    context.trace.report(
+                        InjektErrors.MULTIPLE_GIVEN_CONSTRAINTS
+                            .on(declaration)
+                    )
+                }
+
+                /*if (givenConstraints.size == 1) {
                 val constraintType = givenConstraints.single()
-                    .defaultType.toTypeRef(this.context)
-                val returnType = descriptor.returnType!!.toTypeRef(this.context)
+                    .defaultType.toTypeRef(this.context, context.trace)
+                val returnType = descriptor.returnType!!.toTypeRef(this.context, context.trace)
                 if (returnType.isAssignableTo(this.context, constraintType)) {
                     context.trace.report(
                         InjektErrors.DIVERGENT_GIVEN_CONSTRAINT
                             .on(declaration)
                     )
                 }
+            }*/
+            } else {
+                checkGivenTypeParametersOnNonGivenFunction(descriptor.typeParameters, context.trace)
             }
         } else if (descriptor is ConstructorDescriptor) {
-            descriptor.valueParameters
-                .checkParameters(declaration, if (descriptor.constructedClass.isGiven(this.context))
-                    descriptor.constructedClass else descriptor, context.trace)
+            if (descriptor.isGiven(this.context, context.trace)) {
+                descriptor.valueParameters
+                    .checkGivenCallableHasOnlyGivenParameters(declaration, context.trace)
+            }
         } else if (descriptor is ClassDescriptor) {
-            checkTypeParameters(descriptor.declaredTypeParameters, context.trace)
+            checkGivenTypeParametersOnNonGivenFunction(descriptor.declaredTypeParameters, context.trace)
+
             val hasGivenAnnotation = descriptor.hasAnnotation(InjektFqNames.Given)
             val givenConstructors = descriptor.constructors
                 .filter { it.hasAnnotation(InjektFqNames.Given) }
@@ -147,17 +140,11 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                         .on(declaration)
                 )
             }
-
-            descriptor.constructors
-                .forEach {
-                    it.valueParameters
-                        .checkParameters(it.findPsi() as KtDeclaration, descriptor, context.trace)
-                }
         } else if (descriptor is PropertyDescriptor) {
-            checkTypeParameters(descriptor.typeParameters, context.trace)
+            checkGivenTypeParametersOnNonGivenFunction(descriptor.typeParameters, context.trace)
             if (descriptor.hasAnnotation(InjektFqNames.Given) &&
                 descriptor.extensionReceiverParameter != null &&
-                descriptor.extensionReceiverParameter?.type?.isGiven(this.context) != true
+                descriptor.extensionReceiverParameter?.type?.isGiven(this.context, context.trace) != true
             ) {
                 context.trace.report(
                     InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
@@ -165,17 +152,16 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                 )
             }
         } else if (descriptor is TypeAliasDescriptor) {
-            checkTypeParameters(descriptor.declaredTypeParameters, context.trace)
+            checkGivenTypeParametersOnNonGivenFunction(descriptor.declaredTypeParameters, context.trace)
         }
     }
 
-    private fun checkTypeParameters(
+    private fun checkGivenTypeParametersOnNonGivenFunction(
         typeParameters: List<TypeParameterDescriptor>,
         trace: BindingTrace
     ) {
         typeParameters.forEach {
-            if (it.hasAnnotation(InjektFqNames.Given) &&
-                it.containingDeclaration !is SimpleFunctionDescriptor) {
+            if (it.hasAnnotation(InjektFqNames.Given)) {
                 trace.report(
                     InjektErrors.GIVEN_CONSTRAINT_ON_NON_GIVEN_FUNCTION
                         .on(it.findPsi()!!)
@@ -184,48 +170,17 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         }
     }
 
-    private fun checkType(
-        descriptor: DeclarationDescriptor,
+    private fun List<ParameterDescriptor>.checkGivenCallableHasOnlyGivenParameters(
         declaration: KtDeclaration,
-        trace: BindingTrace
-    ) {
-        val type = when (descriptor) {
-            is CallableDescriptor -> descriptor.returnType
-            is ValueDescriptor -> descriptor.type
-            else -> return
-        } ?: return
-        if ((type.isFunctionType ||
-                    type.isSuspendFunctionType) &&
-            type.hasAnnotation(InjektFqNames.Given) &&
-            type.arguments.dropLast(1)
-                .any { !it.type.isGiven(context) }) {
-            trace.report(
-                InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
-                    .on(declaration)
-            )
-        }
-    }
-
-    private fun List<ParameterDescriptor>.checkParameters(
-        declaration: KtDeclaration,
-        descriptor: DeclarationDescriptor,
         trace: BindingTrace,
     ) {
-        if (descriptor.hasAnnotation(InjektFqNames.Given) ||
-            (descriptor is ConstructorDescriptor &&
-                    descriptor.constructedClass.hasAnnotation(InjektFqNames.Given))
-        ) {
-            this
-                .filter {
-                    !it.isGiven(context) &&
-                            !it.type.isGiven(context)
-                }
-                .forEach {
-                    trace.report(
-                        InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
-                            .on(it.findPsi() ?: declaration)
-                    )
-                }
-        }
+        this
+            .filter { !it.isGiven(context, trace) }
+            .forEach {
+                trace.report(
+                    InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
+                        .on(it.findPsi() ?: declaration)
+                )
+            }
     }
 }

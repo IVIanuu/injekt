@@ -52,6 +52,7 @@ import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -75,14 +76,15 @@ fun CallableRef.toPersistedCallableInfo(context: InjektContext) = PersistedCalla
 
 fun CallableRef.apply(
     context: InjektContext,
+    trace: BindingTrace?,
     info: PersistedCallableInfo?
 ): CallableRef {
-    return if (info == null || !callable.original.isExternalDeclaration()) this
+    return if (info == null) this
     else {
         val original = callable.original
         val originalQualifiers = original.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-            .map { it.toAnnotationRef(context) }
-        val originalType = original.returnType!!.toTypeRef(context).let {
+            .map { it.toAnnotationRef(context, trace) }
+        val originalType = original.returnType!!.toTypeRef(context, trace).let {
             if (originalQualifiers.isNotEmpty()) it.copy(qualifiers = originalQualifiers + it.qualifiers)
             else it
         }
@@ -92,19 +94,19 @@ fun CallableRef.apply(
                     parameterTypes.values
                         .zip(
                             (if (original is ConstructorDescriptor) original.valueParameters else original.allParameters)
-                                .map { it.type.toTypeRef(context) }
+                                .map { it.type.toTypeRef(context, trace) }
                         )
         )
         copy(
-            type = info.type.toTypeRef(context),
-            originalType = info.type.toTypeRef(context),
+            type = info.type.toTypeRef(context, trace),
+            originalType = info.type.toTypeRef(context, trace),
             typeParameters = info.typeParameters.map {
-                it.toClassifierRef(context)
+                it.toClassifierRef(context, trace)
             },
             parameterTypes = info.parameterTypes
-                .mapValues { it.value.toTypeRef(context) },
+                .mapValues { it.value.toTypeRef(context, trace) },
             givenParameters = info.givenParameters,
-            qualifiers = info.qualifiers.map { it.toAnnotationRef(context) }
+            qualifiers = info.qualifiers.map { it.toAnnotationRef(context, trace) }
         ).substitute(substitutionMap)
     }
 }
@@ -143,16 +145,16 @@ fun TypeRef.toPersistedTypeRef(context: InjektContext): PersistedTypeRef = Persi
     isGiven = isGiven
 )
 
-fun PersistedTypeRef.toTypeRef(context: InjektContext): TypeRef {
+fun PersistedTypeRef.toTypeRef(context: InjektContext, trace: BindingTrace?): TypeRef {
     if (isStarProjection) return STAR_PROJECTION_TYPE
-    val classifier = context.classifierDescriptorForKey(classifierKey)
-        .toClassifierRef(context)
+    val classifier = context.classifierDescriptorForKey(classifierKey, trace)
+        .toClassifierRef(context, trace)
     return classifier.defaultType
         .copy(
-            qualifiers = qualifiers.map { it.toAnnotationRef(context) },
-            arguments = arguments.map { it.toTypeRef(context) },
+            qualifiers = qualifiers.map { it.toAnnotationRef(context, trace) },
+            arguments = arguments.map { it.toTypeRef(context, trace) },
             isMarkedNullable = isMarkedNullable,
-            isComposable = isMarkedComposable,
+            isMarkedComposable = isMarkedComposable,
             isGiven = isGiven
         )
 }
@@ -180,13 +182,20 @@ fun ClassifierRef.toPersistedClassifierRef(
     qualifiers = qualifiers.map { it.toPersistedAnnotationRef(context) }
 )
 
-fun PersistedClassifierRef.toClassifierRef(context: InjektContext): ClassifierRef {
-    return context.classifierDescriptorForKey(key)
-        .toClassifierRef(context)
-        .copy(
-            superTypes = superTypes.map { it.toTypeRef(context) },
-            qualifiers = qualifiers.map { it.toAnnotationRef(context) }
-        )
+fun PersistedClassifierRef.toClassifierRef(
+    context: InjektContext,
+    trace: BindingTrace?
+): ClassifierRef {
+    return context.classifierDescriptorForKey(key, trace)
+        .toClassifierRef(context, trace)
+        .let { raw ->
+            if (superTypes.isNotEmpty() || qualifiers.isNotEmpty())
+                raw.copy(
+                    superTypes = superTypes.map { it.toTypeRef(context, trace) },
+                    qualifiers = qualifiers.map { it.toAnnotationRef(context, trace) }
+                )
+            else raw
+        }
 }
 
 fun PersistedClassifierRef.toPersistedClassifierInfo() = PersistedClassifierInfo(
@@ -197,12 +206,13 @@ fun PersistedClassifierRef.toPersistedClassifierInfo() = PersistedClassifierInfo
 
 fun ClassifierRef.apply(
     context: InjektContext,
+    trace: BindingTrace?,
     info: PersistedClassifierInfo?
 ): ClassifierRef {
     return if (info == null || !descriptor!!.isExternalDeclaration()) this
     else copy(
-        qualifiers = info.qualifiers.map { it.toAnnotationRef(context) },
-        superTypes = info.superTypes.map { it.toTypeRef(context) }
+        qualifiers = info.qualifiers.map { it.toAnnotationRef(context, trace) },
+        superTypes = info.superTypes.map { it.toTypeRef(context, trace) }
     )
 }
 
@@ -221,11 +231,14 @@ fun AnnotationRef.toPersistedAnnotationRef(context: InjektContext): PersistedAnn
     )
 }
 
-fun PersistedAnnotationRef.toAnnotationRef(context: InjektContext) = AnnotationRef(
-    type.toTypeRef(context),
+fun PersistedAnnotationRef.toAnnotationRef(
+    context: InjektContext,
+    trace: BindingTrace?
+) = AnnotationRef(
+    type.toTypeRef(context, trace),
     arguments
         .mapKeys { it.key.asNameId() }
-        .mapValues { it.value.toConstantValue(context) }
+        .mapValues { it.value.toConstantValue(context, trace) }
 )
 
 fun ConstantValue<*>.toPersistedConstantValue(
@@ -255,82 +268,85 @@ fun ConstantValue<*>.toPersistedConstantValue(
     is UShortValue -> PersistedUShortValue(value)
 }
 
-fun PersistedConstantValue.toConstantValue(context: InjektContext): ConstantValue<*> = when (this) {
+fun PersistedConstantValue.toConstantValue(
+    context: InjektContext,
+    trace: BindingTrace?
+): ConstantValue<*> = when (this) {
     is PersistedArrayValue -> ArrayValue(
-        value = value.map { it.toConstantValue(context) },
+        value = value.map { it.toConstantValue(context, trace) },
         type = context.module.builtIns.array
             .defaultType
-            .toTypeRef(context)
-            .typeWith(listOf(elementType.toTypeRef(context)))
+            .toTypeRef(context, trace)
+            .typeWith(listOf(elementType.toTypeRef(context, trace)))
     )
     is PersistedBooleanValue -> BooleanValue(
         value,
-        context.module.builtIns.booleanType.toTypeRef(context)
+        context.module.builtIns.booleanType.toTypeRef(context, trace)
     )
     is PersistedByteValue -> ByteValue(
         value,
-        context.module.builtIns.byteType.toTypeRef(context)
+        context.module.builtIns.byteType.toTypeRef(context, trace)
     )
     is PersistedCharValue -> CharValue(
         value,
-        context.module.builtIns.charType.toTypeRef(context)
+        context.module.builtIns.charType.toTypeRef(context, trace)
     )
     is PersistedDoubleValue -> DoubleValue(
         value,
-        context.module.builtIns.doubleType.toTypeRef(context)
+        context.module.builtIns.doubleType.toTypeRef(context, trace)
     )
     is PersistedEnumValue -> {
         val enumClassifier = context.classifierDescriptorForFqName(FqName(enumClassifierFqName))!!
-            .toClassifierRef(context)
+            .toClassifierRef(context, trace)
         EnumValue(enumClassifier to enumValue.asNameId(), enumClassifier.defaultType)
     }
     is PersistedFloatValue -> FloatValue(
         value,
-        context.module.builtIns.floatType.toTypeRef(context)
+        context.module.builtIns.floatType.toTypeRef(context, trace)
     )
     is PersistedIntValue -> IntValue(
         value,
-        context.module.builtIns.intType.toTypeRef(context)
+        context.module.builtIns.intType.toTypeRef(context, trace)
     )
     is PersistedKClassValue -> KClassValue(
         context.classifierDescriptorForFqName(FqName(classifierFqName))!!
-            .toClassifierRef(context),
-        type.toTypeRef(context)
+            .toClassifierRef(context, trace),
+        type.toTypeRef(context, trace)
     )
     is PersistedLongValue -> LongValue(
         value,
-        context.module.builtIns.longType.toTypeRef(context)
+        context.module.builtIns.longType.toTypeRef(context, trace)
     )
     is PersistedShortValue -> ShortValue(
         value,
-        context.module.builtIns.shortType.toTypeRef(context)
+        context.module.builtIns.shortType.toTypeRef(context, trace)
     )
     is PersistedStringValue -> StringValue(
         value,
-        context.module.builtIns.stringType.toTypeRef(context)
+        context.module.builtIns.stringType.toTypeRef(context, trace)
     )
     is PersistedUByteValue -> UByteValue(
         value,
         context.classifierDescriptorForFqName(FqName("kotlin.UByte"))!!
-            .toClassifierRef(context)
+            .toClassifierRef(context, trace)
             .defaultType
     )
     is PersistedUIntValue -> UIntValue(
         value,
         context.classifierDescriptorForFqName(FqName("kotlin.UInt"))!!
-            .toClassifierRef(context)
+            .toClassifierRef(context, trace)
             .defaultType
     )
     is PersistedULongValue -> ULongValue(
         value,
         context.classifierDescriptorForFqName(FqName("kotlin.ULong"))!!
-            .toClassifierRef(context)
+            .toClassifierRef(context, trace)
             .defaultType
     )
     is PersistedUShortValue -> UShortValue(
         value,
         context.classifierDescriptorForFqName(FqName("kotlin.UShort"))!!
-            .toClassifierRef(context)
+            .toClassifierRef(context, trace)
             .defaultType
     )
 }

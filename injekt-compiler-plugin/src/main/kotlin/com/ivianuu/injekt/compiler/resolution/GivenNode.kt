@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 sealed class GivenNode {
@@ -118,6 +119,7 @@ class ProviderGivenNode(
             context = context,
             callContext = type.callContext,
             ownerDescriptor = ownerScope.ownerDescriptor,
+            trace = ownerScope.trace,
             depth = ownerScope.depth + 1,
             produceGivens = {
                 type
@@ -129,7 +131,7 @@ class ProviderGivenNode(
                     .onEach { parameterDescriptors += it }
                     .map { parameter ->
                         parameter
-                            .toCallableRef(context = context)
+                            .toCallableRef(context, ownerScope.trace)
                             .copy(isGiven = true, depth = ownerScope.depth + 1)
                     }
             }
@@ -159,20 +161,23 @@ fun CallableRef.toGivenNode(
     val finalCallable = substitute(getSubstitutionMap(ownerScope.context, listOf(type to this.type)))
     return CallableGivenNode(
         type,
-        finalCallable.getGivenRequests(ownerScope.context),
+        finalCallable.getGivenRequests(ownerScope.context, ownerScope.trace),
         ownerScope,
         finalCallable
     )
 }
 
-fun CallableRef.getGivenRequests(context: InjektContext): List<GivenRequest> {
+fun CallableRef.getGivenRequests(
+    context: InjektContext,
+    trace: BindingTrace?
+): List<GivenRequest> {
     return callable.allParameters
         .filter {
             callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
         }
         .filter {
             it === callable.dispatchReceiverParameter ||
-                    it.isGiven(context) ||
+                    it.isGiven(context, trace) ||
                     parameterTypes[it.injektName()]!!.isGiven
         }
         .map {

@@ -17,14 +17,13 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektContext
-import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.resolution.isGiven
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.components.hasDefaultValue
 import org.jetbrains.kotlin.types.TypeSubstitutor
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -36,16 +35,16 @@ interface GivenFunctionDescriptor : FunctionDescriptor {
 class GivenValueParameterDescriptor(
     parent: GivenFunctionDescriptor,
     val underlyingDescriptor: ValueParameterDescriptor,
-    val context: InjektContext
+    val context: InjektContext,
+    trace: BindingTrace
 ) : ValueParameterDescriptorImpl(
     parent,
     null,
     underlyingDescriptor.index,
     underlyingDescriptor.annotations,
-    if (underlyingDescriptor.name.isSpecial) underlyingDescriptor.type.toTypeRef(context)
-        .classifier.fqName.shortName().asString().decapitalize().asNameId() else underlyingDescriptor.name,
+    underlyingDescriptor.name,
     underlyingDescriptor.type,
-    underlyingDescriptor.isGiven(context) ||
+    underlyingDescriptor.isGiven(context, trace) ||
             underlyingDescriptor.declaresDefaultValue(),
     underlyingDescriptor.isCrossinline,
     underlyingDescriptor.isNoinline,
@@ -59,12 +58,13 @@ val ValueParameterDescriptor.hasDefaultValueIgnoringGiven: Boolean
 
 abstract class AbstractGivenFunctionDescriptor(
     override val invokeDescriptor: FunctionDescriptor,
-    val context: InjektContext
+    val context: InjektContext,
+    trace: BindingTrace
 ) : GivenFunctionDescriptor {
     private val valueParameters = invokeDescriptor
         .valueParameters
         .mapTo(mutableListOf()) { valueParameter ->
-            GivenValueParameterDescriptor(this, valueParameter, context)
+            GivenValueParameterDescriptor(this, valueParameter, context, trace)
         }
 
     override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
@@ -72,22 +72,24 @@ abstract class AbstractGivenFunctionDescriptor(
 }
 
 fun FunctionDescriptor.toGivenFunctionDescriptor(
-    context: InjektContext
+    context: InjektContext,
+    trace: BindingTrace
 ) = when (this) {
     is GivenFunctionDescriptor -> this
-    is ClassConstructorDescriptor -> GivenConstructorDescriptorImpl(this, context)
-    is SimpleFunctionDescriptor -> GivenSimpleFunctionDescriptorImpl(this, context)
-    else -> GivenFunctionDescriptorImpl(this, context)
+    is ClassConstructorDescriptor -> GivenConstructorDescriptorImpl(this, context, trace)
+    is SimpleFunctionDescriptor -> GivenSimpleFunctionDescriptorImpl(this, context, trace)
+    else -> GivenFunctionDescriptorImpl(this, context, trace)
 }
 
 class GivenConstructorDescriptorImpl(
     underlyingDescriptor: ClassConstructorDescriptor,
-    context: InjektContext
-) : AbstractGivenFunctionDescriptor(underlyingDescriptor, context),
+    context: InjektContext,
+    private val trace: BindingTrace
+) : AbstractGivenFunctionDescriptor(underlyingDescriptor, context, trace),
     ClassConstructorDescriptor by underlyingDescriptor {
     override fun substitute(substitutor: TypeSubstitutor): ClassConstructorDescriptor =
         GivenConstructorDescriptorImpl(invokeDescriptor
-            .substitute(substitutor) as ClassConstructorDescriptor, context)
+            .substitute(substitutor) as ClassConstructorDescriptor, context, trace)
 
     override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
         super.getValueParameters()
@@ -95,12 +97,13 @@ class GivenConstructorDescriptorImpl(
 
 class GivenFunctionDescriptorImpl(
     underlyingDescriptor: FunctionDescriptor,
-    context: InjektContext
-) : AbstractGivenFunctionDescriptor(underlyingDescriptor, context),
+    context: InjektContext,
+    private val trace: BindingTrace
+) : AbstractGivenFunctionDescriptor(underlyingDescriptor, context, trace),
     FunctionDescriptor by underlyingDescriptor {
     override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =
         GivenFunctionDescriptorImpl(
-            invokeDescriptor.substitute(substitutor) as FunctionDescriptor, context)
+            invokeDescriptor.substitute(substitutor) as FunctionDescriptor, context, trace)
 
     override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
         super.getValueParameters()
@@ -109,11 +112,12 @@ class GivenFunctionDescriptorImpl(
 class GivenSimpleFunctionDescriptorImpl(
     underlyingDescriptor: SimpleFunctionDescriptor,
     context: InjektContext,
-) : AbstractGivenFunctionDescriptor(underlyingDescriptor, context),
+    private val trace: BindingTrace
+) : AbstractGivenFunctionDescriptor(underlyingDescriptor, context, trace),
     SimpleFunctionDescriptor by underlyingDescriptor {
     override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =
         GivenSimpleFunctionDescriptorImpl(invokeDescriptor
-            .substitute(substitutor) as SimpleFunctionDescriptor, context)
+            .substitute(substitutor) as SimpleFunctionDescriptor, context, trace)
 
     override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
         super.getValueParameters()

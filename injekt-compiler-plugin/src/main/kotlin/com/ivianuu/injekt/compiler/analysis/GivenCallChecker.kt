@@ -43,7 +43,6 @@ class GivenCallChecker(
     private val context: InjektContext,
     private val bindingContextCollector: ((BindingContext) -> Unit)?
 ) : CallChecker {
-
     override fun check(
         resolvedCall: ResolvedCall<*>,
         reportOn: PsiElement,
@@ -58,10 +57,10 @@ class GivenCallChecker(
         val requests = resolvedCall
             .valueArguments
             .filterValues { it is DefaultValueArgument }
-            .filterKeys { it.isGiven(this.context) }
+            .filterKeys { it.isGiven(this.context, context.trace) }
             .map {
                 GivenRequest(
-                    type = it.key.type.toTypeRef(this.context),
+                    type = it.key.type.toTypeRef(this.context, context.trace),
                     required = !it.key.hasDefaultValueIgnoringGiven,
                     callableFqName = resultingDescriptor.fqNameSafe,
                     parameterName = it.key.name
@@ -117,5 +116,4 @@ class GivenCallChecker(
             )
         }
     }
-
 }

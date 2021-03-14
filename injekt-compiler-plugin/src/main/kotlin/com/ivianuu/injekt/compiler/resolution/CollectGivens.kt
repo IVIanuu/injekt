@@ -18,9 +18,10 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.Tuple1
 import com.ivianuu.injekt.compiler.apply
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.getGivenParameters
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.isExternalDeclaration
@@ -36,7 +37,7 @@ import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
-import org.jetbrains.kotlin.resolve.calls.DslMarkerUtils
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.lazy.LazyImportScope
 import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
@@ -45,6 +46,7 @@ import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.resolve.scopes.LexicalScopeKind
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
+import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 data class CallableRef(
@@ -84,39 +86,50 @@ fun CallableRef.substituteInputs(map: Map<ClassifierRef, TypeRef>): CallableRef 
     )
 }
 
-fun CallableDescriptor.toCallableRef(context: InjektContext): CallableRef {
+fun CallableRef.makeGiven(): CallableRef = if (isGiven) this
+else copy(isGiven = true)
+
+fun CallableDescriptor.toCallableRef(
+    context: InjektContext,
+    trace: BindingTrace?
+): CallableRef {
+    trace?.get(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this)?.let { return it }
     val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
-        .map { it.toAnnotationRef(context) }
-    val type = returnType!!.toTypeRef(context).let {
-        if (qualifiers.isNotEmpty()) it.copy(qualifiers = qualifiers + it.qualifiers)
+        .map { it.toAnnotationRef(context, trace) }
+    val type = returnType!!.toTypeRef(context, trace).let {
+        if (qualifiers.isNotEmpty()) it.copy(qualifiers = (qualifiers + it.qualifiers)
+            .distinctBy { it.type.classifier })
         else it
     }
     val typeParameters = typeParameters
-        .map { it.toClassifierRef(context) }
+        .map { it.toClassifierRef(context, trace) }
     return CallableRef(
         callable = this,
         type = type,
         originalType = type,
         typeParameters = typeParameters,
         parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-            .map { it.injektName() to it.type.toTypeRef(context) }
+            .map { it.injektName() to it.type.toTypeRef(context, trace) }
             .toMap(),
         givenParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-            .filter { it.isGiven(context) }
+            .filter { it.isGiven(context, trace) }
             .mapTo(mutableSetOf()) { it.injektName() },
         qualifiers = qualifiers,
         typeArguments = typeParameters
             .map { it to it.defaultType }
             .toMap(),
-        isGiven = isGiven(context),
+        isGiven = isGiven(context, trace),
         fromGivenConstraint = false,
         depth = 0,
         callContext = callContext
     ).let {
         if (original.isExternalDeclaration()) it.apply(
             context,
-            context.callableInfoFor(it.callable)
+            trace,
+            context.callableInfoFor(it.callable, trace)
         ) else it
+    }.also {
+        trace?.record(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this, it)
     }
 }
 
@@ -125,34 +138,34 @@ fun MemberScope.collectGivens(
     type: TypeRef?,
     ownerDescriptor: DeclarationDescriptor?,
     depth: Int,
+    trace: BindingTrace?,
     substitutionMap: Map<ClassifierRef, TypeRef>
 ): List<CallableRef> {
     val givenPrimaryConstructorParameters = (type?.classifier?.descriptor
         ?.safeAs<ClassDescriptor>()
         ?.unsubstitutedPrimaryConstructor
         ?.valueParameters
-        ?.filter { it.isGiven(context) }
+        ?.filter { it.isGiven(context, trace) }
         ?.map { it.name } ?: emptyList())
     return getContributedDescriptors()
         .flatMap { declaration ->
             when (declaration) {
-                is ClassDescriptor -> declaration.getGivenConstructors(context)
-                    .map {
-                        it
-                            .copy(isGiven = true, depth = depth)
-                            .substitute(substitutionMap)
-                    }
-                is PropertyDescriptor -> if (declaration.isGiven(context) ||
+                is ClassDescriptor -> listOfNotNull(
+                    declaration.getGivenConstructor(context, trace)
+                        ?.copy(isGiven = true, depth = depth)
+                        ?.substitute(substitutionMap)
+                )
+                is PropertyDescriptor -> if (declaration.isGiven(context, trace) ||
                         declaration.name in givenPrimaryConstructorParameters) {
                     listOf(
-                        declaration.toCallableRef(context)
+                        declaration.toCallableRef(context, trace)
                             .copy(isGiven = true, depth = depth)
                             .substitute(substitutionMap)
                     )
                 } else emptyList()
-                is FunctionDescriptor -> if (declaration.isGiven(context)) {
+                is FunctionDescriptor -> if (declaration.isGiven(context, trace)) {
                     listOf(
-                        declaration.toCallableRef(context)
+                        declaration.toCallableRef(context, trace)
                             .copy(isGiven = true, depth = depth)
                             .substitute(substitutionMap)
                     )
@@ -173,59 +186,56 @@ fun MemberScope.collectGivens(
         }
 }
 
-fun Annotated.isGiven(context: InjektContext): Boolean =
-    hasAnnotation(InjektFqNames.Given) ||
-            (this is ClassConstructorDescriptor && constructedClass.isGiven(context))
-
-fun CallableDescriptor.collectGivens(context: InjektContext): List<CallableRef> {
-    val declarations = mutableListOf<CallableRef>()
-
-    declarations += allParameters
-        .filter { it.isGiven(context) || it == extensionReceiverParameter }
-        .map { it.toCallableRef(context).copy(isGiven = true) }
-
-    return declarations
+fun Annotated.isGiven(context: InjektContext, trace: BindingTrace?): Boolean {
+    @Suppress("IMPLICIT_CAST_TO_ANY")
+    val key = if (this is KotlinType) System.identityHashCode(this) else this
+    trace?.get(InjektWritableSlices.IS_GIVEN, key)?.let { return it }
+    var isGiven = hasAnnotation(InjektFqNames.Given)
+    if (!isGiven && this is ParameterDescriptor) {
+        isGiven = type.isGiven(context, trace) ||
+                containingDeclaration.safeAs<FunctionDescriptor>()
+                    ?.takeIf { it.isExternalDeclaration() }
+                    ?.let { context.callableInfoFor(it, trace) }
+                    ?.let { name.asString() in it.givenParameters } == true
+    }
+    if (!isGiven && this is ClassConstructorDescriptor) {
+        isGiven = constructedClass.isGiven(context, trace)
+    }
+    trace?.record(InjektWritableSlices.IS_GIVEN, key, isGiven)
+    return isGiven
 }
 
-fun ParameterDescriptor.isGiven(context: InjektContext): Boolean {
-    return (this as Annotated).isGiven(context) ||
-            type.isGiven(context) ||
-            getUserData(DslMarkerUtils.FunctionTypeAnnotationsKey)
-                ?.hasAnnotation(InjektFqNames.Given) == true ||
-            getGivenParameters(context)
-                .firstOrNull { it.callable == this }
-                ?.isGiven == true ||
-            containingDeclaration.safeAs<FunctionDescriptor>()
-                ?.takeIf { it.isExternalDeclaration() }
-                ?.let { context.callableInfoFor(it) }
-                ?.let { name.asString() in it.givenParameters } == true
-}
-
-fun ClassDescriptor.getGivenConstructors(
-    context: InjektContext
-): List<CallableRef> = constructors
-    .filter { constructor ->
-        constructor.isGiven(context) ||
-                (constructor.isPrimary && isGiven(context))
-    }
-    .map {
-        it.toCallableRef(context)
-            .copy(isGiven = true)
-    }
-    .map {
-        if (it.type.classifier.qualifiers.isNotEmpty()) {
-            val typeWithQualifiers = it.type.copy(qualifiers = it.type.classifier.qualifiers + it.type.qualifiers)
-            it.copy(type = typeWithQualifiers, originalType = typeWithQualifiers)
+fun ClassDescriptor.getGivenConstructor(
+    context: InjektContext,
+    trace: BindingTrace?
+): CallableRef? {
+    trace?.get(InjektWritableSlices.GIVEN_CONSTRUCTOR, this)?.let { return it.value }
+    val rawGivenConstructor = if (isGiven(context, trace))
+        unsubstitutedPrimaryConstructor!!.toCallableRef(context, trace)
+    else constructors
+        .singleOrNull { it.hasAnnotation(InjektFqNames.Given) }
+        ?.toCallableRef(context, trace)
+        ?.makeGiven()
+    val finalConstructor = if (rawGivenConstructor != null) {
+        if (rawGivenConstructor.type.classifier.qualifiers.isNotEmpty()) {
+            val typeWithQualifiers = rawGivenConstructor.type.copy(
+                qualifiers = rawGivenConstructor.type.classifier.qualifiers +
+                        rawGivenConstructor.type.qualifiers)
+            rawGivenConstructor.copy(type = typeWithQualifiers, originalType = typeWithQualifiers)
         } else {
-            it
+            rawGivenConstructor
         }
-    }
+    } else null
+    trace?.record(InjektWritableSlices.GIVEN_CONSTRUCTOR, this, Tuple1(finalConstructor))
+    return finalConstructor
+}
 
 fun CallableRef.collectGivens(
     context: InjektContext,
     ownerDescriptor: DeclarationDescriptor?,
     depth: Int,
     substitutionMap: Map<ClassifierRef, TypeRef>,
+    trace: BindingTrace?,
     addGiven: (CallableRef) -> Unit,
     addConstrainedGiven: (CallableRef) -> Unit
 ) {
@@ -239,13 +249,14 @@ fun CallableRef.collectGivens(
     callable
         .returnType!!
         .memberScope
-        .collectGivens(context, type, ownerDescriptor, depth, combinedSubstitutionMap)
+        .collectGivens(context, type, ownerDescriptor, depth, trace, combinedSubstitutionMap)
         .forEach {
             it.collectGivens(
                 context,
                 ownerDescriptor,
                 depth,
                 combinedSubstitutionMap,
+                trace,
                 addGiven,
                 addConstrainedGiven
             )
@@ -253,7 +264,8 @@ fun CallableRef.collectGivens(
 }
 
 fun HierarchicalScope.collectGivens(
-    context: InjektContext
+    context: InjektContext,
+    trace: BindingTrace?
 ): List<CallableRef> {
     val allScopes = parentsWithSelf.toList()
 
@@ -278,7 +290,8 @@ fun HierarchicalScope.collectGivens(
             depth++
             scope.collectGivensInScope(
                 if (scope is ImportingScope) 0 else depth,
-                context
+                context,
+                trace
             ) { depth++ }
         }
         .distinctBy { it.callable }
@@ -287,6 +300,7 @@ fun HierarchicalScope.collectGivens(
 private fun HierarchicalScope.collectGivensInScope(
     depth: Int,
     context: InjektContext,
+    trace: BindingTrace?,
     bumpDepth: () -> Unit
 ): List<CallableRef> {
     return if (this is LexicalScope &&
@@ -295,34 +309,37 @@ private fun HierarchicalScope.collectGivensInScope(
         val clazz = ownerDescriptor as ClassDescriptor
         listOfNotNull(
             clazz.companionObjectDescriptor?.thisAsReceiverParameter
-                ?.toCallableRef(context)
+                ?.toCallableRef(context, trace)
                 ?.copy(isGiven = true, depth = depth)
                 ?.also { bumpDepth() },
-            clazz.thisAsReceiverParameter.toCallableRef(context)
+            clazz.thisAsReceiverParameter.toCallableRef(context, trace)
                 .copy(isGiven = true, depth = depth + 1)
         )
     } else if (this is LexicalScope &&
         ownerDescriptor is FunctionDescriptor &&
         kind == LexicalScopeKind.FUNCTION_INNER_SCOPE) {
         val function = ownerDescriptor as FunctionDescriptor
-        function.collectGivens(context)
-            .map { it.copy(depth = depth) }
+        function.allParameters
+            .filter { it.isGiven(context, trace) || it === function.extensionReceiverParameter }
+            .map { it.toCallableRef(context, trace).copy(isGiven = true, depth = depth) }
     } else {
         getContributedDescriptors()
             .flatMap { declaration ->
                 when (declaration) {
-                    is ClassDescriptor -> declaration.getGivenConstructors(context)
-                    is PropertyDescriptor -> if (declaration.isGiven(context)) {
+                    is ClassDescriptor -> listOfNotNull(
+                        declaration.getGivenConstructor(context, trace)
+                    )
+                    is PropertyDescriptor -> if (declaration.isGiven(context, trace)) {
                         listOf(
-                            declaration.toCallableRef(context)
-                                .copy(isGiven = true)
+                            declaration.toCallableRef(context, trace)
+                                .makeGiven()
                         )
                     } else emptyList()
-                    is FunctionDescriptor -> if (declaration.isGiven(context)) {
-                        listOf(declaration.toCallableRef(context))
+                    is FunctionDescriptor -> if (declaration.isGiven(context, trace)) {
+                        listOf(declaration.toCallableRef(context, trace))
                     } else emptyList()
-                    is VariableDescriptor -> if (declaration.isGiven(context)) {
-                        listOf(declaration.toCallableRef(context))
+                    is VariableDescriptor -> if (declaration.isGiven(context, trace)) {
+                        listOf(declaration.toCallableRef(context, trace))
                     } else emptyList()
                     else -> emptyList()
                 }

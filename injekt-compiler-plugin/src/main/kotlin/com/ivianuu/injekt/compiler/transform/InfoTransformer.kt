@@ -57,7 +57,7 @@ class InfoTransformer(
                             .constructors
                             .single()
                     ).apply {
-                        val info = declaration.descriptor.toClassifierRef(this@InfoTransformer.context)
+                        val info = declaration.descriptor.toClassifierRef(this@InfoTransformer.context, null)
                             .toPersistedClassifierInfo(this@InfoTransformer.context)
                         val value = Base64.getEncoder()
                             .encode(this@InfoTransformer.context.moshi.adapter(PersistedClassifierInfo::class.java)
@@ -84,7 +84,7 @@ class InfoTransformer(
                                 .constructors
                                 .single()
                         ).apply {
-                            val info = declaration.descriptor.toCallableRef(this@InfoTransformer.context)
+                            val info = declaration.descriptor.toCallableRef(this@InfoTransformer.context, null)
                                 .toPersistedCallableInfo(this@InfoTransformer.context)
                             val value = Base64.getEncoder()
                                 .encode(this@InfoTransformer.context.moshi.adapter(PersistedCallableInfo::class.java)
@@ -115,7 +115,7 @@ class InfoTransformer(
                             .constructors
                             .single()
                     ).apply {
-                        val info = declaration.descriptor.toCallableRef(this@InfoTransformer.context)
+                        val info = declaration.descriptor.toCallableRef(this@InfoTransformer.context, null)
                             .toPersistedCallableInfo(this@InfoTransformer.context)
                         val value = Base64.getEncoder()
                             .encode(this@InfoTransformer.context.moshi.adapter(PersistedCallableInfo::class.java)

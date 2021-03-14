@@ -17,7 +17,8 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektContext
-import com.ivianuu.injekt.compiler.getGivenParameters
+import com.ivianuu.injekt.compiler.resolution.isGiven
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.extensions.internal.CallResolutionInterceptorExtension
 import org.jetbrains.kotlin.incremental.components.LookupLocation
@@ -44,22 +45,18 @@ class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtensi
         dispatchReceiver: ReceiverValueWithSmartCastInfo?,
         extensionReceiver: ReceiverValueWithSmartCastInfo?,
     ): Collection<FunctionDescriptor> {
-        val newCandidates = mutableListOf<FunctionDescriptor>()
-
-        if (newCandidates.isEmpty()) newCandidates += candidates
-            .map {
-                if (context?.module != it.module) {
-                    context = InjektContext(it.module)
+        val newCandidates = candidates
+            .map { candidate ->
+                if (context?.module != candidate.module) {
+                    context = InjektContext(candidate.module)
                 }
-                if (it.getGivenParameters(context!!).isNotEmpty()) {
-                    it.toGivenFunctionDescriptor(context!!)
+                if (candidate.allParameters.any { it.isGiven(context!!, resolutionContext.trace) }) {
+                    candidate.toGivenFunctionDescriptor(context!!, resolutionContext.trace)
                 } else {
-                    it
+                    candidate
                 }
             }
-
-        if (newCandidates.isEmpty()) newCandidates += candidates
-
-        return newCandidates
+        return if (newCandidates.isNotEmpty()) newCandidates
+        else candidates
     }
 }

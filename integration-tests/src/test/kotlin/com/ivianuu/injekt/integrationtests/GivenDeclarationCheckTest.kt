@@ -93,7 +93,7 @@ class GivenDeclarationCheckTest {
     @Test
     fun testGivenTailrecFunction() = codegen(
         """
-            tailrec fun factorial(n : Long, a : Long = 1) : Long {
+            @Given tailrec fun factorial(n : Long, a : Long = 1) : Long {
                 return if (n == 1L) a
                 else factorial(n - 1, n * a)
             }

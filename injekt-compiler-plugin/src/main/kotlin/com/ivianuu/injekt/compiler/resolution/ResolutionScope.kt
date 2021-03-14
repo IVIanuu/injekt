@@ -31,6 +31,7 @@ class ResolutionScope(
     val context: InjektContext,
     val callContext: CallContext,
     val ownerDescriptor: DeclarationDescriptor?,
+    val trace: BindingTrace,
     var depth: Int = -1,
     produceGivens: () -> List<CallableRef>
 ) {
@@ -78,6 +79,7 @@ class ResolutionScope(
                     ownerDescriptor = ownerDescriptor,
                     depth = given.depth,
                     substitutionMap = emptyMap(),
+                    trace = trace,
                     addGiven = { callable ->
                         hasGivens = true
                         givens += callable
@@ -221,6 +223,7 @@ class ResolutionScope(
             ownerDescriptor = ownerDescriptor,
             depth = depth,
             substitutionMap = outputsSubstitutionMap,
+            trace = trace,
             addGiven = { newInnerGiven ->
                 givens += newInnerGiven
                 val newInnerGivenWithFrameworkKey = newInnerGiven.copy(
@@ -267,6 +270,7 @@ fun HierarchicalResolutionScope(
         ownerDescriptor = scope.parentsWithSelf
             .firstIsInstance<LexicalScope>()
             .ownerDescriptor,
-        produceGivens = { scope.collectGivens(context) }
+        trace = trace,
+        produceGivens = { scope.collectGivens(context, trace) }
     ).also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, scope, it) }
 }

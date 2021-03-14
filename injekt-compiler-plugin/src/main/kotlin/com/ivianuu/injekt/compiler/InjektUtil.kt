@@ -17,15 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.GivenFunctionDescriptor
-import com.ivianuu.injekt.compiler.resolution.CallableRef
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.isGiven
-import com.ivianuu.injekt.compiler.resolution.substitute
-import com.ivianuu.injekt.compiler.resolution.toCallableRef
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.resolution.uniqueTypeName
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -61,7 +53,7 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.types.upperIfFlexible
 
-internal fun KtAnnotated.hasAnnotation(fqName: FqName): Boolean = findAnnotation(fqName) != null
+fun KtAnnotated.hasAnnotation(fqName: FqName): Boolean = findAnnotation(fqName) != null
 
 fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
     val annotationEntries = annotationEntries
@@ -99,19 +91,6 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
 
     return null
 }
-
-fun CallableDescriptor.getGivenParameters(
-    context: InjektContext,
-    substitutionMap: Map<ClassifierRef, TypeRef> = emptyMap()
-): List<CallableRef> =
-    allParameters
-        .filter {
-            it.isGiven(context) ||
-                    (substitutionMap.isNotEmpty() &&
-                            it.type.toTypeRef(context).substitute(substitutionMap).isGiven) ||
-                    it.type.isGiven(context)
-        }
-        .map { it.toCallableRef(context).copy(isGiven = true) }
 
 fun <D : DeclarationDescriptor> KtDeclaration.descriptor(
     bindingContext: BindingContext,
@@ -230,3 +209,5 @@ fun <K, V> List<K>.toMap(values: List<V>): Map<K, V> {
 
 private var currentFrameworkKey = 0
 fun generateFrameworkKey() = currentFrameworkKey++.toString()
+
+data class Tuple1<T>(val value: T)

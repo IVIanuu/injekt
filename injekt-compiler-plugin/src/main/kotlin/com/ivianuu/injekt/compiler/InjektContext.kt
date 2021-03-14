@@ -16,18 +16,24 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.injekt.compiler.resolution.ClassifierRef
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.squareup.moshi.Moshi
-import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.Base64
-import java.util.WeakHashMap
 
 @Suppress("NewApi")
 class InjektContext(val module: ModuleDescriptor) {
@@ -35,10 +41,14 @@ class InjektContext(val module: ModuleDescriptor) {
     val moshi = Moshi.Builder().build()!!
 
     val setType by unsafeLazy {
-        module.builtIns.set.defaultType.toTypeRef(this)
+        module.builtIns.set.defaultType.toTypeRef(this, null)
     }
 
-    fun callableInfoFor(callable: CallableDescriptor): PersistedCallableInfo? {
+    fun callableInfoFor(
+        callable: CallableDescriptor,
+        trace: BindingTrace?
+    ): PersistedCallableInfo? {
+        trace?.get(InjektWritableSlices.CALLABLE_INFO, callable)?.let { return it.value }
         val annotations = if (callable is ConstructorDescriptor &&
             callable.constructedClass.unsubstitutedPrimaryConstructor?.original == callable.original) {
             callable.constructedClass.annotations
@@ -58,10 +68,15 @@ class InjektContext(val module: ModuleDescriptor) {
                 val info = moshi.adapter(PersistedCallableInfo::class.java).fromJson(json)!!
                 info
             }
+            .also { trace?.record(InjektWritableSlices.CALLABLE_INFO, callable, Tuple1(it)) }
     }
 
-    fun classifierInfoFor(classifier: ClassifierRef): PersistedClassifierInfo? {
-        return classifier.descriptor!!
+    fun classifierInfoFor(
+        classifier: ClassifierRef,
+        trace: BindingTrace?
+    ): PersistedClassifierInfo? {
+        trace?.get(InjektWritableSlices.CLASSIFIER_INFO, classifier)?.let { return it.value }
+        val classifierInfo = classifier.descriptor!!
             .annotations
             .findAnnotation(InjektFqNames.ClassifierInfo)
             ?.allValueArguments
@@ -77,13 +92,15 @@ class InjektContext(val module: ModuleDescriptor) {
             ?: classifier.descriptor
                 .containingDeclaration
                 .safeAs<CallableDescriptor>()
-                ?.let { callableInfoFor(it) }
+                ?.let { callableInfoFor(it, trace) }
                 ?.typeParameters
                 ?.singleOrNull {
                     val fqName = FqName(it.key.split(":")[1])
                     fqName == classifier.fqName
                 }
                 ?.toPersistedClassifierInfo()
+        trace?.record(InjektWritableSlices.CLASSIFIER_INFO, classifier, Tuple1(classifierInfo))
+        return classifierInfo
     }
 
     fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor? {
@@ -92,9 +109,13 @@ class InjektContext(val module: ModuleDescriptor) {
         )
     }
 
-    fun classifierDescriptorForKey(key: String): ClassifierDescriptor {
+    fun classifierDescriptorForKey(
+        key: String,
+        trace: BindingTrace?
+    ): ClassifierDescriptor {
+        trace?.get(InjektWritableSlices.CLASSIFIER_FOR_KEY, key)?.let { return it }
         val fqName = FqName(key.split(":")[1])
-        return memberScopeForFqName(fqName.parent())?.getContributedClassifier(
+        val classifier = memberScopeForFqName(fqName.parent())?.getContributedClassifier(
             fqName.shortName(), NoLookupLocation.FROM_BACKEND
         )?.takeIf { it.uniqueKey(this) == key }
             ?: functionDescriptorsForFqName(fqName.parent())
@@ -112,6 +133,8 @@ class InjektContext(val module: ModuleDescriptor) {
                 ?.declaredTypeParameters
                 ?.firstOrNull { it.uniqueKey(this) == key }
             ?: error("Could not get for $fqName $key")
+        trace?.record(InjektWritableSlices.CLASSIFIER_FOR_KEY, key, classifier)
+        return classifier
     }
 
     fun functionDescriptorsForFqName(fqName: FqName): List<FunctionDescriptor> {

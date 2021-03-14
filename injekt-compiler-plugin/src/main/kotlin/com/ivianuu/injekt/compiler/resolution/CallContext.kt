@@ -51,7 +51,7 @@ val TypeRef.callContext: CallContext
         else -> CallContext.DEFAULT
     }
 
-private var composeCompilerInClasspath = try {
+private val composeCompilerInClasspath = try {
     Class.forName("androidx.compose.compiler.plugins.kotlin.analysis.ComposeWritableSlices")
     true
 } catch (e: ClassNotFoundException) {

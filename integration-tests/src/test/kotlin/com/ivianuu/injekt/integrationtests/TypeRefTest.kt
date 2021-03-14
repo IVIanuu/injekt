@@ -231,11 +231,11 @@ class TypeRefTest {
     fun testQualifiedTypeAliasIsSubTypeOfTypeParameterWithSameQualifiers() = withAnalysisContext {
         typeAlias(
             function(0)
-                .copy(isComposable = true)
+                .copy(isMarkedComposable = true)
                 .qualified(qualifier1())
         ) shouldBeSubTypeOf typeParameter(
             function(0)
-                .copy(isComposable = true)
+                .copy(isMarkedComposable = true)
                 .qualified(qualifier1())
         )
     }
@@ -244,11 +244,11 @@ class TypeRefTest {
     fun testQualifiedTypeAliasIsNotSubTypeOfTypeParameterWithOtherQualifiers() = withAnalysisContext {
         typeAlias(
             function(0)
-                .copy(isComposable = true)
+                .copy(isMarkedComposable = true)
                 .qualified(qualifier1())
         ) shouldNotBeSubTypeOf typeParameter(
                 function(0)
-                    .copy(isComposable = true)
+                    .copy(isMarkedComposable = true)
                     .qualified(qualifier2(""))
             )
     }
@@ -421,7 +421,7 @@ class TypeRefTest {
 
         fun composableFunction(parameterCount: Int) = typeFor(
             FqName("kotlin.Function$parameterCount")
-        ).copy(isComposable = true)
+        ).copy(isMarkedComposable = true)
 
         fun function(parameterCount: Int) = typeFor(
             FqName("kotlin.Function$parameterCount")
@@ -482,7 +482,7 @@ class TypeRefTest {
 
         fun typeFor(fqName: FqName) = module.findClassifierAcrossModuleDependencies(
             ClassId.topLevel(fqName)
-        )!!.defaultType.toTypeRef(context)
+        )!!.defaultType.toTypeRef(context, null)
 
         infix fun TypeRef.shouldBeAssignable(other: TypeRef) {
             if (!isAssignableTo(context, other)) {
