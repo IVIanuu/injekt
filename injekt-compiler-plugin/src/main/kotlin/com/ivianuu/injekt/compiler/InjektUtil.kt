@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.GivenFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.uniqueTypeName
+import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -102,6 +103,8 @@ fun DeclarationDescriptor.isExternalDeclaration(): Boolean = this is Deserialize
         this is DeserializedTypeParameterDescriptor
 
 fun String.asNameId() = Name.identifier(this)
+
+val isIde: Boolean = Project::class.java.name == "com.intellij.openapi.project.Project"
 
 fun <T> unsafeLazy(init: () -> T) = lazy(LazyThreadSafetyMode.NONE, init)
 
