@@ -69,7 +69,7 @@ class GivenDeclarationCheckTest {
             }
         """
     ) {
-        compilationShouldHaveFailed("class cannot have multiple @Given marked constructors")
+        compilationShouldHaveFailed("class cannot have multiple @Given constructors")
     }
 
     @Test
@@ -78,7 +78,7 @@ class GivenDeclarationCheckTest {
             @Given annotation class MyAnnotation
         """
     ) {
-        compilationShouldHaveFailed("annotation class cannot be marked with @Given")
+        compilationShouldHaveFailed("annotation class cannot be @Given")
     }
 
     @Test
@@ -87,7 +87,7 @@ class GivenDeclarationCheckTest {
             annotation class MyAnnotation @Given constructor()
         """
     ) {
-        compilationShouldHaveFailed("annotation class constructor cannot be marked with @Given")
+        compilationShouldHaveFailed("annotation class constructor cannot be @Given")
     }
 
     @Test
@@ -99,7 +99,7 @@ class GivenDeclarationCheckTest {
             }
         """
     ) {
-        compilationShouldHaveFailed("tailrec function cannot be marked with @Given")
+        compilationShouldHaveFailed("@Given function cannot be tail recursive")
     }
 
     @Test
@@ -108,7 +108,7 @@ class GivenDeclarationCheckTest {
             @Given enum class MyEnum
         """
     ) {
-        compilationShouldHaveFailed("enum class cannot be marked with @Given")
+        compilationShouldHaveFailed("enum class cannot be @Given")
     }
 
     @Test
@@ -117,7 +117,7 @@ class GivenDeclarationCheckTest {
             @Given abstract class MyAbstractClass
         """
     ) {
-        compilationShouldHaveFailed("abstract class cannot be marked with @Given")
+        compilationShouldHaveFailed("@Given class cannot be abstract")
     }
 
     @Test
