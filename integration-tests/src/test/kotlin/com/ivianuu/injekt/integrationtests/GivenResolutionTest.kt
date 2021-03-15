@@ -285,7 +285,26 @@ class GivenResolutionTest {
         classFoo shouldBeSameInstanceAs result
     }
 
-    // todo class constructor given in init
+    @Test
+    fun testPrefersConstructorParameterGivenOverClassBodyGiven() = codegen(
+        """
+            lateinit var classBodyFoo: Foo
+            class MyClass(@Given constructorFoo: Foo) {
+                val finalFoo = given<Foo>()
+                @Given val classFoo get() = classBodyFoo
+            }
+
+            fun invoke(constructorFoo: Foo, _classBodyFoo: Foo): Foo {
+                classBodyFoo = _classBodyFoo
+                return MyClass(constructorFoo).finalFoo
+            }
+        """
+    ) {
+        val constructorFoo = Foo()
+        val classBodyFoo = Foo()
+        val result = invokeSingleFile(constructorFoo, classBodyFoo)
+        result shouldBeSameInstanceAs constructorFoo
+    }
 
     @Test
     fun testPrefersFunctionParameterGivenOverInternalGiven() = codegen(

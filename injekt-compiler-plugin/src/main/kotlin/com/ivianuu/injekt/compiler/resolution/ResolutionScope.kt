@@ -299,7 +299,8 @@ fun HierarchicalResolutionScope(
                             it.kind == LexicalScopeKind.CLASS_MEMBER_SCOPE) ||
                             (it.ownerDescriptor is FunctionDescriptor &&
                                     it.kind == LexicalScopeKind.FUNCTION_INNER_SCOPE) ||
-                            it.kind == LexicalScopeKind.CODE_BLOCK
+                            it.kind == LexicalScopeKind.CODE_BLOCK ||
+                            it.kind == LexicalScopeKind.CLASS_INITIALIZER
                     )
         }
         .fold(importsResolutionScope) { parent, next ->
