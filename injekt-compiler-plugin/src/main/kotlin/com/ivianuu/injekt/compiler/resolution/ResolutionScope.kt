@@ -39,7 +39,7 @@ class ResolutionScope(
     val callContext: CallContext,
     val ownerDescriptor: DeclarationDescriptor?,
     val trace: BindingTrace,
-    produceGivens: () -> List<CallableRef>
+    initialGivens: List<CallableRef>
 ) {
     val chain: MutableList<GivenNode> = parent?.chain ?: mutableListOf()
     val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
@@ -68,9 +68,8 @@ class ResolutionScope(
     private val givensByType = mutableMapOf<TypeRef, List<GivenNode>>()
     private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>>()
 
-    private val initialize: Unit by unsafeLazy {
+    init {
         if (parent != null) {
-            parent.initialize
             constrainedGivens += parent.constrainedGivens
                 .map { it.copy() }
             constrainedGivenCandidates += parent.constrainedGivenCandidates
@@ -78,7 +77,7 @@ class ResolutionScope(
 
         var hasGivens = false
 
-        produceGivens()
+        initialGivens
             .forEach { given ->
                 given.collectGivens(
                     context = context,
@@ -110,64 +109,60 @@ class ResolutionScope(
         }
     }
 
-    fun givensForType(type: TypeRef): List<GivenNode> {
-        initialize
-        return givensByType.getOrPut(type) {
-            buildList<GivenNode> {
-                parent?.givensForType(type)
-                    ?.filterNot { it.isFrameworkGiven }
-                    ?.let { this += it }
-                this += givens
-                    .filter { it.type.isAssignableTo(context, type) }
-                    .map { it.toGivenNode(type, this@ResolutionScope) }
+    fun givensForType(type: TypeRef): List<GivenNode> = givensByType.getOrPut(type) {
+        buildList<GivenNode> {
+            parent?.givensForType(type)
+                ?.filterNot { it.isFrameworkGiven }
+                ?.let { this += it }
+            this += givens
+                .filter { it.type.isAssignableTo(context, type) }
+                .map { it.toGivenNode(type, this@ResolutionScope) }
 
-                if (type.qualifiers.isEmpty() &&
-                    type.frameworkKey == null) {
-                    if (type.isFunctionType && type.arguments.dropLast(1).all { it.isGiven }) {
-                        this += ProviderGivenNode(
-                            type = type,
-                            ownerScope = this@ResolutionScope,
-                            context = context
-                        )
-                    } else if (type.classifier == context.setType.classifier) {
-                        val setElementType = type.arguments.single()
-                        var elementTypes = setElementsForType(setElementType)
-                        if (elementTypes.isEmpty() &&
-                            setElementType.qualifiers.isEmpty() &&
-                            setElementType.isFunctionType &&
-                            setElementType.arguments.dropLast(1).all { it.isGiven }) {
-                            val providerReturnType = setElementType.arguments.last()
-                            elementTypes = setElementsForType(providerReturnType)
-                                .map { elementType ->
-                                    setElementType.copy(
-                                        arguments = setElementType.arguments
-                                            .dropLast(1) + elementType
-                                    )
-                                }
-                        }
-
-                        val elements = elementTypes
-                            .mapIndexed { index, element ->
-                                GivenRequest(
-                                    type = element,
-                                    required = true,
-                                    callableFqName = FqName("com.ivianuu.injekt.givenSetOf"),
-                                    parameterName = "element$index".asNameId()
+            if (type.qualifiers.isEmpty() &&
+                type.frameworkKey == null) {
+                if (type.isFunctionType && type.arguments.dropLast(1).all { it.isGiven }) {
+                    this += ProviderGivenNode(
+                        type = type,
+                        ownerScope = this@ResolutionScope,
+                        context = context
+                    )
+                } else if (type.classifier == context.setType.classifier) {
+                    val setElementType = type.arguments.single()
+                    var elementTypes = setElementsForType(setElementType)
+                    if (elementTypes.isEmpty() &&
+                        setElementType.qualifiers.isEmpty() &&
+                        setElementType.isFunctionType &&
+                        setElementType.arguments.dropLast(1).all { it.isGiven }) {
+                        val providerReturnType = setElementType.arguments.last()
+                        elementTypes = setElementsForType(providerReturnType)
+                            .map { elementType ->
+                                setElementType.copy(
+                                    arguments = setElementType.arguments
+                                        .dropLast(1) + elementType
                                 )
                             }
-                        this += SetGivenNode(
-                            type = type,
-                            ownerScope = this@ResolutionScope,
-                            dependencies = elements
-                        )
                     }
+
+                    val elements = elementTypes
+                        .mapIndexed { index, element ->
+                            GivenRequest(
+                                type = element,
+                                required = true,
+                                callableFqName = FqName("com.ivianuu.injekt.givenSetOf"),
+                                parameterName = "element$index".asNameId()
+                            )
+                        }
+                    this += SetGivenNode(
+                        type = type,
+                        ownerScope = this@ResolutionScope,
+                        dependencies = elements
+                    )
                 }
             }
         }
     }
 
     private fun setElementsForType(type: TypeRef): List<TypeRef> {
-        initialize
         val parentSetElements = parent?.setElementsForType(type) ?: emptyList()
         if (givens.isEmpty()) return parentSetElements
         return setElementsByType.getOrPut(type) {
@@ -284,10 +279,8 @@ fun HierarchicalResolutionScope(
             parent = null,
             ownerDescriptor = null,
             trace = trace,
-            produceGivens = {
-                importScopes
-                    .flatMap { it.collectGivensInScope(context, trace) }
-            }
+            initialGivens = importScopes
+                .flatMap { it.collectGivensInScope(context, trace) }
         ).also { trace.record(InjektWritableSlices.IMPORT_RESOLUTION_SCOPE, importScopes, it) }
 
     return allScopes
@@ -317,14 +310,12 @@ fun HierarchicalResolutionScope(
                                     parent = parent,
                                     ownerDescriptor = companionDescriptor,
                                     trace = trace,
-                                    produceGivens = {
-                                        listOf(
-                                            companionDescriptor
-                                                .thisAsReceiverParameter
-                                                .toCallableRef(context, trace)
-                                                .copy(isGiven = true)
-                                        )
-                                    }
+                                    initialGivens = listOf(
+                                        companionDescriptor
+                                            .thisAsReceiverParameter
+                                            .toCallableRef(context, trace)
+                                            .copy(isGiven = true)
+                                    )
                                 ).also { trace.record(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, companionDescriptor, it) }
                         }
                     trace.get(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, clazz)
@@ -335,12 +326,10 @@ fun HierarchicalResolutionScope(
                             parent = companionScope ?: parent,
                             ownerDescriptor = clazz,
                             trace = trace,
-                            produceGivens = {
-                                listOf(
-                                    clazz.thisAsReceiverParameter.toCallableRef(context, trace)
-                                        .copy(isGiven = true)
-                                )
-                            }
+                            initialGivens = listOf(
+                                clazz.thisAsReceiverParameter.toCallableRef(context, trace)
+                                    .copy(isGiven = true)
+                            )
                         ).also { trace.record(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, clazz, it) }
                 }
                 next is LexicalScope && next.ownerDescriptor is FunctionDescriptor &&
@@ -354,11 +343,9 @@ fun HierarchicalResolutionScope(
                             parent = parent,
                             ownerDescriptor = function,
                             trace = trace,
-                            produceGivens = {
-                                function.allParameters
-                                    .filter { it.isGiven(context, trace) || it === function.extensionReceiverParameter }
-                                    .map { it.toCallableRef(context, trace).copy(isGiven = true) }
-                            }
+                            initialGivens = function.allParameters
+                                .filter { it.isGiven(context, trace) || it === function.extensionReceiverParameter }
+                                .map { it.toCallableRef(context, trace).copy(isGiven = true) }
                         ).also { trace.record(InjektWritableSlices.FUNCTION_RESOLUTION_SCOPE, function, it) }
                 }
                 else -> {
@@ -372,7 +359,7 @@ fun HierarchicalResolutionScope(
                                 .firstIsInstance<LexicalScope>()
                                 .ownerDescriptor,
                             trace = trace,
-                            produceGivens = { next.collectGivensInScope(context, trace) }
+                            initialGivens = next.collectGivensInScope(context, trace)
                         ).also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, next, it) }
                 }
             }
