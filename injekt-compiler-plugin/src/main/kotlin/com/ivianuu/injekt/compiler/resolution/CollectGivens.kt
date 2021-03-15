@@ -134,7 +134,6 @@ fun CallableDescriptor.toCallableRef(
 fun MemberScope.collectGivens(
     context: InjektContext,
     type: TypeRef?,
-    ownerDescriptor: DeclarationDescriptor?,
     trace: BindingTrace?,
     substitutionMap: Map<ClassifierRef, TypeRef>
 ): List<CallableRef> {
@@ -166,17 +165,6 @@ fun MemberScope.collectGivens(
                 } else emptyList()
                 else -> emptyList()
             }
-        }
-        .filter { callable ->
-            callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
-                    callable.callable.visibility == DescriptorVisibilities.LOCAL ||
-                    (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
-                            !callable.callable.original.isExternalDeclaration()) ||
-                    (callable.callable is ClassConstructorDescriptor &&
-                            callable.type.classifier.isObject) ||
-                    callable.callable.parents.any {
-                        it == ownerDescriptor
-                    }
         }
 }
 
@@ -226,12 +214,14 @@ fun ClassDescriptor.getGivenConstructor(
 
 fun CallableRef.collectGivens(
     context: InjektContext,
-    ownerDescriptor: DeclarationDescriptor?,
+    scope: ResolutionScope,
     substitutionMap: Map<ClassifierRef, TypeRef>,
     trace: BindingTrace?,
     addGiven: (CallableRef) -> Unit,
     addConstrainedGiven: (CallableRef) -> Unit
 ) {
+    if (!scope.canSee(this)) return
+
     if (!fromGivenConstraint && typeParameters.any { it.isGivenConstraint }) {
         addConstrainedGiven(this)
         return
@@ -242,11 +232,11 @@ fun CallableRef.collectGivens(
     callable
         .returnType!!
         .memberScope
-        .collectGivens(context, type, ownerDescriptor, trace, combinedSubstitutionMap)
+        .collectGivens(context, type, trace, combinedSubstitutionMap)
         .forEach {
             it.collectGivens(
                 context,
-                ownerDescriptor,
+                scope,
                 combinedSubstitutionMap,
                 trace,
                 addGiven,
@@ -279,3 +269,14 @@ fun HierarchicalScope.collectGivensInScope(
                 else -> emptyList()
             }
         }
+
+fun ResolutionScope.canSee(callable: CallableRef): Boolean =
+    callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
+            callable.callable.visibility == DescriptorVisibilities.LOCAL ||
+            (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
+                    !callable.callable.original.isExternalDeclaration()) ||
+            (callable.callable is ClassConstructorDescriptor &&
+                    callable.type.classifier.isObject) ||
+            callable.callable.parents.any {
+                it == ownerDescriptor
+            }

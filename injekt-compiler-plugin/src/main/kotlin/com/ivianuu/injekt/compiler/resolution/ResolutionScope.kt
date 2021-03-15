@@ -82,7 +82,7 @@ class ResolutionScope(
             .forEach { given ->
                 given.collectGivens(
                     context = context,
-                    ownerDescriptor = ownerDescriptor,
+                    scope = this,
                     substitutionMap = emptyMap(),
                     trace = trace,
                     addGiven = { callable ->
@@ -220,7 +220,7 @@ class ResolutionScope(
 
         newGiven.collectGivens(
             context = context,
-            ownerDescriptor = ownerDescriptor,
+            scope = this,
             substitutionMap = outputsSubstitutionMap,
             trace = trace,
             addGiven = { newInnerGiven ->
