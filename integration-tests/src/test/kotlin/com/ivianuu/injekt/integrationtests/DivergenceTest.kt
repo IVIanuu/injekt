@@ -54,38 +54,6 @@ class DivergenceTest {
         compilationShouldHaveFailed("diverging")
     }
 
-    // todo @Test
-    fun testUnresolvableDivergenceWithProvidersAndQualifiers() = codegen(
-        """
-            @Given fun <T> any1(@Given t: () -> @Qualifier1 T): T = t()
-            @Given fun <T> any2(@Given t: () -> @Qualifier2("a") T): T = t()
-            fun invoke() = given<String>()
-        """
-    ) {
-        compilationShouldHaveFailed("diverging")
-    }
-
-    // todo @Test
-    fun testUnresolvableDivergenceWithProvidersAndQualifiersMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                    @Given fun <T> any1(@Given t: () -> @Qualifier1 T): T = t()
-                    @Given fun <T> any2(@Given t: () -> @Qualifier2("a") T): T = t()
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                   fun invoke() = given<String>() 
-                """
-            )
-        )
-    ) {
-        it.last().compilationShouldHaveFailed("diverging")
-    }
-
     @Test
     fun testResolvableDivergence() = codegen(
         """

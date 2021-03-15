@@ -192,7 +192,6 @@ class QualifierTest {
             .shouldBeTypeOf<Foo>()
     }
 
-    // todo rewrite test
     @Test
     fun testSubstitutesQualifierTypeParameters() = codegen(
         """

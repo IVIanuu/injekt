@@ -266,9 +266,9 @@ fun HierarchicalResolutionScope(
 
     val importScopes = allScopes
         .filterIsInstance<ImportingScope>()
-        .filter { scope ->
-            if (scope is LazyImportScope) {
-                val scopeString = scope.toString()
+        .filter { importScope ->
+            if (importScope is LazyImportScope) {
+                val scopeString = importScope.toString()
                 "LazyImportScope: Explicit imports in LazyFileScope for file" in scopeString
                         || ("LazyImportScope: All under imports in LazyFileScope for file" in scopeString &&
                         !scopeString.endsWith("(invisible classes only)"))

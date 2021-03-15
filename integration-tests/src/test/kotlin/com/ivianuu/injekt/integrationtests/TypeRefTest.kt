@@ -369,8 +369,6 @@ class TypeRefTest {
         floatType shouldNotBeSubTypeOf comparable.typeWith(intType)
     }
 
-    // todo type parameter multuple upper bounds
-
     private fun withAnalysisContext(
         block: AnalysisContext.() -> Unit,
     ) {
