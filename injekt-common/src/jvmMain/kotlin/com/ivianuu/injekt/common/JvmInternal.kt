@@ -14,25 +14,8 @@
  * limitations under the License.
  */
 
-plugins {
-    kotlin("multiplatform")
-}
+package com.ivianuu.injekt.common
 
-kotlin {
-    jvm {
-        compilations.forEach {
-            it.kotlinOptions {
-                jvmTarget = "1.8"
-            }
-        }
-    }
-    sourceSets {
-        named("jvmMain") {
-            dependencies {
-                api(project(":injekt-core"))
-                configurations.getByName("kotlinCompilerPluginClasspath")
-                    .dependencies.add(project(":injekt-compiler-plugin"))
-            }
-        }
-    }
-}
+@PublishedApi
+internal actual inline fun <T> synchronized(lock: Any, block: () -> T): T =
+    kotlin.synchronized(lock, block)

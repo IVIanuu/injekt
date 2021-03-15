@@ -474,8 +474,8 @@ fun getSubstitutionMap(
                 }
                 allMatch
             }) {
-            thisType.qualifiers.forEachWith(baseType.qualifiers) { a, b -> visitType(a.type, b.type) }
             visitType(thisType.unqualified, baseType.unqualified)
+            thisType.qualifiers.forEachWith(baseType.qualifiers) { a, b -> visitType(a.type, b.type) }
             return
         }
 
@@ -491,12 +491,12 @@ fun getSubstitutionMap(
             .forEach { (thisBaseTypeView, baseSuperType) ->
                 if (baseSuperType.classifier.isTypeParameter) {
                     val thisTypeToUse = thisBaseTypeView ?: thisType
+                    visitType(thisTypeToUse, baseSuperType)
                     if (thisTypeToUse.qualifiers.isAssignableTo(context, baseSuperType.qualifiers)) {
                         thisTypeToUse.qualifiers.forEachWith(baseSuperType.qualifiers) { a, b ->
                             visitType(a.type, b.type)
                         }
                     }
-                    visitType(thisTypeToUse, baseSuperType)
                 } else {
                     visitType(thisBaseTypeView ?: thisType, baseSuperType)
                 }

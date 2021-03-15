@@ -20,31 +20,27 @@ import com.ivianuu.injekt.gradle.setupForInjekt
 buildscript {
     repositories {
         mavenLocal()
-        maven("https://dl.bintray.com/ivianuu/maven")
-        maven("https://dl.bintray.com/kotlin/kotlin-eap")
         google()
+        mavenCentral()
         jcenter()
-        maven("https://oss.sonatype.org/content/repositories/snapshots")
         maven("https://plugins.gradle.org/m2")
     }
     dependencies {
         classpath(Deps.androidGradlePlugin)
-        classpath(Deps.bintrayGradlePlugin)
         classpath(Deps.buildConfigGradlePlugin)
+        classpath(Deps.dokkaGradlePlugin)
         classpath(Deps.Injekt.gradlePlugin)
         classpath(Deps.Kotlin.gradlePlugin)
-        classpath(Deps.mavenGradlePlugin)
+        classpath(Deps.mavenPublishGradlePlugin)
         classpath(Deps.shadowGradlePlugin)
-        classpath(Deps.spotlessGradlePlugin)
     }
 }
 
 allprojects {
     repositories {
         mavenLocal()
-        maven("https://dl.bintray.com/ivianuu/maven")
-        maven("https://dl.bintray.com/kotlin/kotlin-eap")
         google()
+        mavenCentral()
         jcenter()
         maven("https://oss.sonatype.org/content/repositories/snapshots")
         maven("https://plugins.gradle.org/m2")
@@ -54,13 +50,19 @@ allprojects {
         extensions.add<InjektExtension>("injekt", InjektExtension())
     }
     afterEvaluate {
-        tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-            kotlinOptions {
-                useIR = true
+        tasks.withType<org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile<*>> {
+            val kotlinOptions = when (this) {
+                is org.jetbrains.kotlin.gradle.tasks.KotlinCompile -> kotlinOptions
+                is org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon -> kotlinOptions
+                else -> null
+            } ?: return@withType
+            kotlinOptions.run {
+                if (this is org.jetbrains.kotlin.gradle.dsl.KotlinJvmOptions)
+                    useIR = true
                 if (project.name != "injekt-compiler-plugin" &&
                         project.name != "injekt-gradle-plugin") {
-                    val options = setupForInjekt()
-                    options.forEach {
+                    val pluginOptions = setupForInjekt()
+                    pluginOptions.forEach {
                         freeCompilerArgs += listOf(
                             "-P", "plugin:com.ivianuu.injekt:${it.key}=${it.value}"
                         )

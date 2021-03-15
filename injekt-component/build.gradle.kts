@@ -15,18 +15,34 @@
  */
 
 plugins {
-    kotlin("jvm")
+    kotlin("multiplatform")
 }
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
-//apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
-
-dependencies {
-    api(project(":injekt-core"))
-    api(project(":injekt-common"))
-    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
-    testImplementation(Deps.junit)
-    testImplementation(Deps.kotestAssertions)
+kotlin {
+    jvm {
+        withJava()
+        compilations.forEach {
+            it.kotlinOptions {
+                jvmTarget = "1.8"
+            }
+        }
+    }
+    sourceSets {
+        commonMain {
+            dependencies {
+                api(project(":injekt-core"))
+                api(project(":injekt-common"))
+                configurations.getByName("kotlinCompilerPluginClasspath")
+                    .dependencies.add(project(":injekt-compiler-plugin"))
+            }
+        }
+        named("jvmTest") {
+            dependencies {
+                implementation(Deps.junit)
+                implementation(Deps.kotestAssertions)
+            }
+        }
+    }
 }
+
+plugins.apply("com.vanniktech.maven.publish")

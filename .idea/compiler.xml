@@ -1,6 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="CompilerConfiguration">
-    <bytecodeTargetLevel target="1.8" />
+    <bytecodeTargetLevel target="1.8">
+      <module name="injekt.injekt-common.commonMain" target="1.8" />
+      <module name="injekt.injekt-common.commonTest" target="1.8" />
+      <module name="injekt.injekt-common.jvmMain" target="1.8" />
+      <module name="injekt.injekt-common.jvmTest" target="1.8" />
+      <module name="injekt.injekt-component.commonMain" target="1.8" />
+      <module name="injekt.injekt-component.commonTest" target="1.8" />
+      <module name="injekt.injekt-component.jvmMain" target="1.8" />
+      <module name="injekt.injekt-component.jvmTest" target="1.8" />
+      <module name="injekt.injekt-core.commonMain" target="1.8" />
+      <module name="injekt.injekt-core.commonTest" target="1.8" />
+      <module name="injekt.injekt-core.jvmMain" target="1.8" />
+      <module name="injekt.injekt-core.jvmTest" target="1.8" />
+      <module name="injekt.samples.coffee-maker.commonMain" target="1.8" />
+      <module name="injekt.samples.coffee-maker.commonTest" target="1.8" />
+      <module name="injekt.samples.coffee-maker.jvmMain" target="1.8" />
+      <module name="injekt.samples.coffee-maker.jvmTest" target="1.8" />
+    </bytecodeTargetLevel>
   </component>
 </project>

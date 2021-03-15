@@ -36,4 +36,3 @@ dependencies {
     compile(Deps.Moshi.adapters)
     compile(Deps.Moshi.sealedRuntime)
 }
-

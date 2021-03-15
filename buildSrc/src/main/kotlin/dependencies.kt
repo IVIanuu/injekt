@@ -18,20 +18,12 @@
 
 object Build {
     const val applicationId = "com.ivianuu.injekt.sample"
-    const val applicationIdComparison = "com.ivianuu.injekt.samples.comparison"
     const val compileSdk = 29
     const val minSdk = 21
     const val minSdkComparison = 29
     const val targetSdk = 29
-
     const val versionCode = 1
     const val versionName = "0.0.1"
-}
-
-object Publishing {
-    const val groupId = "com.ivianuu.injekt"
-    const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev487"
 }
 
 object Deps {
@@ -68,9 +60,6 @@ object Deps {
 
     const val autoService = "com.google.auto.service:auto-service:1.0-rc7"
 
-    const val bintrayGradlePlugin =
-        "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.5"
-
     const val buildConfigGradlePlugin =
         "gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.1.8"
 
@@ -80,6 +69,8 @@ object Deps {
         const val core = "org.jetbrains.kotlinx:kotlinx-coroutines-core:$version"
         const val test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:$version"
     }
+
+    const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.4.20"
 
     object Injekt {
         const val version = "0.0.1-dev485"
@@ -94,15 +85,15 @@ object Deps {
         const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
         const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
         const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
-        const val stdlib = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$version"
+        const val stdlibJvm = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$version"
+        const val stdlibCommon = "org.jetbrains.kotlin:kotlin-stdlib-common:$version"
     }
 
     const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.3.6"
 
     const val kotestAssertions = "io.kotest:kotest-assertions-core:4.3.0"
 
-    const val mavenGradlePlugin =
-        "com.github.dcendents:android-maven-gradle-plugin:2.1"
+    const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.14.2"
 
     const val mockk = "io.mockk:mockk:1.10.0"
 
@@ -119,6 +110,4 @@ object Deps {
     const val roboelectric = "org.robolectric:robolectric:4.4"
 
     const val shadowGradlePlugin = "com.github.jengelman.gradle.plugins:shadow:5.2.0"
-
-    const val spotlessGradlePlugin = "com.diffplug.spotless:spotless-plugin-gradle:3.26.1"
 }
