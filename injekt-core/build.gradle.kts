@@ -1,3 +1,5 @@
+import com.ivianuu.injekt.gradle.setupForInjekt
+
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -15,16 +17,27 @@
  */
 
 plugins {
-    kotlin("jvm")
+    kotlin("multiplatform")
 }
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
-//apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
-
-dependencies {
-    api(Deps.Kotlin.stdlib)
-    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
-    testImplementation(Deps.junit)
+kotlin {
+    jvm {
+        withJava()
+        compilations.forEach {
+            it.kotlinOptions {
+                jvmTarget = "1.8"
+            }
+        }
+    }
+    sourceSets {
+        commonMain {
+            dependencies {
+                api(Deps.Kotlin.stdlibCommon)
+                configurations.getByName("kotlinCompilerPluginClasspath")
+                    .dependencies.add(project(":injekt-compiler-plugin"))
+            }
+        }
+    }
 }
+
+plugins.apply("com.vanniktech.maven.publish")
