@@ -19,6 +19,8 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.unsafeLazy
+import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
+import kotlin.math.sign
 
 sealed class GivenGraph {
     data class Success(
@@ -308,6 +310,14 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
                 b.callable.callable.isExternalDeclaration()) return -1
         if (!b.callable.callable.isExternalDeclaration() &&
             a.callable.callable.isExternalDeclaration()) return 1
+
+        if (a.callable.callable.containingDeclaration ==
+                b.callable.callable.containingDeclaration) {
+            val aOverriddenTreeSize = a.callable.callable.overriddenTreeUniqueAsSequence(true).count()
+            val bOverriddenTreeSize = b.callable.callable.overriddenTreeUniqueAsSequence(true).count()
+            if (aOverriddenTreeSize < bOverriddenTreeSize) return -1
+            if (bOverriddenTreeSize < aOverriddenTreeSize) return 1
+        }
     }
 
     val diff = compareType(a.originalType, b.originalType)

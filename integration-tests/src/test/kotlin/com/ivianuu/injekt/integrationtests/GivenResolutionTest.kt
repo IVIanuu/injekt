@@ -307,6 +307,25 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testPrefersSubClassGivenOverSuperClassGiven() = codegen(
+        """
+            abstract class MySuperClass(@Given val superClassFoo: Foo)
+            class MySubClass(@Given val subClassFoo: Foo, superClassFoo: Foo) : MySuperClass(superClassFoo) {
+                fun finalFoo(): Foo = given()
+            }
+
+            fun invoke(subClassFoo: Foo, superClassFoo: Foo): Foo {
+                return MySubClass(subClassFoo, superClassFoo).finalFoo()
+            }
+        """
+    ) {
+        val subClassFoo = Foo()
+        val superClassFoo = Foo()
+        val result = invokeSingleFile(subClassFoo, superClassFoo)
+        result shouldBeSameInstanceAs subClassFoo
+    }
+
+    @Test
     fun testPrefersFunctionParameterGivenOverInternalGiven() = codegen(
         """
             @Given lateinit var internalFoo: Foo
@@ -735,9 +754,7 @@ class GivenResolutionTest {
                     fun invoke() = given<Foo>()
                 }
                 """
-    ) {
-        compilationShouldBeOk()
-    }
+    )
 
     @Test
     fun testCannotResolveProtectedGivenFromOuterScope() = codegen(
@@ -759,9 +776,7 @@ class GivenResolutionTest {
                     fun invoke() = given<Foo>()
                 }
                 """
-    ) {
-        compilationShouldBeOk()
-    }
+    )
 
     @Test
     fun testCanResolveProtectedGivenFromSubClass() = codegen(
@@ -773,8 +788,6 @@ class GivenResolutionTest {
                     fun invoke() = given<Foo>()
                 }
                 """
-    ) {
-        compilationShouldBeOk()
-    }
+    )
 
 }

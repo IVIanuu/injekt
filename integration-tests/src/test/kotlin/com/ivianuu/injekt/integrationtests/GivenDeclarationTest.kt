@@ -332,4 +332,13 @@ class GivenDeclarationTest {
         """
     )
 
+    @Test
+    fun testGivenSuperClassPrimaryConstructorParameter() = codegen(
+        """
+            abstract class MySuperClass(@Given val foo: Foo)
+            @Given object MySubClass : MySuperClass(Foo())
+            fun invoke() = given<Foo>()
+        """
+    )
+
 }

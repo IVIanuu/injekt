@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.lazy.LazyImportScope
 import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
@@ -137,12 +138,6 @@ fun MemberScope.collectGivens(
     trace: BindingTrace?,
     substitutionMap: Map<ClassifierRef, TypeRef>
 ): List<CallableRef> {
-    val givenPrimaryConstructorParameters = (type?.classifier?.descriptor
-        ?.safeAs<ClassDescriptor>()
-        ?.unsubstitutedPrimaryConstructor
-        ?.valueParameters
-        ?.filter { it.isGiven(context, trace) }
-        ?.map { it.name } ?: emptyList())
     return getContributedDescriptors()
         .flatMap { declaration ->
             when (declaration) {
@@ -150,8 +145,7 @@ fun MemberScope.collectGivens(
                     declaration.getGivenConstructor(context, trace)
                         ?.substitute(substitutionMap)
                 )
-                is PropertyDescriptor -> if (declaration.isGiven(context, trace) ||
-                        declaration.name in givenPrimaryConstructorParameters) {
+                is PropertyDescriptor -> if (declaration.isGiven(context, trace)) {
                     listOf(
                         declaration.toCallableRef(context, trace)
                             .substitute(substitutionMap)
@@ -173,6 +167,16 @@ fun Annotated.isGiven(context: InjektContext, trace: BindingTrace?): Boolean {
     val key = if (this is KotlinType) System.identityHashCode(this) else this
     trace?.get(InjektWritableSlices.IS_GIVEN, key)?.let { return it }
     var isGiven = hasAnnotation(InjektFqNames.Given)
+    if (!isGiven && this is PropertyDescriptor) {
+        isGiven = overriddenTreeUniqueAsSequence(false)
+            .map { it.containingDeclaration }
+            .filterIsInstance<ClassDescriptor>()
+            .mapNotNull { it.unsubstitutedPrimaryConstructor }
+            .flatMap { it.valueParameters }
+            .filter { it.name == name }
+            .filter { it.isGiven(context, trace) }
+            .any() == true
+    }
     if (!isGiven && this is ParameterDescriptor) {
         isGiven = type.isGiven(context, trace) ||
                 containingDeclaration.safeAs<FunctionDescriptor>()

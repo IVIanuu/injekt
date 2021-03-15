@@ -161,4 +161,16 @@ class ModuleTest {
         """
     )
 
+    @Test
+    fun testSubClassModule() = codegen(
+        """
+            @Given val foo = Foo()
+            abstract class BaseBarModule(@Given private val foo: Foo) {
+                @Given val bar get() = Bar(foo)
+            }
+            @Given class BarModule(@Given private val foo: Foo) : BaseBarModule(foo)
+            fun invoke() = given<Bar>()
+        """
+    )
+
 }
