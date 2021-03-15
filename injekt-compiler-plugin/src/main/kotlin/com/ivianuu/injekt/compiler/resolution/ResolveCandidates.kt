@@ -146,6 +146,9 @@ private fun ResolutionScope.computeForCandidate(
     compute: () -> ResolutionResult,
 ): ResolutionResult {
     resultsByCandidate[candidate]?.let { return it }
+    if (candidate.dependencies.isEmpty())
+        return compute().also { resultsByCandidate[candidate] = it }
+
     if (chain.isNotEmpty()) {
         var lazyDependencies = false
         for (i in chain.lastIndex downTo 0) {
@@ -225,6 +228,9 @@ private fun ResolutionScope.resolveCandidate(
     if (!callContext.canCall(candidate.callContext)) {
         return@computeForCandidate ResolutionResult.Failure.CallContextMismatch(callContext, candidate)
     }
+
+    if (candidate.dependencies.isEmpty())
+        return@computeForCandidate ResolutionResult.Success(candidate, this, emptyMap())
 
     val successDependencyResults = mutableMapOf<GivenRequest, ResolutionResult.Success>()
     val dependencyScope = candidate.dependencyScope ?: this
