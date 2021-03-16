@@ -257,26 +257,23 @@ class ResolutionScope(
         )
     }
 
+    /**
+     * A callable is not applicable if it is a given constructor parameter property
+     * of a class which itself is given but not in the scope.
+     * Without removing the property this would result in a divergent request
+     */
     private fun CallableRef.isApplicable(): Boolean {
-        var isApplicable = true
-        if (callable is PropertyDescriptor &&
-                callable.dispatchReceiverParameter != null) {
-            val containing = callable.containingDeclaration
-            if (containing is ClassDescriptor &&
-                    containing.kind == ClassKind.CLASS) {
-                val containingClassifier = containing.toClassifierRef(context, trace)
-                if (callable.name in
-                    containingClassifier.primaryConstructorPropertyParameters) {
-                    isApplicable = allScopes.any { it.ownerDescriptor == containing } ||
-                            givensForType(parameterTypes["_dispatchReceiver"]!!)
-                                .any { classGiven ->
-                                    classGiven.dependencies.none { it.type == type }
-                                }
-                }
-            }
-        }
-
-        return isApplicable
+        if (callable !is PropertyDescriptor ||
+                callable.dispatchReceiverParameter == null) return true
+        val containing = callable.containingDeclaration as ClassDescriptor
+        if (containing.kind == ClassKind.OBJECT) return true
+        val containingClassifier = containing.toClassifierRef(context, trace)
+        if (callable.name !in containingClassifier.primaryConstructorPropertyParameters) return true
+        return allScopes.any { it.ownerDescriptor == containing } ||
+                givensForType(parameterTypes["_dispatchReceiver"]!!)
+                    .any { classGiven ->
+                        classGiven.dependencies.none { it.type == type }
+                    }
     }
 
     override fun toString(): String = "ResolutionScope($name)"
