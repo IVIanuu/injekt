@@ -234,6 +234,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         val isGiven = descriptor.hasAnnotation(InjektFqNames.Given)
         if (isGiven) return
         if (descriptor.overriddenTreeUniqueAsSequence(false)
+                .drop(1)
                 .any { it.isGiven(context, trace) }) {
             trace.report(
                 InjektErrors.NO_GIVEN_ANNOTATION_ON_GIVEN_OVERRIDE
