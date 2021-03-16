@@ -317,6 +317,25 @@ class GivenConstraintTest {
     )
 
     @Test
+    fun testCanResolveTypeWithConstraintTypeArgument() = codegen(
+        """
+            @Qualifier annotation class Trigger
+            @Given fun <@Given T : @Trigger Any?> triggerImpl(
+                @Given pair: Pair<T, T>
+            ): Int = 0
+
+            @Trigger
+            @Given
+            val string = ""
+
+            @Given
+            fun stringPair() = "a" to "b"
+
+            fun invoke() = given<Int>()
+        """
+    )
+
+    @Test
     fun testUiDecorator() = codegen(
         """
             typealias UiDecorator = @Composable (@Composable () -> Unit) -> Unit
