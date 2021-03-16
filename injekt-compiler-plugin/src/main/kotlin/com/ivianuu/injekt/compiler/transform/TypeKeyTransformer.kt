@@ -166,15 +166,22 @@ class TypeKeyTransformer(
             check(this@collectExpressions is IrSimpleType)
 
             val typeAnnotations = listOfNotNull(
-                if (hasAnnotation(InjektFqNames.Given)) "@Given" else null,
-                if (hasAnnotation(InjektFqNames.Composable)) "@Composable" else null,
-                *getAnnotatedAnnotations(InjektFqNames.Qualifier)
-                    .map { it.type.classifierOrFail.descriptor.fqNameSafe.asString() +
-                            (0 until it.valueArgumentsCount)
-                                .map { i -> it.getValueArgument(i) as IrConst<*> }
-                                .map { it.value }
-                                .hashCode()
-                                .toString()
+                if ((abbreviation?.hasAnnotation(InjektFqNames.Given) ?:
+                    hasAnnotation(InjektFqNames.Given))) "@Given" else null,
+                if ((abbreviation?.hasAnnotation(InjektFqNames.Composable) ?:
+                    hasAnnotation(InjektFqNames.Composable))) "@Composable" else null,
+                *(abbreviation?.getAnnotatedAnnotations(InjektFqNames.Qualifier) ?:
+                    getAnnotatedAnnotations(InjektFqNames.Qualifier))
+                    .map { qualifier ->
+                        "@" + qualifier.type.classifierOrFail.descriptor.fqNameSafe.asString() +
+                                if (qualifier.valueArgumentsCount > 0) {
+                                    (0 until qualifier.valueArgumentsCount)
+                                        .map { i -> qualifier.getValueArgument(i) as IrConst<*> }
+                                        .map { it.value }
+                                        .hashCode()
+                                        .toString()
+                                        .let { "($it)" }
+                                } else ""
                     }
                     .toTypedArray()
             )

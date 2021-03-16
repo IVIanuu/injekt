@@ -85,6 +85,42 @@ class TypeKeyTest {
     }
 
     @Test
+    fun testTypeKeyOfWithComposableType() = codegen(
+        """
+            fun invoke() = typeKeyOf<@Composable () -> Unit>() 
+        """
+    ) {
+        invokeSingleFile<TypeKey<Any>>().value shouldBe "[@Composable]kotlin.Function0<kotlin.Unit>"
+    }
+    @Test
+    fun testTypeKeyOfWithTypeAliasWithComposableExpandedType() = codegen(
+        """
+            typealias MyAlias = @Composable () -> Unit
+            fun invoke() = typeKeyOf<MyAlias>() 
+        """
+    ) {
+        invokeSingleFile<TypeKey<Any>>().value shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
+    }
+
+    @Test
+    fun testTypeKeyOfWithQualifiers() = codegen(
+        """
+            fun invoke() = typeKeyOf<@Qualifier2("a") String>() 
+        """
+    ) {
+        invokeSingleFile<TypeKey<Any>>().value shouldBe "[@com.ivianuu.injekt.test.Qualifier2(128)]kotlin.String"
+    }
+    @Test
+    fun testTypeKeyOfWithTypeAliasWithQualifiedExpandedType() = codegen(
+        """
+            typealias MyAlias = @Qualifier2("a") String
+            fun invoke() = typeKeyOf<MyAlias>() 
+        """
+    ) {
+        invokeSingleFile<TypeKey<Any>>().value shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
+    }
+    
+    @Test
     fun testForTypeKeyTypeParameterInInterface() = codegen(
         """
             interface KeyFactory {
