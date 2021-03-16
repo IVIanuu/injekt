@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringGiven
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektName
+import com.ivianuu.injekt.compiler.toMap
 import com.ivianuu.injekt.compiler.transform.toKotlinType
 import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
@@ -116,16 +117,23 @@ class ProviderGivenNode(
             ownerDescriptor = ownerScope.ownerDescriptor,
             trace = ownerScope.trace,
             initialGivens = type
-                .toKotlinType(context)
+                .classifier
+                .descriptor!!
+                .defaultType
                 .memberScope
                 .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
                 .first()
                 .valueParameters
                 .onEach { parameterDescriptors += it }
-                .map { parameter ->
-                    parameter
-                        .toCallableRef(context, ownerScope.trace)
-                        .makeGiven()
+                .let { parameters ->
+                    val substitutionMap = type.classifier.typeParameters
+                        .toMap(type.arguments)
+                    parameters.map { parameter ->
+                        parameter
+                            .toCallableRef(context, ownerScope.trace)
+                            .substitute(substitutionMap)
+                            .makeGiven()
+                    }
                 }
         )
     }

@@ -17,18 +17,18 @@
 package com.ivianuu.injekt.ide
 
 import com.intellij.ide.ApplicationInitializedListener
-import com.intellij.openapi.application.Application
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.extensions.Extensions
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.project.ProjectManagerListener
-import com.intellij.util.messages.Topic
 import com.ivianuu.injekt.compiler.analysis.GivenCallResolutionInterceptorExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
+import com.ivianuu.injekt.compiler.analysis.InjektTypeResolutionInterceptorExtension
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.extensions.internal.CandidateInterceptor
+import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 
 @Suppress("UnstableApiUsage")
@@ -48,6 +48,10 @@ class AppInitializer : ApplicationInitializedListener {
                         CandidateInterceptor.registerExtension(
                             project,
                             GivenCallResolutionInterceptorExtension()
+                        )
+                        TypeResolutionInterceptor.registerExtension(
+                            project,
+                            InjektTypeResolutionInterceptorExtension()
                         )
 
                         @Suppress("DEPRECATION")

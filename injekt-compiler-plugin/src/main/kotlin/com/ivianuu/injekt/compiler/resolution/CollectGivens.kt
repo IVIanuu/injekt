@@ -21,10 +21,13 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.Tuple1
 import com.ivianuu.injekt.compiler.apply
+import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.isExternalDeclaration
+import com.ivianuu.injekt.compiler.transform.toKotlinType
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
@@ -36,6 +39,7 @@ import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
@@ -127,8 +131,26 @@ fun CallableDescriptor.toCallableRef(
 fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
     context: InjektContext,
     trace: BindingTrace?,
+    type: TypeRef?,
     substitutionMap: Map<ClassifierRef, TypeRef>
 ): List<CallableRef> {
+    // special case to support @Given () -> Foo
+    if (type?.isFunctionType == true && type.isGiven) {
+        return listOf(
+            getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
+                .first()
+                .toCallableRef(context, trace)
+                .let { callable ->
+                    callable.copy(
+                        type = type.arguments.last(),
+                        isGiven = true,
+                        parameterTypes = callable.parameterTypes.toMutableMap()
+                            .also { it[callable.callable.dispatchReceiverParameter!!.injektName()] = type }
+                    ).substitute(substitutionMap)
+                }
+        )
+    }
+
     return getContributedDescriptors()
         .flatMap { declaration ->
             when (declaration) {
@@ -235,14 +257,23 @@ fun CallableRef.collectGivens(
         addConstrainedGiven(this)
         return
     }
-    addGiven(this)
-    val combinedSubstitutionMap = substitutionMap + type.classifier.typeParameters
-        .zip(type.arguments)
-    callable
-        .returnType!!
-        .memberScope
-        .collectGivens(context, trace, combinedSubstitutionMap)
-        .forEach {
+
+    val nextCallable = if (type.isFunctionType && type.isGiven)
+        copy(type = type.copy(frameworkKey = generateFrameworkKey()))
+    else this
+    addGiven(nextCallable)
+
+    val combinedSubstitutionMap = substitutionMap + nextCallable.type.classifier.typeParameters
+        .zip(nextCallable.type.arguments)
+
+    nextCallable
+        .type
+        .classifier
+        .descriptor
+        ?.defaultType
+        ?.memberScope
+        ?.collectGivens(context, trace, nextCallable.type, combinedSubstitutionMap)
+        ?.forEach {
             it.collectGivens(
                 context,
                 scope,

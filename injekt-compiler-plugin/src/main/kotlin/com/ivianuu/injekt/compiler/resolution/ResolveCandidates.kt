@@ -266,13 +266,18 @@ private fun ResolutionScope.resolveCandidate(
         when (val dependencyResult = dependencyScope.resolveRequest(dependency)) {
             is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
             is ResolutionResult.Failure -> {
-                if (dependency.required || dependencyResult !is ResolutionResult.Failure.NoCandidates) {
-                    return@computeForCandidate ResolutionResult.Failure.DependencyFailure(
-                        dependency,
-                        dependencyResult
-                    )
-                } else {
-                    successDependencyResults[dependency] = ResolutionResult.Success.DefaultValue
+                when {
+                    candidate is ProviderGivenNode && dependencyResult is ResolutionResult.Failure.NoCandidates ->
+                        return@computeForCandidate ResolutionResult.Failure.NoCandidates
+                    dependency.required || dependencyResult !is ResolutionResult.Failure.NoCandidates -> {
+                        return@computeForCandidate ResolutionResult.Failure.DependencyFailure(
+                            dependency,
+                            dependencyResult
+                        )
+                    }
+                    else -> {
+                        successDependencyResults[dependency] = ResolutionResult.Success.DefaultValue
+                    }
                 }
             }
         }

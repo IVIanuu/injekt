@@ -394,6 +394,7 @@ fun TypeRef.render(depth: Int = 0): String {
                     } else ""
                 }"
             } + listOfNotNull(
+                if (isGiven) "@Given" else null,
                 if (isMarkedComposable) "@Composable" else null,
             )
 
@@ -417,6 +418,7 @@ fun TypeRef.render(depth: Int = 0): String {
                 append(">")
             }
             if (isMarkedNullable && !isStarProjection) append("?")
+            frameworkKey?.let { append("[$it]") }
         }
         inner()
     }

@@ -204,4 +204,28 @@ class ProviderTest {
         """
     )
 
+    @Test
+    fun testProviderWhichReturnsItsParameter() = codegen(
+        """
+            @Given val foo = Foo()
+            fun invoke(): Foo {
+                return given<(@Given Foo) -> Foo>()(Foo())
+            }
+        """
+    ) {
+        invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
+    }
+
+    @Test
+    fun testProviderWithoutCandidatesError() = codegen(
+        """
+            fun invoke() {
+                given<() -> Foo>()
+            }
+        """
+    ) {
+        compilationShouldHaveFailed("no given argument found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter value of function com.ivianuu.injekt.given")
+    }
+
 }

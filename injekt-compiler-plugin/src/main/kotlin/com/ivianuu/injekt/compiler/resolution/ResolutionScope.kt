@@ -127,8 +127,7 @@ class ResolutionScope(
             if (type.qualifiers.isEmpty() &&
                 type.frameworkKey == null) {
                 if (type.isFunctionType &&
-                    type.arguments.dropLast(1).all { it.isGiven } &&
-                    givensForType(type.arguments.last()).isNotEmpty()) {
+                    type.arguments.dropLast(1).all { it.isGiven }) {
                     this += ProviderGivenNode(
                         type = type,
                         ownerScope = this@ResolutionScope,
@@ -310,7 +309,7 @@ fun HierarchicalResolutionScope(
             ownerDescriptor = null,
             trace = trace,
             initialGivens = importScopes
-                .flatMap { it.collectGivens(context, trace, emptyMap()) }
+                .flatMap { it.collectGivens(context, trace, null, emptyMap()) }
         ).also { trace.record(InjektWritableSlices.IMPORT_RESOLUTION_SCOPE, importScopes, it) }
 
     return allScopes
@@ -389,7 +388,7 @@ fun HierarchicalResolutionScope(
                                 .firstIsInstance<LexicalScope>()
                                 .ownerDescriptor,
                             trace = trace,
-                            initialGivens = next.collectGivens(context, trace, emptyMap())
+                            initialGivens = next.collectGivens(context, trace, null, emptyMap())
                         ).also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, next, it) }
                 }
             }
