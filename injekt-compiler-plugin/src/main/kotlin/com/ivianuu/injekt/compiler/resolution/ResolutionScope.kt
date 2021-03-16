@@ -19,8 +19,10 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -119,6 +121,7 @@ class ResolutionScope(
                     it.type.frameworkKey == type.frameworkKey
                             && it.type.isAssignableTo(context, type)
                 }
+                .filter { it.isApplicable() }
                 .map { it.toGivenNode(type, this@ResolutionScope) }
 
             if (type.qualifiers.isEmpty() &&
@@ -252,6 +255,28 @@ class ResolutionScope(
                     }
             }
         )
+    }
+
+    private fun CallableRef.isApplicable(): Boolean {
+        var isApplicable = true
+        if (callable is PropertyDescriptor &&
+                callable.dispatchReceiverParameter != null) {
+            val containing = callable.containingDeclaration
+            if (containing is ClassDescriptor &&
+                    containing.kind == ClassKind.CLASS) {
+                val containingClassifier = containing.toClassifierRef(context, trace)
+                if (callable.name in
+                    containingClassifier.primaryConstructorPropertyParameters) {
+                    isApplicable = allScopes.any { it.ownerDescriptor == containing } ||
+                            givensForType(parameterTypes["_dispatchReceiver"]!!)
+                                .any { classGiven ->
+                                    classGiven.dependencies.none { it.type == type }
+                                }
+                }
+            }
+        }
+
+        return isApplicable
     }
 
     override fun toString(): String = "ResolutionScope($name)"
