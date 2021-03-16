@@ -291,7 +291,9 @@ class GivenDeclarationTest {
     fun testGivenLocalClass() = codegen(
         """
             fun invoke(_foo: Foo): Foo {
-                @Given class FooProvider(@Given val foo: Foo = _foo)
+                @Given class FooProvider(@Given __foo: Foo = _foo) {
+                    val foo = __foo
+                }
                 return given<FooProvider>().foo
             }
         """

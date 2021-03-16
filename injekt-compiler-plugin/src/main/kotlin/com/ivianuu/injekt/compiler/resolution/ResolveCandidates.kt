@@ -20,7 +20,8 @@ import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
-import kotlin.math.sign
+import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 sealed class GivenGraph {
     data class Success(
@@ -36,45 +37,68 @@ sealed class GivenGraph {
 }
 
 sealed class ResolutionResult {
-    data class Success(
-        val candidate: GivenNode,
-        val scope: ResolutionScope,
-        val dependencyResults: Map<GivenRequest, Success>
-    ) : ResolutionResult() {
-        val outerMostScope: ResolutionScope by unsafeLazy {
-            when {
-                dependencyResults.isEmpty() -> scope.allScopes.first {
-                    it.allParents.size >= candidate.ownerScope.allParents.size &&
-                            it.callContext.canCall(candidate.callContext)
-                }
-                candidate.dependencyScope != null -> {
-                    val allOuterMostScopes = mutableListOf<ResolutionScope>()
-                    fun Success.visit() {
-                        allOuterMostScopes += outerMostScope
-                        dependencyResults.forEach { it.value.visit() }
-                    }
-                    dependencyResults.values.single().visit()
-                    allOuterMostScopes
-                        .sortedBy { it.allParents.size }
-                        .filter { it.allParents.size < candidate.dependencyScope!!.allParents.size }
-                        .lastOrNull {
-                            it.callContext.canCall(candidate.callContext)
-                        } ?: scope.allScopes.first()
-                }
-                else -> {
-                    val dependencyScope = dependencyResults.maxByOrNull {
-                        it.value.outerMostScope.allParents.size
-                    }!!.value.outerMostScope
+    sealed class Success : ResolutionResult() {
+        object DefaultValue : Success()
+        sealed class WithCandidate : ResolutionResult.Success() {
+            abstract val candidate: GivenNode
+            abstract val scope: ResolutionScope
+            data class CircularDependency(
+                override val candidate: GivenNode,
+                override val scope: ResolutionScope
+            ) : Success.WithCandidate()
+            data class Value(
+                override val candidate: GivenNode,
+                override val scope: ResolutionScope,
+                val dependencyResults: Map<GivenRequest, Success>
+            ) : Success.WithCandidate() {
+                val outerMostScope: ResolutionScope by unsafeLazy {
                     when {
-                        dependencyScope.allParents.size <
-                                candidate.ownerScope.allParents.size -> scope.allScopes.first {
+                        dependencyResults.isEmpty() -> scope.allScopes.first {
                             it.allParents.size >= candidate.ownerScope.allParents.size &&
-                                    it.callContext.canCall(scope.callContext)
+                                    it.callContext.canCall(candidate.callContext)
                         }
-                        dependencyScope.callContext.canCall(scope.callContext) -> dependencyScope
-                        else -> scope.allScopes.first {
-                            it.allParents.size >= candidate.ownerScope.allParents.size &&
-                                    it.callContext.canCall(scope.callContext)
+                        candidate.dependencyScope != null -> {
+                            val allOuterMostScopes = mutableListOf<ResolutionScope>()
+                            fun Value.visit() {
+                                allOuterMostScopes += outerMostScope
+                                dependencyResults.forEach {
+                                    (it.value as? Value)?.visit()
+                                }
+                            }
+                            dependencyResults.values.single().cast<Value>().visit()
+                            allOuterMostScopes
+                                .sortedBy { it.allParents.size }
+                                .filter { it.allParents.size < candidate.dependencyScope!!.allParents.size }
+                                .lastOrNull {
+                                    it.callContext.canCall(candidate.callContext)
+                                } ?: scope.allScopes.first()
+                        }
+                        else -> {
+                            val dependencyScope = dependencyResults
+                                .filterValues { it is Value }
+                                .mapValues { it.value as Value }
+                                .maxByOrNull {
+                                    it.value.outerMostScope.allParents.size
+                                }?.value?.outerMostScope
+                            if (dependencyScope != null) {
+                                when {
+                                    dependencyScope.allParents.size <
+                                            candidate.ownerScope.allParents.size -> scope.allScopes.first {
+                                        it.allParents.size >= candidate.ownerScope.allParents.size &&
+                                                it.callContext.canCall(scope.callContext)
+                                    }
+                                    dependencyScope.callContext.canCall(scope.callContext) -> dependencyScope
+                                    else -> scope.allScopes.first {
+                                        it.allParents.size >= candidate.ownerScope.allParents.size &&
+                                                it.callContext.canCall(scope.callContext)
+                                    }
+                                }
+                            } else {
+                                scope.allScopes.first {
+                                    it.allParents.size >= candidate.ownerScope.allParents.size &&
+                                            it.callContext.canCall(scope.callContext)
+                                }
+                            }
                         }
                     }
                 }
@@ -85,7 +109,7 @@ sealed class ResolutionResult {
     sealed class Failure : ResolutionResult() {
         abstract val failureOrdering: Int
 
-        data class CandidateAmbiguity(val candidateResults: List<Success>) : Failure() {
+        data class CandidateAmbiguity(val candidateResults: List<Success.WithCandidate.Value>) : Failure() {
             override val failureOrdering: Int
                 get() = 0
         }
@@ -170,7 +194,7 @@ private fun ResolutionScope.computeForCandidate(
     }
 
     if (candidate in chain)
-        return ResolutionResult.Success(candidate, this, emptyMap())
+        return ResolutionResult.Success.WithCandidate.CircularDependency(candidate, this)
 
     chain += candidate
     val result = compute()
@@ -196,7 +220,8 @@ private fun ResolutionScope.resolveCandidates(
         .toMutableList()
     while (remaining.isNotEmpty()) {
         val candidate = remaining.removeAt(0)
-        if (compareCandidate(successes.firstOrNull()?.candidate, candidate) < 0) {
+        if (compareCandidate(successes.firstOrNull()
+                ?.safeAs<ResolutionResult.Success.WithCandidate>()?.candidate, candidate) < 0) {
             // we cannot get a better result
             break
         }
@@ -221,7 +246,7 @@ private fun ResolutionScope.resolveCandidates(
 
     return if (successes.isNotEmpty()) {
         successes.singleOrNull()
-            ?: ResolutionResult.Failure.CandidateAmbiguity(successes)
+            ?: ResolutionResult.Failure.CandidateAmbiguity(successes.cast())
     } else failure!!
 }
 
@@ -233,7 +258,7 @@ private fun ResolutionScope.resolveCandidate(
     }
 
     if (candidate.dependencies.isEmpty())
-        return@computeForCandidate ResolutionResult.Success(candidate, this, emptyMap())
+        return@computeForCandidate ResolutionResult.Success.WithCandidate.Value(candidate, this, emptyMap())
 
     val successDependencyResults = mutableMapOf<GivenRequest, ResolutionResult.Success>()
     val dependencyScope = candidate.dependencyScope ?: this
@@ -246,11 +271,13 @@ private fun ResolutionScope.resolveCandidate(
                         dependency,
                         dependencyResult
                     )
+                } else {
+                    successDependencyResults[dependency] = ResolutionResult.Success.DefaultValue
                 }
             }
         }
     }
-    return@computeForCandidate ResolutionResult.Success(candidate, this, successDependencyResults)
+    return@computeForCandidate ResolutionResult.Success.WithCandidate.Value(candidate, this, successDependencyResults)
 }
 
 private fun ResolutionScope.compareResult(
@@ -270,22 +297,33 @@ private fun ResolutionScope.compareResult(
 
     if (a is ResolutionResult.Success &&
             b is ResolutionResult.Success) {
-        var diff = compareCandidate(a.candidate, b.candidate)
-        if (diff < 0) return -1
-        else if (diff > 0) return 1
+        if (a !is ResolutionResult.Success.DefaultValue &&
+                b is ResolutionResult.Success.DefaultValue) return -1
+        if (b !is ResolutionResult.Success.DefaultValue &&
+            a is ResolutionResult.Success.DefaultValue) return 1
 
-        diff = 0
+        if (a is ResolutionResult.Success.WithCandidate &&
+            b is ResolutionResult.Success.WithCandidate) {
+            var diff = compareCandidate(a.candidate, b.candidate)
+            if (diff < 0) return -1
+            else if (diff > 0) return 1
 
-        for (aDependency in a.dependencyResults) {
-            for (bDependency in b.dependencyResults) {
-                diff += compareResult(aDependency.value, bDependency.value)
+            diff = 0
+
+            if (a is ResolutionResult.Success.WithCandidate.Value &&
+                    b is ResolutionResult.Success.WithCandidate.Value) {
+                for (aDependency in a.dependencyResults) {
+                    for (bDependency in b.dependencyResults) {
+                        diff += compareResult(aDependency.value, bDependency.value)
+                    }
+                }
             }
-        }
-        return when {
-            diff < 0 -> -1
-            diff > 0 -> 1
-            else -> 0
-        }
+            return when {
+                diff < 0 -> -1
+                diff > 0 -> 1
+                else -> 0
+            }
+        } else throw AssertionError()
     } else if (a is ResolutionResult.Failure &&
             b is ResolutionResult.Failure) {
         return a.failureOrdering.compareTo(b.failureOrdering)

@@ -80,6 +80,7 @@ class GivenCallChecker(
                 )
                 val visited = mutableSetOf<ResolutionResult.Success>()
                 fun ResolutionResult.Success.visit() {
+                    if (this !is ResolutionResult.Success.WithCandidate.Value) return
                     if (!visited.add(this)) return
                     if (candidate is CallableGivenNode) {
                         context.trace.record(
