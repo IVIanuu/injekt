@@ -16,13 +16,16 @@
 
 package com.ivianuu.injekt.gradle
 
+import com.android.build.gradle.api.BaseVariant
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSetContainer
+import org.jetbrains.kotlin.gradle.dsl.KotlinCompile
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmAndroidCompilation
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
+fun KotlinCompile<*>.setupForInjekt(): Provider<List<SubpluginOption>> {
     val compilation = AbstractKotlinCompile::class.java
         .getDeclaredMethod("getTaskData\$kotlin_gradle_plugin")
         .invoke(this)
@@ -31,10 +34,10 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
                 .getDeclaredMethod("getCompilation")
                 .invoke(taskData) as KotlinCompilation<*>
         }
-    val androidVariantData: com.android.build.gradle.api.BaseVariant? =
-        (compilation as? org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmAndroidCompilation)?.androidVariant
+    val androidVariantData: BaseVariant? =
+        (compilation as? KotlinJvmAndroidCompilation)?.androidVariant
 
-    if (this is KotlinCompile) {
+    if (this is org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
         usePreciseJavaTracking = false
     }
 
@@ -81,14 +84,16 @@ fun AbstractKotlinCompile<*>.setupForInjekt(): List<SubpluginOption> {
                 "incremental fix enabled ${extension.incrementalFixEnabled}")
     }
 
-    return listOf(
-        SubpluginOption(
-            key = "cacheDir",
-            value = cacheDir.absolutePath
-        ),
-        SubpluginOption(
-            key = "dumpDir",
-            value = dumpDir.absolutePath
+    return project.provider {
+        listOf(
+            SubpluginOption(
+                key = "cacheDir",
+                value = cacheDir.absolutePath
+            ),
+            SubpluginOption(
+                key = "dumpDir",
+                value = dumpDir.absolutePath
+            )
         )
-    )
+    }
 }

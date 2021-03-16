@@ -18,31 +18,31 @@ package com.ivianuu.injekt.gradle
 
 import com.google.auto.service.AutoService
 import org.gradle.api.Project
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.jetbrains.kotlin.gradle.dsl.KotlinCommonOptions
 import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
+import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
 import org.jetbrains.kotlin.gradle.plugin.KotlinGradleSubplugin
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinMetadataCompilation
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 
-@AutoService(KotlinGradleSubplugin::class)
-open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
+@AutoService(KotlinCompilerPluginSupportPlugin::class)
+open class InjektPlugin : KotlinCompilerPluginSupportPlugin {
+    override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean =
+        kotlinCompilation.target.project.plugins.hasPlugin(InjektPlugin::class.java) &&
+                kotlinCompilation !is KotlinMetadataCompilation<*> &&
+                kotlinCompilation.compileKotlinTask !is KaptGenerateStubsTask
 
-    override fun isApplicable(project: Project, task: AbstractCompile) =
-        project.plugins.hasPlugin(InjektGradlePlugin::class.java) &&
-                task !is KaptGenerateStubsTask
+    override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> =
+        kotlinCompilation.compileKotlinTask.setupForInjekt()
 
-    override fun apply(
-        project: Project,
-        kotlinCompile: AbstractCompile,
-        javaCompile: AbstractCompile?,
-        variantData: Any?,
-        androidProjectHandler: Any?,
-        kotlinCompilation: KotlinCompilation<KotlinCommonOptions>?,
-    ): List<SubpluginOption> = (kotlinCompile as AbstractKotlinCompile<*>)
-        .setupForInjekt()
+    override fun apply(target: Project) {
+        target.extensions.add(InjektExtension::class.java, "injekt", InjektExtension())
+    }
 
     override fun getCompilerPluginId(): String = "com.ivianuu.injekt"
 

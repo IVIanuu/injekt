@@ -28,7 +28,7 @@ gradlePlugin {
     plugins {
         create("injektPlugin") {
             id = "com.ivianuu.injekt"
-            implementationClass = "com.ivianuu.injekt.gradle.InjektGradlePlugin"
+            implementationClass = "com.ivianuu.injekt.gradle.InjektPlugin"
         }
     }
 }
@@ -39,7 +39,7 @@ buildConfig {
 
     version = property("VERSION_NAME").toString()
     buildConfigField("String", "GROUP_ID", property("GROUP").toString())
-    buildConfigField("String", "ARTIFACT_ID", property("POM_ARTIFACT_ID").toString())
+    buildConfigField("String", "ARTIFACT_ID", "injekt-compiler-plugin")
 }
 
 dependencies {

@@ -26,7 +26,6 @@ import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 import java.io.File
 
 abstract class CleanGeneratedFiles : DefaultTask() {
-
     @get:InputFiles
     @get:Optional
     lateinit var cacheDir: File
@@ -156,5 +155,4 @@ abstract class CleanGeneratedFiles : DefaultTask() {
             log("clean files: Do not force recompilation: is enabled: $incrementalFixEnabled, has changes: $hasChanges")
         }
     }
-
 }
