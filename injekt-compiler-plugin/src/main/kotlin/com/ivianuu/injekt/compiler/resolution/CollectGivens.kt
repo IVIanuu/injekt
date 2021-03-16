@@ -171,10 +171,14 @@ fun Annotated.isGiven(context: InjektContext, trace: BindingTrace?): Boolean {
         isGiven = overriddenTreeUniqueAsSequence(false)
             .map { it.containingDeclaration }
             .filterIsInstance<ClassDescriptor>()
-            .mapNotNull { it.unsubstitutedPrimaryConstructor }
-            .flatMap { it.valueParameters }
-            .filter { it.name == name }
-            .filter { it.isGiven(context, trace) }
+            .flatMap { clazz ->
+                val clazzClassifier = clazz.toClassifierRef(context, trace)
+                clazz.unsubstitutedPrimaryConstructor
+                    ?.valueParameters
+                    ?.filter { it.name in clazzClassifier.primaryConstructorPropertyParameters }
+                    ?.filter { it.isGiven(context, trace) }
+                    ?: emptyList()
+            }
             .any() == true
     }
     if (!isGiven && this is ParameterDescriptor) {

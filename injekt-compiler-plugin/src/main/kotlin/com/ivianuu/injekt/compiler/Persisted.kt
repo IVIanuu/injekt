@@ -49,9 +49,13 @@ import com.squareup.moshi.JsonClass
 import dev.zacsweers.moshix.sealed.annotations.TypeLabel
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtParameter
+import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -115,13 +119,16 @@ fun CallableRef.apply(
 data class PersistedClassifierInfo(
     val fqName: String,
     val qualifiers: List<PersistedAnnotationRef>,
-    val superTypes: List<PersistedTypeRef>
+    val superTypes: List<PersistedTypeRef>,
+    val primaryConstructorPropertyParameters: List<String>
 )
 
 fun ClassifierRef.toPersistedClassifierInfo(context: InjektContext) = PersistedClassifierInfo(
     fqName = descriptor!!.fqNameSafe.asString(),
     qualifiers = qualifiers.map { it.toPersistedAnnotationRef(context) },
-    superTypes = superTypes.map { it.toPersistedTypeRef(context) }
+    superTypes = superTypes.map { it.toPersistedTypeRef(context) },
+    primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
+        .map { it.asString() }
 )
 
 @JsonClass(generateAdapter = true)
@@ -163,7 +170,8 @@ fun PersistedTypeRef.toTypeRef(context: InjektContext, trace: BindingTrace?): Ty
 data class PersistedClassifierRef(
     val key: String,
     val superTypes: List<PersistedTypeRef>,
-    val qualifiers: List<PersistedAnnotationRef>
+    val qualifiers: List<PersistedAnnotationRef>,
+    val primaryConstructorPropertyParameters: List<String>
 )
 
 fun ClassifierRef.toPersistedClassifierRef(
@@ -179,7 +187,9 @@ fun ClassifierRef.toPersistedClassifierRef(
             ?: descriptor.uniqueKey(context)
      } else descriptor!!.uniqueKey(context),
     superTypes = superTypes.map { it.toPersistedTypeRef(context) },
-    qualifiers = qualifiers.map { it.toPersistedAnnotationRef(context) }
+    qualifiers = qualifiers.map { it.toPersistedAnnotationRef(context) },
+    primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
+        .map { it.asString() }
 )
 
 fun PersistedClassifierRef.toClassifierRef(
@@ -189,10 +199,12 @@ fun PersistedClassifierRef.toClassifierRef(
     return context.classifierDescriptorForKey(key, trace)
         .toClassifierRef(context, trace)
         .let { raw ->
-            if (superTypes.isNotEmpty() || qualifiers.isNotEmpty())
+            if (superTypes.isNotEmpty() || qualifiers.isNotEmpty() || primaryConstructorPropertyParameters.isNotEmpty())
                 raw.copy(
                     superTypes = superTypes.map { it.toTypeRef(context, trace) },
-                    qualifiers = qualifiers.map { it.toAnnotationRef(context, trace) }
+                    qualifiers = qualifiers.map { it.toAnnotationRef(context, trace) },
+                    primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
+                        .map { it.asNameId() }
                 )
             else raw
         }
@@ -201,7 +213,8 @@ fun PersistedClassifierRef.toClassifierRef(
 fun PersistedClassifierRef.toPersistedClassifierInfo() = PersistedClassifierInfo(
     fqName = key.split(":")[1],
     qualifiers = qualifiers,
-    superTypes = superTypes
+    superTypes = superTypes,
+    primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
 )
 
 fun ClassifierRef.apply(
@@ -212,7 +225,8 @@ fun ClassifierRef.apply(
     return if (info == null || !descriptor!!.isExternalDeclaration()) this
     else copy(
         qualifiers = info.qualifiers.map { it.toAnnotationRef(context, trace) },
-        superTypes = info.superTypes.map { it.toTypeRef(context, trace) }
+        superTypes = info.superTypes.map { it.toTypeRef(context, trace) },
+        primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters.map { it.asNameId() }
     )
 }
 

@@ -42,7 +42,7 @@ class ProviderTest {
     }
 
     @Test
-    fun testCannotRequestProviderForNonExistingGIven() = codegen(
+    fun testCannotRequestProviderForNonExistingGiven() = codegen(
         """ 
             fun invoke(): Foo {
                 return given<() -> Foo>()()

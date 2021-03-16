@@ -33,12 +33,17 @@ import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi.KtParameter
+import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.getAbbreviation
 import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 data class ClassifierRef(
     val fqName: FqName,
@@ -49,7 +54,8 @@ data class ClassifierRef(
     val isTypeAlias: Boolean = false,
     val descriptor: ClassifierDescriptor? = null,
     val qualifiers: List<AnnotationRef> = emptyList(),
-    val isGivenConstraint: Boolean = false
+    val isGivenConstraint: Boolean = false,
+    val primaryConstructorPropertyParameters: List<Name> = emptyList()
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
     override fun hashCode(): Int = fqName.hashCode()
@@ -95,7 +101,15 @@ fun ClassifierDescriptor.toClassifierRef(
         isTypeAlias = this is TypeAliasDescriptor,
         descriptor = this,
         qualifiers = qualifiers,
-        isGivenConstraint = this is TypeParameterDescriptor && hasAnnotation(InjektFqNames.Given)
+        isGivenConstraint = this is TypeParameterDescriptor && hasAnnotation(InjektFqNames.Given),
+        primaryConstructorPropertyParameters = this
+            .takeIf { !it.isExternalDeclaration() }
+            .safeAs<ClassDescriptor>()
+            ?.unsubstitutedPrimaryConstructor
+            ?.valueParameters
+            ?.filter { it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true }
+            ?.map { it.name }
+            ?: emptyList()
     ).let {
         if (original.isExternalDeclaration()) it.apply(
             context,

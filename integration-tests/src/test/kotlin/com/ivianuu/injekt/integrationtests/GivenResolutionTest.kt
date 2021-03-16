@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.compiler.resolution.render
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
@@ -803,4 +804,16 @@ class GivenResolutionTest {
                 """
     )
 
+    @Test
+    fun testCannotResolvePropertyWithTheSameNameAsAnGivenPrimaryConstructorParameter() = codegen(
+        """
+            @Given class MyClass(@Given foo: Foo) {
+                val foo = foo
+            }
+
+            fun invoke() = given<Foo>()
+        """
+    ) {
+        compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.given")
+    }
 }
