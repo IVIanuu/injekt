@@ -39,7 +39,7 @@ typealias App = Any
 val @Given AppComponent.app: App
     get() = element()
 
-private lateinit var _appComponent: AppComponent
+private var _appComponent: AppComponent? = null
 
 val App.appComponent: AppComponent
-    get() = _appComponent
+    get() = _appComponent ?: error("app component not initialized. Did you forget to call initializeApp()?")
