@@ -56,7 +56,7 @@ class ProviderTest {
         """ 
             typealias ComponentA = Component
 
-            fun createComponentA() = ComponentBuilder<ComponentA>()
+            fun createComponentA() = ComponentBuilder<ComponentA>(initializers = { emptySet() })
                 .build()
 
             typealias ComponentB = Component
@@ -132,7 +132,7 @@ class ProviderTest {
         listOf(
             source(
                 """
-                    fun createComponentA() = ComponentBuilder<ComponentA>().build()
+                    fun createComponentA() = ComponentBuilder<ComponentA>(initializers = { emptySet() }).build()
 
                     @ComponentElementBinding<ComponentC>
                     @Given class MyComponent(

@@ -143,20 +143,22 @@ class ResolutionScope(
                             }
                     }
 
-                    val elements = elementTypes
-                        .mapIndexed { index, element ->
-                            GivenRequest(
-                                type = element,
-                                required = true,
-                                callableFqName = FqName("com.ivianuu.injekt.givenSetOf"),
-                                parameterName = "element$index".asNameId()
-                            )
-                        }
-                    this += SetGivenNode(
-                        type = type,
-                        ownerScope = this@ResolutionScope,
-                        dependencies = elements
-                    )
+                    if (elementTypes.isNotEmpty()) {
+                        val elements = elementTypes
+                            .mapIndexed { index, element ->
+                                GivenRequest(
+                                    type = element,
+                                    required = true,
+                                    callableFqName = FqName("com.ivianuu.injekt.givenSetOf"),
+                                    parameterName = "element$index".asNameId()
+                                )
+                            }
+                        this += SetGivenNode(
+                            type = type,
+                            ownerScope = this@ResolutionScope,
+                            dependencies = elements
+                        )
+                    }
                 }
             }
         }

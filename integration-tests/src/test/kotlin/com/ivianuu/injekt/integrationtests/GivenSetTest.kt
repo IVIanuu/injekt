@@ -22,6 +22,7 @@ import com.ivianuu.injekt.test.CommandA
 import com.ivianuu.injekt.test.CommandB
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
@@ -76,12 +77,12 @@ class GivenSetTest {
     }
 
     @Test
-    fun testEmptyDefault() = codegen(
+    fun testSetWithoutContributions() = codegen(
         """
             fun invoke() = given<Set<Command>>()
         """
     ) {
-        emptySet<Command>() shouldBe invokeSingleFile()
+        compilationShouldHaveFailed("no given argument found of type kotlin.collections.Set<com.ivianuu.injekt.test.Command> for parameter value of function com.ivianuu.injekt.given")
     }
 
     @Test

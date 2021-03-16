@@ -21,14 +21,14 @@ import com.ivianuu.injekt.Given
 typealias AppComponent = Component
 
 /**
- * Initializes the [AppComponent] with [elementsFactory] and [initializersFactory]
+ * Initializes the [AppComponent] with [elements] and [initializers]
  * And can then be accessed via [appComponent]
  */
 fun App.initializeApp(
-    @Given elementsFactory: (@Given AppComponent) -> Set<ComponentElement<AppComponent>>,
-    @Given initializersFactory: (@Given AppComponent) -> Set<ComponentInitializer<AppComponent>>
+    @Given elements: (@Given AppComponent) -> Set<ComponentElement<AppComponent>>,
+    @Given initializers: (@Given AppComponent) -> Set<ComponentInitializer<AppComponent>>
 ) {
-    _appComponent = ComponentBuilder<AppComponent>(elementsFactory, initializersFactory)
+    _appComponent = ComponentBuilder<AppComponent>(elements, initializers)
         .element { this }
         .build()
 }

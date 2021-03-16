@@ -75,15 +75,20 @@ fun <T> Component.element(key: TypeKey<T>): T = elementOrNull(key)
 /**
  * Returns a new [Component.Builder] instance
  */
-@Given
 fun <@ForTypeKey C : Component> ComponentBuilder(
-    @Given elementsFactory: (@Given C) -> Set<ComponentElement<C>>,
-    @Given initializersFactory: (@Given C) -> Set<ComponentInitializer<C>>
+    @Given elements: (@Given C) -> Set<ComponentElement<C>>,
+    @Given initializers: (@Given C) -> Set<ComponentInitializer<C>>
 ): Component.Builder<C> = ComponentImpl.Builder(
     typeKeyOf<C>(),
-    elementsFactory as (Component) -> Set<ComponentElement<Component>>,
-    initializersFactory as (Component) -> Set<ComponentInitializer<Component>>,
+    elements as (Component) -> Set<ComponentElement<Component>>,
+    initializers as (Component) -> Set<ComponentInitializer<Component>>,
 )
+
+@Given
+fun <@ForTypeKey C : Component> componentBuilder(
+    @Given elements: (@Given C) -> Set<ComponentElement<C>> = { emptySet() },
+    @Given initializers: (@Given C) -> Set<ComponentInitializer<C>> = { emptySet() }
+) = ComponentBuilder(elements, initializers)
 
 fun <C : Component, @ForTypeKey T> Component.Builder<C>.element(factory: () -> T) =
     element(typeKeyOf(), factory)
@@ -147,8 +152,8 @@ internal class ComponentImpl(
 
     class Builder<C : Component>(
         private val key: TypeKey<Component>,
-        private val injectedElementsFactory: (Component) -> Set<ComponentElement<C>>,
-        private val injectedInitializersFactory: (Component) -> Set<ComponentInitializer<C>>
+        private val injectedElements: (Component) -> Set<ComponentElement<C>>,
+        private val injectedInitializers: (Component) -> Set<ComponentInitializer<C>>
     ) : Component.Builder<C> {
         private var dependencies: MutableList<Component>? = null
         private var elements: MutableMap<TypeKey<*>, () -> Any?>? = null
@@ -173,9 +178,9 @@ internal class ComponentImpl(
             }
 
         override fun build(): C {
-            val component = ComponentImpl(key, dependencies, elements, injectedElementsFactory) as C
+            val component = ComponentImpl(key, dependencies, elements, injectedElements) as C
             initializers?.forEach { it(component) }
-            injectedInitializersFactory(component).forEach { it(component) }
+            injectedInitializers(component).forEach { it(component) }
             return component
         }
     }
