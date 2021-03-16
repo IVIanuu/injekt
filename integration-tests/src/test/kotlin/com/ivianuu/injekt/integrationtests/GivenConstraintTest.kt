@@ -319,12 +319,10 @@ class GivenConstraintTest {
     @Test
     fun testCanResolveTypeWithConstraintTypeArgument() = codegen(
         """
-            @Qualifier annotation class Trigger
-            @Given fun <@Given T : @Trigger Any?> triggerImpl(
+            @Given fun <@Given T : String> triggerImpl(
                 @Given pair: Pair<T, T>
             ): Int = 0
 
-            @Trigger
             @Given
             val string = ""
 

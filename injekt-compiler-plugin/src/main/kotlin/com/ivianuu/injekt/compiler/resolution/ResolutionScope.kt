@@ -115,7 +115,10 @@ class ResolutionScope(
                 ?.filterNot { it.isFrameworkGiven }
                 ?.let { this += it }
             this += givens
-                .filter { it.type.isAssignableTo(context, type) }
+                .filter {
+                    it.type.frameworkKey == type.frameworkKey
+                            && it.type.isAssignableTo(context, type)
+                }
                 .map { it.toGivenNode(type, this@ResolutionScope) }
 
             if (type.qualifiers.isEmpty() &&
@@ -169,6 +172,7 @@ class ResolutionScope(
         if (givens.isEmpty()) return parentSetElements
         return setElementsByType.getOrPut(type) {
             parentSetElements + givens
+                .filter { it.type.frameworkKey == type.frameworkKey }
                 .filter { it.type.isAssignableTo(context, type) }
                 .map { it.substitute(getSubstitutionMap(context, listOf(type to it.type))) }
                 .map { callable ->
