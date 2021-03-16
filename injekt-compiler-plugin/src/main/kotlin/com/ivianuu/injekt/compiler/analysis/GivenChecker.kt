@@ -28,6 +28,7 @@ import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -38,14 +39,17 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -105,6 +109,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                 }
 
             } else {
+                checkOverrides(declaration, descriptor, context.trace)
                 checkGivenTypeParametersOnNonGivenFunction(descriptor.typeParameters, context.trace)
             }
         } else if (descriptor is ConstructorDescriptor) {
@@ -198,6 +203,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                     }
             }
         } else if (descriptor is PropertyDescriptor) {
+            checkOverrides(declaration, descriptor, context.trace)
             checkGivenTypeParametersOnNonGivenFunction(descriptor.typeParameters, context.trace)
             if (descriptor.hasAnnotation(InjektFqNames.Given)) {
                 checkUnresolvableGivenTypeParameters(declaration,
@@ -217,6 +223,22 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
             }
         } else if (descriptor is TypeAliasDescriptor) {
             checkGivenTypeParametersOnNonGivenFunction(descriptor.declaredTypeParameters, context.trace)
+        }
+    }
+
+    private fun checkOverrides(
+        declaration: KtDeclaration,
+        descriptor: CallableDescriptor,
+        trace: BindingTrace
+    ) {
+        val isGiven = descriptor.hasAnnotation(InjektFqNames.Given)
+        if (isGiven) return
+        if (descriptor.overriddenTreeUniqueAsSequence(false)
+                .any { it.isGiven(context, trace) }) {
+            trace.report(
+                InjektErrors.NO_GIVEN_ANNOTATION_ON_GIVEN_OVERRIDE
+                    .on(declaration)
+            )
         }
     }
 

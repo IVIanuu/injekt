@@ -160,6 +160,16 @@ interface InjektErrors {
                     )
                 }
 
+        @JvmField
+        val NO_GIVEN_ANNOTATION_ON_GIVEN_OVERRIDE =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "declaration which overrides a given declaration must be also marked with @Given"
+                    )
+                }
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,

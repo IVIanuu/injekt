@@ -16,10 +16,13 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
+import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.shouldContainMessage
 import com.ivianuu.injekt.test.shouldNotContainMessage
+import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
 class GivenDeclarationCheckTest {
@@ -207,4 +210,59 @@ class GivenDeclarationCheckTest {
             }
         """
     )
+
+    @Test
+    fun testGivenFunctionOverrideWithGivenAnnotation() = codegen(
+        """
+            abstract class MySuperClass {
+                @Given abstract fun foo(): Foo
+            }
+
+            @Given
+            class MySubClass : MySuperClass() {
+                @Given
+                override fun foo() = Foo()
+            }
+
+            fun invoke() = given<Foo>()
+        """
+    ) {
+        invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
+    }
+
+    @Test
+    fun testFunctionOverrideWithGivenAnnotation() = codegen(
+        """
+            abstract class MySuperClass {
+                abstract fun foo(): Foo
+            }
+
+            @Given
+            class MySubClass : MySuperClass() {
+                @Given
+                override fun foo() = Foo()
+            }
+
+            fun invoke() = given<Foo>()
+        """
+    ) {
+        invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
+    }
+
+    @Test
+    fun testGivenFunctionOverrideWithoutGivenAnnotation() = codegen(
+        """
+            abstract class MySuperClass {
+                @Given abstract fun foo(): Foo
+            }
+
+            class MySubClass : MySuperClass() {
+                override fun foo() = Foo()
+            }
+        """
+    ) {
+        compilationShouldHaveFailed("declaration which overrides a given declaration must be also marked with @Given")
+    }
 }
