@@ -642,7 +642,7 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testUsesDefaultIfNotGiven() = codegen(
+    fun testUsesDefaultValueIfNoCandidateExists() = codegen(
         """
                 fun invoke(_foo: Foo): Foo {
                     fun inner(@Given foo: Foo = _foo) = foo
@@ -652,6 +652,19 @@ class GivenResolutionTest {
     ) {
         val foo = Foo()
         foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    }
+
+    @Test
+    fun testDoesNotUseDefaultValueIfCandidateHasFailures() = codegen(
+        """
+                @Given fun bar(@Given foo: Foo) = Bar(foo)
+                fun invoke() {
+                    fun inner(@Given bar: Bar = Bar(Foo())) = bar
+                    return inner()
+                }
+            """
+    ) {
+        compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
     }
 
     @Test
