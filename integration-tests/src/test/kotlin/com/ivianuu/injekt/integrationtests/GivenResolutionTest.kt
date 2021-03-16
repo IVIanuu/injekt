@@ -16,11 +16,9 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.compiler.resolution.render
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.compilationShouldBeOk
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
@@ -816,4 +814,34 @@ class GivenResolutionTest {
     ) {
         compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.given")
     }
+
+    @Test
+    fun testCannotResolveGivenConstructorParameterIfConstructorIsCalledByUs() = codegen(
+        """
+            @Given class MyClass(@Given val foo: Foo)
+            fun invoke() = given<Foo>()
+        """
+    ) {
+        compilationShouldHaveFailed(
+            "no given argument found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.given"
+        )
+    }
+
+    @Test
+    fun testCanResolveGivenConstructorParameterFromOutsideOfTheConstructorIsNotCalledByUs() = codegen(
+        """
+            class MyClass(@Given val foo: Foo)
+            fun invoke(@Given myClass: MyClass) = given<Foo>()
+        """
+    )
+
+    @Test
+    fun testCanResolveGivenConstructorParameterFromInsideTheClass() = codegen(
+        """
+            @Given class MyClass(@Given val foo: Foo) {
+                fun invoke() = given<Foo>()
+            }
+        """
+    )
+
 }

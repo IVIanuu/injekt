@@ -281,7 +281,7 @@ fun HierarchicalResolutionScope(
 
     val importsResolutionScope = trace.get(InjektWritableSlices.IMPORT_RESOLUTION_SCOPE, importScopes)
         ?: ResolutionScope(
-            name = "IMPORTS $scope",
+            name = "IMPORTS",
             context = context,
             callContext = CallContext.DEFAULT,
             parent = null,

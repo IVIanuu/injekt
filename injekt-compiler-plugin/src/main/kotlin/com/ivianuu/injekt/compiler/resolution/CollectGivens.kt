@@ -30,7 +30,6 @@ import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
@@ -40,13 +39,8 @@ import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
-import org.jetbrains.kotlin.resolve.lazy.LazyImportScope
 import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
-import org.jetbrains.kotlin.resolve.scopes.ImportingScope
-import org.jetbrains.kotlin.resolve.scopes.LexicalScope
-import org.jetbrains.kotlin.resolve.scopes.LexicalScopeKind
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
-import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -134,7 +128,6 @@ fun CallableDescriptor.toCallableRef(
 
 fun MemberScope.collectGivens(
     context: InjektContext,
-    type: TypeRef?,
     trace: BindingTrace?,
     substitutionMap: Map<ClassifierRef, TypeRef>
 ): List<CallableRef> {
@@ -240,7 +233,7 @@ fun CallableRef.collectGivens(
     callable
         .returnType!!
         .memberScope
-        .collectGivens(context, type, trace, combinedSubstitutionMap)
+        .collectGivens(context, trace, combinedSubstitutionMap)
         .forEach {
             it.collectGivens(
                 context,
@@ -285,6 +278,6 @@ fun ResolutionScope.canSee(callable: CallableRef): Boolean =
                     !callable.callable.original.isExternalDeclaration()) ||
             (callable.callable is ClassConstructorDescriptor &&
                     callable.type.classifier.isObject) ||
-            callable.callable.parents.any {
-                it == ownerDescriptor
+            callable.callable.parents.any { callableParent ->
+                allScopes.any { it.ownerDescriptor == callableParent }
             }
