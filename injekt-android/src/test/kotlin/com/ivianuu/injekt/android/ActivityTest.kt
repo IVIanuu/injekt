@@ -35,7 +35,7 @@ class ActivityTest {
 
     @Test
     fun testActivityComponentLifecycle() {
-        initializeApp()
+        initializeApp(initializers = { emptySet() })
         val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
         lateinit var disposable: TestComponentDisposable<ActivityComponent>
         scenario.onActivity { disposable = it.activityComponent.element() }

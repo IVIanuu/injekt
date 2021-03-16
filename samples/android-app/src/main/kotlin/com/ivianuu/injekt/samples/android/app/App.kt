@@ -1,4 +1,4 @@
-// injekt-incremental-fix 1615845308623 injekt-end
+// injekt-incremental-fix 1615900390154 injekt-end
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -19,6 +19,12 @@ package com.ivianuu.injekt.samples.android.app
 
 import android.app.Application
 import com.ivianuu.injekt.component.initializeApp
+import com.ivianuu.injekt.component.*
+import com.ivianuu.injekt.common.*
+import com.ivianuu.injekt.android.*
+import com.ivianuu.injekt.samples.android.data.*
+import com.ivianuu.injekt.samples.android.domain.*
+import com.ivianuu.injekt.samples.android.ui.*
 
 class App : Application() {
     override fun onCreate() {

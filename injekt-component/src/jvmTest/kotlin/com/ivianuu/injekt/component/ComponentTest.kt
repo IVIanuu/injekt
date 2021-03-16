@@ -28,7 +28,10 @@ class ComponentTest {
 
     @Test
     fun testReturnsExistingValue() {
-        val component = ComponentBuilder<TestComponent1>()
+        val component = ComponentBuilder<TestComponent1>(
+            elements = { emptySet() },
+            initializers = { emptySet() }
+        )
             .element { "value" }
             .build()
         component.element<String>() shouldBe "value"
@@ -36,15 +39,24 @@ class ComponentTest {
 
     @Test
     fun testReturnsNullForNotExistingValue() {
-        val component = ComponentBuilder<TestComponent1>().build()
+        val component = ComponentBuilder<TestComponent1>(
+            elements = { emptySet() },
+            initializers = { emptySet() }
+        ).build()
         component.elementOrNull(typeKeyOf<String>()) shouldBe null
     }
 
     @Test
     fun testReturnsFromDependency() {
-        val component = ComponentBuilder<TestComponent2>()
+        val component = ComponentBuilder<TestComponent2>(
+            elements = { emptySet() },
+            initializers = { emptySet() }
+        )
             .dependency(
-                ComponentBuilder<TestComponent1>()
+                ComponentBuilder<TestComponent1>(
+                    elements = { emptySet() },
+                    initializers = { emptySet() }
+                )
                     .element { "value" }
                     .build()
             )
@@ -54,8 +66,14 @@ class ComponentTest {
 
     @Test
 fun testGetDependencyReturnsDependency() {
-        val dependency = ComponentBuilder<TestComponent1>().build()
-        val dependent = ComponentBuilder<TestComponent2>()
+        val dependency = ComponentBuilder<TestComponent1>(
+            elements = { emptySet() },
+            initializers = { emptySet() }
+        ).build()
+        val dependent = ComponentBuilder<TestComponent2>(
+            elements = { emptySet() },
+            initializers = { emptySet() }
+        )
             .dependency(dependency)
             .build()
         dependent.element<TestComponent1>() shouldBeSameInstanceAs dependency
@@ -63,15 +81,24 @@ fun testGetDependencyReturnsDependency() {
 
     @Test
 fun testGetDependencyReturnsNullIfNotExists() {
-        val dependent = ComponentBuilder<TestComponent2>().build()
+        val dependent = ComponentBuilder<TestComponent2>(
+            elements = { emptySet() },
+            initializers = { emptySet() }
+        ).build()
         dependent.elementOrNull(typeKeyOf<TestComponent1>()) shouldBe null
     }
 
     @Test
     fun testOverridesDependency() {
-        val component = ComponentBuilder<TestComponent2>()
+        val component = ComponentBuilder<TestComponent2>(
+            elements = { emptySet() },
+            initializers = { emptySet() }
+        )
             .dependency(
-                ComponentBuilder<TestComponent1>()
+                ComponentBuilder<TestComponent1>(
+                    elements = { emptySet() },
+                    initializers = { emptySet() }
+                )
                     .element { "dependency" }
                     .build()
             )
@@ -83,7 +110,9 @@ fun testGetDependencyReturnsNullIfNotExists() {
     @Test
     fun testInjectedElement() {
         @Given val injected: @ComponentElementBinding<TestComponent1> String = "value"
-        val component = ComponentBuilder<TestComponent1>().build()
+        val component = ComponentBuilder<TestComponent1>(
+            initializers = { emptySet() }
+        ).build()
         component.element<String>() shouldBe "value"
     }
 
@@ -95,7 +124,9 @@ fun testGetDependencyReturnsNullIfNotExists() {
         @ComponentElementBinding<TestComponent2>
         @Given
         fun otherElement() = 0
-        val component = ComponentBuilder<TestComponent1>().build()
+        val component = ComponentBuilder<TestComponent1>(
+            initializers = { emptySet() }
+        ).build()
         component.element<Pair<TestComponent1, TestComponent1>>().first shouldBeSameInstanceAs component
         component.elementOrNull(typeKeyOf<Int>()).shouldBeNull()
     }
@@ -112,7 +143,9 @@ fun testGetDependencyReturnsNullIfNotExists() {
         fun otherInitializer(): ComponentInitializer<TestComponent2> = {
             otherCalled = true
         }
-        val builder = ComponentBuilder<TestComponent1>()
+        val builder = ComponentBuilder<TestComponent1>(
+            elements = { emptySet() }
+        )
         called shouldBe false
         val component = builder.build()
         called shouldBe true
@@ -124,7 +157,9 @@ fun testGetDependencyReturnsNullIfNotExists() {
         @Given
         val childComponentModule = ChildComponentModule1<TestComponent1, String, TestComponent2>()
 
-        val parentComponent = ComponentBuilder<TestComponent1>().build()
+        val parentComponent = ComponentBuilder<TestComponent1>(
+            initializers = { emptySet() }
+        ).build()
         val childComponent = parentComponent.element<(String) -> TestComponent2>()("42")
         childComponent.element<String>() shouldBe "42"
     }
