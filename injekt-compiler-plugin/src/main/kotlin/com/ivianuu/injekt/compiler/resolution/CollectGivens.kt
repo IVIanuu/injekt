@@ -39,8 +39,6 @@ import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
-import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
-import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -126,7 +124,7 @@ fun CallableDescriptor.toCallableRef(
     }
 }
 
-fun MemberScope.collectGivens(
+fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
     context: InjektContext,
     trace: BindingTrace?,
     substitutionMap: Map<ClassifierRef, TypeRef>
@@ -137,18 +135,28 @@ fun MemberScope.collectGivens(
                 is ClassDescriptor -> listOfNotNull(
                     declaration.getGivenConstructor(context, trace)
                         ?.substitute(substitutionMap)
+                ) + listOfNotNull(
+                    declaration.companionObjectDescriptor
+                        ?.thisAsReceiverParameter
+                        ?.toCallableRef(context, trace)
+                        ?.makeGiven()
                 )
                 is PropertyDescriptor -> if (declaration.isGiven(context, trace)) {
                     listOf(
                         declaration.toCallableRef(context, trace)
                             .substitute(substitutionMap)
+                            .makeGiven()
                     )
                 } else emptyList()
                 is FunctionDescriptor -> if (declaration.isGiven(context, trace)) {
                     listOf(
                         declaration.toCallableRef(context, trace)
                             .substitute(substitutionMap)
+                            .makeGiven()
                     )
+                } else emptyList()
+                is VariableDescriptor -> if (declaration.isGiven(context, trace)) {
+                    listOf(declaration.toCallableRef(context, trace).makeGiven())
                 } else emptyList()
                 else -> emptyList()
             }
@@ -246,32 +254,7 @@ fun CallableRef.collectGivens(
         }
 }
 
-fun HierarchicalScope.collectGivensInScope(
-    context: InjektContext,
-    trace: BindingTrace?
-): List<CallableRef> = getContributedDescriptors()
-        .flatMap { declaration ->
-            when (declaration) {
-                is ClassDescriptor -> listOfNotNull(
-                    declaration.getGivenConstructor(context, trace)
-                )
-                is PropertyDescriptor -> if (declaration.isGiven(context, trace)) {
-                    listOf(
-                        declaration.toCallableRef(context, trace)
-                            .makeGiven()
-                    )
-                } else emptyList()
-                is FunctionDescriptor -> if (declaration.isGiven(context, trace)) {
-                    listOf(declaration.toCallableRef(context, trace))
-                } else emptyList()
-                is VariableDescriptor -> if (declaration.isGiven(context, trace)) {
-                    listOf(declaration.toCallableRef(context, trace))
-                } else emptyList()
-                else -> emptyList()
-            }
-        }
-
-fun ResolutionScope.canSee(callable: CallableRef): Boolean =
+private fun ResolutionScope.canSee(callable: CallableRef): Boolean =
     callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
             callable.callable.visibility == DescriptorVisibilities.LOCAL ||
             (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&

@@ -176,7 +176,7 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testResolvesClassCompanionGiven() = codegen(
+    fun testResolvesClassCompanionGivenFromWithinTheClass() = codegen(
         """
             class MyClass {
                 fun resolve() = given<Foo>()
@@ -186,6 +186,21 @@ class GivenResolutionTest {
             }
 
             fun invoke() = MyClass().resolve()
+        """
+    ) {
+        invokeSingleFile().shouldBeTypeOf<Foo>()
+    }
+
+    @Test
+    fun testResolvesClassCompanionGivenFromOuterClass() = codegen(
+        """
+            class MyClass {
+                companion object {
+                    @Given val foo = Foo()
+                }
+            }
+
+            fun invoke() = given<Foo>()
         """
     ) {
         invokeSingleFile().shouldBeTypeOf<Foo>()

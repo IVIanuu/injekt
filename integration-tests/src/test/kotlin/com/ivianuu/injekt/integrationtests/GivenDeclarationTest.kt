@@ -116,7 +116,6 @@ class GivenDeclarationTest {
     @Test
     fun testGivenCompanionObject() = codegen(
         """
-            import com.ivianuu.injekt.integrationtests.Dep.Companion
             @Given val foo = Foo()
             class Dep {
                 @Given

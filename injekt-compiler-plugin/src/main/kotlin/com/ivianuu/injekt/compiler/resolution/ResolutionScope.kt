@@ -310,7 +310,7 @@ fun HierarchicalResolutionScope(
             ownerDescriptor = null,
             trace = trace,
             initialGivens = importScopes
-                .flatMap { it.collectGivensInScope(context, trace) }
+                .flatMap { it.collectGivens(context, trace, emptyMap()) }
         ).also { trace.record(InjektWritableSlices.IMPORT_RESOLUTION_SCOPE, importScopes, it) }
 
     return allScopes
@@ -344,7 +344,7 @@ fun HierarchicalResolutionScope(
                                         companionDescriptor
                                             .thisAsReceiverParameter
                                             .toCallableRef(context, trace)
-                                            .copy(isGiven = true)
+                                            .makeGiven()
                                     )
                                 ).also { trace.record(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, companionDescriptor, it) }
                         }
@@ -358,7 +358,7 @@ fun HierarchicalResolutionScope(
                             trace = trace,
                             initialGivens = listOf(
                                 clazz.thisAsReceiverParameter.toCallableRef(context, trace)
-                                    .copy(isGiven = true)
+                                    .makeGiven()
                             )
                         ).also { trace.record(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, clazz, it) }
                 }
@@ -375,7 +375,7 @@ fun HierarchicalResolutionScope(
                             trace = trace,
                             initialGivens = function.allParameters
                                 .filter { it.isGiven(context, trace) || it === function.extensionReceiverParameter }
-                                .map { it.toCallableRef(context, trace).copy(isGiven = true) }
+                                .map { it.toCallableRef(context, trace).makeGiven() }
                         ).also { trace.record(InjektWritableSlices.FUNCTION_RESOLUTION_SCOPE, function, it) }
                 }
                 else -> {
@@ -389,7 +389,7 @@ fun HierarchicalResolutionScope(
                                 .firstIsInstance<LexicalScope>()
                                 .ownerDescriptor,
                             trace = trace,
-                            initialGivens = next.collectGivensInScope(context, trace)
+                            initialGivens = next.collectGivens(context, trace, emptyMap())
                         ).also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, next, it) }
                 }
             }

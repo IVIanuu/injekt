@@ -125,7 +125,7 @@ class ProviderGivenNode(
                 .map { parameter ->
                     parameter
                         .toCallableRef(context, ownerScope.trace)
-                        .copy(isGiven = true,)
+                        .makeGiven()
                 }
         )
     }
