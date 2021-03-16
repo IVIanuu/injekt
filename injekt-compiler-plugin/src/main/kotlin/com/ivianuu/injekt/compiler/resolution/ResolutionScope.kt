@@ -123,7 +123,9 @@ class ResolutionScope(
 
             if (type.qualifiers.isEmpty() &&
                 type.frameworkKey == null) {
-                if (type.isFunctionType && type.arguments.dropLast(1).all { it.isGiven }) {
+                if (type.isFunctionType &&
+                    type.arguments.dropLast(1).all { it.isGiven } &&
+                    givensForType(type.arguments.last()).isNotEmpty()) {
                     this += ProviderGivenNode(
                         type = type,
                         ownerScope = this@ResolutionScope,
