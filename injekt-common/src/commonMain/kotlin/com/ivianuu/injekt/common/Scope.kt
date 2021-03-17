@@ -94,6 +94,12 @@ inline fun <T : Any> Scope.getOrCreate(key: Any, init: () -> T): T {
 
 inline fun <@ForTypeKey T : Any> Scope.getOrCreate(block: () -> T): T = getOrCreate(typeKeyOf<T>(), block)
 
+/**
+ * Invokes the [action] function once [this] scope get's disposed
+ * or invokes it synchronously if [this] is already disposed
+ *
+ * Returns a [ScopeDisposable] to unregister the [action]
+ */
 fun Scope.invokeOnDispose(action: () -> Unit): ScopeDisposable {
     if (isDisposed) {
         action()
@@ -104,7 +110,7 @@ fun Scope.invokeOnDispose(action: () -> Unit): ScopeDisposable {
             action()
             return NoOpScopeDisposable
         }
-        val key = DisposerKey()
+        val key = InvokeOnDisposeKey()
         var notifyDisposal = true
         set(key, ScopeDisposable {
             if (notifyDisposal) action()
@@ -116,7 +122,7 @@ fun Scope.invokeOnDispose(action: () -> Unit): ScopeDisposable {
     }
 }
 
-private class DisposerKey
+private class InvokeOnDisposeKey
 
 private val NoOpScopeDisposable = ScopeDisposable {  }
 
