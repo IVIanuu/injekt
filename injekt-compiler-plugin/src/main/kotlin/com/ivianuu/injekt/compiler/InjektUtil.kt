@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.GivenFunctionDescriptor
+import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.uniqueTypeName
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -47,6 +48,7 @@ import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedTypeParameterDescriptor
 import org.jetbrains.kotlin.types.CommonSupertypes
@@ -54,6 +56,8 @@ import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.types.upperIfFlexible
+import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 fun KtAnnotated.hasAnnotation(fqName: FqName): Boolean = findAnnotation(fqName) != null
 
@@ -206,3 +210,20 @@ private var currentFrameworkKey = 0
 fun generateFrameworkKey() = currentFrameworkKey++.toString()
 
 data class Tuple1<T>(val value: T)
+
+fun TypeParameterDescriptor.isForTypeKey(
+    context: InjektContext,
+    trace: BindingTrace?
+): Boolean {
+    trace?.get(InjektWritableSlices.IS_FOR_TYPE_KEY, this)?.let { return it }
+    var isForTypeKey = hasAnnotation(InjektFqNames.ForTypeKey)
+    if (!isForTypeKey && containingDeclaration is ClassDescriptor) {
+        isForTypeKey = name in containingDeclaration
+            .cast<ClassDescriptor>()
+            .toClassifierRef(context, trace)
+            .forTypeKeyTypeParameters
+    }
+
+    trace?.record(InjektWritableSlices.IS_FOR_TYPE_KEY, this, isForTypeKey)
+    return isForTypeKey
+}

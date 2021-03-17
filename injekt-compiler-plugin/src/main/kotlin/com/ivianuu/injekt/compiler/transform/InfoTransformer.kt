@@ -39,6 +39,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import java.util.Base64
 
 class InfoTransformer(
@@ -48,8 +49,10 @@ class InfoTransformer(
 
     @Suppress("NewApi")
     override fun visitClass(declaration: IrClass): IrStatement {
-        if (declaration.hasAnnotation(InjektFqNames.Given) &&
-                declaration.visibility == DescriptorVisibilities.PUBLIC) {
+        if (declaration.visibility == DescriptorVisibilities.PUBLIC &&
+            (declaration.hasAnnotation(InjektFqNames.Given) ||
+                    declaration.descriptor.toClassifierRef(context, null)
+                        .forTypeKeyTypeParameters.isNotEmpty())) {
             declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
                 .run {
                     irCall(

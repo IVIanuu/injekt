@@ -16,18 +16,24 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.isForTypeKey
+import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-class TypeKeyChecker : CallChecker {
+class TypeKeyChecker(private val context: InjektContext) : CallChecker {
     override fun check(
         resolvedCall: ResolvedCall<*>,
         reportOn: PsiElement,
@@ -35,7 +41,7 @@ class TypeKeyChecker : CallChecker {
     ) {
         resolvedCall
             .typeArguments
-            .filterKeys { it.hasAnnotation(InjektFqNames.ForTypeKey) }
+            .filterKeys { it.isForTypeKey(this.context, context.trace) }
             .forEach { it.value.checkAllForTypeKey(reportOn, context.trace) }
     }
 
@@ -44,7 +50,8 @@ class TypeKeyChecker : CallChecker {
         trace: BindingTrace
     ) {
         if (constructor.declarationDescriptor is TypeParameterDescriptor &&
-                !constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ForTypeKey)) {
+            !constructor.declarationDescriptor.cast<TypeParameterDescriptor>()
+                .isForTypeKey(context, trace)) {
             trace.report(
                 InjektErrors.NON_FOR_TYPE_KEY_TYPE_PARAMETER_AS_FOR_TYPE_KEY
                     .on(reportOn, constructor.declarationDescriptor as TypeParameterDescriptor)

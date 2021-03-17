@@ -120,7 +120,8 @@ data class PersistedClassifierInfo(
     val fqName: String,
     val qualifiers: List<PersistedAnnotationRef>,
     val superTypes: List<PersistedTypeRef>,
-    val primaryConstructorPropertyParameters: List<String>
+    val primaryConstructorPropertyParameters: List<String>,
+    val forTypeKeyTypeParameters: List<String>
 )
 
 fun ClassifierRef.toPersistedClassifierInfo(context: InjektContext) = PersistedClassifierInfo(
@@ -128,6 +129,8 @@ fun ClassifierRef.toPersistedClassifierInfo(context: InjektContext) = PersistedC
     qualifiers = qualifiers.map { it.toPersistedAnnotationRef(context) },
     superTypes = superTypes.map { it.toPersistedTypeRef(context) },
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
+        .map { it.asString() },
+    forTypeKeyTypeParameters = forTypeKeyTypeParameters
         .map { it.asString() }
 )
 
@@ -171,7 +174,8 @@ data class PersistedClassifierRef(
     val key: String,
     val superTypes: List<PersistedTypeRef>,
     val qualifiers: List<PersistedAnnotationRef>,
-    val primaryConstructorPropertyParameters: List<String>
+    val primaryConstructorPropertyParameters: List<String>,
+    val forTypeKeyTypeParameters: List<String>
 )
 
 fun ClassifierRef.toPersistedClassifierRef(
@@ -189,6 +193,8 @@ fun ClassifierRef.toPersistedClassifierRef(
     superTypes = superTypes.map { it.toPersistedTypeRef(context) },
     qualifiers = qualifiers.map { it.toPersistedAnnotationRef(context) },
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
+        .map { it.asString() },
+    forTypeKeyTypeParameters = forTypeKeyTypeParameters
         .map { it.asString() }
 )
 
@@ -214,7 +220,8 @@ fun PersistedClassifierRef.toPersistedClassifierInfo() = PersistedClassifierInfo
     fqName = key.split(":")[1],
     qualifiers = qualifiers,
     superTypes = superTypes,
-    primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
+    primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
+    forTypeKeyTypeParameters = forTypeKeyTypeParameters
 )
 
 fun ClassifierRef.apply(
@@ -226,7 +233,8 @@ fun ClassifierRef.apply(
     else copy(
         qualifiers = info.qualifiers.map { it.toAnnotationRef(context, trace) },
         superTypes = info.superTypes.map { it.toTypeRef(context, trace) },
-        primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters.map { it.asNameId() }
+        primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters.map { it.asNameId() },
+        forTypeKeyTypeParameters = info.forTypeKeyTypeParameters.map { it.asNameId() }
     )
 }
 
