@@ -117,23 +117,16 @@ class ProviderGivenNode(
             ownerDescriptor = ownerScope.ownerDescriptor,
             trace = ownerScope.trace,
             initialGivens = type
-                .classifier
-                .descriptor!!
-                .defaultType
+                .toKotlinType(context)
                 .memberScope
                 .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
                 .first()
                 .valueParameters
                 .onEach { parameterDescriptors += it }
-                .let { parameters ->
-                    val substitutionMap = type.classifier.typeParameters
-                        .toMap(type.arguments)
-                    parameters.map { parameter ->
-                        parameter
-                            .toCallableRef(context, ownerScope.trace)
-                            .substitute(substitutionMap)
-                            .makeGiven()
-                    }
+                .map { parameter ->
+                    parameter
+                        .toCallableRef(context, ownerScope.trace)
+                        .makeGiven()
                 }
         )
     }

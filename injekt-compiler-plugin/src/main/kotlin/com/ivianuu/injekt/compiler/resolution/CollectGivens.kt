@@ -198,8 +198,11 @@ fun Annotated.isGiven(context: InjektContext, trace: BindingTrace?): Boolean {
                 val clazzClassifier = clazz.toClassifierRef(context, trace)
                 clazz.unsubstitutedPrimaryConstructor
                     ?.valueParameters
-                    ?.filter { it.name in clazzClassifier.primaryConstructorPropertyParameters }
-                    ?.filter { it.isGiven(context, trace) }
+                    ?.filter {
+                        it.name == name &&
+                                it.name in clazzClassifier.primaryConstructorPropertyParameters &&
+                                it.isGiven(context, trace)
+                    }
                     ?: emptyList()
             }
             .any() == true
@@ -211,7 +214,7 @@ fun Annotated.isGiven(context: InjektContext, trace: BindingTrace?): Boolean {
                     ?.let { context.callableInfoFor(it, trace) }
                     ?.let { name.asString() in it.givenParameters } == true
     }
-    if (!isGiven && this is ClassConstructorDescriptor) {
+    if (!isGiven && this is ClassConstructorDescriptor && isPrimary) {
         isGiven = constructedClass.isGiven(context, trace)
     }
     trace?.record(InjektWritableSlices.IS_GIVEN, key, isGiven)
