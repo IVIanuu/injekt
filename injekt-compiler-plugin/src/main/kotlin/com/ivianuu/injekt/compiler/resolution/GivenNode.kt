@@ -20,11 +20,11 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringGiven
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektName
-import com.ivianuu.injekt.compiler.toMap
 import com.ivianuu.injekt.compiler.transform.toKotlinType
 import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
@@ -43,7 +43,7 @@ sealed class GivenNode {
     abstract val dependencyScope: ResolutionScope?
     abstract val lazyDependencies: Boolean
     abstract val isFrameworkGiven: Boolean
-    abstract val cache: Boolean
+    abstract val cacheIfPossible: Boolean
 }
 
 class CallableGivenNode(
@@ -65,7 +65,7 @@ class CallableGivenNode(
         get() = callable.originalType
     override val isFrameworkGiven: Boolean
         get() = false
-    override val cache: Boolean
+    override val cacheIfPossible: Boolean
         get() = false
 }
 
@@ -85,7 +85,7 @@ class SetGivenNode(
         get() = type
     override val isFrameworkGiven: Boolean
         get() = true
-    override val cache: Boolean
+    override val cacheIfPossible: Boolean
         get() = false
 }
 
@@ -102,9 +102,10 @@ class ProviderGivenNode(
     override val dependencies: List<GivenRequest> = listOf(
         GivenRequest(
             type = type.arguments.last(),
-            required = true,
+            isRequired = true,
             callableFqName = callableFqName,
-            parameterName = "instance".asNameId()
+            parameterName = "instance".asNameId(),
+            isInline = false
         )
     )
 
@@ -141,7 +142,7 @@ class ProviderGivenNode(
         get() = type
     override val isFrameworkGiven: Boolean
         get() = true
-    override val cache: Boolean
+    override val cacheIfPossible: Boolean
         get() = true
 }
 
@@ -175,16 +176,18 @@ fun CallableRef.getGivenRequests(
             val name = it.injektName()
             GivenRequest(
                 type = parameterTypes[name]!!,
-                required = it !is ValueParameterDescriptor || !it.hasDefaultValueIgnoringGiven,
+                isRequired = it !is ValueParameterDescriptor || !it.hasDefaultValueIgnoringGiven,
                 callableFqName = callable.fqNameSafe,
-                parameterName = name.asNameId()
+                parameterName = name.asNameId(),
+                isInline = callable is FunctionDescriptor && callable.isInline
             )
         }
 }
 
 data class GivenRequest(
     val type: TypeRef,
-    val required: Boolean,
+    val isRequired: Boolean,
     val callableFqName: FqName,
-    val parameterName: Name
+    val parameterName: Name,
+    val isInline: Boolean
 )

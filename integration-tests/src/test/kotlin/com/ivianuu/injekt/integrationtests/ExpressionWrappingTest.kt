@@ -103,6 +103,20 @@ class ExpressionWrappingTest {
         irShouldNotContain("val tmp0: Function0<Foo> = local fun <anonymous>(): Foo {")
     }
 
+    @Test
+    fun testDoesNotCacheInlineProvider() = codegen(
+        """
+            @Given val foo = Foo()
+            @Given inline fun bar(@Given fooProvider: () -> Foo) = Bar(fooProvider())
+            @Given fun <T> pair(@Given a: T, @Given b: T): Pair<T, T> = a to b
+            fun invoke() {
+                given<Pair<Bar, Bar>>()
+            }
+        """
+    ) {
+        irShouldNotContain("val tmp0: Function0<Foo> = local fun <anonymous>(): Foo {")
+    }
+
     /*@Test
     fun testDoesNotCacheCircularDependency() = codegen(
         """

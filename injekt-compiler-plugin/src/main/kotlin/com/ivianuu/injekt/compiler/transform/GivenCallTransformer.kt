@@ -92,18 +92,18 @@ class GivenCallTransformer(
             }
         }
 
-        private val usagesByResult = mutableMapOf<ResolutionResult.Success.WithCandidate.Value, Int>()
-        fun usagesFor(result: ResolutionResult.Success.WithCandidate.Value): Int = usagesByResult.getOrPut(result) {
-            var usages = 0
-            fun ResolutionResult.Success.WithCandidate.Value.visit() {
+        private val usagesByResult = mutableMapOf<ResolutionResult.Success.WithCandidate.Value, List<GivenRequest>>()
+        fun usagesFor(result: ResolutionResult.Success.WithCandidate.Value): List<GivenRequest> = usagesByResult.getOrPut(result) {
+            val usages = mutableListOf<GivenRequest>()
+            fun ResolutionResult.Success.WithCandidate.Value.visit(request: GivenRequest) {
                 if (candidate.type == result.candidate.type &&
-                        outerMostScope == result.outerMostScope) usages++
+                        outerMostScope == result.outerMostScope) usages += request
                 dependencyResults.forEach {
-                    it.value.safeAs<ResolutionResult.Success.WithCandidate.Value>()?.visit()
+                    it.value.safeAs<ResolutionResult.Success.WithCandidate.Value>()?.visit(it.key)
                 }
             }
             graph.results.forEach {
-                it.value.safeAs<ResolutionResult.Success.WithCandidate.Value>()?.visit()
+                it.value.safeAs<ResolutionResult.Success.WithCandidate.Value>()?.visit(it.key)
             }
             usages
         }
@@ -231,7 +231,7 @@ class GivenCallTransformer(
     private fun ResolutionResult.Success.WithCandidate.Value.shouldWrap(
         context: GraphContext
     ): Boolean = dependencyResults.isNotEmpty() &&
-            !candidate.cache && context.usagesFor(this) > 1
+            !candidate.cacheIfPossible && context.usagesFor(this).size > 1
 
     private fun ScopeContext.wrapExpressionInFunctionIfNeeded(
         result: ResolutionResult.Success.WithCandidate.Value,
@@ -274,7 +274,8 @@ class GivenCallTransformer(
 
     private fun ResolutionResult.Success.WithCandidate.Value.shouldCache(
         context: GraphContext
-    ): Boolean = candidate.cache && context.usagesFor(this) > 1
+    ): Boolean = candidate.cacheIfPossible && context.usagesFor(this)
+        .count { !it.isInline } > 1
 
     private fun ScopeContext.cacheExpressionIfNeeded(
         result: ResolutionResult.Success.WithCandidate.Value,

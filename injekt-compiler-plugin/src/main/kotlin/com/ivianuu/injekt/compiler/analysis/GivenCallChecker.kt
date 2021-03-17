@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class GivenCallChecker(
     private val context: InjektContext,
@@ -61,9 +62,11 @@ class GivenCallChecker(
             .map {
                 GivenRequest(
                     type = it.key.type.toTypeRef(this.context, context.trace),
-                    required = !it.key.hasDefaultValueIgnoringGiven,
+                    isRequired = !it.key.hasDefaultValueIgnoringGiven,
                     callableFqName = resultingDescriptor.fqNameSafe,
-                    parameterName = it.key.name
+                    parameterName = it.key.name,
+                    isInline = resolvedCall.candidateDescriptor
+                        .safeAs<FunctionDescriptor>()?.isInline == true
                 )
             }
 

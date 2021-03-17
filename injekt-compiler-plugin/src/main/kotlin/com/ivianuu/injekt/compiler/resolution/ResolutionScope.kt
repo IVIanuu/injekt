@@ -155,9 +155,10 @@ class ResolutionScope(
                             .mapIndexed { index, element ->
                                 GivenRequest(
                                     type = element,
-                                    required = true,
+                                    isRequired = true,
                                     callableFqName = FqName("com.ivianuu.injekt.givenSetOf"),
-                                    parameterName = "element$index".asNameId()
+                                    parameterName = "element$index".asNameId(),
+                                    isInline = false
                                 )
                             }
                         this += SetGivenNode(

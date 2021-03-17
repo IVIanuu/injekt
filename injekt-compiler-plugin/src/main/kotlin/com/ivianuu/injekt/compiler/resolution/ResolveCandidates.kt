@@ -150,7 +150,7 @@ fun ResolutionScope.resolveRequests(requests: List<GivenRequest>): GivenGraph {
         when (val result = resolveRequest(request)) {
             is ResolutionResult.Success -> successes[request] = result
             is ResolutionResult.Failure ->
-                if ((request.required || result !is ResolutionResult.Failure.NoCandidates) &&
+                if ((request.isRequired || result !is ResolutionResult.Failure.NoCandidates) &&
                     compareResult(result, failure) < 0) {
                     failureRequest = request
                     failure = result
@@ -269,7 +269,7 @@ private fun ResolutionScope.resolveCandidate(
                 when {
                     candidate is ProviderGivenNode && dependencyResult is ResolutionResult.Failure.NoCandidates ->
                         return@computeForCandidate ResolutionResult.Failure.NoCandidates
-                    dependency.required || dependencyResult !is ResolutionResult.Failure.NoCandidates -> {
+                    dependency.isRequired || dependencyResult !is ResolutionResult.Failure.NoCandidates -> {
                         return@computeForCandidate ResolutionResult.Failure.DependencyFailure(
                             dependency,
                             dependencyResult
