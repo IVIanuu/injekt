@@ -21,16 +21,15 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.component.AppComponent
-import com.ivianuu.injekt.component.ChildComponentModule3
-import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.element
+import com.ivianuu.injekt.scope.AppGivenScope
+import com.ivianuu.injekt.scope.ChildComponentModule3
+import com.ivianuu.injekt.scope.Component
 
 fun BroadcastReceiver.createReceiverComponent(
     context: Context,
     intent: Intent,
 ): ReceiverComponent = (context.applicationContext as Application)
-    .appComponent
+    .appGivenScope
     .element<(BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent>()
     .invoke(this, context, intent)
 
@@ -38,7 +37,7 @@ typealias ReceiverComponent = Component
 
 @Given
 val receiverComponentModule =
-    ChildComponentModule3<AppComponent, BroadcastReceiver, ReceiverContext, ReceiverIntent, ReceiverComponent>()
+    ChildComponentModule3<AppGivenScope, BroadcastReceiver, ReceiverContext, ReceiverIntent, ReceiverComponent>()
 
 typealias ReceiverContext = Context
 

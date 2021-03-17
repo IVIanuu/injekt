@@ -14,17 +14,7 @@
  * limitations under the License.
  */
 
-include(
-    ":injekt-android",
-    ":injekt-android-work",
-    ":injekt-compiler-plugin",
-    ":injekt-common",
-    ":injekt-core",
-    ":injekt-gradle-plugin",
-    ":injekt-ide-plugin",
-    ":injekt-scope",
-    ":integration-tests",
-    ":test-util",
-    "samples:android-app",
-    "samples:coffee-maker"
-)
+package com.ivianuu.injekt.scope
+
+@PublishedApi
+internal expect inline fun <T> synchronized(lock: Any, block: () -> T): T

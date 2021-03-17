@@ -32,8 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.android.ActivityRetainedComponent
-import com.ivianuu.injekt.common.ScopeDisposable
-import com.ivianuu.injekt.common.Scoped
+import com.ivianuu.injekt.scope.GivenScopeDisposable
+import com.ivianuu.injekt.scope.Scoped
 import com.ivianuu.injekt.samples.android.domain.CounterRepo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -78,7 +78,7 @@ fun sampleUi(
 
 @Scoped<ActivityRetainedComponent>
 @Given
-class CounterViewModel(@Given private val repo: CounterRepo) : ScopeDisposable {
+class CounterViewModel(@Given private val repo: CounterRepo) : GivenScopeDisposable {
     val state: Flow<Int> get() = repo.counterState
     private val scope = CoroutineScope(Dispatchers.Default)
 

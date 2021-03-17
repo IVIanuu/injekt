@@ -19,8 +19,8 @@ package com.ivianuu.injekt.android
 
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
-import com.ivianuu.injekt.component.element
-import com.ivianuu.injekt.component.initializeApp
+import com.ivianuu.injekt.scope.element
+import com.ivianuu.injekt.scope.initializeApp
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import org.junit.Test

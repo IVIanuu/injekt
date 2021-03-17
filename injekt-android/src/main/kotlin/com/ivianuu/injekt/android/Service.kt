@@ -22,19 +22,18 @@ import android.app.Service
 import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.component.AppComponent
-import com.ivianuu.injekt.component.ChildComponentModule1
-import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.element
+import com.ivianuu.injekt.scope.AppGivenScope
+import com.ivianuu.injekt.scope.ChildComponentModule1
+import com.ivianuu.injekt.scope.Component
 
 fun Service.createServiceComponent(): ServiceComponent =
-    application.appComponent.element<(Service) -> ServiceComponent>()(this)
+    application.appGivenScope.element<(Service) -> ServiceComponent>()(this)
 
 typealias ServiceComponent = Component
 
 @Given
 val serviceComponentModule =
-    ChildComponentModule1<AppComponent, Service, ServiceComponent>()
+    ChildComponentModule1<AppGivenScope, Service, ServiceComponent>()
 
 typealias ServiceContext = Context
 

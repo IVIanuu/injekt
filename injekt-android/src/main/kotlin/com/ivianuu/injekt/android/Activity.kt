@@ -28,9 +28,9 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.component.ChildComponentModule1
-import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.element
+import com.ivianuu.injekt.scope.ChildComponentModule1
+import com.ivianuu.injekt.scope.Component
+import com.ivianuu.injekt.scope.element
 
 val ComponentActivity.activityComponent: ActivityComponent
     get() = lifecycle.component {

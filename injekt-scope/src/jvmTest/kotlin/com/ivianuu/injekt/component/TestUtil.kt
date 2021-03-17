@@ -14,21 +14,10 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.android
+package com.ivianuu.injekt.component
 
-import androidx.activity.ComponentActivity
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.scope.AppGivenScope
-import com.ivianuu.injekt.scope.ChildComponentModule0
 import com.ivianuu.injekt.scope.Component
 
-val ComponentActivity.activityRetainedComponent: ActivityRetainedComponent
-    get() = viewModelStore.component {
-        application.appGivenScope.element<() -> ActivityRetainedComponent>()()
-    }
-
-typealias ActivityRetainedComponent = Component
-
-@Given
-val activityRetainedComponentModule =
-    ChildComponentModule0<AppGivenScope, ActivityRetainedComponent>()
+typealias TestComponent1 = Component
+typealias TestComponent2 = Component
+typealias TestComponent3 = Component

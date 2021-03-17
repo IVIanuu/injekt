@@ -12,11 +12,6 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-common/injekt.injekt-common.jvmMain.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-common/injekt.injekt-common.jvmMain.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-common/injekt.injekt-common.jvmTest.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-common/injekt.injekt-common.jvmTest.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-compiler-plugin/injekt.injekt-compiler-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-compiler-plugin/injekt.injekt-compiler-plugin.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-component/injekt.injekt-component.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-component/injekt.injekt-component.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-component/injekt.injekt-component.commonMain.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-component/injekt.injekt-component.commonMain.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-component/injekt.injekt-component.commonTest.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-component/injekt.injekt-component.commonTest.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-component/injekt.injekt-component.jvmMain.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-component/injekt.injekt-component.jvmMain.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-component/injekt.injekt-component.jvmTest.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-component/injekt.injekt-component.jvmTest.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-core/injekt.injekt-core.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-core/injekt.injekt-core.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-core/injekt.injekt-core.commonMain.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-core/injekt.injekt-core.commonMain.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-core/injekt.injekt-core.commonTest.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-core/injekt.injekt-core.commonTest.iml" />
@@ -24,6 +19,11 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-core/injekt.injekt-core.jvmTest.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-core/injekt.injekt-core.jvmTest.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-gradle-plugin/injekt.injekt-gradle-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-gradle-plugin/injekt.injekt-gradle-plugin.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-ide-plugin/injekt.injekt-ide-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-ide-plugin/injekt.injekt-ide-plugin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-scope/injekt.injekt-scope.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-scope/injekt.injekt-scope.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-scope/injekt.injekt-scope.commonMain.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-scope/injekt.injekt-scope.commonMain.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-scope/injekt.injekt-scope.commonTest.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-scope/injekt.injekt-scope.commonTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-scope/injekt.injekt-scope.jvmMain.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-scope/injekt.injekt-scope.jvmMain.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-scope/injekt.injekt-scope.jvmTest.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-scope/injekt.injekt-scope.jvmTest.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/integration-tests/injekt.integration-tests.iml" filepath="$PROJECT_DIR$/.idea/modules/integration-tests/injekt.integration-tests.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/samples/injekt.samples.iml" filepath="$PROJECT_DIR$/.idea/modules/samples/injekt.samples.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/samples/android-app/injekt.samples.android-app.iml" filepath="$PROJECT_DIR$/.idea/modules/samples/android-app/injekt.samples.android-app.iml" />

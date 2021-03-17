@@ -14,21 +14,28 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.android
+package com.ivianuu.injekt.scope
 
-import androidx.activity.ComponentActivity
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.scope.AppGivenScope
-import com.ivianuu.injekt.scope.ChildComponentModule0
-import com.ivianuu.injekt.scope.Component
+import com.ivianuu.injekt.Qualifier
 
-val ComponentActivity.activityRetainedComponent: ActivityRetainedComponent
-    get() = viewModelStore.component {
-        application.appGivenScope.element<() -> ActivityRetainedComponent>()()
-    }
-
-typealias ActivityRetainedComponent = Component
+/**
+ * Converts a [@Eager<C> T] to a [T] which is scoped to the lifecycle of [S] and will be instantiated
+ * as soon as the hosting [GivenScope] get's initialized
+ */
+@Qualifier
+annotation class Eager<S : GivenScope>
 
 @Given
-val activityRetainedComponentModule =
-    ChildComponentModule0<AppGivenScope, ActivityRetainedComponent>()
+fun <@Given T : @Eager<U> S, S : Any, U : GivenScope> eagerImpl() = EagerModule<T, S, U>()
+
+class EagerModule<T : S, S : Any, U : GivenScope> {
+    @Scoped<U>
+    @Given
+    inline fun scopedInstance(@Given instance: T): S = instance
+
+    @Given
+    fun initializer(@Given factory: () -> S): GivenScopeInitializer<U> = {
+        factory()
+    }
+}

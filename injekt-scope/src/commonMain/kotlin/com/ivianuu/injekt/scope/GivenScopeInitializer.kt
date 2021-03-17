@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-include(
-    ":injekt-android",
-    ":injekt-android-work",
-    ":injekt-compiler-plugin",
-    ":injekt-common",
-    ":injekt-core",
-    ":injekt-gradle-plugin",
-    ":injekt-ide-plugin",
-    ":injekt-scope",
-    ":integration-tests",
-    ":test-util",
-    "samples:android-app",
-    "samples:coffee-maker"
-)
+package com.ivianuu.injekt.scope
+
+/**
+ * Will get invoked once [GivenScope] [S] is initialized
+ *
+ * Example:
+ * ```
+ * @Given
+ * fun imageLoaderInitializer(@Given app: App): GivenScopeInitializer<AppGivenScope> = {
+ *     ImageLoader.init(app)
+ * }
+ * ```
+ */
+typealias GivenScopeInitializer<S> = (S) -> Unit
