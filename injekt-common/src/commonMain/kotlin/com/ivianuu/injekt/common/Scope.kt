@@ -21,15 +21,17 @@ import com.ivianuu.injekt.Qualifier
 
 interface Scope : ScopeDisposable {
     /**
+     * Whether or not this scope is disposed
+     */
+    val isDisposed: Boolean
+    /**
      * Returns the value [T] for [key] or null
      */
     operator fun <T : Any> get(key: Any): T?
-
     /**
      * Sets the value [T] for [key] to [value]
      */
     operator fun <T : Any> set(key: Any, value: T)
-
     /**
      * Removes the value for [key]
      */
@@ -39,7 +41,7 @@ interface Scope : ScopeDisposable {
 /**
  * Allows scoped values to be notified when the hosting [Scope] get's disposed
  */
-interface ScopeDisposable {
+fun interface ScopeDisposable {
     /**
      * Get's called while the hosting [Scope] get's disposed via [Scope.dispose]
      */
@@ -94,19 +96,28 @@ inline operator fun <@ForTypeKey T : Any> Scope.invoke(block: () -> T): T =
     this(typeKeyOf<T>(), block)
 
 private class ScopeImpl(private val values: MutableMap<Any, Any>) : Scope {
+    override var isDisposed = false
+
     @Suppress("UNCHECKED_CAST")
-    override fun <T : Any> get(key: Any): T? = values[key] as? T
+    override fun <T : Any> get(key: Any): T? {
+        if (isDisposed) return null
+        return values[key] as? T
+    }
 
     override fun <T : Any> set(key: Any, value: T) {
+        if (isDisposed) return
         minusAssign(key)
         values[key] = value
     }
 
     override fun minusAssign(key: Any) {
+        if (isDisposed) return
         (values.remove(key) as? ScopeDisposable)?.dispose()
     }
 
     override fun dispose() {
+        if (isDisposed) return
+        isDisposed = true
         values.keys
             .forEach { minusAssign(it) }
     }
