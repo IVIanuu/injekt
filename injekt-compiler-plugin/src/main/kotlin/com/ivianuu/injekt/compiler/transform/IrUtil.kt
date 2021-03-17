@@ -112,6 +112,7 @@ fun TypeRef.toKotlinType(context: InjektContext): SimpleType {
                     it.toKotlinType(context)
                 )
             })
+            .makeGivenAsSpecified(context, isGiven)
             .makeComposableAsSpecified(context, isMarkedComposable)
             .makeNullableAsSpecified(isMarkedNullable)
     }
@@ -128,6 +129,34 @@ fun TypeRef.toAbbreviation(context: InjektContext): SimpleType {
         })
 
         .makeNullableAsSpecified(isMarkedNullable)
+}
+
+private fun SimpleType.makeGivenAsSpecified(
+    context: InjektContext,
+    isGiven: Boolean
+): SimpleType {
+    return replaceAnnotations(
+        if (isGiven) {
+            Annotations.create(
+                listOf(
+                    AnnotationDescriptorImpl(
+                        context.module
+                            .findClassAcrossModuleDependencies(
+                                ClassId.topLevel(InjektFqNames.Given)
+                            )!!.defaultType,
+                        emptyMap(),
+                        SourceElement.NO_SOURCE
+                    )
+                )
+            )
+        } else {
+            Annotations.create(
+                annotations.filter {
+                    it.type.constructor.declarationDescriptor?.fqNameSafe != InjektFqNames.Given
+                }
+            )
+        }
+    )
 }
 
 private fun SimpleType.makeComposableAsSpecified(
