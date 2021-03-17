@@ -2,6 +2,11 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-component/com.ivianuu.injekt.injekt.injekt-component.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-component/com.ivianuu.injekt.injekt.injekt-component.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-component/com.ivianuu.injekt.injekt.injekt-component.commonMain.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-component/com.ivianuu.injekt.injekt.injekt-component.commonMain.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-component/com.ivianuu.injekt.injekt.injekt-component.commonTest.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-component/com.ivianuu.injekt.injekt.injekt-component.commonTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-component/com.ivianuu.injekt.injekt.injekt-component.jvmMain.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-component/com.ivianuu.injekt.injekt.injekt-component.jvmMain.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-component/com.ivianuu.injekt.injekt.injekt-component.jvmTest.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-component/com.ivianuu.injekt.injekt.injekt-component.jvmTest.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt.buildSrc.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt.buildSrc.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-android/injekt.injekt-android.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-android/injekt.injekt-android.iml" />

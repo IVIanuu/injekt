@@ -154,4 +154,16 @@ class GivenSetTest {
         explicitProvider shouldBeSameInstanceAs set.single()
     }
 
+    @Test
+    fun testUsesAllProviderArgumentsForGivenRequest() = codegen(
+        """
+            fun invoke(): Set<Any> {
+                return given<(@Given String, @Given String) -> Set<String>>()("a", "b")
+            }
+        """
+    ) {
+        val set = invokeSingleFile<Set<Any>>()
+        set.shouldHaveSize(2)
+    }
+
 }

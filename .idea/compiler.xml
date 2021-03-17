@@ -2,6 +2,10 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <bytecodeTargetLevel target="1.8">
+      <module name="com.ivianuu.injekt.injekt.injekt-component.commonMain" target="1.8" />
+      <module name="com.ivianuu.injekt.injekt.injekt-component.commonTest" target="1.8" />
+      <module name="com.ivianuu.injekt.injekt.injekt-component.jvmMain" target="1.8" />
+      <module name="com.ivianuu.injekt.injekt.injekt-component.jvmTest" target="1.8" />
       <module name="injekt.injekt-common.commonMain" target="1.8" />
       <module name="injekt.injekt-common.commonTest" target="1.8" />
       <module name="injekt.injekt-common.jvmMain" target="1.8" />
