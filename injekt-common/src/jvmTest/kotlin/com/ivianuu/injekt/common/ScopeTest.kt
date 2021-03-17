@@ -32,6 +32,40 @@ class ScopeTest {
     }
 
     @Test
+    fun testRemoveDisposesValue() {
+        val scope = Scope()
+        var disposed = false
+        scope(0) {
+            object : ScopeDisposable {
+                override fun dispose() {
+                    disposed = true
+                }
+            }
+        }
+
+        disposed.shouldBeFalse()
+        scope.minusAssign(0)
+        disposed.shouldBeTrue()
+    }
+
+    @Test
+    fun testSetDisposesOldValue() {
+        val scope = Scope()
+        var disposed = false
+        scope(0) {
+            object : ScopeDisposable {
+                override fun dispose() {
+                    disposed = true
+                }
+            }
+        }
+
+        disposed.shouldBeFalse()
+        scope[0] = ""
+        disposed.shouldBeTrue()
+    }
+
+    @Test
     fun testScope() {
         val scope = Scope()
         var calls = 0

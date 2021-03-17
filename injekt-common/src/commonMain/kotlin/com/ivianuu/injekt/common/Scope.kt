@@ -98,17 +98,16 @@ private class ScopeImpl(private val values: MutableMap<Any, Any>) : Scope {
     override fun <T : Any> get(key: Any): T? = values[key] as? T
 
     override fun <T : Any> set(key: Any, value: T) {
+        minusAssign(key)
         values[key] = value
     }
 
     override fun minusAssign(key: Any) {
-        values -= key
+        (values.remove(key) as? ScopeDisposable)?.dispose()
     }
 
     override fun dispose() {
-        values.values
-            .filterIsInstance<ScopeDisposable>()
-            .forEach { it.dispose() }
-        values.clear()
+        values.keys
+            .forEach { minusAssign(it) }
     }
 }
