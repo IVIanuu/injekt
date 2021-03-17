@@ -21,14 +21,12 @@ import com.ivianuu.injekt.common.ForTypeKey
 import com.ivianuu.injekt.common.TypeKey
 import com.ivianuu.injekt.common.typeKeyOf
 
-class ChildComponentModule0<P : Component, C : Component>(
-    private val childComponentFactoryKey: TypeKey<() -> C>
-) {
+class ChildComponentModule0<P : Component, @ForTypeKey C : Component> {
     @Given
     fun factoryElement(
         @Given parent: P,
         @Given builderProvider: () -> Component.Builder<C>
-    ): ComponentElement<P> = childComponentFactoryKey to {
+    ): ComponentElement<P> = typeKeyOf<() -> C>() to {
         val factory: () -> C = {
             builderProvider()
                 .dependency(parent)
@@ -38,249 +36,155 @@ class ChildComponentModule0<P : Component, C : Component>(
     }
 
     @Given
-    fun factory(@Given parent: P): () -> C = parent.element(childComponentFactoryKey)
-
-    companion object {
-        operator fun <P : Component, @ForTypeKey C : Component> invoke() = ChildComponentModule0<P, C>(
-            typeKeyOf()
-        )
-    }
+    fun factory(@Given parent: P): () -> C = parent.element()
 }
 
-class ChildComponentModule1<P : Component, P1, C : Component>(
-    private val p1Key: TypeKey<P1>,
-    private val childComponentFactoryKey: TypeKey<(P1) -> C>
-) {
+class ChildComponentModule1<P : Component, @ForTypeKey P1, @ForTypeKey C : Component> {
     @Given
     fun factoryElement(
         @Given parent: P,
         @Given builderProvider: () -> Component.Builder<C>
-    ): ComponentElement<P> = childComponentFactoryKey to {
+    ): ComponentElement<P> = typeKeyOf<(P1) -> C>() to {
         val factory: (P1) -> C = { p1 ->
             builderProvider()
                 .dependency(parent)
-                .element(p1Key) { p1 }
+                .element { p1 }
                 .build()
         }
         factory
     }
 
     @Given
-    fun factory(@Given parent: P): (P1) -> C = parent.element(childComponentFactoryKey)
+    fun factory(@Given parent: P): (P1) -> C = parent.element()
 
     @Given
-    fun p1(@Given component: C): P1 = component.element(p1Key)!!
-
-    companion object {
-        operator fun <P : Component, @ForTypeKey P1, @ForTypeKey C : Component> invoke() = ChildComponentModule1<P, P1, C>(
-            typeKeyOf(),
-            typeKeyOf()
-        )
-    }
+    fun p1(@Given component: C): P1 = component.element()
 }
 
-class ChildComponentModule2<P : Component, P1, P2, C : Component>(
-    private val p1Key: TypeKey<P1>,
-    private val p2Key: TypeKey<P2>,
-    private val childComponentFactoryKey: TypeKey<(P1, P2) -> C>
-) {
+class ChildComponentModule2<P : Component, @ForTypeKey P1, @ForTypeKey P2, @ForTypeKey C : Component> {
     @Given
     fun factoryElement(
         @Given parent: P,
         @Given builderProvider: () -> Component.Builder<C>
-    ): ComponentElement<P> = childComponentFactoryKey to {
+    ): ComponentElement<P> = typeKeyOf<(P1, P2) -> C>() to {
         val factory: (P1, P2) -> C = { p1, p2 ->
             builderProvider()
                 .dependency(parent)
-                .element(p1Key) { p1 }
-                .element(p2Key) { p2 }
+                .element { p1 }
+                .element { p2 }
                 .build()
         }
         factory
     }
 
     @Given
-    fun factory(@Given parent: P): (P1, P2) -> C = parent.element(childComponentFactoryKey)
+    fun factory(@Given parent: P): (P1, P2) -> C = parent.element()
 
     @Given
-    fun p1(@Given component: C): P1 = component.element(p1Key)!!
+    fun p1(@Given component: C): P1 = component.element()
 
     @Given
-    fun p2(@Given component: C): P2 = component.element(p2Key)!!
-
-    companion object {
-        operator fun <@ForTypeKey P : Component,
-                @ForTypeKey P1,
-                @ForTypeKey P2,
-                @ForTypeKey C : Component> invoke() = ChildComponentModule2<P, P1, P2, C>(
-            typeKeyOf(),
-            typeKeyOf(),
-            typeKeyOf()
-        )
-    }
+    fun p2(@Given component: C): P2 = component.element()
 }
 
-class ChildComponentModule3<P : Component, P1, P2, P3, C : Component>(
-    private val p1Key: TypeKey<P1>,
-    private val p2Key: TypeKey<P2>,
-    private val p3Key: TypeKey<P3>,
-    private val childComponentFactoryKey: TypeKey<(P1, P2, P3) -> C>
-) {
+class ChildComponentModule3<P : Component, @ForTypeKey P1, @ForTypeKey P2, @ForTypeKey P3, @ForTypeKey C : Component> {
     @Given
     fun factoryElement(
         @Given parent: P,
         @Given builderProvider: () -> Component.Builder<C>
-    ): ComponentElement<P> = childComponentFactoryKey to {
+    ): ComponentElement<P> = typeKeyOf<(P1, P2, P3) -> C>() to {
         val factory: (P1, P2, P3) -> C = { p1, p2, p3 ->
             builderProvider()
                 .dependency(parent)
-                .element(p1Key) { p1 }
-                .element(p2Key) { p2 }
-                .element(p3Key) { p3 }
+                .element { p1 }
+                .element { p2 }
+                .element { p3 }
                 .build()
         }
         factory
     }
 
     @Given
-    fun factory(@Given parent: P): (P1, P2, P3) -> C = parent.element(childComponentFactoryKey)
+    fun factory(@Given parent: P): (P1, P2, P3) -> C = parent.element()
 
     @Given
-    fun p1(@Given component: C): P1 = component.element(p1Key)!!
+    fun p1(@Given component: C): P1 = component.element()
 
     @Given
-    fun p2(@Given component: C): P2 = component.element(p2Key)!!
+    fun p2(@Given component: C): P2 = component.element()
 
     @Given
-    fun p3(@Given component: C): P3 = component.element(p3Key)!!
-
-    companion object {
-        operator fun <P : Component,
-                @ForTypeKey P1,
-                @ForTypeKey P2,
-                @ForTypeKey P3,
-                @ForTypeKey C : Component> invoke() = ChildComponentModule3<P, P1, P2, P3, C>(
-            typeKeyOf(),
-            typeKeyOf(),
-            typeKeyOf(),
-            typeKeyOf()
-        )
-    }
+    fun p3(@Given component: C): P3 = component.element()
 }
 
-class ChildComponentModule4<P : Component, P1, P2, P3, P4, C : Component>(
-    private val p1Key: TypeKey<P1>,
-    private val p2Key: TypeKey<P2>,
-    private val p3Key: TypeKey<P3>,
-    private val p4Key: TypeKey<P4>,
-    private val childComponentFactoryKey: TypeKey<(P1, P2, P3, P4) -> C>
-) {
+class ChildComponentModule4<P : Component, @ForTypeKey P1, @ForTypeKey P2, @ForTypeKey P3, @ForTypeKey P4, @ForTypeKey C : Component> {
     @Given
     fun factoryElement(
         @Given parent: P,
         @Given builderProvider: () -> Component.Builder<C>
-    ): ComponentElement<P> = childComponentFactoryKey to {
+    ): ComponentElement<P> = typeKeyOf<(P2, P2, P3, P4) -> C>() to {
         val factory: (P1, P2, P3, P4) -> C = { p1, p2, p3, p4 ->
             builderProvider()
                 .dependency(parent)
-                .element(p1Key) { p1 }
-                .element(p2Key) { p2 }
-                .element(p3Key) { p3 }
-                .element(p4Key) { p4 }
+                .element { p1 }
+                .element { p2 }
+                .element { p3 }
+                .element { p4 }
                 .build()
         }
         factory
     }
 
     @Given
-    fun factory(@Given parent: P): (P1, P2, P3, P4) -> C = parent.element(childComponentFactoryKey)
+    fun factory(@Given parent: P): (P1, P2, P3, P4) -> C = parent.element()
 
     @Given
-    fun p1(@Given component: C): P1 = component.element(p1Key)!!
+    fun p1(@Given component: C): P1 = component.element()
 
     @Given
-    fun p2(@Given component: C): P2 = component.element(p2Key)!!
+    fun p2(@Given component: C): P2 = component.element()
 
     @Given
-    fun p3(@Given component: C): P3 = component.element(p3Key)!!
+    fun p3(@Given component: C): P3 = component.element()
 
     @Given
-    fun p4(@Given component: C): P4 = component.element(p4Key)!!
-
-    companion object {
-        operator fun <P : Component,
-                @ForTypeKey P1,
-                @ForTypeKey P2,
-                @ForTypeKey P3,
-                @ForTypeKey P4,
-                @ForTypeKey C : Component> invoke() = ChildComponentModule4<P, P1, P2, P3, P4, C>(
-            typeKeyOf(),
-            typeKeyOf(),
-            typeKeyOf(),
-            typeKeyOf(),
-            typeKeyOf()
-        )
-    }
+    fun p4(@Given component: C): P4 = component.element()
 }
 
-class ChildComponentModule5<P : Component, P1, P2, P3, P4, P5, C : Component>(
-    private val p1Key: TypeKey<P1>,
-    private val p2Key: TypeKey<P2>,
-    private val p3Key: TypeKey<P3>,
-    private val p4Key: TypeKey<P4>,
-    private val p5Key: TypeKey<P5>,
-    private val childComponentFactoryKey: TypeKey<(P1, P2, P3, P4, P5) -> C>
-) {
+class ChildComponentModule5<P : Component, @ForTypeKey P1, @ForTypeKey P2, @ForTypeKey P3, @ForTypeKey P4, @ForTypeKey P5, @ForTypeKey C : Component> {
     @Given
     fun factoryElement(
         @Given parent: P,
         @Given builderProvider: () -> Component.Builder<C>
-    ): ComponentElement<P> = childComponentFactoryKey to {
+    ): ComponentElement<P> = typeKeyOf<(P1, P2, P3, P4, P5) -> C>() to {
         val factory: (P1, P2, P3, P4, P5) -> C = { p1, p2, p3, p4, p5 ->
             builderProvider()
                 .dependency(parent)
-                .element(p1Key) { p1 }
-                .element(p2Key) { p2 }
-                .element(p3Key) { p3 }
-                .element(p4Key) { p4 }
-                .element(p5Key) { p5 }
+                .element { p1 }
+                .element { p2 }
+                .element { p3 }
+                .element { p4 }
+                .element { p5 }
                 .build()
         }
         factory
     }
 
     @Given
-    fun factory(@Given parent: P): (P1, P2, P3, P4, P5) -> C = parent.element(childComponentFactoryKey)
+    fun factory(@Given parent: P): (P1, P2, P3, P4, P5) -> C = parent.element()
 
     @Given
-    fun p1(@Given component: C): P1 = component.element(p1Key)!!
+    fun p1(@Given component: C): P1 = component.element()
 
     @Given
-    fun p2(@Given component: C): P2 = component.element(p2Key)!!
+    fun p2(@Given component: C): P2 = component.element()
 
     @Given
-    fun p3(@Given component: C): P3 = component.element(p3Key)!!
+    fun p3(@Given component: C): P3 = component.element()
 
     @Given
-    fun p4(@Given component: C): P4 = component.element(p4Key)!!
+    fun p4(@Given component: C): P4 = component.element()
 
     @Given
-    fun p5(@Given component: C): P5 = component.element(p5Key)!!
-
-    companion object {
-        operator fun <P : Component,
-                @ForTypeKey P1,
-                @ForTypeKey P2,
-                @ForTypeKey P3,
-                @ForTypeKey P4,
-                @ForTypeKey P5,
-                @ForTypeKey C : Component> invoke() = ChildComponentModule5<P, P1, P2, P3, P4, P5, C>(
-            typeKeyOf(),
-            typeKeyOf(),
-            typeKeyOf(),
-            typeKeyOf(),
-            typeKeyOf(),
-            typeKeyOf()
-        )
-    }
+    fun p5(@Given component: C): P5 = component.element()
 }

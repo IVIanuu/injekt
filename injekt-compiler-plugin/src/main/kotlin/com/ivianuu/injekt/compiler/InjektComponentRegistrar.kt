@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
 import com.ivianuu.injekt.compiler.analysis.InjektTypeResolutionInterceptorExtension
 import com.ivianuu.injekt.compiler.transform.FileManager
+import com.ivianuu.injekt.compiler.transform.InfoDescriptorSerializationPlugin
 import com.ivianuu.injekt.compiler.transform.InjektIrDumper
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -35,6 +36,7 @@ import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.extensions.internal.CandidateInterceptor
 import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
+import org.jetbrains.kotlin.serialization.DescriptorSerializerPlugin
 import java.io.File
 
 @AutoService(ComponentRegistrar::class)
@@ -79,6 +81,10 @@ class InjektComponentRegistrar : ComponentRegistrar {
         @Suppress("DEPRECATION")
         Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
             .registerExtension(InjektDiagnosticSuppressor())
+        DescriptorSerializerPlugin.registerExtension(
+            project,
+            InfoDescriptorSerializationPlugin()
+        )
     }
 }
 

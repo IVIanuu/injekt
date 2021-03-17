@@ -49,10 +49,9 @@ class InfoTransformer(
 
     @Suppress("NewApi")
     override fun visitClass(declaration: IrClass): IrStatement {
-        if (declaration.visibility == DescriptorVisibilities.PUBLIC &&
-            (declaration.hasAnnotation(InjektFqNames.Given) ||
+        if (declaration.hasAnnotation(InjektFqNames.Given) ||
                     declaration.descriptor.toClassifierRef(context, null)
-                        .forTypeKeyTypeParameters.isNotEmpty())) {
+                        .forTypeKeyTypeParameters.isNotEmpty()) {
             declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
                 .run {
                     irCall(
@@ -75,11 +74,9 @@ class InfoTransformer(
 
     @Suppress("NewApi")
     override fun visitFunction(declaration: IrFunction): IrStatement {
-        if ((declaration.hasAnnotation(InjektFqNames.Given) &&
-                    declaration.visibility == DescriptorVisibilities.PUBLIC) || (
-                    (declaration is IrConstructor &&
-                            declaration.constructedClass.hasAnnotation(InjektFqNames.Given) &&
-                            declaration.constructedClass.visibility == DescriptorVisibilities.PUBLIC))) {
+        if (declaration.hasAnnotation(InjektFqNames.Given) ||
+            (declaration is IrConstructor &&
+                    declaration.constructedClass.hasAnnotation(InjektFqNames.Given))) {
                 val annotation = DeclarationIrBuilder(pluginContext, declaration.symbol)
                     .run {
                         irCall(
@@ -109,8 +106,7 @@ class InfoTransformer(
 
     @Suppress("NewApi")
     override fun visitProperty(declaration: IrProperty): IrStatement {
-        if (declaration.hasAnnotation(InjektFqNames.Given) &&
-                declaration.visibility == DescriptorVisibilities.PUBLIC) {
+        if (declaration.hasAnnotation(InjektFqNames.Given)) {
             declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
                 .run {
                     irCall(

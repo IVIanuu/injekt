@@ -162,7 +162,7 @@ class TypeKeyTransformer(
         if (function in transformedFunctions.values) return function
 
         if (function is IrConstructor) {
-            if (!function.descriptor.isExternalDeclaration()) return function
+            if (!function.descriptor.original.isExternalDeclaration()) return function
             val typeKeyParameters = function.constructedClass
                 .descriptor
                 .toClassifierRef(context, trace)
