@@ -370,4 +370,31 @@ class GivenConstraintTest {
         compilationShouldHaveFailed("constrained given return type must not be assignable to the constraint type")
     }
 
+    @Test
+    fun testComplexGivenConstraintSetup() = codegen(
+        """
+            @Scoped<AppComponent>
+            @Given
+            class Dep(@Given app: App)
+
+            @Scoped<AppComponent>
+            @Given
+            class DepWrapper(@Given dep: Dep)
+
+            @Scoped<AppComponent>
+            @Given
+            class DepWrapper2(@Given dep: () -> Dep, @Given wrapper: () -> DepWrapper)
+
+            fun invoke() {
+                "".initializeApp()   
+            }
+            @ComponentElementBinding<AppComponent>
+            @Given
+            class MyComponent(@Given dep: Dep, @Given wrapper: () -> () -> DepWrapper, @Given wrapper2: () -> DepWrapper2)
+
+            @Given
+            fun myInitializer(@Given dep: Dep, @Given wrapper: () -> () -> DepWrapper, @Given wrapper2: () -> DepWrapper2): ComponentInitializer<AppComponent> = {}
+        """
+    )
+
 }

@@ -37,33 +37,6 @@ class GivenDeclarationCheckTest {
     }
 
     @Test
-    fun test() = codegen(
-        """
-            @Scoped<AppComponent>
-            @Given
-            class Dep(@Given app: App)
-
-            @Scoped<AppComponent>
-            @Given
-            class DepWrapper(@Given dep: Dep)
-
-            @Scoped<AppComponent>
-            @Given
-            class DepWrapper2(@Given dep: () -> Dep, @Given wrapper: () -> DepWrapper)
-
-            fun invoke() {
-                "".initializeApp()   
-            }
-            @ComponentElementBinding<AppComponent>
-            @Given
-            class MyComponent(@Given dep: Dep, @Given wrapper: () -> () -> DepWrapper, @Given wrapper2: () -> DepWrapper2)
-
-            @Given
-            fun myInitializer(@Given dep: Dep, @Given wrapper: () -> () -> DepWrapper, @Given wrapper2: () -> DepWrapper2): ComponentInitializer<AppComponent> = {}
-        """
-    )
-
-    @Test
     fun testClassWithMultipleGivenConstructors() = codegen(
         """
             class Dep {

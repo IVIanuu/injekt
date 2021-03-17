@@ -229,9 +229,11 @@ class ResolutionScope(
             substitutionMap = outputsSubstitutionMap,
             trace = trace,
             addGiven = { newInnerGiven ->
-                givens += newInnerGiven
-                val newInnerGivenWithFrameworkKey = newInnerGiven.copy(
-                    type = newInnerGiven.type.copy(
+                val finalNewInnerGiven = newInnerGiven
+                    .copy(fromGivenConstraint = true)
+                givens += finalNewInnerGiven
+                val newInnerGivenWithFrameworkKey = finalNewInnerGiven.copy(
+                    type = finalNewInnerGiven.type.copy(
                         frameworkKey = generateFrameworkKey()
                             .also { constrainedGiven.resultingFrameworkKeys += it }
                     )
@@ -239,13 +241,15 @@ class ResolutionScope(
                 givens += newInnerGivenWithFrameworkKey
                 val newCandidate = ConstrainedGivenCandidate(
                     type = newInnerGivenWithFrameworkKey.type,
-                    rawType = newInnerGiven.type
+                    rawType = finalNewInnerGiven.type
                 )
                 constrainedGivenCandidates += newCandidate
                 collectConstrainedGivens(newCandidate)
             },
-            addConstrainedGiven = { newCallable ->
-                val newConstrainedGiven = ConstrainedGivenNode(newCallable)
+            addConstrainedGiven = { newInnerConstrainedGiven ->
+                val finalNewInnerConstrainedGiven = newInnerConstrainedGiven
+                    .copy(fromGivenConstraint = true)
+                val newConstrainedGiven = ConstrainedGivenNode(finalNewInnerConstrainedGiven)
                 constrainedGivens += newConstrainedGiven
                 constrainedGivenCandidates
                     .toList()

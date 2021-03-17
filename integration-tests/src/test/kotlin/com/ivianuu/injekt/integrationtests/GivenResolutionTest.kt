@@ -574,6 +574,26 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testPrefersGivenFromAGivenConstraint() = codegen(
+        """
+            @MyQualifier
+            @Given 
+            class FooModule {
+                @Given
+                val foo = Foo()
+            }
+
+            @Qualifier
+            annotation class MyQualifier
+
+            @Given
+            fun <@Given T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
+
+            fun invoke() = given<Foo>()
+        """
+    )
+
+    @Test
     fun testGenericGiven() = codegen(
         """
             @Given val foo = Foo()
