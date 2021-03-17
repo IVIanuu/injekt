@@ -21,16 +21,20 @@ import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
+import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 
 class InjektIrGenerationExtension : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val context = InjektContext(pluginContext.moduleDescriptor)
+        val trace = DelegatingBindingTrace(
+            pluginContext.bindingContext, "injekt trace"
+        )
         moduleFragment.transform(InfoTransformer(
             context,
             pluginContext
         ), null)
         moduleFragment.transform(GivenCallTransformer(context, pluginContext), null)
-        moduleFragment.transform(TypeKeyTransformer(pluginContext), null)
+        moduleFragment.transform(TypeKeyTransformer(context, trace, pluginContext), null)
         moduleFragment.patchDeclarationParents()
     }
 }

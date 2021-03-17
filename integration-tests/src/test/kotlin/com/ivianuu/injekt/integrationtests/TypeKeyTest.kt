@@ -18,6 +18,7 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.common.TypeKey
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
@@ -154,6 +155,90 @@ class TypeKeyTest {
         )
     ) {
         it.invokeSingleFile<TypeKey<List<String>>>().value shouldBe "kotlin.collections.List<kotlin.String>"
+    }
+
+    @Test
+    fun testClassWithForTypeKeyParameterInInitializer() = codegen(
+        """
+            class MyClass<@ForTypeKey T> {
+                val typeKey = typeKeyOf<T>()
+            }
+            fun invoke() = MyClass<String>().typeKey
+        """
+    ) {
+        invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String"
+    }
+
+    @Test
+    fun testClassWithForTypeKeyParameterInFunction() = codegen(
+        """
+            class MyClass<@ForTypeKey T> {
+                fun typeKey() = typeKeyOf<T>()
+            }
+            fun invoke() = MyClass<String>().typeKey()
+        """
+    ) {
+        invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String"
+    }
+
+    @Test
+    fun testClassWithForTypeKeyParameterMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                class MyClass<@ForTypeKey T> {
+                    val typeKey = typeKeyOf<T>()
+                }
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke() = MyClass<String>().typeKey
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        it.invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String"
+    }
+
+    @Test
+    fun testClassWithForTypeKeyParameterSubClass() = codegen(
+        """
+            abstract class MySuperClass<@ForTypeKey T> {
+                val typeKey = typeKeyOf<T>()
+            }
+            class MyClass<@ForTypeKey T> : MySuperClass<T>()
+            fun invoke() = MyClass<String>().typeKey
+        """
+    ) {
+        invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String"
+    }
+
+    @Test
+    fun testClassWithForTypeKeyParameterSubClassMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    abstract class MySuperClass<@ForTypeKey T> {
+                        val typeKey = typeKeyOf<T>()
+                    }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    class MyClass<@ForTypeKey T> : MySuperClass<T>()
+                    fun invoke() = MyClass<String>().typeKey
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        it.invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String"
     }
 
 }

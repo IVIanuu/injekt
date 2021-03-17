@@ -37,6 +37,11 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     override fun isSuppressed(diagnostic: Diagnostic, bindingContext: BindingContext?): Boolean {
         if (bindingContext == null) return false
 
+        if (diagnostic.factory == Errors.UNSUPPORTED) {
+            val typeParameter = diagnostic.psiElement.parent?.parent as? KtTypeParameter
+            if (typeParameter?.hasAnnotation(InjektFqNames.ForTypeKey) == true) return true
+        }
+
         if (diagnostic.factory == Errors.FINAL_UPPER_BOUND) {
             val typeParameter = diagnostic.psiElement.parent as? KtTypeParameter
             if (typeParameter?.hasAnnotation(InjektFqNames.Given) == true) return true

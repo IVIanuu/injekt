@@ -36,7 +36,9 @@ import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtParameter
+import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -55,7 +57,8 @@ data class ClassifierRef(
     val descriptor: ClassifierDescriptor? = null,
     val qualifiers: List<AnnotationRef> = emptyList(),
     val isGivenConstraint: Boolean = false,
-    val primaryConstructorPropertyParameters: List<Name> = emptyList()
+    val primaryConstructorPropertyParameters: List<Name> = emptyList(),
+    val forTypeKeyTypeParameters: List<Name> = emptyList()
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
     override fun hashCode(): Int = fqName.hashCode()
@@ -109,6 +112,15 @@ fun ClassifierDescriptor.toClassifierRef(
             ?.valueParameters
             ?.filter { it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true }
             ?.map { it.name }
+            ?: emptyList(),
+        forTypeKeyTypeParameters = this
+            .takeIf { !it.isExternalDeclaration() }
+            .safeAs<ClassDescriptor>()
+            ?.findPsi()
+            ?.safeAs<KtClass>()
+            ?.typeParameters
+            ?.filter { it.hasAnnotation(InjektFqNames.ForTypeKey) }
+            ?.map { it.nameAsSafeName }
             ?: emptyList()
     ).let {
         if (original.isExternalDeclaration()) it.apply(

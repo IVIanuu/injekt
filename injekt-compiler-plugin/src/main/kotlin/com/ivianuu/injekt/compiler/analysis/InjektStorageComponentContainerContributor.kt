@@ -35,7 +35,7 @@ class InjektStorageComponentContainerContributor(
     ) {
         val context = InjektContext(moduleDescriptor)
         container.useInstance(GivenChecker(context))
-        container.useInstance(TypeKeyChecker())
+        container.useInstance(TypeKeyChecker(context))
         if (!isIde) {
             container.useInstance(GivenCallChecker(context, bindingContextCollector))
         }

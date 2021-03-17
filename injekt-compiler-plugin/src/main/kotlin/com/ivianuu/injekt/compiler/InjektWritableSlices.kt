@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
 import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
@@ -52,6 +53,9 @@ object InjektWritableSlices {
     val CALLABLE_INFO = BasicWritableSlice<CallableDescriptor, Tuple1<PersistedCallableInfo?>>(
         RewritePolicy.DO_NOTHING)
     val CLASSIFIER_INFO = BasicWritableSlice<ClassifierRef, Tuple1<PersistedClassifierInfo?>>(
+        RewritePolicy.DO_NOTHING
+    )
+    val IS_FOR_TYPE_KEY = BasicWritableSlice<TypeParameterDescriptor, Boolean>(
         RewritePolicy.DO_NOTHING
     )
     val CLASSIFIER_FOR_KEY = BasicWritableSlice<String, ClassifierDescriptor>(RewritePolicy.DO_NOTHING)
