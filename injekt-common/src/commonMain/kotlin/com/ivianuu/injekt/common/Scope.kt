@@ -94,6 +94,32 @@ inline fun <T : Any> Scope.getOrCreate(key: Any, init: () -> T): T {
 
 inline fun <@ForTypeKey T : Any> Scope.getOrCreate(block: () -> T): T = getOrCreate(typeKeyOf<T>(), block)
 
+fun Scope.invokeOnDispose(action: () -> Unit): ScopeDisposable {
+    if (isDisposed) {
+        action()
+        return NoOpScopeDisposable
+    }
+    synchronized(this) {
+        if (isDisposed) {
+            action()
+            return NoOpScopeDisposable
+        }
+        val key = DisposerKey()
+        var notifyDisposal = true
+        set(key, ScopeDisposable {
+            if (notifyDisposal) action()
+        })
+        return ScopeDisposable {
+            notifyDisposal = false
+            remove(key)
+        }
+    }
+}
+
+private class DisposerKey
+
+private val NoOpScopeDisposable = ScopeDisposable {  }
+
 private class ScopeImpl(private val values: MutableMap<Any, Any>) : Scope {
     override var isDisposed = false
 

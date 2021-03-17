@@ -88,4 +88,33 @@ class ScopeTest {
         scope.isDisposed.shouldBeTrue()
     }
 
+    @Test
+    fun testInvokeOnDispose() {
+        val scope = Scope()
+        var called = false
+        scope.invokeOnDispose { called = true }
+        called.shouldBeFalse()
+        scope.dispose()
+        called.shouldBeTrue()
+    }
+
+    @Test
+    fun testInvokeOnDisposeOnDisposedScope() {
+        val scope = Scope()
+        var called = false
+        scope.dispose()
+        scope.invokeOnDispose { called = true }
+        called.shouldBeTrue()
+    }
+
+    @Test
+    fun testDoesNotInvokeOnDisposeIfReturnDisposableWasDisposed() {
+        val scope = Scope()
+        var called = false
+        val disposable = scope.invokeOnDispose { called = true }
+        disposable.dispose()
+        called.shouldBeFalse()
+        scope.dispose()
+        called.shouldBeFalse()
+    }
 }
