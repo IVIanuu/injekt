@@ -27,15 +27,15 @@ interface Scope : ScopeDisposable {
     /**
      * Returns the value [T] for [key] or null
      */
-    operator fun <T : Any> get(key: Any): T?
+    fun <T : Any> get(key: Any): T?
     /**
      * Sets the value [T] for [key] to [value]
      */
-    operator fun <T : Any> set(key: Any, value: T)
+    fun <T : Any> set(key: Any, value: T)
     /**
      * Removes the value for [key]
      */
-    operator fun minusAssign(key: Any)
+    fun remove(key: Any)
 }
 
 /**
@@ -77,23 +77,22 @@ annotation class Scoped<S : Scope>
 inline fun <@Given T : @Scoped<U> S, @ForTypeKey S : Any, U : Scope> scopedImpl(
     @Given scope: U,
     @Given factory: () -> T
-): S = scope<S>(factory)
+): S = scope.getOrCreate<S>(factory)
 
 /**
- * Returns an existing instance of [T] for key [key] or creates a new one by calling function [block]
+ * Returns an existing instance of [T] for key [key] or creates and caches a new instance by calling function [init]
  */
-inline operator fun <T : Any> Scope.invoke(key: Any, block: () -> T): T {
+inline fun <T : Any> Scope.getOrCreate(key: Any, init: () -> T): T {
     get<T>(key)?.let { return it }
     synchronized(this) {
         get<T>(key)?.let { return it }
-        val value = block()
+        val value = init()
         set(key, value)
         return value
     }
 }
 
-inline operator fun <@ForTypeKey T : Any> Scope.invoke(block: () -> T): T =
-    this(typeKeyOf<T>(), block)
+inline fun <@ForTypeKey T : Any> Scope.getOrCreate(block: () -> T): T = getOrCreate(typeKeyOf<T>(), block)
 
 private class ScopeImpl(private val values: MutableMap<Any, Any>) : Scope {
     override var isDisposed = false
@@ -106,19 +105,23 @@ private class ScopeImpl(private val values: MutableMap<Any, Any>) : Scope {
 
     override fun <T : Any> set(key: Any, value: T) {
         if (isDisposed) return
-        minusAssign(key)
+        remove(key)
         values[key] = value
     }
 
-    override fun minusAssign(key: Any) {
+    override fun remove(key: Any) {
         if (isDisposed) return
-        (values.remove(key) as? ScopeDisposable)?.dispose()
+        removeImpl(key)
     }
 
     override fun dispose() {
         if (isDisposed) return
         isDisposed = true
         values.keys
-            .forEach { minusAssign(it) }
+            .forEach { removeImpl(it) }
+    }
+
+    private fun removeImpl(key: Any) {
+        (values.remove(key) as? ScopeDisposable)?.dispose()
     }
 }

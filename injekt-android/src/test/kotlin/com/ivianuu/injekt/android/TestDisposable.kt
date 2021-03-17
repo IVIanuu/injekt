@@ -19,8 +19,7 @@ package com.ivianuu.injekt.android
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.common.ForTypeKey
 import com.ivianuu.injekt.common.ScopeDisposable
-import com.ivianuu.injekt.common.Scoped
-import com.ivianuu.injekt.common.invoke
+import com.ivianuu.injekt.common.getOrCreate
 import com.ivianuu.injekt.component.Component
 import com.ivianuu.injekt.component.ComponentElementBinding
 
@@ -34,4 +33,4 @@ class TestComponentDisposable<C : Component> : ScopeDisposable {
 @Given
 fun <@ForTypeKey C : Component> testComponentDisposable(
     @Given component: C
-): @ComponentElementBinding<C> TestComponentDisposable<C> = component { TestComponentDisposable() }
+): @ComponentElementBinding<C> TestComponentDisposable<C> = component.getOrCreate { TestComponentDisposable() }

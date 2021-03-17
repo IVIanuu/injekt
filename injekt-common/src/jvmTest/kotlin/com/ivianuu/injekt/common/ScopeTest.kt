@@ -27,7 +27,7 @@ class ScopeTest {
     fun testGetSet() {
         val scope = Scope()
         scope.get<String>(0) shouldBe null
-        scope[0] = "value"
+        scope.set(0, "value")
         scope.get<String>(0) shouldBe "value"
     }
 
@@ -35,16 +35,12 @@ class ScopeTest {
     fun testRemoveDisposesValue() {
         val scope = Scope()
         var disposed = false
-        scope(0) {
-            object : ScopeDisposable {
-                override fun dispose() {
-                    disposed = true
-                }
-            }
+        scope.getOrCreate(0) {
+            ScopeDisposable { disposed = true }
         }
 
         disposed.shouldBeFalse()
-        scope.minusAssign(0)
+        scope.remove(0)
         disposed.shouldBeTrue()
     }
 
@@ -52,16 +48,12 @@ class ScopeTest {
     fun testSetDisposesOldValue() {
         val scope = Scope()
         var disposed = false
-        scope(0) {
-            object : ScopeDisposable {
-                override fun dispose() {
-                    disposed = true
-                }
-            }
+        scope.getOrCreate(0) {
+            ScopeDisposable { disposed = true }
         }
 
         disposed.shouldBeFalse()
-        scope[0] = ""
+        scope.set(0, 0)
         disposed.shouldBeTrue()
     }
 
@@ -69,12 +61,8 @@ class ScopeTest {
     fun testDisposeDisposesValues() {
         val scope = Scope()
         var disposed = false
-        scope(0) {
-            object : ScopeDisposable {
-                override fun dispose() {
-                    disposed = true
-                }
-            }
+        scope.getOrCreate(0) {
+            ScopeDisposable { disposed = true }
         }
 
         disposed.shouldBeFalse()
@@ -86,9 +74,9 @@ class ScopeTest {
     fun testScope() {
         val scope = Scope()
         var calls = 0
-        scope(0) { calls++ }
-        scope(0) { calls++ }
-        scope(1) { calls++ }
+        scope.getOrCreate(0) { calls++ }
+        scope.getOrCreate(0) { calls++ }
+        scope.getOrCreate(1) { calls++ }
         calls shouldBe 2
     }
 
