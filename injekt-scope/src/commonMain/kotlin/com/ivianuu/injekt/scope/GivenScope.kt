@@ -63,7 +63,7 @@ fun <S : GivenScope> GivenScope(
 ): S {
     val scope = GivenScopeImpl()
     elements(scope as S).forEach { scope.elements[it.key] = it.factory }
-    initializers(scope).forEach { it(scope) }
+    initializers(scope).forEach { it() }
     return scope
 }
 

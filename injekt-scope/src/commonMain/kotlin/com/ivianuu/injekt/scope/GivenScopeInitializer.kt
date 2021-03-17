@@ -27,4 +27,4 @@ package com.ivianuu.injekt.scope
  * }
  * ```
  */
-typealias GivenScopeInitializer<S> = (S) -> Unit
+typealias GivenScopeInitializer<S> = () -> Unit
