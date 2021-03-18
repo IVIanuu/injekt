@@ -149,8 +149,11 @@ private class ScopeImpl(private val values: MutableMap<Any, Any>) : Scope {
     override fun dispose() {
         if (isDisposed) return
         isDisposed = true
-        values.keys
-            .forEach { removeImpl(it) }
+        if (values.isNotEmpty()) {
+            values.keys
+                .toList()
+                .forEach { removeImpl(it) }
+        }
     }
 
     private fun removeImpl(key: Any) {
