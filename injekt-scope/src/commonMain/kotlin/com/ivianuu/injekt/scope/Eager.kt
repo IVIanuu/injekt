@@ -20,7 +20,7 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Qualifier
 
 /**
- * Converts a [@Eager<C> T] to a [T] which is scoped to the lifecycle of [S] and will be instantiated
+ * Converts a [@Eager<S> T] to a [T] which is scoped to the lifecycle of [S] and will be instantiated
  * as soon as the hosting [GivenScope] get's initialized
  */
 @Qualifier

@@ -192,7 +192,7 @@ fun <@Given T : @GivenScopeElementBinding<U> S, @ForTypeKey S, @ForTypeKey U : G
     typeKeyOf<S>() to factory as () -> Any?
 
 /**
- * Will get invoked once [GivenScope] [C] is initialized
+ * Will get invoked once [GivenScope] [S] is initialized
  *
  * Example:
  * ```
@@ -201,7 +201,7 @@ fun <@Given T : @GivenScopeElementBinding<U> S, @ForTypeKey S, @ForTypeKey U : G
  * }
  * ```
  */
-typealias GivenScopeInitializer<C> = (C) -> Unit
+typealias GivenScopeInitializer<S> = (S) -> Unit
 
 @PublishedApi
 internal class GivenScopeImpl(
