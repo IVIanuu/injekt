@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.given
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 
@@ -25,16 +26,16 @@ class EagerTest {
     fun testEager() {
         var callCount = 0
         class Foo
-        @Eager<AppGivenScope>
+        @Eager<TestGivenScope1>
         @Given
         fun eagerFoo(): Foo {
             callCount++
             return Foo()
         }
-        @GivenScopeElementBinding<AppGivenScope>
+        @GivenScopeElementBinding<TestGivenScope1>
         @Given
         fun fooElement(@Given foo: Foo) = foo
-        val builder = GivenScopeBuilder<AppGivenScope>()
+        val builder = given<GivenScope.Builder<TestGivenScope1>>()
         callCount shouldBe 0
         val scope = builder.build()
         callCount shouldBe 1

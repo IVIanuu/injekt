@@ -28,7 +28,7 @@ import com.ivianuu.injekt.samples.android.ui.*
 class App : Application() {
     override fun onCreate() {
         // kick start injekt here
-        initializeApp(initializers = { emptySet() })
+        initializeApp()
         super.onCreate()
     }
 }

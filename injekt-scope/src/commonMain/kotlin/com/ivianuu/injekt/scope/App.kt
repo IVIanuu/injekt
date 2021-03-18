@@ -24,22 +24,19 @@ typealias AppGivenScope = GivenScope
  * Initializes the [AppGivenScope] with [elements] and [initializers]
  * And can then be accessed via [appGivenScope]
  */
-fun App.initializeApp(
-    @Given elements: (@Given AppGivenScope) -> Set<GivenScopeElement<AppGivenScope>>,
-    @Given initializers: (@Given AppGivenScope) -> Set<GivenScopeInitializer<AppGivenScope>>
-) {
-    _appGivenScope = GivenScopeBuilder<AppGivenScope>(elements, initializers)
+fun App.initializeApp(@Given appScopeBuilder: GivenScope.Builder<AppGivenScope>) {
+    _appGivenScope = appScopeBuilder
         .element { this }
         .build()
 }
+
+private var _appGivenScope: AppGivenScope? = null
+
+val App.appGivenScope: AppGivenScope
+    get() = _appGivenScope ?: error("app given scope not initialized. Did you forget to call initializeApp()?")
 
 typealias App = Any
 
 @Given
 val @Given AppGivenScope.app: App
     get() = element()
-
-private var _appGivenScope: AppGivenScope? = null
-
-val App.appGivenScope: AppGivenScope
-    get() = _appGivenScope ?: error("app given scope not initialized. Did you forget to call initializeApp()?")

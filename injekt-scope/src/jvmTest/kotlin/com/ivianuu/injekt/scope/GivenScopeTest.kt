@@ -18,6 +18,7 @@ package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.common.typeKeyOf
+import com.ivianuu.injekt.given
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.nulls.shouldBeNull
@@ -28,10 +29,7 @@ import org.junit.Test
 class GivenScopeTest {
     @Test
     fun testReturnsExistingValue() {
-        val givenScope = GivenScopeBuilder<TestGivenScope1>(
-            elements = { emptySet() },
-            initializers = { emptySet() }
-        )
+        val givenScope = given<GivenScope.Builder<TestGivenScope1>>()
             .element { "value" }
             .build()
         givenScope.element<String>() shouldBe "value"
@@ -39,24 +37,15 @@ class GivenScopeTest {
 
     @Test
     fun testReturnsNullForNotExistingValue() {
-        val givenScope = GivenScopeBuilder<TestGivenScope1>(
-            elements = { emptySet() },
-            initializers = { emptySet() }
-        ).build()
+        val givenScope = given<GivenScope.Builder<TestGivenScope1>>().build()
         givenScope.elementOrNull(typeKeyOf<String>()) shouldBe null
     }
 
     @Test
     fun testReturnsFromDependency() {
-        val givenScope = GivenScopeBuilder<TestGivenScope2>(
-            elements = { emptySet() },
-            initializers = { emptySet() }
-        )
+        val givenScope =given<GivenScope.Builder<TestGivenScope2>>()
             .dependency(
-                GivenScopeBuilder<TestGivenScope1>(
-                    elements = { emptySet() },
-                    initializers = { emptySet() }
-                )
+                given<GivenScope.Builder<TestGivenScope1>>()
                     .element { "value" }
                     .build()
             )
@@ -66,14 +55,8 @@ class GivenScopeTest {
 
     @Test
     fun testGetDependencyReturnsDependency() {
-        val dependency = GivenScopeBuilder<TestGivenScope1>(
-            elements = { emptySet() },
-            initializers = { emptySet() }
-        ).build()
-        val dependent = GivenScopeBuilder<TestGivenScope2>(
-            elements = { emptySet() },
-            initializers = { emptySet() }
-        )
+        val dependency = given<GivenScope.Builder<TestGivenScope1>>().build()
+        val dependent = given<GivenScope.Builder<TestGivenScope2>>()
             .dependency(dependency)
             .build()
         dependent.element<TestGivenScope1>() shouldBeSameInstanceAs dependency
@@ -81,24 +64,15 @@ class GivenScopeTest {
 
     @Test
     fun testGetDependencyReturnsNullIfNotExists() {
-        val dependent = GivenScopeBuilder<TestGivenScope2>(
-            elements = { emptySet() },
-            initializers = { emptySet() }
-        ).build()
+        val dependent = given<GivenScope.Builder<TestGivenScope2>>().build()
         dependent.elementOrNull(typeKeyOf<TestGivenScope1>()) shouldBe null
     }
 
     @Test
     fun testOverridesDependency() {
-        val givenScope = GivenScopeBuilder<TestGivenScope2>(
-            elements = { emptySet() },
-            initializers = { emptySet() }
-        )
+        val givenScope = given<GivenScope.Builder<TestGivenScope2>>()
             .dependency(
-                GivenScopeBuilder<TestGivenScope1>(
-                    elements = { emptySet() },
-                    initializers = { emptySet() }
-                )
+                given<GivenScope.Builder<TestGivenScope1>>()
                     .element { "dependency" }
                     .build()
             )
@@ -110,9 +84,7 @@ class GivenScopeTest {
     @Test
     fun testInjectedElement() {
         @Given val injected: @GivenScopeElementBinding<TestGivenScope1> String = "value"
-        val givenScope = GivenScopeBuilder<TestGivenScope1>(
-            initializers = { emptySet() }
-        ).build()
+        val givenScope = given<GivenScope.Builder<TestGivenScope1>>().build()
         givenScope.element<String>() shouldBe "value"
     }
 
@@ -124,9 +96,7 @@ class GivenScopeTest {
         @GivenScopeElementBinding<TestGivenScope2>
         @Given
         fun otherElement() = 0
-        val givenScope = GivenScopeBuilder<TestGivenScope1>(
-            initializers = { emptySet() }
-        ).build()
+        val givenScope = given<GivenScope.Builder<TestGivenScope1>>().build()
         givenScope.element<Pair<TestGivenScope1, TestGivenScope1>>().first shouldBeSameInstanceAs givenScope
         givenScope.elementOrNull(typeKeyOf<Int>()).shouldBeNull()
     }
@@ -143,9 +113,7 @@ class GivenScopeTest {
         fun otherInitializer(): GivenScopeInitializer<TestGivenScope2> = {
             otherCalled = true
         }
-        val builder = GivenScopeBuilder<TestGivenScope1>(
-            elements = { emptySet() }
-        )
+        val builder = given<GivenScope.Builder<TestGivenScope1>>()
         called shouldBe false
         val givenScope = builder.build()
         called shouldBe true
@@ -157,19 +125,14 @@ class GivenScopeTest {
         @Given
         val childGivenScopeModule =
             ChildGivenScopeModule1<TestGivenScope1, String, TestGivenScope2>()
-        val parentGivenScope = GivenScopeBuilder<TestGivenScope1>(
-            initializers = { emptySet() }
-        ).build()
+        val parentGivenScope = given<GivenScope.Builder<TestGivenScope1>>().build()
         val childGivenScope = parentGivenScope.element<(String) -> TestGivenScope2>()("42")
         childGivenScope.element<String>() shouldBe "42"
     }
 
     @Test
     fun testGetSetScopedValue() {
-        val scope = GivenScopeBuilder<TestGivenScope1>(
-            elements = { emptySet() },
-            initializers = { emptySet() }
-        ).build()
+        val scope = given<GivenScope.Builder<TestGivenScope1>>().build()
         scope.getScopedValueOrNull<String>(0) shouldBe null
         scope.setScopedValue(0, "value")
         scope.getScopedValueOrNull<String>(0) shouldBe "value"
@@ -177,10 +140,7 @@ class GivenScopeTest {
 
     @Test
     fun testRemoveScopedValueDisposesValue() {
-        val scope = GivenScopeBuilder<TestGivenScope1>(
-            elements = { emptySet() },
-            initializers = { emptySet() }
-        ).build()
+        val scope = given<GivenScope.Builder<TestGivenScope1>>().build()
         var disposed = false
         scope.setScopedValue(0, GivenScopeDisposable { disposed = true })
 
@@ -191,10 +151,7 @@ class GivenScopeTest {
 
     @Test
     fun testSetScopedValueDisposesOldValue() {
-        val scope = GivenScopeBuilder<TestGivenScope1>(
-            elements = { emptySet() },
-            initializers = { emptySet() }
-        ).build()
+        val scope = given<GivenScope.Builder<TestGivenScope1>>().build()
         var disposed = false
         scope.setScopedValue(0, GivenScopeDisposable { disposed = true })
 
@@ -205,10 +162,7 @@ class GivenScopeTest {
 
     @Test
     fun testDisposeDisposesValues() {
-        val scope = GivenScopeBuilder<TestGivenScope1>(
-            elements = { emptySet() },
-            initializers = { emptySet() }
-        ).build()
+        val scope = given<GivenScope.Builder<TestGivenScope1>>().build()
         var disposed = false
         scope.setScopedValue(0, GivenScopeDisposable { disposed = true })
 
@@ -219,10 +173,7 @@ class GivenScopeTest {
 
     @Test
     fun testGetOrCreateScopedValue() {
-        val scope = GivenScopeBuilder<TestGivenScope1>(
-            elements = { emptySet() },
-            initializers = { emptySet() }
-        ).build()
+        val scope = given<GivenScope.Builder<TestGivenScope1>>().build()
         var calls = 0
         scope.getOrCreateScopedValue(0) { calls++ }
         scope.getOrCreateScopedValue(0) { calls++ }
@@ -232,10 +183,7 @@ class GivenScopeTest {
 
     @Test
     fun testDispose() {
-        val scope = GivenScopeBuilder<TestGivenScope1>(
-            elements = { emptySet() },
-            initializers = { emptySet() }
-        ).build()
+        val scope = given<GivenScope.Builder<TestGivenScope1>>().build()
         scope.isDisposed.shouldBeFalse()
         scope.dispose()
         scope.isDisposed.shouldBeTrue()
@@ -243,10 +191,7 @@ class GivenScopeTest {
 
     @Test
     fun testInvokeOnDispose() {
-        val scope = GivenScopeBuilder<TestGivenScope1>(
-            elements = { emptySet() },
-            initializers = { emptySet() }
-        ).build()
+        val scope = given<GivenScope.Builder<TestGivenScope1>>().build()
         var called = false
         scope.invokeOnDispose { called = true }
         called.shouldBeFalse()
@@ -256,10 +201,7 @@ class GivenScopeTest {
 
     @Test
     fun testInvokeOnDisposeOnDisposedScope() {
-        val scope = GivenScopeBuilder<TestGivenScope1>(
-            elements = { emptySet() },
-            initializers = { emptySet() }
-        ).build()
+        val scope = given<GivenScope.Builder<TestGivenScope1>>().build()
         var called = false
         scope.dispose()
         scope.invokeOnDispose { called = true }
@@ -268,10 +210,7 @@ class GivenScopeTest {
 
     @Test
     fun testDoesNotInvokeOnDisposeIfReturnDisposableWasDisposed() {
-        val scope = GivenScopeBuilder<TestGivenScope1>(
-            elements = { emptySet() },
-            initializers = { emptySet() }
-        ).build()
+        val scope = given<GivenScope.Builder<TestGivenScope1>>().build()
         var called = false
         val disposable = scope.invokeOnDispose { called = true }
         disposable.dispose()

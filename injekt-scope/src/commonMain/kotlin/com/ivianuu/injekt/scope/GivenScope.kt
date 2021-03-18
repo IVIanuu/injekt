@@ -146,23 +146,11 @@ private class InvokeOnDisposeKey
 
 private val NoOpScopeDisposable = GivenScopeDisposable {  }
 
-/**
- * Returns a new [GivenScope.Builder] instance
- */
-fun <@ForTypeKey S : GivenScope> GivenScopeBuilder(
-    @Given elements: (@Given S) -> Set<GivenScopeElement<S>>,
-    @Given initializers: (@Given S) -> Set<GivenScopeInitializer<S>>
-): GivenScope.Builder<S> = GivenScopeImpl.Builder(
-    typeKeyOf<S>(),
-    elements as (GivenScope) -> Set<GivenScopeElement<GivenScope>>,
-    initializers as (GivenScope) -> Set<GivenScopeInitializer<GivenScope>>,
-)
-
 @Given
 fun <@ForTypeKey S : GivenScope> givenScopeBuilder(
     @Given elements: (@Given S) -> Set<GivenScopeElement<S>> = { emptySet() },
     @Given initializers: (@Given S) -> Set<GivenScopeInitializer<S>> = { emptySet() }
-) = GivenScopeBuilder(elements, initializers)
+): GivenScope.Builder<S> = GivenScopeImpl.Builder(typeKeyOf<S>(), elements, initializers)
 
 fun <S : GivenScope, @ForTypeKey T> GivenScope.Builder<S>.element(factory: () -> T) =
     element(typeKeyOf(), factory)
@@ -260,8 +248,8 @@ internal class GivenScopeImpl(
 
     class Builder<S : GivenScope>(
         private val key: TypeKey<GivenScope>,
-        private val injectedElements: (GivenScope) -> Set<GivenScopeElement<S>>,
-        private val injectedInitializers: (GivenScope) -> Set<GivenScopeInitializer<S>>
+        private val injectedElements: (S) -> Set<GivenScopeElement<S>>,
+        private val injectedInitializers: (S) -> Set<GivenScopeInitializer<S>>
     ) : GivenScope.Builder<S> {
         private var dependencies: MutableList<GivenScope>? = null
         private var elements: MutableMap<TypeKey<*>, () -> Any?>? = null
@@ -286,7 +274,8 @@ internal class GivenScopeImpl(
             }
 
         override fun build(): S {
-            val givenScope = GivenScopeImpl(key, dependencies, elements, injectedElements) as S
+            val givenScope = GivenScopeImpl(key, dependencies, elements,
+                injectedElements as (GivenScope) -> Set<GivenScopeElement<Any>>) as S
             initializers?.forEach { it(givenScope) }
             injectedInitializers(givenScope).forEach { it(givenScope) }
             return givenScope
