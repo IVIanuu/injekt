@@ -34,7 +34,7 @@ class ActivityRetainedTest {
 
     @Test
     fun testActivityRetainedGivenScopeLifecycle() {
-        initializeApp(initializers = { emptySet() })
+        initializeApp()
         val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
         lateinit var disposable: TestGivenScopeDisposable<ActivityRetainedGivenScope>
         scenario.onActivity { disposable = it.activityRetainedGivenScope.element() }

@@ -21,16 +21,14 @@ import com.ivianuu.injekt.Given
 typealias AppGivenScope = GivenScope
 
 /**
- * Initializes the [AppGivenScope] with [elements] and [initializers]
- * And can then be accessed via [appGivenScope]
+ * Initializes the app given scope which can then be accessed via [appGivenScope]
  */
-fun App.initializeApp(@Given appScopeBuilder: GivenScope.Builder<AppGivenScope>) {
-    _appGivenScope = appScopeBuilder
-        .element { this }
-        .build()
+inline fun App.initializeApp(@Given scopeFactory: (@Given App) -> AppGivenScope) {
+    _appGivenScope = scopeFactory(this)
 }
 
-private var _appGivenScope: AppGivenScope? = null
+@PublishedApi
+internal var _appGivenScope: AppGivenScope? = null
 
 val App.appGivenScope: AppGivenScope
     get() = _appGivenScope ?: error("app given scope not initialized. Did you forget to call initializeApp()?")

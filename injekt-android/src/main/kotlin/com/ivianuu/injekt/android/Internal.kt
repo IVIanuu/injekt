@@ -29,9 +29,9 @@ import com.ivianuu.injekt.scope.GivenScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 
-private val givenScopesByLifecycle = mutableMapOf<Lifecycle, GivenScope>()
+internal val givenScopesByLifecycle = mutableMapOf<Lifecycle, GivenScope>()
 
-internal fun <T : GivenScope> Lifecycle.givenScope(init: () -> T): T {
+internal inline fun <T : GivenScope> Lifecycle.givenScope(init: () -> T): T {
     givenScopesByLifecycle[this]?.let { return it as T }
     return synchronized(givenScopesByLifecycle) {
         givenScopesByLifecycle[this]?.let { return it as T }
@@ -56,7 +56,7 @@ internal fun <T : GivenScope> Lifecycle.givenScope(init: () -> T): T {
     }
 }
 
-internal fun <T : GivenScope> ViewModelStore.givenScope(init: () -> T): T {
+internal inline fun <T : GivenScope> ViewModelStore.givenScope(crossinline init: () -> T): T {
     return ViewModelProvider(
         this,
         object : ViewModelProvider.Factory {
@@ -66,7 +66,7 @@ internal fun <T : GivenScope> ViewModelStore.givenScope(init: () -> T): T {
     )[ViewModelGivenScopeHolder::class.java].givenScope as T
 }
 
-private class ViewModelGivenScopeHolder<T : GivenScope>(val givenScope: T) : ViewModel() {
+internal class ViewModelGivenScopeHolder<T : GivenScope>(val givenScope: T) : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         givenScope.dispose()

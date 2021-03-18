@@ -34,14 +34,9 @@ interface GivenScope : GivenScopeDisposable {
      */
     val isDisposed: Boolean
     /**
-     * The exact type key of this scope
-     */
-    val key: TypeKey<GivenScope>
-
-    /**
      * Returns the element [T] for [key] or null
      */
-    fun <T> elementOrNull(key: TypeKey<T>): T?
+    fun <T : Any> elementOrNull(key: TypeKey<T>): T?
     /**
      * Returns the value [T] for [key] or null
      */
@@ -54,28 +49,6 @@ interface GivenScope : GivenScopeDisposable {
      * Removes the value for [key]
      */
     fun removeScopedValue(key: Any)
-
-    /**
-     * Construct a [GivenScope] instance
-     */
-    interface Builder<S : GivenScope> {
-        /**
-         * Adds [parent] as a dependency
-         */
-        fun <T : GivenScope> dependency(parent: T): Builder<S>
-        /**
-         * Registers a element for [key] which will be provided by [factory]
-         */
-        fun <T> element(key: TypeKey<T>, factory: () -> T): Builder<S>
-        /**
-         * Registers the [initializer]
-         */
-        fun initializer(initializer: GivenScopeInitializer<S>): Builder<S>
-        /**
-         * Returns the configured [GivenScope] instance
-         */
-        fun build(): S
-    }
 }
 
 /**
@@ -92,10 +65,10 @@ fun interface GivenScopeDisposable {
 /**
  * Returns the element [T] for [key] or throws
  */
-fun <T> GivenScope.element(key: TypeKey<T>): T = elementOrNull(key)
-    ?: error("No element for for $key in ${this.key}")
+fun <T : Any> GivenScope.element(key: TypeKey<T>): T = elementOrNull(key)
+    ?: error("No element for for $key in $this")
 
-fun <@ForTypeKey T> GivenScope.element(): T =
+fun <@ForTypeKey T : Any> GivenScope.element(): T =
     element(typeKeyOf())
 
 /**
@@ -147,15 +120,19 @@ private class InvokeOnDisposeKey
 private val NoOpScopeDisposable = GivenScopeDisposable {  }
 
 @Given
-fun <@ForTypeKey S : GivenScope> givenScopeBuilder(
+inline fun <@ForTypeKey S : GivenScope> givenScope(
     @Given elements: (@Given S) -> Set<GivenScopeElement<S>> = { emptySet() },
     @Given initializers: (@Given S) -> Set<GivenScopeInitializer<S>> = { emptySet() }
-): GivenScope.Builder<S> = GivenScopeImpl.Builder(typeKeyOf<S>(), elements, initializers)
+): S {
+    val scope = GivenScopeImpl()
+    scope as S
+    elements(scope)
+        .forEach { scope.elements[it.first] = it.second }
+    initializers(scope).forEach { it() }
+    return scope
+}
 
-fun <S : GivenScope, @ForTypeKey T> GivenScope.Builder<S>.element(factory: () -> T) =
-    element(typeKeyOf(), factory)
-
-typealias GivenScopeElement<@Suppress("unused") C> = Pair<TypeKey<*>, () -> Any?>
+typealias GivenScopeElement<@Suppress("unused") S> = Pair<TypeKey<Any>, () -> Any>
 
 /**
  * Registers the declaration a element in the [GivenScope] [S]
@@ -175,9 +152,9 @@ typealias GivenScopeElement<@Suppress("unused") C> = Pair<TypeKey<*>, () -> Any?
 annotation class GivenScopeElementBinding<S : GivenScope>
 
 @Given
-fun <@Given T : @GivenScopeElementBinding<U> S, @ForTypeKey S, @ForTypeKey U : GivenScope>
+fun <@Given T : @GivenScopeElementBinding<U> S, @ForTypeKey S : Any, @ForTypeKey U : GivenScope>
         givenScopeElementBindingImpl(@Given factory: () -> T): GivenScopeElement<U> =
-    typeKeyOf<S>() to factory as () -> Any?
+    typeKeyOf<S>() to factory as () -> Any
 
 /**
  * Will get invoked once [GivenScope] [S] is initialized
@@ -189,42 +166,30 @@ fun <@Given T : @GivenScopeElementBinding<U> S, @ForTypeKey S, @ForTypeKey U : G
  * }
  * ```
  */
-typealias GivenScopeInitializer<S> = (S) -> Unit
+typealias GivenScopeInitializer<S> = () -> Unit
 
 @PublishedApi
-internal class GivenScopeImpl(
-    override val key: TypeKey<GivenScope>,
-    private val dependencies: List<GivenScope>?,
-    explicitElements: Map<TypeKey<*>, () -> Any?>?,
-    injectedElements: (GivenScope) -> Set<GivenScopeElement<*>>,
-) : GivenScope {
+internal class GivenScopeImpl : GivenScope {
     override var isDisposed = false
 
-    private val elements = (explicitElements ?: emptyMap()) + injectedElements(this)
-    private val values = mutableMapOf<Any, Any>()
+    val elements = mutableMapOf<TypeKey<*>, () -> Any>()
+    private val scopedValues = mutableMapOf<Any, Any>()
 
-    override fun <T> elementOrNull(key: TypeKey<T>): T? {
-        if (key == this.key) return this as T
-        elements[key]?.let { return it() as T }
-
-        if (dependencies != null) {
-            for (dependency in dependencies)
-                dependency.elementOrNull(key)?.let { return it }
-        }
-
-        return null
+    override fun <T : Any> elementOrNull(key: TypeKey<T>): T? {
+        if (isDisposed) return null
+        return elements[key]?.invoke() as? T
     }
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : Any> getScopedValueOrNull(key: Any): T? {
         if (isDisposed) return null
-        return values[key] as? T
+        return scopedValues[key] as? T
     }
 
     override fun <T : Any> setScopedValue(key: Any, value: T) {
         if (isDisposed) return
         removeScopedValue(key)
-        values[key] = value
+        scopedValues[key] = value
     }
 
     override fun removeScopedValue(key: Any) {
@@ -235,50 +200,14 @@ internal class GivenScopeImpl(
     override fun dispose() {
         if (isDisposed) return
         isDisposed = true
-        if (values.isNotEmpty()) {
-            values.keys
+        if (scopedValues.isNotEmpty()) {
+            scopedValues.keys
                 .toList()
                 .forEach { removeImpl(it) }
         }
     }
 
     private fun removeImpl(key: Any) {
-        (values.remove(key) as? GivenScopeDisposable)?.dispose()
-    }
-
-    class Builder<S : GivenScope>(
-        private val key: TypeKey<GivenScope>,
-        private val injectedElements: (S) -> Set<GivenScopeElement<S>>,
-        private val injectedInitializers: (S) -> Set<GivenScopeInitializer<S>>
-    ) : GivenScope.Builder<S> {
-        private var dependencies: MutableList<GivenScope>? = null
-        private var elements: MutableMap<TypeKey<*>, () -> Any?>? = null
-        private var initializers: MutableList<GivenScopeInitializer<S>>? = null
-
-        override fun <T : GivenScope> dependency(parent: T): GivenScope.Builder<S> =
-            apply {
-                (dependencies ?: mutableListOf<GivenScope>()
-                    .also { dependencies = it }) += parent
-            }
-
-        override fun <T> element(key: TypeKey<T>, factory: () -> T): GivenScope.Builder<S> =
-            apply {
-                (elements ?: mutableMapOf<TypeKey<*>, () -> Any?>()
-                    .also { elements = it })[key] = factory
-            }
-
-        override fun initializer(initializer: GivenScopeInitializer<S>): GivenScope.Builder<S> =
-            apply {
-                (initializers ?: mutableListOf<GivenScopeInitializer<S>>()
-                    .also { initializers = it }) += initializer
-            }
-
-        override fun build(): S {
-            val givenScope = GivenScopeImpl(key, dependencies, elements,
-                injectedElements as (GivenScope) -> Set<GivenScopeElement<Any>>) as S
-            initializers?.forEach { it(givenScope) }
-            injectedInitializers(givenScope).forEach { it(givenScope) }
-            return givenScope
-        }
+        (scopedValues.remove(key) as? GivenScopeDisposable)?.dispose()
     }
 }

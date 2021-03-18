@@ -80,8 +80,7 @@ class ProviderTest {
         """ 
             typealias GivenScopeA = GivenScope
 
-            fun createGivenScopeA() = GivenScopeBuilder<GivenScopeA>(initializers = { emptySet() })
-                .build()
+            fun createGivenScopeA() = given<GivenScopeA>()
 
             typealias GivenScopeB = GivenScope
 
@@ -89,12 +88,8 @@ class ProviderTest {
             @Given
             fun givenScopeBFactory(
                 @Given parent: GivenScopeA,
-                @Given builderFactory: () -> GivenScope.Builder<GivenScopeB>
-            ): () -> GivenScopeB = { 
-                builderFactory()
-                    .dependency(parent)
-                    .build()
-            }
+                @Given scopeFactory: () -> GivenScopeB
+            ): () -> GivenScopeB = scopeFactory
 
             typealias GivenScopeC = GivenScope
 
@@ -102,15 +97,11 @@ class ProviderTest {
             @Given 
             fun givenScopeCFactory(
                 @Given parent: GivenScopeB,
-                @Given builderFactory: () -> GivenScope.Builder<GivenScopeC>
-            ): () -> GivenScopeC = {
-                builderFactory()
-                    .dependency(parent)
-                    .build()
-            }
+                @Given scopeFactory: () -> GivenScopeC
+            ): () -> GivenScopeC = scopeFactory
 
             @GivenScopeElementBinding<GivenScopeC>
-            @Given class MyGivenScope(
+            @Given class MyComponent(
                 @Given val a: GivenScopeA,
                 @Given val b: GivenScopeB,
                 @Given val c: GivenScopeC
@@ -124,6 +115,8 @@ class ProviderTest {
             source(
                 """
                     typealias GivenScopeA = GivenScope
+
+                    fun createGivenScopeA() = given<GivenScopeA>()
         
                     typealias GivenScopeB = GivenScope
         
@@ -131,12 +124,8 @@ class ProviderTest {
                     @Given
                     fun givenScopeBFactory(
                         @Given parent: GivenScopeA,
-                        @Given builderFactory: () -> GivenScope.Builder<GivenScopeB>
-                    ): () -> GivenScopeB = { 
-                        builderFactory()
-                            .dependency(parent)
-                            .build()
-                    }
+                        @Given scopeFactory: () -> GivenScopeB
+                    ): () -> GivenScopeB = scopeFactory
         
                     typealias GivenScopeC = GivenScope
         
@@ -144,22 +133,18 @@ class ProviderTest {
                     @Given 
                     fun givenScopeCFactory(
                         @Given parent: GivenScopeB,
-                        @Given builderFactory: () -> GivenScope.Builder<GivenScopeC>
-                    ): () -> GivenScopeC = {
-                        builderFactory()
-                            .dependency(parent)
-                            .build()
-                    }
-                """
-            )
+                        @Given scopeFactory: () -> GivenScopeC
+                    ): () -> GivenScopeC = scopeFactory
+                        """
+                    )
         ),
         listOf(
             source(
                 """
-                    fun createGivenScopeA() = GivenScopeBuilder<GivenScopeA>(initializers = { emptySet() }).build()
+                    fun createGivenScopeA() = given<GivenScopeA>()
 
                     @GivenScopeElementBinding<GivenScopeC>
-                    @Given class MyGivenScope(
+                    @Given class MyComponent(
                         @Given val a: GivenScopeA,
                         @Given val b: GivenScopeB,
                         @Given val c: GivenScopeC

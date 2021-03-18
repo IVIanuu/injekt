@@ -209,7 +209,7 @@ class QualifierTest {
             class MyElement(@Given val foo: Foo)
 
             fun invoke() {
-                val givenScope = GivenScopeBuilder<AppGivenScope>()
+                val givenScope = given<AppGivenScope>()
             }
         """
     ) {

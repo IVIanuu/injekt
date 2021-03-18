@@ -33,7 +33,7 @@ import com.ivianuu.injekt.scope.*
 class ActivityTest {
     @Test
     fun testActivityGivenScopeLifecycle() {
-        initializeApp(initializers = { emptySet() })
+        initializeApp()
         val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
         lateinit var disposable: TestGivenScopeDisposable<ActivityGivenScope>
         scenario.onActivity { disposable = it.activityGivenScope.element() }

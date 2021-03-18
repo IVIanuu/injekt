@@ -35,9 +35,7 @@ class EagerTest {
         @GivenScopeElementBinding<TestGivenScope1>
         @Given
         fun fooElement(@Given foo: Foo) = foo
-        val builder = given<GivenScope.Builder<TestGivenScope1>>()
-        callCount shouldBe 0
-        val scope = builder.build()
+        val scope = given<TestGivenScope1>()
         callCount shouldBe 1
         scope.element<Foo>()
         callCount shouldBe 1

@@ -17,41 +17,23 @@
 package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.common.typeKeyOf
 import com.ivianuu.injekt.common.ForTypeKey
 
 class ChildGivenScopeModule0<P : GivenScope, @ForTypeKey S : GivenScope> {
+    @GivenScopeElementBinding<P>
     @Given
-    fun factoryElement(
-        @Given parent: P,
-        @Given builderProvider: () -> GivenScope.Builder<S>
-    ): GivenScopeElement<P> = typeKeyOf<() -> S>() to {
-        val factory: () -> S = {
-            builderProvider()
-                .dependency(parent)
-                .build()
-        }
-        factory
-    }
+    fun factoryElement(@Given scopeFactory: () -> S): () -> S = scopeFactory
 
     @Given
     fun factory(@Given parent: P): () -> S = parent.element()
 }
 
 class ChildGivenScopeModule1<P : GivenScope, @ForTypeKey P1, @ForTypeKey S : GivenScope> {
+    @GivenScopeElementBinding<P>
     @Given
     fun factoryElement(
-        @Given parent: P,
-        @Given builderProvider: () -> GivenScope.Builder<S>
-    ): GivenScopeElement<P> = typeKeyOf<(P1) -> S>() to {
-        val factory: (P1) -> S = { p1 ->
-            builderProvider()
-                .dependency(parent)
-                .element { p1 }
-                .build()
-        }
-        factory
-    }
+        @Given scopeFactory: (@Given @GivenScopeElementBinding<S> P1) -> S
+    ): (P1) -> S = scopeFactory
 
     @Given
     fun factory(@Given parent: P): (P1) -> S = parent.element()
@@ -61,20 +43,14 @@ class ChildGivenScopeModule1<P : GivenScope, @ForTypeKey P1, @ForTypeKey S : Giv
 }
 
 class ChildGivenScopeModule2<P : GivenScope, @ForTypeKey P1, @ForTypeKey P2, @ForTypeKey S : GivenScope> {
+    @GivenScopeElementBinding<P>
     @Given
     fun factoryElement(
-        @Given parent: P,
-        @Given builderProvider: () -> GivenScope.Builder<S>
-    ): GivenScopeElement<P> = typeKeyOf<(P1, P2) -> S>() to {
-        val factory: (P1, P2) -> S = { p1, p2 ->
-            builderProvider()
-                .dependency(parent)
-                .element { p1 }
-                .element { p2 }
-                .build()
-        }
-        factory
-    }
+        @Given scopeFactory: (
+            @Given @GivenScopeElementBinding<S> P1,
+            @Given @GivenScopeElementBinding<S> P2
+        ) -> S
+    ): (P1, P2) -> S = scopeFactory
 
     @Given
     fun factory(@Given parent: P): (P1, P2) -> S = parent.element()
@@ -87,21 +63,11 @@ class ChildGivenScopeModule2<P : GivenScope, @ForTypeKey P1, @ForTypeKey P2, @Fo
 }
 
 class ChildGivenScopeModule3<P : GivenScope, @ForTypeKey P1, @ForTypeKey P2, @ForTypeKey P3, @ForTypeKey S : GivenScope> {
+    @GivenScopeElementBinding<P>
     @Given
     fun factoryElement(
-        @Given parent: P,
-        @Given builderProvider: () -> GivenScope.Builder<S>
-    ): GivenScopeElement<P> = typeKeyOf<(P1, P2, P3) -> S>() to {
-        val factory: (P1, P2, P3) -> S = { p1, p2, p3 ->
-            builderProvider()
-                .dependency(parent)
-                .element { p1 }
-                .element { p2 }
-                .element { p3 }
-                .build()
-        }
-        factory
-    }
+        @Given scopeFactory: (@Given P1, @Given P2, @Given P3) -> S
+    ): (P1, P2, P3) -> S = scopeFactory
 
     @Given
     fun factory(@Given parent: P): (P1, P2, P3) -> S = parent.element()
@@ -117,22 +83,16 @@ class ChildGivenScopeModule3<P : GivenScope, @ForTypeKey P1, @ForTypeKey P2, @Fo
 }
 
 class ChildGivenScopeModule4<P : GivenScope, @ForTypeKey P1, @ForTypeKey P2, @ForTypeKey P3, @ForTypeKey P4, @ForTypeKey S : GivenScope> {
+    @GivenScopeElementBinding<P>
     @Given
     fun factoryElement(
-        @Given parent: P,
-        @Given builderProvider: () -> GivenScope.Builder<S>
-    ): GivenScopeElement<P> = typeKeyOf<(P2, P2, P3, P4) -> S>() to {
-        val factory: (P1, P2, P3, P4) -> S = { p1, p2, p3, p4 ->
-            builderProvider()
-                .dependency(parent)
-                .element { p1 }
-                .element { p2 }
-                .element { p3 }
-                .element { p4 }
-                .build()
-        }
-        factory
-    }
+        @Given scopeFactory: (
+            @Given @GivenScopeElementBinding<S> P1,
+            @Given @GivenScopeElementBinding<S> P2,
+            @Given @GivenScopeElementBinding<S> P3,
+            @Given @GivenScopeElementBinding<S> P4
+        ) -> S
+    ): (P1, P2, P3, P4) -> S = scopeFactory
 
     @Given
     fun factory(@Given parent: P): (P1, P2, P3, P4) -> S = parent.element()
@@ -151,23 +111,17 @@ class ChildGivenScopeModule4<P : GivenScope, @ForTypeKey P1, @ForTypeKey P2, @Fo
 }
 
 class ChildGivenScopeModule5<P : GivenScope, @ForTypeKey P1, @ForTypeKey P2, @ForTypeKey P3, @ForTypeKey P4, @ForTypeKey P5, @ForTypeKey S : GivenScope> {
+    @GivenScopeElementBinding<P>
     @Given
     fun factoryElement(
-        @Given parent: P,
-        @Given builderProvider: () -> GivenScope.Builder<S>
-    ): GivenScopeElement<P> = typeKeyOf<(P1, P2, P3, P4, P5) -> S>() to {
-        val factory: (P1, P2, P3, P4, P5) -> S = { p1, p2, p3, p4, p5 ->
-            builderProvider()
-                .dependency(parent)
-                .element { p1 }
-                .element { p2 }
-                .element { p3 }
-                .element { p4 }
-                .element { p5 }
-                .build()
-        }
-        factory
-    }
+        @Given scopeFactory: (
+            @Given @GivenScopeElementBinding<S> P1,
+            @Given @GivenScopeElementBinding<S> P2,
+            @Given @GivenScopeElementBinding<S> P3,
+            @Given @GivenScopeElementBinding<S> P4,
+            @Given @GivenScopeElementBinding<S> P5
+        ) -> S
+    ): (P1, P2, P3, P4, P5) -> S = scopeFactory
 
     @Given
     fun factory(@Given parent: P): (P1, P2, P3, P4, P5) -> S = parent.element()
