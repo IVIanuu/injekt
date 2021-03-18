@@ -358,8 +358,6 @@ class TypeKeyTransformer(
             check(this@collectExpressions is IrSimpleType)
 
             val typeAnnotations = listOfNotNull(
-                if ((abbreviation?.hasAnnotation(InjektFqNames.Given) ?:
-                    hasAnnotation(InjektFqNames.Given))) "@Given" else null,
                 if ((abbreviation?.hasAnnotation(InjektFqNames.Composable) ?:
                     hasAnnotation(InjektFqNames.Composable))) "@Composable" else null,
                 *(abbreviation?.getAnnotatedAnnotations(InjektFqNames.Qualifier) ?:
