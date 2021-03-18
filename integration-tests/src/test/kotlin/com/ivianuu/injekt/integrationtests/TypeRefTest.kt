@@ -285,6 +285,18 @@ class TypeRefTest {
     }
 
     @Test
+    fun testGetSubstitutionMapWithExtraTypeParameter() = withAnalysisContext {
+        val typeParameterU = typeParameter()
+        val typeParameterS = typeParameter(listType.typeWith(typeParameterU))
+        val typeParameterT = typeParameter(typeParameterS)
+        val substitutionType = listType.typeWith(stringType)
+        val map = getSubstitutionMap(context, listOf(substitutionType to typeParameterT))
+        map[typeParameterT.classifier] shouldBe substitutionType
+        map[typeParameterS.classifier] shouldBe substitutionType
+        map[typeParameterU.classifier] shouldBe stringType
+    }
+
+    @Test
     fun testGetSubstitutionMapWithNestedGenerics() = withAnalysisContext {
         val superType = typeParameter()
         val map = getSubstitutionMap(context, listOf(listType.typeWith(stringType) to listType.typeWith(superType)))

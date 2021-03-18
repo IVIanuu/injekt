@@ -492,6 +492,12 @@ fun getSubstitutionMap(
             return
         }
 
+        baseType.superTypes
+            .forEach { baseSuperType ->
+                thisType.subtypeView(baseSuperType.classifier)
+                    ?.arguments?.forEachWith(baseSuperType.arguments) { a, b -> visitType(a, b) }
+            }
+
         if (thisType.qualifiers.isNotEmpty() &&
             thisType.qualifiers.size == baseType.qualifiers.size &&
             run {
