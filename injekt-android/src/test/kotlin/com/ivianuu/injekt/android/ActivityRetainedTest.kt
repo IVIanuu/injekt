@@ -18,26 +18,26 @@ package com.ivianuu.injekt.android
 
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
-import com.ivianuu.injekt.component.element
-import com.ivianuu.injekt.component.initializeApp
+import com.ivianuu.injekt.scope.element
+import com.ivianuu.injekt.scope.initializeApp
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import com.ivianuu.injekt.component.*
+import com.ivianuu.injekt.scope.*
 
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)
 class ActivityRetainedTest {
 
     @Test
-    fun testActivityRetainedComponentLifecycle() {
+    fun testActivityRetainedGivenScopeLifecycle() {
         initializeApp(initializers = { emptySet() })
         val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
-        lateinit var disposable: TestComponentDisposable<ActivityRetainedComponent>
-        scenario.onActivity { disposable = it.activityRetainedComponent.element() }
+        lateinit var disposable: TestGivenScopeDisposable<ActivityRetainedGivenScope>
+        scenario.onActivity { disposable = it.activityRetainedGivenScope.element() }
         disposable.disposed.shouldBeFalse()
         scenario.recreate()
         disposable.disposed.shouldBeFalse()

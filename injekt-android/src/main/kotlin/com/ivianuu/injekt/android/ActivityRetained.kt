@@ -18,18 +18,18 @@ package com.ivianuu.injekt.android
 
 import androidx.activity.ComponentActivity
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.component.AppComponent
-import com.ivianuu.injekt.component.ChildComponentModule0
-import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.element
+import com.ivianuu.injekt.scope.AppGivenScope
+import com.ivianuu.injekt.scope.ChildGivenScopeModule0
+import com.ivianuu.injekt.scope.GivenScope
+import com.ivianuu.injekt.scope.element
 
-val ComponentActivity.activityRetainedComponent: ActivityRetainedComponent
-    get() = viewModelStore.component {
-        application.appComponent.element<() -> ActivityRetainedComponent>()()
+val ComponentActivity.activityRetainedGivenScope: ActivityRetainedGivenScope
+    get() = viewModelStore.givenScope {
+        application.appGivenScope.element<() -> ActivityRetainedGivenScope>()()
     }
 
-typealias ActivityRetainedComponent = Component
+typealias ActivityRetainedGivenScope = GivenScope
 
 @Given
-val activityRetainedComponentModule =
-    ChildComponentModule0<AppComponent, ActivityRetainedComponent>()
+val activityRetainedGivenScopeModule =
+    ChildGivenScopeModule0<AppGivenScope, ActivityRetainedGivenScope>()

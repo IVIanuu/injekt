@@ -14,24 +14,28 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.samples.android.data
+package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.scope.AppGivenScope
-import com.ivianuu.injekt.scope.Scoped
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import com.ivianuu.injekt.Qualifier
 
-@Scoped<AppGivenScope>
+/**
+ * Converts a [@Eager<C> T] to a [T] which is scoped to the lifecycle of [S] and will be instantiated
+ * as soon as the hosting [GivenScope] get's initialized
+ */
+@Qualifier
+annotation class Eager<S : GivenScope>
+
 @Given
-class CounterStorage {
-    private val _counterState = MutableStateFlow(0)
-    val counterState: Flow<Int> by this::_counterState
-    private val counterMutex = Mutex()
+fun <@Given T : @Eager<U> S, S : Any, U : GivenScope> eagerImpl() = EagerModule<T, S, U>()
 
-    suspend fun updateCounter(value: Int) = counterMutex.withLock {
-        _counterState.value = value
+class EagerModule<T : S, S : Any, U : GivenScope> {
+    @Scoped<U>
+    @Given
+    inline fun scopedInstance(@Given instance: T): S = instance
+
+    @Given
+    fun initializer(@Given factory: () -> S): GivenScopeInitializer<U> = {
+        factory()
     }
 }

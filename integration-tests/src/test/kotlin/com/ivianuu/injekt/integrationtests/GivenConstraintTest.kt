@@ -237,20 +237,20 @@ class GivenConstraintTest {
         listOf(
             source(
                 """
-                    typealias ActivityComponent = Component
-                    @Given fun activityComponent(
-                        @Given builder: Component.Builder<ActivityComponent>
-                    ): ActivityComponent = builder.build()
-                    @Given fun appComponent(
-                        @Given builder: Component.Builder<AppComponent>
-                    ): AppComponent = builder.build()
+                    typealias ActivityGivenScope = GivenScope
+                    @Given fun activityGivenScope(
+                        @Given builder: GivenScope.Builder<ActivityGivenScope>
+                    ): ActivityGivenScope = builder.build()
+                    @Given fun appGivenScope(
+                        @Given builder: GivenScope.Builder<AppGivenScope>
+                    ): AppGivenScope = builder.build()
                 """
             )
         ),
         listOf(
             source(
                 """
-                    @Scoped<AppComponent> @Given fun foo() = Foo()
+                    @Scoped<AppGivenScope> @Given fun foo() = Foo()
                     fun invoke() = given<Foo>()
                 """,
                 name = "File.kt"
@@ -373,27 +373,27 @@ class GivenConstraintTest {
     @Test
     fun testComplexGivenConstraintSetup() = codegen(
         """
-            @Scoped<AppComponent>
+            @Scoped<AppGivenScope>
             @Given
             class Dep(@Given app: App)
 
-            @Scoped<AppComponent>
+            @Scoped<AppGivenScope>
             @Given
             class DepWrapper(@Given dep: Dep)
 
-            @Scoped<AppComponent>
+            @Scoped<AppGivenScope>
             @Given
             class DepWrapper2(@Given dep: () -> Dep, @Given wrapper: () -> DepWrapper)
 
             fun invoke() {
                 "".initializeApp()   
             }
-            @ComponentElementBinding<AppComponent>
+            @GivenScopeElementBinding<AppGivenScope>
             @Given
-            class MyComponent(@Given dep: Dep, @Given wrapper: () -> () -> DepWrapper, @Given wrapper2: () -> DepWrapper2)
+            class MyGivenScope(@Given dep: Dep, @Given wrapper: () -> () -> DepWrapper, @Given wrapper2: () -> DepWrapper2)
 
             @Given
-            fun myInitializer(@Given dep: Dep, @Given wrapper: () -> () -> DepWrapper, @Given wrapper2: () -> DepWrapper2): ComponentInitializer<AppComponent> = {}
+            fun myInitializer(@Given dep: Dep, @Given wrapper: () -> () -> DepWrapper, @Given wrapper2: () -> DepWrapper2): GivenScopeInitializer<AppGivenScope> = {}
         """
     )
 

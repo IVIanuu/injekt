@@ -20,19 +20,19 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.android.ActivityComponent
+import com.ivianuu.injekt.android.ActivityGivenScope
 import com.ivianuu.injekt.android.AppContext
-import com.ivianuu.injekt.android.activityComponent
-import com.ivianuu.injekt.component.ComponentElementBinding
-import com.ivianuu.injekt.component.element
+import com.ivianuu.injekt.android.activityGivenScope
+import com.ivianuu.injekt.scope.GivenScopeElementBinding
+import com.ivianuu.injekt.scope.element
 import com.ivianuu.injekt.samples.android.ui.SampleAppUi
 import com.ivianuu.injekt.samples.android.ui.SampleTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // retrieve our dependencies from the activity component
-        val dependencies = activityComponent.element<MainActivityDependencies>()
+        // retrieve our dependencies from the activity scope
+        val dependencies = activityGivenScope.element<MainActivityDependencies>()
         // display ui
         setContent {
             dependencies.theme {
@@ -42,8 +42,8 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Declare dependencies we want to retrieve from the activity component
-@ComponentElementBinding<ActivityComponent>
+// Declare dependencies we want to retrieve from the activity scope
+@GivenScopeElementBinding<ActivityGivenScope>
 @Given
 class MainActivityDependencies(
     @Given val theme: SampleTheme,

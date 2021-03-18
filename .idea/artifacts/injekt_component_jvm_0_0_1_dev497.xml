@@ -1,0 +1,6 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="injekt-component-jvm-0.0.1-dev497">
+    <output-path>$PROJECT_DIR$/injekt-component/build/libs</output-path>
+    <root id="archive" name="injekt-component-jvm-0.0.1-dev497.jar" />
+  </artifact>
+</component>

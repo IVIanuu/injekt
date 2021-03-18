@@ -28,21 +28,21 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.component.ChildComponentModule1
-import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.element
+import com.ivianuu.injekt.scope.ChildGivenScopeModule1
+import com.ivianuu.injekt.scope.GivenScope
+import com.ivianuu.injekt.scope.element
 
-val ComponentActivity.activityComponent: ActivityComponent
-    get() = lifecycle.component {
-        activityRetainedComponent
-            .element<(ComponentActivity) -> ActivityComponent>()(this)
+val ComponentActivity.activityGivenScope: ActivityGivenScope
+    get() = lifecycle.givenScope {
+        activityRetainedGivenScope
+            .element<(ComponentActivity) -> ActivityGivenScope>()(this)
     }
 
-typealias ActivityComponent = Component
+typealias ActivityGivenScope = GivenScope
 
 @Given
-val activityComponentModule =
-    ChildComponentModule1<ActivityRetainedComponent, ComponentActivity, ActivityComponent>()
+val activityGivenScopeModule =
+    ChildGivenScopeModule1<ActivityRetainedGivenScope, ComponentActivity, ActivityGivenScope>()
 
 typealias ActivityContext = Context
 

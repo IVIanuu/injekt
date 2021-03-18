@@ -14,17 +14,8 @@
  * limitations under the License.
  */
 
-include(
-    ":injekt-android",
-    ":injekt-android-work",
-    ":injekt-common",
-    ":injekt-compiler-plugin",
-    ":injekt-core",
-    ":injekt-gradle-plugin",
-    ":injekt-ide-plugin",
-    ":injekt-scope",
-    ":integration-tests",
-    ":test-util",
-    "samples:android-app",
-    "samples:coffee-maker"
-)
+package com.ivianuu.injekt.scope
+
+typealias TestGivenScope1 = GivenScope
+typealias TestGivenScope2 = GivenScope
+typealias TestGivenScope3 = GivenScope

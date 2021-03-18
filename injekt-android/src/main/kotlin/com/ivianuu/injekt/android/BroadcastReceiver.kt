@@ -21,24 +21,24 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.component.AppComponent
-import com.ivianuu.injekt.component.ChildComponentModule3
-import com.ivianuu.injekt.component.Component
-import com.ivianuu.injekt.component.element
+import com.ivianuu.injekt.scope.AppGivenScope
+import com.ivianuu.injekt.scope.ChildGivenScopeModule3
+import com.ivianuu.injekt.scope.GivenScope
+import com.ivianuu.injekt.scope.element
 
-fun BroadcastReceiver.createReceiverComponent(
+fun BroadcastReceiver.createReceiverGivenScope(
     context: Context,
     intent: Intent,
-): ReceiverComponent = (context.applicationContext as Application)
-    .appComponent
-    .element<(BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverComponent>()
+): ReceiverGivenScope = (context.applicationContext as Application)
+    .appGivenScope
+    .element<(BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverGivenScope>()
     .invoke(this, context, intent)
 
-typealias ReceiverComponent = Component
+typealias ReceiverGivenScope = GivenScope
 
 @Given
-val receiverComponentModule =
-    ChildComponentModule3<AppComponent, BroadcastReceiver, ReceiverContext, ReceiverIntent, ReceiverComponent>()
+val receiverGivenScopeModule =
+    ChildGivenScopeModule3<AppGivenScope, BroadcastReceiver, ReceiverContext, ReceiverIntent, ReceiverGivenScope>()
 
 typealias ReceiverContext = Context
 
