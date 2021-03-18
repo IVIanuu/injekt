@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.irShouldContain
 import com.ivianuu.injekt.test.irShouldNotContain
 import org.junit.Test
@@ -117,28 +118,15 @@ class ExpressionWrappingTest {
         irShouldNotContain("val tmp0: Function0<Foo> = local fun <anonymous>(): Foo {")
     }
 
-    /*@Test
+    @Test
     fun testDoesNotCacheCircularDependency() = codegen(
         """
             @Given class A(@Given b: B)
-            @Given class B(@Given a: () -> A)
-            fun invoke() = given<B>()
-       """
-    ) {
-
-    }
-
-    @Test
-    fun testDoesNotFunctionWrapCircularDependency() = codegen(
-        """
-            @Given class A(@Given b: B)
-            @Given class B(@Given a: () -> A)
+            @Given class B(@Given a: () -> A, @Given a2: () -> A)
             fun invoke() = given<B>()
        """
     ) {
         invokeSingleFile()
-    }*/
-
-    // todo does not cache circular dependency
+    }
 
 }

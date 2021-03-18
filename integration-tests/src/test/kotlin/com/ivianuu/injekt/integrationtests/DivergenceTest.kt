@@ -128,15 +128,13 @@ class DivergenceTest {
         compilationShouldHaveFailed("diverging")
     }
 
-    // todo @Test
+    @Test
     fun testLazyRequestInSetBreaksCircularDependency() = codegen(
         """
             typealias A = () -> Unit
             @Given fun a(@Given b: () -> B): A = {}
-            @GivenSetElement fun aIntoSet(@Given a: A): () -> Unit = a
             typealias B = () -> Unit
             @Given fun b(@Given a: () -> A): B = {}
-            @GivenSetElement fun bIntoSet(@Given b: B): () -> Unit = b
             fun invoke() = given<Set<() -> Unit>>()
        """
     ) {

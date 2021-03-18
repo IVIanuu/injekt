@@ -65,7 +65,7 @@ sealed class ResolutionResult {
                                     (it.value as? Value)?.visit()
                                 }
                             }
-                            dependencyResults.values.single().cast<Value>().visit()
+                            dependencyResults.values.single().safeAs<Value>()?.visit()
                             allOuterMostScopes
                                 .sortedBy { it.allParents.size }
                                 .filter { it.allParents.size < candidate.dependencyScope!!.allParents.size }

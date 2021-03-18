@@ -108,6 +108,32 @@ class GivenCallTransformer(
             usages
         }
 
+        private val isInBetweenCircularDependency = mutableMapOf<ResolutionResult.Success.WithCandidate.Value, Boolean>()
+        fun isInBetweenCircularDependency(result: ResolutionResult.Success.WithCandidate.Value): Boolean = isInBetweenCircularDependency.getOrPut(result) {
+            val allResults = mutableListOf<ResolutionResult.Success.WithCandidate.Value>()
+            var isInBetweenCircularDependency = false
+            fun ResolutionResult.Success.WithCandidate.visit() {
+                if (this is ResolutionResult.Success.WithCandidate.CircularDependency &&
+                        allResults.none { it.candidate == candidate }) {
+                    isInBetweenCircularDependency = true
+                    return
+                }
+                if (this is ResolutionResult.Success.WithCandidate.Value) {
+                    allResults += this
+                    dependencyResults.forEach { (_, dependencyResult) ->
+                        if (!isInBetweenCircularDependency &&
+                            dependencyResult is ResolutionResult.Success.WithCandidate)
+                                dependencyResult.visit()
+                    }
+                }
+            }
+            result.dependencyResults.forEach {
+                if (!isInBetweenCircularDependency)
+                    it.value.safeAs<ResolutionResult.Success.WithCandidate>()?.visit()
+            }
+            isInBetweenCircularDependency
+        }
+
         fun mapScopeIfNeeded(scope: ResolutionScope) =
             if (scope in graphContextParents) graph.scope else scope
     }
@@ -198,7 +224,6 @@ class GivenCallTransformer(
             }
 
             result as ResolutionResult.Success.WithCandidate.Value
-                ?: error("Expected result to be a value $result")
 
             finalExpression?.let { return it }
 
@@ -231,7 +256,9 @@ class GivenCallTransformer(
     private fun ResolutionResult.Success.WithCandidate.Value.shouldWrap(
         context: GraphContext
     ): Boolean = dependencyResults.isNotEmpty() &&
-            !candidate.cacheIfPossible && context.usagesFor(this).size > 1
+            !candidate.cacheIfPossible &&
+            !context.isInBetweenCircularDependency(this) &&
+            context.usagesFor(this).size > 1
 
     private fun ScopeContext.wrapExpressionInFunctionIfNeeded(
         result: ResolutionResult.Success.WithCandidate.Value,
@@ -274,8 +301,9 @@ class GivenCallTransformer(
 
     private fun ResolutionResult.Success.WithCandidate.Value.shouldCache(
         context: GraphContext
-    ): Boolean = candidate.cacheIfPossible && context.usagesFor(this)
-        .count { !it.isInline } > 1
+    ): Boolean = candidate.cacheIfPossible &&
+            !context.isInBetweenCircularDependency(this) &&
+            context.usagesFor(this).count { !it.isInline } > 1
 
     private fun ScopeContext.cacheExpressionIfNeeded(
         result: ResolutionResult.Success.WithCandidate.Value,
