@@ -124,10 +124,10 @@ class ProviderGivenNode(
                 .first()
                 .valueParameters
                 .onEach { parameterDescriptors += it }
-                .map { parameter ->
+                .mapIndexed { index, parameter ->
                     parameter
                         .toCallableRef(context, ownerScope.trace)
-                        .makeGiven()
+                        .copy(isGiven = true, type = type.arguments[index])
                 }
         )
     }

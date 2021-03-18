@@ -64,6 +64,18 @@ class ProviderTest {
     }
 
     @Test
+    fun testProviderWithQualifiedGivenArgs() = codegen(
+        """
+            @Qualifier annotation class MyQualifier
+            @Given fun bar(@Given foo: @MyQualifier Foo) = Bar(foo)
+            fun invoke() = given<(@Given @MyQualifier Foo) -> Bar>()(Foo())
+        """
+    ) {
+        invokeSingleFile()
+            .shouldBeTypeOf<Bar>()
+    }
+
+    @Test
     fun testProviderWithGenericGivenArgs() = codegen(
         """ 
             typealias GivenScopeA = GivenScope
