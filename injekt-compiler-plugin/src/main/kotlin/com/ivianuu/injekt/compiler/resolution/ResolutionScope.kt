@@ -20,9 +20,12 @@ import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -109,6 +112,23 @@ class ResolutionScope(
                 .toList()
                 .forEach { collectConstrainedGivens(it) }
         }
+    }
+
+    fun recordLookup(location: KotlinLookupLocation) {
+        parent?.recordLookup(location)
+        fun recordLookup(declaration: DeclarationDescriptor) {
+            if (declaration is ConstructorDescriptor) {
+                recordLookup(declaration.constructedClass)
+                return
+            }
+            when (val containingDeclaration = declaration.containingDeclaration) {
+                is ClassDescriptor -> containingDeclaration.unsubstitutedMemberScope
+                is PackageFragmentDescriptor -> containingDeclaration.getMemberScope()
+                else -> null
+            }?.recordLookup(declaration.name, location)
+        }
+        givens.forEach { recordLookup(it.callable) }
+        constrainedGivens.forEach { recordLookup(it.callable.callable) }
     }
 
     fun givensForType(type: TypeRef): List<GivenNode> = givensByType.getOrPut(type) {

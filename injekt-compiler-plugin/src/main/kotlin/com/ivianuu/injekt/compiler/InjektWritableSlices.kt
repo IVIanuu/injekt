@@ -35,7 +35,6 @@ object InjektWritableSlices {
     val GIVEN_GRAPH =
         BasicWritableSlice<SourcePosition, GivenGraph.Success>(RewritePolicy.DO_NOTHING)
     val USED_GIVEN = BasicWritableSlice<CallableDescriptor, Unit>(RewritePolicy.DO_NOTHING)
-    val GIVEN_CALLS_IN_FILE = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
     val USED_GIVENS_FOR_FILE = BasicWritableSlice<KtFile, List<CallableDescriptor>>(RewritePolicy.DO_NOTHING)
     val IMPORT_RESOLUTION_SCOPE = BasicWritableSlice<List<HierarchicalScope>, ResolutionScope>(
         RewritePolicy.DO_NOTHING)

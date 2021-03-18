@@ -1,4 +1,3 @@
-// injekt-incremental-fix 1615845308623 injekt-end
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -22,6 +21,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.android.ActivityComponent
+import com.ivianuu.injekt.android.AppContext
 import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.component.ComponentElementBinding
 import com.ivianuu.injekt.component.element
@@ -47,5 +47,6 @@ class MainActivity : ComponentActivity() {
 @Given
 class MainActivityDependencies(
     @Given val theme: SampleTheme,
-    @Given val appUi: SampleAppUi
+    @Given val appUi: SampleAppUi,
+    @Given val appContext: AppContext
 )

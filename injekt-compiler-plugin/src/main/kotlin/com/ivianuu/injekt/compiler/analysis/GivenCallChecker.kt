@@ -30,6 +30,7 @@ import com.ivianuu.injekt.compiler.resolution.resolveRequests
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
@@ -53,8 +54,6 @@ class GivenCallChecker(
         val resultingDescriptor = resolvedCall.resultingDescriptor
         if (resultingDescriptor !is FunctionDescriptor) return
 
-        val callExpression = resolvedCall.call.callElement
-
         val requests = resolvedCall
             .valueArguments
             .filterValues { it is DefaultValueArgument }
@@ -73,14 +72,11 @@ class GivenCallChecker(
         if (requests.isEmpty()) return
 
         val scope = HierarchicalResolutionScope(this.context, context.scope, context.trace)
+        val callExpression = resolvedCall.call.callElement
+        scope.recordLookup(KotlinLookupLocation(callExpression))
 
         when (val graph = scope.resolveRequests(requests)) {
             is GivenGraph.Success -> {
-                context.trace.record(
-                    InjektWritableSlices.GIVEN_CALLS_IN_FILE,
-                    callExpression.containingKtFile.virtualFilePath,
-                    Unit
-                )
                 val visited = mutableSetOf<ResolutionResult.Success>()
                 fun ResolutionResult.Success.visit() {
                     if (this !is ResolutionResult.Success.WithCandidate.Value) return

@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektWritableSlices
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -28,11 +27,6 @@ import java.io.File
 class InjektIrDumper(private val fileManager: FileManager) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         moduleFragment.files.forEach { irFile ->
-            fileManager.markFileSeen(irFile.fileEntry.name)
-            if (pluginContext.bindingContext[InjektWritableSlices.GIVEN_CALLS_IN_FILE,
-                        irFile.fileEntry.name] != null) {
-                fileManager.markGivenCallInFile(irFile.fileEntry.name)
-            }
             val file = File(irFile.fileEntry.name)
             val content = try {
                 irFile.dumpKotlinLike(

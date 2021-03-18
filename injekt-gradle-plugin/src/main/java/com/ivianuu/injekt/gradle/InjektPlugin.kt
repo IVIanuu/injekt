@@ -41,7 +41,6 @@ open class InjektPlugin : KotlinCompilerPluginSupportPlugin {
         kotlinCompilation.compileKotlinTask.setupForInjekt()
 
     override fun apply(target: Project) {
-        target.extensions.add(InjektExtension::class.java, "injekt", InjektExtension())
     }
 
     override fun getCompilerPluginId(): String = "com.ivianuu.injekt"

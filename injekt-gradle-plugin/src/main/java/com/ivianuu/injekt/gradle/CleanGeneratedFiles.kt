@@ -37,13 +37,10 @@ abstract class CleanGeneratedFiles : DefaultTask() {
     @get:InputFiles
     lateinit var srcDirs: List<File>
 
-    @get:Input
-    var incrementalFixEnabled = true
-
     @Suppress("unused")
     @get:OutputFile
     @get:Optional
-    val someFile = File(project.buildDir, "not-existing-file-because-gradle-needs-an-output")
+    val dummyOutput = File(project.buildDir, "not-existing-file-because-gradle-needs-an-output")
 
     private val cacheFile by lazy {
         cacheDir.resolve("file_pairs")
@@ -64,47 +61,24 @@ abstract class CleanGeneratedFiles : DefaultTask() {
             .toMutableMap()
     }
 
-    private val givenCallsFile by lazy {
-        cacheDir.resolve("given_calls_file")
-    }
-
-    private val filesWithGivenCalls by lazy {
-        if (!givenCallsFile.exists()) mutableSetOf()
-        else givenCallsFile.readText()
-            .split("\n")
-            .filter { it.isNotEmpty() }
-            .toMutableSet()
-    }
-
     @TaskAction
     operator fun invoke(inputs: IncrementalTaskInputs) {
         log("clean files")
 
-        val oldFilesWithGivenCalls = filesWithGivenCalls.toSet()
         val oldCacheEntries = cacheEntries.toMap()
-        var hasChanges = false
         inputs.outOfDate { details ->
-            hasChanges = dumpDir.absolutePath !in details.file.absolutePath
             cacheEntries.remove(details.file.absolutePath)
                 ?.onEach {
                     log("clean files: Delete $it because ${details.file} has changed")
                 }
-                ?.forEach {
-                    File(it).delete()
-                    filesWithGivenCalls -= it
-                }
+                ?.forEach { File(it).delete() }
         }
         inputs.removed { details ->
-            hasChanges = dumpDir.absolutePath !in details.file.absolutePath
             cacheEntries.remove(details.file.absolutePath)
                 ?.onEach {
                     log("clean files: Delete $it because ${details.file} was removed")
                 }
-                ?.forEach {
-                    File(it).delete()
-                    filesWithGivenCalls -= it
-                }
-            filesWithGivenCalls -= details.file.absolutePath
+                ?.forEach { File(it).delete() }
         }
 
         if (cacheEntries != oldCacheEntries) {
@@ -122,37 +96,6 @@ abstract class CleanGeneratedFiles : DefaultTask() {
                     cacheFile.writeText(it)
                     log("clean files: Updated cache $it")
                 }
-        }
-
-        if (filesWithGivenCalls != oldFilesWithGivenCalls) {
-            filesWithGivenCalls
-                .joinToString("\n")
-                .let {
-                    if (!givenCallsFile.exists()) {
-                        givenCallsFile.parentFile.mkdirs()
-                        givenCallsFile.createNewFile()
-                    }
-                    givenCallsFile.writeText(it)
-                    log("clean files: Updated files with given calls $it")
-                }
-        }
-
-        if (incrementalFixEnabled && hasChanges) {
-            filesWithGivenCalls
-                .map { File(it) }
-                .filter { it.exists() }
-                .forEach { fileWithGivenCall ->
-                    val text = fileWithGivenCall.readText()
-                    val newText = if (text.startsWith("// injekt-incremental-fix")) {
-                        "// injekt-incremental-fix ${System.currentTimeMillis()} injekt-end\n" + text.split("injekt-end\n")[1]
-                    } else {
-                        "// injekt-incremental-fix ${System.currentTimeMillis()} injekt-end\n" + text
-                    }
-                    log("clean files: Force recompilation of $fileWithGivenCall")
-                    fileWithGivenCall.writeText(newText)
-                }
-        } else {
-            log("clean files: Do not force recompilation: is enabled: $incrementalFixEnabled, has changes: $hasChanges")
         }
     }
 }

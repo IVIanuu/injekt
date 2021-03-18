@@ -1,4 +1,3 @@
-// injekt-incremental-fix 1615998351775 injekt-end
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -28,6 +27,7 @@ import com.ivianuu.injekt.samples.android.ui.*
 
 class App : Application() {
     override fun onCreate() {
+        println()
         // kick start injekt here
         initializeApp(initializers = { emptySet() })
         super.onCreate()

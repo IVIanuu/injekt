@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import com.ivianuu.injekt.gradle.InjektExtension
 import com.ivianuu.injekt.gradle.setupForInjekt
 
 buildscript {
@@ -46,9 +45,6 @@ allprojects {
         maven("https://plugins.gradle.org/m2")
     }
 
-    if (project.name != "injekt-compiler-plugin") {
-        extensions.add<InjektExtension>("injekt", InjektExtension())
-    }
     afterEvaluate {
         tasks.withType<org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile<*>> {
             val kotlinOptions = when (this) {
@@ -61,7 +57,8 @@ allprojects {
                     useIR = true
                 if (project.name != "injekt-compiler-plugin" &&
                         project.name != "injekt-gradle-plugin") {
-                    val pluginOptions = setupForInjekt()
+                    val pluginOptions = (this@withType as org.jetbrains.kotlin.gradle.dsl.KotlinCompile<*>)
+                        .setupForInjekt().get()
                     pluginOptions.forEach {
                         freeCompilerArgs += listOf(
                             "-P", "plugin:com.ivianuu.injekt:${it.key}=${it.value}"

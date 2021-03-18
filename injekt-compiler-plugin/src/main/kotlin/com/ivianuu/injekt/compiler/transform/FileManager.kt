@@ -39,24 +39,6 @@ class FileManager(
         }
         .toMutableSet()
 
-    private val givenCallsFile = cacheDir.resolve("given_calls_file")
-
-    private val filesWithGivenCalls = if (!givenCallsFile.exists()) mutableSetOf()
-    else givenCallsFile.readText()
-        .split("\n")
-        .filter { it.isNotEmpty() }
-        .toMutableSet()
-
-    private val seenFiles = mutableSetOf<String>()
-
-    fun markFileSeen(filePath: String) {
-        seenFiles += filePath
-    }
-
-    fun markGivenCallInFile(filePath: String) {
-        filesWithGivenCalls += filePath
-    }
-
     fun generateFile(
         packageFqName: FqName,
         fileName: String,
@@ -93,17 +75,6 @@ class FileManager(
                     cacheFile.createNewFile()
                 }
                 cacheFile.writeText(it)
-            }
-
-        filesWithGivenCalls
-            .filter { it !in seenFiles || it in filesWithGivenCalls }
-            .joinToString("\n")
-            .let {
-                if (!givenCallsFile.exists()) {
-                    givenCallsFile.parentFile.mkdirs()
-                    givenCallsFile.createNewFile()
-                }
-                givenCallsFile.writeText(it)
             }
     }
 

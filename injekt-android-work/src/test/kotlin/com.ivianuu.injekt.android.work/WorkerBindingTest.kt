@@ -1,4 +1,3 @@
-// injekt-incremental-fix 1615671950518 injekt-end
 /*
  * Copyright 2020 Manuel Wrage
  *
