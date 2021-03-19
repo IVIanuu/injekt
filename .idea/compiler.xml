@@ -6,6 +6,10 @@
       <module name="com.ivianuu.injekt.injekt.injekt-component.commonTest" target="1.8" />
       <module name="com.ivianuu.injekt.injekt.injekt-component.jvmMain" target="1.8" />
       <module name="com.ivianuu.injekt.injekt.injekt-component.jvmTest" target="1.8" />
+      <module name="injekt.buildSrc" target="11" />
+      <module name="injekt.injekt-android" target="11" />
+      <module name="injekt.injekt-android-work" target="11" />
+      <module name="injekt.injekt-common" target="11" />
       <module name="injekt.injekt-common.commonMain" target="1.8" />
       <module name="injekt.injekt-common.commonTest" target="1.8" />
       <module name="injekt.injekt-common.jvmMain" target="1.8" />
@@ -14,14 +18,19 @@
       <module name="injekt.injekt-component.commonTest" target="1.8" />
       <module name="injekt.injekt-component.jvmMain" target="1.8" />
       <module name="injekt.injekt-component.jvmTest" target="1.8" />
+      <module name="injekt.injekt-core" target="11" />
       <module name="injekt.injekt-core.commonMain" target="1.8" />
       <module name="injekt.injekt-core.commonTest" target="1.8" />
       <module name="injekt.injekt-core.jvmMain" target="1.8" />
       <module name="injekt.injekt-core.jvmTest" target="1.8" />
+      <module name="injekt.injekt-scope" target="11" />
       <module name="injekt.injekt-scope.commonMain" target="1.8" />
       <module name="injekt.injekt-scope.commonTest" target="1.8" />
       <module name="injekt.injekt-scope.jvmMain" target="1.8" />
       <module name="injekt.injekt-scope.jvmTest" target="1.8" />
+      <module name="injekt.integration-tests" target="11" />
+      <module name="injekt.samples.android-app" target="11" />
+      <module name="injekt.samples.coffee-maker" target="11" />
       <module name="injekt.samples.coffee-maker.commonMain" target="1.8" />
       <module name="injekt.samples.coffee-maker.commonTest" target="1.8" />
       <module name="injekt.samples.coffee-maker.jvmMain" target="1.8" />
