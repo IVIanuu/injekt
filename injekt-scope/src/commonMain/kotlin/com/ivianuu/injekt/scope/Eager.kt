@@ -27,15 +27,15 @@ import com.ivianuu.injekt.Qualifier
 annotation class Eager<S : GivenScope>
 
 @Given
-fun <@Given T : @Eager<U> S, S : Any, U : GivenScope> eagerImpl() = EagerModule<T, S, U>()
+fun <@Given T : @Eager<S> U, U : Any, S : GivenScope> eagerImpl() = EagerModule<T, U, S>()
 
-class EagerModule<T : S, S : Any, U : GivenScope> {
-    @Scoped<U>
+class EagerModule<T : U, U : Any, S : GivenScope> {
+    @Scoped<S>
     @Given
-    inline fun scopedInstance(@Given instance: T): S = instance
+    inline fun scopedInstance(@Given instance: T): U = instance
 
     @Given
-    fun initializer(@Given factory: () -> S): GivenScopeInitializer<U> = {
+    fun initializer(@Given factory: () -> S): GivenScopeInitializer<S> = {
         factory()
     }
 }

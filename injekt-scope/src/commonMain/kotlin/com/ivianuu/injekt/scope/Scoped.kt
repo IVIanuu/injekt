@@ -41,7 +41,7 @@ import com.ivianuu.injekt.common.ForTypeKey
 annotation class Scoped<S : GivenScope>
 
 @Given
-inline fun <@Given T : @Scoped<U> S, @ForTypeKey S : Any, U : GivenScope> scopedImpl(
-    @Given scope: U,
+inline fun <@Given T : @Scoped<S> U, @ForTypeKey U : Any, S : GivenScope> scopedImpl(
+    @Given scope: S,
     @Given factory: () -> T
-): S = scope.getOrCreateScopedValue<S>(factory)
+): U = scope.getOrCreateScopedValue<U>(factory)
