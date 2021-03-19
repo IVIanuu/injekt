@@ -64,44 +64,47 @@ class ProviderTest {
     }
 
     @Test
+    fun testProviderWithQualifiedGivenArgs() = codegen(
+        """
+            @Qualifier annotation class MyQualifier
+            @Given fun bar(@Given foo: @MyQualifier Foo) = Bar(foo)
+            fun invoke() = given<(@Given @MyQualifier Foo) -> Bar>()(Foo())
+        """
+    ) {
+        invokeSingleFile()
+            .shouldBeTypeOf<Bar>()
+    }
+
+    @Test
     fun testProviderWithGenericGivenArgs() = codegen(
         """ 
-            typealias ComponentA = Component
+            typealias GivenScopeA = GivenScope
 
-            fun createComponentA() = ComponentBuilder<ComponentA>(initializers = { emptySet() })
-                .build()
+            fun createGivenScopeA() = given<GivenScopeA>()
 
-            typealias ComponentB = Component
+            typealias GivenScopeB = GivenScope
 
-            @ComponentElementBinding<ComponentA>
+            @GivenScopeElementBinding<GivenScopeA>
             @Given
-            fun componentBFactory(
-                @Given parent: ComponentA,
-                @Given builderFactory: () -> Component.Builder<ComponentB>
-            ): () -> ComponentB = { 
-                builderFactory()
-                    .dependency(parent)
-                    .build()
-            }
+            fun givenScopeBFactory(
+                @Given parent: GivenScopeA,
+                @Given scopeFactory: () -> GivenScopeB
+            ): () -> GivenScopeB = scopeFactory
 
-            typealias ComponentC = Component
+            typealias GivenScopeC = GivenScope
 
-            @ComponentElementBinding<ComponentB>
+            @GivenScopeElementBinding<GivenScopeB>
             @Given 
-            fun componentCFactory(
-                @Given parent: ComponentB,
-                @Given builderFactory: () -> Component.Builder<ComponentC>
-            ): () -> ComponentC = {
-                builderFactory()
-                    .dependency(parent)
-                    .build()
-            }
+            fun givenScopeCFactory(
+                @Given parent: GivenScopeB,
+                @Given scopeFactory: () -> GivenScopeC
+            ): () -> GivenScopeC = scopeFactory
 
-            @ComponentElementBinding<ComponentC>
+            @GivenScopeElementBinding<GivenScopeC>
             @Given class MyComponent(
-                @Given val a: ComponentA,
-                @Given val b: ComponentB,
-                @Given val c: ComponentC
+                @Given val a: GivenScopeA,
+                @Given val b: GivenScopeB,
+                @Given val c: GivenScopeC
             )
             """
     )
@@ -111,46 +114,40 @@ class ProviderTest {
         listOf(
             source(
                 """
-                    typealias ComponentA = Component
+                    typealias GivenScopeA = GivenScope
+
+                    fun createGivenScopeA() = given<GivenScopeA>()
         
-                    typealias ComponentB = Component
+                    typealias GivenScopeB = GivenScope
         
-                    @ComponentElementBinding<ComponentA>
+                    @GivenScopeElementBinding<GivenScopeA>
                     @Given
-                    fun componentBFactory(
-                        @Given parent: ComponentA,
-                        @Given builderFactory: () -> Component.Builder<ComponentB>
-                    ): () -> ComponentB = { 
-                        builderFactory()
-                            .dependency(parent)
-                            .build()
-                    }
+                    fun givenScopeBFactory(
+                        @Given parent: GivenScopeA,
+                        @Given scopeFactory: () -> GivenScopeB
+                    ): () -> GivenScopeB = scopeFactory
         
-                    typealias ComponentC = Component
+                    typealias GivenScopeC = GivenScope
         
-                    @ComponentElementBinding<ComponentB>
+                    @GivenScopeElementBinding<GivenScopeB>
                     @Given 
-                    fun componentCFactory(
-                        @Given parent: ComponentB,
-                        @Given builderFactory: () -> Component.Builder<ComponentC>
-                    ): () -> ComponentC = {
-                        builderFactory()
-                            .dependency(parent)
-                            .build()
-                    }
-                """
-            )
+                    fun givenScopeCFactory(
+                        @Given parent: GivenScopeB,
+                        @Given scopeFactory: () -> GivenScopeC
+                    ): () -> GivenScopeC = scopeFactory
+                        """
+                    )
         ),
         listOf(
             source(
                 """
-                    fun createComponentA() = ComponentBuilder<ComponentA>(initializers = { emptySet() }).build()
+                    fun createGivenScopeA() = given<GivenScopeA>()
 
-                    @ComponentElementBinding<ComponentC>
+                    @GivenScopeElementBinding<GivenScopeC>
                     @Given class MyComponent(
-                        @Given val a: ComponentA,
-                        @Given val b: ComponentB,
-                        @Given val c: ComponentC
+                        @Given val a: GivenScopeA,
+                        @Given val b: GivenScopeB,
+                        @Given val c: GivenScopeC
                     )
                 """
             )
@@ -192,14 +189,14 @@ class ProviderTest {
     @Test
     fun testMultipleProvidersInSetWithDependencyDerivedByProviderArgument() = codegen(
         """
-            typealias MyComponent = Component
-            @Given val @Given MyComponent.key: String get() = ""
+            typealias MyGivenScope = GivenScope
+            @Given val @Given MyGivenScope.key: String get() = ""
             @Given fun foo(@Given key: String) = Foo()
-            @Given fun fooIntoSet(@Given provider: (@Given MyComponent) -> Foo): (MyComponent) -> Any = provider as (MyComponent) -> Any 
+            @Given fun fooIntoSet(@Given provider: (@Given MyGivenScope) -> Foo): (MyGivenScope) -> Any = provider as (MyGivenScope) -> Any 
             @Given class Dep(@Given key: String)
-            @Given fun depIntoSet(@Given provider: (@Given MyComponent) -> Dep): (MyComponent) -> Any = provider as (MyComponent) -> Any
+            @Given fun depIntoSet(@Given provider: (@Given MyGivenScope) -> Dep): (MyGivenScope) -> Any = provider as (MyGivenScope) -> Any
             fun invoke() {
-                given<Set<(MyComponent) -> Any>>()
+                given<Set<(MyGivenScope) -> Any>>()
             }
         """
     )

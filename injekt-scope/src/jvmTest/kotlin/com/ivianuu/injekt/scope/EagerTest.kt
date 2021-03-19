@@ -14,21 +14,30 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.android
+package com.ivianuu.injekt.scope
 
-import androidx.activity.ComponentActivity
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.scope.AppGivenScope
-import com.ivianuu.injekt.scope.ChildGivenScopeModule0
-import com.ivianuu.injekt.scope.GivenScope
+import com.ivianuu.injekt.given
+import io.kotest.matchers.shouldBe
+import org.junit.Test
 
-val ComponentActivity.activityRetainedGivenScope: ActivityRetainedGivenScope
-    get() = viewModelStore.givenScope {
-        application.appGivenScope.element<() -> ActivityRetainedGivenScope>()()
+class EagerTest {
+    @Test
+    fun testEager() {
+        var callCount = 0
+        class Foo
+        @Eager<TestGivenScope1>
+        @Given
+        fun eagerFoo(): Foo {
+            callCount++
+            return Foo()
+        }
+        @GivenScopeElementBinding<TestGivenScope1>
+        @Given
+        fun fooElement(@Given foo: Foo) = foo
+        val scope = given<TestGivenScope1>()
+        callCount shouldBe 1
+        scope.element<Foo>()
+        callCount shouldBe 1
     }
-
-typealias ActivityRetainedGivenScope = GivenScope
-
-@Given
-val activityRetainedGivenScopeModule =
-    ChildGivenScopeModule0<AppGivenScope, ActivityRetainedGivenScope>()
+}

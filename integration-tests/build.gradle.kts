@@ -29,6 +29,6 @@ dependencies {
     implementation(Deps.AndroidX.Compose.runtime)
     implementation(project(":injekt-core"))
     implementation(project(":injekt-common"))
-    implementation(project(":injekt-component"))
+    implementation(project(":injekt-scope"))
     implementation(project(":test-util"))
 }

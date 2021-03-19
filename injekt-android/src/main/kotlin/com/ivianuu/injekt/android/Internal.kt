@@ -25,18 +25,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.lifecycleScope
-import com.ivianuu.injekt.component.Component
+import com.ivianuu.injekt.scope.GivenScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 
-private val componentsByLifecycle = mutableMapOf<Lifecycle, Component>()
+internal val givenScopesByLifecycle = mutableMapOf<Lifecycle, GivenScope>()
 
-internal fun <T : Component> Lifecycle.component(init: () -> T): T {
-    componentsByLifecycle[this]?.let { return it as T }
-    return synchronized(componentsByLifecycle) {
-        componentsByLifecycle[this]?.let { return it as T }
+internal inline fun <T : GivenScope> Lifecycle.givenScope(init: () -> T): T {
+    givenScopesByLifecycle[this]?.let { return it as T }
+    return synchronized(givenScopesByLifecycle) {
+        givenScopesByLifecycle[this]?.let { return it as T }
         val value = init()
-        componentsByLifecycle[this] = value
+        givenScopesByLifecycle[this] = value
         value
     }.also {
         addObserver(object : LifecycleEventObserver {
@@ -45,9 +45,9 @@ internal fun <T : Component> Lifecycle.component(init: () -> T): T {
                     // schedule clean up to the next frame
                     // to allow users to access bindings in their onDestroy()
                     source.lifecycleScope.launch(NonCancellable) {
-                        synchronized(componentsByLifecycle) {
-                            componentsByLifecycle
-                                .remove(this@component)
+                        synchronized(givenScopesByLifecycle) {
+                            givenScopesByLifecycle
+                                .remove(this@givenScope)
                         }!!.dispose()
                     }
                 }
@@ -56,19 +56,19 @@ internal fun <T : Component> Lifecycle.component(init: () -> T): T {
     }
 }
 
-internal fun <T : Component> ViewModelStore.component(init: () -> T): T {
+internal inline fun <T : GivenScope> ViewModelStore.givenScope(crossinline init: () -> T): T {
     return ViewModelProvider(
         this,
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                ViewModelComponentHolder(init()) as T
+                ViewModelGivenScopeHolder(init()) as T
         }
-    )[ViewModelComponentHolder::class.java].component as T
+    )[ViewModelGivenScopeHolder::class.java].givenScope as T
 }
 
-private class ViewModelComponentHolder<T : Component>(val component: T) : ViewModel() {
+internal class ViewModelGivenScopeHolder<T : GivenScope>(val givenScope: T) : ViewModel() {
     override fun onCleared() {
         super.onCleared()
-        component.dispose()
+        givenScope.dispose()
     }
 }

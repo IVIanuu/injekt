@@ -18,6 +18,10 @@
       <module name="injekt.injekt-core.commonTest" target="1.8" />
       <module name="injekt.injekt-core.jvmMain" target="1.8" />
       <module name="injekt.injekt-core.jvmTest" target="1.8" />
+      <module name="injekt.injekt-scope.commonMain" target="1.8" />
+      <module name="injekt.injekt-scope.commonTest" target="1.8" />
+      <module name="injekt.injekt-scope.jvmMain" target="1.8" />
+      <module name="injekt.injekt-scope.jvmTest" target="1.8" />
       <module name="injekt.samples.coffee-maker.commonMain" target="1.8" />
       <module name="injekt.samples.coffee-maker.commonTest" target="1.8" />
       <module name="injekt.samples.coffee-maker.jvmMain" target="1.8" />

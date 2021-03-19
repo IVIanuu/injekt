@@ -195,21 +195,21 @@ class QualifierTest {
     @Test
     fun testSubstitutesQualifierTypeParameters() = codegen(
         """
-            @Eager<AppComponent> 
+            @Eager<AppGivenScope> 
             @Given 
             fun foo() = Foo()
 
-            typealias ChildComponent = Component
+            typealias ChildGivenScope = GivenScope
 
             @Given
-            val childComponentModule = ChildComponentModule0<AppComponent, ChildComponent>()
+            val childGivenScopeModule = ChildGivenScopeModule0<AppGivenScope, ChildGivenScope>()
 
-            @ComponentElementBinding<ChildComponent>
+            @GivenScopeElementBinding<ChildGivenScope>
             @Given
             class MyElement(@Given val foo: Foo)
 
             fun invoke() {
-                val component = ComponentBuilder<AppComponent>()
+                val givenScope = given<AppGivenScope>()
             }
         """
     ) {

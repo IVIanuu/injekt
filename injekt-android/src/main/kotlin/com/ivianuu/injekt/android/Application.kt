@@ -24,13 +24,13 @@ import android.content.res.Resources
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.component.App
-import com.ivianuu.injekt.component.AppComponent
-import com.ivianuu.injekt.component.appComponent
+import com.ivianuu.injekt.scope.App
+import com.ivianuu.injekt.scope.AppGivenScope
+import com.ivianuu.injekt.scope.appGivenScope
 
 @Suppress("unused")
-val Application.appComponent: AppComponent
-    get() = (this as App).appComponent
+val Application.appGivenScope: AppGivenScope
+    get() = (this as App).appGivenScope
 
 @Given
 inline val @Given App.application: Application

@@ -14,21 +14,27 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.android
+package com.ivianuu.injekt.scope
 
-import androidx.activity.ComponentActivity
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.scope.AppGivenScope
-import com.ivianuu.injekt.scope.ChildGivenScopeModule0
-import com.ivianuu.injekt.scope.GivenScope
 
-val ComponentActivity.activityRetainedGivenScope: ActivityRetainedGivenScope
-    get() = viewModelStore.givenScope {
-        application.appGivenScope.element<() -> ActivityRetainedGivenScope>()()
-    }
+typealias AppGivenScope = GivenScope
 
-typealias ActivityRetainedGivenScope = GivenScope
+/**
+ * Initializes the app given scope which can then be accessed via [appGivenScope]
+ */
+inline fun App.initializeApp(@Given scopeFactory: (@Given App) -> AppGivenScope) {
+    _appGivenScope = scopeFactory(this)
+}
+
+@PublishedApi
+internal var _appGivenScope: AppGivenScope? = null
+
+val App.appGivenScope: AppGivenScope
+    get() = _appGivenScope ?: error("app given scope not initialized. Did you forget to call initializeApp()?")
+
+typealias App = Any
 
 @Given
-val activityRetainedGivenScopeModule =
-    ChildGivenScopeModule0<AppGivenScope, ActivityRetainedGivenScope>()
+val @Given AppGivenScope.app: App
+    get() = element()

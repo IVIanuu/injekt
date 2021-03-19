@@ -17,14 +17,14 @@
 package com.ivianuu.injekt.samples.android.data
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.common.Scoped
-import com.ivianuu.injekt.component.AppComponent
+import com.ivianuu.injekt.scope.AppGivenScope
+import com.ivianuu.injekt.scope.Scoped
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-@Scoped<AppComponent>
+@Scoped<AppGivenScope>
 @Given
 class CounterStorage {
     private val _counterState = MutableStateFlow(0)

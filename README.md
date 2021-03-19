@@ -28,16 +28,13 @@ TODO
 # Qualifiers
 TODO
 
-# Typealiases
+# Type aliases
 TODO
 
 # Providers
 TODO
 
-# Scopes
-TODO
-
-# Components
+# Given scopes
 TODO
 
 # Android

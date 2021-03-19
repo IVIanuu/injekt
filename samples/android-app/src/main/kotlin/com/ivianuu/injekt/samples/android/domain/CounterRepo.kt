@@ -17,13 +17,13 @@
 package com.ivianuu.injekt.samples.android.domain
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.common.Scoped
-import com.ivianuu.injekt.component.AppComponent
+import com.ivianuu.injekt.scope.AppGivenScope
 import com.ivianuu.injekt.samples.android.data.CounterStorage
+import com.ivianuu.injekt.scope.Scoped
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 
-@Scoped<AppComponent>
+@Scoped<AppGivenScope>
 @Given
 class CounterRepo(@Given private val storage: CounterStorage) {
     val counterState: Flow<Int>
