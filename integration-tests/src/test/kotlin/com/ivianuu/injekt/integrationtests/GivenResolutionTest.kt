@@ -851,7 +851,7 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testCannotResolveGivenConstructorParameterIfConstructorIsCalledByUs() = codegen(
+    fun testCannotResolveGivenConstructorParameterOfGivenClassFromOutsideTheClass() = codegen(
         """
             @Given class MyClass(@Given val foo: Foo)
             fun invoke() = given<Foo>()
@@ -863,7 +863,7 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testCanResolveGivenConstructorParameterFromOutsideOfTheConstructorIsNotCalledByUs() = codegen(
+    fun testCanResolveGivenConstructorParameterOfNonGivenClassFromOutsideTheClass() = codegen(
         """
             class MyClass(@Given val foo: Foo)
             fun invoke(@Given myClass: MyClass) = given<Foo>()

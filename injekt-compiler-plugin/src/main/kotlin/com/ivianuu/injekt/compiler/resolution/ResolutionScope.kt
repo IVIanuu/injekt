@@ -302,10 +302,7 @@ class ResolutionScope(
         val containingClassifier = containing.toClassifierRef(context, trace)
         if (callable.name !in containingClassifier.primaryConstructorPropertyParameters) return true
         return allScopes.any { it.ownerDescriptor == containing } ||
-                givensForType(parameterTypes["_dispatchReceiver"]!!)
-                    .any { classGiven ->
-                        classGiven.dependencies.none { it.type == type }
-                    }
+                !containingClassifier.descriptor!!.isGiven(context, trace)
     }
 
     override fun toString(): String = "ResolutionScope($name)"
