@@ -74,6 +74,7 @@ class TypeKeyTransformer(
 ) : IrElementTransformerVoid() {
 
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
+    private val transformedClasses = mutableSetOf<IrClass>()
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         super.visitModuleFragment(declaration)
@@ -88,6 +89,9 @@ class TypeKeyTransformer(
         super.visitFunction(transformFunctionIfNeeded(declaration))
 
     private fun transformClassIfNeeded(clazz: IrClass): IrClass {
+        if (clazz in transformedClasses) return clazz
+        transformedClasses += clazz
+
         if (clazz.descriptor.declaredTypeParameters.none { it.isForTypeKey(context, trace) })
             return clazz
 
@@ -162,7 +166,10 @@ class TypeKeyTransformer(
         if (function in transformedFunctions.values) return function
 
         if (function is IrConstructor) {
-            if (!function.descriptor.original.isExternalDeclaration()) return function
+            if (!function.descriptor.original.isExternalDeclaration()) {
+                transformClassIfNeeded(function.constructedClass)
+                return function
+            }
             val typeKeyParameters = function.constructedClass
                 .descriptor
                 .toClassifierRef(context, trace)
@@ -177,9 +184,7 @@ class TypeKeyTransformer(
             return function
         }
 
-        if (function.descriptor.typeParameters.none {
-                it.isForTypeKey(context, trace)
-        })
+        if (function.descriptor.typeParameters.none { it.isForTypeKey(context, trace) })
             return function
 
         val transformedFunction = function.copyWithTypeKeyParams()
