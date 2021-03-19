@@ -24,7 +24,6 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.scope.AppGivenScope
 import com.ivianuu.injekt.scope.ChildGivenScopeModule3
 import com.ivianuu.injekt.scope.GivenScope
-import com.ivianuu.injekt.scope.element
 
 fun BroadcastReceiver.createReceiverGivenScope(
     context: Context,

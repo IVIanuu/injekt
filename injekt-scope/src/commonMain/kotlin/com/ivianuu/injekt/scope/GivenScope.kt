@@ -26,7 +26,7 @@ import com.ivianuu.injekt.common.typeKeyOf
 
 /**
  * A hierarchical construct with a lifecycle which hosts a map of keys to elements
- * which can be retrieved via [GivenScope.elementOrNull] or [GivenScope.element]
+ * which can be retrieved via [GivenScope.element]
  */
 interface GivenScope : GivenScopeDisposable {
     /**
@@ -34,42 +34,32 @@ interface GivenScope : GivenScopeDisposable {
      */
     val isDisposed: Boolean
     /**
-     * Returns the element [T] for [key] or null
+     * Returns the element [T] or throws
      */
-    fun <T : Any> elementOrNull(key: TypeKey<T>): T?
+    fun <@ForTypeKey T : Any> element(): T
     /**
-     * Returns the value [T] for [key] or null
+     * Returns the scoped value [T] for [key] or null
      */
     fun <T : Any> getScopedValueOrNull(key: Any): T?
     /**
-     * Sets the value [T] for [key] to [value]
+     * Sets the scoped value [T] for [key] to [value]
      */
     fun <T : Any> setScopedValue(key: Any, value: T)
     /**
-     * Removes the value for [key]
+     * Removes the scoped value for [key]
      */
     fun removeScopedValue(key: Any)
 }
 
 /**
- * Allows scoped values to be notified when the hosting [Scope] get's disposed
+ * Allows scoped values to be notified when the hosting [GivenScope] get's disposed
  */
 fun interface GivenScopeDisposable {
     /**
-     * Get's called while the hosting [Scope] get's disposed via [Scope.dispose]
+     * Get's called while the hosting [GivenScope] get's disposed via [GivenScope.dispose]
      */
     fun dispose()
 }
-
-
-/**
- * Returns the element [T] for [key] or throws
- */
-fun <T : Any> GivenScope.element(key: TypeKey<T>): T = elementOrNull(key)
-    ?: error("No element for for $key in $this")
-
-fun <@ForTypeKey T : Any> GivenScope.element(): T =
-    element(typeKeyOf())
 
 /**
  * Returns an existing instance of [T] for key [key] or creates and caches a new instance by calling function [init]
@@ -175,10 +165,9 @@ internal class GivenScopeImpl : GivenScope {
     val elements = mutableMapOf<TypeKey<*>, () -> Any>()
     private val scopedValues = mutableMapOf<Any, Any>()
 
-    override fun <T : Any> elementOrNull(key: TypeKey<T>): T? {
-        if (isDisposed) return null
-        return elements[key]?.invoke() as? T
-    }
+    override fun <@ForTypeKey T : Any> element(): T =
+        elements[typeKeyOf<T>()]?.invoke() as? T
+            ?: error("No element found for ${typeKeyOf<T>()} in $this")
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : Any> getScopedValueOrNull(key: Any): T? {

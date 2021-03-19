@@ -33,12 +33,6 @@ class GivenScopeTest {
     }
 
     @Test
-    fun testReturnsNullForNotExistingValue() {
-        val scope = given<TestGivenScope1>()
-        scope.elementOrNull(typeKeyOf<String>()) shouldBe null
-    }
-
-    @Test
     fun testGivenScopeInitializer() {
         var called = false
         @Given
