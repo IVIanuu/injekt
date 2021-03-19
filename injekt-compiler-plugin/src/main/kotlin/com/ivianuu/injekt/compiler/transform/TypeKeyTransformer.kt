@@ -46,7 +46,6 @@ import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
-import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
@@ -60,7 +59,6 @@ import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.load.java.JvmAbi
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.DescriptorUtils
@@ -359,73 +357,79 @@ class TypeKeyTransformer(
     ): IrExpression {
         val builder = DeclarationIrBuilder(pluginContext, symbol)
         val expressions = mutableListOf<IrExpression>()
+        var currentString = ""
+        fun commitCurrentString() {
+            if (currentString.isNotEmpty()) {
+                expressions += builder.irString(currentString)
+                currentString = ""
+            }
+        }
+        fun appendToCurrentString(value: String) {
+            currentString += value
+        }
+        fun appendTypeParameterExpression(expression: IrExpression) {
+            commitCurrentString()
+            expressions += expression
+        }
+
         fun IrType.collectExpressions() {
             check(this@collectExpressions is IrSimpleType)
 
             val typeAnnotations = listOfNotNull(
-                if ((abbreviation?.hasAnnotation(InjektFqNames.Composable) ?:
-                    hasAnnotation(InjektFqNames.Composable))) "@Composable" else null,
-                *(abbreviation?.getAnnotatedAnnotations(InjektFqNames.Qualifier) ?:
-                    getAnnotatedAnnotations(InjektFqNames.Qualifier))
-                    .map { qualifier ->
-                        "@" + qualifier.type.classifierOrFail.descriptor.fqNameSafe.asString() +
-                                if (qualifier.valueArgumentsCount > 0) {
-                                    (0 until qualifier.valueArgumentsCount)
-                                        .map { i -> qualifier.getValueArgument(i) as IrConst<*> }
-                                        .map { it.value }
-                                        .hashCode()
-                                        .toString()
-                                        .let { "($it)" }
-                                } else ""
-                    }
-                    .toTypedArray()
-            )
+                (abbreviation ?: this).annotations.firstOrNull {
+                    it.symbol.owner.constructedClass.descriptor.fqNameSafe ==
+                            InjektFqNames.Composable
+                }
+            ) + (abbreviation?.getAnnotatedAnnotations(InjektFqNames.Qualifier)
+                ?: getAnnotatedAnnotations(InjektFqNames.Qualifier))
+
             if (typeAnnotations.isNotEmpty()) {
-                expressions += builder.irString(
-                    buildString {
-                        append("[")
-                        typeAnnotations.forEachIndexed { index, annotation ->
-                            append(annotation)
-                            if (index != typeAnnotations.lastIndex) append(", ")
-                        }
-                        append("]")
+                appendToCurrentString("[")
+                typeAnnotations.forEachIndexed { index, annotation ->
+                    appendToCurrentString("@")
+                    annotation.type.collectExpressions()
+                    if (annotation.valueArgumentsCount > 0) {
+                        appendToCurrentString(
+                            (0 until annotation.valueArgumentsCount)
+                                .map { i -> annotation.getValueArgument(i) as IrConst<*> }
+                                .map { it.value }
+                                .hashCode()
+                                .toString()
+                                .let { "($it)" }
+                        )
                     }
-                )
+                    if (index != typeAnnotations.lastIndex) appendToCurrentString(", ")
+                }
+                appendToCurrentString("]")
             }
 
             when {
-                abbreviation != null -> {
-                    expressions += builder.irString(abbreviation!!.typeAlias.descriptor.fqNameSafe.asString())
-                }
-                classifierOrFail is IrTypeParameterSymbol -> {
-                    expressions += typeParameterKeyExpressions[classifierOrFail.owner]
-                        ?.invoke(scopes)
-                        ?: error("")
-                }
-                else -> {
-                    expressions += builder.irString(classifierOrFail.descriptor.fqNameSafe.asString())
-                }
+                abbreviation != null -> appendToCurrentString(abbreviation!!.typeAlias.descriptor.fqNameSafe.asString())
+                classifierOrFail is IrTypeParameterSymbol -> appendTypeParameterExpression(
+                    typeParameterKeyExpressions[classifierOrFail.owner]!!(scopes)
+                )
+                else -> appendToCurrentString(classifierOrFail.descriptor.fqNameSafe.asString())
             }
 
             val arguments = abbreviation?.arguments ?: arguments
 
             if (arguments.isNotEmpty()) {
-                expressions += builder.irString("<")
+                appendToCurrentString("<")
                 arguments.forEachIndexed { index, typeArgument ->
                     if (typeArgument.typeOrNull != null)
                         typeArgument.typeOrNull?.collectExpressions()
-                    else expressions += builder.irString("*")
-                    if (index != arguments.lastIndex) expressions += builder.irString(", ")
+                    else appendToCurrentString("*")
+                    if (index != arguments.lastIndex) appendToCurrentString(", ")
                 }
-                expressions += builder.irString(">")
+                appendToCurrentString(">")
             }
 
             if ((abbreviation != null && abbreviation!!.hasQuestionMark) ||
-                (abbreviation == null && hasQuestionMark))
-                    expressions += builder.irString("?")
+                (abbreviation == null && hasQuestionMark)) appendToCurrentString("?")
         }
 
         collectExpressions()
+        commitCurrentString()
 
         return if (expressions.size == 1) {
             expressions.single()

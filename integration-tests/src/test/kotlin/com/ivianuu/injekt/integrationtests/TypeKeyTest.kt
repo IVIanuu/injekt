@@ -91,7 +91,7 @@ class TypeKeyTest {
             fun invoke() = typeKeyOf<@Composable () -> Unit>() 
         """
     ) {
-        invokeSingleFile<TypeKey<Any>>().value shouldBe "[@Composable]kotlin.Function0<kotlin.Unit>"
+        invokeSingleFile<TypeKey<Any>>().value shouldBe "[@androidx.compose.runtime.Composable]kotlin.Function0<kotlin.Unit>"
     }
     @Test
     fun testTypeKeyOfWithTypeAliasWithComposableExpandedType() = codegen(
@@ -111,6 +111,7 @@ class TypeKeyTest {
     ) {
         invokeSingleFile<TypeKey<Any>>().value shouldBe "[@com.ivianuu.injekt.test.Qualifier2(128)]kotlin.String"
     }
+
     @Test
     fun testTypeKeyOfWithTypeAliasWithQualifiedExpandedType() = codegen(
         """
@@ -119,6 +120,17 @@ class TypeKeyTest {
         """
     ) {
         invokeSingleFile<TypeKey<Any>>().value shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
+    }
+
+    @Test
+    fun testTypeKeyOfWithParameterizedQualifiers() = codegen(
+        """
+            @Qualifier 
+            annotation class MyQualifier<T>
+            fun invoke() = typeKeyOf<@MyQualifier<String> String>() 
+        """
+    ) {
+        invokeSingleFile<TypeKey<Any>>().value shouldBe "[@com.ivianuu.injekt.integrationtests.MyQualifier<kotlin.String>]kotlin.String"
     }
     
     @Test
