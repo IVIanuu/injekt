@@ -373,6 +373,8 @@ class GivenConstraintTest {
     @Test
     fun testComplexGivenConstraintSetup() = codegen(
         """
+            typealias App = Any
+
             @Scoped<AppGivenScope>
             @Given
             class Dep(@Given app: App)
@@ -386,7 +388,7 @@ class GivenConstraintTest {
             class DepWrapper2(@Given dep: () -> Dep, @Given wrapper: () -> DepWrapper)
 
             fun invoke() {
-                "".initializeApp()   
+                given<(@Given @GivenScopeElementBinding<AppGivenScope> App) -> AppGivenScope>()
             }
             @GivenScopeElementBinding<AppGivenScope>
             @Given
