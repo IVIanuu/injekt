@@ -24,17 +24,20 @@ import android.content.res.Resources
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.scope.App
 import com.ivianuu.injekt.scope.AppGivenScope
-import com.ivianuu.injekt.scope.appGivenScope
+import com.ivianuu.injekt.scope.GivenScopeElementBinding
 
-@Suppress("unused")
 val Application.appGivenScope: AppGivenScope
-    get() = (this as App).appGivenScope
+    get() = (this as? AppGivenScopeOwner)?.appGivenScope
+        ?: error("application does not implement AppGivenScopeOwner")
 
-@Given
-inline val @Given App.application: Application
-    get() = this as Application
+interface AppGivenScopeOwner {
+    val appGivenScope: AppGivenScope
+}
+
+inline fun Application.createAppGivenScope(
+    @Given scopeFactory: (@Given @GivenScopeElementBinding<AppGivenScope> Application) -> AppGivenScope
+): AppGivenScope = scopeFactory(this)
 
 typealias AppContext = Context
 
@@ -50,7 +53,6 @@ inline val @Given AppContext.appResources: AppResources
 
 typealias AppLifecycleOwner = LifecycleOwner
 
-@Suppress("unused")
 @Given
-inline val @Given Application.appLifecycleOwner: AppLifecycleOwner
+inline val appLifecycleOwner: AppLifecycleOwner
     get() = ProcessLifecycleOwner.get()

@@ -14,16 +14,11 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.samples.android.app
+package com.ivianuu.injekt.android
 
 import android.app.Application
 import com.ivianuu.injekt.scope.*
-import com.ivianuu.injekt.common.*
-import com.ivianuu.injekt.android.*
-import com.ivianuu.injekt.samples.android.data.*
-import com.ivianuu.injekt.samples.android.domain.*
-import com.ivianuu.injekt.samples.android.ui.*
 
-class App : Application(), AppGivenScopeOwner {
+class AndroidTestApplication : Application(), AppGivenScopeOwner {
     override val appGivenScope by lazy { createAppGivenScope() }
 }

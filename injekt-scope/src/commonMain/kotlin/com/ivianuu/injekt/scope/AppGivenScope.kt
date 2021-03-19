@@ -16,25 +16,4 @@
 
 package com.ivianuu.injekt.scope
 
-import com.ivianuu.injekt.Given
-
 typealias AppGivenScope = GivenScope
-
-/**
- * Initializes the app given scope which can then be accessed via [appGivenScope]
- */
-inline fun App.initializeApp(@Given scopeFactory: (@Given App) -> AppGivenScope) {
-    _appGivenScope = scopeFactory(this)
-}
-
-@PublishedApi
-internal var _appGivenScope: AppGivenScope? = null
-
-val App.appGivenScope: AppGivenScope
-    get() = _appGivenScope ?: error("app given scope not initialized. Did you forget to call initializeApp()?")
-
-typealias App = Any
-
-@Given
-val @Given AppGivenScope.app: App
-    get() = element()

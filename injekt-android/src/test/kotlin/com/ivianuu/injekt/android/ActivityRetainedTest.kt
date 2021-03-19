@@ -18,22 +18,18 @@ package com.ivianuu.injekt.android
 
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
-import com.ivianuu.injekt.scope.initializeApp
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import com.ivianuu.injekt.scope.*
 
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)
 class ActivityRetainedTest {
-
     @Test
     fun testActivityRetainedGivenScopeLifecycle() {
-        initializeApp()
         val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
         lateinit var disposable: TestGivenScopeDisposable<ActivityRetainedGivenScope>
         scenario.onActivity { disposable = it.activityRetainedGivenScope.element() }
@@ -43,5 +39,4 @@ class ActivityRetainedTest {
         scenario.moveToState(Lifecycle.State.DESTROYED)
         disposable.disposed.shouldBeTrue()
     }
-
 }
