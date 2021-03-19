@@ -24,7 +24,6 @@ import com.ivianuu.injekt.android.ActivityGivenScope
 import com.ivianuu.injekt.android.AppContext
 import com.ivianuu.injekt.android.activityGivenScope
 import com.ivianuu.injekt.scope.GivenScopeElementBinding
-import com.ivianuu.injekt.scope.element
 import com.ivianuu.injekt.samples.android.ui.SampleAppUi
 import com.ivianuu.injekt.samples.android.ui.SampleTheme
 
@@ -47,6 +46,5 @@ class MainActivity : ComponentActivity() {
 @Given
 class MainActivityDependencies(
     @Given val theme: SampleTheme,
-    @Given val appUi: SampleAppUi,
-    @Given val appContext: AppContext
+    @Given val appUi: SampleAppUi
 )
