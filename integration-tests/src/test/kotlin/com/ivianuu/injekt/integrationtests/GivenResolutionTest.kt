@@ -21,6 +21,7 @@ import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.irShouldContain
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
 import io.kotest.matchers.shouldBe
@@ -546,6 +547,17 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testPrefersMoreSpecificType2() = codegen(
+        """
+            @Given fun <T> list(): List<T> = emptyList()
+            @Given fun <T> listList(): List<List<T>> = listOf(listOf("a", "b", "c")) as List<List<T>>
+            fun invoke() = given<List<List<String>>>()
+        """
+    ) {
+        invokeSingleFile() shouldBe listOf(listOf("a", "b", "c"))
+    }
+
+    @Test
     fun testPrefersShorterTree() = codegen(
         """
             @Given val a = "a"
@@ -570,7 +582,7 @@ class GivenResolutionTest {
         """
     ) {
         val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
+        invokeSingleFile(foo) shouldBeSameInstanceAs foo
     }
 
     @Test
@@ -592,6 +604,36 @@ class GivenResolutionTest {
             fun invoke() = given<Foo>()
         """
     )
+
+    @Test
+    fun testPrefersGivenConstraintWithBetterTypeOverNonGivenConstraint() = codegen(
+        """
+            typealias Collector<T> = (T) -> Unit
+        
+            @Given
+            fun <T> worseCollector(): Collector<T> = {}
+
+            @Qualifier
+            annotation class MyScoped<S : GivenScope>
+
+            @Given
+            inline fun <@Given T : @MyScoped<S> U, @ForTypeKey U : Any, S : GivenScope> myScopedImpl(
+                @Given scope: S,
+                @Given factory: () -> T
+            ): U = scope.getOrCreateScopedValue<U>(factory)
+
+            @MyScoped<AppGivenScope>
+            @Given
+            fun <T> betterCollector(): Collector<List<T>> = {}
+
+            fun invoke() {
+                @Given val appGivenScope = given<AppGivenScope>()
+                given<Collector<List<String>>>()
+            }
+        """
+    ) {
+        irShouldContain(1, "return betterCollector<String>()")
+    }
 
     @Test
     fun testGenericGiven() = codegen(

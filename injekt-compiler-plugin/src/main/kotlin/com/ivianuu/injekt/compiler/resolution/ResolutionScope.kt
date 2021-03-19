@@ -243,13 +243,15 @@ class ResolutionScope(
         check(outputsSubstitutionMap.size == constrainedGiven.callable.typeParameters.size) {
             "Corrupt substitution map $outputsSubstitutionMap for $constrainedGiven with candidate $candidate"
         }
+        val newGivenType = constrainedGiven.callable.type.substitute(outputsSubstitutionMap)
         val newGiven = constrainedGiven.callable.substituteInputs(inputsSubstitutionMap)
             .copy(
                 fromGivenConstraint = true,
                 typeArguments = constrainedGiven.callable
                     .typeArguments
                     .mapValues { it.value.substitute(inputsSubstitutionMap) },
-                type = constrainedGiven.callable.type.substitute(outputsSubstitutionMap)
+                type = newGivenType,
+                originalType = newGivenType
             )
 
         newGiven.collectGivens(
