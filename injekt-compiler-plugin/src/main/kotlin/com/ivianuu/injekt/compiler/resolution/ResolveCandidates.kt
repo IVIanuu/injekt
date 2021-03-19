@@ -396,9 +396,6 @@ private fun compareType(a: TypeRef, b: TypeRef): Int {
     if (!a.classifier.isTypeParameter && b.classifier.isTypeParameter) return -1
     if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
 
-    if (!a.classifier.isTypeAlias && b.classifier.isTypeAlias) return -1
-    if (a.classifier.isTypeAlias && !b.classifier.isTypeAlias) return 1
-
     if (a.arguments.size < b.arguments.size) return -1
     if (b.arguments.size < a.arguments.size) return 1
 
