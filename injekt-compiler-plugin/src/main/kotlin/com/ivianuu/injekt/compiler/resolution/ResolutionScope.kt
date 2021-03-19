@@ -291,7 +291,7 @@ class ResolutionScope(
 
     /**
      * A callable is not applicable if it is a given constructor parameter property
-     * of a class which itself is given but not in the scope.
+     * of a given class but not in the scope.
      * Without removing the property this would result in a divergent request
      */
     private fun CallableRef.isApplicable(): Boolean {
