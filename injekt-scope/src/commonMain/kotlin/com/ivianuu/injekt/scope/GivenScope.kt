@@ -122,7 +122,7 @@ inline fun <@ForTypeKey S : GivenScope> givenScope(
     return scope
 }
 
-typealias GivenScopeElement<@Suppress("unused") S> = Pair<TypeKey<Any>, () -> Any>
+typealias GivenScopeElement<@Suppress("unused", "UNUSED_TYPEALIAS_PARAMETER") S> = Pair<TypeKey<Any>, () -> Any>
 
 /**
  * Registers the declaration a element in the [GivenScope] [S]
@@ -156,7 +156,7 @@ fun <@Given T : @GivenScopeElementBinding<U> S, @ForTypeKey S : Any, @ForTypeKey
  * }
  * ```
  */
-typealias GivenScopeInitializer<S> = () -> Unit
+typealias GivenScopeInitializer<@Suppress("unused", "UNUSED_TYPEALIAS_PARAMETER") S> = () -> Unit
 
 @PublishedApi
 internal class GivenScopeImpl : GivenScope {
@@ -165,9 +165,11 @@ internal class GivenScopeImpl : GivenScope {
     val elements = mutableMapOf<TypeKey<*>, () -> Any>()
     private val scopedValues = mutableMapOf<Any, Any>()
 
-    override fun <@ForTypeKey T : Any> element(): T =
-        elements[typeKeyOf<T>()]?.invoke() as? T
-            ?: error("No element found for ${typeKeyOf<T>()} in $this")
+    override fun <@ForTypeKey T : Any> element(): T {
+        val key = typeKeyOf<T>()
+        return elements[key]?.invoke() as? T
+            ?: error("No element found for $key in $this")
+    }
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : Any> getScopedValueOrNull(key: Any): T? {
