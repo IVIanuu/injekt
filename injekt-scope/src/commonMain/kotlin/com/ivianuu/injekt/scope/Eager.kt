@@ -35,7 +35,7 @@ class EagerModule<T : U, U : Any, S : GivenScope> {
     inline fun scopedInstance(@Given instance: T): U = instance
 
     @Given
-    fun initializer(@Given factory: () -> S): GivenScopeInitializer<S> = {
+    fun initializer(@Given factory: () -> U): GivenScopeInitializer<S> = {
         factory()
     }
 }
