@@ -20,6 +20,9 @@ import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isForTypeKey
 import com.ivianuu.injekt.compiler.unsafeLazy
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -173,6 +176,7 @@ fun ResolutionScope.resolveRequests(requests: List<GivenRequest>): GivenGraph {
         }
     }
     return if (failure == null) GivenGraph.Success(this, successes)
+        .also { it.validate() }
     else GivenGraph.Error(this, failureRequest!!, failure)
 }
 
@@ -451,4 +455,49 @@ private fun compareType(a: TypeRef, b: TypeRef): Int {
         diff > 0 -> 1
         else -> 0
     }
+}
+
+private fun GivenGraph.Success.validate() {
+    validateAllTypeParametersSubstituted()
+}
+
+private fun GivenGraph.Success.validateAllTypeParametersSubstituted() {
+    val typeParametersInScope = scope.allScopes
+        .flatMap { scope ->
+            (scope.ownerDescriptor.safeAs<ClassDescriptor>()
+                ?.declaredTypeParameters ?:
+                scope.ownerDescriptor.safeAs<FunctionDescriptor>()
+                    ?.typeParameters ?:
+                    scope.ownerDescriptor.safeAs<PropertyDescriptor>()
+                        ?.typeParameters)
+                ?.map { it.toClassifierRef(scope.context, scope.trace) }
+                ?: emptyList()
+        }
+
+    fun ResolutionResult.Success.WithCandidate.Value.validate() {
+        fun TypeRef.validate() {
+            if (classifier.isTypeParameter &&
+                    classifier !in typeParametersInScope) {
+                error("Invalid graph: unsubstituted type parameter $classifier")
+            }
+
+            arguments.forEach { it.validate() }
+            qualifiers.forEach { it.type.validate() }
+        }
+
+        candidate.type.validate()
+        if (candidate is CallableGivenNode) {
+            candidate.callable.typeArguments.forEach { it.value.validate() }
+        }
+
+        dependencyResults
+            .values
+            .filterIsInstance<ResolutionResult.Success.WithCandidate.Value>()
+            .forEach { it.validate() }
+    }
+
+    results
+        .values
+        .filterIsInstance<ResolutionResult.Success.WithCandidate.Value>()
+        .forEach { it.validate() }
 }
