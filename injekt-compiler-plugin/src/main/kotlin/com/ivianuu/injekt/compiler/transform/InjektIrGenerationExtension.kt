@@ -31,7 +31,8 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         )
         moduleFragment.transform(InfoTransformer(
             context,
-            pluginContext
+            pluginContext,
+            trace
         ), null)
         moduleFragment.transform(GivenCallTransformer(context, pluginContext), null)
         moduleFragment.transform(TypeKeyTransformer(context, trace, pluginContext), null)

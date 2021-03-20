@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
+import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.squareup.moshi.Moshi
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -28,6 +29,8 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.ir.util.constructedClass
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
@@ -49,14 +52,24 @@ class InjektContext(val module: ModuleDescriptor) {
         trace: BindingTrace?
     ): PersistedCallableInfo? {
         trace?.get(InjektWritableSlices.CALLABLE_INFO, callable)?.let { return it.value }
-        val annotations = if (callable is ConstructorDescriptor &&
-            callable.constructedClass.unsubstitutedPrimaryConstructor?.original == callable.original) {
-            callable.constructedClass.annotations
-        } else {
-            callable.annotations
-        }
+        val annotations = if (callable is ConstructorDescriptor) {
+            when {
+                callable.hasAnnotation(InjektFqNames.Given) -> callable.annotations
+                callable.constructedClass.hasAnnotation(InjektFqNames.Given) ->
+                    callable.constructedClass.annotations
+                else ->  callable
+                    .valueParameters
+                    .firstOrNull { it.hasAnnotation(InjektFqNames.Given) }
+                    ?.annotations
+            }
+        } else if (!callable.isGiven(this, trace)) {
+            callable
+                .valueParameters
+                .firstOrNull { it.hasAnnotation(InjektFqNames.Given) }
+                ?.annotations
+        } else callable.annotations
         return annotations
-            .findAnnotation(InjektFqNames.CallableInfo)
+            ?.findAnnotation(InjektFqNames.CallableInfo)
             ?.allValueArguments
             ?.get("value".asNameId())
             ?.value

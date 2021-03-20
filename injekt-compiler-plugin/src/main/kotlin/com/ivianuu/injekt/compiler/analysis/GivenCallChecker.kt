@@ -20,13 +20,16 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.HierarchicalResolutionScope
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
-import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.resolveRequests
+import com.ivianuu.injekt.compiler.resolution.substitute
+import com.ivianuu.injekt.compiler.resolution.toCallableRef
+import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -54,17 +57,30 @@ class GivenCallChecker(
         val resultingDescriptor = resolvedCall.resultingDescriptor
         if (resultingDescriptor !is FunctionDescriptor) return
 
-        val requests = resolvedCall
-            .valueArguments
-            .filterValues { it is DefaultValueArgument }
-            .filterKeys { it.isGiven(this.context, context.trace) }
-            .map {
+        val substitutionMap = resolvedCall.typeArguments
+            .mapKeys { it.key.toClassifierRef(this.context, context.trace) }
+            .mapValues { it.value.toTypeRef(this.context, context.trace) }
+
+        val callable = resultingDescriptor.toCallableRef(this.context, context.trace)
+            .substitute(substitutionMap)
+
+        val requests = callable.givenParameters
+            .filter { parameterName ->
+                resolvedCall.valueArguments
+                    .any {
+                        it.key.name.asString() == parameterName &&
+                                it.value is DefaultValueArgument
+                    }
+            }
+            .map { parameterName ->
+                val parameterDescriptor = resultingDescriptor.valueParameters
+                    .single { it.name.asString() == parameterName }
                 GivenRequest(
-                    type = it.key.type.toTypeRef(this.context, context.trace),
-                    isRequired = !it.key.hasDefaultValueIgnoringGiven,
+                    type = callable.parameterTypes[parameterName]!!,
+                    isRequired = !parameterDescriptor.hasDefaultValueIgnoringGiven,
                     callableFqName = resultingDescriptor.fqNameSafe,
-                    parameterName = it.key.name,
-                    isInline = resolvedCall.candidateDescriptor
+                    parameterName = parameterName.asNameId(),
+                    isInline = resultingDescriptor
                         .safeAs<FunctionDescriptor>()?.isInline == true
                 )
             }

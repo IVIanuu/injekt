@@ -149,4 +149,66 @@ class PersistenceTest {
         }
     }
 
+    @Test
+    fun testNonGivenFunctionWithGivenParameters() = multiCodegen(
+        listOf(
+            source(
+                """
+                    fun myFunction(
+                        @Given scopeFactory: (@Given @GivenScopeElementBinding<AppGivenScope> Any) -> AppGivenScope
+                    ): AppGivenScope = TODO()
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke() = myFunction()
+                """
+            )
+        )
+    )
+
+    @Test
+    fun testNonGivenPrimaryConstructorWithGivenParameters() = multiCodegen(
+        listOf(
+            source(
+                """
+                    class MyClass(
+                        @Given scopeFactory: (@Given @GivenScopeElementBinding<AppGivenScope> Any) -> AppGivenScope
+                    )
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke() = MyClass()
+                """
+            )
+        )
+    )
+
+    @Test
+    fun testNonGivenSecondaryConstructorWithGivenParameters() = multiCodegen(
+        listOf(
+            source(
+                """
+                    class MyClass {
+                        constructor(
+                            @Given scopeFactory: (@Given @GivenScopeElementBinding<AppGivenScope> Any) -> AppGivenScope
+                        )
+                    }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke() = MyClass()
+                """
+            )
+        )
+    )
+
 }

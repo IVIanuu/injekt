@@ -20,6 +20,8 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.PersistedCallableInfo
 import com.ivianuu.injekt.compiler.PersistedClassifierInfo
+import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.toPersistedCallableInfo
@@ -40,11 +42,13 @@ import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.resolve.BindingTrace
 import java.util.Base64
 
 class InfoTransformer(
     private val context: InjektContext,
-    private val pluginContext: IrPluginContext
+    private val pluginContext: IrPluginContext,
+    private val trace: BindingTrace
 ) : IrElementTransformerVoid() {
 
     @Suppress("NewApi")
@@ -74,9 +78,12 @@ class InfoTransformer(
 
     @Suppress("NewApi")
     override fun visitFunction(declaration: IrFunction): IrStatement {
-        if (declaration.hasAnnotation(InjektFqNames.Given) ||
-            (declaration is IrConstructor &&
-                    declaration.constructedClass.hasAnnotation(InjektFqNames.Given))) {
+        val isGiven = declaration.hasAnnotation(InjektFqNames.Given) ||
+                (declaration is IrConstructor &&
+                        declaration.constructedClass.hasAnnotation(InjektFqNames.Given))
+        val hasGivenParameters =
+            declaration.valueParameters.any { it.descriptor.isGiven(context, trace) }
+        if (isGiven || hasGivenParameters) {
                 val annotation = DeclarationIrBuilder(pluginContext, declaration.symbol)
                     .run {
                         irCall(
@@ -94,9 +101,20 @@ class InfoTransformer(
                         }
                     }
 
-                if (declaration is IrConstructor &&
-                        declaration.constructedClass.primaryConstructor == declaration) {
-                    declaration.constructedClass.annotations += annotation
+                if (declaration is IrConstructor) {
+                    when {
+                        declaration.hasAnnotation(InjektFqNames.Given) ->
+                            declaration.annotations += annotation
+                        declaration.constructedClass.hasAnnotation(InjektFqNames.Given) ->
+                            declaration.constructedClass.annotations += annotation
+                        else -> declaration.valueParameters
+                            .first { it.descriptor.isGiven(context, trace) }
+                            .annotations += annotation
+                    }
+                } else if (!isGiven && hasGivenParameters) {
+                    declaration.valueParameters
+                        .first { it.descriptor.isGiven(context, trace) }
+                        .annotations += annotation
                 } else {
                     declaration.annotations += annotation
                 }
