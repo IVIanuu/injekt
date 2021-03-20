@@ -42,14 +42,10 @@ internal inline fun <T : GivenScope> Lifecycle.givenScope(init: () -> T): T {
         addObserver(object : LifecycleEventObserver {
             override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
                 if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
-                    // schedule clean up to the next frame
-                    // to allow users to access bindings in their onDestroy()
-                    source.lifecycleScope.launch(NonCancellable) {
-                        synchronized(givenScopesByLifecycle) {
-                            givenScopesByLifecycle
-                                .remove(this@givenScope)
-                        }!!.dispose()
-                    }
+                    synchronized(givenScopesByLifecycle) {
+                        givenScopesByLifecycle
+                            .remove(this@givenScope)
+                    }!!.dispose()
                 }
             }
         })
