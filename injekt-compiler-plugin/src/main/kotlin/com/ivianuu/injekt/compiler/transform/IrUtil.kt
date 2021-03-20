@@ -93,9 +93,11 @@ fun TypeRef.toIrType(
 ): IrType =
     pluginContext.typeTranslator.translateType(toKotlinType(context))
         .also {
-            it.classifierOrNull?.let {
-                (pluginContext as IrPluginContextImpl)
-                    .linker.getDeclaration(it)
+            it.classifierOrNull?.let { classifier ->
+                (pluginContext as IrPluginContextImpl).linker.run {
+                    getDeclaration(classifier)
+                    postProcess()
+                }
             }
         }
 
@@ -185,107 +187,6 @@ private fun SimpleType.makeComposableAsSpecified(
             )
         }
     )
-}
-
-fun IrType.toKotlinType(): SimpleType {
-    this as IrSimpleType
-    return makeKotlinType(
-        classifier,
-        arguments,
-        hasQuestionMark,
-        annotations,
-        abbreviation
-    )
-}
-
-fun makeKotlinType(
-    classifier: IrClassifierSymbol,
-    arguments: List<IrTypeArgument>,
-    hasQuestionMark: Boolean,
-    annotations: List<IrConstructorCall>,
-    abbreviation: IrTypeAbbreviation?,
-): SimpleType {
-    val kotlinTypeArguments = arguments.mapIndexed { index, it ->
-        val typeProjectionBase = when (it) {
-            is IrTypeProjection -> TypeProjectionImpl(it.variance, it.type.toKotlinType())
-            is IrStarProjection -> StarProjectionImpl((classifier.descriptor as ClassDescriptor).typeConstructor.parameters[index])
-            else -> error(it)
-        }
-        typeProjectionBase
-    }
-    return classifier.descriptor.defaultType
-        .replace(
-            newArguments = kotlinTypeArguments,
-            newAnnotations = if (annotations.isEmpty()) Annotations.EMPTY
-            else Annotations.create(annotations.map { it.toAnnotationDescriptor() })
-        )
-        .makeNullableAsSpecified(hasQuestionMark)
-        .let { type ->
-            if (abbreviation != null) {
-                type.withAbbreviation(
-                    abbreviation.typeAlias.descriptor.defaultType
-                        .replace(
-                            newArguments = abbreviation.arguments.mapIndexed { index, it ->
-                                when (it) {
-                                    is IrTypeProjection -> TypeProjectionImpl(
-                                        it.variance,
-                                        it.type.toKotlinType()
-                                    )
-                                    is IrStarProjection -> StarProjectionImpl((classifier.descriptor as ClassDescriptor).typeConstructor.parameters[index])
-                                    else -> error(it)
-                                }
-                            },
-                            newAnnotations = if (annotations.isEmpty()) Annotations.EMPTY
-                            else Annotations.create(annotations.map { it.toAnnotationDescriptor() })
-                        )
-                )
-            } else {
-                type
-            }
-        }
-}
-
-fun IrConstructorCall.toAnnotationDescriptor() = AnnotationDescriptorImpl(
-    type.toKotlinType(),
-    symbol.owner.valueParameters.map { it.name to getValueArgument(it.index) }
-        .filter { it.second != null }
-        .associate { it.first to it.second!!.toConstantValue() },
-    SourceElement.NO_SOURCE
-)
-
-fun IrElement.toConstantValue(): ConstantValue<*> {
-    return when (this) {
-        is IrConst<*> -> when (kind) {
-            IrConstKind.Null -> NullValue()
-            IrConstKind.Boolean -> BooleanValue(value as Boolean)
-            IrConstKind.Char -> CharValue(value as Char)
-            IrConstKind.Byte -> ByteValue(value as Byte)
-            IrConstKind.Short -> ShortValue(value as Short)
-            IrConstKind.Int -> IntValue(value as Int)
-            IrConstKind.Long -> LongValue(value as Long)
-            IrConstKind.String -> StringValue(value as String)
-            IrConstKind.Float -> FloatValue(value as Float)
-            IrConstKind.Double -> DoubleValue(value as Double)
-        }
-        is IrVararg -> {
-            val elements =
-                elements.map { if (it is IrSpreadElement) error("$it is not expected") else it.toConstantValue() }
-            ArrayValue(elements) { moduleDescriptor ->
-                // TODO: substitute.
-                moduleDescriptor.builtIns.array.defaultType
-            }
-        }
-        is IrGetEnumValue -> EnumValue(
-            symbol.owner.parentAsClass.descriptor.classId!!,
-            symbol.owner.name
-        )
-        is IrClassReference -> KClassValue(
-            classType.classifierOrFail.descriptor.classId!!, /*TODO*/
-            0
-        )
-        is IrConstructorCall -> AnnotationValue(this.toAnnotationDescriptor())
-        else -> error("$this is not expected: ${this.dump()}")
-    }
 }
 
 fun IrBuilderWithScope.irLambda(
