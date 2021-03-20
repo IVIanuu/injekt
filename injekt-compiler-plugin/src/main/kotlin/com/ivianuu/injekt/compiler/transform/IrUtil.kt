@@ -18,21 +18,24 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.toMap
+import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.ir.IrElement
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
+import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
@@ -48,58 +51,124 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrReturnImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
-import org.jetbrains.kotlin.ir.types.IrStarProjection
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeAbbreviation
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
-import org.jetbrains.kotlin.ir.types.IrTypeProjection
-import org.jetbrains.kotlin.ir.types.classifierOrFail
-import org.jetbrains.kotlin.ir.types.classifierOrNull
+import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
+import org.jetbrains.kotlin.ir.types.impl.IrTypeAbbreviationImpl
+import org.jetbrains.kotlin.ir.types.impl.IrTypeProjectionImpl
+import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.resolve.constants.AnnotationValue
-import org.jetbrains.kotlin.resolve.constants.ArrayValue
-import org.jetbrains.kotlin.resolve.constants.BooleanValue
-import org.jetbrains.kotlin.resolve.constants.ByteValue
-import org.jetbrains.kotlin.resolve.constants.CharValue
-import org.jetbrains.kotlin.resolve.constants.ConstantValue
-import org.jetbrains.kotlin.resolve.constants.DoubleValue
-import org.jetbrains.kotlin.resolve.constants.EnumValue
-import org.jetbrains.kotlin.resolve.constants.FloatValue
-import org.jetbrains.kotlin.resolve.constants.IntValue
-import org.jetbrains.kotlin.resolve.constants.KClassValue
-import org.jetbrains.kotlin.resolve.constants.LongValue
-import org.jetbrains.kotlin.resolve.constants.NullValue
-import org.jetbrains.kotlin.resolve.constants.ShortValue
-import org.jetbrains.kotlin.resolve.constants.StringValue
-import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DescriptorWithContainerSource
 import org.jetbrains.kotlin.types.SimpleType
-import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.withAbbreviation
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 fun TypeRef.toIrType(
     pluginContext: IrPluginContext,
+    localClasses: List<IrClass>,
     context: InjektContext
-): IrType =
-    pluginContext.typeTranslator.translateType(toKotlinType(context))
-        .also {
-            it.classifierOrNull?.let { classifier ->
-                (pluginContext as IrPluginContextImpl).linker.run {
-                    getDeclaration(classifier)
-                    postProcess()
-                }
+): IrType {
+    if (isStarProjection) return pluginContext.irBuiltIns.anyType
+    return if (classifier.isTypeAlias) {
+        superTypes.single()
+            .toIrType(pluginContext, localClasses, context)
+            .let {
+                it as IrSimpleType
+                IrSimpleTypeImpl(
+                    it.classifier,
+                    it.hasQuestionMark,
+                    it.arguments,
+                    it.annotations,
+                    toIrAbbreviation(pluginContext, localClasses, context)
+                )
             }
+    } else {
+        val key = classifier.descriptor!!.uniqueKey(context)
+        val fqName = FqName(key.split(":")[1])
+        val irClassifier = localClasses.singleOrNull { it.descriptor.fqNameSafe == fqName }
+            ?.symbol
+            ?: pluginContext.referenceClass(fqName)
+            ?: pluginContext.referenceFunctions(fqName.parent())
+                .flatMap { it.owner.typeParameters }
+                .singleOrNull { it.descriptor.uniqueKey(context) == key }
+                ?.symbol
+            ?: pluginContext.referenceProperties(fqName.parent())
+                .flatMap { it.owner.getter!!.typeParameters }
+                .singleOrNull { it.descriptor.uniqueKey(context) == key }
+                ?.symbol
+            ?: (pluginContext.referenceClass(fqName)
+                ?: pluginContext.referenceTypeAlias(fqName))
+                ?.owner
+                ?.typeParameters
+                ?.singleOrNull { it.descriptor.uniqueKey(context) == key }
+                ?.symbol
+            ?: error("Could not get for $fqName $key")
+        IrSimpleTypeImpl(
+            irClassifier,
+            isMarkedNullable,
+            arguments.map { makeTypeProjection(it.toIrType(pluginContext, localClasses, context), Variance.INVARIANT) },
+            emptyList(),
+            null
+        ).makeComposableAsSpecified(pluginContext, context, isMarkedComposable)
+    }
+}
+
+private fun TypeRef.toIrAbbreviation(
+    pluginContext: IrPluginContext,
+    localClasses: List<IrClass>,
+    context: InjektContext
+): IrTypeAbbreviation {
+    val typeAlias = pluginContext.referenceTypeAlias(classifier.fqName)!!
+    return IrTypeAbbreviationImpl(
+        typeAlias,
+        isMarkedComposable,
+        arguments.map {
+            makeTypeProjection(it.toIrType(pluginContext, localClasses, context), Variance.INVARIANT)
+       },
+        emptyList()
+    )
+}
+
+private fun IrSimpleType.makeComposableAsSpecified(
+    pluginContext: IrPluginContext,
+    context: InjektContext,
+    isComposable: Boolean
+): IrSimpleType {
+    val newAnnotations = if (isComposable) {
+        if (annotations.any { it.type.classOrNull?.descriptor?.fqNameSafe == InjektFqNames.Composable }) {
+            annotations
+        } else {
+            val composableConstructor = pluginContext.referenceConstructors(InjektFqNames.Composable)
+                .single()
+            annotations + DeclarationIrBuilder(pluginContext, composableConstructor)
+                .irCall(composableConstructor)
         }
+    } else {
+        annotations.filter {
+            it.type.classOrNull?.descriptor?.fqNameSafe != InjektFqNames.Composable
+        }
+    }
+    return IrSimpleTypeImpl(
+        classifier,
+        hasQuestionMark,
+        arguments,
+        newAnnotations,
+        abbreviation
+    )
+}
 
 fun TypeRef.toKotlinType(context: InjektContext): SimpleType {
     if (isStarProjection) return context.module.builtIns.anyType
@@ -114,7 +183,6 @@ fun TypeRef.toKotlinType(context: InjektContext): SimpleType {
                     it.toKotlinType(context)
                 )
             })
-            .makeGivenAsSpecified(context, isGiven)
             .makeComposableAsSpecified(context, isMarkedComposable)
             .makeNullableAsSpecified(isMarkedNullable)
     }
@@ -133,34 +201,6 @@ fun TypeRef.toAbbreviation(context: InjektContext): SimpleType {
         .makeNullableAsSpecified(isMarkedNullable)
 }
 
-private fun SimpleType.makeGivenAsSpecified(
-    context: InjektContext,
-    isGiven: Boolean
-): SimpleType {
-    return replaceAnnotations(
-        if (isGiven) {
-            Annotations.create(
-                listOf(
-                    AnnotationDescriptorImpl(
-                        context.module
-                            .findClassAcrossModuleDependencies(
-                                ClassId.topLevel(InjektFqNames.Given)
-                            )!!.defaultType,
-                        emptyMap(),
-                        SourceElement.NO_SOURCE
-                    )
-                )
-            )
-        } else {
-            Annotations.create(
-                annotations.filter {
-                    it.type.constructor.declarationDescriptor?.fqNameSafe != InjektFqNames.Given
-                }
-            )
-        }
-    )
-}
-
 private fun SimpleType.makeComposableAsSpecified(
     context: InjektContext,
     isComposable: Boolean
@@ -170,10 +210,7 @@ private fun SimpleType.makeComposableAsSpecified(
             Annotations.create(
                 listOf(
                     AnnotationDescriptorImpl(
-                        context.module
-                            .findClassAcrossModuleDependencies(
-                                ClassId.topLevel(InjektFqNames.Composable)
-                        )!!.defaultType,
+                        context.classifierDescriptorForFqName(InjektFqNames.Composable)!!.defaultType,
                         emptyMap(),
                         SourceElement.NO_SOURCE
                     )

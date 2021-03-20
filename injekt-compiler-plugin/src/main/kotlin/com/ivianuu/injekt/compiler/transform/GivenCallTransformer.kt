@@ -214,7 +214,7 @@ class GivenCallTransformer(
         fun ScopeContext.get(): IrExpression {
             if (initializing) {
                 if (block == null) {
-                    val resultType = result.candidate.type.toIrType(pluginContext, context)
+                    val resultType = result.candidate.type.toIrType(pluginContext, localClasses, context)
                     block = DeclarationIrBuilder(pluginContext, symbol)
                         .irBlock(resultType = resultType) {
                             tmpVariable = irTemporary(
@@ -275,7 +275,7 @@ class GivenCallTransformer(
             val function = IrFactoryImpl.buildFun {
                 origin = IrDeclarationOrigin.DEFINED
                 name = Name.special("<anonymous>")
-                returnType = result.candidate.type.toIrType(pluginContext, context)
+                returnType = result.candidate.type.toIrType(pluginContext, localClasses, context)
                 visibility = DescriptorVisibilities.LOCAL
                 isSuspend = scope.callContext == CallContext.SUSPEND
             }.apply {
@@ -337,7 +337,7 @@ class GivenCallTransformer(
         given: ProviderGivenNode
     ): IrExpression = DeclarationIrBuilder(pluginContext, symbol)
         .irLambda(
-            given.type.toIrType(pluginContext, context),
+            given.type.toIrType(pluginContext, localClasses, context),
             parameterNameProvider = { "p${graphContext.parameterIndex++}" }
         ) { function ->
             val dependencyScopeContext = ScopeContext(
@@ -388,19 +388,19 @@ class GivenCallTransformer(
             given.dependencies.isEmpty() -> DeclarationIrBuilder(pluginContext, symbol)
                 .irCall(emptySet)
                 .apply {
-                    putTypeArgument(0, elementType.toIrType(pluginContext, context))
+                    putTypeArgument(0, elementType.toIrType(pluginContext, localClasses, context))
                 }
             given.dependencies.size == 1 -> DeclarationIrBuilder(pluginContext, symbol)
                 .irCall(setOf)
                 .apply {
-                    putTypeArgument(0, elementType.toIrType(pluginContext, context))
+                    putTypeArgument(0, elementType.toIrType(pluginContext, localClasses, context))
                     putValueArgument(0, expressionFor(result.dependencyResults.values.single().cast()))
                 }
             else -> DeclarationIrBuilder(pluginContext, symbol).irBlock {
                 val tmpSet = irTemporary(
                     irCall(mutableSetOf)
                         .apply {
-                            putTypeArgument(0, elementType.toIrType(pluginContext, this@GivenCallTransformer.context))
+                            putTypeArgument(0, elementType.toIrType(pluginContext, localClasses, this@GivenCallTransformer.context))
                         }
                 )
 
@@ -519,7 +519,7 @@ class GivenCallTransformer(
             .typeArguments
             .values
             .forEachIndexed { index, typeArgument ->
-                putTypeArgument(index, typeArgument.toIrType(pluginContext, context))
+                putTypeArgument(index, typeArgument.toIrType(pluginContext, localClasses, context))
             }
     }
 
