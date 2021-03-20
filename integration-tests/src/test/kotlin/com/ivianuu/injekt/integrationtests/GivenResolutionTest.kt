@@ -921,4 +921,48 @@ class GivenResolutionTest {
         """
     )
 
+    @Test
+    fun testResolvesGivenWithTypeParameterInScope() = codegen(
+        """
+            @Given fun <T> list(): List<T> = emptyList()
+            fun <T> invoke() {
+                given<List<T>>()
+            }
+        """
+    )
+
+    @Test
+    fun testCannotUseNonReifiedTypeParameterForReifiedGiven() = codegen(
+        """
+            @Given inline fun <reified T> list(): List<T> {
+                T::class
+                return emptyList()
+            }
+            fun <T> invoke() {
+                given<List<T>>()
+            }
+        """
+    ) {
+        compilationShouldHaveFailed(
+            "type parameter T of given argument com.ivianuu.injekt.integrationtests.list() of type kotlin.collections.List<T> for parameter value of function com.ivianuu.injekt.given is marked with reified but type argument com.ivianuu.injekt.integrationtests.invoke.T is not marked with reified"
+        )
+    }
+
+    @Test
+    fun testCannotUseNonForTypeKeyTypeParameterForForTypeKeyGiven() = codegen(
+        """
+            @Given fun <@ForTypeKey T> list(): List<T> {
+                typeKeyOf<T>()
+                return emptyList()
+            }
+            fun <T> invoke() {
+                given<List<T>>()
+            }
+        """
+    ) {
+        compilationShouldHaveFailed(
+            "type parameter T of given argument com.ivianuu.injekt.integrationtests.list() of type kotlin.collections.List<T> for parameter value of function com.ivianuu.injekt.given is marked with @ForTypeKey but type argument com.ivianuu.injekt.integrationtests.invoke.T is not marked with @ForTypeKey"
+        )
+    }
+
 }

@@ -18,7 +18,9 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.isExternalDeclaration
+import com.ivianuu.injekt.compiler.isForTypeKey
 import com.ivianuu.injekt.compiler.unsafeLazy
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -120,6 +122,19 @@ sealed class ResolutionResult {
         ) : Failure() {
             override val failureOrdering: Int
                 get() = 1
+        }
+
+        data class TypeArgumentKindMismatch(
+            val kind: TypeArgumentKind,
+            val parameter: ClassifierRef,
+            val argument: ClassifierRef,
+            val candidate: GivenNode
+        ) : Failure() {
+            override val failureOrdering: Int
+                get() = 1
+            enum class TypeArgumentKind {
+                REIFIED, FOR_TYPE_KEY
+            }
         }
 
         data class DivergentGiven(val candidate: GivenNode) : Failure() {
@@ -255,6 +270,31 @@ private fun ResolutionScope.resolveCandidate(
 ): ResolutionResult = computeForCandidate(candidate) {
     if (!callContext.canCall(candidate.callContext)) {
         return@computeForCandidate ResolutionResult.Failure.CallContextMismatch(callContext, candidate)
+    }
+
+    if (candidate is CallableGivenNode) {
+        for ((typeParameter, typeArgument) in candidate.callable.typeArguments) {
+            val argumentDescriptor = typeArgument.classifier.descriptor as? TypeParameterDescriptor
+                ?: continue
+            val parameterDescriptor = typeParameter.descriptor as TypeParameterDescriptor
+            if (parameterDescriptor.isReified && !argumentDescriptor.isReified) {
+                return@computeForCandidate ResolutionResult.Failure.TypeArgumentKindMismatch(
+                    ResolutionResult.Failure.TypeArgumentKindMismatch.TypeArgumentKind.REIFIED,
+                    typeParameter,
+                    typeArgument.classifier,
+                    candidate
+                )
+            }
+            if (parameterDescriptor.isForTypeKey(context, trace) &&
+                    !argumentDescriptor.isForTypeKey(context, trace)) {
+                return@computeForCandidate ResolutionResult.Failure.TypeArgumentKindMismatch(
+                    ResolutionResult.Failure.TypeArgumentKindMismatch.TypeArgumentKind.FOR_TYPE_KEY,
+                    typeParameter,
+                    typeArgument.classifier,
+                    candidate
+                )
+            }
+        }
     }
 
     if (candidate.dependencies.isEmpty())

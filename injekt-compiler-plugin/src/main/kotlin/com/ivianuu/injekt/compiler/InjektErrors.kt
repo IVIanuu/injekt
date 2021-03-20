@@ -217,6 +217,17 @@ private fun GivenGraph.Error.render(): String = buildString {
                 appendLine("call context mismatch")
             }
         }
+        is ResolutionResult.Failure.TypeArgumentKindMismatch -> {
+            if (failure == unwrappedFailure) {
+                appendLine("type parameter ${unwrappedFailure.parameter.fqName.shortName()} " +
+                        "of given argument ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.render()} " +
+                        "for parameter ${failureRequest.parameterName} of function ${failureRequest.callableFqName} " +
+                        "is marked with ${unwrappedFailure.kind.readableName()} but type argument " +
+                        "${unwrappedFailure.argument.fqName} is not marked with ${unwrappedFailure.kind.readableName()}")
+            } else {
+                appendLine("type argument kind mismatch")
+            }
+        }
         is ResolutionResult.Failure.CandidateAmbiguity -> {
             if (failure == unwrappedFailure) {
                 appendLine("ambiguous given arguments:\n${unwrappedFailure.candidateResults.joinToString("\n") {
@@ -236,8 +247,7 @@ private fun GivenGraph.Error.render(): String = buildString {
                     "${unwrappedFailureRequest.parameterName} of function " +
                     "${unwrappedFailureRequest.callableFqName}")
         }
-    }
-
+    }.let {  }
 
     if (failure is ResolutionResult.Failure.DependencyFailure) {
         appendLine("I found:")
@@ -274,6 +284,9 @@ private fun GivenGraph.Error.render(): String = buildString {
                         is ResolutionResult.Failure.CallContextMismatch -> {
                             append("${failure.candidate.callContext.name.toLowerCase()} call:")
                         }
+                        is ResolutionResult.Failure.TypeArgumentKindMismatch -> {
+                            append("${failure.parameter.fqName.shortName()} is marked with ${failure.kind.readableName()}: ")
+                        }
                         is ResolutionResult.Failure.CandidateAmbiguity -> {
                             append("ambiguous: ${failure.candidateResults.joinToString(", ") {
                                 it.candidate.callableFqName.asString() 
@@ -282,7 +295,7 @@ private fun GivenGraph.Error.render(): String = buildString {
                         is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
                         is ResolutionResult.Failure.NoCandidates,
                         is ResolutionResult.Failure.DivergentGiven -> append("missing:")
-                    }
+                    }.let { }
                     append(" */ ")
                     if (failure is ResolutionResult.Failure.CallContextMismatch) {
                         appendLine("${failure.candidate.callableFqName}()")
@@ -317,6 +330,9 @@ private fun GivenGraph.Error.render(): String = buildString {
             is ResolutionResult.Failure.CallContextMismatch -> {
                 appendLine("but call context was ${unwrappedFailure.actualCallContext.name.toLowerCase()}")
             }
+            is ResolutionResult.Failure.TypeArgumentKindMismatch -> {
+                appendLine("but type argument ${unwrappedFailure.argument.fqName} is not marked with ${unwrappedFailure.kind.readableName()}")
+            }
             is ResolutionResult.Failure.CandidateAmbiguity -> {
                 appendLine("but ${unwrappedFailure.candidateResults.joinToString("\n") {
                     it.candidate.callableFqName.asString()
@@ -330,6 +346,11 @@ private fun GivenGraph.Error.render(): String = buildString {
             is ResolutionResult.Failure.NoCandidates -> {
                 appendLine("but no givens were found that match type ${unwrappedFailureRequest.type.render()}")
             }
-        }
+        }.let {  }
     }
+}
+
+private fun ResolutionResult.Failure.TypeArgumentKindMismatch.TypeArgumentKind.readableName() = when (this) {
+    ResolutionResult.Failure.TypeArgumentKindMismatch.TypeArgumentKind.REIFIED -> "reified"
+    ResolutionResult.Failure.TypeArgumentKindMismatch.TypeArgumentKind.FOR_TYPE_KEY -> "@ForTypeKey"
 }
