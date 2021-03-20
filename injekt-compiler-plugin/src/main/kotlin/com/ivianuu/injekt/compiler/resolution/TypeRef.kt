@@ -440,7 +440,8 @@ fun TypeRef.uniqueTypeName(depth: Int = 0): String {
     if (depth > 15) return ""
     return buildString {
         qualifiers.forEach {
-            append(it.type.classifier.fqName)
+            append(it.type.uniqueTypeName())
+            append("_")
             append(it.arguments.hashCode())
             append("_")
         }
@@ -487,8 +488,23 @@ fun getSubstitutionMap(
         visitedTypes += thisType
         visitedTypes += baseType
         if (!baseType.classifier.isTypeParameter) {
-            thisType.subtypeView(baseType.classifier)
-                ?.arguments?.forEachWith(baseType.arguments) { a, b -> visitType(a, b) }
+            val subType = thisType.subtypeView(baseType.classifier)
+                ?: return
+            subType.arguments.forEachWith(baseType.arguments) { a, b -> visitType(a, b) }
+            if (subType.qualifiers.isNotEmpty() &&
+                subType.qualifiers.size == baseType.qualifiers.size &&
+                run {
+                    var allMatch = true
+                    subType.qualifiers.forEachWith(baseType.qualifiers) { a, b ->
+                        allMatch = allMatch || a.type.classifier == b.type.classifier &&
+                                a.arguments == b.arguments
+                    }
+                    allMatch
+                }) {
+                visitType(subType.unqualified, baseType.unqualified)
+                subType.qualifiers.forEachWith(baseType.qualifiers) { a, b -> visitType(a.type, b.type) }
+                return
+            }
             return
         }
 
