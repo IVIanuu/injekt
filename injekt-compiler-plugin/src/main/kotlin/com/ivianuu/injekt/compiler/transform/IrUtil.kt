@@ -109,8 +109,8 @@ fun TypeRef.toIrType(
                 .flatMap { it.owner.getter!!.typeParameters }
                 .singleOrNull { it.descriptor.uniqueKey(context) == key }
                 ?.symbol
-            ?: (pluginContext.referenceClass(fqName)
-                ?: pluginContext.referenceTypeAlias(fqName))
+            ?: (pluginContext.referenceClass(fqName.parent())
+                ?: pluginContext.referenceTypeAlias(fqName.parent()))
                 ?.owner
                 ?.typeParameters
                 ?.singleOrNull { it.descriptor.uniqueKey(context) == key }
