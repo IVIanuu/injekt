@@ -22,8 +22,8 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
@@ -39,6 +39,7 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.Scope
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
@@ -53,24 +54,28 @@ import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSet
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
-import org.jetbrains.kotlin.ir.symbols.IrBindableSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.makeNullable
+import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.isLocal
 import org.jetbrains.kotlin.ir.util.isVararg
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -443,15 +448,11 @@ class GivenCallTransformer(
         given: CallableGivenNode,
         descriptor: ClassConstructorDescriptor
     ): IrExpression = if (descriptor.constructedClass.kind == ClassKind.OBJECT) {
-        val clazz =
-            pluginContext.symbolTable.referenceClass(descriptor.constructedClass.original)
-                .bind()
+        val clazz = pluginContext.referenceClass(descriptor.constructedClass.fqNameSafe)!!
         DeclarationIrBuilder(pluginContext, symbol)
             .irGetObject(clazz)
     } else {
-        val constructor =
-            pluginContext.symbolTable.referenceConstructor(descriptor.original).bind()
-                .owner
+        val constructor = descriptor.irConstructor()
         DeclarationIrBuilder(pluginContext, symbol)
             .irCall(constructor.symbol)
             .apply {
@@ -465,7 +466,8 @@ class GivenCallTransformer(
         given: CallableGivenNode,
         descriptor: PropertyDescriptor
     ): IrExpression {
-        val property = pluginContext.symbolTable.referenceProperty(descriptor.original).bind()
+        val property = pluginContext.referenceProperties(descriptor.fqNameSafe)
+            .single { it.descriptor.uniqueKey(context) == descriptor.uniqueKey(context) }
         val getter = property.owner.getter!!
         return DeclarationIrBuilder(pluginContext, symbol)
             .irCall(getter.symbol)
@@ -523,27 +525,36 @@ class GivenCallTransformer(
 
     private fun ScopeContext.variableExpression(descriptor: VariableDescriptor): IrExpression =
         DeclarationIrBuilder(pluginContext, symbol)
-            .irGet(variables.single { it.descriptor == descriptor })
+            .irGet(localVariables.single { it.descriptor == descriptor })
 
-    private fun ClassConstructorDescriptor.irConstructor() =
-        pluginContext.symbolTable.referenceConstructor(original).bind().owner
-
-    private fun FunctionDescriptor.irFunction() =
-        pluginContext.symbolTable.referenceSimpleFunction(original)
-            .bind()
-            .owner
-
-    private fun <T : IrBindableSymbol<*, *>> T.bind(): T {
-        (pluginContext as IrPluginContextImpl).linker.run {
-            getDeclaration(this@bind)
-            postProcess()
+    private fun ClassConstructorDescriptor.irConstructor(): IrConstructor {
+        if (constructedClass.visibility == DescriptorVisibilities.LOCAL) {
+            return localClasses
+                .single { it.descriptor.fqNameSafe == constructedClass.fqNameSafe }
+                .constructors
+                .single { it.descriptor.uniqueKey(context) == uniqueKey(context) }
         }
-        return this
+        return pluginContext.referenceConstructors(constructedClass.fqNameSafe)
+            .single { it.descriptor.uniqueKey(context) == uniqueKey(context) }
+            .owner
+    }
+
+    private fun FunctionDescriptor.irFunction(): IrFunction {
+        if (visibility == DescriptorVisibilities.LOCAL) {
+            return localFunctions.single {
+                it.descriptor.uniqueKey(context) == uniqueKey(context)
+            }
+        }
+        return pluginContext.referenceFunctions(fqNameSafe)
+            .single { it.descriptor.uniqueKey(context) == uniqueKey(context) }
+            .owner
     }
 
     private val receiverAccessors = mutableListOf<Pair<IrClass, () -> IrExpression>>()
 
-    private val variables = mutableListOf<IrVariable>()
+    private val localVariables = mutableListOf<IrVariable>()
+    private val localFunctions = mutableListOf<IrFunction>()
+    private val localClasses = mutableListOf<IrClass>()
 
     private val fileStack = mutableListOf<IrFile>()
     override fun visitFile(declaration: IrFile): IrFile {
@@ -559,6 +570,7 @@ class GivenCallTransformer(
                     .irGet(declaration.thisReceiver!!)
             }
         )
+        if (declaration.isLocal) localClasses += declaration
         val result = super.visitClass(declaration)
         receiverAccessors.pop()
         return result
@@ -583,6 +595,7 @@ class GivenCallTransformer(
                 }
             )
         }
+        if (declaration.isLocal) localFunctions += declaration
         val result = super.visitFunction(declaration)
         if (dispatchReceiver != null) receiverAccessors.pop()
         if (extensionReceiver != null) receiverAccessors.pop()
@@ -591,7 +604,7 @@ class GivenCallTransformer(
 
     override fun visitVariable(declaration: IrVariable): IrStatement =
         super.visitVariable(declaration)
-            .also { variables += declaration }
+            .also { localVariables += declaration }
 
     override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
         val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
