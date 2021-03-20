@@ -65,6 +65,7 @@ class GivenCallChecker(
         val substitutionMap = resolvedCall.typeArguments
             .mapKeys { it.key.toClassifierRef(this.context, context.trace) }
             .mapValues { it.value.toTypeRef(this.context, context.trace) }
+            .filter { it.key != it.value.classifier }
 
         val callable = resultingDescriptor.toCallableRef(this.context, context.trace)
             .substitute(substitutionMap)
