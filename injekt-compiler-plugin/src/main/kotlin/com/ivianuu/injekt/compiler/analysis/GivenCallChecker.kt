@@ -26,6 +26,7 @@ import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.HierarchicalResolutionScope
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
+import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.resolveRequests
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
@@ -56,6 +57,10 @@ class GivenCallChecker(
         bindingContextCollector?.invoke(context.trace.bindingContext)
         val resultingDescriptor = resolvedCall.resultingDescriptor
         if (resultingDescriptor !is FunctionDescriptor) return
+
+        if (resultingDescriptor.valueParameters.none {
+                it.isGiven(this.context, context.trace)
+        }) return
 
         val substitutionMap = resolvedCall.typeArguments
             .mapKeys { it.key.toClassifierRef(this.context, context.trace) }
