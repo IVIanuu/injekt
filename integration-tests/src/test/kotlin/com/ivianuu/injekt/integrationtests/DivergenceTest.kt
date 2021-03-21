@@ -45,7 +45,7 @@ class DivergenceTest {
     @Test
     fun testUnresolvableDivergenceWithQualifiers() = codegen(
         """
-            @Given fun <T> unwrapped(@Given qualified: @Qualifier1 T): T = qualified
+            @Given fun <T> unwrapped(@Given qualified: @TypeWrapper1 T): T = qualified
             fun lol() {
                 given<Foo>()
             }
@@ -74,9 +74,9 @@ class DivergenceTest {
     @Test
     fun testResolvableDivergenceWithQualifiers() = codegen(
         """
-            @Given fun <T> unwrapped(@Given qualified: @Qualifier1 T): T = qualified
+            @Given fun <T> unwrapped(@Given qualified: @TypeWrapper1 T): T = qualified
 
-            @Given fun qualifiedFoo(): @Qualifier1 Foo = error("")
+            @Given fun qualifiedFoo(): @TypeWrapper1 Foo = error("")
 
             fun lol() {
                 given<Foo>()

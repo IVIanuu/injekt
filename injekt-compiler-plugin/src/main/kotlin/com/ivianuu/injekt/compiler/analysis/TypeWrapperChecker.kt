@@ -26,25 +26,25 @@ import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
-class QualifierChecker : DeclarationChecker {
+class TypeWrapperChecker : DeclarationChecker {
     override fun check(
         declaration: KtDeclaration,
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (descriptor.hasAnnotation(InjektFqNames.Qualifier) &&
+        if (descriptor.hasAnnotation(InjektFqNames.TypeWrapper) &&
                 descriptor is ClassDescriptor) {
             if (descriptor.unsubstitutedPrimaryConstructor?.valueParameters?.isNotEmpty() == true) {
                 context.trace.report(
-                    InjektErrors.QUALIFIER_WITH_VALUE_PARAMETERS
+                    InjektErrors.TYPE_WRAPPER_WITH_VALUE_PARAMETERS
                         .on(declaration)
                 )
             }
         } else {
-            val qualifiers = descriptor.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-            if (qualifiers.isNotEmpty() && descriptor !is ClassDescriptor) {
+            val typeWrappers = descriptor.getAnnotatedAnnotations(InjektFqNames.TypeWrapper)
+            if (typeWrappers.isNotEmpty() && descriptor !is ClassDescriptor) {
                 context.trace.report(
-                    InjektErrors.QUALIFIER_ON_NON_CLASS_AND_NON_TYPE
+                    InjektErrors.TYPE_WRAPPER_ON_NON_CLASS_AND_NON_TYPE
                         .on(declaration)
                 )
             }

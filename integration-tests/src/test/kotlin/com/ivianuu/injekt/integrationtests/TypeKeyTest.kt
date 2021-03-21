@@ -104,12 +104,12 @@ class TypeKeyTest {
     }
 
     @Test
-    fun testTypeKeyOfWithQualifiers() = codegen(
+    fun testTypeKeyOfWithTypeWrappers() = codegen(
         """
-            fun invoke() = typeKeyOf<@Qualifier2("a") String>() 
+            fun invoke() = typeKeyOf<@TypeWrapper1 String>() 
         """
     ) {
-        invokeSingleFile<TypeKey<Any>>().value shouldBe "[@com.ivianuu.injekt.test.Qualifier2(128)]kotlin.String"
+        invokeSingleFile<TypeKey<Any>>().value shouldBe "com.ivianuu.injekt.test.TypeWrapper1[:kotlin.String]"
     }
 
     @Test

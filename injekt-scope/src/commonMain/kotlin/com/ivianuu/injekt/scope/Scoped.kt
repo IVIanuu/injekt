@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.TypeWrapper
 import com.ivianuu.injekt.common.ForTypeKey
 
 /**
@@ -37,7 +37,7 @@ import com.ivianuu.injekt.common.ForTypeKey
  *
  * ```
  */
-@Qualifier
+@TypeWrapper
 annotation class Scoped<S : GivenScope>
 
 @Given

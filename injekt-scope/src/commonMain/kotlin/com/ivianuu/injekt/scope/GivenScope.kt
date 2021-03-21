@@ -19,7 +19,7 @@
 package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.TypeWrapper
 import com.ivianuu.injekt.common.ForTypeKey
 import com.ivianuu.injekt.common.TypeKey
 import com.ivianuu.injekt.common.typeKeyOf
@@ -138,7 +138,7 @@ typealias GivenScopeElement<@Suppress("unused", "UNUSED_TYPEALIAS_PARAMETER") S>
  * }
  * ```
  */
-@Qualifier
+@TypeWrapper
 annotation class GivenScopeElementBinding<S : GivenScope>
 
 @Given

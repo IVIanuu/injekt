@@ -380,8 +380,8 @@ class TypeKeyTransformer(
                     it.symbol.owner.constructedClass.descriptor.fqNameSafe ==
                             InjektFqNames.Composable
                 }
-            ) + (abbreviation?.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-                ?: getAnnotatedAnnotations(InjektFqNames.Qualifier))
+            ) + (abbreviation?.getAnnotatedAnnotations(InjektFqNames.TypeWrapper)
+                ?: getAnnotatedAnnotations(InjektFqNames.TypeWrapper))
 
             if (typeAnnotations.isNotEmpty()) {
                 appendToCurrentString("[")

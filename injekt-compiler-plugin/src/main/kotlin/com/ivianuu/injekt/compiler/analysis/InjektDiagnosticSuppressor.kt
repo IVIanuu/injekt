@@ -50,7 +50,7 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
         if (diagnostic.factory == Errors.WRONG_ANNOTATION_TARGET) {
             val annotationDescriptor = bindingContext[BindingContext.ANNOTATION, diagnostic.psiElement.cast()]
             if (annotationDescriptor?.type?.constructor?.declarationDescriptor
-                    ?.hasAnnotation(InjektFqNames.Qualifier) == true)
+                    ?.hasAnnotation(InjektFqNames.TypeWrapper) == true)
                         return true
         }
 

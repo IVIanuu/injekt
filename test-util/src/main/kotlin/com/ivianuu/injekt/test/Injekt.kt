@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.test
 
-import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.TypeWrapper
 
 class Foo
 
@@ -30,6 +30,6 @@ class CommandA : Command
 
 class CommandB : Command
 
-@Qualifier annotation class Qualifier1
+@TypeWrapper annotation class TypeWrapper1
 
-@Qualifier annotation class Qualifier2(val value: String)
+@TypeWrapper annotation class TypeWrapper2(val value: String)

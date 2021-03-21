@@ -125,6 +125,11 @@ class AnalysisContext(val module: ModuleDescriptor) {
         superTypes = superTypes.toList()
     ).defaultType
 
+    fun typeWrapperType(fqName: FqName = FqName("Wrapper${id++}")) = ClassifierRef(
+        fqName = fqName,
+        isTypeWrapper = true
+    )
+
     fun typeParameter(
         fqName: FqName = FqName("TypeParameter${id++}"),
         nullable: Boolean = true,
@@ -173,9 +178,6 @@ class AnalysisContext(val module: ModuleDescriptor) {
 fun TypeRef.nullable() = copy(isMarkedNullable = true)
 
 fun TypeRef.nonNull() = copy(isMarkedNullable = false)
-
-fun TypeRef.qualified(vararg qualifiers: TypeRef) =
-    copy(qualifiers = qualifiers.toList())
 
 fun TypeRef.typeWith(vararg typeArguments: TypeRef) =
     copy(arguments = typeArguments.toList())

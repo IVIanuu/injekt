@@ -24,13 +24,13 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.TypeWrapper
 import com.ivianuu.injekt.android.AppContext
 
 /**
  * Registers the annotated given [ListenableWorker] in the [InjektWorkerFactory]
  */
-@Qualifier
+@TypeWrapper
 annotation class WorkerBinding
 
 @Given

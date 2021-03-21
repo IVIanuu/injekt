@@ -221,11 +221,12 @@ fun ClassDescriptor.getGivenConstructor(
         ?.toCallableRef(context, trace)
         ?.makeGiven()
     val finalConstructor = if (rawGivenConstructor != null) {
-        if (rawGivenConstructor.type.classifier.qualifiers.isNotEmpty()) {
-            val typeWithQualifiers = rawGivenConstructor.type.copy(
-                qualifiers = rawGivenConstructor.type.classifier.qualifiers +
-                        rawGivenConstructor.type.qualifiers)
-            rawGivenConstructor.copy(type = typeWithQualifiers, originalType = typeWithQualifiers)
+        if (rawGivenConstructor.type.classifier.typeWrappers.isNotEmpty()) {
+            val wrappedType = rawGivenConstructor.type.classifier.typeWrappers
+                .foldRight(rawGivenConstructor.type) { nextWrapper, acc ->
+                    nextWrapper.wrap(acc)
+                }
+            rawGivenConstructor.copy(type = wrappedType, originalType = wrappedType)
         } else {
             rawGivenConstructor
         }

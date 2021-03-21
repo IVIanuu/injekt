@@ -23,7 +23,7 @@ object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
 
     val Given = InjektPackage.child("Given".asNameId())
-    val Qualifier = InjektPackage.child("Qualifier".asNameId())
+    val TypeWrapper = InjektPackage.child("TypeWrapper".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
     val CallableInfo = InternalPackage.child("CallableInfo".asNameId())

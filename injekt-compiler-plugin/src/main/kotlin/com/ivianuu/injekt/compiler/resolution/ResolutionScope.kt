@@ -145,8 +145,7 @@ class ResolutionScope(
                 .map { it.toGivenNode(type, this@ResolutionScope) }
 
             if (none { !it.isFrameworkGiven }) {
-                if (type.qualifiers.isEmpty() &&
-                    type.frameworkKey == null) {
+                if (type.frameworkKey == null) {
                     if (type.isFunctionType &&
                         type.arguments.dropLast(1).all { it.isGiven }) {
                         this += ProviderGivenNode(
@@ -158,7 +157,6 @@ class ResolutionScope(
                         val setElementType = type.arguments.single()
                         var elementTypes = setElementsForType(setElementType)
                         if (elementTypes.isEmpty() &&
-                            setElementType.qualifiers.isEmpty() &&
                             setElementType.isFunctionType &&
                             setElementType.arguments.dropLast(1).all { it.isGiven }) {
                             val providerReturnType = setElementType.arguments.last()

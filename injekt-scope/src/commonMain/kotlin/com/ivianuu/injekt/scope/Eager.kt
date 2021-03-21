@@ -17,13 +17,13 @@
 package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.TypeWrapper
 
 /**
  * Converts a [@Eager<S> T] to a [T] which is scoped to the lifecycle of [S] and will be instantiated
  * as soon as the hosting [GivenScope] get's initialized
  */
-@Qualifier
+@TypeWrapper
 annotation class Eager<S : GivenScope>
 
 @Given

@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.samples.android.app
 
 import android.app.Application
+import com.ivianuu.injekt.TypeWrapper
 import com.ivianuu.injekt.scope.*
 import com.ivianuu.injekt.common.*
 import com.ivianuu.injekt.android.*
@@ -27,3 +28,12 @@ import com.ivianuu.injekt.samples.android.ui.*
 class App : Application(), AppGivenScopeOwner {
     override val appGivenScope by lazy { createAppGivenScope() }
 }
+
+@TypeWrapper
+annotation class MyWrapper
+
+class Foo
+
+val foo: @MyWrapper Foo = Foo()
+// MyWrapper<Foo>
+// MyWrapper : Foo

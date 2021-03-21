@@ -28,16 +28,16 @@ import io.kotest.matchers.types.shouldBeTypeOf
 import io.kotest.matchers.types.shouldNotBeSameInstanceAs
 import org.junit.Test
 
-class QualifierTest {
+class TypeWrapperTest {
 
     @Test
-    fun testDistinctQualifier() = codegen(
+    fun testDistinctTypeWrappers() = codegen(
         """
             @Given val foo = Foo()
-            @Given val qualifiedFoo: @Qualifier1 Foo = Foo()
+            @Given val wrappedFoo: @TypeWrapper1 Foo = Foo()
        
             fun invoke(): Pair<Foo, Foo> {
-                return given<Foo>() to given<@Qualifier1 Foo>()
+                return given<Foo>() to given<@TypeWrapper1 Foo>()
             }
             """
     ) {
@@ -48,9 +48,9 @@ class QualifierTest {
     @Test
     fun testTypeParameterWithQualifierUpperBound() = codegen(
         """
-            @Given class Dep<T>(@Given val value: @Qualifier1 T)
+            @Given class Dep<T>(@Given val value: @TypeWrapper1 T)
             
-            @Given fun qualified(): @Qualifier1 String = ""
+            @Given fun wrapped(): @TypeWrapper1 String = ""
             
             fun invoke() = given<Dep<String>>()
             """
@@ -59,8 +59,8 @@ class QualifierTest {
     @Test
     fun testQualifiedClass() = codegen(
         """ 
-            @Given @Qualifier1 class Dep
-            fun invoke() = given<@Qualifier1 Dep>()
+            @Given @TypeWrapper1 class Dep
+            fun invoke() = given<@TypeWrapper1 Dep>()
             """
     )
 
@@ -69,14 +69,14 @@ class QualifierTest {
         listOf(
             source(
                 """ 
-                    @Given @Qualifier1 class Dep
+                    @Given @TypeWrapper1 class Dep
             """
             )
         ),
         listOf(
             source(
                 """ 
-                    fun invoke() = given<@Qualifier1 Dep>()
+                    fun invoke() = given<@TypeWrapper1 Dep>()
             """
             )
         )
@@ -85,8 +85,8 @@ class QualifierTest {
     @Test
     fun testQualifiedFunction() = codegen(
         """ 
-            @Given @Qualifier1 fun foo() = Foo()
-            fun invoke() = given<@Qualifier1 Foo>()
+            @Given @TypeWrapper1 fun foo() = Foo()
+            fun invoke() = given<@TypeWrapper1 Foo>()
             """
     ) {
         compilationShouldHaveFailed("only types and classes can be annotated with a qualifier")

@@ -66,4 +66,4 @@ inline fun <T> given(@Given value: T): T = value
  * ```
  */
 @Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class Qualifier
+annotation class TypeWrapper

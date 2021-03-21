@@ -388,6 +388,11 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     a!!
     b!!
 
+    if (a.originalType == a.type &&
+            b.originalType != a.type) return -1
+    if (b.originalType == b.type &&
+        a.originalType != b.type) return 1
+
     val diff = compareType(a.originalType, b.originalType)
     if (diff < 0) return -1
     if (diff > 0) return 1
@@ -480,9 +485,7 @@ private fun GivenGraph.Success.validateAllTypeParametersSubstituted() {
                     classifier !in typeParametersInScope) {
                 error("Invalid graph: unsubstituted type parameter $classifier")
             }
-
             arguments.forEach { it.validate() }
-            qualifiers.forEach { it.validate() }
         }
 
         candidate.type.validate()
