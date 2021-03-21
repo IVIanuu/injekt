@@ -111,6 +111,14 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
             } else {
                 checkOverrides(declaration, descriptor, context.trace)
                 checkGivenTypeParametersOnNonGivenFunction(descriptor.typeParameters, context.trace)
+                if (descriptor.extensionReceiverParameter
+                        ?.isGiven(this.context, context.trace) == true) {
+                    context.trace.report(
+                        InjektErrors.GIVEN_RECEIVER_ON_NON_GIVEN_DECLARATION
+                            .on(declaration.safeAs<KtNamedFunction>()
+                                ?.receiverTypeReference ?: declaration)
+                    )
+                }
             }
         } else if (descriptor is ConstructorDescriptor) {
             if (descriptor.isGiven(this.context, context.trace)) {
@@ -205,7 +213,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         } else if (descriptor is PropertyDescriptor) {
             checkOverrides(declaration, descriptor, context.trace)
             checkGivenTypeParametersOnNonGivenFunction(descriptor.typeParameters, context.trace)
-            if (descriptor.hasAnnotation(InjektFqNames.Given)) {
+            if (descriptor.isGiven(this.context, context.trace)) {
                 checkUnresolvableGivenTypeParameters(declaration,
                     descriptor.typeParameters, descriptor.returnType!!, context.trace)
                 if (descriptor.extensionReceiverParameter != null &&
@@ -218,6 +226,15 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                                     ?.receiverTypeReference
                                     ?: declaration
                             )
+                    )
+                }
+            } else {
+                if (descriptor.extensionReceiverParameter
+                        ?.isGiven(this.context, context.trace) == true) {
+                    context.trace.report(
+                        InjektErrors.GIVEN_RECEIVER_ON_NON_GIVEN_DECLARATION
+                            .on(declaration.safeAs<KtProperty>()
+                                ?.receiverTypeReference ?: declaration)
                     )
                 }
             }

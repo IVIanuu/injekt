@@ -127,6 +127,15 @@ class GivenDeclarationCheckTest {
     }
 
     @Test
+    fun testGivenReceiverOnNonGivenFunction() = codegen(
+        """
+            fun @Given Foo.bar() = Bar(this)
+        """
+    ) {
+        compilationShouldHaveFailed("non @Given callable cannot have @Given receiver")
+    }
+
+    @Test
     fun testNonGivenValueParameterOnGivenClass() = codegen(
         """
             @Given class MyBar(foo: Foo)
