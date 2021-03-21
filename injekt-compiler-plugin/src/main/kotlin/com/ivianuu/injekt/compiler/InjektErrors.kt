@@ -158,6 +158,15 @@ interface InjektErrors {
                 }
 
         @JvmField
+        val DIVERGENT_GIVEN = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+            .also {
+                MAP.put(
+                    it,
+                    "given cannot have a value parameter with the same type as it's return type"
+                )
+            }
+
+        @JvmField
         val GIVEN_WITH_UNRESOLVABLE_TYPE_PARAMETER =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also {

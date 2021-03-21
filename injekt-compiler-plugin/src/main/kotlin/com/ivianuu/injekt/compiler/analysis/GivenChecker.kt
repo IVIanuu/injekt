@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.forEachType
 import com.ivianuu.injekt.compiler.resolution.isAssignableTo
 import com.ivianuu.injekt.compiler.resolution.isGiven
+import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
@@ -43,6 +44,7 @@ import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.BindingContext
@@ -96,10 +98,11 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                 }
 
                 if (givenConstraints.size == 1) {
-                    val constraintType = givenConstraints.single()
-                        .defaultType.toTypeRef(this.context, context.trace)
-                    val returnType = descriptor.returnType!!.toTypeRef(this.context, context.trace)
-                    if (returnType.isAssignableTo(this.context, constraintType)) {
+                    val callable = descriptor.toCallableRef(this.context, context.trace)
+                    val constraintType = callable.typeParameters
+                        .single { it.isGivenConstraint }
+                        .defaultType
+                    if (callable.type.isAssignableTo(this.context, constraintType)) {
                         context.trace.report(
                             InjektErrors.DIVERGENT_GIVEN_CONSTRAINT
                                 .on(declaration.safeAs<KtNamedFunction>()?.typeReference
@@ -108,6 +111,19 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                     }
                 }
 
+                if (descriptor.valueParameters.isNotEmpty()) {
+                    val callable = descriptor.toCallableRef(this.context, context.trace)
+                    callable.parameterTypes
+                        .filter { callable.type == it.value }
+                        .forEach { (divergentParameterName) ->
+                            context.trace.report(
+                                InjektErrors.DIVERGENT_GIVEN
+                                    .on(declaration.safeAs<KtFunction>()
+                                        ?.valueParameters
+                                        ?.firstOrNull { it.name == divergentParameterName } ?: declaration)
+                            )
+                        }
+                }
             } else {
                 checkOverrides(declaration, descriptor, context.trace)
                 checkGivenTypeParametersOnNonGivenFunction(descriptor.typeParameters, context.trace)

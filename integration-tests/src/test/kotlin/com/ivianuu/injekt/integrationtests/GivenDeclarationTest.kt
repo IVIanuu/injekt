@@ -19,6 +19,7 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
@@ -156,16 +157,6 @@ class GivenDeclarationTest {
     fun testGivenValueParameter() = codegen(
         """
             fun invoke(@Given foo: Foo) = given<Foo>()
-        """
-    ) {
-        val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
-
-    @Test
-    fun testGivenExtensionReceiver() = codegen(
-        """
-            fun @receiver:Given Foo.invoke() = given<Foo>()
         """
     ) {
         val foo = Foo()
@@ -341,5 +332,14 @@ class GivenDeclarationTest {
             fun invoke() = given<Foo>()
         """
     )
+
+    @Test
+    fun testDivergentGiven() = codegen(
+        """
+            @Given fun <T> divergentGiven(@Given instance: T): T = instance
+        """
+    ) {
+        compilationShouldHaveFailed("given cannot have a value parameter with the same type as it's return type")
+    }
 
 }

@@ -378,7 +378,7 @@ class GivenResolutionTest {
     fun testPrefersFunctionReceiverGivenOverInternalGiven() = codegen(
         """
             @Given lateinit var internalFoo: Foo
-            fun @receiver:Given Foo.invoke(internal: Foo): Foo {
+            fun Foo.invoke(internal: Foo): Foo {
                 internalFoo = internal
                 return given()
             }
@@ -394,7 +394,7 @@ class GivenResolutionTest {
     fun testPrefersFunctionReceiverGivenOverClassGiven() = codegen(
         """
             class MyClass(@Given val classFoo: Foo) {
-                fun @receiver:Given Foo.resolve() = given<Foo>()
+                fun Foo.resolve() = given<Foo>()
             }
 
             fun invoke(classFoo: Foo, functionFoo: Foo): Foo {
