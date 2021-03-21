@@ -434,8 +434,6 @@ fun TypeRef.uniqueTypeName(depth: Int = 0): String {
         qualifiers.forEach {
             append(it.uniqueTypeName())
             append("_")
-            append(it.arguments.hashCode())
-            append("_")
         }
         if (isMarkedComposable) append("composable_")
         if (isStarProjection) append("star")
@@ -468,6 +466,7 @@ fun getSubstitutionMap(
     context: InjektContext,
     pairs: List<Pair<TypeRef, TypeRef>>
 ): Map<ClassifierRef, TypeRef> {
+    if (pairs.isEmpty()) return emptyMap()
     if (pairs.all { it.first == it.second }) return emptyMap()
     val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
     val visitedTypes = mutableSetOf<TypeRef>()
