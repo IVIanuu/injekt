@@ -92,7 +92,7 @@ data class PersistedClassifierInfo(
 
 fun ClassifierRef.toPersistedClassifierInfo(context: InjektContext) = PersistedClassifierInfo(
     fqName = descriptor!!.fqNameSafe.asString(),
-    qualifiers = qualifiers.map { it.toPersistedTypeRef(context) },
+    qualifiers = qualifiers.map { it.value.toPersistedTypeRef(context) },
     superTypes = superTypes.map { it.toPersistedTypeRef(context) },
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
         .map { it.asString() },
@@ -113,7 +113,7 @@ data class PersistedTypeRef(
 
 fun TypeRef.toPersistedTypeRef(context: InjektContext): PersistedTypeRef = PersistedTypeRef(
     classifierKey = classifier.descriptor?.uniqueKey(context) ?: "",
-    qualifiers = qualifiers.map { it.toPersistedTypeRef(context) },
+    qualifiers = qualifiers.map { it.value.toPersistedTypeRef(context) },
     arguments = arguments.map { it.toPersistedTypeRef(context) },
     isStarProjection = isStarProjection,
     isMarkedNullable = isMarkedNullable,
@@ -127,7 +127,9 @@ fun PersistedTypeRef.toTypeRef(context: InjektContext, trace: BindingTrace?): Ty
         .toClassifierRef(context, trace)
     return classifier.defaultType
         .copy(
-            qualifiers = qualifiers.map { it.toTypeRef(context, trace) },
+            qualifiers = qualifiers
+                .map { it.toTypeRef(context, trace) }
+                .associateBy { it.classifier },
             arguments = arguments.map { it.toTypeRef(context, trace) },
             isMarkedNullable = isMarkedNullable,
             isMarkedComposable = isMarkedComposable,
@@ -157,7 +159,7 @@ fun ClassifierRef.toPersistedClassifierRef(
             ?: descriptor.uniqueKey(context)
      } else descriptor!!.uniqueKey(context),
     superTypes = superTypes.map { it.toPersistedTypeRef(context) },
-    qualifiers = qualifiers.map { it.toPersistedTypeRef(context) },
+    qualifiers = qualifiers.map { it.value.toPersistedTypeRef(context) },
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
         .map { it.asString() },
     forTypeKeyTypeParameters = forTypeKeyTypeParameters
@@ -174,7 +176,9 @@ fun PersistedClassifierRef.toClassifierRef(
             if (superTypes.isNotEmpty() || qualifiers.isNotEmpty() || primaryConstructorPropertyParameters.isNotEmpty())
                 raw.copy(
                     superTypes = superTypes.map { it.toTypeRef(context, trace) },
-                    qualifiers = qualifiers.map { it.toTypeRef(context, trace) },
+                    qualifiers = qualifiers
+                        .map { it.toTypeRef(context, trace) }
+                        .associateBy { it.classifier },
                     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
                         .map { it.asNameId() }
                 )
@@ -197,7 +201,9 @@ fun ClassifierRef.apply(
 ): ClassifierRef {
     return if (info == null || !descriptor!!.isExternalDeclaration()) this
     else copy(
-        qualifiers = info.qualifiers.map { it.toTypeRef(context, trace) },
+        qualifiers = info.qualifiers
+            .map { it.toTypeRef(context, trace) }
+            .associateBy { it.classifier },
         superTypes = info.superTypes.map { it.toTypeRef(context, trace) },
         primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters.map { it.asNameId() },
         forTypeKeyTypeParameters = info.forTypeKeyTypeParameters.map { it.asNameId() }

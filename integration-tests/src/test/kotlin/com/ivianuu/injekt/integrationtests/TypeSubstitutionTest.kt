@@ -43,7 +43,7 @@ class TypeSubstitutionTest {
         val map = getSubstitutionMap(context, listOf(substitutionType to typeParameterT))
         map[typeParameterT.classifier] shouldBe substitutionType
         map[typeParameterS.classifier] shouldBe substitutionType.copy(
-            qualifiers = listOf(qualifier2)
+            qualifiers = mapOf(qualifier2.classifier to qualifier2)
         )
     }
 

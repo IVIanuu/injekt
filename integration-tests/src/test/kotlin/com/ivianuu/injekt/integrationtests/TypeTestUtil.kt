@@ -176,7 +176,7 @@ fun TypeRef.nullable() = copy(isMarkedNullable = true)
 fun TypeRef.nonNull() = copy(isMarkedNullable = false)
 
 fun TypeRef.qualified(vararg qualifiers: TypeRef) =
-    copy(qualifiers = qualifiers.toList())
+    copy(qualifiers = qualifiers.associateBy { it.classifier })
 
 fun TypeRef.typeWith(vararg typeArguments: TypeRef) =
     copy(arguments = typeArguments.toList())

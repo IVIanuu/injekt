@@ -139,6 +139,12 @@ class TypeRefTest {
     }
 
     @Test
+    fun testSameQualifiersWithDifferentOrderIsAssignable() = withAnalysisContext {
+        stringType.qualified(qualifier1, qualifier2) shouldBeAssignable
+                stringType.qualified(qualifier2, qualifier1)
+    }
+
+    @Test
     fun testSubTypeOfTypeParameterWithNullableAnyUpperBound() = withAnalysisContext {
         stringType shouldBeAssignable typeParameter()
     }
@@ -266,12 +272,6 @@ class TypeRefTest {
     @Test
     fun testSubTypeWithTypeParameterIsAssignableToSuperTypeWithOtherTypeParameterButSameSuperTypes() = withAnalysisContext {
         mutableListType.typeWith(typeParameter()) shouldBeAssignable listType.typeWith(typeParameter())
-    }
-
-    @Test
-    fun testQualifiedSubTypeWithTypeParameterIsNotAssignableToSuperTypeWithOtherTypeParameterButSameSuperTypes() = withAnalysisContext {
-        mutableListType.typeWith(typeParameter())
-            .qualified(qualifier1) shouldNotBeAssignable listType.typeWith(typeParameter())
     }
 
     @Test

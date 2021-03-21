@@ -54,7 +54,7 @@ data class ClassifierRef(
     val isObject: Boolean = false,
     val isTypeAlias: Boolean = false,
     val descriptor: ClassifierDescriptor? = null,
-    val qualifiers: List<TypeRef> = emptyList(),
+    val qualifiers: Map<ClassifierRef, TypeRef> = emptyMap(),
     val isGivenConstraint: Boolean = false,
     val primaryConstructorPropertyParameters: List<Name> = emptyList(),
     val forTypeKeyTypeParameters: List<Name> = emptyList()
@@ -92,6 +92,7 @@ fun ClassifierDescriptor.toClassifierRef(
         ?.toTypeRef(context, trace)
     val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
         .map { it.type.toTypeRef(context, trace) }
+        .associateBy { it.classifier }
     return ClassifierRef(
         fqName = original.fqNameSafe,
         typeParameters = (original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
@@ -139,7 +140,7 @@ sealed class TypeRef {
     abstract val isMarkedComposable: Boolean
     abstract val isGiven: Boolean
     abstract val isStarProjection: Boolean
-    abstract val qualifiers: List<TypeRef>
+    abstract val qualifiers: Map<ClassifierRef, TypeRef>
     abstract val frameworkKey: String?
 
     private val typeName by unsafeLazy { uniqueTypeName() }
@@ -171,7 +172,7 @@ sealed class TypeRef {
             typeSize++
             if (type in seen) return
             seen += type
-            type.qualifiers.forEach { visit(it) }
+            type.qualifiers.forEach { visit(it.value) }
             type.arguments.forEach { visit(it) }
         }
         visit(this)
@@ -185,7 +186,7 @@ sealed class TypeRef {
             if (type in seen) return
             seen += type
             classifiers += type.classifier
-            type.qualifiers.forEach { visit(it) }
+            type.qualifiers.forEach { visit(it.value) }
             type.arguments.forEach { visit(it) }
         }
         visit(this)
@@ -221,8 +222,8 @@ sealed class TypeRef {
             .map { superType ->
                 superType.substitute(substitutionMap)
                     .let {
-                        if (qualifiers.isNotEmpty()) it.copy(qualifiers = (qualifiers + it.qualifiers)
-                            .distinctBy { it.classifier })
+                        if (qualifiers.isNotEmpty())
+                            it.copy(qualifiers = (qualifiers + it.qualifiers))
                         else it
                     }
             }
@@ -246,7 +247,7 @@ fun TypeRef.forEachUniqueSuperTypeUntil(action: (TypeRef) -> Boolean) {
 fun TypeRef.forEachType(action: (TypeRef) -> Unit) {
     action(this)
     arguments.forEach { it.forEachType(action) }
-    qualifiers.forEach { it.forEachType(action) }
+    qualifiers.forEach { it.value.forEachType(action) }
 }
 
 class KotlinTypeRef(
@@ -273,9 +274,10 @@ class KotlinTypeRef(
             .take(classifier.typeParameters.size)
             .map { it.type.toTypeRef(context, trace, it.isStarProjection) }
     }
-    override val qualifiers: List<TypeRef> by unsafeLazy {
+    override val qualifiers: Map<ClassifierRef, TypeRef> by unsafeLazy {
         kotlinType.getAnnotatedAnnotations(InjektFqNames.Qualifier)
             .map { it.type.toTypeRef(context, trace) }
+            .associateBy { it.classifier }
     }
     override val frameworkKey: String?
         get() = null
@@ -288,13 +290,10 @@ class SimpleTypeRef(
     override val isMarkedComposable: Boolean = false,
     override val isGiven: Boolean = false,
     override val isStarProjection: Boolean = false,
-    override val qualifiers: List<TypeRef> = emptyList(),
+    override val qualifiers: Map<ClassifierRef, TypeRef> = emptyMap(),
     override val frameworkKey: String? = null
 ) : TypeRef() {
     init {
-        check(qualifiers.distinctBy { it.classifier.fqName }.size == qualifiers.size) {
-            "Duplicated qualifiers ${render()}"
-        }
         check(arguments.size == classifier.typeParameters.size) {
             "Argument size mismatch ${classifier.fqName} " +
                     "params: ${classifier.typeParameters.map { it.fqName }} " +
@@ -312,7 +311,7 @@ fun TypeRef.copy(
     isMarkedComposable: Boolean = this.isMarkedComposable,
     isGiven: Boolean = this.isGiven,
     isStarProjection: Boolean = this.isStarProjection,
-    qualifiers: List<TypeRef> = this.qualifiers,
+    qualifiers: Map<ClassifierRef, TypeRef> = this.qualifiers,
     frameworkKey: String? = this.frameworkKey
 ): SimpleTypeRef = SimpleTypeRef(
     classifier,
@@ -329,15 +328,11 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
     if (map.isEmpty()) return this
     map[classifier]?.let { substitution ->
         val newQualifiers = qualifiers
-            .map { qualifier ->
-                substitution.qualifiers.singleOrNull {
-                    it.classifier == qualifier.classifier
-                } ?: qualifier
-            }
-            .map { it.substitute(map) } + substitution.qualifiers
-            .filter { qualifier ->
-                qualifiers.none { it.classifier == qualifier.classifier }
-            }
+            .map { substitution.qualifiers[it.key] ?: it.value }
+            .map { it.classifier to it.substitute(map) }
+            .toMap() + substitution.qualifiers
+            .filter { it.key !in qualifiers }
+            .toMap()
         val newNullability = if (!isStarProjection) isMarkedNullable else substitution.isMarkedNullable
         val newGiven = isGiven || substitution.isGiven
         return if (qualifiers != substitution.qualifiers ||
@@ -363,7 +358,7 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
 
     val substituted = copy(
         arguments = arguments.map { it.substitute(map) },
-        qualifiers = qualifiers.map { it.substitute(map) }
+        qualifiers = qualifiers.mapValues { it.value.substitute(map) }
     )
 
     if (classifier.isTypeParameter && substituted == this) {
@@ -389,7 +384,7 @@ fun TypeRef.render(depth: Int = 0): String {
     if (depth > 15) return ""
     return buildString {
         fun TypeRef.inner() {
-            val annotations = qualifiers.map { qualifier ->
+            val annotations = qualifiers.map { (_, qualifier) ->
                 "@${qualifier.render()}"
             } + listOfNotNull(
                 if (isGiven) "@Given" else null,
@@ -426,7 +421,7 @@ fun TypeRef.uniqueTypeName(depth: Int = 0): String {
     if (depth > 15) return ""
     return buildString {
         qualifiers.forEach {
-            append(it.uniqueTypeName())
+            append(it.value.uniqueTypeName())
             append("_")
         }
         if (isMarkedComposable) append("composable_")
@@ -479,11 +474,7 @@ fun getSubstitutionMap(
                 thisType
                     .copy(
                         qualifiers = thisType.qualifiers
-                            .filter { thisQualifier ->
-                                thisQualifier.classifier !in baseType.qualifiers.map { baseQualifier ->
-                                    baseQualifier.classifier
-                                }
-                            }
+                            .filter { it.key !in baseType.qualifiers }
                     )
             } else thisType
             substitutionMap[baseType.classifier] = final
@@ -497,7 +488,12 @@ fun getSubstitutionMap(
         }
 
         if (thisType.qualifiers.isAssignableTo(context, baseType.qualifiers)) {
-            thisType.qualifiers.forEachWith(baseType.qualifiers) { a, b -> visitType(a, b, fromInput) }
+            for ((thisQualifierKey, thisQualifier) in thisType.qualifiers) {
+                val baseQualifier = baseType.qualifiers[thisQualifierKey]
+                if (baseQualifier != null) {
+                    visitType(thisQualifier, baseQualifier, false)
+                }
+            }
         }
 
         baseType.superTypes.forEach { visitType(thisType, it, false) }
@@ -574,11 +570,14 @@ fun TypeRef.isSubTypeOf(
     return false
 }
 
-fun List<TypeRef>.isAssignableTo(context: InjektContext, superQualifiers: List<TypeRef>): Boolean {
+fun Map<ClassifierRef, TypeRef>.isAssignableTo(
+    context: InjektContext,
+    superQualifiers: Map<ClassifierRef, TypeRef>
+): Boolean {
     if (size != superQualifiers.size) return false
-    forEachWith(superQualifiers) { a, b ->
-        if (!a.isAssignableTo(context, b))
-            return false
+    for ((superQualifierClassifier, superQualifier) in superQualifiers) {
+        val thisQualifier = this[superQualifierClassifier] ?: return false
+        if (!thisQualifier.isAssignableTo(context, superQualifier)) return false
     }
     return true
 }

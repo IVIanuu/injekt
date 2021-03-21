@@ -41,8 +41,7 @@ class GivenConstraintTest {
             fun invoke() = given<Foo>()
         """
     ) {
-        invokeSingleFile()
-            .shouldBeTypeOf<Foo>()
+        invokeSingleFile().shouldBeTypeOf<Foo>()
     }
 
     @Test
@@ -56,7 +55,7 @@ class GivenConstraintTest {
             fun invoke() = given<Set<Foo>>()
         """
     ) {
-        1 shouldBe invokeSingleFile<Set<Foo>>().size
+        invokeSingleFile<Set<Foo>>().size shouldBe 1
     }
 
     @Test
@@ -74,7 +73,7 @@ class GivenConstraintTest {
             fun invoke() = given<Set<Foo>>()
         """
     ) {
-        1 shouldBe invokeSingleFile<Set<Foo>>().size
+        invokeSingleFile<Set<Foo>>().size shouldBe 1
     }
 
     @Test
