@@ -39,5 +39,6 @@ class InjektStorageComponentContainerContributor(
         if (!isIde) {
             container.useInstance(GivenCallChecker(context, bindingContextCollector))
         }
+        container.useInstance(QualifierChecker())
     }
 }

@@ -23,11 +23,9 @@ import com.ivianuu.injekt.compiler.Tuple1
 import com.ivianuu.injekt.compiler.apply
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.generateFrameworkKey
-import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.isExternalDeclaration
-import com.ivianuu.injekt.compiler.transform.toKotlinType
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
@@ -53,7 +51,6 @@ data class CallableRef(
     val typeParameters: List<ClassifierRef>,
     val parameterTypes: Map<String, TypeRef>,
     val givenParameters: Set<String>,
-    val qualifiers: List<AnnotationRef>,
     val typeArguments: Map<ClassifierRef, TypeRef>,
     val isGiven: Boolean,
     val fromGivenConstraint: Boolean,
@@ -67,9 +64,7 @@ fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
         parameterTypes = parameterTypes
             .mapValues { it.value.substitute(map) },
         typeArguments = typeArguments
-            .mapValues { it.value.substitute(map) },
-        qualifiers = qualifiers
-            .map { it.substitute(map) }
+            .mapValues { it.value.substitute(map) }
     )
 }
 
@@ -82,21 +77,14 @@ fun CallableRef.substituteInputs(map: Map<ClassifierRef, TypeRef>): CallableRef 
     )
 }
 
-fun CallableRef.makeGiven(): CallableRef = if (isGiven) this
-else copy(isGiven = true)
+fun CallableRef.makeGiven(): CallableRef = if (isGiven) this else copy(isGiven = true)
 
 fun CallableDescriptor.toCallableRef(
     context: InjektContext,
     trace: BindingTrace?
 ): CallableRef {
     trace?.get(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this)?.let { return it }
-    val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
-        .map { it.toAnnotationRef(context, trace) }
-    val type = returnType!!.toTypeRef(context, trace).let {
-        if (qualifiers.isNotEmpty()) it.copy(qualifiers = (qualifiers + it.qualifiers)
-            .distinctBy { it.type.classifier })
-        else it
-    }
+    val type = returnType!!.toTypeRef(context, trace)
     val typeParameters = typeParameters
         .map { it.toClassifierRef(context, trace) }
     return CallableRef(
@@ -110,7 +98,6 @@ fun CallableDescriptor.toCallableRef(
         givenParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
             .filter { it.isGiven(context, trace) }
             .mapTo(mutableSetOf()) { it.injektName() },
-        qualifiers = qualifiers,
         typeArguments = typeParameters
             .map { it to it.defaultType }
             .toMap(),

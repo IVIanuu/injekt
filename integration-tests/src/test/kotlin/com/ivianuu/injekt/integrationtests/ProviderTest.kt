@@ -84,24 +84,23 @@ class ProviderTest {
 
             typealias GivenScopeB = GivenScope
 
-            @GivenScopeElementBinding<GivenScopeA>
             @Given
             fun givenScopeBFactory(
                 @Given parent: GivenScopeA,
                 @Given scopeFactory: () -> GivenScopeB
-            ): () -> GivenScopeB = scopeFactory
+            ): @GivenScopeElementBinding<GivenScopeA> () -> GivenScopeB = scopeFactory
 
             typealias GivenScopeC = GivenScope
 
-            @GivenScopeElementBinding<GivenScopeB>
             @Given 
             fun givenScopeCFactory(
                 @Given parent: GivenScopeB,
                 @Given scopeFactory: () -> GivenScopeC
-            ): () -> GivenScopeC = scopeFactory
+            ): @GivenScopeElementBinding<GivenScopeB> () -> GivenScopeC = scopeFactory
 
             @GivenScopeElementBinding<GivenScopeC>
-            @Given class MyComponent(
+            @Given
+            class MyComponent(
                 @Given val a: GivenScopeA,
                 @Given val b: GivenScopeB,
                 @Given val c: GivenScopeC
@@ -119,22 +118,20 @@ class ProviderTest {
                     fun createGivenScopeA() = given<GivenScopeA>()
         
                     typealias GivenScopeB = GivenScope
-        
-                    @GivenScopeElementBinding<GivenScopeA>
+
                     @Given
                     fun givenScopeBFactory(
                         @Given parent: GivenScopeA,
                         @Given scopeFactory: () -> GivenScopeB
-                    ): () -> GivenScopeB = scopeFactory
+                    ): @GivenScopeElementBinding<GivenScopeA> () -> GivenScopeB = scopeFactory
         
                     typealias GivenScopeC = GivenScope
-        
-                    @GivenScopeElementBinding<GivenScopeB>
+
                     @Given 
                     fun givenScopeCFactory(
                         @Given parent: GivenScopeB,
                         @Given scopeFactory: () -> GivenScopeC
-                    ): () -> GivenScopeC = scopeFactory
+                    ): @GivenScopeElementBinding<GivenScopeB> () -> GivenScopeC = scopeFactory
                         """
                     )
         ),

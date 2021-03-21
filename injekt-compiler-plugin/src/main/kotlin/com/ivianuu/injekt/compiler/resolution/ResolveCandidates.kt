@@ -482,7 +482,7 @@ private fun GivenGraph.Success.validateAllTypeParametersSubstituted() {
             }
 
             arguments.forEach { it.validate() }
-            qualifiers.forEach { it.type.validate() }
+            qualifiers.forEach { it.validate() }
         }
 
         candidate.type.validate()

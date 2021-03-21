@@ -186,6 +186,26 @@ interface InjektErrors {
                     )
                 }
 
+        @JvmField
+        val QUALIFIER_WITH_VALUE_PARAMETERS =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "qualifier cannot have value parameters"
+                    )
+                }
+
+        @JvmField
+        val QUALIFIER_ON_NON_CLASS_AND_NON_TYPE =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "only types and classes can be annotated with a qualifier"
+                    )
+                }
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,

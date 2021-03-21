@@ -30,9 +30,8 @@ annotation class Eager<S : GivenScope>
 fun <@Given T : @Eager<S> U, U : Any, S : GivenScope> eagerImpl() = EagerModule<T, U, S>()
 
 class EagerModule<T : U, U : Any, S : GivenScope> {
-    @Scoped<S>
     @Given
-    inline fun scopedInstance(@Given instance: T): U = instance
+    inline fun scopedInstance(@Given instance: T): @Scoped<S> U = instance
 
     @Given
     fun initializer(@Given factory: () -> U): GivenScopeInitializer<S> = {

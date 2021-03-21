@@ -19,6 +19,7 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldBeOk
+import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.irShouldNotContain
 import com.ivianuu.injekt.test.multiCodegen
@@ -37,21 +38,6 @@ class QualifierTest {
        
             fun invoke(): Pair<Foo, Foo> {
                 return given<Foo>() to given<@Qualifier1 Foo>()
-            }
-            """
-    ) {
-        val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
-        foo1 shouldNotBeSameInstanceAs foo2
-    }
-
-    @Test
-    fun testDistinctQualifierAnnotationWithArguments() = codegen(
-        """
-            @Given val foo1: @Qualifier2("a") Foo = Foo()
-            @Given val foo2: @Qualifier2("b") Foo = Foo()
-       
-            fun invoke(): Pair<Foo, Foo> {
-                return given<@Qualifier2("a") Foo>() to given<@Qualifier2("b") Foo>()
             }
             """
     ) {
@@ -102,7 +88,18 @@ class QualifierTest {
             @Given @Qualifier1 fun foo() = Foo()
             fun invoke() = given<@Qualifier1 Foo>()
             """
-    )
+    ) {
+        compilationShouldHaveFailed("only types and classes can be annotated with a qualifier")
+    }
+
+    @Test
+    fun testQualifierWithArguments() = codegen(
+        """ 
+            @Qualifier annotation class MyQualifier(val value: String)
+            """
+    ) {
+        compilationShouldHaveFailed("qualifier cannot have value parameters")
+    }
 
     @Test
     fun testQualifierWithTypeArguments() = codegen(
@@ -183,7 +180,7 @@ class QualifierTest {
 
             @Given fun <T> uiState(@Given instance: @UiState T): T = instance
 
-            @UiState @Given val foo = Foo()
+            @Given val foo: @UiState Foo = Foo()
 
             fun invoke() = given<Foo>()
             """
@@ -195,9 +192,8 @@ class QualifierTest {
     @Test
     fun testSubstitutesQualifierTypeParameters() = codegen(
         """
-            @Eager<AppGivenScope> 
             @Given 
-            fun foo() = Foo()
+            fun foo(): @Eager<AppGivenScope> Foo = Foo()
 
             typealias ChildGivenScope = GivenScope
 

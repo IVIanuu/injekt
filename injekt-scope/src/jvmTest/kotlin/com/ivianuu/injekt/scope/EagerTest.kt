@@ -26,15 +26,15 @@ class EagerTest {
     fun testEager() {
         var callCount = 0
         class Foo
-        @Eager<TestGivenScope1>
         @Given
-        fun eagerFoo(): Foo {
+        fun eagerFoo(): @Eager<TestGivenScope1> Foo {
             callCount++
             return Foo()
         }
-        @GivenScopeElementBinding<TestGivenScope1>
         @Given
-        fun fooElement(@Given foo: Foo) = foo
+        fun fooElement(
+            @Given foo: Foo
+        ): @GivenScopeElementBinding<TestGivenScope1> Foo = foo
         val scope = given<TestGivenScope1>()
         callCount shouldBe 1
         scope.element<Foo>()

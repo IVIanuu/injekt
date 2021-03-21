@@ -622,9 +622,8 @@ class GivenResolutionTest {
                 @Given factory: () -> T
             ): U = scope.getOrCreateScopedValue<U>(factory)
 
-            @MyScoped<AppGivenScope>
             @Given
-            fun <T> betterCollector(): Collector<List<T>> = {}
+            fun <T> betterCollector(): @MyScoped<AppGivenScope> Collector<List<T>> = {}
 
             fun invoke() {
                 @Given val appGivenScope = given<AppGivenScope>()
@@ -649,9 +648,8 @@ class GivenResolutionTest {
             @Given
             fun <@Given T : @MyElement S, S> myElementModule() = MyElementModule<T, S>()
 
-            @MyElement
             @Given
-            val myElementFoo = Foo()
+            val myElementFoo: @MyElement Foo = Foo()
         
             @Given
             val foo = Foo()

@@ -36,7 +36,7 @@ class GivenConstraintTest {
             @Qualifier annotation class Trigger
             @Given fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): S = instance
 
-            @Trigger @Given fun foo() = Foo()
+            @Given fun foo(): @Trigger Foo = Foo()
 
             fun invoke() = given<Foo>()
         """
@@ -51,7 +51,7 @@ class GivenConstraintTest {
             @Qualifier annotation class Trigger
             @Given fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): S = instance
 
-            @Trigger @Given fun foo() = Foo()
+            @Given fun foo(): @Trigger Foo = Foo()
 
             fun invoke() = given<Set<Foo>>()
         """
@@ -68,8 +68,8 @@ class GivenConstraintTest {
             @Qualifier annotation class Trigger
             @Given fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): MyModule<T, S> = MyModule()
 
-            @Trigger @Given fun foo() = Foo()
-            @Trigger @Given fun string() = ""
+            @Given fun foo(): @Trigger Foo = Foo()
+            @Given fun string(): @Trigger String = ""
 
             fun invoke() = given<Set<Foo>>()
         """
@@ -111,7 +111,7 @@ class GivenConstraintTest {
             @Given fun <@Given @ForTypeKey T : @Trigger<S> Any?, @ForTypeKey S> triggerImpl() = 
                 typeKeyOf<S>()
 
-            @Trigger<Bar> @Given fun foo() = Foo()
+            @Given fun foo(): @Trigger<Bar> Foo = Foo()
 
             fun invoke() = given<TypeKey<Bar>>().value
         """
@@ -133,7 +133,7 @@ class GivenConstraintTest {
         listOf(
             source(
                 """
-                    @Trigger<Bar> @Given fun foo() = Foo()
+                    @Given fun foo(): @Trigger<Bar> Foo = Foo()
                 """
             )
         ),
@@ -206,24 +206,22 @@ class GivenConstraintTest {
             @Given fun <@Given T : @A S, S> aImpl() = AModule<S>()
 
             class AModule<T> {
-                @B
                 @Given
-                fun my(@Given instance: T): T = instance
+                fun my(@Given instance: T): @B T = instance
             }
 
             @Qualifier annotation class B
             @Given fun <@Given T : @B S, S> bImpl() = BModule<T>()
 
             class BModule<T> {
-                @C
                 @Given
-                fun my(@Given instance: T): Any? = instance
+                fun my(@Given instance: T): @C Any? = instance
             }
 
             @Qualifier annotation class C
             @Given fun <@Given T : @C Any?> cImpl() = Foo()
 
-            @A @Given fun dummy() = 0L
+            @Given fun dummy(): @A Long = 0L
             
             fun invoke() = given<Set<Foo>>().single()
         """
@@ -250,7 +248,7 @@ class GivenConstraintTest {
         listOf(
             source(
                 """
-                    @Scoped<AppGivenScope> @Given fun foo() = Foo()
+                    @Given fun foo(): @Scoped<AppGivenScope> Foo = Foo()
                     fun invoke() = given<Foo>()
                 """,
                 name = "File.kt"
@@ -267,8 +265,8 @@ class GivenConstraintTest {
             @Qualifier annotation class Trigger
             @Given fun <@Given T : @Trigger String> triggerImpl(@Given instance: T): String = instance
 
-            @Trigger @Given fun a() = "a"
-            @Trigger @Given fun b() = "b"
+            @Given fun a(): @Trigger String = "a"
+            @Given fun b(): @Trigger String = "b"
 
             fun invoke() = given<Set<String>>()
         """
@@ -305,9 +303,8 @@ class GivenConstraintTest {
                 @Given pair: Pair<S, S>
             ): Int = 0
 
-            @Trigger
             @Given
-            val string = ""
+            val string: @Trigger String = ""
 
             @Given
             fun stringPair() = "a" to "b"
@@ -346,10 +343,9 @@ class GivenConstraintTest {
             ): UiDecorator = instance as UiDecorator
 
             typealias RootSystemBarsProvider = UiDecorator
-            
-            @UiDecoratorBinding
+
             @Given
-            fun rootSystemBarsProvider(): RootSystemBarsProvider = {}
+            fun rootSystemBarsProvider(): @UiDecoratorBinding RootSystemBarsProvider = {}
 
             fun invoke() = given<Set<UiDecorator>>().size
         """
