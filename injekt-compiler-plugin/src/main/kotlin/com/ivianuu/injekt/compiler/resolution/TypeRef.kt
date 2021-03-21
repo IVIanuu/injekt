@@ -227,12 +227,6 @@ sealed class TypeRef {
                     }
             }
     }
-
-    val unqualified: TypeRef by unsafeLazy {
-        if (qualifiers.isEmpty() && frameworkKey == null) this
-        else copy(qualifiers = emptyList(), frameworkKey = null)
-    }
-
 }
 
 fun TypeRef.forEachUniqueSuperTypeUntil(action: (TypeRef) -> Boolean) {
@@ -469,96 +463,48 @@ fun getSubstitutionMap(
     if (pairs.isEmpty()) return emptyMap()
     if (pairs.all { it.first == it.second }) return emptyMap()
     val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
-    val visitedTypes = mutableSetOf<TypeRef>()
-    fun visitType(thisType: TypeRef, baseType: TypeRef) {
+
+    fun visitType(
+        thisType: TypeRef,
+        baseType: TypeRef,
+        fromInput: Boolean
+    ) {
         if (thisType == baseType) return
 
-        if (thisType in visitedTypes && baseType in visitedTypes) {
-            return
+        if (baseType.classifier.isTypeParameter &&
+            (baseType.classifier !in substitutionMap ||
+                    fromInput)) {
+            val final = if (thisType.qualifiers.isNotEmpty() &&
+                    baseType.qualifiers.isNotEmpty()) {
+                thisType
+                    .copy(
+                        qualifiers = thisType.qualifiers
+                            .filter { thisQualifier ->
+                                thisQualifier.classifier !in baseType.qualifiers.map { baseQualifier ->
+                                    baseQualifier.classifier
+                                }
+                            }
+                    )
+            } else thisType
+            substitutionMap[baseType.classifier] = final
         }
-        visitedTypes += thisType
-        visitedTypes += baseType
-        if (!baseType.classifier.isTypeParameter) {
+
+        if (thisType.classifier == baseType.classifier) {
+            thisType.arguments.forEachWith(baseType.arguments) { a, b -> visitType(a, b, fromInput) }
+        } else {
             val subType = thisType.subtypeView(baseType.classifier)
-                ?: return
-            subType.arguments.forEachWith(baseType.arguments) { a, b -> visitType(a, b) }
-            if (subType.qualifiers.isNotEmpty() &&
-                subType.qualifiers.size == baseType.qualifiers.size &&
-                run {
-                    var allMatch = true
-                    subType.qualifiers.forEachWith(baseType.qualifiers) { a, b ->
-                        allMatch = allMatch || a.classifier == b.classifier
-                    }
-                    allMatch
-                }) {
-                visitType(subType.unqualified, baseType.unqualified)
-                subType.qualifiers.forEachWith(baseType.qualifiers) { a, b -> visitType(a, b) }
-                return
-            }
-            return
+            subType?.arguments?.forEachWith(baseType.arguments) { a, b -> visitType(a, b, false) }
         }
 
-        baseType.superTypes
-            .forEach { baseSuperType ->
-                thisType.subtypeView(baseSuperType.classifier)
-                    ?.arguments?.forEachWith(baseSuperType.arguments) { a, b -> visitType(a, b) }
-            }
-
-        if (thisType.qualifiers.isNotEmpty() &&
-            thisType.qualifiers.size == baseType.qualifiers.size &&
-            run {
-                var allMatch = true
-                thisType.qualifiers.forEachWith(baseType.qualifiers) { a, b ->
-                    allMatch = allMatch || a.classifier == b.classifier &&
-                            a.arguments == b.arguments
-                }
-                allMatch
-            }) {
-            visitType(thisType.unqualified, baseType.unqualified)
-            thisType.qualifiers.forEachWith(baseType.qualifiers) { a, b -> visitType(a, b) }
-            return
+        if (thisType.qualifiers.isAssignableTo(context, baseType.qualifiers)) {
+            thisType.qualifiers.forEachWith(baseType.qualifiers) { a, b -> visitType(a, b, fromInput) }
         }
 
-        if (baseType.classifier !in substitutionMap) {
-            substitutionMap[baseType.classifier] = thisType
-        }
-    }
-    pairs.forEach { visitType(it.first, it.second) }
-
-    substitutionMap.forEach { (baseClassifier, thisType) ->
-        baseClassifier.defaultType.superTypes
-            .map { thisType.subtypeView(it.classifier) to it }
-            .forEach { (thisBaseTypeView, baseSuperType) ->
-                if (baseSuperType.classifier.isTypeParameter) {
-                    val thisTypeToUse = thisBaseTypeView ?: thisType
-                    visitType(thisTypeToUse, baseSuperType)
-                    if (thisTypeToUse.qualifiers.isAssignableTo(context, baseSuperType.qualifiers)) {
-                        thisTypeToUse.qualifiers.forEachWith(baseSuperType.qualifiers) { a, b ->
-                            visitType(a, b)
-                        }
-                    }
-                } else {
-                    visitType(thisBaseTypeView ?: thisType, baseSuperType)
-                }
-
-                thisBaseTypeView?.arguments?.forEachWith(baseSuperType.arguments) { a, b ->
-                    visitType(a, b)
-                }
-
-                if (thisType.qualifiers.isAssignableTo(context, baseSuperType.qualifiers)) {
-                    thisType.qualifiers.forEachWith(baseSuperType.qualifiers) { a, b ->
-                        visitType(a, b)
-                    }
-                }
-                if (thisBaseTypeView?.qualifiers?.isAssignableTo(context, baseSuperType.qualifiers) == true) {
-                    thisBaseTypeView.qualifiers.forEachWith(baseSuperType.qualifiers) { a, b ->
-                        visitType(a, b)
-                    }
-                }
-            }
+        baseType.superTypes.forEach { visitType(thisType, it, false) }
     }
 
-    substitutionMap.forEach { visitType(it.value, it.key.defaultType) }
+    pairs.forEach { visitType(it.first, it.second, true) }
+
     return substitutionMap
 }
 

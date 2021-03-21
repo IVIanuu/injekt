@@ -63,7 +63,7 @@ class TypeSubstitutionTest {
     fun testGetSubstitutionMapWithNestedGenerics() = withAnalysisContext {
         val superType = typeParameter()
         val map = getSubstitutionMap(context, listOf(listType.typeWith(stringType) to listType.typeWith(superType)))
-        stringType shouldBe map[superType.classifier]
+        map[superType.classifier] shouldBe stringType
     }
 
     @Test
@@ -72,7 +72,7 @@ class TypeSubstitutionTest {
         val qualifiedSuperType = unqualifiedSuperType.qualified(qualifier1)
         val substitutionType = stringType.qualified(qualifier1)
         val map = getSubstitutionMap(context, listOf(substitutionType to qualifiedSuperType))
-        stringType shouldBe map[unqualifiedSuperType.classifier]
+        map[unqualifiedSuperType.classifier] shouldBe stringType
     }
 
     @Test
