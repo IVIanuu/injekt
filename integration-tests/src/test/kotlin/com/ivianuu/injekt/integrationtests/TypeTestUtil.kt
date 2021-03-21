@@ -105,7 +105,7 @@ class AnalysisContext(val module: ModuleDescriptor) {
         fqName: FqName = FqName("SubType${id}"),
     ) = ClassifierRef(
         fqName = fqName,
-        superTypes = superTypes.toList()
+        superTypes = if (superTypes.isNotEmpty()) superTypes.toList() else listOf(anyType),
     ).defaultType
 
     fun typeAlias(
@@ -122,7 +122,7 @@ class AnalysisContext(val module: ModuleDescriptor) {
         fqName: FqName = FqName("ClassType${id++}"),
     ) = ClassifierRef(
         fqName = fqName,
-        superTypes = superTypes.toList()
+        superTypes = if (superTypes.isNotEmpty()) superTypes.toList() else listOf(anyType),
     ).defaultType
 
     fun typeParameter(
@@ -137,7 +137,8 @@ class AnalysisContext(val module: ModuleDescriptor) {
         fqName: FqName = FqName("TypeParameter${id++}"),
     ) = ClassifierRef(
         fqName = fqName,
-        superTypes = listOf(anyType.copy(isMarkedNullable = nullable)) + upperBounds,
+        superTypes = if (upperBounds.isNotEmpty()) upperBounds.toList() else
+            listOf(anyType.copy(isMarkedNullable = nullable)),
         isTypeParameter = true
     ).defaultType
 
