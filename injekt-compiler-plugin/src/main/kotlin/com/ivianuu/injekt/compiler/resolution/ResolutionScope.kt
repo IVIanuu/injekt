@@ -144,48 +144,50 @@ class ResolutionScope(
                 .filter { it.isApplicable() }
                 .map { it.toGivenNode(type, this@ResolutionScope) }
 
-            if (type.qualifiers.isEmpty() &&
-                type.frameworkKey == null) {
-                if (type.isFunctionType &&
-                    type.arguments.dropLast(1).all { it.isGiven }) {
-                    this += ProviderGivenNode(
-                        type = type,
-                        ownerScope = this@ResolutionScope,
-                        context = context
-                    )
-                } else if (type.classifier == context.setType.classifier) {
-                    val setElementType = type.arguments.single()
-                    var elementTypes = setElementsForType(setElementType)
-                    if (elementTypes.isEmpty() &&
-                        setElementType.qualifiers.isEmpty() &&
-                        setElementType.isFunctionType &&
-                        setElementType.arguments.dropLast(1).all { it.isGiven }) {
-                        val providerReturnType = setElementType.arguments.last()
-                        elementTypes = setElementsForType(providerReturnType)
-                            .map { elementType ->
-                                setElementType.copy(
-                                    arguments = setElementType.arguments
-                                        .dropLast(1) + elementType
-                                )
-                            }
-                    }
-
-                    if (elementTypes.isNotEmpty()) {
-                        val elements = elementTypes
-                            .mapIndexed { index, element ->
-                                GivenRequest(
-                                    type = element,
-                                    isRequired = true,
-                                    callableFqName = FqName("com.ivianuu.injekt.givenSetOf"),
-                                    parameterName = "element$index".asNameId(),
-                                    isInline = false
-                                )
-                            }
-                        this += SetGivenNode(
+            if (none { !it.isFrameworkGiven }) {
+                if (type.qualifiers.isEmpty() &&
+                    type.frameworkKey == null) {
+                    if (type.isFunctionType &&
+                        type.arguments.dropLast(1).all { it.isGiven }) {
+                        this += ProviderGivenNode(
                             type = type,
                             ownerScope = this@ResolutionScope,
-                            dependencies = elements
+                            context = context
                         )
+                    } else if (type.classifier == context.setType.classifier) {
+                        val setElementType = type.arguments.single()
+                        var elementTypes = setElementsForType(setElementType)
+                        if (elementTypes.isEmpty() &&
+                            setElementType.qualifiers.isEmpty() &&
+                            setElementType.isFunctionType &&
+                            setElementType.arguments.dropLast(1).all { it.isGiven }) {
+                            val providerReturnType = setElementType.arguments.last()
+                            elementTypes = setElementsForType(providerReturnType)
+                                .map { elementType ->
+                                    setElementType.copy(
+                                        arguments = setElementType.arguments
+                                            .dropLast(1) + elementType
+                                    )
+                                }
+                        }
+
+                        if (elementTypes.isNotEmpty()) {
+                            val elements = elementTypes
+                                .mapIndexed { index, element ->
+                                    GivenRequest(
+                                        type = element,
+                                        isRequired = true,
+                                        callableFqName = FqName("com.ivianuu.injekt.givenSetOf"),
+                                        parameterName = "element$index".asNameId(),
+                                        isInline = false
+                                    )
+                                }
+                            this += SetGivenNode(
+                                type = type,
+                                ownerScope = this@ResolutionScope,
+                                dependencies = elements
+                            )
+                        }
                     }
                 }
             }

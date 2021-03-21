@@ -636,6 +636,42 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testPrefersUserGivenWithWorseTypeOverFrameworkGiven() = codegen(
+        """
+            class MyElementModule<T : S, S> {
+                @Given
+                fun userProvider(@Given value: () -> T): () -> S = value
+            }
+
+            @Qualifier
+            annotation class MyElement
+
+            @Given
+            fun <@Given T : @MyElement S, S> myElementModule() = MyElementModule<T, S>()
+
+            @MyElement
+            @Given
+            val myElementFoo = Foo()
+        
+            @Given
+            val foo = Foo()
+
+            fun invoke() = given<() -> Foo>()
+        """
+    )
+
+    @Test
+    fun testDoesNotUseFrameworkGivensIfThereAreUserGivens() = codegen(
+        """
+            fun <T> diyProvider(@Given unit: Unit): () -> T = { TODO() } 
+
+            fun invoke() = given<() -> Foo>()
+        """
+    ) {
+        compilationShouldHaveFailed("no given argument found of type kotlin.Function0<com.ivianuu.injekt.test.Foo>")
+    }
+
+    @Test
     fun testGenericGiven() = codegen(
         """
             @Given val foo = Foo()

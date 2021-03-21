@@ -82,7 +82,7 @@ class SetGivenNode(
     override val lazyDependencies: Boolean
         get() = false
     override val originalType: TypeRef
-        get() = type
+        get() = type.classifier.defaultType
     override val isFrameworkGiven: Boolean
         get() = true
     override val cacheIfPossible: Boolean
@@ -139,7 +139,7 @@ class ProviderGivenNode(
     override val callContext: CallContext
         get() = CallContext.DEFAULT
     override val originalType: TypeRef
-        get() = type
+        get() = type.classifier.defaultType
     override val isFrameworkGiven: Boolean
         get() = true
     override val cacheIfPossible: Boolean

@@ -388,6 +388,10 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     a!!
     b!!
 
+    val diff = compareType(a.originalType, b.originalType)
+    if (diff < 0) return -1
+    if (diff > 0) return 1
+
     if (!a.isFrameworkGiven && !b.isFrameworkGiven) {
         if (a.ownerScope.allParents.size > b.ownerScope.allParents.size) return -1
         if (b.ownerScope.allParents.size > a.ownerScope.allParents.size) return 1
@@ -395,14 +399,10 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
 
     if (a is CallableGivenNode && b is CallableGivenNode) {
         if (!a.callable.callable.isExternalDeclaration() &&
-                b.callable.callable.isExternalDeclaration()) return -1
+            b.callable.callable.isExternalDeclaration()) return -1
         if (!b.callable.callable.isExternalDeclaration() &&
             a.callable.callable.isExternalDeclaration()) return 1
     }
-
-    val diff = compareType(a.originalType, b.originalType)
-    if (diff < 0) return -1
-    if (diff > 0) return 1
 
     if (!a.isFrameworkGiven && b.isFrameworkGiven) return -1
     if (!b.isFrameworkGiven && a.isFrameworkGiven) return 1
