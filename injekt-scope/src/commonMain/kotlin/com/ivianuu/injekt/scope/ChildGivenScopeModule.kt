@@ -22,8 +22,8 @@ import com.ivianuu.injekt.common.ForTypeKey
 class ChildGivenScopeModule0<P : GivenScope, @ForTypeKey S : GivenScope> {
     @Given
     fun factory(
-        @Given scopeFactory: () -> S
-    ): @GivenScopeElementBinding<P> () -> S = scopeFactory
+        @Given scopeFactory: (@Given Unit) -> S // todo change type to () -> S once fixed
+    ): @GivenScopeElementBinding<P> () -> S = { scopeFactory(Unit) }
 }
 
 class ChildGivenScopeModule1<P : GivenScope, @ForTypeKey P1, @ForTypeKey S : GivenScope> {
