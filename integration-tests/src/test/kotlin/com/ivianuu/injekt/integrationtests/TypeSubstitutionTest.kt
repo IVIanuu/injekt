@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
+import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
 import io.kotest.matchers.maps.shouldContain
 import io.kotest.matchers.maps.shouldHaveSize
@@ -31,6 +32,19 @@ class TypeSubstitutionTest {
         val superType = typeParameter()
         val map = getSubstitutionMap(context, listOf(stringType to superType))
         stringType shouldBe map[superType.classifier]
+    }
+
+    @Test
+    fun testGetSubstitutionMapWithMultipleQualifiers() = withAnalysisContext {
+        val typeParameterS = typeParameter(FqName("S"))
+        val typeParameterT = typeParameter(typeParameterS.qualified(qualifier1), fqName = FqName("T"))
+        val substitutionType = stringType
+            .qualified(qualifier1, qualifier2)
+        val map = getSubstitutionMap(context, listOf(substitutionType to typeParameterT))
+        map[typeParameterT.classifier] shouldBe substitutionType
+        map[typeParameterS.classifier] shouldBe substitutionType.copy(
+            qualifiers = listOf(qualifier2)
+        )
     }
 
     @Test
