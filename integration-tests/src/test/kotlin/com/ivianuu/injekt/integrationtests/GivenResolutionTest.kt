@@ -965,4 +965,18 @@ class GivenResolutionTest {
         )
     }
 
+    @Test
+    fun testCannotResolveUnparameterizedSubTypeOfParameterizedGiven() = codegen(
+        """
+            typealias TypedString<T> = String
+
+            @Given
+            val foo = Foo()
+
+            @Given
+            fun <T : Foo> typedString(@Given value: T): TypedString<T> = ""
+
+            fun invoke() = given<String>()
+        """
+    )
 }
