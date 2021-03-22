@@ -39,8 +39,8 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 
-fun withAnalysisContext(
-    block: AnalysisContext.() -> Unit,
+fun withTypeCheckerContext(
+    block: TypeCheckerContext.() -> Unit,
 ) {
     codegen(
         """
@@ -60,7 +60,7 @@ fun withAnalysisContext(
                                 bindingTrace: BindingTrace,
                                 files: Collection<KtFile>,
                             ): AnalysisResult? {
-                                block(AnalysisContext(module))
+                                block(TypeCheckerContext(module))
                                 return null
                             }
                         }
@@ -71,10 +71,9 @@ fun withAnalysisContext(
     )
 }
 
-class AnalysisContext(val module: ModuleDescriptor) {
+class TypeCheckerContext(val module: ModuleDescriptor) {
 
     val context = InjektContext(module)
-
     val comparable = typeFor(StandardNames.FqNames.comparable)
     val anyType = typeFor(StandardNames.FqNames.any.toSafe())
     val anyNType = anyType.copy(isMarkedNullable = true)

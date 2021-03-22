@@ -16,214 +16,188 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.compiler.InjektContext
-import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
-import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
-import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
-import com.ivianuu.injekt.compiler.resolution.isAssignableTo
-import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.resolution.typeWith
-import com.ivianuu.injekt.test.codegen
-import io.kotest.matchers.maps.shouldContain
-import io.kotest.matchers.maps.shouldHaveSize
-import io.kotest.matchers.shouldBe
-import org.jetbrains.kotlin.analyzer.AnalysisResult
-import org.jetbrains.kotlin.builtins.StandardNames
-import org.jetbrains.kotlin.com.intellij.mock.MockProject
-import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
-import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.findClassifierAcrossModuleDependencies
-import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import org.junit.Test
 
 class TypeRefTest {
 
     @Test
-    fun testSimpleTypeWithSameClassifierIsAssignable() = withAnalysisContext {
+    fun testSimpleTypeWithSameClassifierIsAssignable() = withTypeCheckerContext {
         stringType shouldBeAssignable stringType
     }
 
     @Test
-    fun testSimpleTypeWithDifferentClassifierIsNotAssignable() = withAnalysisContext {
+    fun testSimpleTypeWithDifferentClassifierIsNotAssignable() = withTypeCheckerContext {
         stringType shouldNotBeAssignable intType
     }
 
     @Test
-    fun testNonNullIsAssignableToNullable() = withAnalysisContext {
+    fun testNonNullIsAssignableToNullable() = withTypeCheckerContext {
         stringType shouldBeAssignable stringType.nullable()
     }
 
     @Test
-    fun testNullableIsNotAssignableToNonNullable() = withAnalysisContext {
+    fun testNullableIsNotAssignableToNonNullable() = withTypeCheckerContext {
         stringType.nullable() shouldNotBeAssignable stringType
     }
 
     @Test
-    fun testMatchingGenericTypeIsAssignable() = withAnalysisContext {
+    fun testMatchingGenericTypeIsAssignable() = withTypeCheckerContext {
         listType.typeWith(listOf(stringType)) shouldBeAssignable listType
     }
 
     @Test
-    fun testNotMatchingGenericTypeIsNotAssignable() = withAnalysisContext {
+    fun testNotMatchingGenericTypeIsNotAssignable() = withTypeCheckerContext {
         listType.typeWith(stringType) shouldNotBeAssignable listType.typeWith(intType)
     }
 
     @Test
-    fun testAnyTypeIsAssignableToStarProjectedType() = withAnalysisContext {
+    fun testAnyTypeIsAssignableToStarProjectedType() = withTypeCheckerContext {
         starProjectedType shouldBeAssignable stringType
     }
 
     @Test
-    fun testStarProjectedTypeMatchesNullableType() = withAnalysisContext {
+    fun testStarProjectedTypeMatchesNullableType() = withTypeCheckerContext {
         starProjectedType shouldBeAssignable stringType.nullable()
     }
 
     @Test
-    fun testStarProjectedTypeMatchesQualifiedType() = withAnalysisContext {
+    fun testStarProjectedTypeMatchesQualifiedType() = withTypeCheckerContext {
         starProjectedType shouldBeAssignable stringType.qualified(qualifier1)
     }
 
     @Test
-    fun testRandomTypeIsNotSubTypeOfTypeAliasWithAnyExpandedType() = withAnalysisContext {
+    fun testRandomTypeIsNotSubTypeOfTypeAliasWithAnyExpandedType() = withTypeCheckerContext {
         stringType shouldNotBeAssignable typeAlias(anyType)
     }
 
     @Test
-    fun testTypeAliasIsNotAssignableToOtherTypeAliasOfTheSameExpandedType() = withAnalysisContext {
+    fun testTypeAliasIsNotAssignableToOtherTypeAliasOfTheSameExpandedType() = withTypeCheckerContext {
         typeAlias(stringType) shouldNotBeAssignable typeAlias(stringType)
     }
 
     @Test
-    fun testTypeAliasIsAssignableToOtherTypeAliasOfTheSameExpandedType() = withAnalysisContext {
+    fun testTypeAliasIsAssignableToOtherTypeAliasOfTheSameExpandedType() = withTypeCheckerContext {
         typeAlias(stringType) shouldNotBeAssignable typeAlias(stringType)
     }
 
     @Test
-    fun testTypeAliasIsSubTypeOfExpandedType() = withAnalysisContext {
+    fun testTypeAliasIsSubTypeOfExpandedType() = withTypeCheckerContext {
         typeAlias(stringType) shouldBeSubTypeOf stringType
     }
 
     @Test
-    fun testNestedTypeAliasIsSubTypeOfExpandedType() = withAnalysisContext {
+    fun testNestedTypeAliasIsSubTypeOfExpandedType() = withTypeCheckerContext {
         typeAlias(typeAlias(stringType)) shouldBeSubTypeOf stringType
     }
 
     @Test
-    fun testSameComposabilityIsAssignable() = withAnalysisContext {
+    fun testSameComposabilityIsAssignable() = withTypeCheckerContext {
         composableFunction(0) shouldBeAssignable composableFunction(0)
     }
 
     @Test
-    fun testComposableTypeAliasIsSubTypeOfComposableFunctionUpperBound() = withAnalysisContext {
+    fun testComposableTypeAliasIsSubTypeOfComposableFunctionUpperBound() = withTypeCheckerContext {
         typeAlias(composableFunction(0)) shouldBeAssignable typeParameter(composableFunction(0))
     }
 
     @Test
-    fun testSameQualifiersIsAssignable() = withAnalysisContext {
+    fun testSameQualifiersIsAssignable() = withTypeCheckerContext {
         stringType.qualified(qualifier1) shouldBeAssignable stringType.qualified(qualifier1)
     }
 
     @Test
-    fun testDifferentQualifiersIsNotAssignable() = withAnalysisContext {
+    fun testDifferentQualifiersIsNotAssignable() = withTypeCheckerContext {
         stringType.qualified(qualifier1) shouldNotBeAssignable stringType.qualified(qualifier2)
     }
 
     @Test
-    fun testSameQualifiersWithDifferentOrderIsAssignable() = withAnalysisContext {
+    fun testSameQualifiersWithDifferentOrderIsAssignable() = withTypeCheckerContext {
         stringType.qualified(qualifier1, qualifier2) shouldBeAssignable
                 stringType.qualified(qualifier2, qualifier1)
     }
 
     @Test
-    fun testIsAssignableIfItIncludesOtherQualifiers() = withAnalysisContext {
+    fun testIsAssignableIfItIncludesOtherQualifiers() = withTypeCheckerContext {
         stringType.qualified(qualifier1, qualifier2) shouldBeAssignable
                 stringType.qualified(qualifier2)
     }
 
     @Test
-    fun testQualifiedIsSubTypeOfUnqualified() = withAnalysisContext {
+    fun testQualifiedIsSubTypeOfUnqualified() = withTypeCheckerContext {
         stringType.qualified(qualifier1) shouldBeSubTypeOf stringType
     }
 
     @Test
-    fun testSubTypeOfTypeParameterWithNullableAnyUpperBound() = withAnalysisContext {
+    fun testSubTypeOfTypeParameterWithNullableAnyUpperBound() = withTypeCheckerContext {
         stringType shouldBeAssignable typeParameter()
     }
 
     @Test
-    fun testComposableSubTypeOfTypeParameterWithNullableAnyUpperBound() = withAnalysisContext {
+    fun testComposableSubTypeOfTypeParameterWithNullableAnyUpperBound() = withTypeCheckerContext {
         composableFunction(0) shouldBeAssignable typeParameter()
     }
 
     @Test
-    fun testComposableIsNotSubTypeOfNonComposable() = withAnalysisContext {
+    fun testComposableIsNotSubTypeOfNonComposable() = withTypeCheckerContext {
         composableFunction(0) shouldNotBeAssignable typeParameter(function(0))
     }
 
     @Test
-    fun testSubTypeOfTypeParameterWithNonNullAnyUpperBound() = withAnalysisContext {
+    fun testSubTypeOfTypeParameterWithNonNullAnyUpperBound() = withTypeCheckerContext {
         stringType shouldBeAssignable typeParameter(nullable = false)
     }
 
     @Test
-    fun testNullableSubTypeOfTypeParameterWithNonNullAnyUpperBound() = withAnalysisContext {
+    fun testNullableSubTypeOfTypeParameterWithNonNullAnyUpperBound() = withTypeCheckerContext {
         stringType.nullable() shouldNotBeAssignable typeParameter(nullable = false)
     }
 
     @Test
-    fun testSubTypeOfTypeParameterWithUpperBound() = withAnalysisContext {
+    fun testSubTypeOfTypeParameterWithUpperBound() = withTypeCheckerContext {
         subType(stringType) shouldBeSubTypeOf typeParameter(stringType)
     }
 
     @Test
-    fun testSubTypeOfTypeParameterWithNullableUpperBound() = withAnalysisContext {
+    fun testSubTypeOfTypeParameterWithNullableUpperBound() = withTypeCheckerContext {
         subType(stringType) shouldBeSubTypeOf typeParameter(stringType.nullable())
     }
 
     @Test
-    fun testQualifiedSubTypeOfQualifiedTypeParameter() = withAnalysisContext {
+    fun testQualifiedSubTypeOfQualifiedTypeParameter() = withTypeCheckerContext {
         stringType.qualified(qualifier1) shouldBeAssignable
                 typeParameter(nullable = false).qualified(qualifier1)
     }
 
     @Test
-    fun testNestedQualifiedSubTypeOfNestedQualifiedTypeParameter() = withAnalysisContext {
+    fun testNestedQualifiedSubTypeOfNestedQualifiedTypeParameter() = withTypeCheckerContext {
         listType.typeWith(stringType.qualified(qualifier1)) shouldBeAssignable
                 listType.typeWith(typeParameter(nullable = false).qualified(qualifier1))
     }
 
     @Test
-    fun testUnqualifiedSubTypeOfTypeParameterWithQualifiedUpperBound() = withAnalysisContext {
+    fun testUnqualifiedSubTypeOfTypeParameterWithQualifiedUpperBound() = withTypeCheckerContext {
         stringType shouldNotBeAssignable
                 typeParameter(anyNType.qualified(qualifier1))
     }
 
     @Test
     fun testNestedUnqualifiedSubTypeOfNestedTypeParameterWithQualifiedUpperBound() =
-        withAnalysisContext {
+        withTypeCheckerContext {
             listType.typeWith(stringType) shouldNotBeAssignable
                     listType.typeWith(typeParameter(anyNType.qualified(qualifier1)))
         }
 
     @Test
     fun testNestedQualifiedSubTypeOfNestedTypeParameterWithQualifiedUpperBound() =
-        withAnalysisContext {
+        withTypeCheckerContext {
             listType.typeWith(stringType.qualified(qualifier1)) shouldBeAssignable
                     listType.typeWith(typeParameter(anyNType.qualified(qualifier1)))
         }
 
     @Test
-    fun testQualifiedTypeIsSubTypeOfTypeParameterWithQualifiedUpperBound() = withAnalysisContext {
+    fun testQualifiedTypeIsSubTypeOfTypeParameterWithQualifiedUpperBound() = withTypeCheckerContext {
         val sTypeParameter = typeParameter(listType.typeWith(stringType))
         val tTypeParameter = typeParameter(sTypeParameter.qualified(qualifier1))
         listType.typeWith(stringType)
@@ -231,7 +205,7 @@ class TypeRefTest {
     }
 
     @Test
-    fun testQualifiedTypeAliasIsSubTypeOfTypeParameterWithSameQualifiers() = withAnalysisContext {
+    fun testQualifiedTypeAliasIsSubTypeOfTypeParameterWithSameQualifiers() = withTypeCheckerContext {
         typeAlias(
             function(0)
                 .copy(isMarkedComposable = true)
@@ -244,7 +218,7 @@ class TypeRefTest {
     }
 
     @Test
-    fun testQualifiedTypeAliasIsNotSubTypeOfTypeParameterWithOtherQualifiers() = withAnalysisContext {
+    fun testQualifiedTypeAliasIsNotSubTypeOfTypeParameterWithOtherQualifiers() = withTypeCheckerContext {
         typeAlias(
             function(0)
                 .copy(isMarkedComposable = true)
@@ -257,7 +231,7 @@ class TypeRefTest {
     }
 
     @Test
-    fun testTypeAliasIsNotSubTypeOfTypeParameterWithOtherTypeAliasUpperBound() = withAnalysisContext {
+    fun testTypeAliasIsNotSubTypeOfTypeParameterWithOtherTypeAliasUpperBound() = withTypeCheckerContext {
         val typeAlias1 = typeAlias(function(0).typeWith(stringType))
         val typeAlias2 = typeAlias(function(0).typeWith(intType))
         val typeParameter = typeParameter(typeAlias1)
@@ -265,14 +239,14 @@ class TypeRefTest {
     }
 
     @Test
-    fun testTypeAliasIsSubTypeOfOtherTypeAlias() = withAnalysisContext {
+    fun testTypeAliasIsSubTypeOfOtherTypeAlias() = withTypeCheckerContext {
         val typeAlias1 = typeAlias(function(0).typeWith(stringType))
         val typeAlias2 = typeAlias(typeAlias1)
         typeAlias2 shouldBeSubTypeOf typeAlias1
     }
 
     @Test
-    fun testTypeAliasIsSubTypeOfTypeParameterWithTypeAliasUpperBound() = withAnalysisContext {
+    fun testTypeAliasIsSubTypeOfTypeParameterWithTypeAliasUpperBound() = withTypeCheckerContext {
         val superTypeAlias = typeAlias(function(0))
         val typeParameterS = typeParameter(superTypeAlias)
         val typeParameterT = typeParameter(typeParameterS.qualified(qualifier1))
@@ -281,12 +255,12 @@ class TypeRefTest {
     }
 
     @Test
-    fun testSubTypeWithTypeParameterIsAssignableToSuperTypeWithOtherTypeParameterButSameSuperTypes() = withAnalysisContext {
+    fun testSubTypeWithTypeParameterIsAssignableToSuperTypeWithOtherTypeParameterButSameSuperTypes() = withTypeCheckerContext {
         mutableListType.typeWith(typeParameter()) shouldBeAssignable listType.typeWith(typeParameter())
     }
 
     @Test
-    fun testComparableStackOverflowBug() = withAnalysisContext {
+    fun testComparableStackOverflowBug() = withTypeCheckerContext {
         floatType shouldNotBeSubTypeOf comparable.typeWith(intType)
     }
 
