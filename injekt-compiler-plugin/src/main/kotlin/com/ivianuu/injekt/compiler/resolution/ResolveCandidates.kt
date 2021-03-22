@@ -446,8 +446,8 @@ private fun compareType(a: TypeRef, b: TypeRef): Int {
     if (a.arguments.size < b.arguments.size) return -1
     if (b.arguments.size < a.arguments.size) return 1
 
-    if (a.qualifiers.size < b.qualifiers.size) return -1
-    if (b.qualifiers.size < a.qualifiers.size) return 1
+    if (a.qualifier == null && b.qualifier != null) return -1
+    if (b.qualifier == null && a.qualifier != null) return 1
 
     if (a.classifier != b.classifier) return 0
 
@@ -488,7 +488,7 @@ private fun GivenGraph.Success.validateAllTypeParametersSubstituted() {
             }
 
             arguments.forEach { it.validate() }
-            qualifiers.forEach { it.value.validate() }
+            qualifier?.validate()
         }
 
         candidate.type.validate()

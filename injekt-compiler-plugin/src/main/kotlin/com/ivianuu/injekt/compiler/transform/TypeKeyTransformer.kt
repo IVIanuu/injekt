@@ -381,7 +381,8 @@ class TypeKeyTransformer(
                             InjektFqNames.Composable
                 }
             ) + (abbreviation?.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-                ?: getAnnotatedAnnotations(InjektFqNames.Qualifier))
+                ?.take(1)
+                ?: getAnnotatedAnnotations(InjektFqNames.Qualifier).take(1))
 
             if (typeAnnotations.isNotEmpty()) {
                 appendToCurrentString("[")

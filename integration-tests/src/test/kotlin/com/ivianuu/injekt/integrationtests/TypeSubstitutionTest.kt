@@ -53,19 +53,6 @@ class TypeSubstitutionTest {
     }
 
     @Test
-    fun testGetSubstitutionMapWithMultipleQualifiers() = withTypeCheckerContext {
-        val typeParameterS = typeParameter(FqName("S"))
-        val typeParameterT = typeParameter(typeParameterS.qualified(qualifier1), fqName = FqName("T"))
-        val substitutionType = stringType
-            .qualified(qualifier1, qualifier2)
-        val map = getSubstitutionMap(context, listOf(substitutionType to typeParameterT))
-        map[typeParameterT.classifier] shouldBe substitutionType
-        map[typeParameterS.classifier] shouldBe substitutionType.copy(
-            qualifiers = mapOf(qualifier2.classifier to qualifier2)
-        )
-    }
-
-    @Test
     fun testGetSubstitutionMapWithExtraTypeParameter() = withTypeCheckerContext {
         val typeParameterU = typeParameter()
         val typeParameterS = typeParameter(listType.typeWith(typeParameterU))

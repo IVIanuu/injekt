@@ -145,7 +145,7 @@ class ResolutionScope(
                 .map { it.toGivenNode(type, this@ResolutionScope) }
 
             if (none { !it.isFrameworkGiven }) {
-                if (type.qualifiers.isEmpty() &&
+                if (type.qualifier == null &&
                     type.frameworkKey == null) {
                     if (type.isFunctionType &&
                         type.arguments.dropLast(1).all { it.isGiven }) {
@@ -158,7 +158,7 @@ class ResolutionScope(
                         val setElementType = type.arguments.single()
                         var elementTypes = setElementsForType(setElementType)
                         if (elementTypes.isEmpty() &&
-                            setElementType.qualifiers.isEmpty() &&
+                            setElementType.qualifier == null &&
                             setElementType.isFunctionType &&
                             setElementType.arguments.dropLast(1).all { it.isGiven }) {
                             val providerReturnType = setElementType.arguments.last()
@@ -228,8 +228,7 @@ class ResolutionScope(
         val constraintType = constrainedGiven.callable.typeParameters.single {
             it.isGivenConstraint
         }.defaultType
-        if (!candidate.rawType
-                .isSubTypeOf(context, constraintType)) return
+        if (!candidate.rawType.isSubTypeOf(context, constraintType)) return
 
         val inputsSubstitutionMap = getSubstitutionMap(
             context,
