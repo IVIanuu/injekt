@@ -32,4 +32,4 @@ class CommandB : Command
 
 @Qualifier annotation class Qualifier1
 
-@Qualifier annotation class Qualifier2(val value: String)
+@Qualifier annotation class Qualifier2
