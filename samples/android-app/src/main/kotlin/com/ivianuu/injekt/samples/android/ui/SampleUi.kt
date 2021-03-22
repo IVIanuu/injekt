@@ -76,8 +76,8 @@ fun sampleUi(
     }
 }
 
-@Scoped<ActivityRetainedGivenScope>
 @Given
+@Scoped<ActivityRetainedGivenScope>
 class CounterViewModel(@Given private val repo: CounterRepo) : GivenScopeDisposable {
     val state: Flow<Int> get() = repo.counterState
     private val scope = CoroutineScope(Dispatchers.Default)

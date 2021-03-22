@@ -23,8 +23,8 @@ import com.ivianuu.injekt.scope.Scoped
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 
-@Scoped<AppGivenScope>
 @Given
+@Scoped<AppGivenScope>
 class CounterRepo(@Given private val storage: CounterStorage) {
     val counterState: Flow<Int>
         get() = storage.counterState
