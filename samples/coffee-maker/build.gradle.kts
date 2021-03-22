@@ -1,3 +1,5 @@
+import com.ivianuu.injekt.gradle.withGivenCalls
+
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -26,6 +28,7 @@ kotlin {
             }
         }
     }
+    withGivenCalls()
     sourceSets {
         named("jvmMain") {
             dependencies {

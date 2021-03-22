@@ -16,14 +16,12 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.CacheDir
-import com.ivianuu.injekt.compiler.DumpDir
 import org.jetbrains.kotlin.name.FqName
 import java.io.File
 
 class FileManager(
-    private val dumpDir: DumpDir,
-    cacheDir: CacheDir
+    private val dumpDir: File,
+    cacheDir: File
 ) {
     private val originatingFilePaths = mutableMapOf<File, String>()
 

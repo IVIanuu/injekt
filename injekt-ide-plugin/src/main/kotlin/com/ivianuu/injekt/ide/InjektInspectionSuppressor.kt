@@ -22,6 +22,8 @@ import com.intellij.psi.PsiElement
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.caches.resolve.KotlinCacheService
+import org.jetbrains.kotlin.idea.configuration.compilerArgumentsBySourceSet
+import org.jetbrains.kotlin.idea.util.projectStructure.module
 import org.jetbrains.kotlin.psi.KtImportDirective
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe

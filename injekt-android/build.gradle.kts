@@ -1,3 +1,6 @@
+import com.ivianuu.injekt.gradle.withGivenCalls
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -27,6 +30,11 @@ android {
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }
+}
+
+tasks.withType<KotlinCompile> {
+    if (name.toLowerCase().contains("test"))
+        withGivenCalls()
 }
 
 dependencies {

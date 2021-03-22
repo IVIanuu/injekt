@@ -1,3 +1,5 @@
+import com.ivianuu.injekt.gradle.withGivenCalls
+
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -22,6 +24,7 @@ kotlin {
     jvm {
         withJava()
         compilations.forEach {
+            if (it.name == "test") it.withGivenCalls()
             it.kotlinOptions {
                 jvmTarget = "1.8"
             }

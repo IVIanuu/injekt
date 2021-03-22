@@ -26,9 +26,13 @@ import com.ivianuu.injekt.compiler.analysis.GivenCallResolutionInterceptorExtens
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
 import com.ivianuu.injekt.compiler.analysis.InjektTypeResolutionInterceptorExtension
+import org.jetbrains.kotlin.analyzer.ModuleInfo
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.extensions.internal.CandidateInterceptor
 import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
+import org.jetbrains.kotlin.idea.core.unwrapModuleSourceInfo
+import org.jetbrains.kotlin.idea.facet.KotlinFacet
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 
 @Suppress("UnstableApiUsage")
@@ -43,7 +47,10 @@ class AppInitializer : ApplicationInitializedListener {
                     override fun projectOpened(project: Project) {
                         StorageComponentContainerContributor.registerExtension(
                             project,
-                            InjektStorageComponentContainerContributor { latestBindingContext = it }
+                            InjektStorageComponentContainerContributor(
+                                { latestBindingContext = it },
+                                { true } // todo
+                            )
                         )
                         CandidateInterceptor.registerExtension(
                             project,
@@ -61,4 +68,15 @@ class AppInitializer : ApplicationInitializedListener {
                 }
             )
     }
+}
+
+private fun ModuleDescriptor.allowGivenCalls(): Boolean {
+    val module = getCapability(ModuleInfo.Capability)?.unwrapModuleSourceInfo()?.module
+        ?: return false
+    val facet = KotlinFacet.get(module)
+        ?: return false
+    return facet.configuration.settings.compilerArguments?.pluginOptions
+        ?.any {
+            it.contains("allowGivenCalls=true")
+        } ?: false
 }

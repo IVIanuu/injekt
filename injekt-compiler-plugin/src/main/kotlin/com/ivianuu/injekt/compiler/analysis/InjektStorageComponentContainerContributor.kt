@@ -26,7 +26,8 @@ import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.resolve.BindingContext
 
 class InjektStorageComponentContainerContributor(
-    private val bindingContextCollector: ((BindingContext) -> Unit)?
+    private val bindingContextCollector: ((BindingContext) -> Unit)?,
+    private val allowGivenCalls: (ModuleDescriptor) -> Boolean
 ) : StorageComponentContainerContributor {
     override fun registerModuleComponents(
         container: StorageComponentContainer,
@@ -36,9 +37,7 @@ class InjektStorageComponentContainerContributor(
         val context = InjektContext(moduleDescriptor)
         container.useInstance(GivenChecker(context))
         container.useInstance(TypeKeyChecker(context))
-        if (!isIde) {
-            container.useInstance(GivenCallChecker(context, bindingContextCollector))
-        }
+        container.useInstance(GivenCallChecker(context, allowGivenCalls, bindingContextCollector))
         container.useInstance(QualifierChecker())
     }
 }

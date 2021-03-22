@@ -32,14 +32,12 @@ import com.ivianuu.injekt.common.*
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)
 class WorkerBindingTest {
-
     @Test
     fun testWorkerBinding() {
         val workerFactory = given<WorkerFactory>()
         workerFactory.createWorker(mockk(), TestWorker::class.java.name, mockk())
             .shouldNotBeNull()
     }
-
 }
 
 @WorkerBinding

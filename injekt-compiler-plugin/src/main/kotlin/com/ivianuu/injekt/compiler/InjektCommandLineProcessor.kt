@@ -29,6 +29,7 @@ class InjektCommandLineProcessor : CommandLineProcessor {
     override val pluginId = "com.ivianuu.injekt"
 
     override val pluginOptions = listOf(
+        AllowGivenCallsOption,
         CacheDirOption,
         DumpDirOption
     )
@@ -39,12 +40,19 @@ class InjektCommandLineProcessor : CommandLineProcessor {
         configuration: CompilerConfiguration,
     ) {
         when (option.optionName) {
+            AllowGivenCallsOption.optionName -> configuration.put(AllowGivenCallsKey, value.toBoolean())
             CacheDirOption.optionName -> configuration.put(CacheDirKey, value)
             DumpDirOption.optionName -> configuration.put(DumpDirKey, value)
         }
     }
 }
 
+val AllowGivenCallsOption = CliOption(
+    optionName = "allowGivenCalls",
+    valueDescription = "allowGivenCalls",
+    description = "allowGivenCalls",
+    required = false
+)
 val CacheDirOption = CliOption(
     optionName = "cacheDir",
     valueDescription = "cacheDir",
@@ -56,16 +64,18 @@ val DumpDirOption = CliOption(
     description = "dumpDir"
 )
 
-val CacheDirKey = CompilerConfigurationKey<String>("cacheDir")
-typealias CacheDir = File
+val AllowGivenCallsKey = CompilerConfigurationKey<Boolean>("allowGivenCalls")
+fun allowGivenCalls(configuration: CompilerConfiguration): Boolean =
+    configuration.get(AllowGivenCallsKey) ?: false
 
-fun cacheDir(configuration: CompilerConfiguration): CacheDir =
+val CacheDirKey = CompilerConfigurationKey<String>("cacheDir")
+
+fun cacheDir(configuration: CompilerConfiguration): File =
     File(configuration.getNotNull(CacheDirKey))
         .also { it.mkdirs() }
 
 val DumpDirKey = CompilerConfigurationKey<String>("dumpDir")
-typealias DumpDir = File
 
-fun dumpDir(configuration: CompilerConfiguration): DumpDir =
+fun dumpDir(configuration: CompilerConfiguration): File =
     File(configuration.getNotNull(DumpDirKey))
         .also { it.mkdirs() }

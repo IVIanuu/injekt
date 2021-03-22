@@ -1,3 +1,4 @@
+import com.ivianuu.injekt.gradle.withGivenCalls
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 /*
@@ -27,7 +28,7 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-source-sets-android.gradle")
 
 tasks.withType<KotlinCompile> {
-    incremental = false
+    withGivenCalls()
 }
 
 dependencies {

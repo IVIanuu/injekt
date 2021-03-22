@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.isIde
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
@@ -34,6 +35,7 @@ import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
@@ -43,10 +45,12 @@ import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class GivenCallChecker(
     private val context: InjektContext,
+    private val allowGivenCalls: (ModuleDescriptor) -> Boolean,
     private val bindingContextCollector: ((BindingContext) -> Unit)?
 ) : CallChecker {
     override fun check(
@@ -93,8 +97,20 @@ class GivenCallChecker(
 
         if (requests.isEmpty()) return
 
-        val scope = HierarchicalResolutionScope(this.context, context.scope, context.trace)
         val callExpression = resolvedCall.call.callElement
+
+        if (!allowGivenCalls(resultingDescriptor.module)) {
+            context.trace.report(
+                InjektErrors.GIVEN_CALLS_NOT_ALLOWED
+                    .on(callExpression)
+            )
+            return
+        }
+
+        // todo
+        if (isIde) return
+
+        val scope = HierarchicalResolutionScope(this.context, context.scope, context.trace)
         scope.recordLookup(KotlinLookupLocation(callExpression))
 
         when (val graph = scope.resolveRequests(requests)) {

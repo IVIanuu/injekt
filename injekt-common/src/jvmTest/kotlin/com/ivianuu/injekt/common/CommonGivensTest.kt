@@ -21,7 +21,6 @@ import com.ivianuu.injekt.given
 import org.junit.Test
 
 class CommonGivensTest {
-
     @Test
     fun testCanInjectMapForSetOfPairs() {
         @Given val set = setOf("key" to "value")
@@ -35,5 +34,4 @@ class CommonGivensTest {
     }
 
     class Foo
-
 }
