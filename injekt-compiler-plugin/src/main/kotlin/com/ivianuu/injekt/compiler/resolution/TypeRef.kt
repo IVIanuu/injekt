@@ -484,7 +484,17 @@ fun getSubstitutionMap(
             thisType.arguments.forEachWith(baseType.arguments) { a, b -> visitType(a, b, fromInput) }
         } else {
             val subType = thisType.subtypeView(baseType.classifier)
-            subType?.arguments?.forEachWith(baseType.arguments) { a, b -> visitType(a, b, false) }
+            if (subType != null) {
+                subType.arguments.forEachWith(baseType.arguments) { a, b -> visitType(a, b, false) }
+                if (subType.qualifiers.isAssignableTo(context, baseType.qualifiers)) {
+                    for ((thisQualifierKey, thisQualifier) in subType.qualifiers) {
+                        val baseQualifier = baseType.qualifiers[thisQualifierKey]
+                        if (baseQualifier != null) {
+                            visitType(thisQualifier, baseQualifier, false)
+                        }
+                    }
+                }
+            }
         }
 
         if (thisType.qualifiers.isAssignableTo(context, baseType.qualifiers)) {
