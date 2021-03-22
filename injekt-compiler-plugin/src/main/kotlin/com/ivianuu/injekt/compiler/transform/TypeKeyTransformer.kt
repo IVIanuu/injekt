@@ -388,16 +388,6 @@ class TypeKeyTransformer(
                 typeAnnotations.forEachIndexed { index, annotation ->
                     appendToCurrentString("@")
                     annotation.type.collectExpressions()
-                    if (annotation.valueArgumentsCount > 0) {
-                        appendToCurrentString(
-                            (0 until annotation.valueArgumentsCount)
-                                .map { i -> annotation.getValueArgument(i) as IrConst<*> }
-                                .map { it.value }
-                                .hashCode()
-                                .toString()
-                                .let { "($it)" }
-                        )
-                    }
                     if (index != typeAnnotations.lastIndex) appendToCurrentString(", ")
                 }
                 appendToCurrentString("]")

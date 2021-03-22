@@ -17,6 +17,8 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.common.TypeKey
+import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.Qualifier1
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
@@ -106,16 +108,16 @@ class TypeKeyTest {
     @Test
     fun testTypeKeyOfWithQualifiers() = codegen(
         """
-            fun invoke() = typeKeyOf<@Qualifier2("a") String>() 
+            fun invoke() = typeKeyOf<@Qualifier2 String>() 
         """
     ) {
-        invokeSingleFile<TypeKey<Any>>().value shouldBe "[@com.ivianuu.injekt.test.Qualifier2(128)]kotlin.String"
+        invokeSingleFile<TypeKey<Any>>().value shouldBe "[@com.ivianuu.injekt.test.Qualifier2]kotlin.String"
     }
 
     @Test
     fun testTypeKeyOfWithTypeAliasWithQualifiedExpandedType() = codegen(
         """
-            typealias MyAlias = @Qualifier2("a") String
+            typealias MyAlias = @Qualifier2 String
             fun invoke() = typeKeyOf<MyAlias>() 
         """
     ) {
@@ -253,4 +255,14 @@ class TypeKeyTest {
         it.invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String"
     }
 
+    @Test
+    fun testTypeKeyFromGivenCall() = codegen(
+        """
+            @Given fun <@ForTypeKey T> listKey(): TypeKey<List<T>> = typeKeyOf<List<T>>()
+            fun invoke() = given<TypeKey<List<@Qualifier1 Foo>>>()
+        """
+    ) {
+        invokeSingleFile<TypeKey<List<@Qualifier1 Foo>>>().value shouldBe
+                "kotlin.collections.List<[@com.ivianuu.injekt.test.Qualifier1]com.ivianuu.injekt.test.Foo>"
+    }
 }

@@ -50,6 +50,7 @@ import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeAbbreviation
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.IrTypeAbbreviationImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
@@ -67,6 +68,7 @@ import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.withAbbreviation
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 fun TypeRef.toIrType(
     pluginContext: IrPluginContext,
@@ -112,7 +114,12 @@ fun TypeRef.toIrType(
             irClassifier,
             isMarkedNullable,
             arguments.map { makeTypeProjection(it.toIrType(pluginContext, localClasses, context), Variance.INVARIANT) },
-            emptyList(),
+            qualifiers.values
+                .map { it.toIrType(pluginContext, localClasses, context) }
+                .map {
+                     DeclarationIrBuilder(pluginContext, it.classifierOrFail)
+                         .irCall(it.classOrNull!!.owner.constructors.single().symbol, it, it.classOrNull!!.owner)
+                },
             null
         ).makeComposableAsSpecified(pluginContext, context, isMarkedComposable)
     }
@@ -129,8 +136,13 @@ private fun TypeRef.toIrAbbreviation(
         isMarkedComposable,
         arguments.map {
             makeTypeProjection(it.toIrType(pluginContext, localClasses, context), Variance.INVARIANT)
-       },
-        emptyList()
+        },
+        qualifiers.values
+            .map { it.toIrType(pluginContext, localClasses, context) }
+            .map {
+                DeclarationIrBuilder(pluginContext, it.classifierOrFail)
+                    .irCall(it.classOrNull!!.owner.constructors.single().symbol, it, it.classOrNull!!.owner)
+            }
     )
 }
 
