@@ -145,6 +145,17 @@ class TypeRefTest {
     }
 
     @Test
+    fun testIsAssignableIfItIncludesOtherQualifiers() = withAnalysisContext {
+        stringType.qualified(qualifier1, qualifier2) shouldBeAssignable
+                stringType.qualified(qualifier2)
+    }
+
+    @Test
+    fun testQualifiedIsSubTypeOfUnqualified() = withAnalysisContext {
+        stringType.qualified(qualifier1) shouldBeSubTypeOf stringType
+    }
+
+    @Test
     fun testSubTypeOfTypeParameterWithNullableAnyUpperBound() = withAnalysisContext {
         stringType shouldBeAssignable typeParameter()
     }

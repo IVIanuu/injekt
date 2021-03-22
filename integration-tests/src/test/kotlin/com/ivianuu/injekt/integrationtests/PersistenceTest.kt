@@ -120,15 +120,16 @@ class PersistenceTest {
                 """
                     var callCount = 0
                     @Qualifier annotation class MyQualifier
-                    @Given fun <@Given T : FuncA> impl(@Given instance: T): @MyQualifier T {
+                    @Qualifier annotation class MyOtherQualifier
+                    @Given fun <@Given T : @MyQualifier S, S : FuncA> impl(@Given instance: T): @MyOtherQualifier S {
                         return instance
                     }
 
                     typealias FuncA = suspend () -> Unit
                     typealias FuncB = suspend () -> Boolean
 
-                    @Given fun funcA(@Given funcB: FuncB): FuncA = { }
-                    @Given fun funcB(): FuncB = { true }
+                    @Given fun funcA(@Given funcB: FuncB): @MyQualifier FuncA = { }
+                    @Given fun funcB(): @MyQualifier FuncB = { true }
                 """
             )
         ),
@@ -136,16 +137,16 @@ class PersistenceTest {
             source(
                 """
                     fun invoke() {
-                        given<@MyQualifier FuncA>()
-                        given<@MyQualifier FuncB>()
+                        given<@MyOtherQualifier FuncA>()
+                        given<@MyOtherQualifier FuncB>()
                     } 
                 """
             )
         )
     ) {
         with(it.last()) {
-            shouldNotContainMessage("no given argument found of type @com.ivianuu.injekt.integrationtests.MyQualifier com.ivianuu.injekt.integrationtests.FuncA for parameter value of function com.ivianuu.injekt.given")
-            shouldContainMessage("no given argument found of type @com.ivianuu.injekt.integrationtests.MyQualifier com.ivianuu.injekt.integrationtests.FuncB for parameter value of function com.ivianuu.injekt.given")
+            shouldNotContainMessage("no given argument found of type @com.ivianuu.injekt.integrationtests.MyOtherQualifier com.ivianuu.injekt.integrationtests.FuncA for parameter value of function com.ivianuu.injekt.given")
+            shouldContainMessage("no given argument found of type @com.ivianuu.injekt.integrationtests.MyOtherQualifier com.ivianuu.injekt.integrationtests.FuncB for parameter value of function com.ivianuu.injekt.given")
         }
     }
 

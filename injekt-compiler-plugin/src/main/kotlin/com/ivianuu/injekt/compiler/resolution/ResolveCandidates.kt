@@ -388,6 +388,9 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     a!!
     b!!
 
+    if (a.originalType == a.type && b.originalType != a.type) return -1
+    if (b.originalType == b.type && a.originalType != b.type) return 1
+
     val diff = compareType(a.originalType, b.originalType)
     if (diff < 0) return -1
     if (diff > 0) return 1
@@ -442,6 +445,9 @@ private fun compareType(a: TypeRef, b: TypeRef): Int {
 
     if (a.arguments.size < b.arguments.size) return -1
     if (b.arguments.size < a.arguments.size) return 1
+
+    if (a.qualifiers.size < b.qualifiers.size) return -1
+    if (b.qualifiers.size < a.qualifiers.size) return 1
 
     if (a.classifier != b.classifier) return 0
 

@@ -48,11 +48,13 @@ class GivenConstraintTest {
     fun testSetElementWithGivenConstraint() = codegen(
         """
             @Qualifier annotation class Trigger
-            @Given fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): S = instance
+            @Given fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): @Final S = instance
+
+            @Qualifier annotation class Final
 
             @Given fun foo(): @Trigger Foo = Foo()
 
-            fun invoke() = given<Set<Foo>>()
+            fun invoke() = given<Set<@Final Foo>>()
         """
     ) {
         invokeSingleFile<Set<Foo>>().size shouldBe 1
@@ -62,15 +64,17 @@ class GivenConstraintTest {
     fun testModuleWithGivenConstraint() = codegen(
         """
             class MyModule<T : S, S> {
-                @Given fun intoSet(@Given instance: T): S = instance
+                @Given fun intoSet(@Given instance: T): @Final S = instance
             }
             @Qualifier annotation class Trigger
             @Given fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): MyModule<T, S> = MyModule()
 
+            @Qualifier annotation class Final
+
             @Given fun foo(): @Trigger Foo = Foo()
             @Given fun string(): @Trigger String = ""
 
-            fun invoke() = given<Set<Foo>>()
+            fun invoke() = given<Set<@Final Foo>>()
         """
     ) {
         invokeSingleFile<Set<Foo>>().size shouldBe 1
@@ -391,6 +395,17 @@ class GivenConstraintTest {
 
             @Given
             fun myInitializer(@Given dep: Dep, @Given wrapper: () -> () -> DepWrapper, @Given wrapper2: () -> DepWrapper2): GivenScopeInitializer<AppGivenScope> = {}
+        """
+    )
+
+    @Test
+    fun testGivenConstraintWithQualifiedConstraintAndCandidateWithMultipleQualifiers() = codegen(
+        """
+            @Given fun <@Given T : @Qualifier1 S, S> bind(@Given value: T): S = value
+            
+            @Given val foo: @Qualifier1 @Qualifier2 Foo = Foo()
+
+            fun invoke() = given<@Qualifier2 Foo>()
         """
     )
 

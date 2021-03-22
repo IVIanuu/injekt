@@ -574,7 +574,6 @@ fun Map<ClassifierRef, TypeRef>.isAssignableTo(
     context: InjektContext,
     superQualifiers: Map<ClassifierRef, TypeRef>
 ): Boolean {
-    if (size != superQualifiers.size) return false
     for ((superQualifierClassifier, superQualifier) in superQualifiers) {
         val thisQualifier = this[superQualifierClassifier] ?: return false
         if (!thisQualifier.isAssignableTo(context, superQualifier)) return false
