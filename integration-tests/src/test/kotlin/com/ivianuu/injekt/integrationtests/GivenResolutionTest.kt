@@ -999,6 +999,16 @@ class GivenResolutionTest {
         )
     }
 
+    @Test
+    fun prefers() = codegen(
+        """
+            typealias MyAlias = @Composable () -> Unit
+            @Given fun myAlias(): MyAlias = {}
+            @Given class MyComposeView(@Given val content: @Composable () -> Unit)
+            fun invoke() = given<(@Given @Composable () -> Unit) -> MyComposeView>()
+        """
+    )
+
     // todo @Test
     fun testCannotResolveUnparameterizedSubTypeOfParameterizedGiven() = codegen(
         """
