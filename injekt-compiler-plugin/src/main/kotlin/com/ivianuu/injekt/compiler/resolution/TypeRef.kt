@@ -169,7 +169,6 @@ sealed class TypeRef {
         result = 31 * result + isStarProjection.hashCode()
         result = 31 * result + qualifier.hashCode()
         result = 31 * result + frameworkKey.hashCode()
-
         result
     }
 
@@ -204,25 +203,17 @@ sealed class TypeRef {
     }
 
     val isNullableType: Boolean by unsafeLazy {
-        var isNullableType = isMarkedNullable
-        if (!isNullableType) {
-            forEachUniqueSuperTypeUntil {
-                isNullableType = it.isMarkedNullable
-                isNullableType
-            }
-        }
-        isNullableType
+        if (isMarkedNullable) return@unsafeLazy true
+        for (superType in superTypes)
+            if (superType.isNullableType) return@unsafeLazy true
+        return@unsafeLazy false
     }
 
     val isComposableType: Boolean by unsafeLazy {
-        var isComposableType = isMarkedComposable
-        if (!isComposableType) {
-            forEachUniqueSuperTypeUntil {
-                isComposableType = it.isMarkedComposable
-                isComposableType
-            }
-        }
-        isComposableType
+        if (isMarkedComposable) return@unsafeLazy true
+        for (superType in superTypes)
+            if (superType.isComposableType) return@unsafeLazy true
+        return@unsafeLazy false
     }
 
     val superTypes: List<TypeRef> by unsafeLazy {
@@ -237,20 +228,6 @@ sealed class TypeRef {
                     }
             }
     }
-}
-
-fun TypeRef.forEachUniqueSuperTypeUntil(action: (TypeRef) -> Boolean) {
-    val seen = mutableSetOf(this)
-    var complete = false
-    fun visit(type: TypeRef) {
-        if (complete) return
-        if (type in seen) return
-        seen += type
-        complete = action(type)
-        if (complete) return
-        type.superTypes.forEach { visit(it) }
-    }
-    superTypes.forEach { visit(it) }
 }
 
 fun TypeRef.forEachType(action: (TypeRef) -> Unit) {
@@ -520,8 +497,7 @@ fun TypeRef.isAssignableTo(
         return isSubTypeOfTypeParameter(context, superType)
     if (classifier.isTypeParameter)
         return superType.isSubTypeOfTypeParameter(context, this)
-    if (isSubTypeOf(context, superType)) return true
-    return false
+    return isSubTypeOf(context, superType)
 }
 
 private fun TypeRef.isSubTypeOfTypeParameter(
@@ -580,12 +556,9 @@ fun TypeRef.isSubTypeOf(
 
 fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
     if (this.classifier == classifier) return this
-    var subtypeView: TypeRef? = null
-    forEachUniqueSuperTypeUntil {
-        if (it.classifier == classifier) subtypeView = it
-        subtypeView != null
-    }
-    return subtypeView
+    return superTypes
+        .firstNotNullResult { it.subtypeView(classifier) }
+        ?.let { return it }
 }
 
 val TypeRef.isFunctionType: Boolean get() =

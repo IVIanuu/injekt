@@ -96,24 +96,6 @@ class GivenCallTransformer(
             }
         }
 
-        private val usages = mutableMapOf<UsageKey, MutableList<GivenRequest>>()
-        private val initializeUsages by unsafeLazy {
-            fun ResolutionResult.Success.WithCandidate.Value.visit(request: GivenRequest) {
-                usages.getOrPut(usageKey) { mutableListOf() } += request
-                dependencyResults.forEach {
-                    it.value.safeAs<ResolutionResult.Success.WithCandidate.Value>()?.visit(it.key)
-                }
-            }
-            graph.results.forEach {
-                it.value.safeAs<ResolutionResult.Success.WithCandidate.Value>()?.visit(it.key)
-            }
-            usages
-        }
-        fun usagesFor(result: ResolutionResult.Success.WithCandidate.Value): List<GivenRequest> {
-            initializeUsages
-            return usages[result.usageKey]!!
-        }
-
         private val isInBetweenCircularDependency = mutableMapOf<ResolutionResult.Success.WithCandidate.Value, Boolean>()
         fun isInBetweenCircularDependency(result: ResolutionResult.Success.WithCandidate.Value): Boolean = isInBetweenCircularDependency.getOrPut(result) {
             val allResults = mutableListOf<ResolutionResult.Success.WithCandidate.Value>()
@@ -263,7 +245,7 @@ class GivenCallTransformer(
         context: GraphContext
     ): Boolean = dependencyResults.isNotEmpty() &&
             !candidate.cacheIfPossible &&
-            context.usagesFor(this).size > 1 &&
+            context.graph.usages[this.usageKey]!!.size > 1 &&
             !context.isInBetweenCircularDependency(this)
 
     private fun ScopeContext.wrapExpressionInFunctionIfNeeded(
@@ -308,7 +290,7 @@ class GivenCallTransformer(
     private fun ResolutionResult.Success.WithCandidate.Value.shouldCache(
         context: GraphContext
     ): Boolean = candidate.cacheIfPossible &&
-            context.usagesFor(this).count { !it.isInline } > 1 &&
+            context.graph.usages[this.usageKey]!!.count { !it.isInline } > 1 &&
             !context.isInBetweenCircularDependency(this)
 
     private fun ScopeContext.cacheExpressionIfNeeded(

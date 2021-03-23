@@ -112,41 +112,32 @@ class GivenCallChecker(
         val scope = HierarchicalResolutionScope(this.context, context.scope, context.trace)
         scope.recordLookup(KotlinLookupLocation(callExpression))
 
-        when (val graph = scope.resolveRequests(requests)) {
-            is GivenGraph.Success -> {
-                val visited = mutableSetOf<ResolutionResult.Success>()
-                fun ResolutionResult.Success.visit() {
-                    if (this !is ResolutionResult.Success.WithCandidate.Value) return
-                    if (!visited.add(this)) return
-                    if (candidate is CallableGivenNode) {
-                        context.trace.record(
-                            InjektWritableSlices.USED_GIVEN,
-                            candidate.callable.callable,
-                            Unit
-                        )
-                        val existingUsedGivensForFile =
-                            context.trace.bindingContext[InjektWritableSlices.USED_GIVENS_FOR_FILE,
-                                    callExpression.containingKtFile] ?: emptyList()
-                        context.trace.record(
-                            InjektWritableSlices.USED_GIVENS_FOR_FILE,
-                            callExpression.containingKtFile,
-                            existingUsedGivensForFile + candidate.callable.callable
-                        )
-                    }
-                    dependencyResults.forEach { it.value.visit() }
-                }
-                graph.results.forEach { it.value.visit() }
-
+        when (val graph = scope.resolveRequests(requests) {
+            if (it.candidate is CallableGivenNode) {
                 context.trace.record(
-                    InjektWritableSlices.GIVEN_GRAPH,
-                    SourcePosition(
-                        callExpression.containingKtFile.virtualFilePath,
-                        callExpression.startOffset,
-                        callExpression.endOffset
-                    ),
-                    graph
+                    InjektWritableSlices.USED_GIVEN,
+                    it.candidate.callable.callable,
+                    Unit
+                )
+                val existingUsedGivensForFile =
+                    context.trace.bindingContext[InjektWritableSlices.USED_GIVENS_FOR_FILE,
+                            callExpression.containingKtFile] ?: emptyList()
+                context.trace.record(
+                    InjektWritableSlices.USED_GIVENS_FOR_FILE,
+                    callExpression.containingKtFile,
+                    existingUsedGivensForFile + it.candidate.callable.callable
                 )
             }
+        }) {
+            is GivenGraph.Success -> context.trace.record(
+                InjektWritableSlices.GIVEN_GRAPH,
+                SourcePosition(
+                    callExpression.containingKtFile.virtualFilePath,
+                    callExpression.startOffset,
+                    callExpression.endOffset
+                ),
+                graph
+            )
             is GivenGraph.Error -> context.trace.report(
                 InjektErrors.UNRESOLVED_GIVEN
                     .on(reportOn, graph)

@@ -31,7 +31,8 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 sealed class GivenGraph {
     data class Success(
         val scope: ResolutionScope,
-        val results: Map<GivenRequest, ResolutionResult.Success>
+        val results: Map<GivenRequest, ResolutionResult.Success>,
+        val usages: Map<UsageKey, List<GivenRequest>>
     ) : GivenGraph()
 
     data class Error(
@@ -164,7 +165,10 @@ sealed class ResolutionResult {
 
 data class UsageKey(val type: TypeRef, val outerMostScope: ResolutionScope)
 
-fun ResolutionScope.resolveRequests(requests: List<GivenRequest>): GivenGraph {
+fun ResolutionScope.resolveRequests(
+    requests: List<GivenRequest>,
+    onEachResult: (ResolutionResult.Success.WithCandidate.Value) -> Unit
+): GivenGraph {
     val successes = mutableMapOf<GivenRequest, ResolutionResult.Success>()
     var failureRequest: GivenRequest? = null
     var failure: ResolutionResult.Failure? = null
@@ -179,8 +183,9 @@ fun ResolutionScope.resolveRequests(requests: List<GivenRequest>): GivenGraph {
                 }
         }
     }
-    return if (failure == null) GivenGraph.Success(this, successes)
-        .also { it.validate() }
+    val usages = mutableMapOf<UsageKey, MutableList<GivenRequest>>()
+    return if (failure == null) GivenGraph.Success(this, successes, usages)
+        .also { it.postProcess(onEachResult, usages) }
     else GivenGraph.Error(this, failureRequest!!, failure)
 }
 
@@ -478,47 +483,50 @@ private fun compareType(a: TypeRef, b: TypeRef): Int {
     }
 }
 
-private fun GivenGraph.Success.validate() {
-    validateAllTypeParametersSubstituted()
-}
-
-private fun GivenGraph.Success.validateAllTypeParametersSubstituted() {
+private fun GivenGraph.Success.postProcess(
+    onEachResult: (ResolutionResult.Success.WithCandidate.Value) -> Unit,
+    usages: MutableMap<UsageKey, MutableList<GivenRequest>>
+) {
     val typeParametersInScope = scope.allScopes
         .flatMap { scope ->
             (scope.ownerDescriptor.safeAs<ClassDescriptor>()
                 ?.declaredTypeParameters ?:
-                scope.ownerDescriptor.safeAs<FunctionDescriptor>()
-                    ?.typeParameters ?:
-                    scope.ownerDescriptor.safeAs<PropertyDescriptor>()
-                        ?.typeParameters)
+            scope.ownerDescriptor.safeAs<FunctionDescriptor>()
+                ?.typeParameters ?:
+            scope.ownerDescriptor.safeAs<PropertyDescriptor>()
+                ?.typeParameters)
                 ?.map { it.toClassifierRef(scope.context, scope.trace) }
                 ?: emptyList()
         }
 
-    fun ResolutionResult.Success.WithCandidate.Value.validate() {
+    fun ResolutionResult.Success.WithCandidate.Value.postProcess(request: GivenRequest) {
+        usages.getOrPut(usageKey) { mutableListOf() } += request
+        onEachResult(this)
         fun TypeRef.validate() {
             if (classifier.isTypeParameter &&
-                    classifier !in typeParametersInScope) {
+                classifier !in typeParametersInScope) {
                 error("Invalid graph: unsubstituted type parameter $classifier")
             }
 
             arguments.forEach { it.validate() }
             qualifier?.validate()
         }
-
         candidate.type.validate()
         if (candidate is CallableGivenNode) {
             candidate.callable.typeArguments.forEach { it.value.validate() }
         }
-
         dependencyResults
-            .values
-            .filterIsInstance<ResolutionResult.Success.WithCandidate.Value>()
-            .forEach { it.validate() }
+            .forEach { (request, result) ->
+                if (result is ResolutionResult.Success.WithCandidate.Value) {
+                    result.postProcess(request)
+                }
+            }
     }
 
     results
-        .values
-        .filterIsInstance<ResolutionResult.Success.WithCandidate.Value>()
-        .forEach { it.validate() }
+        .forEach { (request, result) ->
+            if (result is ResolutionResult.Success.WithCandidate.Value) {
+                result.postProcess(request)
+            }
+        }
 }

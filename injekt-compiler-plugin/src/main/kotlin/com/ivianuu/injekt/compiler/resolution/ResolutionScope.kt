@@ -60,6 +60,7 @@ class ResolutionScope(
         val resultingFrameworkKeys = mutableSetOf<String>()
         fun copy() = ConstrainedGivenNode(callable).also {
             it.processedCandidateTypes += processedCandidateTypes
+            it.resultingFrameworkKeys += resultingFrameworkKeys
         }
     }
     private data class ConstrainedGivenCandidate(
