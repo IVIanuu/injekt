@@ -248,8 +248,10 @@ fun CallableRef.collectGivens(
         return
     }
 
-    val nextCallable = if (type.isFunctionType && type.isGiven)
+    val nextCallable = if (type.isFunctionType && type.isGiven) {
+        addGiven(this)
         copy(type = type.copy(frameworkKey = generateFrameworkKey()))
+    }
     else this
     addGiven(nextCallable)
 

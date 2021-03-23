@@ -46,4 +46,14 @@ class GivenLambdaTest {
             .shouldBeTypeOf<Foo>()
     }
 
+    @Test
+    fun testCanRequestGivenLambda() = codegen(
+        """
+            typealias MyAlias = @Composable () -> Unit
+            @Given fun myAlias(): MyAlias = {}
+            @Given class MyComposeView(@Given val content: @Composable () -> Unit)
+            fun invoke() = given<(@Given @Composable () -> Unit) -> MyComposeView>()
+        """
+    )
+
 }
