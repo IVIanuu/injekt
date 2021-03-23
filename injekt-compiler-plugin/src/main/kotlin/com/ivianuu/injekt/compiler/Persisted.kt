@@ -21,7 +21,9 @@ import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
+import com.ivianuu.injekt.compiler.resolution.forTypeKeyTypeParameters
 import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
+import com.ivianuu.injekt.compiler.resolution.givenConstraintTypeParameters
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
@@ -87,7 +89,8 @@ data class PersistedClassifierInfo(
     val qualifier: PersistedTypeRef?,
     val superTypes: List<PersistedTypeRef>,
     val primaryConstructorPropertyParameters: List<String>,
-    val forTypeKeyTypeParameters: List<String>
+    val forTypeKeyTypeParameters: List<String>,
+    val givenConstraintTypeParameters: List<String>
 )
 
 fun ClassifierRef.toPersistedClassifierInfo(context: InjektContext) = PersistedClassifierInfo(
@@ -97,6 +100,8 @@ fun ClassifierRef.toPersistedClassifierInfo(context: InjektContext) = PersistedC
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
         .map { it.asString() },
     forTypeKeyTypeParameters = forTypeKeyTypeParameters
+        .map { it.asString() },
+    givenConstraintTypeParameters = givenConstraintTypeParameters
         .map { it.asString() }
 )
 
@@ -141,7 +146,8 @@ data class PersistedClassifierRef(
     val superTypes: List<PersistedTypeRef>,
     val qualifier: PersistedTypeRef?,
     val primaryConstructorPropertyParameters: List<String>,
-    val forTypeKeyTypeParameters: List<String>
+    val forTypeKeyTypeParameters: List<String>,
+    val givenConstraintTypeParameters: List<String>
 )
 
 fun ClassifierRef.toPersistedClassifierRef(
@@ -161,6 +167,8 @@ fun ClassifierRef.toPersistedClassifierRef(
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
         .map { it.asString() },
     forTypeKeyTypeParameters = forTypeKeyTypeParameters
+        .map { it.asString() },
+    givenConstraintTypeParameters = givenConstraintTypeParameters
         .map { it.asString() }
 )
 
@@ -171,7 +179,8 @@ fun PersistedClassifierRef.toClassifierRef(
     return context.classifierDescriptorForKey(key, trace)
         .toClassifierRef(context, trace)
         .let { raw ->
-            if (superTypes.isNotEmpty() || qualifier != null || primaryConstructorPropertyParameters.isNotEmpty())
+            if (superTypes.isNotEmpty() || qualifier != null ||
+                primaryConstructorPropertyParameters.isNotEmpty())
                 raw.copy(
                     superTypes = superTypes.map { it.toTypeRef(context, trace) },
                     qualifier = qualifier?.toTypeRef(context, trace),
@@ -187,7 +196,8 @@ fun PersistedClassifierRef.toPersistedClassifierInfo() = PersistedClassifierInfo
     qualifier = qualifier,
     superTypes = superTypes,
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-    forTypeKeyTypeParameters = forTypeKeyTypeParameters
+    forTypeKeyTypeParameters = forTypeKeyTypeParameters,
+    givenConstraintTypeParameters = givenConstraintTypeParameters
 )
 
 fun ClassifierRef.apply(
@@ -199,7 +209,6 @@ fun ClassifierRef.apply(
     else copy(
         qualifier = info.qualifier?.toTypeRef(context, trace),
         superTypes = info.superTypes.map { it.toTypeRef(context, trace) },
-        primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters.map { it.asNameId() },
-        forTypeKeyTypeParameters = info.forTypeKeyTypeParameters.map { it.asNameId() }
+        primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters.map { it.asNameId() }
     )
 }

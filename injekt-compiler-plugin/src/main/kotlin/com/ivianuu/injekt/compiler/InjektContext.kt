@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -83,11 +84,11 @@ class InjektContext(val module: ModuleDescriptor) {
     }
 
     fun classifierInfoFor(
-        classifier: ClassifierRef,
+        descriptor: ClassifierDescriptor,
         trace: BindingTrace?
     ): PersistedClassifierInfo? {
-        trace?.get(InjektWritableSlices.CLASSIFIER_INFO, classifier)?.let { return it.value }
-        val classifierInfo = classifier.descriptor!!
+        trace?.get(InjektWritableSlices.CLASSIFIER_INFO, descriptor)?.let { return it.value }
+        val classifierInfo = descriptor
             .annotations
             .findAnnotation(InjektFqNames.ClassifierInfo)
             ?.allValueArguments
@@ -100,17 +101,17 @@ class InjektContext(val module: ModuleDescriptor) {
                     .decodeToString()
                 moshi.adapter(PersistedClassifierInfo::class.java).fromJson(json)!!
             }
-            ?: classifier.descriptor
+            ?: descriptor
                 .containingDeclaration
                 .safeAs<CallableDescriptor>()
                 ?.let { callableInfoFor(it, trace) }
                 ?.typeParameters
                 ?.singleOrNull {
                     val fqName = FqName(it.key.split(":")[1])
-                    fqName == classifier.fqName
+                    fqName == descriptor.fqNameSafe
                 }
                 ?.toPersistedClassifierInfo()
-        trace?.record(InjektWritableSlices.CLASSIFIER_INFO, classifier, Tuple1(classifierInfo))
+        trace?.record(InjektWritableSlices.CLASSIFIER_INFO, descriptor, Tuple1(classifierInfo))
         return classifierInfo
     }
 

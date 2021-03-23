@@ -170,8 +170,8 @@ class TypeKeyTransformer(
             }
             val typeKeyParameters = function.constructedClass
                 .descriptor
-                .toClassifierRef(context, trace)
-                .forTypeKeyTypeParameters
+                .declaredTypeParameters
+                .filter { it.isForTypeKey(context, trace) }
             typeKeyParameters.forEach {
                 function.addValueParameter(
                     "_${it}TypeKey",

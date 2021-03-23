@@ -38,7 +38,8 @@ class InfoDescriptorSerializationPlugin : DescriptorSerializerPlugin {
     ) {
         if (proto.flags and hasAnnotationFlag == 0 &&
             descriptor.toClassifierRef(InjektContext(descriptor.module), null)
-                .forTypeKeyTypeParameters.isNotEmpty()) {
+                .typeParameters
+                .any { it.isForTypeKey || it.isGivenConstraint }) {
             proto.flags = proto.flags or hasAnnotationFlag
         }
     }

@@ -144,12 +144,12 @@ interface InjektErrors {
                 }
 
         @JvmField
-        val GIVEN_CONSTRAINT_ON_NON_GIVEN_FUNCTION =
+        val GIVEN_CONSTRAINT_ON_NON_GIVEN_DECLARATION =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also {
                     MAP.put(
                         it,
-                        "a @Given type constraint is only supported on @Given functions"
+                        "a @Given type constraint is only supported on @Given functions and @Given classes"
                     )
                 }
 

@@ -51,7 +51,10 @@ object InjektWritableSlices {
     val GIVEN_CONSTRUCTOR = BasicWritableSlice<ClassDescriptor, Tuple1<CallableRef?>>(RewritePolicy.DO_NOTHING)
     val CALLABLE_INFO = BasicWritableSlice<CallableDescriptor, Tuple1<PersistedCallableInfo?>>(
         RewritePolicy.DO_NOTHING)
-    val CLASSIFIER_INFO = BasicWritableSlice<ClassifierRef, Tuple1<PersistedClassifierInfo?>>(
+    val CLASSIFIER_INFO = BasicWritableSlice<ClassifierDescriptor, Tuple1<PersistedClassifierInfo?>>(
+        RewritePolicy.DO_NOTHING
+    )
+    val IS_GIVEN_CONSTRAINT = BasicWritableSlice<TypeParameterDescriptor, Boolean>(
         RewritePolicy.DO_NOTHING
     )
     val IS_FOR_TYPE_KEY = BasicWritableSlice<TypeParameterDescriptor, Boolean>(

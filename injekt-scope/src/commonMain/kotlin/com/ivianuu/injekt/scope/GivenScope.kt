@@ -142,10 +142,7 @@ typealias GivenScopeElement<@Suppress("unused", "UNUSED_TYPEALIAS_PARAMETER") S>
 annotation class GivenScopeElementBinding<S : GivenScope>
 
 @Given
-fun <@Given T : @GivenScopeElementBinding<S> U, @ForTypeKey U : Any, S : GivenScope>
-        givenScopeElementModule() = GivenScopeElementModule<T, U, S>()
-
-class GivenScopeElementModule<T : U, @ForTypeKey U : Any, S : GivenScope> {
+class GivenScopeElementModule<@Given T : @GivenScopeElementBinding<S> U, @ForTypeKey U : Any, S : GivenScope> {
     @Given
     fun elementIntoSet(@Given factory: () -> T): GivenScopeElement<S> = typeKeyOf<U>() to factory
 

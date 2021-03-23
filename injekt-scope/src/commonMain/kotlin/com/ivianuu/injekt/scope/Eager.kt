@@ -27,9 +27,7 @@ import com.ivianuu.injekt.Qualifier
 annotation class Eager<S : GivenScope>
 
 @Given
-fun <@Given T : @Eager<S> U, U : Any, S : GivenScope> eagerImpl() = EagerModule<T, U, S>()
-
-class EagerModule<T : U, U : Any, S : GivenScope> {
+class EagerModule<@Given T : @Eager<S> U, U : Any, S : GivenScope> {
     @Given
     inline fun scopedInstance(@Given instance: T): @Scoped<S> U = instance
 

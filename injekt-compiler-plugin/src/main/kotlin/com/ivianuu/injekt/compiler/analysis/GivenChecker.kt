@@ -21,8 +21,10 @@ import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.isGivenConstraint
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.forEachType
+import com.ivianuu.injekt.compiler.resolution.getGivenConstructor
 import com.ivianuu.injekt.compiler.resolution.isAssignableTo
 import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
@@ -34,12 +36,14 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.fir.extensions.predicate.has
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -59,119 +63,66 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext,
     ) {
-        if (descriptor is SimpleFunctionDescriptor) {
-            if (descriptor.isGiven(this.context, context.trace)) {
-                checkUnresolvableGivenTypeParameters(declaration,
-                    descriptor.typeParameters, descriptor.returnType!!, context.trace)
+        when (descriptor) {
+            is SimpleFunctionDescriptor -> checkFunction(declaration, descriptor, context.trace)
+            is ConstructorDescriptor -> checkConstructor(declaration, descriptor, context.trace)
+            is ClassDescriptor -> checkClass(declaration, descriptor, context.trace)
+            is PropertyDescriptor -> checkProperty(declaration, descriptor, context.trace)
+            is TypeAliasDescriptor -> checkTypeAlias(declaration, descriptor, context.trace)
+        }
+    }
 
-                descriptor.allParameters
-                    .filterNot { it === descriptor.dispatchReceiverParameter }
-                    .checkGivenCallableHasOnlyGivenParameters(declaration, context.trace)
+    private fun checkFunction(
+        declaration: KtDeclaration,
+        descriptor: FunctionDescriptor,
+        trace: BindingTrace
+    ) {
+        if (descriptor.isGiven(this.context, trace)) {
+            checkUnresolvableGivenTypeParameters(declaration,
+                descriptor.typeParameters, descriptor.returnType!!, trace)
 
-                if (descriptor.isTailrec) {
-                    context.trace.report(
-                        InjektErrors.GIVEN_TAILREC_FUNCTION
-                            .on(
-                                declaration.modifierList
-                                    ?.getModifier(KtTokens.TAILREC_KEYWORD)
-                                    ?: declaration
-                            )
-                    )
-                }
+            descriptor.allParameters
+                .filterNot { it === descriptor.dispatchReceiverParameter }
+                .checkGivenCallableHasOnlyGivenParameters(declaration, trace)
 
-                val givenConstraints = descriptor.typeParameters.filter {
-                    it.hasAnnotation(InjektFqNames.Given)
-                }
-                if (givenConstraints.size > 1) {
-                    descriptor
-                        .typeParameters
-                        .filter { it.hasAnnotation(InjektFqNames.Given) }
-                        .drop(1)
-                        .forEach {
-                            context.trace.report(
-                                InjektErrors.MULTIPLE_GIVEN_CONSTRAINTS
-                                    .on(it.findPsi() ?: declaration)
-                            )
-                        }
-                }
-
-                if (givenConstraints.size == 1) {
-                    val callable = descriptor.toCallableRef(this.context, context.trace)
-                    val constraintType = callable.typeParameters
-                        .single { it.isGivenConstraint }
-                        .defaultType
-                    if (callable.type.isAssignableTo(this.context, constraintType)) {
-                        context.trace.report(
-                            InjektErrors.DIVERGENT_GIVEN_CONSTRAINT
-                                .on(declaration.safeAs<KtNamedFunction>()?.typeReference
-                                    ?: givenConstraints.single().findPsi() ?: declaration)
+            if (descriptor.isTailrec) {
+                trace.report(
+                    InjektErrors.GIVEN_TAILREC_FUNCTION
+                        .on(
+                            declaration.modifierList
+                                ?.getModifier(KtTokens.TAILREC_KEYWORD)
+                                ?: declaration
                         )
-                    }
-                }
-
-                if (descriptor.valueParameters.isNotEmpty()) {
-                    val callable = descriptor.toCallableRef(this.context, context.trace)
-                    callable.parameterTypes
-                        .filter { callable.type == it.value }
-                        .forEach { (divergentParameterName) ->
-                            context.trace.report(
-                                InjektErrors.DIVERGENT_GIVEN
-                                    .on(declaration.safeAs<KtFunction>()
-                                        ?.valueParameters
-                                        ?.firstOrNull { it.name == divergentParameterName } ?: declaration)
-                            )
-                        }
-                }
-            } else {
-                checkOverrides(declaration, descriptor, context.trace)
-                checkGivenTypeParametersOnNonGivenFunction(descriptor.typeParameters, context.trace)
-                if (descriptor.extensionReceiverParameter
-                        ?.isGiven(this.context, context.trace) == true) {
-                    context.trace.report(
-                        InjektErrors.GIVEN_RECEIVER_ON_NON_GIVEN_DECLARATION
-                            .on(declaration.safeAs<KtNamedFunction>()
-                                ?.receiverTypeReference ?: declaration)
-                    )
-                }
-            }
-        } else if (descriptor is ConstructorDescriptor) {
-            if (descriptor.isGiven(this.context, context.trace)) {
-                descriptor.valueParameters
-                    .checkGivenCallableHasOnlyGivenParameters(declaration, context.trace)
-            }
-        } else if (descriptor is ClassDescriptor) {
-            checkGivenTypeParametersOnNonGivenFunction(descriptor.declaredTypeParameters, context.trace)
-
-            val hasGivenAnnotation = descriptor.hasAnnotation(InjektFqNames.Given)
-            val givenConstructors = descriptor.constructors
-                .filter { it.hasAnnotation(InjektFqNames.Given) }
-
-            if (descriptor.kind == ClassKind.ANNOTATION_CLASS) {
-                if (hasGivenAnnotation) {
-                    context.trace.report(
-                        InjektErrors.GIVEN_ANNOTATION_CLASS
-                            .on(
-                                declaration.findAnnotation(InjektFqNames.Given)
-                                    ?: declaration
-                            )
-                    )
-                }
-
-                if (givenConstructors.isNotEmpty()) {
-                    givenConstructors
-                        .forEach {
-                            context.trace.report(
-                                InjektErrors.GIVEN_CONSTRUCTOR_ON_ANNOTATION_CLASS
-                                    .on(it.findPsi() ?: declaration)
-                            )
-                        }
-                }
+                )
             }
 
-            if (hasGivenAnnotation &&
-                descriptor.kind == ClassKind.ENUM_CLASS) {
-                context.trace.report(
-                    InjektErrors.GIVEN_ENUM_CLASS
+            checkConstrainedGiven(declaration, descriptor, descriptor.typeParameters, trace)
+        } else {
+            checkOverrides(declaration, descriptor, trace)
+            checkGivenConstraintsOnNonGivenDeclaration(descriptor.typeParameters, trace)
+            if (descriptor.extensionReceiverParameter?.isGiven(this.context, trace) == true) {
+                trace.report(
+                    InjektErrors.GIVEN_RECEIVER_ON_NON_GIVEN_DECLARATION
+                        .on(declaration.safeAs<KtNamedFunction>()
+                            ?.receiverTypeReference ?: declaration)
+                )
+            }
+        }
+    }
+
+    private fun checkClass(
+        declaration: KtDeclaration,
+        descriptor: ClassDescriptor,
+        trace: BindingTrace
+    ) {
+        val hasGivenAnnotation = descriptor.hasAnnotation(InjektFqNames.Given)
+        val givenConstructors = descriptor.constructors
+            .filter { it.hasAnnotation(InjektFqNames.Given) }
+
+        if (descriptor.kind == ClassKind.ANNOTATION_CLASS) {
+            if (hasGivenAnnotation) {
+                trace.report(
+                    InjektErrors.GIVEN_ANNOTATION_CLASS
                         .on(
                             declaration.findAnnotation(InjektFqNames.Given)
                                 ?: declaration
@@ -179,81 +130,177 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                 )
             }
 
-            if (hasGivenAnnotation &&
-                    descriptor.modality == Modality.ABSTRACT) {
-                context.trace.report(
-                    InjektErrors.GIVEN_ABSTRACT_CLASS
-                        .on(
-                            declaration.modifierList
-                                ?.getModifier(KtTokens.ABSTRACT_KEYWORD)
-                                ?: declaration
-                        )
-                )
-            }
-
-            if (hasGivenAnnotation && descriptor.isInner) {
-                context.trace.report(
-                    InjektErrors.GIVEN_INNER_CLASS
-                        .on(
-                            declaration.modifierList
-                                ?.getModifier(KtTokens.INNER_KEYWORD)
-                                ?: declaration
-                        )
-                )
-            }
-
-            if (hasGivenAnnotation &&
-                givenConstructors.isNotEmpty()
-            ) {
-                context.trace.report(
-                    InjektErrors.GIVEN_ON_CLASS_WITH_GIVEN_CONSTRUCTOR
-                        .on(
-                            declaration.findAnnotation(InjektFqNames.Given)
-                                ?: declaration
-                        )
-                )
-            }
-
-            if (givenConstructors.size > 1) {
+            if (givenConstructors.isNotEmpty()) {
                 givenConstructors
-                    .drop(1)
                     .forEach {
-                        context.trace.report(
-                            InjektErrors.CLASS_WITH_MULTIPLE_GIVEN_CONSTRUCTORS
+                        trace.report(
+                            InjektErrors.GIVEN_CONSTRUCTOR_ON_ANNOTATION_CLASS
                                 .on(it.findPsi() ?: declaration)
                         )
                     }
             }
-        } else if (descriptor is PropertyDescriptor) {
-            checkOverrides(declaration, descriptor, context.trace)
-            checkGivenTypeParametersOnNonGivenFunction(descriptor.typeParameters, context.trace)
-            if (descriptor.isGiven(this.context, context.trace)) {
-                checkUnresolvableGivenTypeParameters(declaration,
-                    descriptor.typeParameters, descriptor.returnType!!, context.trace)
-                if (descriptor.extensionReceiverParameter != null &&
-                    descriptor.extensionReceiverParameter?.type?.isGiven(this.context, context.trace) != true
-                ) {
-                    context.trace.report(
-                        InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
-                            .on(
-                                declaration.safeAs<KtProperty>()
-                                    ?.receiverTypeReference
-                                    ?: declaration
-                            )
+        }
+
+        if (hasGivenAnnotation && descriptor.kind == ClassKind.ENUM_CLASS) {
+            trace.report(
+                InjektErrors.GIVEN_ENUM_CLASS
+                    .on(
+                        declaration.findAnnotation(InjektFqNames.Given)
+                            ?: declaration
+                    )
+            )
+        }
+
+        if (hasGivenAnnotation && descriptor.modality == Modality.ABSTRACT) {
+            trace.report(
+                InjektErrors.GIVEN_ABSTRACT_CLASS
+                    .on(
+                        declaration.modifierList
+                            ?.getModifier(KtTokens.ABSTRACT_KEYWORD)
+                            ?: declaration
+                    )
+            )
+        }
+
+        if (hasGivenAnnotation && descriptor.isInner) {
+            trace.report(
+                InjektErrors.GIVEN_INNER_CLASS
+                    .on(
+                        declaration.modifierList
+                            ?.getModifier(KtTokens.INNER_KEYWORD)
+                            ?: declaration
+                    )
+            )
+        }
+
+        if (hasGivenAnnotation && givenConstructors.isNotEmpty()) {
+            trace.report(
+                InjektErrors.GIVEN_ON_CLASS_WITH_GIVEN_CONSTRUCTOR
+                    .on(
+                        declaration.findAnnotation(InjektFqNames.Given)
+                            ?: declaration
+                    )
+            )
+        }
+
+        if (givenConstructors.size > 1) {
+            givenConstructors
+                .drop(1)
+                .forEach {
+                    trace.report(
+                        InjektErrors.CLASS_WITH_MULTIPLE_GIVEN_CONSTRUCTORS
+                            .on(it.findPsi() ?: declaration)
                     )
                 }
-            } else {
-                if (descriptor.extensionReceiverParameter
-                        ?.isGiven(this.context, context.trace) == true) {
-                    context.trace.report(
-                        InjektErrors.GIVEN_RECEIVER_ON_NON_GIVEN_DECLARATION
-                            .on(declaration.safeAs<KtProperty>()
-                                ?.receiverTypeReference ?: declaration)
-                    )
-                }
+        }
+
+        val singleGivenConstructor = descriptor.getGivenConstructor(context, trace)
+        if (singleGivenConstructor != null) {
+            checkConstrainedGiven(declaration, singleGivenConstructor.callable,
+                descriptor.declaredTypeParameters, trace)
+        } else {
+            checkGivenConstraintsOnNonGivenDeclaration(descriptor.declaredTypeParameters, trace)
+        }
+    }
+
+    private fun checkConstructor(
+        declaration: KtDeclaration,
+        descriptor: ConstructorDescriptor,
+        trace: BindingTrace
+    ) {
+        if (descriptor.isGiven(this.context, trace)) {
+            descriptor.valueParameters
+                .checkGivenCallableHasOnlyGivenParameters(declaration, trace)
+        }
+    }
+
+    private fun checkProperty(
+        declaration: KtDeclaration,
+        descriptor: PropertyDescriptor,
+        trace: BindingTrace
+    ) {
+        checkOverrides(declaration, descriptor, trace)
+        checkGivenConstraintsOnNonGivenDeclaration(descriptor.typeParameters, trace)
+        if (descriptor.isGiven(this.context, trace)) {
+            checkUnresolvableGivenTypeParameters(declaration,
+                descriptor.typeParameters, descriptor.returnType!!, trace)
+            if (descriptor.extensionReceiverParameter != null &&
+                descriptor.extensionReceiverParameter?.type?.isGiven(this.context, trace) != true
+            ) {
+                trace.report(
+                    InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
+                        .on(
+                            declaration.safeAs<KtProperty>()
+                                ?.receiverTypeReference
+                                ?: declaration
+                        )
+                )
             }
-        } else if (descriptor is TypeAliasDescriptor) {
-            checkGivenTypeParametersOnNonGivenFunction(descriptor.declaredTypeParameters, context.trace)
+        } else {
+            if (descriptor.extensionReceiverParameter?.isGiven(this.context, trace) == true) {
+                trace.report(
+                    InjektErrors.GIVEN_RECEIVER_ON_NON_GIVEN_DECLARATION
+                        .on(declaration.safeAs<KtProperty>()
+                            ?.receiverTypeReference ?: declaration)
+                )
+            }
+        }
+    }
+
+    private fun checkTypeAlias(
+        declaration: KtDeclaration,
+        descriptor: TypeAliasDescriptor,
+        trace: BindingTrace
+    ) {
+        checkGivenConstraintsOnNonGivenDeclaration(descriptor.declaredTypeParameters, trace)
+    }
+
+    private fun checkConstrainedGiven(
+        declaration: KtDeclaration,
+        descriptor: CallableDescriptor,
+        typeParameters: List<TypeParameterDescriptor>,
+        trace: BindingTrace
+    ) {
+        val givenConstraints = typeParameters.filter {
+            it.isGivenConstraint(context, trace)
+        }
+        if (givenConstraints.size > 1) {
+            givenConstraints
+                .drop(1)
+                .forEach {
+                    trace.report(
+                        InjektErrors.MULTIPLE_GIVEN_CONSTRAINTS
+                            .on(it.findPsi() ?: declaration)
+                    )
+                }
+        }
+
+        if (givenConstraints.size == 1) {
+            val callable = descriptor.toCallableRef(this.context, trace)
+            val constraintType = callable.typeParameters
+                .single { it.isGivenConstraint }
+                .defaultType
+            if (callable.type.isAssignableTo(this.context, constraintType)) {
+                trace.report(
+                    InjektErrors.DIVERGENT_GIVEN_CONSTRAINT
+                        .on(declaration.safeAs<KtNamedFunction>()?.typeReference
+                            ?: givenConstraints.single().findPsi() ?: declaration)
+                )
+            }
+        }
+
+        if (descriptor.valueParameters.isNotEmpty()) {
+            val callable = descriptor.toCallableRef(this.context, trace)
+            callable.parameterTypes
+                .filter { callable.type == it.value }
+                .forEach { (divergentParameterName) ->
+                    trace.report(
+                        InjektErrors.DIVERGENT_GIVEN
+                            .on(declaration.safeAs<KtFunction>()
+                                ?.valueParameters
+                                ?.firstOrNull { it.name == divergentParameterName } ?: declaration)
+                    )
+                }
         }
     }
 
@@ -313,16 +360,16 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
             }
     }
 
-    private fun checkGivenTypeParametersOnNonGivenFunction(
+    private fun checkGivenConstraintsOnNonGivenDeclaration(
         typeParameters: List<TypeParameterDescriptor>,
         trace: BindingTrace
     ) {
         if (typeParameters.isEmpty()) return
         typeParameters
-            .filter { it.hasAnnotation(InjektFqNames.Given) }
+            .filter { it.isGivenConstraint(context, trace) }
             .forEach { typeParameter ->
                 trace.report(
-                    InjektErrors.GIVEN_CONSTRAINT_ON_NON_GIVEN_FUNCTION
+                    InjektErrors.GIVEN_CONSTRAINT_ON_NON_GIVEN_DECLARATION
                         .on(typeParameter.findPsi()!!)
                 )
         }

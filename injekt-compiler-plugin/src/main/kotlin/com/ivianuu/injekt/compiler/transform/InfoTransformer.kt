@@ -49,9 +49,9 @@ class InfoTransformer(
 
     @Suppress("NewApi")
     override fun visitClass(declaration: IrClass): IrStatement {
+        val classifierRef = declaration.descriptor.toClassifierRef(context, trace)
         if (declaration.hasAnnotation(InjektFqNames.Given) ||
-                    declaration.descriptor.toClassifierRef(context, null)
-                        .forTypeKeyTypeParameters.isNotEmpty()) {
+            classifierRef.typeParameters.any { it.isForTypeKey || it.isGivenConstraint }) {
             declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
                 .run {
                     irCall(

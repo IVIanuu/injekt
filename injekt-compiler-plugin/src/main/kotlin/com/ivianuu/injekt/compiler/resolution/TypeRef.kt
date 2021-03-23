@@ -24,6 +24,8 @@ import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
+import com.ivianuu.injekt.compiler.isForTypeKey
+import com.ivianuu.injekt.compiler.isGivenConstraint
 import com.ivianuu.injekt.compiler.toMap
 import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.builtins.StandardNames
@@ -38,6 +40,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtParameter
+import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -45,6 +48,7 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.getAbbreviation
 import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import kotlin.reflect.typeOf
 
 data class ClassifierRef(
     val fqName: FqName,
@@ -56,8 +60,8 @@ data class ClassifierRef(
     val descriptor: ClassifierDescriptor? = null,
     val qualifier: TypeRef? = null,
     val isGivenConstraint: Boolean = false,
-    val primaryConstructorPropertyParameters: List<Name> = emptyList(),
-    val forTypeKeyTypeParameters: List<Name> = emptyList()
+    val isForTypeKey: Boolean = false,
+    val primaryConstructorPropertyParameters: List<Name> = emptyList()
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
     override fun hashCode(): Int = fqName.hashCode()
@@ -71,17 +75,15 @@ data class ClassifierRef(
     }
 }
 
-fun KotlinType.toTypeRef(
-    context: InjektContext,
-    trace: BindingTrace?,
-    isStarProjection: Boolean = false
-): TypeRef = if (isStarProjection) STAR_PROJECTION_TYPE
-else {
-    val key = System.identityHashCode(this)
-    trace?.get(InjektWritableSlices.TYPE_REF_FOR_TYPE, key)?.let { return it }
-    KotlinTypeRef(this, isStarProjection, context, trace)
-        .also { trace?.record(InjektWritableSlices.TYPE_REF_FOR_TYPE, key, it) }
-}
+val ClassifierRef.givenConstraintTypeParameters: List<Name>
+    get() = typeParameters
+        .filter { it.isGivenConstraint }
+        .map { it.fqName.shortName() }
+
+val ClassifierRef.forTypeKeyTypeParameters: List<Name>
+    get() = typeParameters
+        .filter { it.isForTypeKey }
+        .map { it.fqName.shortName() }
 
 fun ClassifierDescriptor.toClassifierRef(
     context: InjektContext,
@@ -105,7 +107,8 @@ fun ClassifierDescriptor.toClassifierRef(
         isTypeAlias = this is TypeAliasDescriptor,
         descriptor = this,
         qualifier = qualifier,
-        isGivenConstraint = this is TypeParameterDescriptor && hasAnnotation(InjektFqNames.Given),
+        isGivenConstraint = this is TypeParameterDescriptor && isGivenConstraint(context, trace),
+        isForTypeKey = this is TypeParameterDescriptor && isForTypeKey(context, trace),
         primaryConstructorPropertyParameters = this
             .takeIf { !it.isExternalDeclaration() }
             .safeAs<ClassDescriptor>()
@@ -113,25 +116,28 @@ fun ClassifierDescriptor.toClassifierRef(
             ?.valueParameters
             ?.filter { it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true }
             ?.map { it.name }
-            ?: emptyList(),
-        forTypeKeyTypeParameters = this
-            .takeIf { !it.isExternalDeclaration() }
-            .safeAs<ClassDescriptor>()
-            ?.findPsi()
-            ?.safeAs<KtClass>()
-            ?.typeParameters
-            ?.filter { it.hasAnnotation(InjektFqNames.ForTypeKey) }
-            ?.map { it.nameAsSafeName }
             ?: emptyList()
     ).let {
         if (original.isExternalDeclaration()) it.apply(
             context,
             trace,
-            context.classifierInfoFor(it, trace)
+            context.classifierInfoFor(this, trace)
         ) else it
     }.also {
         trace?.record(InjektWritableSlices.CLASSIFIER_REF_FOR_CLASSIFIER, this, it)
     }
+}
+
+fun KotlinType.toTypeRef(
+    context: InjektContext,
+    trace: BindingTrace?,
+    isStarProjection: Boolean = false
+): TypeRef = if (isStarProjection) STAR_PROJECTION_TYPE
+else {
+    val key = System.identityHashCode(this)
+    trace?.get(InjektWritableSlices.TYPE_REF_FOR_TYPE, key)?.let { return it }
+    KotlinTypeRef(this, isStarProjection, context, trace)
+        .also { trace?.record(InjektWritableSlices.TYPE_REF_FOR_TYPE, key, it) }
 }
 
 sealed class TypeRef {
@@ -247,7 +253,7 @@ fun TypeRef.forEachUniqueSuperTypeUntil(action: (TypeRef) -> Boolean) {
 fun TypeRef.forEachType(action: (TypeRef) -> Unit) {
     action(this)
     arguments.forEach { it.forEachType(action) }
-    qualifier?.let { it.forEachType(action) }
+    qualifier?.forEachType(action)
 }
 
 class KotlinTypeRef(

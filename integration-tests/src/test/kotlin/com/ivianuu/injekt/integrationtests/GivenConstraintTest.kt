@@ -45,29 +45,13 @@ class GivenConstraintTest {
     }
 
     @Test
-    fun testSetElementWithGivenConstraint() = codegen(
+    fun testClassWithGivenConstraint() = codegen(
         """
-            @Qualifier annotation class Trigger
-            @Given fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): @Final S = instance
-
-            @Qualifier annotation class Final
-
-            @Given fun foo(): @Trigger Foo = Foo()
-
-            fun invoke() = given<Set<@Final Foo>>()
-        """
-    ) {
-        invokeSingleFile<Set<Foo>>().size shouldBe 1
-    }
-
-    @Test
-    fun testModuleWithGivenConstraint() = codegen(
-        """
-            class MyModule<T : S, S> {
+            @Given
+            class MyModule<@Given T : @Trigger S, S> {
                 @Given fun intoSet(@Given instance: T): @Final S = instance
             }
             @Qualifier annotation class Trigger
-            @Given fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): MyModule<T, S> = MyModule()
 
             @Qualifier annotation class Final
 
@@ -81,12 +65,21 @@ class GivenConstraintTest {
     }
 
     @Test
+    fun testGivenConstraintOnNonGivenClass() = codegen(
+        """
+            class MyModule<@Given T>
+        """
+    ) {
+        compilationShouldHaveFailed("a @Given type constraint is only supported on @Given functions and @Given classes")
+    }
+
+    @Test
     fun testGivenConstraintOnNonGivenFunction() = codegen(
         """
             fun <@Given T> triggerImpl() = Unit
         """
     ) {
-        compilationShouldHaveFailed("a @Given type constraint is only supported on @Given functions")
+        compilationShouldHaveFailed("a @Given type constraint is only supported on @Given functions and @Given classes")
     }
 
     @Test

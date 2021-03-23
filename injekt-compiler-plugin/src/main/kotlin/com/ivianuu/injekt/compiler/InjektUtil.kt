@@ -40,11 +40,13 @@ import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.interpreter.hasAnnotation
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -52,6 +54,7 @@ import org.jetbrains.kotlin.serialization.deserialization.descriptors.Deserializ
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 fun KtAnnotated.hasAnnotation(fqName: FqName): Boolean = findAnnotation(fqName) != null
 
@@ -205,17 +208,36 @@ fun generateFrameworkKey() = currentFrameworkKey++.toString()
 
 data class Tuple1<T>(val value: T)
 
+fun TypeParameterDescriptor.isGivenConstraint(
+    context: InjektContext,
+    trace: BindingTrace?
+): Boolean {
+    trace?.get(InjektWritableSlices.IS_GIVEN_CONSTRAINT, this)?.let { return it }
+    var isGivenConstraint = hasAnnotation(InjektFqNames.Given) ||
+            findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.Given) == true
+    if (!isGivenConstraint &&
+        original.isExternalDeclaration() &&
+        containingDeclaration is ClassDescriptor) {
+        isGivenConstraint = name.asString() in context.classifierInfoFor(containingDeclaration.cast(), trace)
+            ?.givenConstraintTypeParameters ?: emptyList()
+    }
+
+    trace?.record(InjektWritableSlices.IS_GIVEN_CONSTRAINT, this, isGivenConstraint)
+    return isGivenConstraint
+}
+
 fun TypeParameterDescriptor.isForTypeKey(
     context: InjektContext,
     trace: BindingTrace?
 ): Boolean {
     trace?.get(InjektWritableSlices.IS_FOR_TYPE_KEY, this)?.let { return it }
-    var isForTypeKey = hasAnnotation(InjektFqNames.ForTypeKey)
-    if (!isForTypeKey && containingDeclaration is ClassDescriptor) {
-        isForTypeKey = name in containingDeclaration
-            .cast<ClassDescriptor>()
-            .toClassifierRef(context, trace)
-            .forTypeKeyTypeParameters
+    var isForTypeKey = hasAnnotation(InjektFqNames.ForTypeKey) ||
+            findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.ForTypeKey) == true
+    if (!isForTypeKey &&
+        original.isExternalDeclaration() &&
+        containingDeclaration is ClassDescriptor) {
+        isForTypeKey = name.asString() in context.classifierInfoFor(containingDeclaration.cast(), trace)
+            ?.forTypeKeyTypeParameters ?: emptyList()
     }
 
     trace?.record(InjektWritableSlices.IS_FOR_TYPE_KEY, this, isForTypeKey)
