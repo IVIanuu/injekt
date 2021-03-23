@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.resolution.*
 import com.ivianuu.injekt.compiler.uniqueKey
+import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -95,12 +96,10 @@ class GivenCallTransformer(
             }
         }
 
-        private val usagesByResult = mutableMapOf<ResolutionResult.Success.WithCandidate.Value, List<GivenRequest>>()
-        fun usagesFor(result: ResolutionResult.Success.WithCandidate.Value): List<GivenRequest> = usagesByResult.getOrPut(result) {
-            val usages = mutableListOf<GivenRequest>()
+        private val usages = mutableMapOf<UsageKey, MutableList<GivenRequest>>()
+        private val initializeUsages by unsafeLazy {
             fun ResolutionResult.Success.WithCandidate.Value.visit(request: GivenRequest) {
-                if (candidate.type == result.candidate.type &&
-                        outerMostScope == result.outerMostScope) usages += request
+                usages.getOrPut(usageKey) { mutableListOf() } += request
                 dependencyResults.forEach {
                     it.value.safeAs<ResolutionResult.Success.WithCandidate.Value>()?.visit(it.key)
                 }
@@ -109,6 +108,10 @@ class GivenCallTransformer(
                 it.value.safeAs<ResolutionResult.Success.WithCandidate.Value>()?.visit(it.key)
             }
             usages
+        }
+        fun usagesFor(result: ResolutionResult.Success.WithCandidate.Value): List<GivenRequest> {
+            initializeUsages
+            return usages[result.usageKey]!!
         }
 
         private val isInBetweenCircularDependency = mutableMapOf<ResolutionResult.Success.WithCandidate.Value, Boolean>()
@@ -260,8 +263,8 @@ class GivenCallTransformer(
         context: GraphContext
     ): Boolean = dependencyResults.isNotEmpty() &&
             !candidate.cacheIfPossible &&
-            !context.isInBetweenCircularDependency(this) &&
-            context.usagesFor(this).size > 1
+            context.usagesFor(this).size > 1 &&
+            !context.isInBetweenCircularDependency(this)
 
     private fun ScopeContext.wrapExpressionInFunctionIfNeeded(
         result: ResolutionResult.Success.WithCandidate.Value,
@@ -305,8 +308,8 @@ class GivenCallTransformer(
     private fun ResolutionResult.Success.WithCandidate.Value.shouldCache(
         context: GraphContext
     ): Boolean = candidate.cacheIfPossible &&
-            !context.isInBetweenCircularDependency(this) &&
-            context.usagesFor(this).count { !it.isInline } > 1
+            context.usagesFor(this).count { !it.isInline } > 1 &&
+            !context.isInBetweenCircularDependency(this)
 
     private fun ScopeContext.cacheExpressionIfNeeded(
         result: ResolutionResult.Success.WithCandidate.Value,

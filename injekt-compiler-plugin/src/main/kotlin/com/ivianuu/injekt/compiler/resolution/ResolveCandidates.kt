@@ -56,6 +56,7 @@ sealed class ResolutionResult {
                 override val scope: ResolutionScope,
                 val dependencyResults: Map<GivenRequest, Success>
             ) : Success.WithCandidate() {
+                val usageKey by unsafeLazy { UsageKey(candidate.type, outerMostScope) }
                 val outerMostScope: ResolutionScope by unsafeLazy {
                     when {
                         dependencyResults.isEmpty() -> scope.allScopes.first {
@@ -159,6 +160,8 @@ sealed class ResolutionResult {
         }
     }
 }
+
+data class UsageKey(val type: TypeRef, val outerMostScope: ResolutionScope)
 
 fun ResolutionScope.resolveRequests(requests: List<GivenRequest>): GivenGraph {
     val successes = mutableMapOf<GivenRequest, ResolutionResult.Success>()
