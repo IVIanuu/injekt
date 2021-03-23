@@ -55,4 +55,20 @@ class ConfigurationTest {
         }
     )
 
+    @Test
+    fun testCanPerformGivenCallsWithoutFlagButWithAllArgumentsExceptDefault() = codegen(
+        """
+            fun givenFunctionWithDefault(@Given foo: Foo = Foo()) = foo
+            fun invoke() = givenFunctionWithDefault()
+        """,
+        config = {
+            pluginOptions = pluginOptions
+                .filter { it.optionName != "allowGivenCalls" } + PluginOption(
+                "com.ivianuu.injekt",
+                "allowGivenCalls",
+                "false"
+            )
+        }
+    )
+
 }

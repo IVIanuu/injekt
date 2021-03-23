@@ -77,7 +77,7 @@ class GivenCallChecker(
         val requests = callable.givenParameters
             .filter { parameterName ->
                 resolvedCall.valueArguments
-                    .any {
+                    .none {
                         it.key.name.asString() == parameterName &&
                                 it.value is DefaultValueArgument
                     }
