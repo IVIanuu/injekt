@@ -144,7 +144,7 @@ class GivenDeclarationCheckTest {
         compilationShouldHaveFailed("non @Given parameter")
     }
 
-    @Test
+    // todo @Test
     fun testUsedGivenParameterIsNotMarkedAsUnused() = codegen(
         """
             fun func1(@Given foo: Foo) {

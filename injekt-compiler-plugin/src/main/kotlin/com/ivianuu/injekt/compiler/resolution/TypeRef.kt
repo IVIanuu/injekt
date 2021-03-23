@@ -504,14 +504,12 @@ private fun TypeRef.isSubTypeOfTypeParameter(
     context: InjektContext,
     typeParameter: TypeRef
 ): Boolean {
-    val superTypesAssignable = typeParameter.superTypes.all { upperBound ->
-        isSubTypeOf(context, upperBound)
-    }
-    if (!superTypesAssignable) return false
     if (typeParameter.qualifier != null &&
         (qualifier == null || !qualifier!!.isAssignableTo(context, typeParameter.qualifier!!))
     ) return false
-    return true
+    return typeParameter.superTypes.all { upperBound ->
+        isSubTypeOf(context, upperBound)
+    }
 }
 
 private fun TypeRef.isSubTypeOfSameClassifier(
