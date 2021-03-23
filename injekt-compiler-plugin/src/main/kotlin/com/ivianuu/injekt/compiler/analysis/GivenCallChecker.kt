@@ -76,11 +76,10 @@ class GivenCallChecker(
 
         val requests = callable.givenParameters
             .filter { parameterName ->
-                resolvedCall.valueArguments
-                    .none {
-                        it.key.name.asString() == parameterName &&
-                                it.value is DefaultValueArgument
-                    }
+                val parameter = callable.callable.valueParameters.single {
+                    it.name.asString() == parameterName
+                }
+                resolvedCall.valueArguments[parameter] is DefaultValueArgument
             }
             .map { parameterName ->
                 val parameterDescriptor = resultingDescriptor.valueParameters
@@ -99,7 +98,8 @@ class GivenCallChecker(
 
         val callExpression = resolvedCall.call.callElement
 
-        if (!allowGivenCalls(resultingDescriptor.module)) {
+        if (!allowGivenCalls(resultingDescriptor.module) &&
+                requests.all { it.isRequired }) {
             context.trace.report(
                 InjektErrors.GIVEN_CALLS_NOT_ALLOWED
                     .on(callExpression)

@@ -56,7 +56,7 @@ class ConfigurationTest {
     )
 
     @Test
-    fun testCanPerformGivenCallsWithoutFlagButWithAllArgumentsExceptDefault() = codegen(
+    fun testCanPerformGivenCallsWithoutFlagButDefaultValues() = codegen(
         """
             fun givenFunctionWithDefault(@Given foo: Foo = Foo()) = foo
             fun invoke() = givenFunctionWithDefault()
