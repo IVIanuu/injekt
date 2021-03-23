@@ -37,7 +37,7 @@ class ConfigurationTest {
             )
         }
     ) {
-        compilationShouldHaveFailed("given calls are not allowed in this compilation. Please check your build configuration or provide all arguments to the call")
+        compilationShouldHaveFailed("given calls are not allowed in this compilation. Please check your build configuration or provide all required arguments")
     }
 
     @Test

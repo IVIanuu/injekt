@@ -42,7 +42,7 @@ interface InjektErrors {
         @JvmField
         val GIVEN_CALLS_NOT_ALLOWED =  DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
             .also {
-                MAP.put(it, "given calls are not allowed in this compilation. Please check your build configuration or provide all arguments to the call")
+                MAP.put(it, "given calls are not allowed in this compilation. Please check your build configuration or provide all required arguments")
             }
 
         @JvmField
