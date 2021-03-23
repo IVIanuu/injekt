@@ -45,7 +45,8 @@ class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtensi
         dispatchReceiver: ReceiverValueWithSmartCastInfo?,
         extensionReceiver: ReceiverValueWithSmartCastInfo?,
     ): Collection<FunctionDescriptor> {
-        val newCandidates = candidates
+        return if (candidates.isEmpty()) emptyList()
+        else candidates
             .map { candidate ->
                 if (context?.module != candidate.module) {
                     context = InjektContext(candidate.module)
@@ -56,7 +57,5 @@ class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtensi
                     candidate
                 }
             }
-        return if (newCandidates.isNotEmpty()) newCandidates
-        else candidates
     }
 }
