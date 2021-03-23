@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -45,7 +46,8 @@ class QualifierChecker : DeclarationChecker {
             if (qualifiers.isNotEmpty() && descriptor !is ClassDescriptor) {
                 context.trace.report(
                     InjektErrors.QUALIFIER_ON_NON_CLASS_AND_NON_TYPE
-                        .on(declaration)
+                        .on(declaration.findAnnotation(qualifiers.first().fqName!!)
+                            ?: declaration)
                 )
             }
         }

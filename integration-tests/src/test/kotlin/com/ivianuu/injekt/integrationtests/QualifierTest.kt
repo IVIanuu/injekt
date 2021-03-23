@@ -86,8 +86,7 @@ class QualifierTest {
     fun testQualifiedFunction() = codegen(
         """ 
             @Given @Qualifier1 fun foo() = Foo()
-            fun invoke() = given<@Qualifier1 Foo>()
-            """
+Mo            """
     ) {
         compilationShouldHaveFailed("only types and classes can be annotated with a qualifier")
     }
