@@ -46,7 +46,11 @@ class ChildGivenScopeModule2<P : GivenScope, @ForTypeKey P1, @ForTypeKey P2, @Fo
 class ChildGivenScopeModule3<P : GivenScope, @ForTypeKey P1, @ForTypeKey P2, @ForTypeKey P3, @ForTypeKey S : GivenScope> {
     @Given
     fun factory(
-        @Given scopeFactory: (@Given P1, @Given P2, @Given P3) -> S
+        @Given scopeFactory: (
+            @Given @GivenScopeElementBinding<S> P1,
+            @Given @GivenScopeElementBinding<S> P2,
+            @Given @GivenScopeElementBinding<S> P3
+        ) -> S
     ): @GivenScopeElementBinding<P> (P1, P2, P3) -> S = scopeFactory
 }
 
