@@ -462,7 +462,7 @@ fun getSubstitutionMap(
 
         if (thisType.classifier == baseType.classifier) {
             thisType.arguments.forEachWith(baseType.arguments) { a, b -> visitType(a, b, fromInput) }
-        } else {
+        } else if (!baseType.classifier.isTypeParameter) {
             val subType = thisType.subtypeView(baseType.classifier)
             if (subType != null) {
                 subType.arguments.forEachWith(baseType.arguments) { a, b -> visitType(a, b, false) }
@@ -541,16 +541,17 @@ fun TypeRef.isSubTypeOf(
     if (classifier == superType.classifier)
         return isSubTypeOfSameClassifier(context, superType)
 
-    val subTypeView = subtypeView(superType.classifier)
-    if (subTypeView != null)
-        return subTypeView.isSubTypeOfSameClassifier(context, superType)
-
     if (superType.classifier.isTypeParameter) {
         if (superType.qualifier != null &&
             (qualifier == null || !qualifier!!.isAssignableTo(context, superType.qualifier!!))
         ) return false
         return superType.superTypes.all { isSubTypeOf(context, it) }
     }
+
+    val subTypeView = subtypeView(superType.classifier)
+    if (subTypeView != null)
+        return subTypeView.isSubTypeOfSameClassifier(context, superType)
+
     return false
 }
 
