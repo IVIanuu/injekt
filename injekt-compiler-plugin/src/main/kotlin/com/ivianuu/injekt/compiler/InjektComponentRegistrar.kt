@@ -67,7 +67,10 @@ class InjektComponentRegistrar : ComponentRegistrar {
         IrGenerationExtension.registerExtensionWithLoadingOrder(
             project,
             LoadingOrder.LAST,
-            InjektIrDumper(FileManager(dumpDir(configuration), cacheDir(configuration)))
+            InjektIrDumper(
+                allowGivenCalls,
+                FileManager(dumpDir(configuration), cacheDir(configuration))
+            )
         )
         CandidateInterceptor.registerExtension(
             project,

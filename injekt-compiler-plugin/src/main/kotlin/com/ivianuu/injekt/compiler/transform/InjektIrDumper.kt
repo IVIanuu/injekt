@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektWritableSlices
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -24,27 +25,37 @@ import org.jetbrains.kotlin.ir.util.KotlinLikeDumpOptions
 import org.jetbrains.kotlin.ir.util.dumpKotlinLike
 import java.io.File
 
-class InjektIrDumper(private val fileManager: FileManager) : IrGenerationExtension {
+class InjektIrDumper(
+    private val allowGivenCalls: Boolean,
+    private val fileManager: FileManager
+) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        moduleFragment.files.forEach { irFile ->
-            val file = File(irFile.fileEntry.name)
-            val content = try {
-                irFile.dumpKotlinLike(
-                    KotlinLikeDumpOptions(
-                        useNamedArguments = true,
-                        printFakeOverridesStrategy = FakeOverridesStrategy.NONE
-                    )
-                )
-            } catch (e: Throwable) {
-                e.stackTraceToString()
+        if (!allowGivenCalls) return
+        moduleFragment.files
+            .asSequence()
+            .filter {
+                pluginContext.bindingContext[InjektWritableSlices.USED_GIVENS_FOR_FILE,
+                        it.fileEntry.name] != null
             }
-            fileManager.generateFile(
-                irFile.fqName,
-                file.name.removeSuffix(".kt"),
-                file.absolutePath,
-                content
-            )
-        }
+            .forEach { irFile ->
+                val file = File(irFile.fileEntry.name)
+                val content = try {
+                    irFile.dumpKotlinLike(
+                        KotlinLikeDumpOptions(
+                            useNamedArguments = true,
+                            printFakeOverridesStrategy = FakeOverridesStrategy.NONE
+                        )
+                    )
+                } catch (e: Throwable) {
+                    e.stackTraceToString()
+                }
+                fileManager.generateFile(
+                    irFile.fqName,
+                    file.name.removeSuffix(".kt"),
+                    file.absolutePath,
+                    content
+                )
+            }
         fileManager.postGenerate()
     }
 }

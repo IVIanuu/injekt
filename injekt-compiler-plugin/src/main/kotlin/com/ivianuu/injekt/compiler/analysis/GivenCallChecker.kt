@@ -113,8 +113,7 @@ class GivenCallChecker(
         scope.recordLookup(KotlinLookupLocation(callExpression))
 
         when (val graph = scope.resolveRequests(requests) {
-            // todo
-            /*if (it.candidate is CallableGivenNode) {
+            if (it.candidate is CallableGivenNode) {
                 context.trace.record(
                     InjektWritableSlices.USED_GIVEN,
                     it.candidate.callable.callable,
@@ -122,13 +121,13 @@ class GivenCallChecker(
                 )
                 val existingUsedGivensForFile =
                     context.trace.bindingContext[InjektWritableSlices.USED_GIVENS_FOR_FILE,
-                            callExpression.containingKtFile] ?: emptyList()
+                            callExpression.containingKtFile.virtualFilePath] ?: emptyList()
                 context.trace.record(
                     InjektWritableSlices.USED_GIVENS_FOR_FILE,
-                    callExpression.containingKtFile,
+                    callExpression.containingKtFile.virtualFilePath,
                     existingUsedGivensForFile + it.candidate.callable.callable
                 )
-            }*/
+            }
         }) {
             is GivenGraph.Success -> context.trace.record(
                 InjektWritableSlices.GIVEN_GRAPH,
