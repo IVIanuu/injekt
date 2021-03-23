@@ -185,7 +185,17 @@ fun ResolutionScope.resolveRequests(requests: List<GivenRequest>): GivenGraph {
 
 private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult {
     resultsByType[request.type]?.let { return it }
-    val result = resolveCandidates(givensForType(request.type))
+    val userGivens = givensForType(request.type)
+    val result = if (userGivens.isNotEmpty()) {
+        resolveCandidates(userGivens)
+    } else {
+        val frameworkCandidate = frameworkGivenForType(request.type)
+        if (frameworkCandidate != null) {
+            resolveCandidate(frameworkCandidate)
+        } else {
+            ResolutionResult.Failure.NoCandidates
+        }
+    }
     resultsByType[request.type] = result
     return result
 }

@@ -122,8 +122,7 @@ fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
     substitutionMap: Map<ClassifierRef, TypeRef>
 ): List<CallableRef> {
     // special case to support @Given () -> Foo
-    if (type?.isFunctionType == true && type.isGiven &&
-            type.arguments.dropLast(1).all { it.isGiven }) {
+    if (type?.isGiven == true && type.isFunctionTypeWithOnlyGivenParameters) {
         return listOf(
             getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
                 .first()
@@ -248,7 +247,7 @@ fun CallableRef.collectGivens(
         return
     }
 
-    val nextCallable = if (type.isFunctionType && type.isGiven) {
+    val nextCallable = if (type.isGiven && type.isFunctionTypeWithOnlyGivenParameters) {
         addGiven(this)
         copy(type = type.copy(frameworkKey = generateFrameworkKey()))
     }

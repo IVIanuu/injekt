@@ -131,86 +131,87 @@ class ResolutionScope(
         constrainedGivens.forEach { recordLookup(it.callable.callable) }
     }
 
-    fun givensForType(type: TypeRef): List<GivenNode> = givensByType.getOrPut(type) {
-        buildList<GivenNode> {
-            parent?.givensForType(type)
-                ?.filterNot { it.isFrameworkGiven }
-                ?.let { this += it }
-            this += givens
-                .filter {
-                    it.type.frameworkKey == type.frameworkKey
-                            && it.type.isAssignableTo(context, type)
-                }
-                .filter { it.isApplicable() }
-                .map { it.toGivenNode(type, this@ResolutionScope) }
-
-            if (none { !it.isFrameworkGiven }) {
-                if (type.qualifier == null &&
-                    type.frameworkKey == null) {
-                    if (type.isFunctionType &&
-                        type.arguments.dropLast(1).all { it.isGiven }) {
-                        this += ProviderGivenNode(
-                            type = type,
-                            ownerScope = this@ResolutionScope,
-                            context = context
-                        )
-                    } else if (type.classifier == context.setType.classifier) {
-                        val setElementType = type.arguments.single()
-                        var elementTypes = setElementsForType(setElementType)
-                        if (elementTypes.isEmpty() &&
-                            setElementType.qualifier == null &&
-                            setElementType.isFunctionType &&
-                            setElementType.arguments.dropLast(1).all { it.isGiven }) {
-                            val providerReturnType = setElementType.arguments.last()
-                            elementTypes = setElementsForType(providerReturnType)
-                                .map { elementType ->
-                                    setElementType.copy(
-                                        arguments = setElementType.arguments
-                                            .dropLast(1) + elementType
-                                    )
-                                }
-                        }
-
-                        if (elementTypes.isNotEmpty()) {
-                            val elements = elementTypes
-                                .mapIndexed { index, element ->
-                                    GivenRequest(
-                                        type = element,
-                                        isRequired = true,
-                                        callableFqName = FqName("com.ivianuu.injekt.givenSetOf"),
-                                        parameterName = "element$index".asNameId(),
-                                        isInline = false
-                                    )
-                                }
-                            this += SetGivenNode(
-                                type = type,
-                                ownerScope = this@ResolutionScope,
-                                dependencies = elements
-                            )
-                        }
+    fun givensForType(type: TypeRef): List<GivenNode> {
+        if (givens.isEmpty()) return parent?.givensForType(type) ?: emptyList()
+        return givensByType.getOrPut(type) {
+            buildList<GivenNode> {
+                parent?.givensForType(type)?.let { this += it }
+                this += givens
+                    .filter {
+                        it.type.frameworkKey == type.frameworkKey
+                                && it.type.isAssignableTo(context, type) &&
+                                it.isApplicable()
                     }
-                }
+                    .map { it.toGivenNode(type, this@ResolutionScope) }
             }
         }
     }
 
+    fun frameworkGivenForType(type: TypeRef): GivenNode? {
+        if (type.qualifier != null || type.frameworkKey != null) return null
+        if (type.isFunctionTypeWithOnlyGivenParameters) {
+            return ProviderGivenNode(
+                type = type,
+                ownerScope = this@ResolutionScope,
+                context = context
+            )
+        } else if (type.classifier == context.setType.classifier) {
+            val setElementType = type.arguments.single()
+            var elementTypes = setElementsForType(setElementType)
+            if (elementTypes.isEmpty() &&
+                setElementType.qualifier == null &&
+                setElementType.isFunctionTypeWithOnlyGivenParameters) {
+                val providerReturnType = setElementType.arguments.last()
+                elementTypes = setElementsForType(providerReturnType)
+                    .map { elementType ->
+                        setElementType.copy(
+                            arguments = setElementType.arguments
+                                .dropLast(1) + elementType
+                        )
+                    }
+            }
+
+            if (elementTypes.isNotEmpty()) {
+                val elements = elementTypes
+                    .mapIndexed { index, element ->
+                        GivenRequest(
+                            type = element,
+                            isRequired = true,
+                            callableFqName = FqName("com.ivianuu.injekt.givenSetOf"),
+                            parameterName = "element$index".asNameId(),
+                            isInline = false
+                        )
+                    }
+                return SetGivenNode(
+                    type = type,
+                    ownerScope = this@ResolutionScope,
+                    dependencies = elements
+                )
+            }
+        }
+
+        return null
+    }
+
     private fun setElementsForType(type: TypeRef): List<TypeRef> {
-        val parentSetElements = parent?.setElementsForType(type) ?: emptyList()
-        if (givens.isEmpty()) return parentSetElements
+        if (givens.isEmpty()) return parent?.setElementsForType(type) ?: emptyList()
         return setElementsByType.getOrPut(type) {
-            parentSetElements + givens
-                .filter {
-                    it.type.frameworkKey == type.frameworkKey &&
-                        it.type.isAssignableTo(context, type)
-                }
-                .map { it.substitute(getSubstitutionMap(context, listOf(type to it.type))) }
-                .map { callable ->
-                    val typeWithFrameworkKey = type.copy(
-                        frameworkKey = generateFrameworkKey()
-                    )
-                    givens += callable.copy(type = typeWithFrameworkKey)
-                    typeWithFrameworkKey
-                }
+            buildList<TypeRef> {
+                parent?.setElementsForType(type)?.let { this += it }
+                this += givens
+                    .filter {
+                        it.type.frameworkKey == type.frameworkKey &&
+                                it.type.isAssignableTo(context, type)
+                    }
+                    .map { it.substitute(getSubstitutionMap(context, listOf(type to it.type))) }
+                    .map { callable ->
+                        val typeWithFrameworkKey = type.copy(
+                            frameworkKey = generateFrameworkKey()
+                        )
+                        givens += callable.copy(type = typeWithFrameworkKey)
+                        typeWithFrameworkKey
+                    }
+            }
         }
     }
 

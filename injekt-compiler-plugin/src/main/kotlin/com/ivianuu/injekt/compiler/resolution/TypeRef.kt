@@ -586,3 +586,14 @@ fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
 val TypeRef.isFunctionType: Boolean get() =
     classifier.fqName.asString().startsWith("kotlin.Function") ||
             classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
+
+val TypeRef.isFunctionTypeWithOnlyGivenParameters: Boolean
+    get() {
+        if (!isFunctionType) return false
+        for (i in arguments.indices) {
+            if (i < arguments.lastIndex && !arguments[i].isGiven)
+                return false
+        }
+
+        return true
+    }
