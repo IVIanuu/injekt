@@ -333,14 +333,14 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
             ?: substitution.qualifier
         val newNullability = if (!isStarProjection) isMarkedNullable else substitution.isMarkedNullable
         val newGiven = isGiven || substitution.isGiven
-        return if (qualifier != substitution.qualifier ||
+        return if (newQualifier != substitution.qualifier ||
                 newNullability != substitution.isMarkedNullable ||
                 newGiven != substitution.isGiven) {
             substitution.copy(
                 // we copy nullability to support T : Any? -> String
                 isMarkedNullable = newNullability,
-                // we keep qualifiers to support @MyQualifier T -> @MyQualifier String
-                // but we also add the substitution qualifiers to support T -> @MyQualifier String
+                // we prefer the existing qualifier to support @MyQualifier T -> @MyQualifier String
+                // but we fallback to the substitution qualifier to also support T -> @MyQualifier String
                 // in case of an overlap we replace the original qualifier with substitution qualifier
                 qualifier = newQualifier,
                 // we copy given kind to support @Given C -> @Given String
@@ -463,7 +463,13 @@ fun getSubstitutionMap(
 
         if (baseType.classifier.isTypeParameter &&
             (baseType.classifier !in substitutionMap || fromInput)) {
-            substitutionMap[baseType.classifier] = thisType
+            val finalSubstitutionMap = if ((thisType.qualifier == null &&
+                        baseType.qualifier == null) ||
+                (baseType.qualifier == null && thisType.qualifier != null)) thisType
+            else thisType.copy(qualifier = thisType.qualifier?.takeIf {
+                it.classifier != baseType.qualifier?.classifier
+            })
+            substitutionMap[baseType.classifier] = finalSubstitutionMap
         }
 
         if (thisType.classifier == baseType.classifier) {
@@ -472,13 +478,17 @@ fun getSubstitutionMap(
             val subType = thisType.subtypeView(baseType.classifier)
             if (subType != null) {
                 subType.arguments.forEachWith(baseType.arguments) { a, b -> visitType(a, b, false) }
-                if (subType.qualifier.isSubTypeOf(context, baseType.qualifier)) {
+                if (subType.qualifier != null &&
+                    baseType.qualifier != null &&
+                    subType.qualifier!!.isSubTypeOf(context, baseType.qualifier!!)) {
                     visitType(subType.qualifier!!, baseType.qualifier!!, false)
                 }
             }
         }
 
-        if (thisType.qualifier.isSubTypeOf(context, baseType.qualifier)) {
+        if (thisType.qualifier != null &&
+            baseType.qualifier != null &&
+            thisType.qualifier!!.isSubTypeOf(context, baseType.qualifier!!)) {
             visitType(thisType.qualifier!!, baseType.qualifier!!, false)
         }
 
@@ -490,11 +500,10 @@ fun getSubstitutionMap(
     return substitutionMap
 }
 
-fun TypeRef?.isAssignableTo(
+fun TypeRef.isAssignableTo(
     context: InjektContext,
-    superType: TypeRef?
+    superType: TypeRef
 ): Boolean {
-    if (this == null || superType == null) return false
     if (isStarProjection || superType.isStarProjection) return true
     if (superType.classifier.isTypeParameter)
         return isSubTypeOfTypeParameter(context, superType)
@@ -513,7 +522,7 @@ private fun TypeRef.isSubTypeOfTypeParameter(
     }
     if (!superTypesAssignable) return false
     if (typeParameter.qualifier != null &&
-        !qualifier.isAssignableTo(context, typeParameter.qualifier)
+        (qualifier == null || !qualifier!!.isAssignableTo(context, typeParameter.qualifier!!))
     ) return false
     return true
 }
@@ -523,7 +532,8 @@ private fun TypeRef.isSubTypeOfSameClassifier(
     superType: TypeRef
 ): Boolean {
     if (this == superType) return true
-    if (!qualifier.isAssignableTo(context, superType.qualifier)) return false
+    if (superType.qualifier != null &&
+        (qualifier == null || !qualifier!!.isAssignableTo(context, superType.qualifier!!))) return false
     if (isComposableType != superType.isComposableType) return false
     arguments.forEachWith(superType.arguments) { a, b ->
         if (!a.isAssignableTo(context, b))
@@ -532,16 +542,15 @@ private fun TypeRef.isSubTypeOfSameClassifier(
     return true
 }
 
-fun TypeRef?.isSubTypeOf(
+fun TypeRef.isSubTypeOf(
     context: InjektContext,
-    superType: TypeRef?
+    superType: TypeRef
 ): Boolean {
-    if (this == null || superType == null) return false
     if (isStarProjection) return true
     if (isNullableType && !superType.isNullableType) return false
     if (superType.classifier.fqName == InjektFqNames.Any)
         return superType.qualifier == null ||
-                qualifier.isAssignableTo(context, superType.qualifier)
+                (qualifier != null && qualifier!!.isAssignableTo(context, superType.qualifier!!))
     if (classifier == superType.classifier)
         return isSubTypeOfSameClassifier(context, superType)
 
@@ -551,7 +560,7 @@ fun TypeRef?.isSubTypeOf(
 
     if (superType.classifier.isTypeParameter) {
         if (superType.qualifier != null &&
-            !qualifier.isAssignableTo(context, superType.qualifier)
+            (qualifier == null || !qualifier!!.isAssignableTo(context, superType.qualifier!!))
         ) return false
         return superType.superTypes.all { isSubTypeOf(context, it) }
     }
