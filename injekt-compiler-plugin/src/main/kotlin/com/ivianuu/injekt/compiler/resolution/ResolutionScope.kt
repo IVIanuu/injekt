@@ -70,8 +70,8 @@ class ResolutionScope(
     val allParents: List<ResolutionScope> = parent?.allScopes ?: emptyList()
     val allScopes: List<ResolutionScope> = allParents + this
 
-    private val givensByType = mutableMapOf<TypeRef, List<GivenNode>>()
-    private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>>()
+    private val givensByType = mutableMapOf<TypeRef, List<GivenNode>?>()
+    private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>?>()
 
     init {
         if (parent != null) {
@@ -131,21 +131,22 @@ class ResolutionScope(
         constrainedGivens.forEach { recordLookup(it.callable.callable) }
     }
 
-    fun givensForType(type: TypeRef): List<GivenNode> {
-        if (givens.isEmpty()) return parent?.givensForType(type) ?: emptyList()
+    fun givensForType(type: TypeRef): List<GivenNode>? {
+        if (givens.isEmpty()) return parent?.givensForType(type)
         return givensByType.getOrPut(type) {
-            buildList<GivenNode> {
-                parent?.givensForType(type)?.let { this += it }
-                this += givens
-                    .asSequence()
-                    .filter {
-                        it.type.frameworkKey == type.frameworkKey
-                                && it.type.isAssignableTo(context, type) &&
-                                it.isApplicable()
-                    }
-                    .map { it.toGivenNode(type, this@ResolutionScope) }
-                    .toList()
-            }
+            val thisGivens = givens
+                .asSequence()
+                .filter {
+                    it.type.frameworkKey == type.frameworkKey
+                            && it.type.isAssignableTo(context, type) &&
+                            it.isApplicable()
+                }
+                .map { it.toGivenNode(type, this@ResolutionScope) }
+                .toList()
+                .takeIf { it.isNotEmpty() }
+            val parentGivens = parent?.givensForType(type)
+            if (parentGivens != null && thisGivens != null) parentGivens + thisGivens
+            else thisGivens ?: parentGivens
         }
     }
 
@@ -160,12 +161,12 @@ class ResolutionScope(
         } else if (type.classifier == context.setType.classifier) {
             val setElementType = type.arguments.single()
             var elementTypes = setElementsForType(setElementType)
-            if (elementTypes.isEmpty() &&
+            if (elementTypes == null &&
                 setElementType.qualifier == null &&
                 setElementType.isFunctionTypeWithOnlyGivenParameters) {
                 val providerReturnType = setElementType.arguments.last()
                 elementTypes = setElementsForType(providerReturnType)
-                    .map { elementType ->
+                    ?.map { elementType ->
                         setElementType.copy(
                             arguments = setElementType.arguments
                                 .dropLast(1) + elementType
@@ -173,7 +174,7 @@ class ResolutionScope(
                     }
             }
 
-            if (elementTypes.isNotEmpty()) {
+            if (elementTypes != null) {
                 val elements = elementTypes
                     .mapIndexed { index, element ->
                         GivenRequest(
@@ -195,28 +196,30 @@ class ResolutionScope(
         return null
     }
 
-    private fun setElementsForType(type: TypeRef): List<TypeRef> {
-        if (givens.isEmpty()) return parent?.setElementsForType(type) ?: emptyList()
+    private fun setElementsForType(type: TypeRef): List<TypeRef>? {
+        if (givens.isEmpty()) return parent?.setElementsForType(type)
         return setElementsByType.getOrPut(type) {
-            buildList<TypeRef> {
-                parent?.setElementsForType(type)?.let { this += it }
-                this += givens
-                    .toList()
-                    .asSequence()
-                    .filter {
-                        it.type.frameworkKey == type.frameworkKey &&
-                                it.type.isAssignableTo(context, type)
-                    }
-                    .map { it.substitute(getSubstitutionMap(context, listOf(type to it.type))) }
-                    .map { callable ->
-                        val typeWithFrameworkKey = type.copy(
-                            frameworkKey = generateFrameworkKey()
-                        )
-                        givens += callable.copy(type = typeWithFrameworkKey)
-                        typeWithFrameworkKey
-                    }
-                    .toList()
-            }
+            val thisSetElements = givens
+                .toList()
+                .asSequence()
+                .filter {
+                    it.type.frameworkKey == type.frameworkKey
+                            && it.type.isAssignableTo(context, type) &&
+                            it.isApplicable()
+                }
+                .map { it.substitute(getSubstitutionMap(context, listOf(type to it.type))) }
+                .map { callable ->
+                    val typeWithFrameworkKey = type.copy(
+                        frameworkKey = generateFrameworkKey()
+                    )
+                    givens += callable.copy(type = typeWithFrameworkKey)
+                    typeWithFrameworkKey
+                }
+                .toList()
+                .takeIf { it.isNotEmpty() }
+            val parentSetElements = parent?.setElementsForType(type)
+            if (parentSetElements != null && thisSetElements != null) parentSetElements + thisSetElements
+            else thisSetElements ?: parentSetElements
         }
     }
 
