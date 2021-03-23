@@ -55,18 +55,22 @@ class ResolutionScope(
     private val constrainedGivens = mutableListOf<ConstrainedGivenNode>()
     private val constrainedGivenCandidates = mutableListOf<ConstrainedGivenCandidate>()
 
-    private data class ConstrainedGivenNode(val callable: CallableRef) {
-        val processedCandidateTypes = mutableSetOf<TypeRef>()
-        val resultingFrameworkKeys = mutableSetOf<String>()
-        fun copy() = ConstrainedGivenNode(callable).also {
-            it.processedCandidateTypes += processedCandidateTypes
-            it.resultingFrameworkKeys += resultingFrameworkKeys
-        }
+    private data class ConstrainedGivenNode(
+        val callable: CallableRef,
+        val constraintType: TypeRef = callable.typeParameters.single {
+            it.isGivenConstraint
+        }.defaultType,
+        val processedCandidateTypes: MutableSet<TypeRef> = mutableSetOf(),
+        val resultingFrameworkKeys: MutableSet<String> = mutableSetOf()
+    ) {
+        fun copy() = ConstrainedGivenNode(
+            callable,
+            constraintType,
+            processedCandidateTypes.toMutableSet(),
+            resultingFrameworkKeys.toMutableSet()
+        )
     }
-    private data class ConstrainedGivenCandidate(
-        val type: TypeRef,
-        val rawType: TypeRef
-    )
+    private data class ConstrainedGivenCandidate(val type: TypeRef, val rawType: TypeRef)
 
     val allParents: List<ResolutionScope> = parent?.allScopes ?: emptyList()
     val allScopes: List<ResolutionScope> = allParents + this
@@ -75,14 +79,6 @@ class ResolutionScope(
     private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>?>()
 
     init {
-        if (parent != null) {
-            constrainedGivens += parent.constrainedGivens
-                .map { it.copy() }
-            constrainedGivenCandidates += parent.constrainedGivenCandidates
-        }
-
-        var hasGivens = false
-
         initialGivens
             .forEach { given ->
                 given.collectGivens(
@@ -91,7 +87,6 @@ class ResolutionScope(
                     substitutionMap = emptyMap(),
                     trace = trace,
                     addGiven = { callable ->
-                        hasGivens = true
                         givens += callable
                         val typeWithFrameworkKey = callable.type
                             .copy(frameworkKey = generateFrameworkKey())
@@ -101,14 +96,23 @@ class ResolutionScope(
                             rawType = callable.type
                         )
                     },
-                    addConstrainedGiven = {
-                        hasGivens = true
-                        constrainedGivens += ConstrainedGivenNode(it)
-                    }
+                    addConstrainedGiven = { constrainedGivens += ConstrainedGivenNode(it) }
                 )
             }
 
-        if (hasGivens) {
+        val hasConstrainedGivens = constrainedGivens.isNotEmpty()
+        val hasConstrainedGivensCandidates = constrainedGivenCandidates.isNotEmpty()
+        if (parent != null) {
+            constrainedGivens.addAll(
+                0,
+                parent.constrainedGivens
+                    .map { if (hasConstrainedGivensCandidates) it.copy() else it }
+            )
+            constrainedGivenCandidates.addAll(0, parent.constrainedGivenCandidates)
+        }
+
+        if ((hasConstrainedGivens && constrainedGivenCandidates.isNotEmpty()) ||
+            (hasConstrainedGivensCandidates && constrainedGivens.isNotEmpty())) {
             constrainedGivenCandidates
                 .toList()
                 .forEach { collectConstrainedGivens(it) }
@@ -233,22 +237,18 @@ class ResolutionScope(
         constrainedGiven: ConstrainedGivenNode,
         candidate: ConstrainedGivenCandidate
     ) {
-        if (candidate.type in constrainedGiven.processedCandidateTypes) return
         if (candidate.type.frameworkKey in constrainedGiven.resultingFrameworkKeys) return
+        if (candidate.type in constrainedGiven.processedCandidateTypes) return
         constrainedGiven.processedCandidateTypes += candidate.type
-
-        val constraintType = constrainedGiven.callable.typeParameters.single {
-            it.isGivenConstraint
-        }.defaultType
-        if (!candidate.rawType.isSubTypeOf(context, constraintType)) return
+        if (!candidate.rawType.isSubTypeOf(context, constrainedGiven.constraintType)) return
 
         val inputsSubstitutionMap = getSubstitutionMap(
             context,
-            listOf(candidate.type to constraintType)
+            listOf(candidate.type to constrainedGiven.constraintType)
         )
         val outputsSubstitutionMap = getSubstitutionMap(
             context,
-            listOf(candidate.rawType to constraintType)
+            listOf(candidate.rawType to constrainedGiven.constraintType)
         )
         check(inputsSubstitutionMap.size == constrainedGiven.callable.typeParameters.size) {
             "Corrupt substitution map $inputsSubstitutionMap for $constrainedGiven with candidate $candidate"
