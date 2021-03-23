@@ -45,6 +45,15 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project: MockProject,
         configuration: CompilerConfiguration,
     ) {
+        val outputDir = configuration[JVMConfigurationKeys.OUTPUT_DIRECTORY]
+        val kaptOutputDirs = listOf(
+            listOf("tmp", "kapt3", "stubs"),
+            listOf("tmp", "kapt3", "incrementalData"),
+            listOf("tmp", "kapt3", "incApCache")
+        ).map { File(it.joinToString(File.separator)) }
+        val isGenerateKaptStubs = kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
+        if (isGenerateKaptStubs) return
+
         val allowGivenCalls = allowGivenCalls(configuration)
         StorageComponentContainerContributor.registerExtension(
             project,

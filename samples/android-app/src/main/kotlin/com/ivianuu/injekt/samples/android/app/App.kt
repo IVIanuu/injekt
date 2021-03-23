@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("UnusedImport")
+
 package com.ivianuu.injekt.samples.android.app
 
 import android.app.Application
