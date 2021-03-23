@@ -123,12 +123,14 @@ class ProviderGivenNode(
                 .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
                 .first()
                 .valueParameters
+                .asSequence()
                 .onEach { parameterDescriptors += it }
                 .mapIndexed { index, parameter ->
                     parameter
                         .toCallableRef(context, ownerScope.trace)
                         .copy(isGiven = true, type = type.arguments[index])
                 }
+                .toList()
         )
     }
 
@@ -162,27 +164,27 @@ fun CallableRef.toGivenNode(
 fun CallableRef.getGivenRequests(
     context: InjektContext,
     trace: BindingTrace?
-): List<GivenRequest> {
-    return callable.allParameters
-        .filter {
-            callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
-        }
-        .filter {
-            it === callable.dispatchReceiverParameter ||
-                    it.isGiven(context, trace) ||
-                    parameterTypes[it.injektName()]!!.isGiven
-        }
-        .map {
-            val name = it.injektName()
-            GivenRequest(
-                type = parameterTypes[name]!!,
-                isRequired = it !is ValueParameterDescriptor || !it.hasDefaultValueIgnoringGiven,
-                callableFqName = callable.fqNameSafe,
-                parameterName = name.asNameId(),
-                isInline = callable is FunctionDescriptor && callable.isInline
-            )
-        }
-}
+): List<GivenRequest> = callable.allParameters
+    .asSequence()
+    .filter {
+        callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
+    }
+    .filter {
+        it === callable.dispatchReceiverParameter ||
+                it.isGiven(context, trace) ||
+                parameterTypes[it.injektName()]!!.isGiven
+    }
+    .map {
+        val name = it.injektName()
+        GivenRequest(
+            type = parameterTypes[name]!!,
+            isRequired = it !is ValueParameterDescriptor || !it.hasDefaultValueIgnoringGiven,
+            callableFqName = callable.fqNameSafe,
+            parameterName = name.asNameId(),
+            isInline = callable is FunctionDescriptor && callable.isInline
+        )
+    }
+    .toList()
 
 data class GivenRequest(
     val type: TypeRef,

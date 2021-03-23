@@ -22,15 +22,10 @@ import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.forTypeKeyTypeParameters
-import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
 import com.ivianuu.injekt.compiler.resolution.givenConstraintTypeParameters
-import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.squareup.moshi.JsonClass
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -51,37 +46,6 @@ fun CallableRef.toPersistedCallableInfo(context: InjektContext) = PersistedCalla
         .mapValues { it.value.toPersistedTypeRef(context) },
     givenParameters = givenParameters
 )
-
-fun CallableRef.apply(
-    context: InjektContext,
-    trace: BindingTrace?,
-    info: PersistedCallableInfo?
-): CallableRef {
-    return if (info == null) this
-    else {
-        val original = callable.original
-        val originalType = original.returnType!!.toTypeRef(context, trace)
-        val substitutionMap = getSubstitutionMap(
-            context,
-            listOf(type to originalType) +
-                    parameterTypes.values
-                        .zip(
-                            (if (original is ConstructorDescriptor) original.valueParameters else original.allParameters)
-                                .map { it.type.toTypeRef(context, trace) }
-                        )
-        )
-        copy(
-            type = info.type.toTypeRef(context, trace),
-            originalType = info.type.toTypeRef(context, trace),
-            typeParameters = info.typeParameters.map {
-                it.toClassifierRef(context, trace)
-            },
-            parameterTypes = info.parameterTypes
-                .mapValues { it.value.toTypeRef(context, trace) },
-            givenParameters = info.givenParameters
-        ).substitute(substitutionMap)
-    }
-}
 
 @JsonClass(generateAdapter = true)
 data class PersistedClassifierInfo(
@@ -200,15 +164,3 @@ fun PersistedClassifierRef.toPersistedClassifierInfo() = PersistedClassifierInfo
     givenConstraintTypeParameters = givenConstraintTypeParameters
 )
 
-fun ClassifierRef.apply(
-    context: InjektContext,
-    trace: BindingTrace?,
-    info: PersistedClassifierInfo?
-): ClassifierRef {
-    return if (info == null || !descriptor!!.isExternalDeclaration()) this
-    else copy(
-        qualifier = info.qualifier?.toTypeRef(context, trace),
-        superTypes = info.superTypes.map { it.toTypeRef(context, trace) },
-        primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters.map { it.asNameId() }
-    )
-}

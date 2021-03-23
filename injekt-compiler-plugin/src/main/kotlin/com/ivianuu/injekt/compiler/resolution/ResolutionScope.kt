@@ -137,12 +137,14 @@ class ResolutionScope(
             buildList<GivenNode> {
                 parent?.givensForType(type)?.let { this += it }
                 this += givens
+                    .asSequence()
                     .filter {
                         it.type.frameworkKey == type.frameworkKey
                                 && it.type.isAssignableTo(context, type) &&
                                 it.isApplicable()
                     }
                     .map { it.toGivenNode(type, this@ResolutionScope) }
+                    .toList()
             }
         }
     }
@@ -199,6 +201,8 @@ class ResolutionScope(
             buildList<TypeRef> {
                 parent?.setElementsForType(type)?.let { this += it }
                 this += givens
+                    .toList()
+                    .asSequence()
                     .filter {
                         it.type.frameworkKey == type.frameworkKey &&
                                 it.type.isAssignableTo(context, type)
@@ -211,6 +215,7 @@ class ResolutionScope(
                         givens += callable.copy(type = typeWithFrameworkKey)
                         typeWithFrameworkKey
                     }
+                    .toList()
             }
         }
     }
@@ -325,6 +330,7 @@ fun HierarchicalResolutionScope(
     val allScopes = scope.parentsWithSelf.toList()
 
     val importScopes = allScopes
+        .asSequence()
         .filterIsInstance<ImportingScope>()
         .filter { importScope ->
             if (importScope is LazyImportScope) {
@@ -351,6 +357,7 @@ fun HierarchicalResolutionScope(
     return allScopes
         .filter { it !in importScopes }
         .reversed()
+        .asSequence()
         .filter {
             it is LexicalScope && (
                     (it.ownerDescriptor is ClassDescriptor &&
@@ -409,8 +416,10 @@ fun HierarchicalResolutionScope(
                             ownerDescriptor = function,
                             trace = trace,
                             initialGivens = function.allParameters
+                                .asSequence()
                                 .filter { it.isGiven(context, trace) || it === function.extensionReceiverParameter }
                                 .map { it.toCallableRef(context, trace).makeGiven() }
+                                .toList()
                         ).also { trace.record(InjektWritableSlices.FUNCTION_RESOLUTION_SCOPE, function, it) }
                 }
                 else -> {

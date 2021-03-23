@@ -20,12 +20,14 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.Tuple1
-import com.ivianuu.injekt.compiler.apply
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.isExternalDeclaration
+import com.ivianuu.injekt.compiler.toClassifierRef
+import com.ivianuu.injekt.compiler.toMap
+import com.ivianuu.injekt.compiler.toTypeRef
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
@@ -84,33 +86,37 @@ fun CallableDescriptor.toCallableRef(
     trace: BindingTrace?
 ): CallableRef {
     trace?.get(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this)?.let { return it }
-    val type = returnType!!.toTypeRef(context, trace)
-    val typeParameters = typeParameters
+    val info = if (original.isExternalDeclaration()) context.callableInfoFor(this, trace)
+    else null
+    val type = info?.type?.toTypeRef(context, trace) ?: returnType!!.toTypeRef(context, trace)
+    val typeParameters = info
+        ?.typeParameters
+        ?.map { it.toClassifierRef(context, trace) } ?: typeParameters
         .map { it.toClassifierRef(context, trace) }
+    val parameterTypes = info
+        ?.parameterTypes
+        ?.mapValues { it.value.toTypeRef(context, trace) }
+        ?: (if (this is ConstructorDescriptor) valueParameters else allParameters)
+            .map { it.injektName() to it.type.toTypeRef(context, trace) }
+            .toMap()
+    val givenParameters = info?.givenParameters ?: (if (this is ConstructorDescriptor) valueParameters else allParameters)
+        .asSequence()
+        .filter { it.isGiven(context, trace) }
+        .mapTo(mutableSetOf()) { it.injektName() }
     return CallableRef(
         callable = this,
         type = type,
         originalType = type,
         typeParameters = typeParameters,
-        parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-            .map { it.injektName() to it.type.toTypeRef(context, trace) }
-            .toMap(),
-        givenParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-            .filter { it.isGiven(context, trace) }
-            .mapTo(mutableSetOf()) { it.injektName() },
+        parameterTypes = parameterTypes,
+        givenParameters = givenParameters,
         typeArguments = typeParameters
             .map { it to it.defaultType }
             .toMap(),
         isGiven = isGiven(context, trace),
         fromGivenConstraint = false,
         callContext = callContext
-    ).let {
-        if (original.isExternalDeclaration()) it.apply(
-            context,
-            trace,
-            context.callableInfoFor(it.callable, trace)
-        ) else it
-    }.also {
+    ).also {
         trace?.record(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this, it)
     }
 }
@@ -255,7 +261,7 @@ fun CallableRef.collectGivens(
     addGiven(nextCallable)
 
     val combinedSubstitutionMap = substitutionMap + nextCallable.type.classifier.typeParameters
-        .zip(nextCallable.type.arguments)
+        .toMap(nextCallable.type.arguments)
 
     nextCallable
         .type

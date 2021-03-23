@@ -19,7 +19,7 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.apply
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -27,6 +27,7 @@ import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isForTypeKey
 import com.ivianuu.injekt.compiler.isGivenConstraint
 import com.ivianuu.injekt.compiler.toMap
+import com.ivianuu.injekt.compiler.toTypeRef
 import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -38,9 +39,7 @@ import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtParameter
-import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -48,7 +47,6 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.getAbbreviation
 import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
-import kotlin.reflect.typeOf
 
 data class ClassifierRef(
     val fqName: FqName,
@@ -77,22 +75,28 @@ data class ClassifierRef(
 
 val ClassifierRef.givenConstraintTypeParameters: List<Name>
     get() = typeParameters
+        .asSequence()
         .filter { it.isGivenConstraint }
         .map { it.fqName.shortName() }
+        .toList()
 
 val ClassifierRef.forTypeKeyTypeParameters: List<Name>
     get() = typeParameters
+        .asSequence()
         .filter { it.isForTypeKey }
         .map { it.fqName.shortName() }
+        .toList()
 
 fun ClassifierDescriptor.toClassifierRef(
     context: InjektContext,
     trace: BindingTrace?
 ): ClassifierRef {
     trace?.get(InjektWritableSlices.CLASSIFIER_REF_FOR_CLASSIFIER, this)?.let { return it }
-    val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
-        ?.toTypeRef(context, trace)
-    val qualifier = getAnnotatedAnnotations(InjektFqNames.Qualifier)
+    val info = if (original.isExternalDeclaration()) context.classifierInfoFor(this, trace)
+    else null
+    val expandedType = if (info == null) (original as? TypeAliasDescriptor)?.underlyingType
+        ?.toTypeRef(context, trace) else null
+    val qualifier = info?.qualifier?.toTypeRef(context, trace) ?: getAnnotatedAnnotations(InjektFqNames.Qualifier)
         .firstOrNull()
         ?.type
         ?.toTypeRef(context, trace)
@@ -100,8 +104,11 @@ fun ClassifierDescriptor.toClassifierRef(
         fqName = original.fqNameSafe,
         typeParameters = (original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
             ?.map { it.toClassifierRef(context, trace) } ?: emptyList(),
-        superTypes = if (expandedType != null) listOf(expandedType)
-        else typeConstructor.supertypes.map { it.toTypeRef(context, trace) },
+        superTypes = when {
+            expandedType != null -> listOf(expandedType)
+            info != null -> info.superTypes.map { it.toTypeRef(context, trace) }
+            else -> typeConstructor.supertypes.map { it.toTypeRef(context, trace) }
+        },
         isTypeParameter = this is TypeParameterDescriptor,
         isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
         isTypeAlias = this is TypeAliasDescriptor,
@@ -109,21 +116,18 @@ fun ClassifierDescriptor.toClassifierRef(
         qualifier = qualifier,
         isGivenConstraint = this is TypeParameterDescriptor && isGivenConstraint(context, trace),
         isForTypeKey = this is TypeParameterDescriptor && isForTypeKey(context, trace),
-        primaryConstructorPropertyParameters = this
-            .takeIf { !it.isExternalDeclaration() }
+        primaryConstructorPropertyParameters = info
+            ?.primaryConstructorPropertyParameters
+            ?.map { it.asNameId() } ?: this
             .safeAs<ClassDescriptor>()
             ?.unsubstitutedPrimaryConstructor
             ?.valueParameters
+            ?.asSequence()
             ?.filter { it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true }
             ?.map { it.name }
+            ?.toList()
             ?: emptyList()
-    ).let {
-        if (original.isExternalDeclaration()) it.apply(
-            context,
-            trace,
-            context.classifierInfoFor(this, trace)
-        ) else it
-    }.also {
+    ).also {
         trace?.record(InjektWritableSlices.CLASSIFIER_REF_FOR_CLASSIFIER, this, it)
     }
 }
@@ -132,8 +136,7 @@ fun KotlinType.toTypeRef(
     context: InjektContext,
     trace: BindingTrace?,
     isStarProjection: Boolean = false
-): TypeRef = if (isStarProjection) STAR_PROJECTION_TYPE
-else {
+): TypeRef = if (isStarProjection) STAR_PROJECTION_TYPE else {
     val key = System.identityHashCode(this)
     trace?.get(InjektWritableSlices.TYPE_REF_FOR_TYPE, key)?.let { return it }
     KotlinTypeRef(this, isStarProjection, context, trace)
@@ -277,8 +280,10 @@ class KotlinTypeRef(
         (kotlinType.getAbbreviation() ?: kotlinType).arguments
             // we use the take here because an inner class also contains the type parameters
             // of it's parent class which is irrelevant for us
+            .asSequence()
             .take(classifier.typeParameters.size)
             .map { it.type.toTypeRef(context, trace, it.isStarProjection) }
+            .toList()
     }
     override val qualifier: TypeRef? by unsafeLazy {
         kotlinType.getAnnotatedAnnotations(InjektFqNames.Qualifier)

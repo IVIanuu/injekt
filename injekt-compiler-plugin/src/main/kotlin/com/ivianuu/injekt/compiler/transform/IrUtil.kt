@@ -258,7 +258,7 @@ fun IrBuilderWithScope.irLambda(
                 typeArgument.typeOrNull!!
             )
         }
-        annotations += type.annotations.map {
+        annotations = annotations + type.annotations.map {
             it.deepCopyWithSymbols()
         }
         this.body =

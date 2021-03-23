@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.GivenFunctionDescriptor
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.uniqueTypeName
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -83,10 +82,9 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
 
     // Look for star imports and make a guess.
     val hasStarImport = importPaths
+        .asSequence()
         .filter { it.isAllUnder }
-        .any {
-            fqName.asString().startsWith(it.fqName.asString())
-        }
+        .any { fqName.asString().startsWith(it.fqName.asString()) }
     if (hasStarImport) return annotationEntryShort
 
     val isSamePackage = fqName.parent() == annotationEntryShort.containingKtFile.packageFqName
@@ -126,8 +124,7 @@ fun IrAnnotationContainer.getAnnotatedAnnotations(annotation: FqName): List<IrCo
     }
 
 fun DeclarationDescriptor.uniqueKey(context: InjektContext): String {
-    val original = this.original
-    return when (original) {
+    return when (val original = this.original) {
         is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
             original.valueParameters
                 .joinToString(",") {
@@ -138,8 +135,7 @@ fun DeclarationDescriptor.uniqueKey(context: InjektContext): String {
         }"
         is ClassDescriptor -> "class:$fqNameSafe"
         is FunctionDescriptor -> "function:$fqNameSafe:${
-            listOfNotNull(
-                original.dispatchReceiverParameter, original.extensionReceiverParameter)
+            listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
                 .plus(original.valueParameters)
                 .joinToString(",") {
                     it.type

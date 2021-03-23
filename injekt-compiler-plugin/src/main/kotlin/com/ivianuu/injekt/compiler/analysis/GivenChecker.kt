@@ -43,7 +43,6 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.fir.extensions.predicate.has
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -350,6 +349,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                     }
             }
         nonConstraintTypeParameterRefs
+            .asSequence()
             .filter { it !in usedNonConstraintTypeParameterRefs }
             .map { it.descriptor!! }
             .forEach {

@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
-import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.isIde
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
@@ -75,6 +74,7 @@ class GivenCallChecker(
             .substitute(substitutionMap)
 
         val requests = callable.givenParameters
+            .asSequence()
             .map { parameterName ->
                 callable.callable.valueParameters.single {
                     it.name.asString() == parameterName
@@ -91,6 +91,7 @@ class GivenCallChecker(
                         .safeAs<FunctionDescriptor>()?.isInline == true
                 )
             }
+            .toList()
 
         if (requests.isEmpty()) return
 

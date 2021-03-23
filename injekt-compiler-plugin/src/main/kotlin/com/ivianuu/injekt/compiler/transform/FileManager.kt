@@ -30,6 +30,7 @@ class FileManager(
     private val cacheEntries = if (!cacheFile.exists()) mutableSetOf()
     else cacheFile.readText()
         .split("\n")
+        .asSequence()
         .filter { it.isNotEmpty() }
         .map {
             val tmp = it.split("=:=")

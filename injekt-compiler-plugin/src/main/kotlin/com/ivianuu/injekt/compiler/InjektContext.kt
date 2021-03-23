@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.squareup.moshi.Moshi
@@ -149,7 +148,7 @@ class InjektContext(val module: ModuleDescriptor) {
         return classifier
     }
 
-    fun functionDescriptorsForFqName(fqName: FqName): List<FunctionDescriptor> {
+    private fun functionDescriptorsForFqName(fqName: FqName): List<FunctionDescriptor> {
         return memberScopeForFqName(fqName.parent())?.getContributedFunctions(
             fqName.shortName(), NoLookupLocation.FROM_BACKEND
         )?.toList() ?: emptyList()
@@ -161,7 +160,7 @@ class InjektContext(val module: ModuleDescriptor) {
         )?.toList() ?: emptyList()
     }
 
-    fun memberScopeForFqName(fqName: FqName): MemberScope? {
+    private fun memberScopeForFqName(fqName: FqName): MemberScope? {
         val pkg = module.getPackage(fqName)
 
         if (fqName.isRoot || pkg.fragments.isNotEmpty()) return pkg.memberScope

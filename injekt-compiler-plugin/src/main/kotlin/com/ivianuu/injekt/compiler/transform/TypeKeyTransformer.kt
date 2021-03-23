@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isForTypeKey
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -42,7 +41,6 @@ import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrCall
-import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
@@ -268,6 +266,7 @@ class TypeKeyTransformer(
                     copyTypeAndValueArgumentsFrom(expression)
                     var currentIndex = expression.valueArgumentsCount
                     (0 until typeArgumentsCount)
+                        .asSequence()
                         .map { transformedCallee.typeParameters[it] to getTypeArgument(it)!! }
                         .filter { it.first.descriptor.isForTypeKey(context, trace) }
                         .forEach { (_, typeArgument) ->
@@ -296,6 +295,7 @@ class TypeKeyTransformer(
                     copyTypeAndValueArgumentsFrom(expression)
                     var currentIndex = expression.valueArgumentsCount
                     (0 until typeArgumentsCount)
+                        .asSequence()
                         .map {
                             transformedCallee as IrConstructor
                             transformedCallee.constructedClass.typeParameters[it] to getTypeArgument(it)!!
@@ -329,6 +329,7 @@ class TypeKeyTransformer(
                     copyTypeAndValueArgumentsFrom(expression)
                     var currentIndex = expression.valueArgumentsCount
                     (0 until typeArgumentsCount)
+                        .asSequence()
                         .map {
                             transformedCallee as IrConstructor
                             transformedCallee.constructedClass.typeParameters[it] to getTypeArgument(it)!!
@@ -445,7 +446,7 @@ class TypeKeyTransformer(
                 annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
             ) {
                 val name = JvmAbi.getterName(descriptor.correspondingProperty.name.identifier)
-                annotations += DeclarationIrBuilder(pluginContext, symbol)
+                annotations = annotations + DeclarationIrBuilder(pluginContext, symbol)
                     .jvmNameAnnotation(name, pluginContext)
                 correspondingPropertySymbol?.owner?.getter = this
             }
@@ -453,7 +454,7 @@ class TypeKeyTransformer(
                 annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
             ) {
                 val name = JvmAbi.setterName(descriptor.correspondingProperty.name.identifier)
-                annotations += DeclarationIrBuilder(pluginContext, symbol)
+                annotations = annotations + DeclarationIrBuilder(pluginContext, symbol)
                     .jvmNameAnnotation(name, pluginContext)
                 correspondingPropertySymbol?.owner?.setter = this
             }

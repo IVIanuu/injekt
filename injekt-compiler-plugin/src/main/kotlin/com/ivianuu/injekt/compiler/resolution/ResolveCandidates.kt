@@ -73,6 +73,7 @@ sealed class ResolutionResult {
                             }
                             dependencyResults.values.single().safeAs<Value>()?.visit()
                             allOuterMostScopes
+                                .asSequence()
                                 .sortedBy { it.allParents.size }
                                 .filter { it.allParents.size < candidate.dependencyScope!!.allParents.size }
                                 .lastOrNull {
@@ -248,6 +249,7 @@ private fun ResolutionScope.resolveCandidates(
     val successes = mutableListOf<ResolutionResult.Success>()
     var failure: ResolutionResult.Failure? = null
     val remaining = candidates
+        .asSequence()
         .sortedWith { a, b -> compareCandidate(a, b) }
         .toMutableList()
     while (remaining.isNotEmpty()) {
