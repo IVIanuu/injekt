@@ -521,7 +521,7 @@ private fun TypeRef.isSubTypeOfSameClassifier(
     if (this == superType) return true
     if (superType.qualifier != null &&
         (qualifier == null || !qualifier!!.isAssignableTo(context, superType.qualifier!!))) return false
-    if (isComposableType != superType.isComposableType) return false
+    if (isMarkedComposable != superType.isMarkedComposable) return false
     arguments.forEachWith(superType.arguments) { a, b ->
         if (!a.isAssignableTo(context, b))
             return false

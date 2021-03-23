@@ -113,16 +113,23 @@ fun TypeRef.toIrType(
             irClassifier,
             isMarkedNullable,
             arguments.map { makeTypeProjection(it.toIrType(pluginContext, localClasses, context), Variance.INVARIANT) },
-            listOfNotNull(
+            buildList<IrConstructorCall> {
                 qualifier
                     ?.toIrType(pluginContext, localClasses, context)
                     ?.let {
                         DeclarationIrBuilder(pluginContext, it.classifierOrFail)
                             .irCall(it.classOrNull!!.owner.constructors.single().symbol, it, it.classOrNull!!.owner)
                     }
-            ),
+                    ?.let { this += it }
+                if (isMarkedComposable) {
+                    val composableConstructor = pluginContext.referenceConstructors(InjektFqNames.Composable)
+                        .single()
+                    this += DeclarationIrBuilder(pluginContext, composableConstructor)
+                        .irCall(composableConstructor)
+                }
+            },
             null
-        ).makeComposableAsSpecified(pluginContext, context, isMarkedComposable)
+        )
     }
 }
 
@@ -134,7 +141,7 @@ private fun TypeRef.toIrAbbreviation(
     val typeAlias = pluginContext.referenceTypeAlias(classifier.fqName)!!
     return IrTypeAbbreviationImpl(
         typeAlias,
-        isMarkedComposable,
+        isMarkedNullable,
         arguments.map {
             makeTypeProjection(it.toIrType(pluginContext, localClasses, context), Variance.INVARIANT)
         },
@@ -149,34 +156,6 @@ private fun TypeRef.toIrAbbreviation(
     )
 }
 
-private fun IrSimpleType.makeComposableAsSpecified(
-    pluginContext: IrPluginContext,
-    context: InjektContext,
-    isComposable: Boolean
-): IrSimpleType {
-    val newAnnotations = if (isComposable) {
-        if (annotations.any { it.type.classOrNull?.descriptor?.fqNameSafe == InjektFqNames.Composable }) {
-            annotations
-        } else {
-            val composableConstructor = pluginContext.referenceConstructors(InjektFqNames.Composable)
-                .single()
-            annotations + DeclarationIrBuilder(pluginContext, composableConstructor)
-                .irCall(composableConstructor)
-        }
-    } else {
-        annotations.filter {
-            it.type.classOrNull?.descriptor?.fqNameSafe != InjektFqNames.Composable
-        }
-    }
-    return IrSimpleTypeImpl(
-        classifier,
-        hasQuestionMark,
-        arguments,
-        newAnnotations,
-        abbreviation
-    )
-}
-
 fun TypeRef.toKotlinType(context: InjektContext): SimpleType {
     if (isStarProjection) return context.module.builtIns.anyType
     return if (classifier.isTypeAlias) {
@@ -184,13 +163,27 @@ fun TypeRef.toKotlinType(context: InjektContext): SimpleType {
             .withAbbreviation(toAbbreviation(context))
     } else {
         classifier.descriptor!!.original.defaultType
-            .replace(newArguments = arguments.map {
-                TypeProjectionImpl(
-                    Variance.INVARIANT,
-                    it.toKotlinType(context)
-                )
-            })
-            .makeComposableAsSpecified(context, isMarkedComposable)
+            .replace(
+                newArguments = arguments.map {
+                    TypeProjectionImpl(
+                        Variance.INVARIANT,
+                        it.toKotlinType(context)
+                    )
+                },
+                newAnnotations = if (isMarkedComposable) {
+                    Annotations.create(
+                        listOf(
+                            AnnotationDescriptorImpl(
+                                context.classifierDescriptorForFqName(InjektFqNames.Composable)!!.defaultType,
+                                emptyMap(),
+                                SourceElement.NO_SOURCE
+                            )
+                        )
+                    )
+                } else {
+                    Annotations.EMPTY
+                }
+            )
             .makeNullableAsSpecified(isMarkedNullable)
     }
 }
@@ -206,31 +199,6 @@ fun TypeRef.toAbbreviation(context: InjektContext): SimpleType {
         })
 
         .makeNullableAsSpecified(isMarkedNullable)
-}
-
-private fun SimpleType.makeComposableAsSpecified(
-    context: InjektContext,
-    isComposable: Boolean
-): SimpleType {
-    return replaceAnnotations(
-        if (isComposable) {
-            Annotations.create(
-                listOf(
-                    AnnotationDescriptorImpl(
-                        context.classifierDescriptorForFqName(InjektFqNames.Composable)!!.defaultType,
-                        emptyMap(),
-                        SourceElement.NO_SOURCE
-                    )
-                )
-            )
-        } else {
-            Annotations.create(
-                annotations.filter {
-                    it.type.constructor.declarationDescriptor?.fqNameSafe != InjektFqNames.Composable
-                }
-            )
-        }
-    )
 }
 
 fun IrBuilderWithScope.irLambda(
@@ -252,11 +220,13 @@ fun IrBuilderWithScope.irLambda(
             .startsWith("kotlin.coroutines.SuspendFunction")
     }.apply {
         parent = scope.getLocalDeclarationParent()
-        type.arguments.dropLast(1).forEachIndexed { index, typeArgument ->
-            addValueParameter(
-                parameterNameProvider(index),
-                typeArgument.typeOrNull!!
-            )
+        type.arguments.forEachIndexed { index, typeArgument ->
+            if (index < type.arguments.lastIndex) {
+                addValueParameter(
+                    parameterNameProvider(index),
+                    typeArgument.typeOrNull!!
+                )
+            }
         }
         annotations = annotations + type.annotations.map {
             it.deepCopyWithSymbols()

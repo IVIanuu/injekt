@@ -194,6 +194,7 @@ inline fun <A, B> List<A>.forEachWith(
 }
 
 fun <K, V> List<K>.toMap(values: List<V>): Map<K, V> {
+    if (this.isEmpty()) return emptyMap()
     val map = mutableMapOf<K, V>()
     forEachWith(values) { key, value -> map[key] = value }
     return map
