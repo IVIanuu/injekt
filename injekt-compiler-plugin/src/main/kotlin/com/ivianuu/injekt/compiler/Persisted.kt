@@ -84,7 +84,7 @@ fun CallableRef.apply(
 @JsonClass(generateAdapter = true)
 data class PersistedClassifierInfo(
     val fqName: String,
-    val qualifiers: List<PersistedTypeRef>,
+    val qualifier: PersistedTypeRef?,
     val superTypes: List<PersistedTypeRef>,
     val primaryConstructorPropertyParameters: List<String>,
     val forTypeKeyTypeParameters: List<String>
@@ -92,7 +92,7 @@ data class PersistedClassifierInfo(
 
 fun ClassifierRef.toPersistedClassifierInfo(context: InjektContext) = PersistedClassifierInfo(
     fqName = descriptor!!.fqNameSafe.asString(),
-    qualifiers = qualifiers.map { it.value.toPersistedTypeRef(context) },
+    qualifier = qualifier?.toPersistedTypeRef(context),
     superTypes = superTypes.map { it.toPersistedTypeRef(context) },
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
         .map { it.asString() },
@@ -103,8 +103,8 @@ fun ClassifierRef.toPersistedClassifierInfo(context: InjektContext) = PersistedC
 @JsonClass(generateAdapter = true)
 data class PersistedTypeRef(
     val classifierKey: String,
-    val qualifiers: List<PersistedTypeRef>,
     val arguments: List<PersistedTypeRef>,
+    val qualifier: PersistedTypeRef?,
     val isStarProjection: Boolean,
     val isMarkedNullable: Boolean,
     val isMarkedComposable: Boolean,
@@ -113,8 +113,8 @@ data class PersistedTypeRef(
 
 fun TypeRef.toPersistedTypeRef(context: InjektContext): PersistedTypeRef = PersistedTypeRef(
     classifierKey = classifier.descriptor?.uniqueKey(context) ?: "",
-    qualifiers = qualifiers.map { it.value.toPersistedTypeRef(context) },
     arguments = arguments.map { it.toPersistedTypeRef(context) },
+    qualifier = qualifier?.toPersistedTypeRef(context),
     isStarProjection = isStarProjection,
     isMarkedNullable = isMarkedNullable,
     isMarkedComposable = isMarkedComposable,
@@ -127,9 +127,7 @@ fun PersistedTypeRef.toTypeRef(context: InjektContext, trace: BindingTrace?): Ty
         .toClassifierRef(context, trace)
     return classifier.defaultType
         .copy(
-            qualifiers = qualifiers
-                .map { it.toTypeRef(context, trace) }
-                .associateBy { it.classifier },
+            qualifier = qualifier?.toTypeRef(context, trace),
             arguments = arguments.map { it.toTypeRef(context, trace) },
             isMarkedNullable = isMarkedNullable,
             isMarkedComposable = isMarkedComposable,
@@ -141,7 +139,7 @@ fun PersistedTypeRef.toTypeRef(context: InjektContext, trace: BindingTrace?): Ty
 data class PersistedClassifierRef(
     val key: String,
     val superTypes: List<PersistedTypeRef>,
-    val qualifiers: List<PersistedTypeRef>,
+    val qualifier: PersistedTypeRef?,
     val primaryConstructorPropertyParameters: List<String>,
     val forTypeKeyTypeParameters: List<String>
 )
@@ -159,7 +157,7 @@ fun ClassifierRef.toPersistedClassifierRef(
             ?: descriptor.uniqueKey(context)
      } else descriptor!!.uniqueKey(context),
     superTypes = superTypes.map { it.toPersistedTypeRef(context) },
-    qualifiers = qualifiers.map { it.value.toPersistedTypeRef(context) },
+    qualifier = qualifier?.toPersistedTypeRef(context),
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
         .map { it.asString() },
     forTypeKeyTypeParameters = forTypeKeyTypeParameters
@@ -173,12 +171,10 @@ fun PersistedClassifierRef.toClassifierRef(
     return context.classifierDescriptorForKey(key, trace)
         .toClassifierRef(context, trace)
         .let { raw ->
-            if (superTypes.isNotEmpty() || qualifiers.isNotEmpty() || primaryConstructorPropertyParameters.isNotEmpty())
+            if (superTypes.isNotEmpty() || qualifier != null || primaryConstructorPropertyParameters.isNotEmpty())
                 raw.copy(
                     superTypes = superTypes.map { it.toTypeRef(context, trace) },
-                    qualifiers = qualifiers
-                        .map { it.toTypeRef(context, trace) }
-                        .associateBy { it.classifier },
+                    qualifier = qualifier?.toTypeRef(context, trace),
                     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
                         .map { it.asNameId() }
                 )
@@ -188,7 +184,7 @@ fun PersistedClassifierRef.toClassifierRef(
 
 fun PersistedClassifierRef.toPersistedClassifierInfo() = PersistedClassifierInfo(
     fqName = key.split(":")[1],
-    qualifiers = qualifiers,
+    qualifier = qualifier,
     superTypes = superTypes,
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
     forTypeKeyTypeParameters = forTypeKeyTypeParameters
@@ -201,9 +197,7 @@ fun ClassifierRef.apply(
 ): ClassifierRef {
     return if (info == null || !descriptor!!.isExternalDeclaration()) this
     else copy(
-        qualifiers = info.qualifiers
-            .map { it.toTypeRef(context, trace) }
-            .associateBy { it.classifier },
+        qualifier = info.qualifier?.toTypeRef(context, trace),
         superTypes = info.superTypes.map { it.toTypeRef(context, trace) },
         primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters.map { it.asNameId() },
         forTypeKeyTypeParameters = info.forTypeKeyTypeParameters.map { it.asNameId() }

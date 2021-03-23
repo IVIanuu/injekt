@@ -398,15 +398,4 @@ class GivenConstraintTest {
         """
     )
 
-    @Test
-    fun testGivenConstraintWithQualifiedConstraintAndCandidateWithMultipleQualifiers() = codegen(
-        """
-            @Given fun <@Given T : @Qualifier1 S, S> bind(@Given value: T): S = value
-            
-            @Given val foo: @Qualifier1 @Qualifier2 Foo = Foo()
-
-            fun invoke() = given<@Qualifier2 Foo>()
-        """
-    )
-
 }

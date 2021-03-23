@@ -68,7 +68,6 @@ import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.withAbbreviation
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 fun TypeRef.toIrType(
     pluginContext: IrPluginContext,
@@ -114,12 +113,14 @@ fun TypeRef.toIrType(
             irClassifier,
             isMarkedNullable,
             arguments.map { makeTypeProjection(it.toIrType(pluginContext, localClasses, context), Variance.INVARIANT) },
-            qualifiers.values
-                .map { it.toIrType(pluginContext, localClasses, context) }
-                .map {
-                     DeclarationIrBuilder(pluginContext, it.classifierOrFail)
-                         .irCall(it.classOrNull!!.owner.constructors.single().symbol, it, it.classOrNull!!.owner)
-                },
+            listOfNotNull(
+                qualifier
+                    ?.toIrType(pluginContext, localClasses, context)
+                    ?.let {
+                        DeclarationIrBuilder(pluginContext, it.classifierOrFail)
+                            .irCall(it.classOrNull!!.owner.constructors.single().symbol, it, it.classOrNull!!.owner)
+                    }
+            ),
             null
         ).makeComposableAsSpecified(pluginContext, context, isMarkedComposable)
     }
@@ -137,12 +138,14 @@ private fun TypeRef.toIrAbbreviation(
         arguments.map {
             makeTypeProjection(it.toIrType(pluginContext, localClasses, context), Variance.INVARIANT)
         },
-        qualifiers.values
-            .map { it.toIrType(pluginContext, localClasses, context) }
-            .map {
-                DeclarationIrBuilder(pluginContext, it.classifierOrFail)
-                    .irCall(it.classOrNull!!.owner.constructors.single().symbol, it, it.classOrNull!!.owner)
-            }
+        listOfNotNull(
+            qualifier
+                ?.toIrType(pluginContext, localClasses, context)
+                ?.let {
+                    DeclarationIrBuilder(pluginContext, it.classifierOrFail)
+                        .irCall(it.classOrNull!!.owner.constructors.single().symbol, it, it.classOrNull!!.owner)
+                }
+        )
     )
 }
 
