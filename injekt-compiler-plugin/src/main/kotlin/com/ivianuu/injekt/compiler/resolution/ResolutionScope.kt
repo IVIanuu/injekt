@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
@@ -36,6 +37,7 @@ import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.resolve.scopes.LexicalScopeKind
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstance
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class ResolutionScope(
     val name: String,
@@ -146,7 +148,7 @@ class ResolutionScope(
                             && it.type.isAssignableTo(context, type) &&
                             it.isApplicable()
                 }
-                .map { it.toGivenNode(type, this@ResolutionScope) }
+                .map { it.toGivenNode(type, this) }
                 .toList()
                 .takeIf { it.isNotEmpty() }
             val parentGivens = parent?.givensForType(type)
@@ -156,14 +158,13 @@ class ResolutionScope(
     }
 
     fun frameworkGivenForType(type: TypeRef): GivenNode? {
-        if (type.qualifier != null || type.frameworkKey != null) return null
-        if (type.isFunctionTypeWithOnlyGivenParameters) {
+        if (type.frameworkKey != null) return null
+        if (type.qualifier == null && type.isFunctionTypeWithOnlyGivenParameters) {
             return ProviderGivenNode(
                 type = type,
-                ownerScope = this@ResolutionScope,
-                context = context
+                ownerScope = this
             )
-        } else if (type.classifier == context.setType.classifier) {
+        } else if (type.qualifier == null && type.classifier == context.setType.classifier) {
             val setElementType = type.arguments.single()
             var elementTypes = setElementsForType(setElementType)
             if (elementTypes == null &&
@@ -192,10 +193,14 @@ class ResolutionScope(
                     }
                 return SetGivenNode(
                     type = type,
-                    ownerScope = this@ResolutionScope,
+                    ownerScope = this,
                     dependencies = elements
                 )
             }
+        } else if (type.classifier.descriptor!!.isGiven(context, trace) &&
+            type.classifier.descriptor.safeAs<ClassDescriptor>()?.modality == Modality.ABSTRACT
+        ) {
+            return AbstractGivenNode(type = type, ownerScope = this)
         }
 
         return null

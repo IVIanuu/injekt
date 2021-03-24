@@ -64,7 +64,7 @@ sealed class ResolutionResult {
                             it.allParents.size >= candidate.ownerScope.allParents.size &&
                                     it.callContext.canCall(candidate.callContext)
                         }
-                        candidate.dependencyScope != null -> {
+                        candidate.dependencyScopes.isNotEmpty() -> {
                             val allOuterMostScopes = mutableListOf<ResolutionScope>()
                             fun Value.visit() {
                                 allOuterMostScopes += outerMostScope
@@ -72,11 +72,14 @@ sealed class ResolutionResult {
                                     (it.value as? Value)?.visit()
                                 }
                             }
-                            dependencyResults.values.single().safeAs<Value>()?.visit()
+                            dependencyResults.values.forEach { it.safeAs<Value>()?.visit() }
                             allOuterMostScopes
                                 .asSequence()
                                 .sortedBy { it.allParents.size }
-                                .filter { it.allParents.size < candidate.dependencyScope!!.allParents.size }
+                                .filter { outerMostScope ->
+                                    candidate.dependencyScopes.values
+                                        .all { outerMostScope.allParents.size < it.allParents.size }
+                                }
                                 .lastOrNull {
                                     it.callContext.canCall(candidate.callContext)
                                 } ?: scope.allScopes.first()
@@ -325,8 +328,8 @@ private fun ResolutionScope.resolveCandidate(
         return@computeForCandidate ResolutionResult.Success.WithCandidate.Value(candidate, this, emptyMap())
 
     val successDependencyResults = mutableMapOf<GivenRequest, ResolutionResult.Success>()
-    val dependencyScope = candidate.dependencyScope ?: this
     for (dependency in candidate.dependencies) {
+        val dependencyScope = candidate.dependencyScopes[dependency] ?: this
         when (val dependencyResult = dependencyScope.resolveRequest(dependency)) {
             is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
             is ResolutionResult.Failure -> {

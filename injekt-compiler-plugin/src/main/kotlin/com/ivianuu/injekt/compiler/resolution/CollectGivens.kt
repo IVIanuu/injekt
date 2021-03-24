@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
@@ -148,7 +149,9 @@ fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
         .flatMap { declaration ->
             when (declaration) {
                 is ClassDescriptor -> listOfNotNull(
-                    declaration.getGivenConstructor(context, trace)
+                    declaration
+                        .takeIf { it.modality != Modality.ABSTRACT }
+                        ?.getGivenConstructor(context, trace)
                         ?.substitute(substitutionMap)
                 ) + listOfNotNull(
                     declaration.companionObjectDescriptor

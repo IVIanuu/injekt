@@ -101,14 +101,24 @@ interface InjektErrors {
                 .also { MAP.put(it, "enum class cannot be @Given") }
 
         @JvmField
-        val GIVEN_ABSTRACT_CLASS =
+        val NON_GIVEN_MEMBER_IN_ABSTRACT_GIVEN =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "@Given class cannot be abstract") }
+                .also { MAP.put(it, "abstract @Given can only have @Given members") }
+
+        @JvmField
+        val ABSTRACT_GIVEN_WITH_MUTABLE_PROPERTY =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also { MAP.put(it, "abstract @Given cannot contain mutable properties") }
 
         @JvmField
         val GIVEN_INNER_CLASS =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also { MAP.put(it, "@Given class cannot be inner") }
+
+        @JvmField
+        val GIVEN_SEALED_CLASS =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also { MAP.put(it, "abstract @Given cannot be sealed") }
 
         @JvmField
         val GIVEN_TAILREC_FUNCTION =
