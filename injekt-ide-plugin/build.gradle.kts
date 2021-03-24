@@ -1,3 +1,5 @@
+import org.jetbrains.intellij.tasks.PublishTask
+
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -16,7 +18,7 @@
 
 plugins {
     kotlin("jvm")
-    id("org.jetbrains.intellij") version "0.6.5"
+    id("org.jetbrains.intellij") version "0.7.2"
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
@@ -25,9 +27,13 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 intellij {
     version = "2020.3.1"
     pluginName = "Injekt ide plugin"
-    updateSinceUntilBuild = false
+    updateSinceUntilBuild = true
     setPlugins("org.jetbrains.kotlin:203-1.4.31-release-IJ7148.5", "gradle", "gradle-java", "java")
     localPath = "/home/manu/android-studio"
+}
+
+tasks.withType<PublishTask> {
+    token(project.property("ideaToken") as String)
 }
 
 dependencies {

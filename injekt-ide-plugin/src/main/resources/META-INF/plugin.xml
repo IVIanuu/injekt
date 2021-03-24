@@ -20,11 +20,11 @@
 
     <vendor email="ivianuu@gmail.com" url="https://github.com/IVIanuu/injekt">Injekt</vendor>
 
-    <version>1.0.0</version>
+    <idea-version>2020.3.1</idea-version>
+    <idea-version since-build="203.6682" until-build="203.*" />
+    <version>0.0.1-dev506</version>
 
-    <description><![CDATA[
-    The Injekt idea plugin
-    ]]></description>
+    <description><![CDATA[Idea plugin for the injekt library]]></description>
 
     <depends>com.intellij.gradle</depends>
     <depends>com.intellij.java</depends>

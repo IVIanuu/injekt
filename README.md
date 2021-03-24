@@ -16,6 +16,36 @@ fun main() {
 }
 ```
 
+# Setup
+```kotlin
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath("com.ivianuu.injekt:injekt-gradle-plugin:${latest_version}")
+  }
+}
+
+plugins {
+    apply("com.ivianuu.injekt")
+}
+
+dependencies {
+    // core runtime
+    classpath("com.ivianuu.injekt:injekt-core:${latest_version}")
+    // optional - common utilities
+    classpath("com.ivianuu.injekt:injekt-common:${latest_version}")
+    // optional - scope runtime
+    classpath("com.ivianuu.injekt:injekt-scope:${latest_version}")
+    // optional - android support
+    classpath("com.ivianuu.injekt:injekt-android:${latest_version}")
+    // optional - androidx work support
+    classpath("com.ivianuu.injekt:injekt-android-work:${latest_version}")
+}
+```
+It's also required to install the Injekt IDE plugin
+
 # Request dependencies
 TODO
 
