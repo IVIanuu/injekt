@@ -445,7 +445,7 @@ class GivenCallTransformer(
                             }
                         }
                         dependencyScopeContext.statements.forEach { +it }
-                        +expression
+                        +irReturn(expression)
                     }
                 }
 
