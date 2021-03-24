@@ -220,7 +220,7 @@ fun ClassDescriptor.getGivenConstructor(
 ): CallableRef? {
     trace?.get(InjektWritableSlices.GIVEN_CONSTRUCTOR, this)?.let { return it.value }
     val rawGivenConstructor = if (isGiven(context, trace))
-        unsubstitutedPrimaryConstructor!!.toCallableRef(context, trace)
+        unsubstitutedPrimaryConstructor?.toCallableRef(context, trace)
     else constructors
         .singleOrNull { it.hasAnnotation(InjektFqNames.Given) }
         ?.toCallableRef(context, trace)
