@@ -78,7 +78,6 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
-import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -263,7 +262,7 @@ class GivenCallTransformer(
 
     private fun ResolutionResult.Success.WithCandidate.Value.shouldWrap(
         context: GraphContext
-    ): Boolean = candidate.expressionStrategy == GivenNode.ExpressionStrategy.WRAP &&
+    ): Boolean = !candidate.cacheExpressionResultIfPossible &&
             dependencyResults.isNotEmpty() &&
             context.graph.usages[this.usageKey]!!.size > 1 &&
             !context.isInBetweenCircularDependency(this)
@@ -309,7 +308,7 @@ class GivenCallTransformer(
 
     private fun ResolutionResult.Success.WithCandidate.Value.shouldCache(
         context: GraphContext
-    ): Boolean = candidate.expressionStrategy == GivenNode.ExpressionStrategy.CACHE &&
+    ): Boolean = candidate.cacheExpressionResultIfPossible &&
             context.graph.usages[this.usageKey]!!.count { !it.isInline } > 1 &&
             !context.isInBetweenCircularDependency(this)
 

@@ -48,15 +48,7 @@ sealed class GivenNode {
     abstract val callContext: CallContext
     abstract val ownerScope: ResolutionScope
     abstract val isFrameworkGiven: Boolean
-    abstract val expressionStrategy: ExpressionStrategy
-    enum class ExpressionStrategy {
-        // inserts the expression at each request
-        INLINE,
-        // caches the result of the expression in a variable
-        CACHE,
-        // extracts the expression into a local function
-        WRAP
-    }
+    abstract val cacheExpressionResultIfPossible: Boolean
 }
 
 class CallableGivenNode(
@@ -76,8 +68,8 @@ class CallableGivenNode(
         get() = callable.originalType
     override val isFrameworkGiven: Boolean
         get() = false
-    override val expressionStrategy: ExpressionStrategy
-        get() = ExpressionStrategy.WRAP
+    override val cacheExpressionResultIfPossible: Boolean
+        get() = false
 }
 
 class SetGivenNode(
@@ -94,8 +86,8 @@ class SetGivenNode(
         get() = type.classifier.defaultType
     override val isFrameworkGiven: Boolean
         get() = true
-    override val expressionStrategy: ExpressionStrategy
-        get() = ExpressionStrategy.WRAP
+    override val cacheExpressionResultIfPossible: Boolean
+        get() = false
 }
 
 class ProviderGivenNode(
@@ -150,8 +142,8 @@ class ProviderGivenNode(
         get() = type.classifier.defaultType
     override val isFrameworkGiven: Boolean
         get() = true
-    override val expressionStrategy: ExpressionStrategy
-        get() = ExpressionStrategy.CACHE
+    override val cacheExpressionResultIfPossible: Boolean
+        get() = true
 }
 
 class AbstractGivenNode(
@@ -229,8 +221,8 @@ class AbstractGivenNode(
         get() = type.classifier.defaultType
     override val isFrameworkGiven: Boolean
         get() = true
-    override val expressionStrategy: ExpressionStrategy
-        get() = ExpressionStrategy.INLINE
+    override val cacheExpressionResultIfPossible: Boolean
+        get() = false
 }
 
 fun CallableRef.toGivenNode(
