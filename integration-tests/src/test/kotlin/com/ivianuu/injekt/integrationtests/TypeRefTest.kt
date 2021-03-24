@@ -113,8 +113,8 @@ class TypeRefTest {
     }
 
     @Test
-    fun testQualifiedIsSubTypeOfUnqualified() = withTypeCheckerContext {
-        stringType.qualified(qualifier1) shouldBeSubTypeOf stringType
+    fun testQualifiedIsNotSubTypeOfUnqualified() = withTypeCheckerContext {
+        stringType.qualified(qualifier1) shouldNotBeSubTypeOf stringType
     }
 
     @Test

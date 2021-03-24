@@ -517,8 +517,8 @@ private fun TypeRef.isSubTypeOfSameClassifier(
     superType: TypeRef
 ): Boolean {
     if (this == superType) return true
-    if (superType.qualifier != null &&
-        (qualifier == null || !qualifier!!.isAssignableTo(context, superType.qualifier!!))) return false
+    if (!qualifier.isQualifierAssignableTo(context, superType.qualifier))
+        return false
     if (isMarkedComposable != superType.isMarkedComposable) return false
     arguments.forEachWith(superType.arguments) { a, b ->
         if (!a.isAssignableTo(context, b))
@@ -559,6 +559,12 @@ fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
         .firstNotNullResult { it.subtypeView(classifier) }
         ?.let { return it }
 }
+
+private fun TypeRef?.isQualifierAssignableTo(
+    context: InjektContext,
+    superQualifier: TypeRef?
+): Boolean = (this == null && superQualifier == null) ||
+        (this != null && superQualifier != null && isAssignableTo(context, superQualifier))
 
 val TypeRef.isFunctionType: Boolean get() =
     classifier.fqName.asString().startsWith("kotlin.Function") ||
