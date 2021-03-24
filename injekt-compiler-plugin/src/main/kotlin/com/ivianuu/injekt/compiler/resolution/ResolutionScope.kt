@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
@@ -36,6 +37,7 @@ import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.resolve.scopes.LexicalScopeKind
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstance
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class ResolutionScope(
     val name: String,
@@ -46,7 +48,7 @@ class ResolutionScope(
     val trace: BindingTrace,
     initialGivens: List<CallableRef>
 ) {
-    val chain: MutableList<GivenNode> = parent?.chain ?: mutableListOf()
+    val chain: MutableList<Pair<GivenRequest, GivenNode>> = parent?.chain ?: mutableListOf()
     val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
     val resultsByCandidate = mutableMapOf<GivenNode, ResolutionResult>()
 
@@ -146,7 +148,7 @@ class ResolutionScope(
                             && it.type.isAssignableTo(context, type) &&
                             it.isApplicable()
                 }
-                .map { it.toGivenNode(type, this@ResolutionScope) }
+                .map { it.toGivenNode(type, this) }
                 .toList()
                 .takeIf { it.isNotEmpty() }
             val parentGivens = parent?.givensForType(type)
@@ -156,12 +158,11 @@ class ResolutionScope(
     }
 
     fun frameworkGivenForType(type: TypeRef): GivenNode? {
-        if (type.qualifier != null || type.frameworkKey != null) return null
+        if (type.frameworkKey != null || type.qualifier != null) return null
         if (type.isFunctionTypeWithOnlyGivenParameters) {
             return ProviderGivenNode(
                 type = type,
-                ownerScope = this@ResolutionScope,
-                context = context
+                ownerScope = this
             )
         } else if (type.classifier == context.setType.classifier) {
             val setElementType = type.arguments.single()
@@ -187,12 +188,13 @@ class ResolutionScope(
                             isRequired = true,
                             callableFqName = FqName("com.ivianuu.injekt.givenSetOf"),
                             parameterName = "element$index".asNameId(),
-                            isInline = false
+                            isInline = false,
+                            isLazy = false
                         )
                     }
                 return SetGivenNode(
                     type = type,
-                    ownerScope = this@ResolutionScope,
+                    ownerScope = this,
                     dependencies = elements
                 )
             }

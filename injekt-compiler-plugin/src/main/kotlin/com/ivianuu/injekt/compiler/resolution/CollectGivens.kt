@@ -30,20 +30,33 @@ import com.ivianuu.injekt.compiler.toMap
 import com.ivianuu.injekt.compiler.toTypeRef
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptorVisitor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.descriptors.DescriptorVisibility
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
+import org.jetbrains.kotlin.descriptors.SourceElement
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
+import org.jetbrains.kotlin.descriptors.annotations.Annotations
+import org.jetbrains.kotlin.descriptors.impl.FunctionDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.TypeSubstitutor
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 data class CallableRef(
@@ -148,7 +161,8 @@ fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
         .flatMap { declaration ->
             when (declaration) {
                 is ClassDescriptor -> listOfNotNull(
-                    declaration.getGivenConstructor(context, trace)
+                    declaration
+                        .getGivenConstructor(context, trace)
                         ?.substitute(substitutionMap)
                 ) + listOfNotNull(
                     declaration.companionObjectDescriptor
@@ -221,6 +235,8 @@ fun ClassDescriptor.getGivenConstructor(
     trace?.get(InjektWritableSlices.GIVEN_CONSTRUCTOR, this)?.let { return it.value }
     val rawGivenConstructor = if (isGiven(context, trace))
         unsubstitutedPrimaryConstructor?.toCallableRef(context, trace)
+            ?: AbstractGivenFakeConstructor(this).toCallableRef(context, trace)
+                .makeGiven()
     else constructors
         .singleOrNull { it.hasAnnotation(InjektFqNames.Given) }
         ?.toCallableRef(context, trace)
@@ -236,6 +252,31 @@ fun ClassDescriptor.getGivenConstructor(
     } else null
     trace?.record(InjektWritableSlices.GIVEN_CONSTRUCTOR, this, Tuple1(finalConstructor))
     return finalConstructor
+}
+
+class AbstractGivenFakeConstructor(
+    val clazz: ClassDescriptor
+) : FunctionDescriptorImpl(clazz, null, Annotations.EMPTY,
+    Name.special("<init>"), CallableMemberDescriptor.Kind.SYNTHESIZED, clazz.source) {
+    init {
+        initialize(
+            null,
+            null,
+            emptyList(),
+            emptyList(),
+            clazz.defaultType,
+            null,
+            clazz.visibility
+        )
+    }
+    override fun createSubstitutedCopy(
+        p0: DeclarationDescriptor,
+        p1: FunctionDescriptor?,
+        p2: CallableMemberDescriptor.Kind,
+        p3: Name?,
+        p4: Annotations,
+        p5: SourceElement
+    ): FunctionDescriptorImpl = TODO()
 }
 
 fun CallableRef.collectGivens(
@@ -259,6 +300,8 @@ fun CallableRef.collectGivens(
     }
     else this
     addGiven(nextCallable)
+
+    if (nextCallable.isForAbstractGiven(context, trace)) return
 
     val combinedSubstitutionMap = substitutionMap + nextCallable.type.classifier.typeParameters
         .toMap(nextCallable.type.arguments)
@@ -292,3 +335,12 @@ private fun ResolutionScope.canSee(callable: CallableRef): Boolean =
             callable.callable.parents.any { callableParent ->
                 allScopes.any { it.ownerDescriptor == callableParent }
             }
+
+fun CallableRef.isForAbstractGiven(context: InjektContext, trace: BindingTrace?): Boolean {
+    return callable is AbstractGivenFakeConstructor ||
+            type.classifier.descriptor!!
+                .safeAs<ClassDescriptor>()?.let {
+                    it.modality == Modality.ABSTRACT &&
+                            it.isGiven(context, trace)
+                } == true
+}

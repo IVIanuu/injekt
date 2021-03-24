@@ -96,16 +96,6 @@ class DivergenceTest {
     }
 
     @Test
-    fun testSelfDependencyFails() = codegen(
-        """
-            @Given fun <T> anyFromStream(@Given t: T): T = t
-            fun invoke() = given<String>()
-        """
-    ) {
-        compilationShouldHaveFailed("diverging")
-    }
-
-    @Test
     fun testProviderBreaksCircularDependency() = codegen(
         """
             @Given class A(@Given b: B)
@@ -136,6 +126,20 @@ class DivergenceTest {
             typealias B = () -> Unit
             @Given fun b(@Given a: () -> A): B = {}
             fun invoke() = given<Set<() -> Unit>>()
+       """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testAbstractGivenBreaksCircularDependency() = codegen(
+        """
+            @Given class A(@Given b: B)
+            @Given class B(@Given aComponent: AComponent)
+            @Given interface AComponent {
+                @Given val a: A
+            }
+            fun invoke() = given<B>()
        """
     ) {
         invokeSingleFile()

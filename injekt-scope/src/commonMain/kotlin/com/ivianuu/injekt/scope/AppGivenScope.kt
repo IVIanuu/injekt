@@ -16,4 +16,4 @@
 
 package com.ivianuu.injekt.scope
 
-typealias AppGivenScope = GivenScope
+typealias AppGivenScope = DefaultGivenScope

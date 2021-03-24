@@ -109,8 +109,10 @@ private class InvokeOnDisposeKey
 
 private val NoOpScopeDisposable = GivenScopeDisposable {  }
 
+typealias DefaultGivenScope = GivenScope
+
 @Given
-inline fun <@ForTypeKey S : GivenScope> givenScope(
+inline fun <@ForTypeKey S : DefaultGivenScope> defaultGivenScope(
     @Given elements: (@Given S) -> Set<GivenScopeElement<S>> = { emptySet() },
     @Given initializers: (@Given S) -> Set<GivenScopeInitializer<S>> = { emptySet() }
 ): S {

@@ -32,10 +32,12 @@ import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithVisibility
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
@@ -43,6 +45,7 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.descriptors.isSealed
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -52,8 +55,10 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class GivenChecker(private val context: InjektContext) : DeclarationChecker {
@@ -151,14 +156,31 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         }
 
         if (hasGivenAnnotation && descriptor.modality == Modality.ABSTRACT) {
-            trace.report(
-                InjektErrors.GIVEN_ABSTRACT_CLASS
-                    .on(
-                        declaration.modifierList
-                            ?.getModifier(KtTokens.ABSTRACT_KEYWORD)
-                            ?: declaration
-                    )
-            )
+            descriptor.unsubstitutedMemberScope
+                .getContributedDescriptors()
+                .asSequence()
+                .filterIsInstance<CallableMemberDescriptor>()
+                .filter { it.modality == Modality.ABSTRACT }
+                .filter { it.dispatchReceiverParameter?.type != descriptor.module.builtIns.anyType }
+                .forEach {
+                    if (!it.isGiven(context, trace)) {
+                        trace.report(
+                            InjektErrors.ABSTRACT_NON_GIVEN_MEMBER_IN_ABSTRACT_GIVEN
+                                .on(
+                                    if (it.overriddenTreeUniqueAsSequence(false).count() > 1) declaration
+                                    else it.findPsi() ?: declaration
+                                )
+                        )
+                    } else if (it is PropertyDescriptor && it.isVar) {
+                        trace.report(
+                            InjektErrors.ABSTRACT_GIVEN_WITH_MUTABLE_PROPERTY
+                                .on(
+                                    if (it.overriddenTreeUniqueAsSequence(false).count() > 1) declaration
+                                    else it.findPsi() ?: declaration
+                                )
+                        )
+                    }
+                }
         }
 
         if (hasGivenAnnotation && descriptor.isInner) {
@@ -167,6 +189,17 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                     .on(
                         declaration.modifierList
                             ?.getModifier(KtTokens.INNER_KEYWORD)
+                            ?: declaration
+                    )
+            )
+        }
+
+        if (hasGivenAnnotation && descriptor.isSealed()) {
+            trace.report(
+                InjektErrors.GIVEN_SEALED_CLASS
+                    .on(
+                        declaration.modifierList
+                            ?.getModifier(KtTokens.SEALED_KEYWORD)
                             ?: declaration
                     )
             )
@@ -366,6 +399,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     ) {
         if (typeParameters.isEmpty()) return
         typeParameters
+            .asSequence()
             .filter { it.isGivenConstraint(context, trace) }
             .forEach { typeParameter ->
                 trace.report(
@@ -381,6 +415,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     ) {
         if (isEmpty()) return
         this
+            .asSequence()
             .filter { !it.isGiven(context, trace) }
             .forEach {
                 trace.report(

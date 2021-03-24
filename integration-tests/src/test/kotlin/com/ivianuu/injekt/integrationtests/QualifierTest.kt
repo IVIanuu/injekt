@@ -194,7 +194,7 @@ class QualifierTest {
             @Given 
             fun foo(): @Eager<AppGivenScope> Foo = Foo()
 
-            typealias ChildGivenScope = GivenScope
+            typealias ChildGivenScope = DefaultGivenScope
 
             @Given
             val childGivenScopeModule = ChildGivenScopeModule0<AppGivenScope, ChildGivenScope>()

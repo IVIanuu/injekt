@@ -88,12 +88,12 @@ class GivenDeclarationCheckTest {
     }
 
     @Test
-    fun testGivenAbstractClass() = codegen(
+    fun testGivenSealedClass() = codegen(
         """
-            @Given abstract class MyAbstractClass
+            @Given sealed class MyAbstractClass
         """
     ) {
-        compilationShouldHaveFailed("@Given class cannot be abstract")
+        compilationShouldHaveFailed("abstract @Given cannot be sealed")
     }
 
     @Test
