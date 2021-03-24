@@ -452,10 +452,12 @@ class GivenCallTransformer(
                 if (requestCallable.callable is PropertyDescriptor) {
                     addProperty {
                         name = requestCallable.callable.name
+                        visibility = requestCallable.callable.visibility
                     }.apply {
                         addGetter {
                             returnType = requestCallable.type.toIrType(
                                 pluginContext, localClasses, this@GivenCallTransformer.context)
+                            visibility = requestCallable.callable.getter!!.visibility
                         }.apply {
                             overriddenSymbols = overriddenSymbols + requestCallable.callable.cast<PropertyDescriptor>()
                                 .getter!!
@@ -471,6 +473,7 @@ class GivenCallTransformer(
                             pluginContext, localClasses, this@GivenCallTransformer.context)
                         name = requestCallable.callable.name
                         isSuspend = requestCallable.callContext == CallContext.SUSPEND
+                        visibility = requestCallable.callable.visibility
                     }.apply {
                         overriddenSymbols = overriddenSymbols + requestCallable.callable.cast<FunctionDescriptor>()
                             .irFunction()

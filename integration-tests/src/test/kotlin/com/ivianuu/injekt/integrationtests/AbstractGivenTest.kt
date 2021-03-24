@@ -179,4 +179,20 @@ class AbstractGivenTest {
         invokeSingleFile()
     }
 
+    @Test
+    fun testGivenAbstractClassWithProtectedGiven() = codegen(
+        """
+            @Given abstract class MyComponent {
+                @Given protected abstract val protectedFoo: Foo
+                val scopedFoo by lazy { protectedFoo }
+            }
+
+            @Given val foo = Foo()
+
+            fun invoke() = given<MyComponent>().scopedFoo
+        """
+    ) {
+        invokeSingleFile()
+    }
+
 }
