@@ -148,6 +148,7 @@ class ProviderGivenNode(
 
 class AbstractGivenNode(
     override val type: TypeRef,
+    override val originalType: TypeRef,
     override val ownerScope: ResolutionScope
 ) : GivenNode() {
     override val callableFqName: FqName = FqName(type.classifier.fqName.asString() + "Impl")
@@ -217,8 +218,6 @@ class AbstractGivenNode(
 
     override val callContext: CallContext
         get() = CallContext.DEFAULT
-    override val originalType: TypeRef
-        get() = type.classifier.defaultType
     override val isFrameworkGiven: Boolean
         get() = true
     override val cacheExpressionResultIfPossible: Boolean
@@ -231,7 +230,7 @@ fun CallableRef.toGivenNode(
 ): GivenNode {
     val finalCallable = substitute(getSubstitutionMap(ownerScope.context, listOf(type to this.type)))
     return if (finalCallable.isForAbstractGiven(ownerScope.context, ownerScope.trace)) {
-        AbstractGivenNode(type, ownerScope)
+        AbstractGivenNode(type, finalCallable.originalType, ownerScope)
     } else {
         CallableGivenNode(
             type,

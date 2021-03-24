@@ -167,13 +167,15 @@ class ResolutionScope(
         }
     }
 
-    fun frameworkGivenForType(type: TypeRef): GivenNode? {
+    fun frameworkGivenForType(type: TypeRef): List<GivenNode>? {
         if (type.frameworkKey == null &&
             type.qualifier == null &&
             type.isFunctionTypeWithOnlyGivenParameters) {
-            return ProviderGivenNode(
-                type = type,
-                ownerScope = this
+            return listOf(
+                ProviderGivenNode(
+                    type = type,
+                    ownerScope = this
+                )
             )
         } else if (type.frameworkKey == null &&
             type.qualifier == null &&
@@ -211,16 +213,26 @@ class ResolutionScope(
                             isLazy = false
                         )
                     }
-                return SetGivenNode(
-                    type = type,
-                    ownerScope = this,
-                    dependencies = elements
+                return listOf(
+                    SetGivenNode(
+                        type = type,
+                        ownerScope = this,
+                        dependencies = elements
+                    )
                 )
             }
         } else if (abstractGivens.isNotEmpty()) {
             abstractGivens
-                .singleOrNull { it.type == type }
-                ?.let { return AbstractGivenNode(type, this) }
+                .asSequence()
+                .filter {
+                    it.type.frameworkKey == type.frameworkKey
+                            && it.type.isAssignableTo(context, type) &&
+                            it.isApplicable()
+                }
+                .map { AbstractGivenNode(type, it.type, this) }
+                .toList()
+                .takeIf { it.isNotEmpty() }
+                ?.let { return it }
         }
 
         return null
@@ -256,9 +268,16 @@ class ResolutionScope(
     private fun frameworkSetElementsForType(type: TypeRef): List<TypeRef>? {
         if (abstractGivens.isEmpty()) return null
         return abstractGivens
+            .toList()
             .asSequence()
             .filter { it.type.isAssignableTo(context, type) }
-            .map { it.type.copy(frameworkKey = generateFrameworkKey()) }
+            .map { callable ->
+                val typeWithFrameworkKey = type.copy(
+                    frameworkKey = generateFrameworkKey()
+                )
+                abstractGivens += callable.copy(type = typeWithFrameworkKey)
+                typeWithFrameworkKey
+            }
             .toList()
             .takeIf { it.isNotEmpty() }
     }

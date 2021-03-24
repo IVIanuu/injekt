@@ -200,7 +200,7 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
     } else {
         val frameworkCandidate = frameworkGivenForType(request.type)
         if (frameworkCandidate != null) {
-            resolveCandidate(request, frameworkCandidate)
+            resolveCandidates(request, frameworkCandidate)
         } else {
             ResolutionResult.Failure.NoCandidates
         }
