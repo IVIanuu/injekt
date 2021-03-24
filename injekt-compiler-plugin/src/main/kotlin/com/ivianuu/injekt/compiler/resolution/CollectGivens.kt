@@ -285,6 +285,7 @@ fun CallableRef.collectGivens(
     substitutionMap: Map<ClassifierRef, TypeRef>,
     trace: BindingTrace?,
     addGiven: (CallableRef) -> Unit,
+    addAbstractGiven: (CallableRef) -> Unit,
     addConstrainedGiven: (CallableRef) -> Unit
 ) {
     if (!scope.canSee(this)) return
@@ -294,14 +295,17 @@ fun CallableRef.collectGivens(
         return
     }
 
+    if (isForAbstractGiven(context, trace)) {
+        addAbstractGiven(this)
+        return
+    }
+
     val nextCallable = if (type.isGiven && type.isFunctionTypeWithOnlyGivenParameters) {
         addGiven(this)
         copy(type = type.copy(frameworkKey = generateFrameworkKey()))
     }
     else this
     addGiven(nextCallable)
-
-    if (nextCallable.isForAbstractGiven(context, trace)) return
 
     val combinedSubstitutionMap = substitutionMap + nextCallable.type.classifier.typeParameters
         .toMap(nextCallable.type.arguments)
@@ -320,6 +324,7 @@ fun CallableRef.collectGivens(
                 combinedSubstitutionMap,
                 trace,
                 addGiven,
+                addAbstractGiven,
                 addConstrainedGiven
             )
         }

@@ -176,5 +176,4 @@ class GivenSetTest {
             fun invoke(): Set<MyComponent> = given()
         """
     )
-
 }

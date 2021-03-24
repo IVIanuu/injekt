@@ -23,7 +23,6 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
@@ -37,7 +36,6 @@ import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.resolve.scopes.LexicalScopeKind
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstance
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class ResolutionScope(
     val name: String,
@@ -53,6 +51,7 @@ class ResolutionScope(
     val resultsByCandidate = mutableMapOf<GivenNode, ResolutionResult>()
 
     private val givens = mutableListOf<CallableRef>()
+    private val abstractGivens = mutableListOf<CallableRef>()
 
     private val constrainedGivens = mutableListOf<ConstrainedGivenNode>()
     private val constrainedGivenCandidates = mutableListOf<ConstrainedGivenCandidate>()
@@ -81,6 +80,7 @@ class ResolutionScope(
     private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>?>()
 
     init {
+        if (parent != null) abstractGivens += parent.abstractGivens
         initialGivens
             .forEach { given ->
                 given.collectGivens(
@@ -98,6 +98,16 @@ class ResolutionScope(
                             rawType = callable.type
                         )
                     },
+                    addAbstractGiven = { callable ->
+                        abstractGivens += callable
+                        val typeWithFrameworkKey = callable.type
+                            .copy(frameworkKey = generateFrameworkKey())
+                        abstractGivens += callable.copy(type = typeWithFrameworkKey)
+                        constrainedGivenCandidates += ConstrainedGivenCandidate(
+                            type = typeWithFrameworkKey,
+                            rawType = callable.type
+                        )
+                   },
                     addConstrainedGiven = { constrainedGivens += ConstrainedGivenNode(it) }
                 )
             }
@@ -158,15 +168,24 @@ class ResolutionScope(
     }
 
     fun frameworkGivenForType(type: TypeRef): GivenNode? {
-        if (type.frameworkKey != null || type.qualifier != null) return null
-        if (type.isFunctionTypeWithOnlyGivenParameters) {
+        if (type.frameworkKey == null &&
+            type.qualifier == null &&
+            type.isFunctionTypeWithOnlyGivenParameters) {
             return ProviderGivenNode(
                 type = type,
                 ownerScope = this
             )
-        } else if (type.classifier == context.setType.classifier) {
+        } else if (type.frameworkKey == null &&
+            type.qualifier == null &&
+            type.classifier == context.setType.classifier) {
             val setElementType = type.arguments.single()
-            var elementTypes = setElementsForType(setElementType)
+            val frameworkSetElements = frameworkSetElementsForType(setElementType)
+            var elementTypes = if (frameworkSetElements != null) {
+                setElementsForType(setElementType)
+                    ?.let { it + frameworkSetElements } ?: frameworkSetElements
+            } else {
+                setElementsForType(setElementType)
+            }
             if (elementTypes == null &&
                 setElementType.qualifier == null &&
                 setElementType.isFunctionTypeWithOnlyGivenParameters) {
@@ -198,6 +217,10 @@ class ResolutionScope(
                     dependencies = elements
                 )
             }
+        } else if (abstractGivens.isNotEmpty()) {
+            abstractGivens
+                .singleOrNull { it.type == type }
+                ?.let { return AbstractGivenNode(type, this) }
         }
 
         return null
@@ -228,6 +251,16 @@ class ResolutionScope(
             if (parentSetElements != null && thisSetElements != null) parentSetElements + thisSetElements
             else thisSetElements ?: parentSetElements
         }
+    }
+
+    private fun frameworkSetElementsForType(type: TypeRef): List<TypeRef>? {
+        if (abstractGivens.isEmpty()) return null
+        return abstractGivens
+            .asSequence()
+            .filter { it.type.isAssignableTo(context, type) }
+            .map { it.type.copy(frameworkKey = generateFrameworkKey()) }
+            .toList()
+            .takeIf { it.isNotEmpty() }
     }
 
     private fun collectConstrainedGivens(candidate: ConstrainedGivenCandidate) {
@@ -288,6 +321,24 @@ class ResolutionScope(
                 val newCandidate = ConstrainedGivenCandidate(
                     type = newInnerGivenWithFrameworkKey.type,
                     rawType = finalNewInnerGiven.type
+                )
+                constrainedGivenCandidates += newCandidate
+                collectConstrainedGivens(newCandidate)
+            },
+            addAbstractGiven = { newInnerAbstractGiven ->
+                val finalNewInnerAbstractGiven = newInnerAbstractGiven
+                    .copy(fromGivenConstraint = true)
+                abstractGivens += finalNewInnerAbstractGiven
+                val newInnerGivenWithFrameworkKey = finalNewInnerAbstractGiven.copy(
+                    type = finalNewInnerAbstractGiven.type.copy(
+                        frameworkKey = generateFrameworkKey()
+                            .also { constrainedGiven.resultingFrameworkKeys += it }
+                    )
+                )
+                abstractGivens += newInnerGivenWithFrameworkKey
+                val newCandidate = ConstrainedGivenCandidate(
+                    type = newInnerGivenWithFrameworkKey.type,
+                    rawType = finalNewInnerAbstractGiven.type
                 )
                 constrainedGivenCandidates += newCandidate
                 collectConstrainedGivens(newCandidate)

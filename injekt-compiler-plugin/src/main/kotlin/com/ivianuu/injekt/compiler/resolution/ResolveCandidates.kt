@@ -250,8 +250,6 @@ private fun ResolutionScope.resolveCandidates(
     request: GivenRequest,
     candidates: List<GivenNode>,
 ): ResolutionResult {
-    if (candidates.isEmpty()) return ResolutionResult.Failure.NoCandidates
-
     if (candidates.size == 1) {
         val candidate = candidates.single()
         return resolveCandidate(request, candidate)

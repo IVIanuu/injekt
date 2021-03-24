@@ -195,4 +195,16 @@ class AbstractGivenTest {
         invokeSingleFile()
     }
 
+    @Test
+    fun testGivenInterfaceIsCreatedOnTheFly() = codegen(
+        """
+            @Given interface MyComponent {
+                @Given val foo: Foo
+            }
+
+            fun invoke() = given<(@Given Foo) -> MyComponent>()
+        """
+    ) {
+        invokeSingleFile()
+    }
 }
