@@ -32,10 +32,12 @@ import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithVisibility
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
@@ -56,6 +58,7 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class GivenChecker(private val context: InjektContext) : DeclarationChecker {
@@ -156,12 +159,13 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
             descriptor.unsubstitutedMemberScope
                 .getContributedDescriptors()
                 .asSequence()
-                .filterIsInstance<CallableDescriptor>()
+                .filterIsInstance<CallableMemberDescriptor>()
+                .filter { it.modality == Modality.ABSTRACT }
                 .filter { it.dispatchReceiverParameter?.type != descriptor.module.builtIns.anyType }
                 .forEach {
                     if (!it.isGiven(context, trace)) {
                         trace.report(
-                            InjektErrors.NON_GIVEN_MEMBER_IN_ABSTRACT_GIVEN
+                            InjektErrors.ABSTRACT_NON_GIVEN_MEMBER_IN_ABSTRACT_GIVEN
                                 .on(
                                     if (it.overriddenTreeUniqueAsSequence(false).count() > 1) declaration
                                     else it.findPsi() ?: declaration

@@ -231,7 +231,7 @@ class GivenConstraintTest {
         listOf(
             source(
                 """
-                    typealias ActivityGivenScope = GivenScope
+                    typealias ActivityGivenScope = DefaultGivenScope
                     @Given fun activityGivenScope(
                         @Given builder: GivenScope.Builder<ActivityGivenScope>
                     ): ActivityGivenScope = builder.build()

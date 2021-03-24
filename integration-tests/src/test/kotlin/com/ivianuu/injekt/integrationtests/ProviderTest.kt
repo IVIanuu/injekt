@@ -78,11 +78,11 @@ class ProviderTest {
     @Test
     fun testProviderWithGenericGivenArgs() = codegen(
         """ 
-            typealias GivenScopeA = GivenScope
+            typealias GivenScopeA = DefaultGivenScope
 
             fun createGivenScopeA() = given<GivenScopeA>()
 
-            typealias GivenScopeB = GivenScope
+            typealias GivenScopeB = DefaultGivenScope
 
             @Given
             fun givenScopeBFactory(
@@ -113,11 +113,11 @@ class ProviderTest {
         listOf(
             source(
                 """
-                    typealias GivenScopeA = GivenScope
+                    typealias GivenScopeA = DefaultGivenScope
 
                     fun createGivenScopeA() = given<GivenScopeA>()
         
-                    typealias GivenScopeB = GivenScope
+                    typealias GivenScopeB = DefaultGivenScope
 
                     @Given
                     fun givenScopeBFactory(
@@ -186,7 +186,7 @@ class ProviderTest {
     @Test
     fun testMultipleProvidersInSetWithDependencyDerivedByProviderArgument() = codegen(
         """
-            typealias MyGivenScope = GivenScope
+            typealias MyGivenScope = DefaultGivenScope
             @Given val @Given MyGivenScope.key: String get() = ""
             @Given fun foo(@Given key: String) = Foo()
             @Given fun fooIntoSet(@Given provider: (@Given MyGivenScope) -> Foo): (MyGivenScope) -> Any = provider as (MyGivenScope) -> Any 

@@ -46,7 +46,7 @@ class AbstractGivenTest {
             }
         """
     ) {
-        compilationShouldHaveFailed("abstract @Given can only have @Given members")
+        compilationShouldHaveFailed("abstract @Given can only have abstract @Given members. Implement the member yourself or remove it")
     }
 
     @Test
@@ -69,7 +69,7 @@ class AbstractGivenTest {
             @Given interface MyComponent : MyBaseComponent
         """
     ) {
-        compilationShouldHaveFailed("abstract @Given can only have @Given members")
+        compilationShouldHaveFailed("abstract @Given can only have abstract @Given members. Implement the member yourself or remove it")
     }
 
     @Test
@@ -163,5 +163,20 @@ class AbstractGivenTest {
             fun invoke() = given<FooComponent>().foo()
         """
     )
+
+    @Test
+    fun testGivenInterfaceWithImplementedSuperMember() = codegen(
+        """
+            @Given abstract class MyComponent : GivenScope by defaultGivenScope() {
+                @Given abstract val foo: Foo
+            }
+
+            @Given val foo = Foo()
+
+            fun invoke() = given<MyComponent>().foo
+        """
+    ) {
+        invokeSingleFile()
+    }
 
 }

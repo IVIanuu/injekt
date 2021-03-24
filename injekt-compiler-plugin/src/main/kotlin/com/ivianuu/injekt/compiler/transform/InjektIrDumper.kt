@@ -34,7 +34,7 @@ class InjektIrDumper(
         moduleFragment.files
             .asSequence()
             .filter {
-                pluginContext.bindingContext[InjektWritableSlices.USED_GIVENS_FOR_FILE,
+                pluginContext.bindingContext[InjektWritableSlices.FILE_HAS_GIVEN_CALLS,
                         it.fileEntry.name] != null
             }
             .forEach { irFile ->

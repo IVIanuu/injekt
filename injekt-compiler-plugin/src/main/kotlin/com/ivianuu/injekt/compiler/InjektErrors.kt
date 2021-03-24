@@ -101,9 +101,9 @@ interface InjektErrors {
                 .also { MAP.put(it, "enum class cannot be @Given") }
 
         @JvmField
-        val NON_GIVEN_MEMBER_IN_ABSTRACT_GIVEN =
+        val ABSTRACT_NON_GIVEN_MEMBER_IN_ABSTRACT_GIVEN =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "abstract @Given can only have @Given members") }
+                .also { MAP.put(it, "abstract @Given can only have abstract @Given members. Implement the member yourself or remove it") }
 
         @JvmField
         val ABSTRACT_GIVEN_WITH_MUTABLE_PROPERTY =

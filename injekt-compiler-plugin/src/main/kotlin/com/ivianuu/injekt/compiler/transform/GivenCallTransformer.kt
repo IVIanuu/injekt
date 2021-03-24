@@ -263,8 +263,8 @@ class GivenCallTransformer(
 
     private fun ResolutionResult.Success.WithCandidate.Value.shouldWrap(
         context: GraphContext
-    ): Boolean = dependencyResults.isNotEmpty() &&
-            !candidate.cacheIfPossible &&
+    ): Boolean = candidate.expressionStrategy == GivenNode.ExpressionStrategy.WRAP &&
+            dependencyResults.isNotEmpty() &&
             context.graph.usages[this.usageKey]!!.size > 1 &&
             !context.isInBetweenCircularDependency(this)
 
@@ -309,7 +309,7 @@ class GivenCallTransformer(
 
     private fun ResolutionResult.Success.WithCandidate.Value.shouldCache(
         context: GraphContext
-    ): Boolean = candidate.cacheIfPossible &&
+    ): Boolean = candidate.expressionStrategy == GivenNode.ExpressionStrategy.CACHE &&
             context.graph.usages[this.usageKey]!!.count { !it.isInline } > 1 &&
             !context.isInBetweenCircularDependency(this)
 

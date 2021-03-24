@@ -48,7 +48,7 @@ class ResolutionScope(
     val trace: BindingTrace,
     initialGivens: List<CallableRef>
 ) {
-    val chain: MutableList<GivenNode> = parent?.chain ?: mutableListOf()
+    val chain: MutableList<Pair<GivenRequest, GivenNode>> = parent?.chain ?: mutableListOf()
     val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
     val resultsByCandidate = mutableMapOf<GivenNode, ResolutionResult>()
 
@@ -158,13 +158,13 @@ class ResolutionScope(
     }
 
     fun frameworkGivenForType(type: TypeRef): GivenNode? {
-        if (type.frameworkKey != null) return null
-        if (type.qualifier == null && type.isFunctionTypeWithOnlyGivenParameters) {
+        if (type.frameworkKey != null || type.qualifier != null) return null
+        if (type.isFunctionTypeWithOnlyGivenParameters) {
             return ProviderGivenNode(
                 type = type,
                 ownerScope = this
             )
-        } else if (type.qualifier == null && type.classifier == context.setType.classifier) {
+        } else if (type.classifier == context.setType.classifier) {
             val setElementType = type.arguments.single()
             var elementTypes = setElementsForType(setElementType)
             if (elementTypes == null &&
@@ -188,7 +188,8 @@ class ResolutionScope(
                             isRequired = true,
                             callableFqName = FqName("com.ivianuu.injekt.givenSetOf"),
                             parameterName = "element$index".asNameId(),
-                            isInline = false
+                            isInline = false,
+                            isLazy = false
                         )
                     }
                 return SetGivenNode(
@@ -197,10 +198,6 @@ class ResolutionScope(
                     dependencies = elements
                 )
             }
-        } else if (type.classifier.descriptor!!.isGiven(context, trace) &&
-            type.classifier.descriptor.safeAs<ClassDescriptor>()?.modality == Modality.ABSTRACT
-        ) {
-            return AbstractGivenNode(type = type, ownerScope = this)
         }
 
         return null

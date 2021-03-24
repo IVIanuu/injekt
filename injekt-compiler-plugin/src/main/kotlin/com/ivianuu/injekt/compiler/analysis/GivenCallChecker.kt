@@ -88,7 +88,8 @@ class GivenCallChecker(
                     callableFqName = resultingDescriptor.fqNameSafe,
                     parameterName = parameterDescriptor.name,
                     isInline = resultingDescriptor
-                        .safeAs<FunctionDescriptor>()?.isInline == true
+                        .safeAs<FunctionDescriptor>()?.isInline == true,
+                    isLazy = false
                 )
             }
             .toList()
@@ -129,15 +130,22 @@ class GivenCallChecker(
                 )
             }
         }) {
-            is GivenGraph.Success -> context.trace.record(
-                InjektWritableSlices.GIVEN_GRAPH,
-                SourcePosition(
+            is GivenGraph.Success -> {
+                context.trace.record(
+                    InjektWritableSlices.FILE_HAS_GIVEN_CALLS,
                     callExpression.containingKtFile.virtualFilePath,
-                    callExpression.startOffset,
-                    callExpression.endOffset
-                ),
-                graph
-            )
+                    Unit
+                )
+                context.trace.record(
+                    InjektWritableSlices.GIVEN_GRAPH,
+                    SourcePosition(
+                        callExpression.containingKtFile.virtualFilePath,
+                        callExpression.startOffset,
+                        callExpression.endOffset
+                    ),
+                    graph
+                )
+            }
             is GivenGraph.Error -> context.trace.report(
                 InjektErrors.UNRESOLVED_GIVEN
                     .on(reportOn, graph)

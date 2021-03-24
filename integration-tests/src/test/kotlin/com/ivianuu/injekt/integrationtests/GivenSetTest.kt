@@ -166,4 +166,15 @@ class GivenSetTest {
         set.shouldHaveSize(2)
     }
 
+    @Test
+    fun testSetWithAbstractGiven() = codegen(
+        """
+            @Given interface MyComponent {
+                @Given val foo: Foo
+            }  
+            @Given val foo = Foo()
+            fun invoke(): Set<MyComponent> = given()
+        """
+    )
+
 }

@@ -29,6 +29,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.scope.ChildGivenScopeModule1
+import com.ivianuu.injekt.scope.DefaultGivenScope
 import com.ivianuu.injekt.scope.GivenScope
 
 val ComponentActivity.activityGivenScope: ActivityGivenScope
@@ -37,7 +38,7 @@ val ComponentActivity.activityGivenScope: ActivityGivenScope
             .element<(ComponentActivity) -> ActivityGivenScope>()(this)
     }
 
-typealias ActivityGivenScope = GivenScope
+typealias ActivityGivenScope = DefaultGivenScope
 
 @Given
 val activityGivenScopeModule =

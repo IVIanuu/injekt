@@ -23,6 +23,7 @@ import android.content.Intent
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.scope.AppGivenScope
 import com.ivianuu.injekt.scope.ChildGivenScopeModule3
+import com.ivianuu.injekt.scope.DefaultGivenScope
 import com.ivianuu.injekt.scope.GivenScope
 
 fun BroadcastReceiver.createReceiverGivenScope(
@@ -33,7 +34,7 @@ fun BroadcastReceiver.createReceiverGivenScope(
     .element<(BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverGivenScope>()
     .invoke(this, context, intent)
 
-typealias ReceiverGivenScope = GivenScope
+typealias ReceiverGivenScope = DefaultGivenScope
 
 @Given
 val receiverGivenScopeModule =

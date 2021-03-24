@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.toMap
 import com.ivianuu.injekt.compiler.transform.toKotlinType
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -36,6 +37,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 sealed class GivenNode {
     abstract val type: TypeRef
@@ -45,9 +47,16 @@ sealed class GivenNode {
     abstract val callableFqName: FqName
     abstract val callContext: CallContext
     abstract val ownerScope: ResolutionScope
-    abstract val lazyDependencies: Boolean
     abstract val isFrameworkGiven: Boolean
-    abstract val cacheIfPossible: Boolean
+    abstract val expressionStrategy: ExpressionStrategy
+    enum class ExpressionStrategy {
+        // inserts the expression at each request
+        INLINE,
+        // caches the result of the expression in a variable
+        CACHE,
+        // extracts the expression into a local function
+        WRAP
+    }
 }
 
 class CallableGivenNode(
@@ -63,14 +72,12 @@ class CallableGivenNode(
         get() = callable.callContext
     override val dependencyScopes: Map<GivenRequest, ResolutionScope>
         get() = emptyMap()
-    override val lazyDependencies: Boolean
-        get() = false
     override val originalType: TypeRef
         get() = callable.originalType
     override val isFrameworkGiven: Boolean
         get() = false
-    override val cacheIfPossible: Boolean
-        get() = false
+    override val expressionStrategy: ExpressionStrategy
+        get() = ExpressionStrategy.WRAP
 }
 
 class SetGivenNode(
@@ -83,14 +90,12 @@ class SetGivenNode(
         get() = CallContext.DEFAULT
     override val dependencyScopes: Map<GivenRequest, ResolutionScope>
         get() = emptyMap()
-    override val lazyDependencies: Boolean
-        get() = false
     override val originalType: TypeRef
         get() = type.classifier.defaultType
     override val isFrameworkGiven: Boolean
         get() = true
-    override val cacheIfPossible: Boolean
-        get() = false
+    override val expressionStrategy: ExpressionStrategy
+        get() = ExpressionStrategy.WRAP
 }
 
 class ProviderGivenNode(
@@ -108,7 +113,8 @@ class ProviderGivenNode(
             isRequired = true,
             callableFqName = callableFqName,
             parameterName = "instance".asNameId(),
-            isInline = false
+            isInline = false,
+            isLazy = true
         )
     )
 
@@ -138,17 +144,14 @@ class ProviderGivenNode(
                 .toList()
         )
     )
-
-    override val lazyDependencies: Boolean
-        get() = true
     override val callContext: CallContext
         get() = CallContext.DEFAULT
     override val originalType: TypeRef
         get() = type.classifier.defaultType
     override val isFrameworkGiven: Boolean
         get() = true
-    override val cacheIfPossible: Boolean
-        get() = true
+    override val expressionStrategy: ExpressionStrategy
+        get() = ExpressionStrategy.CACHE
 }
 
 class AbstractGivenNode(
@@ -179,11 +182,12 @@ class AbstractGivenNode(
             GivenRequest(
                 type = requestCallable.type,
                 isRequired = requestCallable.callable
-                    .cast<FunctionDescriptor>()
+                    .cast<CallableMemberDescriptor>()
                     .modality == Modality.ABSTRACT,
                 callableFqName = callableFqName,
                 parameterName = requestCallable.callable.name,
-                isInline = false
+                isInline = false,
+                isLazy = true
             )
         }
 
@@ -219,29 +223,31 @@ class AbstractGivenNode(
             dependencies[index]
         }
 
-    override val lazyDependencies: Boolean
-        get() = true
     override val callContext: CallContext
         get() = CallContext.DEFAULT
     override val originalType: TypeRef
         get() = type.classifier.defaultType
     override val isFrameworkGiven: Boolean
         get() = true
-    override val cacheIfPossible: Boolean
-        get() = false
+    override val expressionStrategy: ExpressionStrategy
+        get() = ExpressionStrategy.INLINE
 }
 
 fun CallableRef.toGivenNode(
     type: TypeRef,
     ownerScope: ResolutionScope
-): CallableGivenNode {
+): GivenNode {
     val finalCallable = substitute(getSubstitutionMap(ownerScope.context, listOf(type to this.type)))
-    return CallableGivenNode(
-        type,
-        finalCallable.getGivenRequests(ownerScope.context, ownerScope.trace),
-        ownerScope,
-        finalCallable
-    )
+    return if (finalCallable.isForAbstractGiven(ownerScope.context, ownerScope.trace)) {
+        AbstractGivenNode(type, ownerScope)
+    } else {
+        CallableGivenNode(
+            type,
+            finalCallable.getGivenRequests(ownerScope.context, ownerScope.trace),
+            ownerScope,
+            finalCallable
+        )
+    }
 }
 
 fun CallableRef.getGivenRequests(
@@ -265,7 +271,8 @@ fun CallableRef.getGivenRequests(
             isRequired = callable !is ValueParameterDescriptor || !callable.hasDefaultValueIgnoringGiven,
             callableFqName = callableFqNameProvider(callable),
             parameterName = name.asNameId(),
-            isInline = this.callable is FunctionDescriptor && this.callable.isInline
+            isInline = this.callable is FunctionDescriptor && this.callable.isInline,
+            isLazy = false
         )
     }
     .toList()
@@ -275,5 +282,6 @@ data class GivenRequest(
     val isRequired: Boolean,
     val callableFqName: FqName,
     val parameterName: Name,
-    val isInline: Boolean
+    val isInline: Boolean,
+    val isLazy: Boolean
 )
