@@ -38,7 +38,7 @@ class InjektInspectionSuppressor : InspectionSuppressor {
         val context = latestBindingContext
             ?: return false
         val usedGivensByFile = context[InjektWritableSlices.USED_GIVENS_FOR_FILE,
-                element.containingKtFile]
+                element.containingKtFile.virtualFilePath]
             ?: return false
         return usedGivensByFile
             .any {
