@@ -31,21 +31,21 @@ object Deps {
 
     object AndroidX {
         object Activity {
-            private const val version = "1.3.0-alpha03"
+            private const val version = "1.3.0-alpha05"
             const val activity = "androidx.activity:activity:$version"
             const val compose = "androidx.activity:activity-compose:$version"
         }
 
         object Compose {
-            const val version = "1.0.0-beta02"
+            const val version = "1.0.0-beta03"
             const val compiler = "androidx.compose.compiler:compiler:$version"
             const val material = "androidx.compose.material:material:$version"
             const val runtime = "androidx.compose.runtime:runtime:$version"
         }
 
         object Lifecycle {
-            private const val version = "2.2.0"
-            const val extensions = "androidx.lifecycle:lifecycle-extensions:$version"
+            private const val version = "2.3.1"
+            const val process = "androidx.lifecycle:lifecycle-process:$version"
             const val runtime = "androidx.lifecycle:lifecycle-runtime-ktx:$version"
         }
 
@@ -54,7 +54,7 @@ object Deps {
             const val junit = "androidx.test.ext:junit:1.0.0"
         }
 
-        const val work = "androidx.work:work-runtime-ktx:2.4.0"
+        const val work = "androidx.work:work-runtime-ktx:2.5.0"
     }
 
 
@@ -91,23 +91,23 @@ object Deps {
 
     const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.3.6"
 
-    const val kotestAssertions = "io.kotest:kotest-assertions-core:4.3.0"
+    const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"
 
     const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.14.2"
 
-    const val mockk = "io.mockk:mockk:1.10.0"
+    const val mockk = "io.mockk:mockk:1.11.0"
 
     object Moshi {
-        private const val version = "1.9.2"
+        private const val version = "1.11.0"
         const val adapters = "com.squareup.moshi:moshi-adapters:$version"
         const val moshi = "com.squareup.moshi:moshi:$version"
         const val codegen = "com.squareup.moshi:moshi-kotlin-codegen:$version"
-        private const val sealedVersion = "0.7.0"
+        private const val sealedVersion = "0.9.2"
         const val sealedRuntime = "dev.zacsweers.moshix:moshi-sealed-runtime:$sealedVersion"
         const val sealedCodegen = "dev.zacsweers.moshix:moshi-sealed-codegen:$sealedVersion"
     }
 
     const val roboelectric = "org.robolectric:robolectric:4.4"
 
-    const val shadowGradlePlugin = "com.github.jengelman.gradle.plugins:shadow:5.2.0"
+    const val shadowGradlePlugin = "com.github.jengelman.gradle.plugins:shadow:6.1.0"
 }
