@@ -18,6 +18,7 @@ fun main() {
 
 # Setup
 ```kotlin
+// in your buildscript
 buildscript {
   repositories {
     mavenCentral()
@@ -27,6 +28,7 @@ buildscript {
   }
 }
 
+// in your app module
 plugins {
     apply("com.ivianuu.injekt")
 }
