@@ -216,6 +216,14 @@ sealed class TypeRef {
         return@unsafeLazy false
     }
 
+    val isSuspendFunctionType: Boolean by unsafeLazy {
+        if (classifier.fqName.asString()
+                .startsWith("kotlin.coroutines.SuspendFunction")) return@unsafeLazy true
+        for (superType in superTypes)
+            if (superType.isComposableType) return@unsafeLazy true
+        return@unsafeLazy false
+    }
+
     val superTypes: List<TypeRef> by unsafeLazy {
         val substitutionMap = classifier.typeParameters
             .toMap(arguments)

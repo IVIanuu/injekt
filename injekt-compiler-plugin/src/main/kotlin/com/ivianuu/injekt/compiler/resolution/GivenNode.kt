@@ -72,6 +72,40 @@ class CallableGivenNode(
         get() = false
 }
 
+class FunctionConversionGivenNode(
+    override val type: TypeRef,
+    override val ownerScope: ResolutionScope,
+    val function: CallableRef
+) : GivenNode() {
+    override val callableFqName: FqName = type.classifier.fqName
+    override val dependencies: List<GivenRequest> = function.getGivenRequests(
+        ownerScope.context,
+        ownerScope.trace
+    )
+
+    private val dependencyScope = ResolutionScope(
+        name = callableFqName.shortName().asString(),
+        parent = ownerScope,
+        context = ownerScope.context,
+        callContext = type.callContext,
+        ownerDescriptor = ownerScope.ownerDescriptor,
+        trace = ownerScope.trace,
+        initialGivens = emptyList()
+    )
+
+    override val dependencyScopes = dependencies
+        .associateWith { dependencyScope }
+
+    override val callContext: CallContext
+        get() = CallContext.DEFAULT
+    override val originalType: TypeRef
+        get() = type.classifier.defaultType
+    override val isFrameworkGiven: Boolean
+        get() = true
+    override val cacheExpressionResultIfPossible: Boolean
+        get() = true
+}
+
 class SetGivenNode(
     override val type: TypeRef,
     override val ownerScope: ResolutionScope,
@@ -114,7 +148,7 @@ class ProviderGivenNode(
 
     override val dependencyScopes = mapOf(
         dependencies.single() to ResolutionScope(
-            callableFqName.shortName().asString(),
+            name = callableFqName.shortName().asString(),
             parent = ownerScope,
             context = ownerScope.context,
             callContext = type.callContext,

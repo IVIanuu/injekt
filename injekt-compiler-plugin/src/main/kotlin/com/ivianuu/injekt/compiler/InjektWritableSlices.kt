@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
@@ -62,6 +63,10 @@ object InjektWritableSlices {
         RewritePolicy.DO_NOTHING
     )
     val CLASSIFIER_FOR_KEY = BasicWritableSlice<String, ClassifierDescriptor>(RewritePolicy.DO_NOTHING)
+    val FUNCTION_CONVERSION_ALIAS = BasicWritableSlice<FunctionDescriptor, TypeAliasDescriptor>(
+        RewritePolicy.DO_NOTHING)
+    val FUNCTION_CONVERSION_FUNCTION = BasicWritableSlice<TypeAliasDescriptor, FunctionDescriptor>(
+        RewritePolicy.DO_NOTHING)
 }
 
 data class SourcePosition(
