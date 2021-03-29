@@ -354,10 +354,8 @@ private fun ResolutionScope.resolveCandidate(
     return@computeForCandidate ResolutionResult.Success.WithCandidate.Value(candidate, this, successDependencyResults)
 }
 
-private fun ResolutionScope.compareResult(
-    a: ResolutionResult?,
-    b: ResolutionResult?,
-): Int {
+private fun ResolutionScope.compareResult(a: ResolutionResult?, b: ResolutionResult?, ): Int {
+    if (a === b) return 0
     if (a != null && b == null) return -1
     if (b != null && a == null) return 1
     if (a == null && b == null) return 0
@@ -397,16 +395,12 @@ private fun ResolutionScope.compareResult(
                 diff > 0 -> 1
                 else -> 0
             }
-        } else throw AssertionError()
-    } else if (a is ResolutionResult.Failure &&
-            b is ResolutionResult.Failure) {
-        return a.failureOrdering.compareTo(b.failureOrdering)
-    } else {
-        throw AssertionError()
-    }
+        } else return 0
+    } else throw AssertionError()
 }
 
 private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int {
+    if (a === b) return 0
     if (a != null && b == null) return -1
     if (b != null && a == null) return 1
     if (a == null && b == null) return 0
@@ -462,6 +456,7 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
 }
 
 private fun compareType(a: TypeRef, b: TypeRef): Int {
+    if (a === b) return 0
     if (!a.isStarProjection && b.isStarProjection) return -1
     if (a.isStarProjection && !b.isStarProjection) return 1
 
