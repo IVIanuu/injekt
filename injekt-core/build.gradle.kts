@@ -29,10 +29,11 @@ kotlin {
             }
         }
     }
+    js()
+
     sourceSets {
         commonMain {
             dependencies {
-                api(Deps.Kotlin.stdlibCommon)
                 configurations.getByName("kotlinCompilerPluginClasspath")
                     .dependencies.add(project(":injekt-compiler-plugin"))
             }

@@ -33,12 +33,10 @@ import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 @AutoService(KotlinCompilerPluginSupportPlugin::class)
 open class InjektPlugin : KotlinCompilerPluginSupportPlugin {
     override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean =
-        kotlinCompilation.target.project.plugins.hasPlugin(InjektPlugin::class.java) &&
-                kotlinCompilation !is KotlinMetadataCompilation<*> &&
-                kotlinCompilation.compileKotlinTask !is KaptGenerateStubsTask
+        kotlinCompilation.target.project.plugins.hasPlugin(InjektPlugin::class.java)
 
     override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> =
-        kotlinCompilation.compileKotlinTask.setupForInjekt()
+        kotlinCompilation.setupForInjekt()
 
     override fun apply(target: Project) {
     }

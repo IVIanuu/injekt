@@ -15,6 +15,12 @@
  */
 
 import com.ivianuu.injekt.gradle.setupForInjekt
+import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.model.KotlinAndroidExtension
+import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmCompilation
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinMultiplatformPlugin
 
 buildscript {
     repositories {
@@ -46,25 +52,46 @@ allprojects {
     }
 
     afterEvaluate {
-        tasks.withType<org.jetbrains.kotlin.gradle.dsl.KotlinCompile<*>> {
-            kotlinOptions {
-                if (this is org.jetbrains.kotlin.gradle.dsl.KotlinJvmOptions)
+        fun setupCompilation(compilation: KotlinCompilation<*>) {
+            if (compilation is KotlinJvmCompilation) {
+                compilation.kotlinOptions {
                     useIR = true
-                if (project.name != "injekt-compiler-plugin" &&
-                        project.name != "injekt-gradle-plugin") {
-                    val pluginOptions = setupForInjekt().get()
+                }
+            }
+            if (project.name != "injekt-compiler-plugin" &&
+                project.name != "injekt-gradle-plugin") {
+                compilation.kotlinOptions {
+                    val pluginOptions = compilation.setupForInjekt().get()
                     pluginOptions.forEach {
                         freeCompilerArgs += listOf(
                             "-P", "plugin:com.ivianuu.injekt:${it.key}=${it.value}"
                         )
                     }
-                }
-                if (configurations.findByName("kotlinCompilerPluginClasspath")
-                                ?.dependencies
-                                ?.any { it.group == "androidx.compose.compiler" } == true) {
-                    freeCompilerArgs += listOf(
+                    if (configurations.findByName("kotlinCompilerPluginClasspath")
+                            ?.dependencies
+                            ?.any { it.group == "androidx.compose.compiler" } == true) {
+                        freeCompilerArgs += listOf(
                             "-P", "plugin:androidx.compose.compiler.plugins.kotlin:suppressKotlinVersionCompatibilityCheck=true"
-                    )
+                        )
+                    }
+                }
+            }
+        }
+        if (pluginManager.hasPlugin("org.jetbrains.kotlin.multiplatform")) {
+            extensions.getByType(KotlinMultiplatformExtension::class.java).run {
+                project.afterEvaluate {
+                    targets
+                        .flatMap { it.compilations }
+                        .forEach { setupCompilation(it) }
+                }
+            }
+        } else if (pluginManager.hasPlugin("org.jetbrains.kotlin.android")) {
+            extensions.getByType(KotlinAndroidProjectExtension::class.java).run {
+                project.afterEvaluate {
+                    target.compilations
+                        .forEach {
+                            setupCompilation(it)
+                        }
                 }
             }
         }

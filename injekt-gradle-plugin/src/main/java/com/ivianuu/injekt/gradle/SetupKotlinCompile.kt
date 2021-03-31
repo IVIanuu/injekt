@@ -16,36 +16,17 @@
 
 package com.ivianuu.injekt.gradle
 
-import com.android.build.gradle.api.BaseVariant
 import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.SourceSetContainer
-import org.jetbrains.kotlin.gradle.dsl.KotlinCompile
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmAndroidCompilation
-import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 
-fun KotlinCompile<*>.setupForInjekt(): Provider<List<SubpluginOption>> {
-    val compilation = AbstractKotlinCompile::class.java
-        .getDeclaredMethod("getTaskData\$kotlin_gradle_plugin")
-        .invoke(this)
-        .let { taskData ->
-            taskData.javaClass
-                .getDeclaredMethod("getCompilation")
-                .invoke(taskData) as KotlinCompilation<*>
-        }
-    val androidVariantData: BaseVariant? =
-        (compilation as? KotlinJvmAndroidCompilation)?.androidVariant
+fun KotlinCompilation<*>.setupForInjekt(): Provider<List<SubpluginOption>> {
+    (compileKotlinTask as? org.jetbrains.kotlin.gradle.tasks.KotlinCompile)
+        ?.usePreciseJavaTracking = false
 
-    if (this is org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
-        usePreciseJavaTracking = false
-    }
+    val sourceSetName = name
 
-    val sourceSetName =
-        androidVariantData?.javaClass?.getMethod("getName")?.run {
-            isAccessible = true
-            invoke(androidVariantData) as String
-        } ?: compilation.compilationName
+    val project = compileKotlinTask.project
 
     val cacheDir = project.buildDir.resolve("injekt/cache/$sourceSetName")
         .also { it.mkdirs() }
@@ -54,24 +35,12 @@ fun KotlinCompile<*>.setupForInjekt(): Provider<List<SubpluginOption>> {
 
     project.afterEvaluate {
         val cleanGeneratedFiles = project.tasks.create(
-            "${name}InjektCleanGeneratedFiles", CleanGeneratedFiles::class.java)
+            "${compileKotlinTask.name}InjektCleanGeneratedFiles", CleanGeneratedFiles::class.java)
         cleanGeneratedFiles.cacheDir = cacheDir
         cleanGeneratedFiles.dumpDir = dumpDir
-        cleanGeneratedFiles.srcDirs = if (androidVariantData != null) {
-            androidVariantData.sourceSets
-                .flatMap { it.javaDirectories }
-                .flatMap {
-                    it.walkTopDown()
-                        .toList()
-                }
-        } else {
-            project.extensions.findByType(SourceSetContainer::class.java)!!
-                .findByName(sourceSetName)
-                ?.allSource
-                ?.toList()
-                ?: emptyList()
-        }
-        dependsOn(cleanGeneratedFiles)
+        cleanGeneratedFiles.srcDirs = allKotlinSourceSets
+            .flatMap { it.kotlin.srcDirs }
+        compileKotlinTask.dependsOn(cleanGeneratedFiles)
     }
 
     return project.provider {
