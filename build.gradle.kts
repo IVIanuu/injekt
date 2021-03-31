@@ -46,19 +46,13 @@ allprojects {
     }
 
     afterEvaluate {
-        tasks.withType<org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile<*>> {
-            val kotlinOptions = when (this) {
-                is org.jetbrains.kotlin.gradle.tasks.KotlinCompile -> kotlinOptions
-                is org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon -> kotlinOptions
-                else -> null
-            } ?: return@withType
-            kotlinOptions.run {
+        tasks.withType<org.jetbrains.kotlin.gradle.dsl.KotlinCompile<*>> {
+            kotlinOptions {
                 if (this is org.jetbrains.kotlin.gradle.dsl.KotlinJvmOptions)
                     useIR = true
                 if (project.name != "injekt-compiler-plugin" &&
                         project.name != "injekt-gradle-plugin") {
-                    val pluginOptions = (this@withType as org.jetbrains.kotlin.gradle.dsl.KotlinCompile<*>)
-                        .setupForInjekt().get()
+                    val pluginOptions = setupForInjekt().get()
                     pluginOptions.forEach {
                         freeCompilerArgs += listOf(
                             "-P", "plugin:com.ivianuu.injekt:${it.key}=${it.value}"
