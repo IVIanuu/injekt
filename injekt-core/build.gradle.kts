@@ -29,7 +29,6 @@ kotlin {
             }
         }
     }
-    js()
 
     sourceSets {
         commonMain {
