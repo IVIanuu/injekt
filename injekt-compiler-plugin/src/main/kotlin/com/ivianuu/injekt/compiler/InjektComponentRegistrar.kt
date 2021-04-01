@@ -57,7 +57,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
         val allowGivenCalls = allowGivenCalls(configuration)
         StorageComponentContainerContributor.registerExtension(
             project,
-            InjektStorageComponentContainerContributor(null, { allowGivenCalls })
+            InjektStorageComponentContainerContributor { allowGivenCalls }
         )
         IrGenerationExtension.registerExtensionWithLoadingOrder(
             project,

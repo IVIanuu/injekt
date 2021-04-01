@@ -22,16 +22,17 @@ import com.intellij.openapi.extensions.Extensions
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.project.ProjectManagerListener
+import com.intellij.psi.PsiElement
 import com.ivianuu.injekt.compiler.analysis.GivenCallResolutionInterceptorExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
 import com.ivianuu.injekt.compiler.analysis.InjektTypeResolutionInterceptorExtension
 import org.jetbrains.kotlin.analyzer.ModuleInfo
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.extensions.internal.CandidateInterceptor
 import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
 import org.jetbrains.kotlin.idea.core.unwrapModuleSourceInfo
+import org.jetbrains.kotlin.idea.caches.project.getModuleInfo
 import org.jetbrains.kotlin.idea.facet.KotlinFacet
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 
@@ -47,10 +48,9 @@ class AppInitializer : ApplicationInitializedListener {
                     override fun projectOpened(project: Project) {
                         StorageComponentContainerContributor.registerExtension(
                             project,
-                            InjektStorageComponentContainerContributor(
-                                { latestBindingContext = it },
-                                { true } // todo
-                            )
+                            InjektStorageComponentContainerContributor { element ->
+                                (element as PsiElement).getModuleInfo().allowGivenCalls()
+                            }
                         )
                         CandidateInterceptor.registerExtension(
                             project,
@@ -70,13 +70,13 @@ class AppInitializer : ApplicationInitializedListener {
     }
 }
 
-private fun ModuleDescriptor.allowGivenCalls(): Boolean {
-    val module = getCapability(ModuleInfo.Capability)?.unwrapModuleSourceInfo()?.module
+private fun ModuleInfo.allowGivenCalls(): Boolean {
+    val module = unwrapModuleSourceInfo()?.module
+    val facet = module?.let { KotlinFacet.get(it) }
         ?: return false
-    val facet = KotlinFacet.get(module)
+    val commonArgs = facet.configuration.settings.compilerArguments
         ?: return false
-    return facet.configuration.settings.compilerArguments?.pluginOptions
-        ?.any {
-            it.contains("allowGivenCalls=true")
-        } ?: false
+    return commonArgs.pluginOptions?.any {
+        it == "plugin:com.ivianuu.injekt:allowGivenCalls=true"
+    } == true
 }

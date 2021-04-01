@@ -104,8 +104,6 @@ fun DeclarationDescriptor.isExternalDeclaration(): Boolean = this is Deserialize
 
 fun String.asNameId() = Name.identifier(this)
 
-val isIde: Boolean = Project::class.java.name == "com.intellij.openapi.project.Project"
-
 fun <T> unsafeLazy(init: () -> T) = lazy(LazyThreadSafetyMode.NONE, init)
 
 fun Annotated.hasAnnotation(fqName: FqName): Boolean =

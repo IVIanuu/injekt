@@ -22,11 +22,11 @@ import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.platform.TargetPlatform
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.resolve.BindingContext
 
 class InjektStorageComponentContainerContributor(
-    private val bindingContextCollector: ((BindingContext) -> Unit)?,
-    private val allowGivenCalls: (ModuleDescriptor) -> Boolean
+    private val allowGivenCalls: (KtElement) -> Boolean
 ) : StorageComponentContainerContributor {
     override fun registerModuleComponents(
         container: StorageComponentContainer,
@@ -36,7 +36,7 @@ class InjektStorageComponentContainerContributor(
         val context = InjektContext(moduleDescriptor)
         container.useInstance(GivenChecker(context))
         container.useInstance(TypeKeyChecker(context))
-        container.useInstance(GivenCallChecker(context, allowGivenCalls, bindingContextCollector))
+        container.useInstance(GivenCallChecker(context, allowGivenCalls))
         container.useInstance(QualifierChecker())
     }
 }

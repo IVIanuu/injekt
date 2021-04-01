@@ -26,6 +26,7 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.asJava.unwrapped
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
+import org.jetbrains.kotlin.idea.caches.resolve.analyze
 import org.jetbrains.kotlin.idea.caches.resolve.resolveToCall
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtFile
@@ -48,9 +49,9 @@ class InjektInspectionSuppressor : InspectionSuppressor {
             "RedundantUnitReturnType" -> return element is KtUserType && element.text != "Unit"
             "UnusedImport" -> {
                 if (element !is KtImportDirective) return false
-                val context = latestBindingContext
-                    ?: return false
-                val usedGivensByFile = context[InjektWritableSlices.USED_GIVENS_FOR_FILE,
+                val file = element.containingKtFile
+                val bindingContext = file.analyze(BodyResolveMode.FULL)
+                val usedGivensByFile = bindingContext[InjektWritableSlices.USED_GIVENS_FOR_FILE,
                         element.containingKtFile.virtualFilePath]
                     ?: return false
                 return usedGivensByFile
@@ -81,5 +82,3 @@ class InjektInspectionSuppressor : InspectionSuppressor {
         }
     }
 }
-
-var latestBindingContext: BindingContext? = null

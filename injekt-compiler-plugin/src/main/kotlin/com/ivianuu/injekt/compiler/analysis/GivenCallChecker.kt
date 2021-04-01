@@ -20,44 +20,39 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
-import com.ivianuu.injekt.compiler.isIde
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
 import com.ivianuu.injekt.compiler.resolution.HierarchicalResolutionScope
-import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.resolveRequests
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
-import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class GivenCallChecker(
     private val context: InjektContext,
-    private val allowGivenCalls: (ModuleDescriptor) -> Boolean,
-    private val bindingContextCollector: ((BindingContext) -> Unit)?
+    private val allowGivenCalls: (KtElement) -> Boolean
 ) : CallChecker {
     override fun check(
         resolvedCall: ResolvedCall<*>,
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
-        bindingContextCollector?.invoke(context.trace.bindingContext)
         val resultingDescriptor = resolvedCall.resultingDescriptor
         if (resultingDescriptor !is FunctionDescriptor) return
 
@@ -98,7 +93,7 @@ class GivenCallChecker(
 
         val callExpression = resolvedCall.call.callElement
 
-        if (!allowGivenCalls(resultingDescriptor.module) &&
+        if (!allowGivenCalls(callExpression) &&
                 requests.any { it.isRequired }) {
             context.trace.report(
                 InjektErrors.GIVEN_CALLS_NOT_ALLOWED
@@ -108,7 +103,7 @@ class GivenCallChecker(
         }
 
         // todo
-        if (isIde) return
+        if (Project::class.java.name == "com.intellij.openapi.project.Project") return
 
         val scope = HierarchicalResolutionScope(this.context, context.scope, context.trace)
         scope.recordLookup(KotlinLookupLocation(callExpression))
