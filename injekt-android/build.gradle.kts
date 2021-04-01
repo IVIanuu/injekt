@@ -49,12 +49,7 @@ dependencies {
     testImplementation(Deps.kotestAssertions)
     testImplementation(Deps.mockk)
     testImplementation(Deps.roboelectric)
-
-    implementation(Deps.AndroidX.Compose.runtime)
-    kotlinCompilerPluginClasspath(Deps.AndroidX.Compose.compiler)
-    implementation(Deps.AndroidX.Compose.material)
 }
 
 plugins.apply("com.vanniktech.maven.publish")
-
 
