@@ -67,8 +67,6 @@ dependencies {
     implementation(Deps.Moshi.moshi)
     implementation(Deps.Moshi.adapters)
     kapt(Deps.Moshi.codegen)
-    implementation(Deps.Moshi.sealedRuntime)
-    kapt(Deps.Moshi.sealedCodegen)
 }
 
 plugins.apply("com.vanniktech.maven.publish")

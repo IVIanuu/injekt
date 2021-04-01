@@ -102,9 +102,6 @@ object Deps {
         const val adapters = "com.squareup.moshi:moshi-adapters:$version"
         const val moshi = "com.squareup.moshi:moshi:$version"
         const val codegen = "com.squareup.moshi:moshi-kotlin-codegen:$version"
-        private const val sealedVersion = "0.9.2"
-        const val sealedRuntime = "dev.zacsweers.moshix:moshi-sealed-runtime:$sealedVersion"
-        const val sealedCodegen = "dev.zacsweers.moshix:moshi-sealed-codegen:$sealedVersion"
     }
 
     const val roboelectric = "org.robolectric:robolectric:4.4"
