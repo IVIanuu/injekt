@@ -25,17 +25,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-typealias Lolo<T> = String
-
-
-abstract class MySuperClass {
-    abstract fun <@ForTypeKey T> func()
-}
-class MySubClass : MySuperClass() {
-    override fun <T> func() {
-    }
-}
-
 @Given
 @Scoped<AppGivenScope>
 class CounterStorage {
