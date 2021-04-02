@@ -260,6 +260,21 @@ class GivenDeclarationCheckTest {
     }
 
     @Test
+    fun testNonGivenTypeParameterOverrideWithGivenOverridden() = codegen(
+        """
+            abstract class MySuperClass {
+                @Given abstract fun <@Given T : Bar> foo(): Foo
+            }
+
+            class MySubClass : MySuperClass() {
+                @Given override fun <T : Bar> foo(): Foo = TODO()
+            }
+        """
+    ) {
+        compilationShouldHaveFailed("Conflicting overloads")
+    }
+
+    @Test
     fun testGivenPropertyOverrideWithoutGivenAnnotation() = codegen(
         """
             abstract class MySuperClass {

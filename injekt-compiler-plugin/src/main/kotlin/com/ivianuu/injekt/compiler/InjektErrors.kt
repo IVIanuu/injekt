@@ -144,6 +144,16 @@ interface InjektErrors {
                 }
 
         @JvmField
+        val FOR_TYPE_KEY_TYPE_PARAMETER_ON_TYPE_ALIAS =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "cannot mark type alias type parameter with @ForTypeKey"
+                    )
+                }
+
+        @JvmField
         val MULTIPLE_GIVEN_CONSTRAINTS =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also {

@@ -17,12 +17,24 @@
 package com.ivianuu.injekt.samples.android.data
 
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.common.ForTypeKey
 import com.ivianuu.injekt.scope.AppGivenScope
 import com.ivianuu.injekt.scope.Scoped
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+
+typealias Lolo<T> = String
+
+
+abstract class MySuperClass {
+    abstract fun <@ForTypeKey T> func()
+}
+class MySubClass : MySuperClass() {
+    override fun <T> func() {
+    }
+}
 
 @Given
 @Scoped<AppGivenScope>

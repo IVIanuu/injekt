@@ -20,7 +20,9 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.findAnnotation
+import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.isForTypeKey
 import com.ivianuu.injekt.compiler.isGivenConstraint
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.forEachType
@@ -47,6 +49,7 @@ import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.isSealed
+import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -103,6 +106,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
             }
 
             checkConstrainedGiven(declaration, descriptor, descriptor.typeParameters, trace)
+            checkGivenTypeParametersMismatch(descriptor, declaration, trace)
         } else {
             checkOverrides(declaration, descriptor, trace)
             checkExceptActual(declaration, descriptor, trace)
@@ -262,6 +266,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         if (descriptor.isGiven(this.context, trace)) {
             checkUnresolvableGivenTypeParameters(declaration,
                 descriptor.typeParameters, descriptor.returnType!!, trace)
+            checkGivenTypeParametersMismatch(descriptor, declaration, trace)
             if (descriptor.extensionReceiverParameter != null &&
                 descriptor.extensionReceiverParameter?.type?.isGiven(this.context, trace) != true
             ) {
@@ -414,6 +419,33 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                 trace.report(
                     InjektErrors.GIVEN_WITH_UNRESOLVABLE_TYPE_PARAMETER
                         .on(it.findPsi() ?: declaration)
+                )
+            }
+    }
+
+    private fun checkGivenTypeParametersMismatch(
+        descriptor: CallableDescriptor,
+        declaration: KtDeclaration,
+        trace: BindingTrace
+    ) {
+        if (descriptor.typeParameters.isEmpty()) return
+        if (descriptor.overriddenDescriptors.isEmpty()) return
+
+        descriptor.overriddenDescriptors
+            .filter { overriddenDescriptor ->
+                var hasDifferentTypeParameters = false
+                descriptor.typeParameters.forEachWith(overriddenDescriptor.typeParameters) { a, b ->
+                    hasDifferentTypeParameters = hasDifferentTypeParameters || b.isGiven(context, trace) &&
+                            !a.isGiven(context, trace)
+                }
+                hasDifferentTypeParameters
+            }
+            .toList()
+            .takeIf { it.isNotEmpty() }
+            ?.let {
+                trace.report(
+                    Errors.CONFLICTING_OVERLOADS
+                        .on(declaration, it)
                 )
             }
     }

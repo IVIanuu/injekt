@@ -20,6 +20,7 @@ import com.ivianuu.injekt.common.TypeKey
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.Qualifier1
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.compilationShouldBeOk
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
@@ -265,4 +266,29 @@ class TypeKeyTest {
         invokeSingleFile<TypeKey<List<@Qualifier1 Foo>>>().value shouldBe
                 "kotlin.collections.List<[@com.ivianuu.injekt.test.Qualifier1]com.ivianuu.injekt.test.Foo>"
     }
+
+    @Test
+    fun testNonForTypeKeyTypeParameterOverride() = codegen(
+        """
+            abstract class MySuperClass {
+                abstract fun <@ForTypeKey T> func()
+            }
+            class MySubClass : MySuperClass() {
+                override fun <T> func() {
+                }
+            }
+        """
+    ) {
+        compilationShouldHaveFailed("Conflicting overloads")
+    }
+
+    @Test
+    fun testForTypeKeyTypeParameterOnTypeAlias() = codegen(
+        """
+            typealias MyAlias<@ForTypeKey T> = String
+        """
+    ) {
+        compilationShouldHaveFailed("cannot mark type alias type parameter with @ForTypeKey")
+    }
+
 }
