@@ -352,7 +352,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
 
     private fun checkOverrides(
         declaration: KtDeclaration,
-        descriptor: CallableDescriptor,
+        descriptor: CallableMemberDescriptor,
         trace: BindingTrace
     ) {
         val isGiven = descriptor.hasAnnotation(InjektFqNames.Given)
@@ -361,8 +361,8 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                 .drop(1)
                 .any { it.hasAnnotation(InjektFqNames.Given) }) {
             trace.report(
-                InjektErrors.NO_GIVEN_ANNOTATION_ON_GIVEN_OVERRIDE
-                    .on(declaration)
+                Errors.NOTHING_TO_OVERRIDE
+                    .on(declaration, descriptor)
             )
         }
     }
@@ -377,8 +377,8 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         if (isGiven) return
         if (descriptor.findExpects().any { it.hasAnnotation(InjektFqNames.Given) }) {
             trace.report(
-                InjektErrors.NO_GIVEN_ANNOTATION_ON_ACTUAL_GIVEN
-                    .on(declaration)
+                Errors.ACTUAL_WITHOUT_EXPECT
+                    .on(declaration.cast(), descriptor, emptyMap())
             )
         }
     }

@@ -256,7 +256,7 @@ class GivenDeclarationCheckTest {
             }
         """
     ) {
-        compilationShouldHaveFailed("declaration which overrides a given declaration must be also marked with @Given")
+        compilationShouldHaveFailed("'foo' overrides nothing")
     }
 
     @Test
@@ -286,7 +286,7 @@ class GivenDeclarationCheckTest {
             }
         """
     ) {
-        compilationShouldHaveFailed("declaration which overrides a given declaration must be also marked with @Given")
+        compilationShouldHaveFailed("'foo' overrides nothing")
     }
 
     @Test
@@ -306,7 +306,7 @@ class GivenDeclarationCheckTest {
             )
         )
     ) {
-        compilationShouldHaveFailed("actual declaration of a given expect declaration must be also marked with @Given")
+        compilationShouldHaveFailed("Actual function 'foo' has no corresponding expected declaration")
     }
 
     @Test
@@ -326,7 +326,7 @@ class GivenDeclarationCheckTest {
             )
         )
     ) {
-        compilationShouldHaveFailed("actual declaration of a given expect declaration must be also marked with @Given")
+        compilationShouldHaveFailed("Actual property 'foo' has no corresponding expected declaration")
     }
 
     @Test
@@ -346,7 +346,7 @@ class GivenDeclarationCheckTest {
             )
         )
     ) {
-        compilationShouldHaveFailed("actual declaration of a given expect declaration must be also marked with @Given")
+        compilationShouldHaveFailed("Actual class 'Dep' has no corresponding expected declaration")
     }
 
     @Test
@@ -370,6 +370,6 @@ class GivenDeclarationCheckTest {
             )
         )
     ) {
-        compilationShouldHaveFailed("actual declaration of a given expect declaration must be also marked with @Given")
+        compilationShouldHaveFailed("Actual constructor of 'Dep' has no corresponding expected declaration")
     }
 }
