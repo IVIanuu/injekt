@@ -203,6 +203,16 @@ interface InjektErrors {
                 }
 
         @JvmField
+        val NO_GIVEN_ANNOTATION_ON_ACTUAL_GIVEN =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "actual declaration of a given expect declaration must be also marked with @Given"
+                    )
+                }
+
+        @JvmField
         val QUALIFIER_WITH_VALUE_PARAMETERS =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also {

@@ -39,6 +39,7 @@ import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithVisibility
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.MemberDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -57,6 +58,7 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
+import org.jetbrains.kotlin.resolve.multiplatform.findExpects
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -103,6 +105,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
             checkConstrainedGiven(declaration, descriptor, descriptor.typeParameters, trace)
         } else {
             checkOverrides(declaration, descriptor, trace)
+            checkExceptActual(declaration, descriptor, trace)
             checkGivenConstraintsOnNonGivenDeclaration(descriptor.typeParameters, trace)
             if (descriptor.extensionReceiverParameter?.isGiven(this.context, trace) == true) {
                 trace.report(
@@ -233,6 +236,8 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         } else {
             checkGivenConstraintsOnNonGivenDeclaration(descriptor.declaredTypeParameters, trace)
         }
+
+        checkExceptActual(declaration, descriptor, trace)
     }
 
     private fun checkConstructor(
@@ -243,6 +248,8 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         if (descriptor.isGiven(this.context, trace)) {
             descriptor.valueParameters
                 .checkGivenCallableHasOnlyGivenParameters(declaration, trace)
+        } else {
+            checkExceptActual(declaration, descriptor, trace)
         }
     }
 
@@ -251,7 +258,6 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         descriptor: PropertyDescriptor,
         trace: BindingTrace
     ) {
-        checkOverrides(declaration, descriptor, trace)
         checkGivenConstraintsOnNonGivenDeclaration(descriptor.typeParameters, trace)
         if (descriptor.isGiven(this.context, trace)) {
             checkUnresolvableGivenTypeParameters(declaration,
@@ -269,6 +275,9 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                 )
             }
         } else {
+            checkOverrides(declaration, descriptor, trace)
+            checkExceptActual(declaration, descriptor, trace)
+
             if (descriptor.extensionReceiverParameter?.isGiven(this.context, trace) == true) {
                 trace.report(
                     InjektErrors.GIVEN_RECEIVER_ON_NON_GIVEN_DECLARATION
@@ -345,9 +354,25 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         if (isGiven) return
         if (descriptor.overriddenTreeUniqueAsSequence(false)
                 .drop(1)
-                .any { it.isGiven(context, trace) }) {
+                .any { it.hasAnnotation(InjektFqNames.Given) }) {
             trace.report(
                 InjektErrors.NO_GIVEN_ANNOTATION_ON_GIVEN_OVERRIDE
+                    .on(declaration)
+            )
+        }
+    }
+
+    private fun checkExceptActual(
+        declaration: KtDeclaration,
+        descriptor: MemberDescriptor,
+        trace: BindingTrace
+    ) {
+        if (!descriptor.isActual) return
+        val isGiven = descriptor.hasAnnotation(InjektFqNames.Given)
+        if (isGiven) return
+        if (descriptor.findExpects().any { it.hasAnnotation(InjektFqNames.Given) }) {
+            trace.report(
+                InjektErrors.NO_GIVEN_ANNOTATION_ON_ACTUAL_GIVEN
                     .on(declaration)
             )
         }

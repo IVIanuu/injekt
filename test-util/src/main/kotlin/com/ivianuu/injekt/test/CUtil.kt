@@ -25,9 +25,12 @@ import com.ivianuu.injekt.compiler.InjektComponentRegistrar
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
+import com.tschuchort.compiletesting.SourceFileAccessor
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
+import okio.buffer
+import okio.sink
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.name.FqName
 import java.net.URLClassLoader
@@ -107,6 +110,25 @@ fun multiCodegen(
             config(index)
             prevCompilations += this
         }
+    }
+    assertions(results)
+}
+
+fun multiPlatformCodegen(
+    commonSources: List<SourceFile>,
+    platformSources: List<SourceFile>,
+    config: KotlinCompilation.() -> Unit = {},
+    assertions: KotlinCompilation.Result.() -> Unit = { compilationShouldBeOk() },
+) {
+    val results = compile {
+        kotlincArguments += "-Xmulti-platform=true"
+        commonSources
+            .map { SourceFileAccessor.writeIfNeeded(it, workingDir.resolve("sources")
+                .also { it.mkdirs() }) }
+            .forEach { kotlincArguments += "-Xcommon-sources=$it" }
+        this.sources = platformSources + commonSources
+        this.compile()
+        config(this)
     }
     assertions(results)
 }

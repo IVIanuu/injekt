@@ -20,8 +20,10 @@ import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiPlatformCodegen
 import com.ivianuu.injekt.test.shouldContainMessage
 import com.ivianuu.injekt.test.shouldNotContainMessage
+import com.ivianuu.injekt.test.source
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
@@ -255,5 +257,104 @@ class GivenDeclarationCheckTest {
         """
     ) {
         compilationShouldHaveFailed("declaration which overrides a given declaration must be also marked with @Given")
+    }
+
+    @Test
+    fun testGivenPropertyOverrideWithoutGivenAnnotation() = codegen(
+        """
+            abstract class MySuperClass {
+                @Given abstract val foo: Foo
+            }
+
+            class MySubClass : MySuperClass() {
+                override val foo = Foo()
+            }
+        """
+    ) {
+        compilationShouldHaveFailed("declaration which overrides a given declaration must be also marked with @Given")
+    }
+
+    @Test
+    fun testActualGivenFunctionWithoutGivenAnnotation() = multiPlatformCodegen(
+        commonSources = listOf(
+            source(
+                """
+                    @Given expect fun foo(): Foo 
+                """
+            )
+        ),
+        platformSources = listOf(
+            source(
+                """
+                    actual fun foo(): Foo = Foo()
+                """
+            )
+        )
+    ) {
+        compilationShouldHaveFailed("actual declaration of a given expect declaration must be also marked with @Given")
+    }
+
+    @Test
+    fun testActualGivenPropertyWithoutGivenAnnotation() = multiPlatformCodegen(
+        commonSources = listOf(
+            source(
+                """
+                    @Given expect val foo: Foo 
+                """
+            )
+        ),
+        platformSources = listOf(
+            source(
+                """
+                    actual val foo: Foo = Foo()
+                """
+            )
+        )
+    ) {
+        compilationShouldHaveFailed("actual declaration of a given expect declaration must be also marked with @Given")
+    }
+
+    @Test
+    fun testActualGivenClassWithoutGivenAnnotation() = multiPlatformCodegen(
+        commonSources = listOf(
+            source(
+                """
+                    @Given expect class Dep 
+                """
+            )
+        ),
+        platformSources = listOf(
+            source(
+                """
+                    actual class Dep
+                """
+            )
+        )
+    ) {
+        compilationShouldHaveFailed("actual declaration of a given expect declaration must be also marked with @Given")
+    }
+
+    @Test
+    fun testActualGivenConstructorWithoutGivenAnnotation() = multiPlatformCodegen(
+        commonSources = listOf(
+            source(
+                """
+                    expect class Dep {
+                        @Given constructor()
+                    }
+                """
+            )
+        ),
+        platformSources = listOf(
+            source(
+                """
+                    actual class Dep {
+                        actual constructor()
+                    }
+                """
+            )
+        )
+    ) {
+        compilationShouldHaveFailed("actual declaration of a given expect declaration must be also marked with @Given")
     }
 }
