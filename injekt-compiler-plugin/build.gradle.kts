@@ -19,6 +19,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
     kotlin("jvm")
     kotlin("kapt")
+    kotlin("plugin.serialization")
     id("com.github.johnrengelman.shadow")
 }
 
@@ -49,9 +50,7 @@ dependencies {
     api(Deps.Kotlin.compilerEmbeddable)
     compileOnly(Deps.AndroidX.Compose.compiler)
     implementation(Deps.Kotlin.stdlibJvm)
-    implementation(Deps.Moshi.moshi)
-    implementation(Deps.Moshi.adapters)
-    kapt(Deps.Moshi.codegen)
+    implementation(Deps.KotlinSerialization.json)
 }
 
 plugins.apply("com.vanniktech.maven.publish")

@@ -23,7 +23,6 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.psi.KtElement
-import org.jetbrains.kotlin.resolve.BindingContext
 
 class InjektStorageComponentContainerContributor(
     private val allowGivenCalls: (KtElement) -> Boolean

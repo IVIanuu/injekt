@@ -80,13 +80,18 @@ object Deps {
     const val junit = "junit:junit:4.12"
 
     object Kotlin {
-        private const val version = "1.4.31"
+        const val version = "1.4.31"
         const val compiler = "org.jetbrains.kotlin:kotlin-compiler:$version"
         const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
         const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
         const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
         const val stdlibJvm = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$version"
         const val stdlibCommon = "org.jetbrains.kotlin:kotlin-stdlib-common:$version"
+    }
+
+    object KotlinSerialization {
+        const val gradlePlugin = "org.jetbrains.kotlin:kotlin-serialization:${Kotlin.version}"
+        const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.1.0"
     }
 
     const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.3.6"
@@ -96,13 +101,6 @@ object Deps {
     const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.14.2"
 
     const val mockk = "io.mockk:mockk:1.11.0"
-
-    object Moshi {
-        private const val version = "1.11.0"
-        const val adapters = "com.squareup.moshi:moshi-adapters:$version"
-        const val moshi = "com.squareup.moshi:moshi:$version"
-        const val codegen = "com.squareup.moshi:moshi-kotlin-codegen:$version"
-    }
 
     const val roboelectric = "org.robolectric:robolectric:4.4"
 

@@ -38,6 +38,4 @@ tasks.withType<PublishTask> {
 
 dependencies {
     compile(project(":injekt-compiler-plugin", "shadow"))
-    compile(Deps.Moshi.moshi)
-    compile(Deps.Moshi.adapters)
 }

@@ -24,19 +24,26 @@ import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.forTypeKeyTypeParameters
 import com.ivianuu.injekt.compiler.resolution.givenConstraintTypeParameters
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-@JsonClass(generateAdapter = true)
+inline fun <reified T> T.encode(): String = Json.encodeToString(this)
+inline fun <reified T> String.decode(): T = Json.decodeFromString(this)
+
+@Serializable
 data class PersistedCallableInfo(
-    val type: PersistedTypeRef,
-    val typeParameters: List<PersistedClassifierRef>,
-    val parameterTypes: Map<String, PersistedTypeRef>,
-    val givenParameters: Set<String>
+    @SerialName("0") val type: PersistedTypeRef,
+    @SerialName("1") val typeParameters: List<PersistedClassifierRef> = emptyList(),
+    @SerialName("2") val parameterTypes: Map<String, PersistedTypeRef> = emptyMap(),
+    @SerialName("3") val givenParameters: Set<String> = emptySet()
 )
 
 fun CallableRef.toPersistedCallableInfo(context: InjektContext) = PersistedCallableInfo(
@@ -47,14 +54,14 @@ fun CallableRef.toPersistedCallableInfo(context: InjektContext) = PersistedCalla
     givenParameters = givenParameters
 )
 
-@JsonClass(generateAdapter = true)
+@Serializable
 data class PersistedClassifierInfo(
-    val fqName: String,
-    val qualifier: PersistedTypeRef?,
-    val superTypes: List<PersistedTypeRef>,
-    val primaryConstructorPropertyParameters: List<String>,
-    val forTypeKeyTypeParameters: List<String>,
-    val givenConstraintTypeParameters: List<String>
+    @SerialName("0") val fqName: String,
+    @SerialName("1") val qualifier: PersistedTypeRef? = null,
+    @SerialName("2") val superTypes: List<PersistedTypeRef> = emptyList(),
+    @SerialName("3") val primaryConstructorPropertyParameters: List<String> = emptyList(),
+    @SerialName("4") val forTypeKeyTypeParameters: List<String> = emptyList(),
+    @SerialName("5") val givenConstraintTypeParameters: List<String> = emptyList()
 )
 
 fun ClassifierRef.toPersistedClassifierInfo(context: InjektContext) = PersistedClassifierInfo(
@@ -69,15 +76,15 @@ fun ClassifierRef.toPersistedClassifierInfo(context: InjektContext) = PersistedC
         .map { it.asString() }
 )
 
-@JsonClass(generateAdapter = true)
+@Serializable
 data class PersistedTypeRef(
-    val classifierKey: String,
-    val arguments: List<PersistedTypeRef>,
-    val qualifier: PersistedTypeRef?,
-    val isStarProjection: Boolean,
-    val isMarkedNullable: Boolean,
-    val isMarkedComposable: Boolean,
-    val isGiven: Boolean
+    @SerialName("0") val classifierKey: String,
+    @SerialName("1") val arguments: List<PersistedTypeRef> = emptyList(),
+    @SerialName("2") val qualifier: PersistedTypeRef? = null,
+    @SerialName("3") val isStarProjection: Boolean,
+    @SerialName("4") val isMarkedNullable: Boolean,
+    @SerialName("5") val isMarkedComposable: Boolean,
+    @SerialName("6") val isGiven: Boolean
 )
 
 fun TypeRef.toPersistedTypeRef(context: InjektContext): PersistedTypeRef = PersistedTypeRef(
@@ -104,14 +111,14 @@ fun PersistedTypeRef.toTypeRef(context: InjektContext, trace: BindingTrace?): Ty
         )
 }
 
-@JsonClass(generateAdapter = true)
+@Serializable
 data class PersistedClassifierRef(
-    val key: String,
-    val superTypes: List<PersistedTypeRef>,
-    val qualifier: PersistedTypeRef?,
-    val primaryConstructorPropertyParameters: List<String>,
-    val forTypeKeyTypeParameters: List<String>,
-    val givenConstraintTypeParameters: List<String>
+    @SerialName("0") val key: String,
+    @SerialName("1") val superTypes: List<PersistedTypeRef> = emptyList(),
+    @SerialName("2") val qualifier: PersistedTypeRef? = null,
+    @SerialName("3") val primaryConstructorPropertyParameters: List<String> = emptyList(),
+    @SerialName("4") val forTypeKeyTypeParameters: List<String> = emptyList(),
+    @SerialName("5") val givenConstraintTypeParameters: List<String> = emptyList()
 )
 
 fun ClassifierRef.toPersistedClassifierRef(

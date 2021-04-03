@@ -16,14 +16,11 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.squareup.moshi.Moshi
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -34,12 +31,9 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
-import java.util.Base64
 
 @Suppress("NewApi")
 class InjektContext(val module: ModuleDescriptor) {
-
-    val moshi = Moshi.Builder().build()!!
 
     val setType by unsafeLazy {
         module.builtIns.set.defaultType.toTypeRef(this, null)
@@ -56,12 +50,7 @@ class InjektContext(val module: ModuleDescriptor) {
             ?.get("value".asNameId())
             ?.value
             ?.cast<String>()
-            ?.let { encoded ->
-                val json = Base64.getDecoder()
-                    .decode(encoded)
-                    .decodeToString()
-                moshi.adapter(PersistedCallableInfo::class.java).fromJson(json)!!
-            }
+            ?.decode<PersistedCallableInfo>()
             .also { trace?.record(InjektWritableSlices.CALLABLE_INFO, callable, Tuple1(it)) }
     }
 
@@ -77,12 +66,7 @@ class InjektContext(val module: ModuleDescriptor) {
             ?.get("value".asNameId())
             ?.value
             ?.cast<String>()
-            ?.let { encoded ->
-                val json = Base64.getDecoder()
-                    .decode(encoded)
-                    .decodeToString()
-                moshi.adapter(PersistedClassifierInfo::class.java).fromJson(json)!!
-            }
+            ?.decode()
             ?: descriptor
                 .containingDeclaration
                 .safeAs<CallableDescriptor>()
