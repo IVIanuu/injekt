@@ -29,11 +29,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         val trace = DelegatingBindingTrace(
             pluginContext.bindingContext, "injekt trace"
         )
-        moduleFragment.transform(InfoTransformer(
-            context,
-            pluginContext,
-            trace
-        ), null)
+        moduleFragment.transform(InfoTransformer(context, pluginContext), null)
         moduleFragment.transform(GivenCallTransformer(context, pluginContext), null)
         moduleFragment.transform(TypeKeyTransformer(context, trace, pluginContext), null)
         moduleFragment.patchDeclarationParents()

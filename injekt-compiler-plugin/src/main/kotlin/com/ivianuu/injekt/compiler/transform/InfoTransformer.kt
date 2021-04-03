@@ -20,107 +20,93 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.PersistedCallableInfo
 import com.ivianuu.injekt.compiler.PersistedClassifierInfo
-import com.ivianuu.injekt.compiler.resolution.isGiven
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.toPersistedCallableInfo
 import com.ivianuu.injekt.compiler.toPersistedClassifierInfo
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.SourceElement
+import org.jetbrains.kotlin.descriptors.annotations.AnnotatedImpl
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
+import org.jetbrains.kotlin.descriptors.annotations.Annotations
+import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
-import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.resolve.constants.StringValue
+import java.lang.reflect.Field
+import java.lang.reflect.Modifier
 import java.util.Base64
 
 class InfoTransformer(
     private val context: InjektContext,
-    private val pluginContext: IrPluginContext,
-    private val trace: BindingTrace
+    private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
 
     @Suppress("NewApi")
     override fun visitClass(declaration: IrClass): IrStatement {
-        val classifierRef = declaration.descriptor.toClassifierRef(context, trace)
-        if (declaration.hasAnnotation(InjektFqNames.Given) ||
-            classifierRef.typeParameters.any { it.isForTypeKey || it.isGivenConstraint }) {
-            declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
-                .run {
-                    irCall(
-                        pluginContext.referenceClass(InjektFqNames.ClassifierInfo)!!
-                            .constructors
-                            .single()
-                    ).apply {
-                        val info = declaration.descriptor.toClassifierRef(this@InfoTransformer.context, null)
-                            .toPersistedClassifierInfo(this@InfoTransformer.context)
-                        val value = Base64.getEncoder()
-                            .encode(this@InfoTransformer.context.moshi.adapter(PersistedClassifierInfo::class.java)
-                                .toJson(info).toByteArray())
-                            .decodeToString()
-                        putValueArgument(0, irString(value))
-                    }
+        declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
+            .run {
+                val info = declaration.descriptor.toClassifierRef(this@InfoTransformer.context,
+                    null)
+                    .toPersistedClassifierInfo(this@InfoTransformer.context)
+                val serializedValue = Base64.getEncoder()
+                    .encode(this@InfoTransformer.context.moshi.adapter(
+                        PersistedClassifierInfo::class.java)
+                        .toJson(info).toByteArray())
+                    .decodeToString()
+                irCall(
+                    pluginContext.referenceClass(InjektFqNames.ClassifierInfo)!!
+                        .constructors
+                        .single()
+                ).apply {
+
+                    putValueArgument(0, irString(serializedValue))
                 }
-        }
+            }
         return super.visitClass(declaration)
     }
 
     @Suppress("NewApi")
     override fun visitFunction(declaration: IrFunction): IrStatement {
-        val isGiven = declaration.hasAnnotation(InjektFqNames.Given) ||
-                (declaration is IrConstructor &&
-                        declaration.constructedClass.hasAnnotation(InjektFqNames.Given))
-        val hasGivenParameters =
-            declaration.valueParameters.any { it.descriptor.isGiven(context, trace) }
-        if (isGiven || hasGivenParameters) {
-                val annotation = DeclarationIrBuilder(pluginContext, declaration.symbol)
-                    .run {
-                        irCall(
-                            pluginContext.referenceClass(InjektFqNames.CallableInfo)!!
-                                .constructors
-                                .single()
-                        ).apply {
-                            val info = declaration.descriptor.toCallableRef(this@InfoTransformer.context, null)
-                                .toPersistedCallableInfo(this@InfoTransformer.context)
-                            val value = Base64.getEncoder()
-                                .encode(this@InfoTransformer.context.moshi.adapter(PersistedCallableInfo::class.java)
-                                    .toJson(info).toByteArray())
-                                .decodeToString()
-                            putValueArgument(0, irString(value))
-                        }
-                    }
+        val descriptor = declaration.descriptor
+        if (descriptor is AnnotatedImpl) {
+            val info = declaration.descriptor.toCallableRef(this@InfoTransformer.context, null)
+                .toPersistedCallableInfo(this@InfoTransformer.context)
+            val serializedInfo = Base64.getEncoder()
+                .encode(this@InfoTransformer.context.moshi.adapter(PersistedCallableInfo::class.java)
+                    .toJson(info).toByteArray())
+                .decodeToString()
 
-                if (declaration is IrConstructor) {
-                    when {
-                        declaration.hasAnnotation(InjektFqNames.Given) ->
-                            declaration.annotations += annotation
-                        declaration.constructedClass.hasAnnotation(InjektFqNames.Given) ->
-                            declaration.constructedClass.annotations += annotation
-                        else -> declaration.valueParameters
-                            .first { it.descriptor.isGiven(context, trace) }
-                            .annotations += annotation
-                    }
-                } else if (!isGiven && hasGivenParameters) {
-                    declaration.valueParameters
-                        .first { it.descriptor.isGiven(context, trace) }
-                        .annotations += annotation
-                } else {
-                    declaration.annotations += annotation
-                }
-        }
-        return super.visitFunction(declaration)
-    }
+            val field = AnnotatedImpl::class.java.declaredFields
+                .single { it.name == "annotations" }
+            field.isAccessible = true
+            val modifiersField: Field = Field::class.java.getDeclaredField("modifiers")
+            modifiersField.isAccessible = true
+            modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
+            field.set(
+                descriptor,
+                Annotations.create(
+                    descriptor.annotations.toList() + AnnotationDescriptorImpl(
+                        pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(
+                            InjektFqNames.CallableInfo
+                        ))!!.defaultType,
+                        mapOf(
+                            "value".asNameId() to StringValue(serializedInfo)
+                        ),
+                        SourceElement.NO_SOURCE
+                    )
+                )
+            )
 
-    @Suppress("NewApi")
-    override fun visitProperty(declaration: IrProperty): IrStatement {
-        if (declaration.hasAnnotation(InjektFqNames.Given)) {
             declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
                 .run {
                     irCall(
@@ -128,13 +114,55 @@ class InfoTransformer(
                             .constructors
                             .single()
                     ).apply {
-                        val info = declaration.descriptor.toCallableRef(this@InfoTransformer.context, null)
-                            .toPersistedCallableInfo(this@InfoTransformer.context)
-                        val value = Base64.getEncoder()
-                            .encode(this@InfoTransformer.context.moshi.adapter(PersistedCallableInfo::class.java)
-                                .toJson(info).toByteArray())
-                            .decodeToString()
-                        putValueArgument(0, irString(value))
+
+                        putValueArgument(0, irString(serializedInfo))
+                    }
+                }
+        }
+        return super.visitFunction(declaration)
+    }
+
+    @Suppress("NewApi")
+    override fun visitProperty(declaration: IrProperty): IrStatement {
+        val descriptor = declaration.descriptor
+        if (descriptor is AnnotatedImpl) {
+            val info = declaration.descriptor.toCallableRef(this@InfoTransformer.context, null)
+                .toPersistedCallableInfo(this@InfoTransformer.context)
+            val serializedInfo = Base64.getEncoder()
+                .encode(this@InfoTransformer.context.moshi.adapter(PersistedCallableInfo::class.java)
+                    .toJson(info).toByteArray())
+                .decodeToString()
+
+            val field = AnnotatedImpl::class.java.declaredFields
+                .single { it.name == "annotations" }
+            field.isAccessible = true
+            val modifiersField: Field = Field::class.java.getDeclaredField("modifiers")
+            modifiersField.isAccessible = true
+            modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
+            field.set(
+                descriptor,
+                Annotations.create(
+                    descriptor.annotations.toList() + AnnotationDescriptorImpl(
+                        pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(
+                            InjektFqNames.CallableInfo
+                        ))!!.defaultType,
+                        mapOf(
+                            "value".asNameId() to StringValue(serializedInfo)
+                        ),
+                        SourceElement.NO_SOURCE
+                    )
+                )
+            )
+
+            declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
+                .run {
+                    irCall(
+                        pluginContext.referenceClass(InjektFqNames.CallableInfo)!!
+                            .constructors
+                            .single()
+                    ).apply {
+
+                        putValueArgument(0, irString(serializedInfo))
                     }
                 }
         }

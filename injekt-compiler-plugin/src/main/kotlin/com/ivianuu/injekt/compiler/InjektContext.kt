@@ -50,24 +50,8 @@ class InjektContext(val module: ModuleDescriptor) {
         trace: BindingTrace?
     ): PersistedCallableInfo? {
         trace?.get(InjektWritableSlices.CALLABLE_INFO, callable)?.let { return it.value }
-        val annotations = if (callable is ConstructorDescriptor) {
-            when {
-                callable.hasAnnotation(InjektFqNames.Given) -> callable.annotations
-                callable.constructedClass.hasAnnotation(InjektFqNames.Given) ->
-                    callable.constructedClass.annotations
-                else ->  callable
-                    .valueParameters
-                    .firstOrNull { it.hasAnnotation(InjektFqNames.Given) }
-                    ?.annotations
-            }
-        } else if (!callable.isGiven(this, trace)) {
-            callable
-                .valueParameters
-                .firstOrNull { it.hasAnnotation(InjektFqNames.Given) }
-                ?.annotations
-        } else callable.annotations
-        return annotations
-            ?.findAnnotation(InjektFqNames.CallableInfo)
+        return callable.annotations
+            .findAnnotation(InjektFqNames.CallableInfo)
             ?.allValueArguments
             ?.get("value".asNameId())
             ?.value
@@ -76,8 +60,7 @@ class InjektContext(val module: ModuleDescriptor) {
                 val json = Base64.getDecoder()
                     .decode(encoded)
                     .decodeToString()
-                val info = moshi.adapter(PersistedCallableInfo::class.java).fromJson(json)!!
-                info
+                moshi.adapter(PersistedCallableInfo::class.java).fromJson(json)!!
             }
             .also { trace?.record(InjektWritableSlices.CALLABLE_INFO, callable, Tuple1(it)) }
     }
