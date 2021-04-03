@@ -232,12 +232,8 @@ class GivenConstraintTest {
             source(
                 """
                     typealias ActivityGivenScope = DefaultGivenScope
-                    @Given fun activityGivenScope(
-                        @Given builder: GivenScope.Builder<ActivityGivenScope>
-                    ): ActivityGivenScope = builder.build()
-                    @Given fun appGivenScope(
-                        @Given builder: GivenScope.Builder<AppGivenScope>
-                    ): AppGivenScope = builder.build()
+                    @Given val activityGivenScopeModule = 
+                        ChildGivenScopeModule0<AppGivenScope, ActivityGivenScope>()
                 """
             )
         ),
