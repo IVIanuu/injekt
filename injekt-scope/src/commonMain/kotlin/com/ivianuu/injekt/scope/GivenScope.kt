@@ -166,7 +166,12 @@ typealias GivenScopeInitializer<@Suppress("unused", "UNUSED_TYPEALIAS_PARAMETER"
 
 @PublishedApi
 internal class GivenScopeImpl : GivenScope {
-    override var isDisposed = false
+    private var _isDisposed = false
+    override val isDisposed: Boolean
+        get() {
+            if (_isDisposed) return true
+            return synchronized(this) { _isDisposed }
+        }
 
     val elements = mutableMapOf<TypeKey<*>, () -> Any>()
     private val scopedValues = mutableMapOf<Any, Any>()
@@ -178,33 +183,42 @@ internal class GivenScopeImpl : GivenScope {
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T : Any> getScopedValueOrNull(key: Any): T? {
-        if (isDisposed) return null
-        return scopedValues[key] as? T
-    }
+    override fun <T : Any> getScopedValueOrNull(key: Any): T? =
+        scopedValues[key] as? T
 
     override fun <T : Any> setScopedValue(key: Any, value: T) {
-        if (isDisposed) return
-        removeScopedValue(key)
-        scopedValues[key] = value
+        synchronizedWithDisposedCheck {
+            removeScopedValue(key)
+            scopedValues[key] = value
+        } ?: kotlin.run {
+            (value as? GivenScopeDisposable)?.dispose()
+        }
     }
 
     override fun removeScopedValue(key: Any) {
-        if (isDisposed) return
-        removeImpl(key)
+        synchronizedWithDisposedCheck { removeImpl(key) }
     }
 
     override fun dispose() {
-        if (isDisposed) return
-        isDisposed = true
-        if (scopedValues.isNotEmpty()) {
-            scopedValues.keys
-                .toList()
-                .forEach { removeImpl(it) }
+        synchronizedWithDisposedCheck {
+            _isDisposed = true
+            if (scopedValues.isNotEmpty()) {
+                scopedValues.keys
+                    .toList()
+                    .forEach { removeImpl(it) }
+            }
         }
     }
 
     private fun removeImpl(key: Any) {
         (scopedValues.remove(key) as? GivenScopeDisposable)?.dispose()
+    }
+
+    private inline fun <R> synchronizedWithDisposedCheck(block: () -> R): R? {
+        if (_isDisposed) return null
+        synchronized(this) {
+            if (_isDisposed) return null
+            return block()
+        }
     }
 }
