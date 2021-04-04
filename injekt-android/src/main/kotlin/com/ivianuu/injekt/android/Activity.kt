@@ -47,41 +47,41 @@ val activityGivenScopeModule =
 typealias ActivityContext = Context
 
 @Given
-inline val @Given ComponentActivity.activityContext: ActivityContext
+inline val ComponentActivity.activityContext: ActivityContext
     get() = this
 
 typealias ActivityResources = Resources
 
 @Given
-inline val @Given ComponentActivity.activityResources: ActivityResources
+inline val ComponentActivity.activityResources: ActivityResources
     get() = resources
 
 typealias ActivityLifecycleOwner = LifecycleOwner
 
 @Given
-inline val @Given ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
+inline val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
     get() = this
 
 typealias ActivityOnBackPressedDispatcherOwner = OnBackPressedDispatcherOwner
 
 @Given
-inline val @Given ComponentActivity.activityOnBackPressedDispatcherOwner: ActivityOnBackPressedDispatcherOwner
+inline val ComponentActivity.activityOnBackPressedDispatcherOwner: ActivityOnBackPressedDispatcherOwner
     get() = this
 
 typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
 
 @Given
-inline val @Given ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
+inline val ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
     get() = this
 
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
 @Given
-inline val @Given ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
+inline val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
     get() = this
 
 typealias ActivityCoroutineScope = LifecycleCoroutineScope
 
 @Given
-inline val @Given ComponentActivity.activityCoroutineScope: ActivityCoroutineScope
+inline val ComponentActivity.activityCoroutineScope: ActivityCoroutineScope
     get() = lifecycleScope

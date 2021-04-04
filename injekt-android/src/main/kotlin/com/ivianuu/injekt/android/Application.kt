@@ -42,13 +42,13 @@ inline fun Application.createAppGivenScope(
 typealias AppContext = Context
 
 @Given
-inline val @Given Application.appContext: AppContext
+inline val Application.appContext: AppContext
     get() = this
 
 typealias AppResources = Resources
 
 @Given
-inline val @Given AppContext.appResources: AppResources
+inline val AppContext.appResources: AppResources
     get() = resources
 
 typealias AppLifecycleOwner = LifecycleOwner

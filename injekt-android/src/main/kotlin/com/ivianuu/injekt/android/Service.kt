@@ -39,11 +39,11 @@ val serviceGivenScopeModule =
 typealias ServiceContext = Context
 
 @Given
-inline val @Given Service.serviceContext: ServiceContext
+inline val Service.serviceContext: ServiceContext
     get() = this
 
 typealias ServiceResources = Resources
 
 @Given
-inline val @Given Service.serviceResources: ServiceResources
+inline val Service.serviceResources: ServiceResources
     get() = resources

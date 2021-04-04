@@ -81,206 +81,206 @@ import androidx.core.content.ContextCompat
 import com.ivianuu.injekt.Given
 
 @Given
-inline val @Given AppContext.accessibilityManager get() = systemService<AccessibilityManager>()
+inline val AppContext.accessibilityManager get() = systemService<AccessibilityManager>()
 
 @Given
-inline val @Given AppContext.accountManager get() = systemService<AccountManager>()
+inline val AppContext.accountManager get() = systemService<AccountManager>()
 
 @Given
-inline val @Given AppContext.activityManager get() = systemService<ActivityManager>()
+inline val AppContext.activityManager get() = systemService<ActivityManager>()
 
 @Given
-inline val @Given AppContext.alarmManager get() = systemService<AlarmManager>()
+inline val AppContext.alarmManager get() = systemService<AlarmManager>()
 
 @Given
-inline val @Given AppContext.audioManager get() = systemService<AudioManager>()
+inline val AppContext.audioManager get() = systemService<AudioManager>()
 
 @Given
-inline val @Given AppContext.clipboardManager get() = systemService<ClipboardManager>()
+inline val AppContext.clipboardManager get() = systemService<ClipboardManager>()
 
 @Given
-inline val @Given AppContext.connectivityManager
+inline val AppContext.connectivityManager
     get() =
         systemService<ConnectivityManager>()
 
 @Given
-inline val @Given AppContext.devicePolicyManager
+inline val AppContext.devicePolicyManager
     get() =
         systemService<DevicePolicyManager>()
 
 @Given
-inline val @Given AppContext.downloadManager get() = systemService<DownloadManager>()
+inline val AppContext.downloadManager get() = systemService<DownloadManager>()
 
 @Given
-inline val @Given AppContext.dropBoxManager get() = systemService<DropBoxManager>()
+inline val AppContext.dropBoxManager get() = systemService<DropBoxManager>()
 
 @Given
-inline val @Given AppContext.inputMethodManager
+inline val AppContext.inputMethodManager
     get() =
         systemService<InputMethodManager>()
 
 @Given
-inline val @Given AppContext.keyguardManager get() = systemService<KeyguardManager>()
+inline val AppContext.keyguardManager get() = systemService<KeyguardManager>()
 
 @Given
-inline val @Given AppContext.layoutInflater get() = systemService<LayoutInflater>()
+inline val AppContext.layoutInflater get() = systemService<LayoutInflater>()
 
 @Given
-inline val @Given AppContext.locationManager get() = systemService<LocationManager>()
+inline val AppContext.locationManager get() = systemService<LocationManager>()
 
 @Given
-inline val @Given AppContext.nfcManager get() = systemService<NfcManager>()
+inline val AppContext.nfcManager get() = systemService<NfcManager>()
 
 @Given
-inline val @Given AppContext.notificationManager
+inline val AppContext.notificationManager
     get() =
         systemService<NotificationManager>()
 
 @Given
-inline val @Given AppContext.powerManager get() = systemService<PowerManager>()
+inline val AppContext.powerManager get() = systemService<PowerManager>()
 
 @Given
-inline val @Given AppContext.searchManager get() = systemService<SearchManager>()
+inline val AppContext.searchManager get() = systemService<SearchManager>()
 
 @Given
-inline val @Given AppContext.sensorManager get() = systemService<SensorManager>()
+inline val AppContext.sensorManager get() = systemService<SensorManager>()
 
 @Given
-inline val @Given AppContext.storageManager get() = systemService<StorageManager>()
+inline val AppContext.storageManager get() = systemService<StorageManager>()
 
 @Given
-inline val @Given AppContext.telephonyManager get() = systemService<TelephonyManager>()
+inline val AppContext.telephonyManager get() = systemService<TelephonyManager>()
 
 @Given
-inline val @Given AppContext.textServicesManager
+inline val AppContext.textServicesManager
     get() =
         systemService<TextServicesManager>()
 
 @Given
-inline val @Given AppContext.uiModeManager get() = systemService<UiModeManager>()
+inline val AppContext.uiModeManager get() = systemService<UiModeManager>()
 
 @Given
-inline val @Given AppContext.usbManager get() = systemService<UsbManager>()
+inline val AppContext.usbManager get() = systemService<UsbManager>()
 
 @Given
-inline val @Given AppContext.vibrator get() = systemService<Vibrator>()
+inline val AppContext.vibrator get() = systemService<Vibrator>()
 
 @Given
-inline val @Given AppContext.wallpaperManager get() = systemService<WallpaperManager>()
+inline val AppContext.wallpaperManager get() = systemService<WallpaperManager>()
 
 @Given
-inline val @Given AppContext.wifiP2pManager get() = systemService<WifiP2pManager>()
+inline val AppContext.wifiP2pManager get() = systemService<WifiP2pManager>()
 
 @Given
-inline val @Given AppContext.wifiManager get() = systemService<WifiManager>()
+inline val AppContext.wifiManager get() = systemService<WifiManager>()
 
 @Given
-inline val @Given AppContext.windowManager get() = systemService<WindowManager>()
+inline val AppContext.windowManager get() = systemService<WindowManager>()
 
 @Given
-inline val @Given AppContext.inputManager get() = systemService<InputManager>()
+inline val AppContext.inputManager get() = systemService<InputManager>()
 
 @Given
-inline val @Given AppContext.mediaRouter get() = systemService<MediaRouter>()
+inline val AppContext.mediaRouter get() = systemService<MediaRouter>()
 
 @Given
-inline val @Given AppContext.nsdManager get() = systemService<NsdManager>()
+inline val AppContext.nsdManager get() = systemService<NsdManager>()
 
 @Given
-inline val @Given AppContext.displayManager get() = systemService<DisplayManager>()
+inline val AppContext.displayManager get() = systemService<DisplayManager>()
 
 @Given
-inline val @Given AppContext.userManager get() = systemService<UserManager>()
+inline val AppContext.userManager get() = systemService<UserManager>()
 
 @Given
-inline val @Given AppContext.bluetoothManager get() = systemService<BluetoothManager>()
+inline val AppContext.bluetoothManager get() = systemService<BluetoothManager>()
 
 @Given
-inline val @Given AppContext.appOpsManager get() = systemService<AppOpsManager>()
+inline val AppContext.appOpsManager get() = systemService<AppOpsManager>()
 
 @Given
-inline val @Given AppContext.captioningManager get() = systemService<CaptioningManager>()
+inline val AppContext.captioningManager get() = systemService<CaptioningManager>()
 
 @Given
-inline val @Given AppContext.consumerIrManager get() = systemService<ConsumerIrManager>()
+inline val AppContext.consumerIrManager get() = systemService<ConsumerIrManager>()
 
 @Given
-inline val @Given AppContext.printManager get() = systemService<PrintManager>()
+inline val AppContext.printManager get() = systemService<PrintManager>()
 
 @Given
-inline val @Given AppContext.appWidgetManager get() = systemService<AppWidgetManager>()
+inline val AppContext.appWidgetManager get() = systemService<AppWidgetManager>()
 
 @Given
-inline val @Given AppContext.batteryManager get() = systemService<BatteryManager>()
+inline val AppContext.batteryManager get() = systemService<BatteryManager>()
 
 @Given
-inline val @Given AppContext.cameraManager get() = systemService<CameraManager>()
+inline val AppContext.cameraManager get() = systemService<CameraManager>()
 
 @Given
-inline val @Given AppContext.jobScheduler get() = systemService<JobScheduler>()
+inline val AppContext.jobScheduler get() = systemService<JobScheduler>()
 
 @Given
-inline val @Given AppContext.launcherApps get() = systemService<LauncherApps>()
+inline val AppContext.launcherApps get() = systemService<LauncherApps>()
 
 @Given
-inline val @Given AppContext.mediaProjectionManager
+inline val AppContext.mediaProjectionManager
     get() =
         systemService<MediaProjectionManager>()
 
 @Given
-inline val @Given AppContext.mediaSessionManager
+inline val AppContext.mediaSessionManager
     get() =
         systemService<MediaSessionManager>()
 
 @Given
-inline val @Given AppContext.restrictionsManager
+inline val AppContext.restrictionsManager
     get() =
         systemService<RestrictionsManager>()
 
 @Given
-inline val @Given AppContext.telecomManager get() = systemService<TelecomManager>()
+inline val AppContext.telecomManager get() = systemService<TelecomManager>()
 
 @Given
-inline val @Given AppContext.tvInputManager get() = systemService<TvInputManager>()
+inline val AppContext.tvInputManager get() = systemService<TvInputManager>()
 
 @Given
-inline val @Given AppContext.subscriptionManager
+inline val AppContext.subscriptionManager
     get() =
         systemService<SubscriptionManager>()
 
 @Given
-inline val @Given AppContext.usageStatsManager get() = systemService<UsageStatsManager>()
+inline val AppContext.usageStatsManager get() = systemService<UsageStatsManager>()
 
 @Given
-inline val @Given AppContext.carrierConfigManager
+inline val AppContext.carrierConfigManager
     get() =
         systemService<CarrierConfigManager>()
 
 @Given
-inline val @Given AppContext.fingerprintManager
+inline val AppContext.fingerprintManager
     get() =
         systemService<FingerprintManager>()
 
 @Given
-inline val @Given AppContext.midiManager get() = systemService<MidiManager>()
+inline val AppContext.midiManager get() = systemService<MidiManager>()
 
 @Given
-inline val @Given AppContext.networkStatsManager
+inline val AppContext.networkStatsManager
     get() =
         systemService<NetworkStatsManager>()
 
 @Given
-inline val @Given AppContext.hardwarePropertiesManager
+inline val AppContext.hardwarePropertiesManager
     get() =
         systemService<HardwarePropertiesManager>()
 
 @Given
-inline val @Given AppContext.systemHealthManager
+inline val AppContext.systemHealthManager
     get() =
         systemService<SystemHealthManager>()
 
 @Given
-inline val @Given AppContext.shortcutManager get() = systemService<ShortcutManager>()
+inline val AppContext.shortcutManager get() = systemService<ShortcutManager>()
 
 @PublishedApi
 internal inline fun <reified T : Any> Context.systemService() =

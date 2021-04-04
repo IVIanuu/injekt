@@ -44,7 +44,7 @@ internal typealias SingleWorkerFactory =
             (WorkerContext, WorkerParameters) -> ListenableWorker
 
 @Given
-val @Given AppContext.workManager: WorkManager
+val AppContext.workManager: WorkManager
     get() = WorkManager.getInstance(this)
 
 @Given
