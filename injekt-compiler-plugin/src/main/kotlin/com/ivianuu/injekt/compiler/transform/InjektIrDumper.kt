@@ -33,10 +33,10 @@ class InjektIrDumper(
         if (!allowGivenCalls) return
         moduleFragment.files
             .asSequence()
-            .filter {
+            /*.filter {
                 pluginContext.bindingContext[InjektWritableSlices.FILE_HAS_GIVEN_CALLS,
                         it.fileEntry.name] != null
-            }
+            }*/
             .forEach { irFile ->
                 val file = File(irFile.fileEntry.name)
                 val content = try {

@@ -291,4 +291,35 @@ class TypeKeyTest {
         compilationShouldHaveFailed("cannot mark type alias type parameter with @ForTypeKey")
     }
 
+    @Test
+    fun testPropertyWithForTypeKeyParameter() = codegen(
+        """
+            val <@ForTypeKey T> T.typeKey: TypeKey<T> get() = typeKeyOf<T>()
+            fun invoke() = "".typeKey
+        """
+    ) {
+        invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String"
+    }
+
+    @Test
+    fun testPropertyWithForTypeKeyParameterMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                val <@ForTypeKey T> T.typeKey: TypeKey<T> get() = typeKeyOf<T>()
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke() = "".typeKey
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        it.invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String"
+    }
+
 }

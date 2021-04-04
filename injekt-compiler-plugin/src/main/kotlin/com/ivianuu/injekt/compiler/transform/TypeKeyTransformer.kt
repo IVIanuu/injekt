@@ -88,7 +88,7 @@ class TypeKeyTransformer(
         if (clazz in transformedClasses) return clazz
         transformedClasses += clazz
 
-        if (clazz.descriptor.declaredTypeParameters.none { it.isForTypeKey(context, trace) })
+        if (clazz.typeParameters.none { it.descriptor.isForTypeKey(context, trace) })
             return clazz
 
         val typeKeyFields = clazz.typeParameters
@@ -180,7 +180,7 @@ class TypeKeyTransformer(
             return function
         }
 
-        if (function.descriptor.typeParameters.none { it.isForTypeKey(context, trace) })
+        if (function.typeParameters.none { it.descriptor.isForTypeKey(context, trace) })
             return function
 
         val transformedFunction = function.copyWithTypeKeyParams()
@@ -239,12 +239,12 @@ class TypeKeyTransformer(
         }
         val callee = expression.symbol.owner
         if (callee is IrConstructor) {
-            if (callee.constructedClass.descriptor.declaredTypeParameters.none {
-                    it.isForTypeKey(context, trace)
+            if (callee.constructedClass.typeParameters.none {
+                    it.descriptor.isForTypeKey(context, trace)
                 }) return expression
         } else {
-            if (callee.descriptor.typeParameters.none {
-                    it.isForTypeKey(context, trace)
+            if (callee.typeParameters.none {
+                    it.descriptor.isForTypeKey(context, trace)
                 }) return expression
         }
 

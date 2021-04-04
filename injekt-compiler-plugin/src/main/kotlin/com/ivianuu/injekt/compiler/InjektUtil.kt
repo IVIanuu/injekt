@@ -224,7 +224,9 @@ fun TypeParameterDescriptor.isForTypeKey(
     context: InjektContext,
     trace: BindingTrace?
 ): Boolean {
-    trace?.get(InjektWritableSlices.IS_FOR_TYPE_KEY, this)?.let { return it }
+    trace?.get(InjektWritableSlices.IS_FOR_TYPE_KEY, this)?.let {
+        return it
+    }
     var isForTypeKey = hasAnnotation(InjektFqNames.ForTypeKey) ||
             findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.ForTypeKey) == true
     if (!isForTypeKey &&
