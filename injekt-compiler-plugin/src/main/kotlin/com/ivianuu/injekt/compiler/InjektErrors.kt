@@ -72,7 +72,7 @@ interface InjektErrors {
         val GIVEN_RECEIVER =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also {
-                    MAP.put(it, "receiver cannot be marked as @Given")
+                    MAP.put(it, "receiver cannot be marked as @Given because it is implicitly @Given")
                 }
 
         @JvmField

@@ -128,6 +128,24 @@ class GivenDeclarationCheckTest {
         compilationShouldHaveFailed("non @Given parameter")
     }
 
+    @Test
+    fun testGivenReceiverOnFunction() = codegen(
+        """
+            fun @Given Foo.bar() = Bar(this)
+        """
+    ) {
+        compilationShouldHaveFailed("receiver cannot be marked as @Given because it is implicitly @Given")
+    }
+
+    @Test
+    fun testGivenReceiverOnNonGivenFunction() = codegen(
+        """
+            val @Given Foo.bar get() = Bar(this)
+        """
+    ) {
+        compilationShouldHaveFailed("receiver cannot be marked as @Given because it is implicitly @Given")
+    }
+
     // todo @Test
     fun testUsedGivenParameterIsNotMarkedAsUnused() = codegen(
         """
