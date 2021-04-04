@@ -126,43 +126,41 @@ class InfoTransformer(
 
     @Suppress("NewApi")
     override fun visitProperty(declaration: IrProperty): IrStatement {
-        if (declaration.hasAnnotation(InjektFqNames.Given)) {
-            val descriptor = declaration.descriptor
-            if (descriptor is AnnotatedImpl) {
-                val info = declaration.descriptor.toCallableRef(this@InfoTransformer.context, null)
-                    .toPersistedCallableInfo(this@InfoTransformer.context)
-                val serializedValue = info.encode()
+        val descriptor = declaration.descriptor
+        if (descriptor is AnnotatedImpl && declaration.hasAnnotation(InjektFqNames.Given)) {
+            val info = declaration.descriptor.toCallableRef(this@InfoTransformer.context, null)
+                .toPersistedCallableInfo(this@InfoTransformer.context)
+            val serializedValue = info.encode()
 
-                val field = AnnotatedImpl::class.java.declaredFields
-                    .single { it.name == "annotations" }
-                field.isAccessible = true
-                val modifiersField: Field = Field::class.java.getDeclaredField("modifiers")
-                modifiersField.isAccessible = true
-                modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
-                field.set(
-                    descriptor,
-                    Annotations.create(
-                        descriptor.annotations.toList() + AnnotationDescriptorImpl(
-                            pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(
-                                InjektFqNames.CallableInfo
-                            ))!!.defaultType,
-                            mapOf("value".asNameId() to StringValue(serializedValue)),
-                            SourceElement.NO_SOURCE
-                        )
+            val field = AnnotatedImpl::class.java.declaredFields
+                .single { it.name == "annotations" }
+            field.isAccessible = true
+            val modifiersField: Field = Field::class.java.getDeclaredField("modifiers")
+            modifiersField.isAccessible = true
+            modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
+            field.set(
+                descriptor,
+                Annotations.create(
+                    descriptor.annotations.toList() + AnnotationDescriptorImpl(
+                        pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(
+                            InjektFqNames.CallableInfo
+                        ))!!.defaultType,
+                        mapOf("value".asNameId() to StringValue(serializedValue)),
+                        SourceElement.NO_SOURCE
                     )
                 )
+            )
 
-                declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
-                    .run {
-                        irCall(
-                            pluginContext.referenceClass(InjektFqNames.CallableInfo)!!
-                                .constructors
-                                .single()
-                        ).apply {
-                            putValueArgument(0, irString(serializedValue))
-                        }
+            declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
+                .run {
+                    irCall(
+                        pluginContext.referenceClass(InjektFqNames.CallableInfo)!!
+                            .constructors
+                            .single()
+                    ).apply {
+                        putValueArgument(0, irString(serializedValue))
                     }
-            }
+                }
         }
         return super.visitProperty(declaration)
     }
