@@ -31,7 +31,6 @@ import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -88,8 +87,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
             checkUnresolvableGivenTypeParameters(declaration,
                 descriptor.typeParameters, descriptor.returnType!!, trace)
 
-            descriptor.allParameters
-                .filterNot { it === descriptor.dispatchReceiverParameter }
+            descriptor.valueParameters
                 .checkGivenCallableHasOnlyGivenParameters(declaration, trace)
 
             if (descriptor.isTailrec) {
@@ -109,13 +107,13 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
             checkOverrides(declaration, descriptor, trace)
             checkExceptActual(declaration, descriptor, trace)
             checkGivenConstraintsOnNonGivenDeclaration(descriptor.typeParameters, trace)
-            if (descriptor.extensionReceiverParameter?.isGiven(this.context, trace) == true) {
-                trace.report(
-                    InjektErrors.GIVEN_RECEIVER_ON_NON_GIVEN_DECLARATION
-                        .on(declaration.safeAs<KtNamedFunction>()
-                            ?.receiverTypeReference ?: declaration)
-                )
-            }
+        }
+        if (descriptor.extensionReceiverParameter?.isGiven(this.context, trace) == true) {
+            trace.report(
+                InjektErrors.GIVEN_RECEIVER
+                    .on(declaration.safeAs<KtNamedFunction>()
+                        ?.receiverTypeReference ?: declaration)
+            )
         }
     }
 
@@ -265,29 +263,16 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
             checkUnresolvableGivenTypeParameters(declaration,
                 descriptor.typeParameters, descriptor.returnType!!, trace)
             checkGivenTypeParametersMismatch(descriptor, declaration, trace)
-            if (descriptor.extensionReceiverParameter != null &&
-                descriptor.extensionReceiverParameter?.type?.isGiven(this.context, trace) != true
-            ) {
-                trace.report(
-                    InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
-                        .on(
-                            declaration.safeAs<KtProperty>()
-                                ?.receiverTypeReference
-                                ?: declaration
-                        )
-                )
-            }
         } else {
             checkOverrides(declaration, descriptor, trace)
             checkExceptActual(declaration, descriptor, trace)
-
-            if (descriptor.extensionReceiverParameter?.isGiven(this.context, trace) == true) {
-                trace.report(
-                    InjektErrors.GIVEN_RECEIVER_ON_NON_GIVEN_DECLARATION
-                        .on(declaration.safeAs<KtProperty>()
-                            ?.receiverTypeReference ?: declaration)
-                )
-            }
+        }
+        if (descriptor.extensionReceiverParameter?.isGiven(this.context, trace) == true) {
+            trace.report(
+                InjektErrors.GIVEN_RECEIVER
+                    .on(declaration.safeAs<KtProperty>()
+                        ?.receiverTypeReference ?: declaration)
+            )
         }
     }
 

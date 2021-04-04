@@ -251,6 +251,7 @@ fun CallableRef.getGivenRequests(
     }
     .filter {
         it === callable.dispatchReceiverParameter ||
+                it === callable.extensionReceiverParameter ||
                 it.isGiven(context, trace) ||
                 parameterTypes[it.injektName()]!!.isGiven
     }

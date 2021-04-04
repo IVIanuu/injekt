@@ -135,7 +135,7 @@ class GivenDeclarationTest {
     @Test
     fun testGivenExtensionFunction() = codegen(
         """
-            @Given fun @Given Foo.bar() = Bar(this)
+            @Given fun Foo.bar() = Bar(this)
             fun invoke(@Given foo: Foo) = given<Bar>()
         """
     ) {
@@ -146,7 +146,7 @@ class GivenDeclarationTest {
     @Test
     fun testGivenExtensionProperty() = codegen(
         """
-            @Given val @Given Foo.bar get() = Bar(this)
+            @Given val Foo.bar get() = Bar(this)
             fun invoke(@Given foo: Foo) = given<Bar>()
         """
     ) {

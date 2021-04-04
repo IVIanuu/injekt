@@ -69,10 +69,10 @@ interface InjektErrors {
                 }
 
         @JvmField
-        val GIVEN_RECEIVER_ON_NON_GIVEN_DECLARATION =
+        val GIVEN_RECEIVER =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also {
-                    MAP.put(it, "non @Given callable cannot have @Given receiver")
+                    MAP.put(it, "receiver cannot be marked as @Given")
                 }
 
         @JvmField

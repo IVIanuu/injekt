@@ -187,7 +187,7 @@ class ProviderTest {
     fun testMultipleProvidersInSetWithDependencyDerivedByProviderArgument() = codegen(
         """
             typealias MyGivenScope = DefaultGivenScope
-            @Given val @Given MyGivenScope.key: String get() = ""
+            @Given val MyGivenScope.key: String get() = ""
             @Given fun foo(@Given key: String) = Foo()
             @Given fun fooIntoSet(@Given provider: (@Given MyGivenScope) -> Foo): (MyGivenScope) -> Any = provider as (MyGivenScope) -> Any 
             @Given class Dep(@Given key: String)
