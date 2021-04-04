@@ -286,7 +286,7 @@ class ResolutionScope(
     }
 
     private fun collectConstrainedGivens(candidate: ConstrainedGivenCandidate) {
-        for (constrainedGiven in constrainedGivens)
+        for (constrainedGiven in constrainedGivens.toList())
             collectConstrainedGivens(constrainedGiven, candidate)
     }
 
