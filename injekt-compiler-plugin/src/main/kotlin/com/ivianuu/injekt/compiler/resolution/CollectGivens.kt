@@ -164,18 +164,21 @@ fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
                         ?.toCallableRef(context, trace)
                         ?.makeGiven()
                 )
-                is PropertyDescriptor -> if (declaration.isGiven(context, trace)) {
+                is CallableMemberDescriptor -> if (declaration.isGiven(context, trace)) {
                     listOf(
                         declaration.toCallableRef(context, trace)
+                            .let { callable ->
+                                callable.copy(
+                                    isGiven = true,
+                                    parameterTypes = callable.parameterTypes.toMutableMap()
+                                        .also {
+                                            if (callable.callable.dispatchReceiverParameter != null) {
+                                                it[callable.callable.dispatchReceiverParameter!!.injektName()] = type!!
+                                            }
+                                        }
+                                )
+                            }
                             .substitute(substitutionMap)
-                            .makeGiven()
-                    )
-                } else emptyList()
-                is FunctionDescriptor -> if (declaration.isGiven(context, trace)) {
-                    listOf(
-                        declaration.toCallableRef(context, trace)
-                            .substitute(substitutionMap)
-                            .makeGiven()
                     )
                 } else emptyList()
                 is VariableDescriptor -> if (declaration.isGiven(context, trace)) {

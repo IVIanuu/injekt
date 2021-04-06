@@ -404,4 +404,29 @@ class GivenConstraintTest {
             fun invoke() = given<FooComponent>()
         """
     )
+
+    @Test
+    fun testConstrainedGivenWithModuleLikeConstrainedReturnType() = codegen(
+        """
+            @Qualifier
+            annotation class ClassSingleton
+            
+            @Given
+            inline fun <@Given T : @ClassSingleton U, reified U : Any> classSingleton(
+                @Given factory: () -> U,
+                @Given scope: AppGivenScope
+            ): U = scope.getOrCreateScopedValue(U::class, factory)
+
+            class MyModule<T : S, S> {
+                @Given fun value(@Given v: T): S = v
+            }
+
+            @Given fun <@Given T : @Qualifier1 S, S> myModule():
+                @ClassSingleton MyModule<T, S> = MyModule()
+
+            @Given val foo: @Qualifier1 Foo = Foo()
+
+            fun invoke() = given<Foo>()
+        """
+    )
 }

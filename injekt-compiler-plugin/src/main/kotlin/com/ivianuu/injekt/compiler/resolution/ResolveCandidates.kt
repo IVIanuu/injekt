@@ -354,7 +354,7 @@ private fun ResolutionScope.resolveCandidate(
     return@computeForCandidate ResolutionResult.Success.WithCandidate.Value(candidate, this, successDependencyResults)
 }
 
-private fun ResolutionScope.compareResult(a: ResolutionResult?, b: ResolutionResult?, ): Int {
+private fun ResolutionScope.compareResult(a: ResolutionResult?, b: ResolutionResult?): Int {
     if (a === b) return 0
     if (a != null && b == null) return -1
     if (b != null && a == null) return 1
@@ -398,7 +398,10 @@ private fun ResolutionScope.compareResult(a: ResolutionResult?, b: ResolutionRes
         } else return 0
     }
 
-    return 0
+    a as ResolutionResult.Failure
+    b as ResolutionResult.Failure
+
+    return a.failureOrdering.compareTo(b.failureOrdering)
 }
 
 private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int {
