@@ -396,7 +396,9 @@ private fun ResolutionScope.compareResult(a: ResolutionResult?, b: ResolutionRes
                 else -> 0
             }
         } else return 0
-    } else throw AssertionError()
+    }
+
+    return 0
 }
 
 private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int {
