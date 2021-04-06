@@ -27,10 +27,11 @@ import java.io.File
 
 class InjektIrDumper(
     private val allowGivenCalls: Boolean,
-    private val fileManager: FileManager
+    private val dumpDir: File
 ) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         if (!allowGivenCalls) return
+        dumpDir.deleteRecursively()
         moduleFragment.files
             .asSequence()
             .filter {
@@ -49,13 +50,17 @@ class InjektIrDumper(
                 } catch (e: Throwable) {
                     e.stackTraceToString()
                 }
-                fileManager.generateFile(
-                    irFile.fqName,
-                    file.name.removeSuffix(".kt"),
-                    file.absolutePath,
-                    content
-                )
+                val newFile = dumpDir
+                    .resolve(irFile.fqName.asString().replace(".", "/"))
+                    .also { it.mkdirs() }
+                    .resolve(file.name.removeSuffix(".kt"))
+                try {
+                    newFile.createNewFile()
+                    newFile.writeText(content)
+                    println("Generated $newFile:\n$content")
+                } catch (e: Throwable) {
+                    throw RuntimeException("Failed to create file ${newFile.absolutePath}\n$content")
+                }
             }
-        fileManager.postGenerate()
     }
 }

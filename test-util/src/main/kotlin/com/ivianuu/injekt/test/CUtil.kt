@@ -148,11 +148,6 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
     )
     pluginOptions += PluginOption(
         "com.ivianuu.injekt",
-        "cacheDir",
-        workingDir.resolve("injekt/cache").absolutePath
-    )
-    pluginOptions += PluginOption(
-        "com.ivianuu.injekt",
         "dumpDir",
         workingDir.resolve("injekt/dump").absolutePath
     )

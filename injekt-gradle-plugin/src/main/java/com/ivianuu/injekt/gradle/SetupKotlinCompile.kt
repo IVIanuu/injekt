@@ -28,27 +28,11 @@ fun KotlinCompilation<*>.setupForInjekt(): Provider<List<SubpluginOption>> {
 
     val project = compileKotlinTask.project
 
-    val cacheDir = project.buildDir.resolve("injekt/cache/$sourceSetName")
-        .also { it.mkdirs() }
     val dumpDir = project.buildDir.resolve("injekt/dump/$sourceSetName")
         .also { it.mkdirs() }
 
-    project.afterEvaluate {
-        val cleanGeneratedFiles = project.tasks.create(
-            "${compileKotlinTask.name}InjektCleanGeneratedFiles", CleanGeneratedFiles::class.java)
-        cleanGeneratedFiles.cacheDir = cacheDir
-        cleanGeneratedFiles.dumpDir = dumpDir
-        cleanGeneratedFiles.srcDirs = allKotlinSourceSets
-            .flatMap { it.kotlin.srcDirs }
-        compileKotlinTask.dependsOn(cleanGeneratedFiles)
-    }
-
     return project.provider {
         listOf(
-            SubpluginOption(
-                key = "cacheDir",
-                value = cacheDir.absolutePath
-            ),
             SubpluginOption(
                 key = "dumpDir",
                 value = dumpDir.absolutePath

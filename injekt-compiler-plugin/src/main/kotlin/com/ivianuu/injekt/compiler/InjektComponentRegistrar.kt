@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.analysis.GivenCallResolutionInterceptorExtens
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
 import com.ivianuu.injekt.compiler.analysis.InjektTypeResolutionInterceptorExtension
-import com.ivianuu.injekt.compiler.transform.FileManager
 import com.ivianuu.injekt.compiler.transform.InfoDescriptorSerializationPlugin
 import com.ivianuu.injekt.compiler.transform.InjektIrDumper
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
@@ -67,10 +66,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
         IrGenerationExtension.registerExtensionWithLoadingOrder(
             project,
             LoadingOrder.LAST,
-            InjektIrDumper(
-                allowGivenCalls,
-                FileManager(dumpDir(configuration), cacheDir(configuration))
-            )
+            InjektIrDumper(allowGivenCalls, dumpDir(configuration))
         )
         CandidateInterceptor.registerExtension(
             project,
