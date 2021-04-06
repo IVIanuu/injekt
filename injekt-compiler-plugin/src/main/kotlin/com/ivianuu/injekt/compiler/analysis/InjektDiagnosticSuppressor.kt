@@ -37,6 +37,9 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     override fun isSuppressed(diagnostic: Diagnostic, bindingContext: BindingContext?): Boolean {
         if (bindingContext == null) return false
 
+        if (diagnostic.factory == Errors.UPPER_BOUND_IS_EXTENSION_FUNCTION_TYPE)
+            return true
+
         if (diagnostic.factory == Errors.FINAL_UPPER_BOUND)
             return true
 
