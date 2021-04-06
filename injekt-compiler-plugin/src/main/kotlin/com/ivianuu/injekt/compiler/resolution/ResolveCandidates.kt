@@ -483,6 +483,9 @@ private fun compareType(a: TypeRef, b: TypeRef): Int {
     if (a.qualifiers.isEmpty() && b.qualifiers.isNotEmpty()) return -1
     if (b.qualifiers.isEmpty() && a.qualifiers.isNotEmpty()) return 1
 
+    if (a.frameworkKey != null && b.frameworkKey == null) return -1
+    if (b.frameworkKey != null && a.frameworkKey == null) return 1
+
     if (a.classifier != b.classifier) return 0
 
     var diff = 0
