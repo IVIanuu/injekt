@@ -415,7 +415,7 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     if (a.originalType == a.type && b.originalType != a.type) return -1
     if (b.originalType == b.type && a.originalType != b.type) return 1
 
-    val diff = compareType(a.originalType, b.originalType)
+    var diff = compareType(a.originalType, b.originalType)
     if (diff < 0) return -1
     if (diff > 0) return 1
 
@@ -436,6 +436,15 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
 
     if (a.dependencies.size < b.dependencies.size) return -1
     if (b.dependencies.size < a.dependencies.size) return 1
+
+    diff = 0
+    for (aDependency in a.dependencies) {
+        for (bDependency in b.dependencies) {
+            diff += compareType(aDependency.type, bDependency.type)
+        }
+    }
+    if (diff < 0) return -1
+    if (diff > 0) return 1
 
     val isAFromGivenConstraint = a is CallableGivenNode && a.callable.fromGivenConstraint
     val isBFromGivenConstraint = b is CallableGivenNode && b.callable.fromGivenConstraint

@@ -413,7 +413,7 @@ class GivenConstraintTest {
             
             @Given
             inline fun <@Given T : @ClassSingleton U, reified U : Any> classSingleton(
-                @Given factory: () -> U,
+                @Given factory: () -> T,
                 @Given scope: AppGivenScope
             ): U = scope.getOrCreateScopedValue(U::class, factory)
 
