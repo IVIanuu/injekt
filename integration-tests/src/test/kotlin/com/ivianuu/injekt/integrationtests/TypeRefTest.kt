@@ -113,13 +113,18 @@ class TypeRefTest {
     }
 
     @Test
-    fun testQualifiedIsNotSubTypeOfUnqualified() = withTypeCheckerContext {
-        stringType.qualified(qualifier1) shouldNotBeSubTypeOf stringType
+    fun testQualifiedIsSubTypeOfUnqualified() = withTypeCheckerContext {
+        stringType.qualified(qualifier1) shouldBeSubTypeOf stringType
     }
 
     @Test
-    fun testSameQualifiersInDifferentOrderIsAssignable() = withTypeCheckerContext {
-        stringType.qualified(qualifier1, qualifier2) shouldBeAssignable
+    fun testQualifiedIsNotAssignableToUnqualified() = withTypeCheckerContext {
+        stringType.qualified(qualifier1) shouldNotBeAssignable stringType
+    }
+
+    @Test
+    fun testSameQualifiersInDifferentOrderIsSubType() = withTypeCheckerContext {
+        stringType.qualified(qualifier1, qualifier2) shouldBeSubTypeOf
                 stringType.qualified(qualifier2, qualifier1)
     }
 

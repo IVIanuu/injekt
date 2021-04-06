@@ -31,6 +31,28 @@ import org.junit.Test
 class QualifierTest {
 
     @Test
+    fun stressTest() = codegen(
+        """
+            @Qualifier annotation class GivenOrFallback
+
+            @Qualifier annotation class Fallback
+
+            @Given inline fun <T> givenOrFallback(
+                @Given given: T? = null,
+                @Given fallback: () -> @Fallback T
+            ): @GivenOrFallback T = given ?: fallback()
+
+            @Given val appGivenScope: AppGivenScope = TODO()
+
+            @Given val foo: @Scoped<AppGivenScope> Foo = Foo()
+
+            @Given val fallbackFoo: @Scoped<AppGivenScope> @Fallback Foo = Foo()
+
+            fun invoke() = given<@GivenOrFallback Foo>()
+        """
+    )
+
+    @Test
     fun testDistinctQualifier() = codegen(
         """
             @Given val foo = Foo()

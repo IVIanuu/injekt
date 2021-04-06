@@ -224,7 +224,11 @@ sealed class TypeRef {
             .map { superType ->
                 superType.substitute(substitutionMap)
                     .let {
-                        if (qualifiers.isNotEmpty()) it.copy(qualifiers = qualifiers)
+                        if (qualifiers.isNotEmpty()) it.copy(
+                            qualifiers = (qualifiers + it.qualifiers)
+                                .distinctBy { it.classifier.fqName.asString() }
+                                .sortedQualifiers()
+                        )
                         else it
                     }
             }
@@ -474,9 +478,12 @@ fun getSubstitutionMap(
                 subType.arguments.forEachWith(baseType.arguments) { a, b -> visitType(a, b, false) }
                 if (subType.qualifiers.isNotEmpty() &&
                     baseType.qualifiers.isNotEmpty() &&
-                    subType.qualifiers.areQualifiersAssignable(context, baseType.qualifiers)) {
-                    subType.qualifiers.forEachWith(baseType.qualifiers) { a, b ->
-                        visitType(a, b, false)
+                    subType.qualifiers.areSubQualifiersOf(context, baseType.qualifiers)) {
+                    for (baseQualifier in baseType.qualifiers) {
+                        val subTypeQualifier = subType.qualifiers.first {
+                            it.classifier == baseQualifier.classifier
+                        }
+                        visitType(subTypeQualifier, baseQualifier, false)
                     }
                 }
             }
@@ -484,9 +491,12 @@ fun getSubstitutionMap(
 
         if (thisType.qualifiers.isNotEmpty() &&
             baseType.qualifiers.isNotEmpty() &&
-            thisType.qualifiers.areQualifiersAssignable(context, baseType.qualifiers)) {
-            thisType.qualifiers.forEachWith(baseType.qualifiers) { a, b ->
-                visitType(a, b, false)
+            thisType.qualifiers.areSubQualifiersOf(context, baseType.qualifiers)) {
+            for (baseQualifier in baseType.qualifiers) {
+                val thisTypeQualifier = thisType.qualifiers.first {
+                    it.classifier == baseQualifier.classifier
+                }
+                visitType(thisTypeQualifier, baseQualifier, false)
             }
         }
 
@@ -507,6 +517,8 @@ fun TypeRef.isAssignableTo(
         return isSubTypeOfTypeParameter(context, superType)
     if (classifier.isTypeParameter)
         return superType.isSubTypeOfTypeParameter(context, this)
+    if (!qualifiers.areQualifiersAssignable(context, superType.qualifiers))
+        return false
     return isSubTypeOf(context, superType)
 }
 
@@ -527,7 +539,7 @@ private fun TypeRef.isSubTypeOfSameClassifier(
     superType: TypeRef
 ): Boolean {
     if (this == superType) return true
-    if (!qualifiers.areQualifiersAssignable(context, superType.qualifiers))
+    if (!qualifiers.areSubQualifiersOf(context, superType.qualifiers))
         return false
     if (isMarkedComposable != superType.isMarkedComposable) return false
     arguments.forEachWith(superType.arguments) { a, b ->
@@ -545,13 +557,13 @@ fun TypeRef.isSubTypeOf(
     if (isNullableType && !superType.isNullableType) return false
     if (superType.classifier.fqName == InjektFqNames.Any)
         return superType.qualifiers.isEmpty() ||
-                (qualifiers.isNotEmpty() && qualifiers.areQualifiersAssignable(context, superType.qualifiers))
+                (qualifiers.isNotEmpty() && qualifiers.areSubQualifiersOf(context, superType.qualifiers))
     if (classifier == superType.classifier)
         return isSubTypeOfSameClassifier(context, superType)
 
     if (superType.classifier.isTypeParameter) {
         if (superType.qualifiers.isNotEmpty() &&
-            (qualifiers.isEmpty() || !qualifiers.areQualifiersAssignable(context, superType.qualifiers))
+            (qualifiers.isEmpty() || !qualifiers.areSubQualifiersOf(context, superType.qualifiers))
         ) return false
         return superType.superTypes.all { isSubTypeOf(context, it) }
     }
@@ -572,11 +584,23 @@ fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
 
 fun List<TypeRef>.areQualifiersAssignable(
     context: InjektContext,
-    superQualifiers: List<TypeRef>
+    superQualifiers: List<TypeRef>,
 ): Boolean {
     if (size != superQualifiers.size) return false
     forEachWith(superQualifiers) { thisQualifier, superQualifier ->
         if (!thisQualifier.isSubTypeOf(context, superQualifier))
+            return false
+    }
+    return true
+}
+
+fun List<TypeRef>.areSubQualifiersOf(
+    context: InjektContext,
+    superQualifiers: List<TypeRef>,
+): Boolean {
+    for (superQualifier in superQualifiers) {
+        val thisQualifier = firstOrNull { it.classifier == superQualifier.classifier }
+        if (thisQualifier?.isSubTypeOf(context, superQualifier) != true)
             return false
     }
     return true
