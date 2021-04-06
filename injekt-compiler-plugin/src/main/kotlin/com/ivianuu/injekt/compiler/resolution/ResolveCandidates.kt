@@ -466,8 +466,8 @@ private fun compareType(a: TypeRef, b: TypeRef): Int {
     if (a.arguments.size < b.arguments.size) return -1
     if (b.arguments.size < a.arguments.size) return 1
 
-    if (a.qualifier == null && b.qualifier != null) return -1
-    if (b.qualifier == null && a.qualifier != null) return 1
+    if (a.qualifiers.isEmpty() && b.qualifiers.isNotEmpty()) return -1
+    if (b.qualifiers.isEmpty() && a.qualifiers.isNotEmpty()) return 1
 
     if (a.classifier != b.classifier) return 0
 
@@ -509,7 +509,7 @@ private fun GivenGraph.Success.postProcess(
             }
 
             arguments.forEach { it.validate() }
-            qualifier?.validate()
+            qualifiers.forEach { it.validate() }
         }
         candidate.type.validate()
         if (candidate is CallableGivenNode) {

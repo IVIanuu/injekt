@@ -236,9 +236,9 @@ fun ClassDescriptor.getGivenConstructor(
         ?.toCallableRef(context, trace)
         ?.makeGiven()
     val finalConstructor = if (rawGivenConstructor != null) {
-        if (rawGivenConstructor.type.classifier.qualifier != null) {
+        if (rawGivenConstructor.type.classifier.qualifiers.isNotEmpty()) {
             val qualifiedType = rawGivenConstructor.type
-                .copy(qualifier = rawGivenConstructor.type.classifier.qualifier)
+                .copy(qualifiers = rawGivenConstructor.type.classifier.qualifiers)
             rawGivenConstructor.copy(type = qualifiedType, originalType = qualifiedType)
         } else {
             rawGivenConstructor
@@ -249,7 +249,7 @@ fun ClassDescriptor.getGivenConstructor(
 }
 
 class AbstractGivenFakeConstructor(
-    val clazz: ClassDescriptor
+    clazz: ClassDescriptor
 ) : FunctionDescriptorImpl(clazz, null, Annotations.EMPTY,
     Name.special("<init>"), CallableMemberDescriptor.Kind.SYNTHESIZED, clazz.source) {
     init {

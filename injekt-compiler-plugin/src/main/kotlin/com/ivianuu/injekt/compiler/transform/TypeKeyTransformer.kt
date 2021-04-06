@@ -376,14 +376,15 @@ class TypeKeyTransformer(
         fun IrType.collectExpressions() {
             check(this@collectExpressions is IrSimpleType)
 
-            val typeAnnotations = listOfNotNull(
-                (abbreviation ?: this).annotations.firstOrNull {
-                    it.symbol.owner.constructedClass.descriptor.fqNameSafe ==
-                            InjektFqNames.Composable
-                }
-            ) + (abbreviation?.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-                ?.take(1)
-                ?: getAnnotatedAnnotations(InjektFqNames.Qualifier).take(1))
+            val typeAnnotations = (abbreviation?.getAnnotatedAnnotations(InjektFqNames.Qualifier)
+                ?: getAnnotatedAnnotations(InjektFqNames.Qualifier)
+                .sortedBy { it.type.classifierOrFail.descriptor.fqNameSafe.asString() }) +
+                    listOfNotNull(
+                        (abbreviation ?: this).annotations.firstOrNull {
+                            it.symbol.owner.constructedClass.descriptor.fqNameSafe ==
+                                    InjektFqNames.Composable
+                        }
+                    )
 
             if (typeAnnotations.isNotEmpty()) {
                 appendToCurrentString("[")

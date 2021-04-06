@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
@@ -121,6 +123,26 @@ class TypeSubstitutionTest {
         val map = getSubstitutionMap(context, listOf(classType to listType.typeWith(typeParameter)))
         map.shouldHaveSize(1)
         map.shouldContain(typeParameter.classifier, stringType)
+    }
+
+    @Test
+    fun testGetSubstitutionMapWithSameQualifiers() = withTypeCheckerContext {
+        val typeParameterS = typeParameter()
+        val typeParameterT = typeParameter(typeParameterS.qualified(qualifier1))
+        val substitutionType = stringType.qualified(qualifier1)
+        val map = getSubstitutionMap(context, listOf(substitutionType to typeParameterT))
+        map[typeParameterT.classifier] shouldBe substitutionType
+        map[typeParameterS.classifier] shouldBe stringType
+    }
+
+    @Test
+    fun testGetSubstitutionMapWithSameQualifiers2() = withTypeCheckerContext {
+        val typeParameterS = typeParameter()
+        val typeParameterT = typeParameter(typeParameterS.qualified(qualifier1))
+        val substitutionType = stringType.qualified(qualifier1, qualifier2)
+        val map = getSubstitutionMap(context, listOf(substitutionType to typeParameterT))
+        map[typeParameterT.classifier] shouldBe substitutionType
+        map[typeParameterS.classifier] shouldBe stringType.qualified(qualifier2)
     }
 
 }

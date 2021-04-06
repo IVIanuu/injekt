@@ -118,6 +118,12 @@ class TypeRefTest {
     }
 
     @Test
+    fun testSameQualifiersInDifferentOrderIsAssignable() = withTypeCheckerContext {
+        stringType.qualified(qualifier1, qualifier2) shouldBeAssignable
+                stringType.qualified(qualifier2, qualifier1)
+    }
+
+    @Test
     fun testSubTypeOfTypeParameterWithNullableAnyUpperBound() = withTypeCheckerContext {
         stringType shouldBeAssignable typeParameter()
     }

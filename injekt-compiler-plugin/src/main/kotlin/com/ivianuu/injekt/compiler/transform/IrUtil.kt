@@ -114,13 +114,12 @@ fun TypeRef.toIrType(
             isMarkedNullable,
             arguments.map { makeTypeProjection(it.toIrType(pluginContext, localClasses, context), Variance.INVARIANT) },
             buildList<IrConstructorCall> {
-                qualifier
-                    ?.toIrType(pluginContext, localClasses, context)
-                    ?.let {
+                this += qualifiers
+                    .map { it.toIrType(pluginContext, localClasses, context) }
+                    .map {
                         DeclarationIrBuilder(pluginContext, it.classifierOrFail)
                             .irCall(it.classOrNull!!.owner.constructors.single().symbol, it, it.classOrNull!!.owner)
                     }
-                    ?.let { this += it }
                 if (isMarkedComposable) {
                     val composableConstructor = pluginContext.referenceConstructors(InjektFqNames.Composable)
                         .single()
@@ -145,14 +144,12 @@ private fun TypeRef.toIrAbbreviation(
         arguments.map {
             makeTypeProjection(it.toIrType(pluginContext, localClasses, context), Variance.INVARIANT)
         },
-        listOfNotNull(
-            qualifier
-                ?.toIrType(pluginContext, localClasses, context)
-                ?.let {
-                    DeclarationIrBuilder(pluginContext, it.classifierOrFail)
-                        .irCall(it.classOrNull!!.owner.constructors.single().symbol, it, it.classOrNull!!.owner)
-                }
-        )
+        qualifiers
+            .map { it.toIrType(pluginContext, localClasses, context) }
+            .map {
+                DeclarationIrBuilder(pluginContext, it.classifierOrFail)
+                    .irCall(it.classOrNull!!.owner.constructors.single().symbol, it, it.classOrNull!!.owner)
+            }
     )
 }
 

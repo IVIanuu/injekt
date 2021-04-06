@@ -172,7 +172,7 @@ class ResolutionScope(
 
     fun frameworkGivenForType(type: TypeRef): List<GivenNode>? {
         if (type.frameworkKey == null &&
-            type.qualifier == null &&
+            type.qualifiers.isEmpty() &&
             type.isFunctionTypeWithOnlyGivenParameters) {
             return listOf(
                 ProviderGivenNode(
@@ -181,7 +181,7 @@ class ResolutionScope(
                 )
             )
         } else if (type.frameworkKey == null &&
-            type.qualifier == null &&
+            type.qualifiers.isEmpty() &&
             type.classifier == context.setType.classifier) {
             val setElementType = type.arguments.single()
             val frameworkSetElements = frameworkSetElementsForType(setElementType)
@@ -192,7 +192,7 @@ class ResolutionScope(
                 setElementsForType(setElementType)
             }
             if (elementTypes == null &&
-                setElementType.qualifier == null &&
+                setElementType.qualifiers.isEmpty() &&
                 setElementType.isFunctionTypeWithOnlyGivenParameters) {
                 val providerReturnType = setElementType.arguments.last()
                 elementTypes = setElementsForType(providerReturnType)

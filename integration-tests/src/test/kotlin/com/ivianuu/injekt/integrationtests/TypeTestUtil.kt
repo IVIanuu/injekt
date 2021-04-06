@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.isAssignableTo
 import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
+import com.ivianuu.injekt.compiler.resolution.sortedQualifiers
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.test.codegen
 import org.jetbrains.kotlin.analyzer.AnalysisResult
@@ -174,7 +175,8 @@ fun TypeRef.nullable() = copy(isMarkedNullable = true)
 
 fun TypeRef.nonNull() = copy(isMarkedNullable = false)
 
-fun TypeRef.qualified(qualifier: TypeRef) = copy(qualifier = qualifier)
+fun TypeRef.qualified(vararg qualifiers: TypeRef) =
+    copy(qualifiers = qualifiers.toList().sortedQualifiers())
 
 fun TypeRef.typeWith(vararg typeArguments: TypeRef) =
     copy(arguments = typeArguments.toList())

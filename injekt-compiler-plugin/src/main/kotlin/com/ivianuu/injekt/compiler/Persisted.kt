@@ -57,7 +57,7 @@ fun CallableRef.toPersistedCallableInfo(context: InjektContext) = PersistedCalla
 @Serializable
 data class PersistedClassifierInfo(
     @SerialName("0") val fqName: String,
-    @SerialName("1") val qualifier: PersistedTypeRef? = null,
+    @SerialName("1") val qualifiers: List<PersistedTypeRef> = emptyList(),
     @SerialName("2") val superTypes: List<PersistedTypeRef> = emptyList(),
     @SerialName("3") val primaryConstructorPropertyParameters: List<String> = emptyList(),
     @SerialName("4") val forTypeKeyTypeParameters: List<String> = emptyList(),
@@ -66,7 +66,7 @@ data class PersistedClassifierInfo(
 
 fun ClassifierRef.toPersistedClassifierInfo(context: InjektContext) = PersistedClassifierInfo(
     fqName = descriptor!!.fqNameSafe.asString(),
-    qualifier = qualifier?.toPersistedTypeRef(context),
+    qualifiers = qualifiers.map { it.toPersistedTypeRef(context) },
     superTypes = superTypes.map { it.toPersistedTypeRef(context) },
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
         .map { it.asString() },
@@ -80,7 +80,7 @@ fun ClassifierRef.toPersistedClassifierInfo(context: InjektContext) = PersistedC
 data class PersistedTypeRef(
     @SerialName("0") val classifierKey: String,
     @SerialName("1") val arguments: List<PersistedTypeRef> = emptyList(),
-    @SerialName("2") val qualifier: PersistedTypeRef? = null,
+    @SerialName("2") val qualifiers: List<PersistedTypeRef> = emptyList(),
     @SerialName("3") val isStarProjection: Boolean,
     @SerialName("4") val isMarkedNullable: Boolean,
     @SerialName("5") val isMarkedComposable: Boolean,
@@ -90,7 +90,7 @@ data class PersistedTypeRef(
 fun TypeRef.toPersistedTypeRef(context: InjektContext): PersistedTypeRef = PersistedTypeRef(
     classifierKey = classifier.descriptor?.uniqueKey(context) ?: "",
     arguments = arguments.map { it.toPersistedTypeRef(context) },
-    qualifier = qualifier?.toPersistedTypeRef(context),
+    qualifiers = qualifiers.map { it.toPersistedTypeRef(context) },
     isStarProjection = isStarProjection,
     isMarkedNullable = isMarkedNullable,
     isMarkedComposable = isMarkedComposable,
@@ -103,7 +103,7 @@ fun PersistedTypeRef.toTypeRef(context: InjektContext, trace: BindingTrace?): Ty
         .toClassifierRef(context, trace)
     return classifier.defaultType
         .copy(
-            qualifier = qualifier?.toTypeRef(context, trace),
+            qualifiers = qualifiers.map { it.toTypeRef(context, trace) },
             arguments = arguments.map { it.toTypeRef(context, trace) },
             isMarkedNullable = isMarkedNullable,
             isMarkedComposable = isMarkedComposable,
@@ -115,7 +115,7 @@ fun PersistedTypeRef.toTypeRef(context: InjektContext, trace: BindingTrace?): Ty
 data class PersistedClassifierRef(
     @SerialName("0") val key: String,
     @SerialName("1") val superTypes: List<PersistedTypeRef> = emptyList(),
-    @SerialName("2") val qualifier: PersistedTypeRef? = null,
+    @SerialName("2") val qualifiers: List<PersistedTypeRef> = emptyList(),
     @SerialName("3") val primaryConstructorPropertyParameters: List<String> = emptyList(),
     @SerialName("4") val forTypeKeyTypeParameters: List<String> = emptyList(),
     @SerialName("5") val givenConstraintTypeParameters: List<String> = emptyList()
@@ -134,7 +134,7 @@ fun ClassifierRef.toPersistedClassifierRef(
             ?: descriptor.uniqueKey(context)
      } else descriptor!!.uniqueKey(context),
     superTypes = superTypes.map { it.toPersistedTypeRef(context) },
-    qualifier = qualifier?.toPersistedTypeRef(context),
+    qualifiers = qualifiers.map { it.toPersistedTypeRef(context) },
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
         .map { it.asString() },
     forTypeKeyTypeParameters = forTypeKeyTypeParameters
@@ -150,11 +150,11 @@ fun PersistedClassifierRef.toClassifierRef(
     return context.classifierDescriptorForKey(key, trace)
         .toClassifierRef(context, trace)
         .let { raw ->
-            if (superTypes.isNotEmpty() || qualifier != null ||
+            if (superTypes.isNotEmpty() || qualifiers.isNotEmpty() ||
                 primaryConstructorPropertyParameters.isNotEmpty())
                 raw.copy(
                     superTypes = superTypes.map { it.toTypeRef(context, trace) },
-                    qualifier = qualifier?.toTypeRef(context, trace),
+                    qualifiers = qualifiers.map { it.toTypeRef(context, trace) },
                     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
                         .map { it.asNameId() }
                 )
@@ -164,7 +164,7 @@ fun PersistedClassifierRef.toClassifierRef(
 
 fun PersistedClassifierRef.toPersistedClassifierInfo() = PersistedClassifierInfo(
     fqName = key.split(":")[1],
-    qualifier = qualifier,
+    qualifiers = qualifiers,
     superTypes = superTypes,
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
     forTypeKeyTypeParameters = forTypeKeyTypeParameters,
