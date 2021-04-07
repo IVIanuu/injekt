@@ -19,6 +19,7 @@ package com.ivianuu.injekt.android
 import androidx.activity.ComponentActivity
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.scope.AppGivenScope
+import com.ivianuu.injekt.scope.ChildGivenScopeFactory
 import com.ivianuu.injekt.scope.ChildGivenScopeModule0
 import com.ivianuu.injekt.scope.DefaultGivenScope
 import com.ivianuu.injekt.scope.GivenScope
@@ -26,7 +27,9 @@ import com.ivianuu.injekt.scope.element
 
 val ComponentActivity.activityRetainedGivenScope: ActivityRetainedGivenScope
     get() = viewModelStore.givenScope {
-        application.appGivenScope.element<() -> ActivityRetainedGivenScope>()()
+        application.appGivenScope
+            .element<@ChildGivenScopeFactory () -> ActivityRetainedGivenScope>()
+            .invoke()
     }
 
 typealias ActivityRetainedGivenScope = DefaultGivenScope

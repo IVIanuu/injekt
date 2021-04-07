@@ -34,7 +34,7 @@ class TestGivenScopeDisposable<S : GivenScope> : GivenScopeDisposable {
 @Given
 fun <S : GivenScope> testGivenScopeDisposable(
     @Given scope: S,
-    @Given key: TypeKey<S>
+    @Given key: TypeKey<TestGivenScopeDisposable<S>>
 ): @GivenScopeElementBinding<S> TestGivenScopeDisposable<S> = scope.getOrCreateScopedValue(key) {
     TestGivenScopeDisposable()
 }

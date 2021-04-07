@@ -28,6 +28,7 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.scope.ChildGivenScopeFactory
 import com.ivianuu.injekt.scope.ChildGivenScopeModule1
 import com.ivianuu.injekt.scope.DefaultGivenScope
 import com.ivianuu.injekt.scope.GivenScope
@@ -36,7 +37,8 @@ import com.ivianuu.injekt.scope.element
 val ComponentActivity.activityGivenScope: ActivityGivenScope
     get() = lifecycle.givenScope {
         activityRetainedGivenScope
-            .element<(ComponentActivity) -> ActivityGivenScope>()(this)
+            .element<@ChildGivenScopeFactory (ComponentActivity) -> ActivityGivenScope>()
+            .invoke(this)
     }
 
 typealias ActivityGivenScope = DefaultGivenScope

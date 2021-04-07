@@ -22,6 +22,7 @@ import android.content.Context
 import android.content.Intent
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.scope.AppGivenScope
+import com.ivianuu.injekt.scope.ChildGivenScopeFactory
 import com.ivianuu.injekt.scope.ChildGivenScopeModule3
 import com.ivianuu.injekt.scope.DefaultGivenScope
 import com.ivianuu.injekt.scope.GivenScope
@@ -32,7 +33,7 @@ fun BroadcastReceiver.createReceiverGivenScope(
     intent: Intent,
 ): ReceiverGivenScope = (context.applicationContext as Application)
     .appGivenScope
-    .element<(BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverGivenScope>()
+    .element<@ChildGivenScopeFactory (BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverGivenScope>()
     .invoke(this, context, intent)
 
 typealias ReceiverGivenScope = DefaultGivenScope
