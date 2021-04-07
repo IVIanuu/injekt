@@ -158,12 +158,7 @@ class AbstractGivenNode(
         .getGivenConstructor(ownerScope.context, ownerScope.trace)
 
     val requestCallables: List<CallableRef> = type
-        .classifier
-        .descriptor!!
-        .defaultType
-        .memberScope
-        .collectGivens(ownerScope.context, ownerScope.trace, type,
-            type.classifier.typeParameters.toMap(type.arguments))
+        .collectGivens(ownerScope.context, ownerScope.trace)
         .filter {
             superConstructor == null ||
                     it.callable.name !in type.classifier.primaryConstructorPropertyParameters

@@ -212,4 +212,65 @@ class PersistenceTest {
         )
     )
 
+    @Test
+    fun testNonGivenClassWithGivenMembers() = multiCodegen(
+        listOf(
+            source(
+                """ 
+                    abstract class MyModule<T : S, S> {
+                        @Given fun func(@Given t: T): S = t
+                    }
+                    class MyModuleImpl<T> : MyModule<@Qualifier1 T, T>()
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Given val myFooModule = MyModuleImpl<Foo>()
+                    @Given val foo: @Qualifier1 Foo = Foo()
+                    fun invoke() = given<Foo>()
+            """
+            )
+        )
+    )
+
+    @Test
+    fun testNonGivenClassWithGivenMembers2() = multiCodegen(
+        listOf(
+            source(
+                """ 
+                    abstract class MyAbstractChildGivenScopeModule<P : GivenScope, T, S : T> {
+                        @Given
+                        fun factory(
+                            @Given scopeFactory: S
+                        ): @GivenScopeElementBinding<P> @ChildGivenScopeFactory T = scopeFactory
+                    }
+                    
+                    class MyChildGivenScopeModule1<P : GivenScope, P1, C : GivenScope> : MyAbstractChildGivenScopeModule<P,
+                                (P1) -> C,
+                                (@Given @GivenScopeElementBinding<C> P1) -> C>()
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    typealias TestGivenScope1 = DefaultGivenScope
+                    typealias TestGivenScope2 = DefaultGivenScope
+                    fun invoke() {
+                        @Given
+                        val childScopeModule =
+                            MyChildGivenScopeModule1<TestGivenScope1, String, TestGivenScope2>()
+                        val parentScope = given<TestGivenScope1>()
+                        val childScope = parentScope.element<@ChildGivenScopeFactory (String) -> TestGivenScope2>()("42")
+                        childScope.element<String>()
+                    }
+            """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        it.invokeSingleFile()
+    }
 }

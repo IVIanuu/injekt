@@ -59,7 +59,8 @@ class InfoTransformer(
     override fun visitClass(declaration: IrClass): IrStatement {
         val classifierRef = declaration.descriptor.toClassifierRef(context, trace)
         if (declaration.hasAnnotation(InjektFqNames.Given) ||
-            classifierRef.typeParameters.any { it.isForTypeKey || it.isGivenConstraint }) {
+            classifierRef.typeParameters.any { it.isForTypeKey || it.isGivenConstraint } ||
+            declaration.declarations.any { it.descriptor.isGiven(context, trace) }) {
             declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
                 .run {
                     val info = declaration.descriptor.toClassifierRef(this@InfoTransformer.context,

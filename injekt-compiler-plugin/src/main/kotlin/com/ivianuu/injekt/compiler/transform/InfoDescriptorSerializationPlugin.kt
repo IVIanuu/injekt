@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.metadata.ProtoBuf
@@ -36,11 +37,16 @@ class InfoDescriptorSerializationPlugin : DescriptorSerializerPlugin {
         childSerializer: DescriptorSerializer,
         extension: SerializerExtension
     ) {
-        if (proto.flags and hasAnnotationFlag == 0 &&
-            descriptor.toClassifierRef(InjektContext(descriptor.module), null)
-                .typeParameters
-                .any { it.isForTypeKey || it.isGivenConstraint }) {
-            proto.flags = proto.flags or hasAnnotationFlag
+        if (proto.flags and hasAnnotationFlag == 0) {
+            val context = InjektContext(descriptor.module)
+            if (descriptor.toClassifierRef(context, null)
+                    .typeParameters
+                    .any { it.isForTypeKey || it.isGivenConstraint } ||
+                descriptor.unsubstitutedMemberScope
+                    .getContributedDescriptors()
+                    .any { it.isGiven(context, null) }) {
+                proto.flags = proto.flags or hasAnnotationFlag
+            }
         }
     }
 }

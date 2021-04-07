@@ -109,7 +109,6 @@ class ResolutionScope(
                 given.collectGivens(
                     context = context,
                     scope = this,
-                    substitutionMap = emptyMap(),
                     trace = trace,
                     addGiven = { callable ->
                         addGivenIfAbsentOrBetter(callable)
@@ -349,7 +348,6 @@ class ResolutionScope(
         newGiven.collectGivens(
             context = context,
             scope = this,
-            substitutionMap = outputsSubstitutionMap,
             trace = trace,
             addGiven = { newInnerGiven ->
                 val finalNewInnerGiven = newInnerGiven
@@ -463,7 +461,7 @@ fun HierarchicalResolutionScope(
             ownerDescriptor = null,
             trace = trace,
             initialGivens = importScopes
-                .flatMap { it.collectGivens(context, trace, null, emptyMap()) }
+                .flatMap { it.collectGivens(context, trace) }
         ).also { trace.record(InjektWritableSlices.IMPORT_RESOLUTION_SCOPE, importScopes, it) }
 
     return allScopes
@@ -545,7 +543,7 @@ fun HierarchicalResolutionScope(
                                 .firstIsInstance<LexicalScope>()
                                 .ownerDescriptor,
                             trace = trace,
-                            initialGivens = next.collectGivens(context, trace, null, emptyMap())
+                            initialGivens = next.collectGivens(context, trace)
                         ).also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, next, it) }
                 }
             }

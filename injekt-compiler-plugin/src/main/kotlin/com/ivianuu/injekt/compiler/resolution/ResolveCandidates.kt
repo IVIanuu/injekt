@@ -425,12 +425,9 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     }
 
     if (a is CallableGivenNode && b is CallableGivenNode) {
-        if (a.callable.callable.containingDeclaration ==
-            b.callable.callable.containingDeclaration) {
-            val aOverriddenTreeSize = a.callable.callable.overriddenTreeUniqueAsSequence(true).count()
-            val bOverriddenTreeSize = b.callable.callable.overriddenTreeUniqueAsSequence(true).count()
-            if (aOverriddenTreeSize < bOverriddenTreeSize) return -1
-            if (bOverriddenTreeSize < aOverriddenTreeSize) return 1
+        if (a.callable.owner != null && a.callable.owner == b.callable.owner) {
+            if (a.callable.overriddenDepth < b.callable.overriddenDepth) return -1
+            if (b.callable.overriddenDepth < a.callable.overriddenDepth) return 1
         }
     }
 
@@ -484,6 +481,11 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     if (diff < 0) return -1
     if (diff > 0) return 1
 
+    if (a.owner != null && a.owner == b.owner) {
+        if (a.overriddenDepth < b.overriddenDepth) return -1
+        if (b.overriddenDepth < a.overriddenDepth) return 1
+    }
+
     if (!a.callable.isExternalDeclaration() &&
         b.callable.isExternalDeclaration()) return -1
     if (!b.callable.isExternalDeclaration() &&
@@ -510,14 +512,6 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
         callContext != b.callContext) return -1
     if (callContext == b.callContext &&
         callContext != a.callContext) return 1
-
-    if (a.callable.containingDeclaration ==
-        b.callable.containingDeclaration) {
-        val aOverriddenTreeSize = a.callable.overriddenTreeUniqueAsSequence(true).count()
-        val bOverriddenTreeSize = b.callable.overriddenTreeUniqueAsSequence(true).count()
-        if (aOverriddenTreeSize < bOverriddenTreeSize) return -1
-        if (bOverriddenTreeSize < aOverriddenTreeSize) return 1
-    }
 
     return 0
 }

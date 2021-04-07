@@ -63,7 +63,9 @@ data class CallableRef(
     val typeArguments: Map<ClassifierRef, TypeRef>,
     val isGiven: Boolean,
     val constrainedGivenSource: CallableRef?,
-    val callContext: CallContext
+    val callContext: CallContext,
+    val owner: ClassifierRef?,
+    val overriddenDepth: Int
 )
 
 fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
@@ -122,72 +124,102 @@ fun CallableDescriptor.toCallableRef(
             .toMap(),
         isGiven = isGiven(context, trace),
         constrainedGivenSource = null,
-        callContext = callContext
+        callContext = callContext,
+        owner = null,
+        overriddenDepth = 0
     ).also {
         trace?.record(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this, it)
     }
 }
 
-fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
+fun TypeRef.collectGivens(
     context: InjektContext,
-    trace: BindingTrace?,
-    type: TypeRef?,
-    substitutionMap: Map<ClassifierRef, TypeRef>
+    trace: BindingTrace?
 ): List<CallableRef> {
     // special case to support @Given () -> Foo
-    if (type?.isGiven == true && type.isFunctionTypeWithOnlyGivenParameters) {
+    if (isGiven && isFunctionTypeWithOnlyGivenParameters) {
         return listOf(
-            getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
+            classifier.descriptor!!
+                .defaultType
+                .memberScope
+                .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
                 .first()
                 .toCallableRef(context, trace)
                 .let { callable ->
                     callable.copy(
-                        type = type.arguments.last(),
+                        type = arguments.last(),
                         isGiven = true,
                         parameterTypes = callable.parameterTypes.toMutableMap()
-                            .also { it[callable.callable.dispatchReceiverParameter!!.injektName()] = type }
-                    ).substitute(substitutionMap)
+                            .also { it[callable.callable.dispatchReceiverParameter!!.injektName()] = this }
+                    ).substitute(classifier.typeParameters.toMap(arguments))
                 }
         )
     }
 
-    return getContributedDescriptors()
-        .flatMap { declaration ->
-            when (declaration) {
-                is ClassDescriptor -> listOfNotNull(
-                    declaration
-                        .getGivenConstructor(context, trace)
-                        ?.substitute(substitutionMap)
-                ) + listOfNotNull(
-                    declaration.companionObjectDescriptor
-                        ?.thisAsReceiverParameter
-                        ?.toCallableRef(context, trace)
-                        ?.makeGiven()
-                )
-                is CallableMemberDescriptor -> if (declaration.isGiven(context, trace)) {
-                    listOf(
-                        declaration.toCallableRef(context, trace)
-                            .let { callable ->
-                                callable.copy(
-                                    isGiven = true,
-                                    parameterTypes = callable.parameterTypes.toMutableMap()
-                                        .also {
-                                            if (callable.callable.dispatchReceiverParameter != null) {
-                                                it[callable.callable.dispatchReceiverParameter!!.injektName()] = type!!
-                                            }
-                                        }
-                                )
-                            }
-                            .substitute(substitutionMap)
-                    )
-                } else emptyList()
-                is VariableDescriptor -> if (declaration.isGiven(context, trace)) {
-                    listOf(declaration.toCallableRef(context, trace).makeGiven())
-                } else emptyList()
-                else -> emptyList()
+    val callables = mutableListOf<CallableRef>()
+    val seen = mutableSetOf<TypeRef>()
+    fun collectInner(type: TypeRef, overriddenDepth: Int) {
+        if (type in seen) return
+        seen += type
+        val substitutionMap = type.classifier.typeParameters.toMap(type.arguments)
+        callables += type.classifier.descriptor!!
+            .defaultType
+            .memberScope
+            .collectGivens(context, trace)
+            .filter {
+                (it.callable as CallableMemberDescriptor)
+                    .kind != CallableMemberDescriptor.Kind.FAKE_OVERRIDE
             }
-        }
+            .map { it.substitute(substitutionMap) }
+            .map { callable ->
+                callable.copy(
+                    overriddenDepth = overriddenDepth,
+                    owner = this.classifier,
+                    isGiven = true,
+                    parameterTypes = callable.parameterTypes.toMutableMap()
+                        .also {
+                            it[callable.callable.dispatchReceiverParameter!!.injektName()] = this
+                        }
+                )
+            }
+        type.superTypes.forEach { collectInner(it, overriddenDepth + 1) }
+    }
+    collectInner(this, 0)
+    return callables
 }
+
+fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
+    context: InjektContext,
+    trace: BindingTrace?
+): List<CallableRef> = getContributedDescriptors()
+    .flatMap { declaration ->
+        when (declaration) {
+            is ClassDescriptor -> listOfNotNull(
+                declaration
+                    .getGivenConstructor(context, trace)
+            ) + listOfNotNull(
+                declaration.companionObjectDescriptor
+                    ?.thisAsReceiverParameter
+                    ?.toCallableRef(context, trace)
+                    ?.makeGiven()
+            )
+            is CallableMemberDescriptor -> if (declaration.isGiven(context, trace)) {
+                listOf(
+                    declaration.toCallableRef(context, trace)
+                        .let { callable ->
+                            callable.copy(
+                                isGiven = true,
+                                parameterTypes = callable.parameterTypes.toMutableMap()
+                            )
+                        }
+                )
+            } else emptyList()
+            is VariableDescriptor -> if (declaration.isGiven(context, trace)) {
+                listOf(declaration.toCallableRef(context, trace).makeGiven())
+            } else emptyList()
+            else -> emptyList()
+        }
+    }
 
 fun Annotated.isGiven(context: InjektContext, trace: BindingTrace?): Boolean {
     @Suppress("IMPLICIT_CAST_TO_ANY")
@@ -279,7 +311,6 @@ class AbstractGivenFakeConstructor(
 fun CallableRef.collectGivens(
     context: InjektContext,
     scope: ResolutionScope,
-    substitutionMap: Map<ClassifierRef, TypeRef>,
     trace: BindingTrace?,
     addGiven: (CallableRef) -> Unit,
     addAbstractGiven: (CallableRef) -> Unit,
@@ -304,21 +335,13 @@ fun CallableRef.collectGivens(
     else this
     addGiven(nextCallable)
 
-    val combinedSubstitutionMap = substitutionMap + nextCallable.type.classifier.typeParameters
-        .toMap(nextCallable.type.arguments)
-
     nextCallable
         .type
-        .classifier
-        .descriptor
-        ?.defaultType
-        ?.memberScope
-        ?.collectGivens(context, trace, nextCallable.type, combinedSubstitutionMap)
-        ?.forEach {
-            it.collectGivens(
+        .collectGivens(context, trace)
+        .forEach { innerCallable ->
+            innerCallable.collectGivens(
                 context,
                 scope,
-                combinedSubstitutionMap,
                 trace,
                 addGiven,
                 addAbstractGiven,
@@ -335,7 +358,11 @@ private fun ResolutionScope.canSee(callable: CallableRef): Boolean =
             (callable.callable is ClassConstructorDescriptor &&
                     callable.type.classifier.isObject) ||
             callable.callable.parents.any { callableParent ->
-                allScopes.any { it.ownerDescriptor == callableParent }
+                allScopes.any {
+                    it.ownerDescriptor == callableParent ||
+                            (it.ownerDescriptor is ClassDescriptor &&
+                                    it.ownerDescriptor.toClassifierRef(context, trace) == callable.owner)
+                }
             }
 
 fun CallableRef.isForAbstractGiven(context: InjektContext, trace: BindingTrace?): Boolean {
