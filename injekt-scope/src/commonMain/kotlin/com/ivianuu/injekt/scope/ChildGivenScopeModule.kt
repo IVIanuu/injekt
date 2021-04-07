@@ -17,64 +17,47 @@
 package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.common.ForTypeKey
+import com.ivianuu.injekt.Qualifier
 
-class ChildGivenScopeModule0<P : GivenScope, S : GivenScope> {
+@Qualifier
+annotation class ChildGivenScopeFactory
+
+abstract class AbstractChildGivenScopeModule<P : GivenScope, T, S : T> {
     @Given
     fun factory(
-        @Given scopeFactory: (@Given Unit) -> S // todo change type to () -> S once fixed
-    ): @GivenScopeElementBinding<P> () -> S = { scopeFactory(Unit) }
+        @Given scopeFactory: S
+    ): @GivenScopeElementBinding<P> @ChildGivenScopeFactory T = scopeFactory
 }
 
-class ChildGivenScopeModule1<P : GivenScope, P1, S : GivenScope> {
-    @Given
-    fun factory(
-        @Given scopeFactory: (@Given @GivenScopeElementBinding<S> P1) -> S
-    ): @GivenScopeElementBinding<P> (P1) -> S = scopeFactory
-}
+class ChildGivenScopeModule0<P : GivenScope, C : GivenScope> :
+    AbstractChildGivenScopeModule<P, () -> C, () -> C>()
 
-class ChildGivenScopeModule2<P : GivenScope, P1, P2, S : GivenScope> {
-    @Given
-    fun factory(
-        @Given scopeFactory: (
-            @Given @GivenScopeElementBinding<S> P1,
-            @Given @GivenScopeElementBinding<S> P2
-        ) -> S
-    ): @GivenScopeElementBinding<P> (P1, P2) -> S = scopeFactory
-}
+class ChildGivenScopeModule1<P : GivenScope, P1, C : GivenScope> : AbstractChildGivenScopeModule<P,
+            (P1) -> C,
+            (@Given @GivenScopeElementBinding<C> P1) -> C>()
 
-class ChildGivenScopeModule3<P : GivenScope, P1, P2, P3, S : GivenScope> {
-    @Given
-    fun factory(
-        @Given scopeFactory: (
-            @Given @GivenScopeElementBinding<S> P1,
-            @Given @GivenScopeElementBinding<S> P2,
-            @Given @GivenScopeElementBinding<S> P3
-        ) -> S
-    ): @GivenScopeElementBinding<P> (P1, P2, P3) -> S = scopeFactory
-}
+class ChildGivenScopeModule2<P : GivenScope, P1, P2, C : GivenScope> : AbstractChildGivenScopeModule<P,
+            (P1, P2) -> C,
+            (@Given @GivenScopeElementBinding<C> P1,
+             @Given @GivenScopeElementBinding<C> P2) -> C>()
 
-class ChildGivenScopeModule4<P : GivenScope, P1, P2, P3, P4, S : GivenScope> {
-    @Given
-    fun factory(
-        @Given scopeFactory: (
-            @Given @GivenScopeElementBinding<S> P1,
-            @Given @GivenScopeElementBinding<S> P2,
-            @Given @GivenScopeElementBinding<S> P3,
-            @Given @GivenScopeElementBinding<S> P4
-        ) -> S
-    ): @GivenScopeElementBinding<P> (P1, P2, P3, P4) -> S = scopeFactory
-}
+class ChildGivenScopeModule3<P : GivenScope, P1, P2, P3, C : GivenScope> : AbstractChildGivenScopeModule<P,
+            (P1, P2, P3) -> C,
+            (@Given @GivenScopeElementBinding<C> P1,
+             @Given @GivenScopeElementBinding<C> P2,
+             @Given @GivenScopeElementBinding<C> P3) -> C>()
 
-class ChildGivenScopeModule5<P : GivenScope, P1, P2, P3, P4, P5, S : GivenScope> {
-    @Given
-    fun factory(
-        @Given scopeFactory: (
-            @Given @GivenScopeElementBinding<S> P1,
-            @Given @GivenScopeElementBinding<S> P2,
-            @Given @GivenScopeElementBinding<S> P3,
-            @Given @GivenScopeElementBinding<S> P4,
-            @Given @GivenScopeElementBinding<S> P5
-        ) -> S
-    ): @GivenScopeElementBinding<P> (P1, P2, P3, P4, P5) -> S = scopeFactory
-}
+class ChildGivenScopeModule4<P : GivenScope, P1, P2, P3, P4, C : GivenScope> : AbstractChildGivenScopeModule<P,
+            (P1, P2, P3, P4) -> C,
+            (@Given @GivenScopeElementBinding<C> P1,
+             @Given @GivenScopeElementBinding<C> P2,
+             @Given @GivenScopeElementBinding<C> P3,
+             @Given @GivenScopeElementBinding<C> P4) -> C>()
+
+class ChildGivenScopeModule5<P : GivenScope, P1, P2, P3, P4, P5, C : GivenScope> : AbstractChildGivenScopeModule<P,
+            (P1, P2, P3, P4, P5) -> C,
+            (@Given @GivenScopeElementBinding<C> P1,
+             @Given @GivenScopeElementBinding<C> P2,
+             @Given @GivenScopeElementBinding<C> P3,
+             @Given @GivenScopeElementBinding<C> P4,
+             @Given @GivenScopeElementBinding<C> P5) -> C>()
