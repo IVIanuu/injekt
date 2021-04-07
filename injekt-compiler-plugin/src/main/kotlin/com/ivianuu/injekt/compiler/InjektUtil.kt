@@ -17,9 +17,12 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.GivenFunctionDescriptor
+import com.ivianuu.injekt.compiler.resolution.getGivenConstructor
 import com.ivianuu.injekt.compiler.resolution.uniqueTypeName
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DeserializedDescriptor
@@ -238,4 +241,27 @@ fun TypeParameterDescriptor.isForTypeKey(
 
     trace?.record(InjektWritableSlices.IS_FOR_TYPE_KEY, this, isForTypeKey)
     return isForTypeKey
+}
+
+fun ClassifierDescriptor.isOptimizableModule(
+    context: InjektContext,
+    trace: BindingTrace?
+): Boolean {
+    if (this !is ClassDescriptor) return false
+    trace?.get(InjektWritableSlices.IS_OPTIMIZABLE_MODULE, this)?.let {
+        return it
+    }
+    var isOptimizableModule = kind == ClassKind.CLASS &&
+            getGivenConstructor(context, trace)?.callable?.valueParameters?.isEmpty() == true &&
+            declaredTypeParameters.none { it.isForTypeKey(context, trace) } &&
+            unsubstitutedMemberScope.getContributedDescriptors()
+                .none { it is PropertyDescriptor && it.backingField != null }
+
+    if (!isOptimizableModule && original.isExternalDeclaration()) {
+        isOptimizableModule = context.classifierInfoFor(this, trace)
+            ?.isOptimizableModule == true
+    }
+
+    trace?.record(InjektWritableSlices.IS_OPTIMIZABLE_MODULE, this, isOptimizableModule)
+    return isOptimizableModule
 }

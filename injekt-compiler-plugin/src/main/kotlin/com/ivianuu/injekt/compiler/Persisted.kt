@@ -30,6 +30,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -61,7 +62,8 @@ data class PersistedClassifierInfo(
     @SerialName("2") val superTypes: List<PersistedTypeRef> = emptyList(),
     @SerialName("3") val primaryConstructorPropertyParameters: List<String> = emptyList(),
     @SerialName("4") val forTypeKeyTypeParameters: List<String> = emptyList(),
-    @SerialName("5") val givenConstraintTypeParameters: List<String> = emptyList()
+    @SerialName("5") val givenConstraintTypeParameters: List<String> = emptyList(),
+    @SerialName("6") val isOptimizableModule: Boolean = false
 )
 
 fun ClassifierRef.toPersistedClassifierInfo(context: InjektContext) = PersistedClassifierInfo(
@@ -73,7 +75,8 @@ fun ClassifierRef.toPersistedClassifierInfo(context: InjektContext) = PersistedC
     forTypeKeyTypeParameters = forTypeKeyTypeParameters
         .map { it.asString() },
     givenConstraintTypeParameters = givenConstraintTypeParameters
-        .map { it.asString() }
+        .map { it.asString() },
+    isOptimizableModule = descriptor.isOptimizableModule(context, null)
 )
 
 @Serializable
@@ -118,7 +121,8 @@ data class PersistedClassifierRef(
     @SerialName("2") val qualifiers: List<PersistedTypeRef> = emptyList(),
     @SerialName("3") val primaryConstructorPropertyParameters: List<String> = emptyList(),
     @SerialName("4") val forTypeKeyTypeParameters: List<String> = emptyList(),
-    @SerialName("5") val givenConstraintTypeParameters: List<String> = emptyList()
+    @SerialName("5") val givenConstraintTypeParameters: List<String> = emptyList(),
+    @SerialName("6") val isOptimizableModule: Boolean = false
 )
 
 fun ClassifierRef.toPersistedClassifierRef(
@@ -168,6 +172,7 @@ fun PersistedClassifierRef.toPersistedClassifierInfo() = PersistedClassifierInfo
     superTypes = superTypes,
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
     forTypeKeyTypeParameters = forTypeKeyTypeParameters,
-    givenConstraintTypeParameters = givenConstraintTypeParameters
+    givenConstraintTypeParameters = givenConstraintTypeParameters,
+    isOptimizableModule = isOptimizableModule
 )
 

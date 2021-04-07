@@ -26,6 +26,7 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isForTypeKey
 import com.ivianuu.injekt.compiler.isGivenConstraint
+import com.ivianuu.injekt.compiler.isOptimizableModule
 import com.ivianuu.injekt.compiler.toMap
 import com.ivianuu.injekt.compiler.toTypeRef
 import com.ivianuu.injekt.compiler.unsafeLazy
