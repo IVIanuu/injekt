@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
 import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
 import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
@@ -62,6 +63,7 @@ object InjektWritableSlices {
     )
     val CLASSIFIER_FOR_KEY = BasicWritableSlice<String, ClassifierDescriptor>(RewritePolicy.DO_NOTHING)
     val IS_OPTIMIZABLE_MODULE = BasicWritableSlice<ClassDescriptor, Boolean>(RewritePolicy.DO_NOTHING)
+    val EXPECTED_TYPE = BasicWritableSlice<KtExpression, TypeRef>(RewritePolicy.DO_NOTHING)
 }
 
 data class SourcePosition(

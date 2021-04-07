@@ -20,13 +20,17 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.encode
+import com.ivianuu.injekt.compiler.resolution.anyType
+import com.ivianuu.injekt.compiler.resolution.fullyExpandedType
 import com.ivianuu.injekt.compiler.resolution.isGiven
+import com.ivianuu.injekt.compiler.resolution.isSuspendFunctionType
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.toPersistedCallableInfo
 import com.ivianuu.injekt.compiler.toPersistedClassifierInfo
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.annotations.AnnotatedImpl
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
@@ -81,15 +85,25 @@ class InfoTransformer(
 
     @Suppress("NewApi")
     override fun visitFunction(declaration: IrFunction): IrStatement {
+        if (declaration.descriptor is PropertyAccessorDescriptor) return super.visitFunction(declaration)
         val descriptor = declaration.descriptor
+        val callableRef = descriptor.toCallableRef(context, trace)
         val isGiven = declaration.hasAnnotation(InjektFqNames.Given) ||
                 (declaration is IrConstructor &&
                         declaration.constructedClass.hasAnnotation(InjektFqNames.Given))
         val hasGivenParameters =
             declaration.valueParameters.any { it.descriptor.isGiven(context, trace) }
-        if (descriptor is AnnotatedImpl && (isGiven || hasGivenParameters)) {
-            val info = declaration.descriptor.toCallableRef(this@InfoTransformer.context, null)
-                .toPersistedCallableInfo(this@InfoTransformer.context)
+        val requiresTypeFix = callableRef.type.anyType {
+            it.qualifiers.isNotEmpty()
+        } || callableRef.parameterTypes.any { (_, parameterType) ->
+            parameterType.anyType {
+                it.qualifiers.isNotEmpty() ||
+                        (it.classifier.isTypeAlias &&
+                                it.fullyExpandedType.isSuspendFunctionType)
+            }
+        }
+        if (descriptor is AnnotatedImpl && (isGiven || hasGivenParameters || requiresTypeFix)) {
+            val info = callableRef.toPersistedCallableInfo(this@InfoTransformer.context)
             val serializedValue = info.encode()
 
             val field = AnnotatedImpl::class.java.declaredFields
@@ -128,9 +142,18 @@ class InfoTransformer(
     @Suppress("NewApi")
     override fun visitProperty(declaration: IrProperty): IrStatement {
         val descriptor = declaration.descriptor
-        if (descriptor is AnnotatedImpl && declaration.hasAnnotation(InjektFqNames.Given)) {
-            val info = declaration.descriptor.toCallableRef(this@InfoTransformer.context, null)
-                .toPersistedCallableInfo(this@InfoTransformer.context)
+        val callableRef = descriptor.toCallableRef(context, trace)
+        val requiresTypeFix = callableRef.type.anyType {
+            it.qualifiers.isNotEmpty()
+        } || callableRef.parameterTypes.any { (_, parameterType) ->
+            parameterType.anyType {
+                it.qualifiers.isNotEmpty() ||
+                        (it.classifier.isTypeAlias &&
+                                it.fullyExpandedType.isSuspendFunctionType)
+            }
+        }
+        if (descriptor is AnnotatedImpl && (declaration.hasAnnotation(InjektFqNames.Given) || requiresTypeFix)) {
+            val info = callableRef.toPersistedCallableInfo(this@InfoTransformer.context)
             val serializedValue = info.encode()
 
             val field = AnnotatedImpl::class.java.declaredFields

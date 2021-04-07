@@ -46,7 +46,10 @@ import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.impl.FunctionDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi.KtFunction
+import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
@@ -97,7 +100,16 @@ fun CallableDescriptor.toCallableRef(
     trace?.get(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this)?.let { return it }
     val info = if (original.isExternalDeclaration()) context.callableInfoFor(this, trace)
     else null
-    val type = info?.type?.toTypeRef(context, trace) ?: returnType!!.toTypeRef(context, trace)
+    val type = info?.type?.toTypeRef(context, trace)
+        ?: kotlin.run {
+            val psi = findPsi()
+            if (psi is KtProperty && psi.initializer != null) {
+                trace?.get(InjektWritableSlices.EXPECTED_TYPE, psi.initializer)
+            } else if (psi is KtFunction && psi.bodyExpression != null) {
+                trace?.get(InjektWritableSlices.EXPECTED_TYPE, psi.bodyExpression)
+            } else null
+        }
+        ?: returnType!!.toTypeRef(context, trace)
     val typeParameters = info
         ?.typeParameters
         ?.map { it.toClassifierRef(context, trace) } ?: typeParameters

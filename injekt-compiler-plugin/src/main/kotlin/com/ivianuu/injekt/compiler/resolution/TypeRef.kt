@@ -242,6 +242,9 @@ fun TypeRef.forEachType(action: (TypeRef) -> Unit) {
     qualifiers.forEach { it.forEachType(action) }
 }
 
+fun TypeRef.anyType(action: (TypeRef) -> Boolean): Boolean =
+    action(this) || arguments.any { it.anyType(action) } || qualifiers.any { it.anyType(action) }
+
 class KotlinTypeRef(
     private val kotlinType: KotlinType,
     override val isStarProjection: Boolean = false,
@@ -610,6 +613,12 @@ fun List<TypeRef>.areSubQualifiersOf(
 val TypeRef.isFunctionType: Boolean get() =
     classifier.fqName.asString().startsWith("kotlin.Function") ||
             classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
+
+val TypeRef.isSuspendFunctionType: Boolean get() =
+    classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
+
+val TypeRef.fullyExpandedType: TypeRef
+    get() = if (classifier.isTypeAlias) superTypes.single().fullyExpandedType else this
 
 val TypeRef.isFunctionTypeWithOnlyGivenParameters: Boolean
     get() {

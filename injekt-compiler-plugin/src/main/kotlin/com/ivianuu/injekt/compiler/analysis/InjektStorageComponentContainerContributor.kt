@@ -36,6 +36,6 @@ class InjektStorageComponentContainerContributor(
         container.useInstance(GivenChecker(context))
         container.useInstance(TypeKeyChecker(context))
         container.useInstance(GivenCallChecker(context, allowGivenCalls))
-        container.useInstance(QualifierChecker())
+        container.useInstance(QualifierChecker(context))
     }
 }
