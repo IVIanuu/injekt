@@ -41,14 +41,22 @@ interface GivenScope : GivenScopeDisposable {
      * Returns the scoped value [T] for [key] or null
      */
     fun <T : Any> getScopedValueOrNull(key: Any): T?
+    // todo remove once inline class boxing is fixed
+    fun <T : Any> getScopedValueOrNull(key: TypeKey<T>): T? =
+        getScopedValueOrNull(key.value)
     /**
      * Sets the scoped value [T] for [key] to [value]
      */
     fun <T : Any> setScopedValue(key: Any, value: T)
+    // todo remove once inline class boxing is fixed
+    fun <T : Any> setScopedValue(key: TypeKey<T>, value: T) =
+        setScopedValue(key.value, value)
     /**
      * Removes the scoped value for [key]
      */
     fun removeScopedValue(key: Any)
+    // todo remove once inline class boxing is fixed
+    fun removeScopedValue(key: TypeKey<*>) = removeScopedValue(key.value)
 }
 
 /**
@@ -61,7 +69,7 @@ fun interface GivenScopeDisposable {
     fun dispose()
 }
 
-fun <@ForTypeKey T : Any> GivenScope.element(): T = element(typeKeyOf<T>())
+fun <@ForTypeKey T : Any> GivenScope.element(): T = element(typeKeyOf())
 
 /**
  * Returns an existing instance of [T] for key [key] or creates and caches a new instance by calling function [init]
@@ -76,8 +84,12 @@ inline fun <T : Any> GivenScope.getOrCreateScopedValue(key: Any, init: () -> T):
     }
 }
 
-inline fun <@ForTypeKey T : Any> GivenScope.getOrCreateScopedValue(block: () -> T): T =
-    getOrCreateScopedValue(typeKeyOf<T>(), block)
+inline fun <@ForTypeKey T : Any> GivenScope.getOrCreateScopedValue(init: () -> T): T =
+    getOrCreateScopedValue(typeKeyOf(), init)
+
+// todo remove once inline class boxing is fixed
+inline fun <T : Any> GivenScope.getOrCreateScopedValue(key: TypeKey<T>, init: () -> T): T =
+    getOrCreateScopedValue(key.value, init)
 
 /**
  * Invokes the [action] function once [this] scope get's disposed
@@ -187,10 +199,15 @@ internal class GivenScopeImpl : GivenScope {
     @Suppress("UNCHECKED_CAST")
     override fun <T : Any> getScopedValueOrNull(key: Any): T? =
         scopedValues[key] as? T
+    @Suppress("CAST_NEVER_SUCCEEDS")
+    override fun <T : Any> getScopedValueOrNull(key: TypeKey<T>): T? {
+        val keyString: String = key as String
+        return scopedValues[keyString] as? T
+    }
 
     override fun <T : Any> setScopedValue(key: Any, value: T) {
         synchronizedWithDisposedCheck {
-            removeScopedValue(key)
+            removeScopedValueImpl(key)
             scopedValues[key] = value
         } ?: kotlin.run {
             (value as? GivenScopeDisposable)?.dispose()
@@ -198,7 +215,7 @@ internal class GivenScopeImpl : GivenScope {
     }
 
     override fun removeScopedValue(key: Any) {
-        synchronizedWithDisposedCheck { removeImpl(key) }
+        synchronizedWithDisposedCheck { removeScopedValueImpl(key) }
     }
 
     override fun dispose() {
@@ -207,12 +224,12 @@ internal class GivenScopeImpl : GivenScope {
             if (scopedValues.isNotEmpty()) {
                 scopedValues.keys
                     .toList()
-                    .forEach { removeImpl(it) }
+                    .forEach { removeScopedValueImpl(it) }
             }
         }
     }
 
-    private fun removeImpl(key: Any) {
+    private fun removeScopedValueImpl(key: Any) {
         (scopedValues.remove(key) as? GivenScopeDisposable)?.dispose()
     }
 

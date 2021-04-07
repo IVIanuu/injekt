@@ -16,11 +16,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.common.TypeKey
-import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.Qualifier1
 import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.compilationShouldBeOk
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
@@ -36,7 +32,7 @@ class TypeKeyTest {
            fun invoke() = typeKeyOf<String>() 
         """
     ) {
-        invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String"
+        invokeSingleFile() shouldBe "kotlin.String"
     }
 
     @Test
@@ -45,7 +41,7 @@ class TypeKeyTest {
            fun invoke() = typeKeyOf<String?>() 
         """
     ) {
-        invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String?"
+        invokeSingleFile() shouldBe "kotlin.String?"
     }
 
     @Test
@@ -55,7 +51,7 @@ class TypeKeyTest {
             fun invoke() = listTypeKeyOf<String>() 
         """
     ) {
-        invokeSingleFile<TypeKey<List<String>>>().value shouldBe "kotlin.collections.List<kotlin.String>"
+        invokeSingleFile() shouldBe "kotlin.collections.List<kotlin.String>"
     }
 
     @Test
@@ -65,7 +61,7 @@ class TypeKeyTest {
             fun invoke() = typeKeyOf<MyAlias>() 
         """
     ) {
-        invokeSingleFile<TypeKey<Any>>().value shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
+        invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
     }
 
     @Test
@@ -75,7 +71,7 @@ class TypeKeyTest {
             fun invoke() = typeKeyOf<MyAlias>() 
         """
     ) {
-        invokeSingleFile<TypeKey<Any>>().value shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
+        invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
     }
 
     @Test
@@ -85,7 +81,7 @@ class TypeKeyTest {
             fun invoke() = typeKeyOf<MyAlias?>()
         """
     ) {
-        invokeSingleFile<TypeKey<Any>>().value shouldBe "com.ivianuu.injekt.integrationtests.MyAlias?"
+        invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias?"
     }
 
     @Test
@@ -94,7 +90,7 @@ class TypeKeyTest {
             fun invoke() = typeKeyOf<@Composable () -> Unit>() 
         """
     ) {
-        invokeSingleFile<TypeKey<Any>>().value shouldBe "[@androidx.compose.runtime.Composable]kotlin.Function0<kotlin.Unit>"
+        invokeSingleFile() shouldBe "[@androidx.compose.runtime.Composable]kotlin.Function0<kotlin.Unit>"
     }
     @Test
     fun testTypeKeyOfWithTypeAliasWithComposableExpandedType() = codegen(
@@ -103,7 +99,7 @@ class TypeKeyTest {
             fun invoke() = typeKeyOf<MyAlias>() 
         """
     ) {
-        invokeSingleFile<TypeKey<Any>>().value shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
+        invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
     }
 
     @Test
@@ -112,7 +108,7 @@ class TypeKeyTest {
             fun invoke() = typeKeyOf<@Qualifier2 String>() 
         """
     ) {
-        invokeSingleFile<TypeKey<Any>>().value shouldBe "[@com.ivianuu.injekt.test.Qualifier2]kotlin.String"
+        invokeSingleFile() shouldBe "[@com.ivianuu.injekt.test.Qualifier2]kotlin.String"
     }
 
     @Test
@@ -122,7 +118,7 @@ class TypeKeyTest {
             fun invoke() = typeKeyOf<MyAlias>() 
         """
     ) {
-        invokeSingleFile<TypeKey<Any>>().value shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
+        invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
     }
 
     @Test
@@ -133,7 +129,7 @@ class TypeKeyTest {
             fun invoke() = typeKeyOf<@MyQualifier<String> String>() 
         """
     ) {
-        invokeSingleFile<TypeKey<Any>>().value shouldBe "[@com.ivianuu.injekt.integrationtests.MyQualifier<kotlin.String>]kotlin.String"
+        invokeSingleFile() shouldBe "[@com.ivianuu.injekt.integrationtests.MyQualifier<kotlin.String>]kotlin.String"
     }
     
     @Test
@@ -148,7 +144,7 @@ class TypeKeyTest {
             fun invoke() = KeyFactory.listTypeKeyOf<String>() 
         """
     ) {
-        invokeSingleFile<TypeKey<List<String>>>().value shouldBe "kotlin.collections.List<kotlin.String>"
+        invokeSingleFile() shouldBe "kotlin.collections.List<kotlin.String>"
     }
 
     @Test
@@ -169,7 +165,7 @@ class TypeKeyTest {
             )
         )
     ) {
-        it.invokeSingleFile<TypeKey<List<String>>>().value shouldBe "kotlin.collections.List<kotlin.String>"
+        it.invokeSingleFile() shouldBe "kotlin.collections.List<kotlin.String>"
     }
 
     @Test
@@ -181,7 +177,7 @@ class TypeKeyTest {
             fun invoke() = MyClass<String>().typeKey
         """
     ) {
-        invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String"
+        invokeSingleFile() shouldBe "kotlin.String"
     }
 
     @Test
@@ -193,7 +189,7 @@ class TypeKeyTest {
             fun invoke() = MyClass<String>().typeKey()
         """
     ) {
-        invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String"
+        invokeSingleFile() shouldBe "kotlin.String"
     }
 
     @Test
@@ -216,7 +212,7 @@ class TypeKeyTest {
             )
         )
     ) {
-        it.invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String"
+        it.invokeSingleFile() shouldBe "kotlin.String"
     }
 
     @Test
@@ -229,7 +225,7 @@ class TypeKeyTest {
             fun invoke() = MyClass<String>().typeKey
         """
     ) {
-        invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String"
+        invokeSingleFile() shouldBe "kotlin.String"
     }
 
     @Test
@@ -253,7 +249,7 @@ class TypeKeyTest {
             )
         )
     ) {
-        it.invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String"
+        it.invokeSingleFile() shouldBe "kotlin.String"
     }
 
     @Test
@@ -263,7 +259,7 @@ class TypeKeyTest {
             fun invoke() = given<TypeKey<List<@Qualifier1 Foo>>>()
         """
     ) {
-        invokeSingleFile<TypeKey<List<@Qualifier1 Foo>>>().value shouldBe
+        invokeSingleFile() shouldBe
                 "kotlin.collections.List<[@com.ivianuu.injekt.test.Qualifier1]com.ivianuu.injekt.test.Foo>"
     }
 
@@ -298,7 +294,7 @@ class TypeKeyTest {
             fun invoke() = "".typeKey
         """
     ) {
-        invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String"
+        invokeSingleFile() shouldBe "kotlin.String"
     }
 
     @Test
@@ -319,7 +315,7 @@ class TypeKeyTest {
             )
         )
     ) {
-        it.invokeSingleFile<TypeKey<String>>().value shouldBe "kotlin.String"
+        it.invokeSingleFile() shouldBe "kotlin.String"
     }
 
 }
