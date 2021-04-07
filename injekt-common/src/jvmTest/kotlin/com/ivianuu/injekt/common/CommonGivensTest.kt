@@ -19,18 +19,29 @@ package com.ivianuu.injekt.common
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.given
 import org.junit.Test
+import kotlin.reflect.KClass
 
 class CommonGivensTest {
     @Test
-    fun testCanInjectMapForSetOfPairs() {
+    fun testCanRequestMapForSetOfPairs() {
         @Given val set = setOf("key" to "value")
         val map = given<Map<String, String>>()
     }
 
     @Test
-    fun testCanInjectLazy() {
+    fun testCanRequestLazy() {
         @Given fun foo() = Foo()
         val lazyFoo = given<Lazy<Foo>>()
+    }
+
+    @Test
+    fun testCanRequestKClass() {
+        val clazz = given<KClass<Foo>>()
+    }
+
+    @Test
+    fun testCanRequestType() {
+        val type = given<TypeKey<Foo>>()
     }
 
     class Foo

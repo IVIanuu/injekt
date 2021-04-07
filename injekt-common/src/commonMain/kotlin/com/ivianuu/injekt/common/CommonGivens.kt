@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+@file:Suppress("NOTHING_TO_INLINE")
+
 package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Given
+import kotlin.reflect.KClass
 
 /**
  * Converts a [Set<Pair<K, V>] to a [Map<K, V>]
@@ -33,3 +36,9 @@ inline fun <K, V> setOfPairsToMap(
 inline fun <T> providerToLazy(@Given crossinline provider: () -> T): Lazy<T> = lazy {
     provider()
 }
+
+@Given
+inline fun <reified T : Any> givenKClass(): KClass<T> = T::class
+
+@Given
+inline fun <@ForTypeKey T> givenTypeKey(): TypeKey<T> = typeKeyOf()
