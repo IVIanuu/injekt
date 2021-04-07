@@ -62,7 +62,7 @@ data class CallableRef(
     val givenParameters: Set<String>,
     val typeArguments: Map<ClassifierRef, TypeRef>,
     val isGiven: Boolean,
-    val fromGivenConstraint: Boolean,
+    val constrainedGivenSource: CallableRef?,
     val callContext: CallContext
 )
 
@@ -121,7 +121,7 @@ fun CallableDescriptor.toCallableRef(
             .map { it to it.defaultType }
             .toMap(),
         isGiven = isGiven(context, trace),
-        fromGivenConstraint = false,
+        constrainedGivenSource = null,
         callContext = callContext
     ).also {
         trace?.record(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this, it)
@@ -287,7 +287,7 @@ fun CallableRef.collectGivens(
 ) {
     if (!scope.canSee(this)) return
 
-    if (!fromGivenConstraint && typeParameters.any { it.isGivenConstraint }) {
+    if (constrainedGivenSource == null && typeParameters.any { it.isGivenConstraint }) {
         addConstrainedGiven(this)
         return
     }

@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.generateFrameworkKey
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -53,7 +54,22 @@ class ResolutionScope(
     val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
     val resultsByCandidate = mutableMapOf<GivenNode, ResolutionResult>()
 
-    private val givens = mutableListOf<CallableRef>()
+    private data class GivenKey(
+        val type: TypeRef,
+        val callable: CallableDescriptor,
+        val source: CallableRef?
+    )
+
+    private val CallableRef.givenKey: GivenKey get() = GivenKey(type, callable, constrainedGivenSource)
+
+    private fun addGivenIfAbsentOrBetter(callable: CallableRef) {
+        val key = callable.givenKey
+        val existing = givens[key]
+        if (compareCallable(callable, existing) < 0)
+            givens[key] = callable
+    }
+
+    private val givens = mutableMapOf<GivenKey, CallableRef>()
     private val abstractGivens = mutableListOf<CallableRef>()
 
     private val constrainedGivens = mutableListOf<ConstrainedGivenNode>()
@@ -74,7 +90,11 @@ class ResolutionScope(
             resultingFrameworkKeys.toMutableSet()
         )
     }
-    private data class ConstrainedGivenCandidate(val type: TypeRef, val rawType: TypeRef)
+    private data class ConstrainedGivenCandidate(
+        val type: TypeRef,
+        val rawType: TypeRef,
+        val source: CallableRef
+    )
 
     val allParents: List<ResolutionScope> = parent?.allScopes ?: emptyList()
     val allScopes: List<ResolutionScope> = allParents + this
@@ -92,13 +112,14 @@ class ResolutionScope(
                     substitutionMap = emptyMap(),
                     trace = trace,
                     addGiven = { callable ->
-                        givens += callable
+                        addGivenIfAbsentOrBetter(callable)
                         val typeWithFrameworkKey = callable.type
                             .copy(frameworkKey = generateFrameworkKey())
-                        givens += callable.copy(type = typeWithFrameworkKey)
+                        addGivenIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey))
                         constrainedGivenCandidates += ConstrainedGivenCandidate(
                             type = typeWithFrameworkKey,
-                            rawType = callable.type
+                            rawType = callable.type,
+                            source = callable
                         )
                     },
                     addAbstractGiven = { callable ->
@@ -108,7 +129,8 @@ class ResolutionScope(
                         abstractGivens += callable.copy(type = typeWithFrameworkKey)
                         constrainedGivenCandidates += ConstrainedGivenCandidate(
                             type = typeWithFrameworkKey,
-                            rawType = callable.type
+                            rawType = callable.type,
+                            source = callable
                         )
                    },
                     addConstrainedGiven = { constrainedGivens += ConstrainedGivenNode(it) }
@@ -147,7 +169,7 @@ class ResolutionScope(
                 else -> null
             }?.recordLookup(declaration.name, location)
         }
-        givens.forEach { recordLookup(it.callable) }
+        givens.forEach { recordLookup(it.value.callable) }
         constrainedGivens.forEach { recordLookup(it.callable.callable) }
     }
 
@@ -157,11 +179,11 @@ class ResolutionScope(
             val thisGivens = givens
                 .asSequence()
                 .filter {
-                    it.type.frameworkKey == type.frameworkKey
-                            && it.type.isAssignableTo(context, type) &&
-                            it.isApplicable()
+                    it.value.type.frameworkKey == type.frameworkKey
+                            && it.value.type.isAssignableTo(context, type) &&
+                            it.value.isApplicable()
                 }
-                .map { it.toGivenNode(type, this) }
+                .map { it.value.toGivenNode(type, this) }
                 .toList()
                 .takeIf { it.isNotEmpty() }
             val parentGivens = parent?.givensForType(type)
@@ -248,16 +270,17 @@ class ResolutionScope(
                 .toList()
                 .asSequence()
                 .filter {
-                    it.type.frameworkKey == type.frameworkKey
-                            && it.type.isAssignableTo(context, type) &&
-                            it.isApplicable()
+                    it.second.type.frameworkKey == type.frameworkKey
+                            && it.second.type.isAssignableTo(context, type) &&
+                            it.second.isApplicable()
                 }
-                .map { it.substitute(getSubstitutionMap(context, listOf(type to it.type))) }
+                .map { it.second.substitute(getSubstitutionMap(context, listOf(type to it.second.type))) }
+                .sortedWith { a, b -> compareCallable(a, b) }
                 .map { callable ->
                     val typeWithFrameworkKey = type.copy(
                         frameworkKey = generateFrameworkKey()
                     )
-                    givens += callable.copy(type = typeWithFrameworkKey)
+                    addGivenIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey))
                     typeWithFrameworkKey
                 }
                 .toList()
@@ -315,7 +338,7 @@ class ResolutionScope(
         val newGivenType = constrainedGiven.callable.type.substitute(outputsSubstitutionMap)
         val newGiven = constrainedGiven.callable.substituteInputs(inputsSubstitutionMap)
             .copy(
-                fromGivenConstraint = true,
+                constrainedGivenSource = candidate.source,
                 typeArguments = constrainedGiven.callable
                     .typeArguments
                     .mapValues { it.value.substitute(inputsSubstitutionMap) },
@@ -330,25 +353,26 @@ class ResolutionScope(
             trace = trace,
             addGiven = { newInnerGiven ->
                 val finalNewInnerGiven = newInnerGiven
-                    .copy(fromGivenConstraint = true)
-                givens += finalNewInnerGiven
+                    .copy(constrainedGivenSource = candidate.source)
+                addGivenIfAbsentOrBetter(finalNewInnerGiven)
                 val newInnerGivenWithFrameworkKey = finalNewInnerGiven.copy(
                     type = finalNewInnerGiven.type.copy(
                         frameworkKey = generateFrameworkKey()
                             .also { constrainedGiven.resultingFrameworkKeys += it }
                     )
                 )
-                givens += newInnerGivenWithFrameworkKey
+                addGivenIfAbsentOrBetter(newInnerGivenWithFrameworkKey)
                 val newCandidate = ConstrainedGivenCandidate(
                     type = newInnerGivenWithFrameworkKey.type,
-                    rawType = finalNewInnerGiven.type
+                    rawType = finalNewInnerGiven.type,
+                    source = candidate.source
                 )
                 constrainedGivenCandidates += newCandidate
                 collectConstrainedGivens(newCandidate)
             },
             addAbstractGiven = { newInnerAbstractGiven ->
                 val finalNewInnerAbstractGiven = newInnerAbstractGiven
-                    .copy(fromGivenConstraint = true)
+                    .copy(constrainedGivenSource = candidate.source)
                 abstractGivens += finalNewInnerAbstractGiven
                 val newInnerGivenWithFrameworkKey = finalNewInnerAbstractGiven.copy(
                     type = finalNewInnerAbstractGiven.type.copy(
@@ -359,14 +383,15 @@ class ResolutionScope(
                 abstractGivens += newInnerGivenWithFrameworkKey
                 val newCandidate = ConstrainedGivenCandidate(
                     type = newInnerGivenWithFrameworkKey.type,
-                    rawType = finalNewInnerAbstractGiven.type
+                    rawType = finalNewInnerAbstractGiven.type,
+                    source = candidate.source
                 )
                 constrainedGivenCandidates += newCandidate
                 collectConstrainedGivens(newCandidate)
             },
             addConstrainedGiven = { newInnerConstrainedGiven ->
                 val finalNewInnerConstrainedGiven = newInnerConstrainedGiven
-                    .copy(fromGivenConstraint = true)
+                    .copy(constrainedGivenSource = candidate.source)
                 val newConstrainedGiven = ConstrainedGivenNode(finalNewInnerConstrainedGiven)
                 constrainedGivens += newConstrainedGiven
                 constrainedGivenCandidates
@@ -381,7 +406,7 @@ class ResolutionScope(
     /**
      * A callable is not applicable if it is a given constructor parameter property
      * of a given class but not in the scope.
-     * Without removing the property this would result in a divergent request
+     * without removing the property this would result in a divergent request
      */
     private fun CallableRef.isApplicable(): Boolean {
         if (callable !is PropertyDescriptor ||

@@ -446,10 +446,10 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     if (diff < 0) return -1
     if (diff > 0) return 1
 
-    val isAFromGivenConstraint = a is CallableGivenNode && a.callable.fromGivenConstraint
-    val isBFromGivenConstraint = b is CallableGivenNode && b.callable.fromGivenConstraint
-    if (isAFromGivenConstraint && !isBFromGivenConstraint) return -1
-    if (isBFromGivenConstraint && !isAFromGivenConstraint) return 1
+    val isAFromConstrainedGiven = a is CallableGivenNode && a.callable.constrainedGivenSource != null
+    val isBFromConstrainedGiven = b is CallableGivenNode && b.callable.constrainedGivenSource != null
+    if (isAFromConstrainedGiven && !isBFromConstrainedGiven) return -1
+    if (isBFromConstrainedGiven && !isAFromConstrainedGiven) return 1
 
     if (callContext == a.callContext &&
             callContext != b.callContext) return -1
@@ -469,7 +469,60 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     return 0
 }
 
-private fun compareType(a: TypeRef, b: TypeRef): Int {
+fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
+    if (a === b) return 0
+    if (a != null && b == null) return -1
+    if (b != null && a == null) return 1
+    if (a == null && b == null) return 0
+    a!!
+    b!!
+
+    if (a.originalType == a.type && b.originalType != a.type) return -1
+    if (b.originalType == b.type && a.originalType != b.type) return 1
+
+    var diff = compareType(a.originalType, b.originalType)
+    if (diff < 0) return -1
+    if (diff > 0) return 1
+
+    if (!a.callable.isExternalDeclaration() &&
+        b.callable.isExternalDeclaration()) return -1
+    if (!b.callable.isExternalDeclaration() &&
+        a.callable.isExternalDeclaration()) return 1
+
+    if (a.parameterTypes.size < b.parameterTypes.size) return -1
+    if (b.parameterTypes.size < a.parameterTypes.size) return 1
+
+    diff = 0
+    for (aDependency in a.parameterTypes) {
+        for (bDependency in b.parameterTypes) {
+            diff += compareType(aDependency.value, bDependency.value)
+        }
+    }
+    if (diff < 0) return -1
+    if (diff > 0) return 1
+
+    val isAFromGivenConstraint = a.constrainedGivenSource != null
+    val isBFromGivenConstraint = b.constrainedGivenSource != null
+    if (isAFromGivenConstraint && !isBFromGivenConstraint) return -1
+    if (isBFromGivenConstraint && !isAFromGivenConstraint) return 1
+
+    if (callContext == a.callContext &&
+        callContext != b.callContext) return -1
+    if (callContext == b.callContext &&
+        callContext != a.callContext) return 1
+
+    if (a.callable.containingDeclaration ==
+        b.callable.containingDeclaration) {
+        val aOverriddenTreeSize = a.callable.overriddenTreeUniqueAsSequence(true).count()
+        val bOverriddenTreeSize = b.callable.overriddenTreeUniqueAsSequence(true).count()
+        if (aOverriddenTreeSize < bOverriddenTreeSize) return -1
+        if (bOverriddenTreeSize < aOverriddenTreeSize) return 1
+    }
+
+    return 0
+}
+
+fun compareType(a: TypeRef, b: TypeRef): Int {
     if (a === b) return 0
     if (!a.isStarProjection && b.isStarProjection) return -1
     if (a.isStarProjection && !b.isStarProjection) return 1

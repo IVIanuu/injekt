@@ -20,6 +20,7 @@ import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.irShouldContain
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.shouldNotContainMessage
 import com.ivianuu.injekt.test.source
@@ -28,7 +29,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
-class GivenConstraintTest {
+class ConstrainedGivenTest {
 
     @Test
     fun testGivenWithGivenConstraint() = codegen(
@@ -428,5 +429,34 @@ class GivenConstraintTest {
 
             fun invoke() = given<Foo>()
         """
-    )
+    ) {
+        irShouldContain(1, "classSingleton<@ClassSingleton MyModule")
+    }
+
+    @Test
+    fun testConstrainedGivenWithModuleLikeConstrainedReturnType2() = codegen(
+        """
+            @Qualifier
+            annotation class ClassSingleton
+            
+            @Given
+            inline fun <@Given T : @ClassSingleton U, reified U : Any> classSingleton(
+                @Given factory: () -> T,
+                @Given scope: AppGivenScope
+            ): U = scope.getOrCreateScopedValue(U::class, factory)
+
+            class MyModule<T : S, S> {
+                @Given fun value(@Given v: T): S = v
+            }
+
+            @Given fun <@Given T : @Qualifier1 S, S> myModule():
+                @ClassSingleton MyModule<T, S> = MyModule()
+
+            @Given val foo: @Qualifier1 Foo = Foo()
+
+            fun invoke() = given<Set<Foo>>()
+        """
+    ) {
+        irShouldContain(1, "setOf")
+    }
 }
