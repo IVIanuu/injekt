@@ -29,12 +29,6 @@ class CommonGivensTest {
     }
 
     @Test
-    fun testCanRequestLazy() {
-        @Given fun foo() = Foo()
-        val lazyFoo = given<Lazy<Foo>>()
-    }
-
-    @Test
     fun testCanRequestKClass() {
         val clazz = given<KClass<Foo>>()
     }

@@ -29,14 +29,6 @@ inline fun <K, V> setOfPairsToMap(
     @Given pairs: Set<Pair<K, V>>
 ): Map<K, V> = pairs.toMap()
 
-/**
- * Converts a () -> T to a [Lazy<T>]
- */
-@Given
-inline fun <T> providerToLazy(@Given crossinline provider: () -> T): Lazy<T> = lazy {
-    provider()
-}
-
 @Given
 inline fun <reified T : Any> givenKClass(): KClass<T> = T::class
 
