@@ -26,6 +26,7 @@ import com.ivianuu.injekt.android.activityGivenScope
 import com.ivianuu.injekt.scope.GivenScopeElementBinding
 import com.ivianuu.injekt.samples.android.ui.SampleAppUi
 import com.ivianuu.injekt.samples.android.ui.SampleTheme
+import com.ivianuu.injekt.scope.element
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

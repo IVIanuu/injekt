@@ -19,21 +19,21 @@ package com.ivianuu.injekt.scope
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.common.ForTypeKey
 
-class ChildGivenScopeModule0<P : GivenScope, @ForTypeKey S : GivenScope> {
+class ChildGivenScopeModule0<P : GivenScope, S : GivenScope> {
     @Given
     fun factory(
         @Given scopeFactory: (@Given Unit) -> S // todo change type to () -> S once fixed
     ): @GivenScopeElementBinding<P> () -> S = { scopeFactory(Unit) }
 }
 
-class ChildGivenScopeModule1<P : GivenScope, @ForTypeKey P1, @ForTypeKey S : GivenScope> {
+class ChildGivenScopeModule1<P : GivenScope, P1, S : GivenScope> {
     @Given
     fun factory(
         @Given scopeFactory: (@Given @GivenScopeElementBinding<S> P1) -> S
     ): @GivenScopeElementBinding<P> (P1) -> S = scopeFactory
 }
 
-class ChildGivenScopeModule2<P : GivenScope, @ForTypeKey P1, @ForTypeKey P2, @ForTypeKey S : GivenScope> {
+class ChildGivenScopeModule2<P : GivenScope, P1, P2, S : GivenScope> {
     @Given
     fun factory(
         @Given scopeFactory: (
@@ -43,7 +43,7 @@ class ChildGivenScopeModule2<P : GivenScope, @ForTypeKey P1, @ForTypeKey P2, @Fo
     ): @GivenScopeElementBinding<P> (P1, P2) -> S = scopeFactory
 }
 
-class ChildGivenScopeModule3<P : GivenScope, @ForTypeKey P1, @ForTypeKey P2, @ForTypeKey P3, @ForTypeKey S : GivenScope> {
+class ChildGivenScopeModule3<P : GivenScope, P1, P2, P3, S : GivenScope> {
     @Given
     fun factory(
         @Given scopeFactory: (
@@ -54,7 +54,7 @@ class ChildGivenScopeModule3<P : GivenScope, @ForTypeKey P1, @ForTypeKey P2, @Fo
     ): @GivenScopeElementBinding<P> (P1, P2, P3) -> S = scopeFactory
 }
 
-class ChildGivenScopeModule4<P : GivenScope, @ForTypeKey P1, @ForTypeKey P2, @ForTypeKey P3, @ForTypeKey P4, @ForTypeKey S : GivenScope> {
+class ChildGivenScopeModule4<P : GivenScope, P1, P2, P3, P4, S : GivenScope> {
     @Given
     fun factory(
         @Given scopeFactory: (
@@ -66,7 +66,7 @@ class ChildGivenScopeModule4<P : GivenScope, @ForTypeKey P1, @ForTypeKey P2, @Fo
     ): @GivenScopeElementBinding<P> (P1, P2, P3, P4) -> S = scopeFactory
 }
 
-class ChildGivenScopeModule5<P : GivenScope, @ForTypeKey P1, @ForTypeKey P2, @ForTypeKey P3, @ForTypeKey P4, @ForTypeKey P5, @ForTypeKey S : GivenScope> {
+class ChildGivenScopeModule5<P : GivenScope, P1, P2, P3, P4, P5, S : GivenScope> {
     @Given
     fun factory(
         @Given scopeFactory: (

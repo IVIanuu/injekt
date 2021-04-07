@@ -31,6 +31,7 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.scope.ChildGivenScopeModule1
 import com.ivianuu.injekt.scope.DefaultGivenScope
 import com.ivianuu.injekt.scope.GivenScope
+import com.ivianuu.injekt.scope.element
 
 val ComponentActivity.activityGivenScope: ActivityGivenScope
     get() = lifecycle.givenScope {

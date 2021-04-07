@@ -26,6 +26,7 @@ import com.ivianuu.injekt.scope.AppGivenScope
 import com.ivianuu.injekt.scope.ChildGivenScopeModule1
 import com.ivianuu.injekt.scope.DefaultGivenScope
 import com.ivianuu.injekt.scope.GivenScope
+import com.ivianuu.injekt.scope.element
 
 fun Service.createServiceGivenScope(): ServiceGivenScope =
     application.appGivenScope.element<(Service) -> ServiceGivenScope>()(this)

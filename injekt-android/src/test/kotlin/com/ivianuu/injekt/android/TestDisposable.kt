@@ -18,6 +18,7 @@ package com.ivianuu.injekt.android
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.common.ForTypeKey
+import com.ivianuu.injekt.common.TypeKey
 import com.ivianuu.injekt.scope.GivenScope
 import com.ivianuu.injekt.scope.GivenScopeElementBinding
 import com.ivianuu.injekt.scope.GivenScopeDisposable
@@ -31,6 +32,9 @@ class TestGivenScopeDisposable<S : GivenScope> : GivenScopeDisposable {
 }
 
 @Given
-fun <@ForTypeKey S : GivenScope> testGivenScopeDisposable(
-    @Given scope: S
-): @GivenScopeElementBinding<S> TestGivenScopeDisposable<S> = scope.getOrCreateScopedValue { TestGivenScopeDisposable() }
+fun <S : GivenScope> testGivenScopeDisposable(
+    @Given scope: S,
+    @Given key: TypeKey<S>
+): @GivenScopeElementBinding<S> TestGivenScopeDisposable<S> = scope.getOrCreateScopedValue(key) {
+    TestGivenScopeDisposable()
+}

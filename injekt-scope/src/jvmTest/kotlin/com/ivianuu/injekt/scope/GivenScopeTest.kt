@@ -17,8 +17,8 @@
 package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.common.typeKeyOf
 import com.ivianuu.injekt.given
+import com.ivianuu.injekt.common.*
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe

@@ -20,6 +20,7 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.given
 import io.kotest.matchers.shouldBe
 import org.junit.Test
+import com.ivianuu.injekt.common.*
 
 class EagerTest {
     @Test

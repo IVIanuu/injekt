@@ -22,6 +22,7 @@ import com.ivianuu.injekt.scope.AppGivenScope
 import com.ivianuu.injekt.scope.ChildGivenScopeModule0
 import com.ivianuu.injekt.scope.DefaultGivenScope
 import com.ivianuu.injekt.scope.GivenScope
+import com.ivianuu.injekt.scope.element
 
 val ComponentActivity.activityRetainedGivenScope: ActivityRetainedGivenScope
     get() = viewModelStore.givenScope {

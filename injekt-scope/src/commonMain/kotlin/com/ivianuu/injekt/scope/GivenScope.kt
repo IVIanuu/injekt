@@ -36,7 +36,7 @@ interface GivenScope : GivenScopeDisposable {
     /**
      * Returns the element [T] or throws
      */
-    fun <@ForTypeKey T : Any> element(): T
+    fun <T : Any> element(key: TypeKey<T>): T
     /**
      * Returns the scoped value [T] for [key] or null
      */
@@ -60,6 +60,8 @@ fun interface GivenScopeDisposable {
      */
     fun dispose()
 }
+
+fun <@ForTypeKey T : Any> GivenScope.element(): T = element(typeKeyOf<T>())
 
 /**
  * Returns an existing instance of [T] for key [key] or creates and caches a new instance by calling function [init]
@@ -144,12 +146,15 @@ typealias GivenScopeElement<@Suppress("unused", "UNUSED_TYPEALIAS_PARAMETER") S>
 annotation class GivenScopeElementBinding<S : GivenScope>
 
 @Given
-class GivenScopeElementModule<@Given T : @GivenScopeElementBinding<S> U, @ForTypeKey U : Any, S : GivenScope> {
+class GivenScopeElementModule<@Given T : @GivenScopeElementBinding<S> U, U : Any, S : GivenScope> {
     @Given
-    fun elementIntoSet(@Given factory: () -> T): GivenScopeElement<S> = typeKeyOf<U>() to factory
+    fun elementIntoSet(
+        @Given factory: () -> T,
+        @Given key: TypeKey<U>
+    ): GivenScopeElement<S> = key to factory
 
     @Given
-    fun element(@Given scope: S): U = scope.element()
+    fun element(@Given scope: S, @Given key: TypeKey<U>): U = scope.element(key)
 }
 
 /**
@@ -176,11 +181,8 @@ internal class GivenScopeImpl : GivenScope {
     val elements = mutableMapOf<TypeKey<*>, () -> Any>()
     private val scopedValues = mutableMapOf<Any, Any>()
 
-    override fun <@ForTypeKey T : Any> element(): T {
-        val key = typeKeyOf<T>()
-        return elements[key]?.invoke() as? T
-            ?: error("No element found for $key in $this")
-    }
+    override fun <T : Any> element(key: TypeKey<T>): T = elements[key]?.invoke() as? T
+        ?: error("No element found for $key in $this")
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : Any> getScopedValueOrNull(key: Any): T? =

@@ -19,6 +19,7 @@ package com.ivianuu.injekt.scope
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.common.ForTypeKey
+import com.ivianuu.injekt.common.TypeKey
 
 /**
  * Converts a [@Scoped<S> T] to a [T] which is scoped to the lifecycle of [S]
@@ -41,7 +42,8 @@ import com.ivianuu.injekt.common.ForTypeKey
 annotation class Scoped<S : GivenScope>
 
 @Given
-inline fun <@Given T : @Scoped<S> U, @ForTypeKey U : Any, S : GivenScope> scopedImpl(
+inline fun <@Given T : @Scoped<S> U, U : Any, S : GivenScope> scopedImpl(
     @Given scope: S,
-    @Given factory: () -> T
-): U = scope.getOrCreateScopedValue<U>(factory)
+    @Given factory: () -> T,
+    @Given key: TypeKey<U>
+): U = scope.getOrCreateScopedValue<U>(key, factory)
