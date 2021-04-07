@@ -55,7 +55,7 @@ class GivenScopeTest {
         val childScopeModule =
             ChildGivenScopeModule1<TestGivenScope1, String, TestGivenScope2>()
         val parentScope = given<TestGivenScope1>()
-        val childScope = parentScope.element<(String) -> TestGivenScope2>()("42")
+        val childScope = parentScope.element<@ChildGivenScopeFactory (String) -> TestGivenScope2>()("42")
         childScope.element<String>() shouldBe "42"
     }
 
