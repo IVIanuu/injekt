@@ -747,7 +747,7 @@ class GivenResolutionTest {
     @Test
     fun testPrimaryConstructorGivenWithReceiver() = codegen(
         """
-                fun invoke(foo: Foo) = withGiven(UsesFoo(foo)) {
+                fun invoke(foo: Foo) = with(UsesFoo(foo)) {
                     given<Foo>()
                 }
 
@@ -802,7 +802,7 @@ class GivenResolutionTest {
         """
             class Dep(@Given val foo: Foo)
             fun invoke(foo: Foo): Foo {
-                return withGiven(Dep(foo)) { given<Foo>() }
+                return with(Dep(foo)) { given<Foo>() }
             }
         """
     ) {
