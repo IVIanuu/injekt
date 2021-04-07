@@ -172,5 +172,4 @@ class ModuleTest {
             fun invoke() = given<Bar>()
         """
     )
-
 }

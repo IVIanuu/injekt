@@ -61,6 +61,7 @@ object InjektWritableSlices {
         RewritePolicy.DO_NOTHING
     )
     val CLASSIFIER_FOR_KEY = BasicWritableSlice<String, ClassifierDescriptor>(RewritePolicy.DO_NOTHING)
+    val IS_OPTIMIZABLE_MODULE = BasicWritableSlice<ClassDescriptor, Boolean>(RewritePolicy.DO_NOTHING)
 }
 
 data class SourcePosition(
