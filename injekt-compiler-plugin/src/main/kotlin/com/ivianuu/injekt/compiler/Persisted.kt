@@ -42,14 +42,14 @@ inline fun <reified T> String.decode(): T = Json.decodeFromString(this)
 @Serializable
 data class PersistedCallableInfo(
     @SerialName("0") val type: PersistedTypeRef,
-    @SerialName("1") val typeParameters: List<PersistedClassifierRef> = emptyList(),
+    @SerialName("1") val typeParameters: List<PersistedClassifierInfo> = emptyList(),
     @SerialName("2") val parameterTypes: Map<String, PersistedTypeRef> = emptyMap(),
     @SerialName("3") val givenParameters: Set<String> = emptySet()
 )
 
 fun CallableRef.toPersistedCallableInfo(context: InjektContext) = PersistedCallableInfo(
     type = type.toPersistedTypeRef(context),
-    typeParameters = typeParameters.map { it.toPersistedClassifierRef(context) },
+    typeParameters = typeParameters.map { it.toPersistedClassifierInfo(context) },
     parameterTypes = parameterTypes
         .mapValues { it.value.toPersistedTypeRef(context) },
     givenParameters = givenParameters
@@ -57,7 +57,7 @@ fun CallableRef.toPersistedCallableInfo(context: InjektContext) = PersistedCalla
 
 @Serializable
 data class PersistedClassifierInfo(
-    @SerialName("0") val fqName: String,
+    @SerialName("0") val key: String,
     @SerialName("1") val qualifiers: List<PersistedTypeRef> = emptyList(),
     @SerialName("2") val superTypes: List<PersistedTypeRef> = emptyList(),
     @SerialName("3") val primaryConstructorPropertyParameters: List<String> = emptyList(),
@@ -67,7 +67,15 @@ data class PersistedClassifierInfo(
 )
 
 fun ClassifierRef.toPersistedClassifierInfo(context: InjektContext) = PersistedClassifierInfo(
-    fqName = descriptor!!.fqNameSafe.asString(),
+    key = if (descriptor is TypeParameterDescriptor) {
+        descriptor.containingDeclaration
+            .safeAs<ClassConstructorDescriptor>()
+            ?.constructedClass
+            ?.declaredTypeParameters
+            ?.single { it.name == descriptor.name }
+            ?.uniqueKey(context)
+            ?: descriptor.uniqueKey(context)
+    } else descriptor!!.uniqueKey(context),
     qualifiers = qualifiers.map { it.toPersistedTypeRef(context) },
     superTypes = superTypes.map { it.toPersistedTypeRef(context) },
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
@@ -114,40 +122,7 @@ fun PersistedTypeRef.toTypeRef(context: InjektContext, trace: BindingTrace?): Ty
         )
 }
 
-@Serializable
-data class PersistedClassifierRef(
-    @SerialName("0") val key: String,
-    @SerialName("1") val superTypes: List<PersistedTypeRef> = emptyList(),
-    @SerialName("2") val qualifiers: List<PersistedTypeRef> = emptyList(),
-    @SerialName("3") val primaryConstructorPropertyParameters: List<String> = emptyList(),
-    @SerialName("4") val forTypeKeyTypeParameters: List<String> = emptyList(),
-    @SerialName("5") val givenConstraintTypeParameters: List<String> = emptyList(),
-    @SerialName("6") val isOptimizableModule: Boolean = false
-)
-
-fun ClassifierRef.toPersistedClassifierRef(
-    context: InjektContext
-) = PersistedClassifierRef(
-    key = if (descriptor is TypeParameterDescriptor) {
-        descriptor.containingDeclaration
-            .safeAs<ClassConstructorDescriptor>()
-            ?.constructedClass
-            ?.declaredTypeParameters
-            ?.single { it.name == descriptor.name }
-            ?.uniqueKey(context)
-            ?: descriptor.uniqueKey(context)
-     } else descriptor!!.uniqueKey(context),
-    superTypes = superTypes.map { it.toPersistedTypeRef(context) },
-    qualifiers = qualifiers.map { it.toPersistedTypeRef(context) },
-    primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
-        .map { it.asString() },
-    forTypeKeyTypeParameters = forTypeKeyTypeParameters
-        .map { it.asString() },
-    givenConstraintTypeParameters = givenConstraintTypeParameters
-        .map { it.asString() }
-)
-
-fun PersistedClassifierRef.toClassifierRef(
+fun PersistedClassifierInfo.toClassifierRef(
     context: InjektContext,
     trace: BindingTrace?
 ): ClassifierRef {
@@ -165,14 +140,3 @@ fun PersistedClassifierRef.toClassifierRef(
             else raw
         }
 }
-
-fun PersistedClassifierRef.toPersistedClassifierInfo() = PersistedClassifierInfo(
-    fqName = key.split(":")[1],
-    qualifiers = qualifiers,
-    superTypes = superTypes,
-    primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-    forTypeKeyTypeParameters = forTypeKeyTypeParameters,
-    givenConstraintTypeParameters = givenConstraintTypeParameters,
-    isOptimizableModule = isOptimizableModule
-)
-

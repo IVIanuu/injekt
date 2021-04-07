@@ -76,7 +76,6 @@ class InjektContext(val module: ModuleDescriptor) {
                     val fqName = FqName(it.key.split(":")[1])
                     fqName == descriptor.fqNameSafe
                 }
-                ?.toPersistedClassifierInfo()
         trace?.record(InjektWritableSlices.CLASSIFIER_INFO, descriptor, Tuple1(classifierInfo))
         return classifierInfo
     }
