@@ -353,7 +353,10 @@ class ResolutionScope(
             trace = trace,
             addGiven = { newInnerGiven ->
                 val finalNewInnerGiven = newInnerGiven
-                    .copy(constrainedGivenSource = candidate.source)
+                    .copy(
+                        constrainedGivenSource = candidate.source,
+                        originalType = newInnerGiven.type
+                    )
                 addGivenIfAbsentOrBetter(finalNewInnerGiven)
                 val newInnerGivenWithFrameworkKey = finalNewInnerGiven.copy(
                     type = finalNewInnerGiven.type.copy(
@@ -372,7 +375,10 @@ class ResolutionScope(
             },
             addAbstractGiven = { newInnerAbstractGiven ->
                 val finalNewInnerAbstractGiven = newInnerAbstractGiven
-                    .copy(constrainedGivenSource = candidate.source)
+                    .copy(
+                        constrainedGivenSource = candidate.source,
+                        originalType = newInnerAbstractGiven.type
+                    )
                 abstractGivens += finalNewInnerAbstractGiven
                 val newInnerGivenWithFrameworkKey = finalNewInnerAbstractGiven.copy(
                     type = finalNewInnerAbstractGiven.type.copy(
@@ -391,7 +397,10 @@ class ResolutionScope(
             },
             addConstrainedGiven = { newInnerConstrainedGiven ->
                 val finalNewInnerConstrainedGiven = newInnerConstrainedGiven
-                    .copy(constrainedGivenSource = candidate.source)
+                    .copy(
+                        constrainedGivenSource = candidate.source,
+                        originalType = newInnerConstrainedGiven.type
+                    )
                 val newConstrainedGiven = ConstrainedGivenNode(finalNewInnerConstrainedGiven)
                 constrainedGivens += newConstrainedGiven
                 constrainedGivenCandidates

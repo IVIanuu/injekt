@@ -425,6 +425,16 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     }
 
     if (a is CallableGivenNode && b is CallableGivenNode) {
+        if (a.callable.callable.containingDeclaration ==
+            b.callable.callable.containingDeclaration) {
+            val aOverriddenTreeSize = a.callable.callable.overriddenTreeUniqueAsSequence(true).count()
+            val bOverriddenTreeSize = b.callable.callable.overriddenTreeUniqueAsSequence(true).count()
+            if (aOverriddenTreeSize < bOverriddenTreeSize) return -1
+            if (bOverriddenTreeSize < aOverriddenTreeSize) return 1
+        }
+    }
+
+    if (a is CallableGivenNode && b is CallableGivenNode) {
         if (!a.callable.callable.isExternalDeclaration() &&
             b.callable.callable.isExternalDeclaration()) return -1
         if (!b.callable.callable.isExternalDeclaration() &&
@@ -455,16 +465,6 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
             callContext != b.callContext) return -1
     if (callContext == b.callContext &&
         callContext != a.callContext) return 1
-
-    if (a is CallableGivenNode && b is CallableGivenNode) {
-        if (a.callable.callable.containingDeclaration ==
-            b.callable.callable.containingDeclaration) {
-            val aOverriddenTreeSize = a.callable.callable.overriddenTreeUniqueAsSequence(true).count()
-            val bOverriddenTreeSize = b.callable.callable.overriddenTreeUniqueAsSequence(true).count()
-            if (aOverriddenTreeSize < bOverriddenTreeSize) return -1
-            if (bOverriddenTreeSize < aOverriddenTreeSize) return 1
-        }
-    }
 
     return 0
 }

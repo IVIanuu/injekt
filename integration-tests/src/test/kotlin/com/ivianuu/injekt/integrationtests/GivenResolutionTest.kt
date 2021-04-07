@@ -606,6 +606,26 @@ class GivenResolutionTest {
     )
 
     @Test
+    fun testPrefersModuleGivenConstraint() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Given class MyModule<@Given T : @Qualifier1 S, S> {
+                        @Given fun unqualified(@Given v: T): S = v 
+                    }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                   fun invoke() = given<(@Given @Qualifier1 TypeKey<Foo>) -> TypeKey<Foo>>() 
+                """
+            )
+        )
+    )
+
+    @Test
     fun testPrefersGivenConstraintWithBetterTypeOverNonGivenConstraint() = codegen(
         """
             typealias Collector<T> = (T) -> Unit
