@@ -25,7 +25,7 @@ import com.ivianuu.injekt.Given
 typealias SampleTheme = @Composable (@Composable () -> Unit) -> Unit
 
 @Given
-fun sampleTheme(): SampleTheme = { content ->
+val sampleTheme: SampleTheme = { content ->
     MaterialTheme(colors = darkColors()) {
         Surface(content = content)
     }

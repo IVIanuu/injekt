@@ -46,9 +46,7 @@ import kotlinx.coroutines.launch
 typealias SampleAppUi = @Composable () -> Unit
 
 @Given
-fun sampleUi(
-    @Given viewModel: CounterViewModel
-): SampleAppUi = {
+fun sampleUi(@Given viewModel: CounterViewModel): SampleAppUi = {
     Scaffold(
         topBar = {
             TopAppBar(
