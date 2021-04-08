@@ -105,7 +105,7 @@ class GivenCallTransformer(
     private inner class GraphContext(val graph: GivenGraph.Success) {
         val statements = mutableListOf<IrStatement>()
 
-        var parameterIndex = 0
+        var variableIndex = 0
 
         private val graphContextParents = buildList<ResolutionScope> {
             var current: ResolutionScope? = graph.scope.parent
@@ -222,7 +222,8 @@ class GivenCallTransformer(
                             tmpVariable = irTemporary(
                                 value = irNull(),
                                 isMutable = true,
-                                irType = resultType.makeNullable()
+                                irType = resultType.makeNullable(),
+                                nameHint = "${graphContext.variableIndex++}"
                             )
                         } as IrBlock
                 }
@@ -320,7 +321,10 @@ class GivenCallTransformer(
         if (!result.shouldCache(graphContext)) return rawExpressionProvider()
         return with(findScopeContext(result.outerMostScope)) {
             cachedExpressions.getOrPut(result.candidate.type) {
-                val variable = irScope.createTemporaryVariable(rawExpressionProvider())
+                val variable = irScope.createTemporaryVariable(
+                    rawExpressionProvider(),
+                    nameHint = "tmp${graphContext.variableIndex++}"
+                )
                 statements += variable
                 val expression: ScopeContext.() -> IrExpression = {
                     DeclarationIrBuilder(pluginContext, symbol)
@@ -495,7 +499,7 @@ class GivenCallTransformer(
     ): IrExpression = DeclarationIrBuilder(pluginContext, symbol)
         .irLambda(
             given.type.toIrType(pluginContext, localClasses, context),
-            parameterNameProvider = { "p${graphContext.parameterIndex++}" }
+            parameterNameProvider = { "p${graphContext.variableIndex++}" }
         ) { function ->
             val dependencyScopeContext = ScopeContext(
                 this@providerExpression, graphContext, given.dependencyScopes.values.single(), scope)
@@ -599,7 +603,8 @@ class GivenCallTransformer(
                                     this@GivenCallTransformer.context
                                 )
                             )
-                        }
+                        },
+                    nameHint = "${graphContext.variableIndex++}"
                 )
 
                 result.dependencyResults
