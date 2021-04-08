@@ -323,7 +323,7 @@ class GivenCallTransformer(
             cachedExpressions.getOrPut(result.candidate.type) {
                 val variable = irScope.createTemporaryVariable(
                     rawExpressionProvider(),
-                    nameHint = "tmp${graphContext.variableIndex++}"
+                    nameHint = "${graphContext.variableIndex++}"
                 )
                 statements += variable
                 val expression: ScopeContext.() -> IrExpression = {

@@ -106,7 +106,7 @@ class ExpressionWrappingTest {
         """
     ) {
         irShouldNotContain("local fun <anonymous>(): Function0<Foo> {")
-        irShouldContain(1, "val tmp0: Function0<Foo> = local fun <anonymous>(): Foo {")
+        irShouldContain(1, "val tmp0_0: Function0<Foo> = local fun <anonymous>(): Foo {")
     }
 
     @Test
@@ -118,7 +118,7 @@ class ExpressionWrappingTest {
             }
         """
     ) {
-        irShouldNotContain("val tmp0: Function0<Foo> = local fun <anonymous>(): Foo {")
+        irShouldNotContain("val tmp0_0: Function0<Foo> = local fun <anonymous>(): Foo {")
     }
 
     @Test
@@ -132,7 +132,7 @@ class ExpressionWrappingTest {
             }
         """
     ) {
-        irShouldNotContain("val tmp0: Function0<Foo> = local fun <anonymous>(): Foo {")
+        irShouldNotContain("val tmp0_0: Function0<Foo> = local fun <anonymous>(): Foo {")
     }
 
     @Test
