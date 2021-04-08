@@ -24,60 +24,83 @@ import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.irShouldContain
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
 class GivenSetTest {
 
     @Test
-    fun testSimpleSet() = codegen(
+    fun testSet() = codegen(
         """
-            @Given fun commandA(): Command = CommandA()
-            @Given fun commandB(): Command = CommandB() 
+            @Given fun commandA() = CommandA()
+            @Given fun commandsB() = setOf(CommandB())
             fun invoke() = given<Set<Command>>()
         """
     ) {
         val set = invokeSingleFile<Set<Command>>().toList()
         set.size shouldBe 2
-        set
-            .filterIsInstance<CommandA>()
-            .shouldHaveSize(1)
-        set
-            .filterIsInstance<CommandB>()
-            .shouldHaveSize(1)
+        set[0].shouldBeTypeOf<CommandA>()
+        set[1].shouldBeTypeOf<CommandB>()
     }
 
     @Test
     fun testNestedSet() = codegen(
         """
-            @Given fun commandA(): Command = CommandA()
+            @Given fun commandA() = CommandA()
 
             class InnerObject {
-                @Given fun commandB(): Command = CommandB()
+                @Given fun commandsB() = listOf(CommandB())
                 val set = given<Set<Command>>()
             }
 
             fun invoke() = given<Set<Command>>() to InnerObject().set
         """
     ) {
-        val (parentSet, childSet) = invokeSingleFile<Pair<Set<Command>, Set<Command>>>().toList()
+        val (parentSet, childSet) = invokeSingleFile<Pair<Set<Command>, Set<Command>>>()
+            .let { it.first.toList() to it.second.toList() }
         parentSet.size shouldBe 1
-        parentSet
-            .filterIsInstance<CommandA>()
-            .shouldHaveSize(1)
+        parentSet[0].shouldBeTypeOf<CommandA>()
         childSet.size shouldBe 2
-        childSet
-            .filterIsInstance<CommandA>()
-            .shouldHaveSize(1)
-        childSet
-            .filterIsInstance<CommandB>()
-            .shouldHaveSize(1)
+        childSet[0].shouldBeTypeOf<CommandA>()
+        childSet[1].shouldBeTypeOf<CommandB>()
     }
 
     @Test
-    fun testSetWithoutContributions() = codegen(
+    fun testSetWithSingleElement() = codegen(
+        """
+            @Given fun commandA() = CommandA()
+            fun invoke() = given<Set<Command>>()
+        """
+    ) {
+        irShouldContain(1, "setOf")
+    }
+
+    @Test
+    fun testSetWithSingleCollectionElement() = codegen(
+        """
+            @Given fun commandA() = listOf(CommandA())
+            fun invoke() = given<Set<Command>>()
+        """
+    ) {
+        irShouldContain(1, "toSet")
+    }
+
+    @Test
+    fun testSetWithSingleSetCollectionElement() = codegen(
+        """
+            @Given fun commandA() = setOf(CommandA())
+            fun invoke() = given<Set<Command>>()
+        """
+    ) {
+        irShouldContain(1, "given<Set<Command>>(value = commandA())")
+    }
+
+    @Test
+    fun testSetWithoutElements() = codegen(
         """
             fun invoke() = given<Set<Command>>()
         """
@@ -118,40 +141,13 @@ class GivenSetTest {
             fun invoke() = given<Set<() -> Command>>() to InnerObject().set
         """
     ) {
-        val (parentSet, childSet) = invokeSingleFile<Pair<Set<() -> Command>, Set<() -> Command>>>().toList()
+        val (parentSet, childSet) = invokeSingleFile<Pair<Set<() -> Command>, Set<() -> Command>>>()
+            .let { it.first.toList() to it.second.toList() }
         parentSet.size shouldBe 1
-        parentSet
-            .map { it() }
-            .filterIsInstance<CommandA>()
-            .shouldHaveSize(1)
+        parentSet[0]().shouldBeTypeOf<CommandA>()
         childSet.size shouldBe 2
-        childSet
-            .map { it() }
-            .filterIsInstance<CommandA>()
-            .shouldHaveSize(1)
-        childSet
-            .map { it() }
-            .filterIsInstance<CommandB>()
-            .shouldHaveSize(1)
-    }
-
-    @Test
-    fun testPrefersExplicitProviderSetOverImplicitProviderSet() = codegen(
-        """
-            @Given
-            lateinit var explicitProviderElement: () -> Foo
-
-            @Given
-            val nonProviderElement = Foo()
-            fun invoke(explicitProvider: () -> Foo): Set<() -> Foo> {
-                explicitProviderElement = explicitProvider
-                return given<Set<() -> Foo>>()
-            }
-        """
-    ) {
-        val explicitProvider: () -> Foo = { Foo() }
-        val set = invokeSingleFile<Set<() -> Foo>>(explicitProvider)
-        explicitProvider shouldBeSameInstanceAs set.single()
+        childSet[0]().shouldBeTypeOf<CommandA>()
+        childSet[1]().shouldBeTypeOf<CommandB>()
     }
 
     @Test

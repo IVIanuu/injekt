@@ -24,7 +24,6 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -198,9 +197,9 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
     val result = if (userGivens != null) {
         resolveCandidates(request, userGivens)
     } else {
-        val frameworkCandidate = frameworkGivenForType(request.type)
-        if (frameworkCandidate != null) {
-            resolveCandidates(request, frameworkCandidate)
+        val frameworkCandidates = frameworkGivensForType(request.type)
+        if (frameworkCandidates != null) {
+            resolveCandidates(request, frameworkCandidates)
         } else {
             ResolutionResult.Failure.NoCandidates
         }

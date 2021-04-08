@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
@@ -35,8 +35,11 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 @Suppress("NewApi")
 class InjektContext(val module: ModuleDescriptor) {
 
-    val setType by unsafeLazy {
-        module.builtIns.set.defaultType.toTypeRef(this, null)
+    val setClassifier by unsafeLazy {
+        module.builtIns.set.toClassifierRef(this, null)
+    }
+    val collectionClassifier by unsafeLazy {
+        module.builtIns.collection.toClassifierRef(this, null)
     }
 
     fun callableInfoFor(

@@ -81,6 +81,7 @@ import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.makeNullable
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -520,51 +521,102 @@ class GivenCallTransformer(
     private val mutableSetOf = pluginContext.referenceFunctions(
         FqName("kotlin.collections.mutableSetOf")
     ).single { it.owner.valueParameters.isEmpty() }
-
     private val setAdd = mutableSetOf.owner.returnType
         .classOrNull!!
         .owner
         .functions
         .single { it.name.asString() == "add" }
-
+    private val setAddAll = mutableSetOf.owner.returnType
+        .classOrNull!!
+        .owner
+        .functions
+        .single { it.name.asString() == "addAll" }
     private val setOf = pluginContext.referenceFunctions(
         FqName("kotlin.collections.setOf")
     ).single { it.owner.valueParameters.singleOrNull()?.isVararg == false }
-
-    private val emptySet = pluginContext.referenceFunctions(
-        FqName("kotlin.collections.emptySet")
-    ).single()
+    private val iterableToSet = pluginContext.referenceFunctions(
+        FqName("kotlin.collections.toSet")
+    ).single {
+        it.owner.extensionReceiverParameter?.type?.classifierOrNull?.descriptor ==
+                pluginContext.builtIns.iterable
+    }
 
     private fun ScopeContext.setExpression(
         result: ResolutionResult.Success.WithCandidate.Value,
         given: SetGivenNode
-    ): IrExpression {
-        val elementType = given.type.arguments.single()
-        return when  {
-            given.dependencies.isEmpty() -> DeclarationIrBuilder(pluginContext, symbol)
-                .irCall(emptySet)
-                .apply {
-                    putTypeArgument(0, elementType.toIrType(pluginContext, localClasses, context))
+    ): IrExpression = when (given.dependencies.size) {
+        1 -> {
+            val singleDependency =
+                result.dependencyResults.values.single()
+                    .cast<ResolutionResult.Success.WithCandidate.Value>()
+            when {
+                singleDependency.candidate.type.isAssignableTo(context, given.type) ->
+                    expressionFor(result.dependencyResults.values.single().cast())
+                singleDependency.candidate.type.isAssignableTo(context, given.collectionElementType) -> {
+                    DeclarationIrBuilder(pluginContext, symbol)
+                        .irCall(iterableToSet)
+                        .apply {
+                            extensionReceiver =
+                                expressionFor(result.dependencyResults.values.single().cast())
+                            putTypeArgument(
+                                0,
+                                given.singleElementType.toIrType(
+                                    pluginContext,
+                                    localClasses,
+                                    context
+                                )
+                            )
+                        }
                 }
-            given.dependencies.size == 1 -> DeclarationIrBuilder(pluginContext, symbol)
-                .irCall(setOf)
-                .apply {
-                    putTypeArgument(0, elementType.toIrType(pluginContext, localClasses, context))
-                    putValueArgument(0, expressionFor(result.dependencyResults.values.single().cast()))
-                }
-            else -> DeclarationIrBuilder(pluginContext, symbol).irBlock {
+                else -> DeclarationIrBuilder(pluginContext, symbol)
+                    .irCall(setOf)
+                    .apply {
+                        putTypeArgument(
+                            0,
+                            given.singleElementType.toIrType(
+                                pluginContext,
+                                localClasses,
+                                context
+                            )
+                        )
+                        putValueArgument(
+                            0,
+                            expressionFor(result.dependencyResults.values.single().cast())
+                        )
+                    }
+            }
+        }
+        else -> {
+            DeclarationIrBuilder(pluginContext, symbol).irBlock {
                 val tmpSet = irTemporary(
                     irCall(mutableSetOf)
                         .apply {
-                            putTypeArgument(0, elementType.toIrType(pluginContext, localClasses, this@GivenCallTransformer.context))
+                            putTypeArgument(
+                                0,
+                                given.singleElementType.toIrType(
+                                    pluginContext,
+                                    localClasses,
+                                    this@GivenCallTransformer.context
+                                )
+                            )
                         }
                 )
 
                 result.dependencyResults
-                    .forEach { dependencyResult ->
-                        +irCall(setAdd).apply {
-                            dispatchReceiver = irGet(tmpSet)
-                            putValueArgument(0, expressionFor(dependencyResult.value.cast()))
+                    .forEach { (_, dependency) ->
+                        dependency as ResolutionResult.Success.WithCandidate.Value
+                        if (dependency.candidate.type.isAssignableTo(
+                                this@GivenCallTransformer.context,
+                                given.collectionElementType)) {
+                            +irCall(setAddAll).apply {
+                                dispatchReceiver = irGet(tmpSet)
+                                putValueArgument(0, expressionFor(dependency))
+                            }
+                        } else {
+                            +irCall(setAdd).apply {
+                                dispatchReceiver = irGet(tmpSet)
+                                putValueArgument(0, expressionFor(dependency))
+                            }
                         }
                     }
 

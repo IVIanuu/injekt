@@ -201,7 +201,7 @@ fun <K, V> List<K>.toMap(values: List<V>): Map<K, V> {
 }
 
 private var currentFrameworkKey = 0
-fun generateFrameworkKey() = currentFrameworkKey++.toString()
+fun generateFrameworkKey() = currentFrameworkKey++
 
 data class Tuple1<T>(val value: T)
 
