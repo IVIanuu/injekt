@@ -105,4 +105,15 @@ class ModuleOptimizationTest {
         irShouldNotContain("var INSTANCE: MyModule")
     }
 
+    @Test
+    fun testDoesNotOptimizeGivenWithoutGivens() = codegen(
+        """
+            @Given class MyModule
+            @Given val foo = Foo()
+            fun invoke() = given<Foo>()
+        """
+    ) {
+        irShouldNotContain("var INSTANCE: MyModule")
+    }
+
 }

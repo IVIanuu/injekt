@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.GivenFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.getGivenConstructor
+import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.uniqueTypeName
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -255,7 +256,9 @@ fun ClassifierDescriptor.isOptimizableModule(
             getGivenConstructor(context, trace)?.callable?.valueParameters?.isEmpty() == true &&
             declaredTypeParameters.none { it.isForTypeKey(context, trace) } &&
             unsubstitutedMemberScope.getContributedDescriptors()
-                .none { it is PropertyDescriptor && it.backingField != null }
+                .none { it is PropertyDescriptor && it.backingField != null } &&
+            unsubstitutedMemberScope.getContributedDescriptors()
+                .any { it.isGiven(context, trace) }
 
     if (!isOptimizableModule && original.isExternalDeclaration()) {
         isOptimizableModule = context.classifierInfoFor(this, trace)
