@@ -153,7 +153,7 @@ sealed class TypeRef {
     abstract val isGiven: Boolean
     abstract val isStarProjection: Boolean
     abstract val qualifiers: List<TypeRef>
-    abstract val frameworkKey: String?
+    abstract val frameworkKey: Int?
 
     private val typeName by unsafeLazy { uniqueTypeName() }
 
@@ -276,7 +276,7 @@ class KotlinTypeRef(
             .map { it.type.toTypeRef(context, trace) }
             .sortedQualifiers()
     }
-    override val frameworkKey: String?
+    override val frameworkKey: Int?
         get() = null
 }
 
@@ -288,7 +288,7 @@ class SimpleTypeRef(
     override val isGiven: Boolean = false,
     override val isStarProjection: Boolean = false,
     override val qualifiers: List<TypeRef> = emptyList(),
-    override val frameworkKey: String? = null
+    override val frameworkKey: Int? = null
 ) : TypeRef() {
     init {
         check(arguments.size == classifier.typeParameters.size) {
@@ -312,7 +312,7 @@ fun TypeRef.copy(
     isGiven: Boolean = this.isGiven,
     isStarProjection: Boolean = this.isStarProjection,
     qualifiers: List<TypeRef> = this.qualifiers,
-    frameworkKey: String? = this.frameworkKey
+    frameworkKey: Int? = this.frameworkKey
 ): SimpleTypeRef = SimpleTypeRef(
     classifier,
     isMarkedNullable,
