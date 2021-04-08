@@ -24,6 +24,7 @@ import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.irShouldContain
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
+import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -555,6 +556,37 @@ class GivenResolutionTest {
         """
     ) {
         invokeSingleFile() shouldBe listOf(listOf("a", "b", "c"))
+    }
+
+    @Test
+    fun testPrefersMoreSpecificType3() = codegen(
+        """
+            interface Logger
+            @Given class LoggerImpl : Logger
+            @Given object NoopLogger : Logger
+            @Given fun logger(
+                @Given loggerProvider: () -> LoggerImpl,
+                @Given noopLoggerProvider: () -> NoopLogger
+            ): Logger = TODO()
+            fun invoke() = given<Logger>()
+        """
+    ) {
+        shouldThrowAny { invokeSingleFile() }
+    }
+
+    @Test
+    fun testPrefersMoreSpecificType4() = codegen(
+        """
+            interface Logger
+            open class IntermediateLogger : Logger
+            open class IntermediateLogger2 : IntermediateLogger()
+            open class IntermediateLogger3 : IntermediateLogger2()
+            @Given class WorseLogger : IntermediateLogger3()
+            @Given class BetterLogger : IntermediateLogger2()
+            fun invoke() = given<IntermediateLogger>()
+        """
+    ) {
+        irShouldContain(1, "given<IntermediateLogger>(value = BetterLogger())")
     }
 
     @Test

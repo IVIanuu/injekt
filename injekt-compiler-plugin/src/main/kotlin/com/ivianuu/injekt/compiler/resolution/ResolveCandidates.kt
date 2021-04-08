@@ -411,8 +411,18 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     a!!
     b!!
 
-    if (a.originalType == a.type && b.originalType != a.type) return -1
-    if (b.originalType == b.type && a.originalType != b.type) return 1
+    val aSubtypeDepth = when {
+        a.originalType.isSubTypeOf(context, a.type) -> a.originalType.subtypeDepth(a.type.classifier)
+        a.type.isSubTypeOf(context, a.originalType) -> a.type.subtypeDepth(a.originalType.classifier)
+        else -> -1
+    }
+    val bSubtypeDepth = when {
+        b.originalType.isSubTypeOf(context, b.type) -> b.originalType.subtypeDepth(b.type.classifier)
+        b.type.isSubTypeOf(context, b.originalType) -> b.type.subtypeDepth(b.originalType.classifier)
+        else -> -1
+    }
+    if (aSubtypeDepth != -1 && aSubtypeDepth < bSubtypeDepth) return -1
+    if (bSubtypeDepth != -1 && bSubtypeDepth < aSubtypeDepth) return 1
 
     var diff = compareType(a.originalType, b.originalType)
     if (diff < 0) return -1
@@ -473,8 +483,18 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     a!!
     b!!
 
-    if (a.originalType == a.type && b.originalType != a.type) return -1
-    if (b.originalType == b.type && a.originalType != b.type) return 1
+    val aSubtypeDepth = when {
+        a.originalType.isSubTypeOf(context, a.type) -> a.originalType.subtypeDepth(a.type.classifier)
+        a.type.isSubTypeOf(context, a.originalType) -> a.type.subtypeDepth(a.originalType.classifier)
+        else -> -1
+    }
+    val bSubtypeDepth = when {
+        b.originalType.isSubTypeOf(context, b.type) -> b.originalType.subtypeDepth(b.type.classifier)
+        b.type.isSubTypeOf(context, b.originalType) -> b.type.subtypeDepth(b.originalType.classifier)
+        else -> -1
+    }
+    if (aSubtypeDepth != -1 && aSubtypeDepth < bSubtypeDepth) return -1
+    if (bSubtypeDepth != -1 && bSubtypeDepth < aSubtypeDepth) return 1
 
     var diff = compareType(a.originalType, b.originalType)
     if (diff < 0) return -1
