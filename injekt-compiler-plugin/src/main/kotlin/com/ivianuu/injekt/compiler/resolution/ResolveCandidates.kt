@@ -411,6 +411,10 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     a!!
     b!!
 
+    var diff = compareType(a.originalType, b.originalType)
+    if (diff < 0) return -1
+    if (diff > 0) return 1
+
     val aSubtypeDepth = when {
         a.originalType.isSubTypeOf(context, a.type) -> a.originalType.subtypeDepth(a.type.classifier)
         a.type.isSubTypeOf(context, a.originalType) -> a.type.subtypeDepth(a.originalType.classifier)
@@ -423,10 +427,6 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     }
     if (aSubtypeDepth != -1 && aSubtypeDepth < bSubtypeDepth) return -1
     if (bSubtypeDepth != -1 && bSubtypeDepth < aSubtypeDepth) return 1
-
-    var diff = compareType(a.originalType, b.originalType)
-    if (diff < 0) return -1
-    if (diff > 0) return 1
 
     if (!a.isFrameworkGiven && !b.isFrameworkGiven) {
         if (a.ownerScope.allParents.size > b.ownerScope.allParents.size) return -1
@@ -483,6 +483,10 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     a!!
     b!!
 
+    var diff = compareType(a.originalType, b.originalType)
+    if (diff < 0) return -1
+    if (diff > 0) return 1
+
     val aSubtypeDepth = when {
         a.originalType.isSubTypeOf(context, a.type) -> a.originalType.subtypeDepth(a.type.classifier)
         a.type.isSubTypeOf(context, a.originalType) -> a.type.subtypeDepth(a.originalType.classifier)
@@ -495,10 +499,6 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     }
     if (aSubtypeDepth != -1 && aSubtypeDepth < bSubtypeDepth) return -1
     if (bSubtypeDepth != -1 && bSubtypeDepth < aSubtypeDepth) return 1
-
-    var diff = compareType(a.originalType, b.originalType)
-    if (diff < 0) return -1
-    if (diff > 0) return 1
 
     if (a.owner != null && a.owner == b.owner) {
         if (a.overriddenDepth < b.overriddenDepth) return -1
