@@ -98,6 +98,12 @@ object Deps {
 
     const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"
 
+    object Ktor {
+        private const val version = "1.5.3"
+        const val core = "io.ktor:ktor-server-core:$version"
+        const val serverTestHost = "io.ktor:ktor-server-test-host:$version"
+    }
+
     const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.14.2"
 
     const val mockk = "io.mockk:mockk:1.11.0"

@@ -22,6 +22,7 @@ import com.ivianuu.injekt.common.TypeKey
 import com.ivianuu.injekt.scope.GivenScope
 import com.ivianuu.injekt.scope.GivenScopeElementBinding
 import com.ivianuu.injekt.scope.GivenScopeDisposable
+import com.ivianuu.injekt.scope.Scoped
 import com.ivianuu.injekt.scope.getOrCreateScopedValue
 
 class TestGivenScopeDisposable<S : GivenScope> : GivenScopeDisposable {
@@ -32,9 +33,6 @@ class TestGivenScopeDisposable<S : GivenScope> : GivenScopeDisposable {
 }
 
 @Given
-fun <S : GivenScope> testGivenScopeDisposable(
-    @Given scope: S,
-    @Given key: TypeKey<TestGivenScopeDisposable<S>>
-): @GivenScopeElementBinding<S> TestGivenScopeDisposable<S> = scope.getOrCreateScopedValue(key) {
+fun <S : GivenScope> testGivenScopeDisposable():
+        @GivenScopeElementBinding<S> @Scoped<S> TestGivenScopeDisposable<S> =
     TestGivenScopeDisposable()
-}

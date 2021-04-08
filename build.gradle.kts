@@ -16,6 +16,7 @@
 
 import com.ivianuu.injekt.gradle.setupForInjekt
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.model.KotlinAndroidExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
@@ -88,6 +89,15 @@ allprojects {
             }
         } else if (pluginManager.hasPlugin("org.jetbrains.kotlin.android")) {
             extensions.getByType(KotlinAndroidProjectExtension::class.java).run {
+                project.afterEvaluate {
+                    target.compilations
+                        .forEach {
+                            setupCompilation(it)
+                        }
+                }
+            }
+        } else if (pluginManager.hasPlugin("org.jetbrains.kotlin.jvm")) {
+            extensions.getByType(KotlinJvmProjectExtension::class.java).run {
                 project.afterEvaluate {
                     target.compilations
                         .forEach {
