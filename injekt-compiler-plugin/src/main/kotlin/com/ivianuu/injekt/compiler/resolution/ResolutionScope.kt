@@ -554,7 +554,7 @@ fun HierarchicalResolutionScope(
                         ?: ResolutionScope(
                             name = "FUNCTION ${function.fqNameSafe}",
                             context = context,
-                            callContext = function.callContext,
+                            callContext = function.callContext(trace.bindingContext),
                             parent = parent,
                             ownerDescriptor = function,
                             trace = trace,

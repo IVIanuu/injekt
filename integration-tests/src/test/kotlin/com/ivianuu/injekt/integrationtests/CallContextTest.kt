@@ -21,7 +21,6 @@ import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import org.junit.Test
 
 class CallContextTest {
-
     @Test
     fun testSuspendCannotBeRequestedFromNonSuspend() = codegen(
         """
@@ -111,4 +110,31 @@ class CallContextTest {
         """
         )
 
+    @Test
+    fun testSuspendCanBeRequestedFromInlineLambdaInSuspendContext() = codegen(
+        """
+            @Given suspend fun suspendFoo() = Foo()
+            fun invoke() = runBlocking {
+                run {
+                    run {
+                        given<Foo>()
+                    }
+                }
+            }
+        """
+    )
+
+    @Test
+    fun testComposableCanBeRequestedFromInlineLambdaInComposableContext() = codegen(
+        """
+            @Given @Composable fun composableFoo() = Foo()
+            @Composable fun invoke() {
+                run {
+                    run {
+                        given<Foo>()
+                    }
+                }
+            }
+        """
+    )
 }

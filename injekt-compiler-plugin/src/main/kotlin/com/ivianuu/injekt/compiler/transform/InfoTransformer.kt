@@ -56,7 +56,7 @@ import java.lang.reflect.Modifier
 class InfoTransformer(
     private val context: InjektContext,
     private val pluginContext: IrPluginContext,
-    private val trace: BindingTrace?
+    private val trace: BindingTrace
 ) : IrElementTransformerVoid() {
 
     @Suppress("NewApi")
@@ -69,7 +69,7 @@ class InfoTransformer(
                 .run {
                     val info = declaration.descriptor.toClassifierRef(this@InfoTransformer.context,
                         null)
-                        .toPersistedClassifierInfo(this@InfoTransformer.context)
+                        .toPersistedClassifierInfo(this@InfoTransformer.context, trace)
                     val serializedValue = info.encode()
                     irCall(
                         pluginContext.referenceClass(InjektFqNames.ClassifierInfo)!!
@@ -103,7 +103,7 @@ class InfoTransformer(
             }
         }
         if (descriptor is AnnotatedImpl && (isGiven || hasGivenParameters || requiresTypeFix)) {
-            val info = callableRef.toPersistedCallableInfo(this@InfoTransformer.context)
+            val info = callableRef.toPersistedCallableInfo(this@InfoTransformer.context, trace)
             val serializedValue = info.encode()
 
             val field = AnnotatedImpl::class.java.declaredFields
@@ -153,7 +153,7 @@ class InfoTransformer(
             }
         }
         if (descriptor is AnnotatedImpl && (declaration.hasAnnotation(InjektFqNames.Given) || requiresTypeFix)) {
-            val info = callableRef.toPersistedCallableInfo(this@InfoTransformer.context)
+            val info = callableRef.toPersistedCallableInfo(this@InfoTransformer.context, trace)
             val serializedValue = info.encode()
 
             val field = AnnotatedImpl::class.java.declaredFields

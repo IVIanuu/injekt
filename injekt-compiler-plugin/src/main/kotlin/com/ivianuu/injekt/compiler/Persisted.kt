@@ -47,9 +47,12 @@ data class PersistedCallableInfo(
     @SerialName("3") val givenParameters: Set<String> = emptySet()
 )
 
-fun CallableRef.toPersistedCallableInfo(context: InjektContext) = PersistedCallableInfo(
+fun CallableRef.toPersistedCallableInfo(
+    context: InjektContext,
+    trace: BindingTrace
+) = PersistedCallableInfo(
     type = type.toPersistedTypeRef(context),
-    typeParameters = typeParameters.map { it.toPersistedClassifierInfo(context) },
+    typeParameters = typeParameters.map { it.toPersistedClassifierInfo(context, trace) },
     parameterTypes = parameterTypes
         .mapValues { it.value.toPersistedTypeRef(context) },
     givenParameters = givenParameters
@@ -66,7 +69,10 @@ data class PersistedClassifierInfo(
     @SerialName("6") val isOptimizableModule: Boolean = false
 )
 
-fun ClassifierRef.toPersistedClassifierInfo(context: InjektContext) = PersistedClassifierInfo(
+fun ClassifierRef.toPersistedClassifierInfo(
+    context: InjektContext,
+    trace: BindingTrace
+) = PersistedClassifierInfo(
     key = if (descriptor is TypeParameterDescriptor) {
         descriptor.containingDeclaration
             .safeAs<ClassConstructorDescriptor>()
@@ -84,7 +90,7 @@ fun ClassifierRef.toPersistedClassifierInfo(context: InjektContext) = PersistedC
         .map { it.asString() },
     givenConstraintTypeParameters = givenConstraintTypeParameters
         .map { it.asString() },
-    isOptimizableModule = descriptor.isOptimizableModule(context, null)
+    isOptimizableModule = descriptor.isOptimizableModule(context, trace)
 )
 
 @Serializable

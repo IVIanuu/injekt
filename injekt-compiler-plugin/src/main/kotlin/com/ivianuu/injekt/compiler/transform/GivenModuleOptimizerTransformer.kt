@@ -32,7 +32,7 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 
 class GivenModuleOptimizerTransformer(
     private val context: InjektContext,
-    private val trace: BindingTrace?,
+    private val trace: BindingTrace,
     private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
     private val ignoredExpressions = mutableListOf<IrExpression>()

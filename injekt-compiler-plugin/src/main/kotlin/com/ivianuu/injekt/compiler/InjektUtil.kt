@@ -246,10 +246,10 @@ fun TypeParameterDescriptor.isForTypeKey(
 
 fun ClassifierDescriptor.isOptimizableModule(
     context: InjektContext,
-    trace: BindingTrace?
+    trace: BindingTrace
 ): Boolean {
     if (this !is ClassDescriptor) return false
-    trace?.get(InjektWritableSlices.IS_OPTIMIZABLE_MODULE, this)?.let {
+    trace.get(InjektWritableSlices.IS_OPTIMIZABLE_MODULE, this)?.let {
         return it
     }
     var isOptimizableModule = kind == ClassKind.CLASS &&
@@ -265,6 +265,6 @@ fun ClassifierDescriptor.isOptimizableModule(
             ?.isOptimizableModule == true
     }
 
-    trace?.record(InjektWritableSlices.IS_OPTIMIZABLE_MODULE, this, isOptimizableModule)
+    trace.record(InjektWritableSlices.IS_OPTIMIZABLE_MODULE, this, isOptimizableModule)
     return isOptimizableModule
 }

@@ -95,18 +95,18 @@ fun CallableRef.makeGiven(): CallableRef = if (isGiven) this else copy(isGiven =
 
 fun CallableDescriptor.toCallableRef(
     context: InjektContext,
-    trace: BindingTrace?
+    trace: BindingTrace
 ): CallableRef {
-    trace?.get(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this)?.let { return it }
+    trace.get(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this)?.let { return it }
     val info = if (original.isExternalDeclaration()) context.callableInfoFor(this, trace)
     else null
     val type = info?.type?.toTypeRef(context, trace)
         ?: kotlin.run {
             val psi = findPsi()
             if (psi is KtProperty && psi.initializer != null) {
-                trace?.get(InjektWritableSlices.EXPECTED_TYPE, psi.initializer)
+                trace.get(InjektWritableSlices.EXPECTED_TYPE, psi.initializer)
             } else if (psi is KtFunction && psi.bodyExpression != null) {
-                trace?.get(InjektWritableSlices.EXPECTED_TYPE, psi.bodyExpression)
+                trace.get(InjektWritableSlices.EXPECTED_TYPE, psi.bodyExpression)
             } else null
         }
         ?: returnType!!.toTypeRef(context, trace)
@@ -136,17 +136,17 @@ fun CallableDescriptor.toCallableRef(
             .toMap(),
         isGiven = isGiven(context, trace),
         constrainedGivenSource = null,
-        callContext = callContext,
+        callContext = callContext(trace.bindingContext),
         owner = null,
         overriddenDepth = 0
     ).also {
-        trace?.record(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this, it)
+        trace.record(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this, it)
     }
 }
 
 fun TypeRef.collectGivens(
     context: InjektContext,
-    trace: BindingTrace?
+    trace: BindingTrace
 ): List<CallableRef> {
     // special case to support @Given () -> Foo
     if (isGiven && isFunctionTypeWithOnlyGivenParameters) {
@@ -202,7 +202,7 @@ fun TypeRef.collectGivens(
 
 fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
     context: InjektContext,
-    trace: BindingTrace?
+    trace: BindingTrace
 ): List<CallableRef> = getContributedDescriptors()
     .flatMap { declaration ->
         when (declaration) {
@@ -271,7 +271,7 @@ fun Annotated.isGiven(context: InjektContext, trace: BindingTrace?): Boolean {
 
 fun ClassDescriptor.getGivenConstructor(
     context: InjektContext,
-    trace: BindingTrace?
+    trace: BindingTrace
 ): CallableRef? {
     trace?.get(InjektWritableSlices.GIVEN_CONSTRUCTOR, this)?.let { return it.value }
     val rawGivenConstructor = if (isGiven(context, trace))
@@ -323,7 +323,7 @@ class AbstractGivenFakeConstructor(
 fun CallableRef.collectGivens(
     context: InjektContext,
     scope: ResolutionScope,
-    trace: BindingTrace?,
+    trace: BindingTrace,
     addGiven: (CallableRef) -> Unit,
     addAbstractGiven: (CallableRef) -> Unit,
     addConstrainedGiven: (CallableRef) -> Unit
