@@ -39,7 +39,7 @@ class GivenValueParameterDescriptor(
     trace: BindingTrace
 ) : ValueParameterDescriptorImpl(
     parent,
-    null,
+    underlyingDescriptor,
     underlyingDescriptor.index,
     underlyingDescriptor.annotations,
     underlyingDescriptor.name,

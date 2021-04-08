@@ -192,7 +192,13 @@ fun ResolutionScope.resolveRequests(
 }
 
 private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult {
-    resultsByType[request.type]?.let { return it }
+    // do not cache inlined providers because the call context can be different
+    // which can lead to unexpected results
+    val isInlineProviderCandidateType = request.isInline &&
+            request.type.frameworkKey == null &&
+            request.type.qualifiers.isEmpty() &&
+            request.type.isFunctionTypeWithOnlyGivenParameters
+    if (!isInlineProviderCandidateType) resultsByType[request.type]?.let { return it }
     val userGivens = givensForType(request.type)
     val result = if (userGivens != null) {
         resolveCandidates(request, userGivens)
@@ -204,10 +210,7 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
             ResolutionResult.Failure.NoCandidates
         }
     }
-    // do not cache inlined providers because the call context can be different
-    if (!request.isInline ||
-        result !is ResolutionResult.Success.WithCandidate.Value ||
-        result.candidate !is ProviderGivenNode) resultsByType[request.type] = result
+    if (!isInlineProviderCandidateType) resultsByType[request.type] = result
     return result
 }
 

@@ -20,14 +20,12 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringGiven
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektName
-import com.ivianuu.injekt.compiler.toMap
 import com.ivianuu.injekt.compiler.transform.toKotlinType
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
@@ -36,6 +34,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.inline.InlineUtil
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 sealed class GivenNode {
@@ -253,14 +252,14 @@ fun CallableRef.getGivenRequests(
                 it.isGiven(context, trace) ||
                 parameterTypes[it.injektName()]!!.isGiven
     }
-    .map { callable ->
-        val name = callable.injektName()
+    .map { parameter ->
+        val name = parameter.injektName()
         GivenRequest(
             type = parameterTypes[name]!!,
-            isRequired = callable !is ValueParameterDescriptor || !callable.hasDefaultValueIgnoringGiven,
-            callableFqName = callableFqNameProvider(callable),
+            isRequired = parameter !is ValueParameterDescriptor || !parameter.hasDefaultValueIgnoringGiven,
+            callableFqName = callableFqNameProvider(parameter),
             parameterName = name.asNameId(),
-            isInline = this.callable is FunctionDescriptor && this.callable.isInline,
+            isInline = InlineUtil.isInlineParameter(parameter),
             isLazy = false
         )
     }
