@@ -36,14 +36,11 @@ annotation class WorkerBinding
 
 @Given
 fun <@Given T : @WorkerBinding S, S : ListenableWorker> workerBindingImpl(
-    @Given provider: (@Given WorkerContext, @Given WorkerParameters) -> T,
+    @Given provider: (@Given WorkerParameters) -> T,
     @Given workerClass: KClass<S>
 ): Pair<String, SingleWorkerFactory> = workerClass.java.name to provider
 
-typealias WorkerContext = Context
-
-internal typealias SingleWorkerFactory =
-            (WorkerContext, WorkerParameters) -> ListenableWorker
+internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
 
 @Given
 val AppContext.workManager: WorkManager
@@ -57,8 +54,5 @@ class InjektWorkerFactory(
         appContext: Context,
         workerClassName: String,
         workerParameters: WorkerParameters,
-    ): ListenableWorker? {
-        val workerFactory = workers[workerClassName] ?: return null
-        return workerFactory(appContext, workerParameters)
-    }
+    ): ListenableWorker? = workers[workerClassName]?.invoke(workerParameters)
 }

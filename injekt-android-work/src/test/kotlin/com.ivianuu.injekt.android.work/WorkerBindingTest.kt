@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android.work
 
+import android.content.Context
 import androidx.work.Worker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
@@ -34,7 +35,7 @@ import com.ivianuu.injekt.common.*
 class WorkerBindingTest {
     @Test
     fun testWorkerBinding() {
-        val workerFactory = given<WorkerFactory>()
+        val workerFactory = given<(@Given Context) -> WorkerFactory>()(mockk())
         workerFactory.createWorker(mockk(), TestWorker::class.java.name, mockk())
             .shouldNotBeNull()
     }
@@ -43,7 +44,7 @@ class WorkerBindingTest {
 @WorkerBinding
 @Given
 class TestWorker(
-    @Given appContext: WorkerContext,
+    @Given appContext: Context,
     @Given workerParams: WorkerParameters
 ) : Worker(appContext, workerParams) {
     override fun doWork(): Result = Result.success()
