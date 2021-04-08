@@ -149,7 +149,7 @@ class CallContextTest {
         """
     )
 
-    // todo our code works but compose does not respect it @Test
+    // todo our code works but compose compiler does not get that the lambda is inlined @Test
     fun testComposableCanBeRequestFromInlineProviderInComposableContext() = codegen(
         """
             @Given @Composable fun composableFoo() = Foo()
