@@ -197,14 +197,17 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
     val result = if (userGivens != null) {
         resolveCandidates(request, userGivens)
     } else {
-        val frameworkCandidates = frameworkGivensForType(request.type)
+        val frameworkCandidates = frameworkGivensForRequest(request)
         if (frameworkCandidates != null) {
             resolveCandidates(request, frameworkCandidates)
         } else {
             ResolutionResult.Failure.NoCandidates
         }
     }
-    resultsByType[request.type] = result
+    // do not cache inlined providers because the call context can be different
+    if (!request.isInline ||
+        result !is ResolutionResult.Success.WithCandidate.Value ||
+        result.candidate !is ProviderGivenNode) resultsByType[request.type] = result
     return result
 }
 

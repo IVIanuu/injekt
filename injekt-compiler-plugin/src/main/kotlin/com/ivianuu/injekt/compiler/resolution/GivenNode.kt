@@ -93,7 +93,8 @@ class SetGivenNode(
 
 class ProviderGivenNode(
     override val type: TypeRef,
-    override val ownerScope: ResolutionScope
+    override val ownerScope: ResolutionScope,
+    dependencyCallContext: CallContext
 ) : GivenNode() {
     override val callableFqName: FqName = when (type.callContext) {
         CallContext.DEFAULT -> FqName("com.ivianuu.injekt.providerOf")
@@ -118,7 +119,7 @@ class ProviderGivenNode(
             callableFqName.shortName().asString(),
             parent = ownerScope,
             context = ownerScope.context,
-            callContext = type.callContext,
+            callContext = dependencyCallContext,
             ownerDescriptor = ownerScope.ownerDescriptor,
             trace = ownerScope.trace,
             initialGivens = type

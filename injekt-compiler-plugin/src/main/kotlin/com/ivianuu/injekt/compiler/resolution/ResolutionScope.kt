@@ -195,20 +195,22 @@ class ResolutionScope(
         }
     }
 
-    fun frameworkGivensForType(type: TypeRef): List<GivenNode>? {
-        if (type.frameworkKey == null &&
-            type.qualifiers.isEmpty() &&
-            type.isFunctionTypeWithOnlyGivenParameters) {
+    fun frameworkGivensForRequest(request: GivenRequest): List<GivenNode>? {
+        if (request.type.frameworkKey == null &&
+            request.type.qualifiers.isEmpty() &&
+            request.type.isFunctionTypeWithOnlyGivenParameters) {
             return listOf(
                 ProviderGivenNode(
-                    type = type,
-                    ownerScope = this
+                    type = request.type,
+                    ownerScope = this,
+                    dependencyCallContext = if (request.isInline) callContext
+                    else request.type.callContext
                 )
             )
-        } else if (type.frameworkKey == null &&
-            type.qualifiers.isEmpty() &&
-            type.classifier == context.setClassifier) {
-            val singleElementType = type.arguments[0]
+        } else if (request.type.frameworkKey == null &&
+            request.type.qualifiers.isEmpty() &&
+            request.type.classifier == context.setClassifier) {
+            val singleElementType = request.type.arguments[0]
             val collectionElementType = context.collectionClassifier.defaultType
                 .typeWith(listOf(singleElementType))
 
@@ -240,7 +242,7 @@ class ResolutionScope(
                         GivenRequest(
                             type = element,
                             isRequired = true,
-                            callableFqName = FqName("com.ivianuu.injekt.givenSetOf<${type.arguments[0].render()}>"),
+                            callableFqName = FqName("com.ivianuu.injekt.givenSetOf<${request.type.arguments[0].render()}>"),
                             parameterName = "element$index".asNameId(),
                             isInline = false,
                             isLazy = false
@@ -248,7 +250,7 @@ class ResolutionScope(
                     }
                 return listOf(
                     SetGivenNode(
-                        type = type,
+                        type = request.type,
                         ownerScope = this,
                         dependencies = elementRequests,
                         singleElementType = singleElementType,
@@ -260,11 +262,11 @@ class ResolutionScope(
             abstractGivens
                 .asSequence()
                 .filter {
-                    it.type.frameworkKey == type.frameworkKey
-                            && it.type.isAssignableTo(context, type) &&
+                    it.type.frameworkKey == request.type.frameworkKey
+                            && it.type.isAssignableTo(context, request.type) &&
                             it.isApplicable()
                 }
-                .map { AbstractGivenNode(type, it.type, this) }
+                .map { AbstractGivenNode(request.type, it.type, this) }
                 .toList()
                 .takeIf { it.isNotEmpty() }
                 ?.let { return it }

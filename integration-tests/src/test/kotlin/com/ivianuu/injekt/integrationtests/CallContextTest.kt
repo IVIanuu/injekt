@@ -137,4 +137,26 @@ class CallContextTest {
             }
         """
     )
+
+    @Test
+    fun testSuspendCanBeRequestFromInlineProviderInSuspendContext() = codegen(
+        """
+            @Given suspend fun suspendFoo() = Foo()
+            suspend inline fun initialize(@Given provider: () -> Foo) {
+            }
+
+            fun invoke() = runBlocking { initialize() }
+        """
+    )
+
+    // todo our code works but compose does not respect it @Test
+    fun testComposableCanBeRequestFromInlineProviderInComposableContext() = codegen(
+        """
+            @Given @Composable fun composableFoo() = Foo()
+            @Composable inline fun initialize(@Given provider: () -> Foo) {
+            }
+
+            @Composable fun invoke() = initialize()
+        """
+    )
 }
