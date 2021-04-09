@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.GivenFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.getGivenConstructor
-import com.ivianuu.injekt.compiler.resolution.isGiven
 import com.ivianuu.injekt.compiler.resolution.uniqueTypeName
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -244,27 +243,25 @@ fun TypeParameterDescriptor.isForTypeKey(
     return isForTypeKey
 }
 
-fun ClassifierDescriptor.isOptimizableModule(
+fun ClassifierDescriptor.isSingletonGiven(
     context: InjektContext,
     trace: BindingTrace
 ): Boolean {
     if (this !is ClassDescriptor) return false
-    trace.get(InjektWritableSlices.IS_OPTIMIZABLE_MODULE, this)?.let {
+    trace.get(InjektWritableSlices.IS_SINGLETON_GIVEN, this)?.let {
         return it
     }
-    var isOptimizableModule = kind == ClassKind.CLASS &&
+    var isSingletonGiven = kind == ClassKind.CLASS &&
             getGivenConstructor(context, trace)?.callable?.valueParameters?.isEmpty() == true &&
             declaredTypeParameters.none { it.isForTypeKey(context, trace) } &&
             unsubstitutedMemberScope.getContributedDescriptors()
-                .none { it is PropertyDescriptor && it.backingField != null } &&
-            unsubstitutedMemberScope.getContributedDescriptors()
-                .any { it.isGiven(context, trace) }
+                .none { it is PropertyDescriptor && it.backingField != null }
 
-    if (!isOptimizableModule && original.isExternalDeclaration()) {
-        isOptimizableModule = context.classifierInfoFor(this, trace)
-            ?.isOptimizableModule == true
+    if (!isSingletonGiven && original.isExternalDeclaration()) {
+        isSingletonGiven = context.classifierInfoFor(this, trace)
+            ?.isOptimizableGiven == true
     }
 
-    trace.record(InjektWritableSlices.IS_OPTIMIZABLE_MODULE, this, isOptimizableModule)
-    return isOptimizableModule
+    trace.record(InjektWritableSlices.IS_SINGLETON_GIVEN, this, isSingletonGiven)
+    return isSingletonGiven
 }

@@ -62,7 +62,7 @@ object InjektWritableSlices {
         RewritePolicy.DO_NOTHING
     )
     val CLASSIFIER_FOR_KEY = BasicWritableSlice<String, ClassifierDescriptor>(RewritePolicy.DO_NOTHING)
-    val IS_OPTIMIZABLE_MODULE = BasicWritableSlice<ClassDescriptor, Boolean>(RewritePolicy.DO_NOTHING)
+    val IS_SINGLETON_GIVEN = BasicWritableSlice<ClassDescriptor, Boolean>(RewritePolicy.DO_NOTHING)
     val EXPECTED_TYPE = BasicWritableSlice<KtExpression, TypeRef>(RewritePolicy.DO_NOTHING)
 }
 

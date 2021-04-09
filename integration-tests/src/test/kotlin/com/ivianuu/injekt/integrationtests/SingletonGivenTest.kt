@@ -8,10 +8,9 @@ import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
 import org.junit.Test
 
-class ModuleOptimizationTest {
-
+class SingletonGivenTest {
     @Test
-    fun testOptimizableModule() = codegen(
+    fun testSingletonGiven() = codegen(
         """
             @Given class MyModule {
                 @Given fun foo() = Foo()
@@ -25,7 +24,7 @@ class ModuleOptimizationTest {
     }
 
     @Test
-    fun testOptimizableModuleMulti() = multiCodegen(
+    fun testSingletonGivenMulti() = multiCodegen(
         listOf(
             source(
                 """
@@ -71,7 +70,7 @@ class ModuleOptimizationTest {
     }
 
     @Test
-    fun testDoesNotModuleOptimizeWithConstructorParameters() = codegen(
+    fun testDoesNotOptimizeGivenWithConstructorParameters() = codegen(
         """
             @Given class MyModule(@Given val foo: Foo)
             @Given val foo = Foo()
@@ -82,7 +81,7 @@ class ModuleOptimizationTest {
     }
 
     @Test
-    fun testDoesNotOptimizeModuleWithForTypeKeyParameters() = codegen(
+    fun testDoesNotOptimizeGivenWithForTypeKeyParameters() = codegen(
         """
             @Given class MyModule<@ForTypeKey T> {
                 @Given val instance = Foo() as T
@@ -94,7 +93,7 @@ class ModuleOptimizationTest {
     }
 
     @Test
-    fun testDoesNotOptimizeModuleWithFields() = codegen(
+    fun testDoesNotOptimizeGivenWithFields() = codegen(
         """
             @Given class MyModule {
                 @Given val foo = Foo()
@@ -104,16 +103,4 @@ class ModuleOptimizationTest {
     ) {
         irShouldNotContain("var INSTANCE: MyModule")
     }
-
-    @Test
-    fun testDoesNotOptimizeGivenWithoutGivens() = codegen(
-        """
-            @Given class MyModule
-            @Given val foo = Foo()
-            fun invoke() = given<Foo>()
-        """
-    ) {
-        irShouldNotContain("var INSTANCE: MyModule")
-    }
-
 }

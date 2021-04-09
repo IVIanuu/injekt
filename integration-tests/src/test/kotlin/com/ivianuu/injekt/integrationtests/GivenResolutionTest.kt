@@ -581,12 +581,13 @@ class GivenResolutionTest {
             open class IntermediateLogger : Logger
             open class IntermediateLogger2 : IntermediateLogger()
             open class IntermediateLogger3 : IntermediateLogger2()
-            @Given class WorseLogger : IntermediateLogger3()
-            @Given class BetterLogger : IntermediateLogger2()
+            @Given class WorseLogger(@Given foo: Foo) : IntermediateLogger3()
+            @Given class BetterLogger(@Given foo: Foo) : IntermediateLogger2()
+            @Given val foo = Foo()
             fun invoke() = given<IntermediateLogger>()
         """
     ) {
-        irShouldContain(1, "given<IntermediateLogger>(value = BetterLogger())")
+        irShouldContain(1, "given<IntermediateLogger>(value = BetterLogger(")
     }
 
     @Test

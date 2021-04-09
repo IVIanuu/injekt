@@ -64,7 +64,7 @@ data class PersistedClassifierInfo(
     @SerialName("3") val primaryConstructorPropertyParameters: List<String> = emptyList(),
     @SerialName("4") val forTypeKeyTypeParameters: List<String> = emptyList(),
     @SerialName("5") val givenConstraintTypeParameters: List<String> = emptyList(),
-    @SerialName("6") val isOptimizableModule: Boolean = false
+    @SerialName("6") val isOptimizableGiven: Boolean = false
 )
 
 fun ClassifierRef.toPersistedClassifierInfo(
@@ -88,7 +88,7 @@ fun ClassifierRef.toPersistedClassifierInfo(
         .map { it.asString() },
     givenConstraintTypeParameters = givenConstraintTypeParameters
         .map { it.asString() },
-    isOptimizableModule = descriptor.isOptimizableModule(context, trace)
+    isOptimizableGiven = descriptor.isSingletonGiven(context, trace)
 )
 
 @Serializable

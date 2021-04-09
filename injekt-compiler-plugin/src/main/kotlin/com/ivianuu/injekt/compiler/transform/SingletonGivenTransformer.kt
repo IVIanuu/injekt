@@ -3,7 +3,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.isExternalDeclaration
-import com.ivianuu.injekt.compiler.isOptimizableModule
+import com.ivianuu.injekt.compiler.isSingletonGiven
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.IrStatement
@@ -24,31 +24,31 @@ import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.resolve.BindingTrace
 
-class GivenModuleOptimizerTransformer(
+class SingletonGivenTransformer(
     private val context: InjektContext,
     private val trace: BindingTrace,
     private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
     private val ignoredExpressions = mutableListOf<IrExpression>()
     override fun visitClass(declaration: IrClass): IrStatement {
-        if (declaration.descriptor.isOptimizableModule(context, trace)) {
-            instanceFieldForModule(declaration)
+        if (declaration.descriptor.isSingletonGiven(context, trace)) {
+            instanceFieldForDeclaration(declaration)
         }
         return super.visitClass(declaration)
     }
 
     override fun visitConstructorCall(expression: IrConstructorCall): IrExpression {
         if (expression in ignoredExpressions) return super.visitConstructorCall(expression)
-        if (expression.type.classifierOrNull?.descriptor?.isOptimizableModule(context, trace) == true)  {
+        if (expression.type.classifierOrNull?.descriptor?.isSingletonGiven(context, trace) == true)  {
             val module = expression.type.classOrNull!!.owner
-            val instanceField = instanceFieldForModule(module)
+            val instanceField = instanceFieldForDeclaration(module)
             return DeclarationIrBuilder(pluginContext, expression.symbol)
                 .irGetField(null, instanceField)
         }
         return super.visitConstructorCall(expression)
     }
 
-    private fun instanceFieldForModule(module: IrClass): IrField {
+    private fun instanceFieldForDeclaration(module: IrClass): IrField {
         module.fields
             .singleOrNull { it.name.asString() == "INSTANCE" }
             ?.let { return it }
