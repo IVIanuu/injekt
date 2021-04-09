@@ -27,7 +27,6 @@ import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
 class GivenDeclarationTest {
-
     @Test
     fun testGivenFunction() = codegen(
         """
@@ -341,5 +340,4 @@ class GivenDeclarationTest {
     ) {
         compilationShouldHaveFailed("given cannot have a value parameter with the same type as it's return type")
     }
-
 }

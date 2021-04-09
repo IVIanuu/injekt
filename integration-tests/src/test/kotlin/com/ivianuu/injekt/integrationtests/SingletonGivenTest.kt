@@ -2,48 +2,25 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.irShouldContain
 import com.ivianuu.injekt.test.irShouldNotContain
-import com.ivianuu.injekt.test.multiCodegen
-import com.ivianuu.injekt.test.source
+import com.ivianuu.injekt.test.singleAndMultiCodegen
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import org.junit.Test
 
 class SingletonGivenTest {
     @Test
-    fun testSingletonGiven() = codegen(
+    fun testSingletonGiven() = singleAndMultiCodegen(
         """
             @Given class MyModule {
                 @Given fun foo() = Foo()
             }
-
-            fun invoke() = given<Foo>()
+        """,
+        """
+           fun invoke() = given<MyModule>()
         """
     ) {
-        irShouldContain(1, "var INSTANCE: MyModule")
         invokeSingleFile()
-    }
-
-    @Test
-    fun testSingletonGivenMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                    @Given class MyModule {
-                        @Given fun foo() = Foo()
-                    }
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                   fun invoke() = given<Foo>() 
-                """,
-                name = "File.kt"
-            )
-        )
-    ) {
-        it.invokeSingleFile()
+            .shouldBeSameInstanceAs(invokeSingleFile())
     }
 
     @Test

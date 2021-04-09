@@ -17,12 +17,10 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.multiCodegen
-import com.ivianuu.injekt.test.source
+import com.ivianuu.injekt.test.singleAndMultiCodegen
 import org.junit.Test
 
 class ModuleTest {
-
     @Test
     fun testClassModule() = codegen(
         """
@@ -66,62 +64,33 @@ class ModuleTest {
     )
 
     @Test
-    fun testGenericModule() = codegen(
+    fun testGenericModule() = singleAndMultiCodegen(
         """
             class MyModule<T>(private val instance: T) {
                 @Given fun provide() = instance to instance
             }
             @Given val fooModule = MyModule(Foo())
             @Given val stringModule = MyModule("__")
-            fun invoke() = given<Pair<Foo, Foo>>()
+        """,
+        """
+           fun invoke() = given<Pair<Foo, Foo>>() 
         """
     )
 
     @Test
-    fun testGenericModuleMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                    class MyModule<T>(private val instance: T) {
-                        @Given fun provide() = instance to instance
-                    }
+    fun testGenericModuleQualified() = singleAndMultiCodegen(
+        """
+            @Qualifier annotation class MyQualifier<T>
+            class MyModule<T>(private val instance: T) {
+                @Given fun provide(): @MyQualifier<Int> Pair<T, T> = instance to instance
+            }
 
-                    @Given val fooModule = MyModule(Foo())
-                    @Given val stringModule = MyModule("__")
+            @Given val fooModule = MyModule(Foo())
+            @Given val stringModule = MyModule("__")
+                """,
+        """
+            fun invoke() = given<@MyQualifier<Int> Pair<Foo, Foo>>() 
                 """
-            )
-        ),
-        listOf(
-            source(
-                """
-                   fun invoke() = given<Pair<Foo, Foo>>() 
-                """
-            )
-        )
-    )
-
-    @Test
-    fun testGenericModuleQualifiedMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                    @Qualifier annotation class MyQualifier<T>
-                    class MyModule<T>(private val instance: T) {
-                        @Given fun provide(): @MyQualifier<Int> Pair<T, T> = instance to instance
-                    }
-
-                    @Given val fooModule = MyModule(Foo())
-                    @Given val stringModule = MyModule("__")
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                   fun invoke() = given<@MyQualifier<Int> Pair<Foo, Foo>>() 
-                """
-            )
-        )
     )
 
     @Test

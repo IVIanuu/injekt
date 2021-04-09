@@ -19,13 +19,11 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.multiCodegen
-import com.ivianuu.injekt.test.source
+import com.ivianuu.injekt.test.singleAndMultiCodegen
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 
 class TypeKeyTest {
-
     @Test
     fun testTypeKeyOf() = codegen(
         """
@@ -45,10 +43,12 @@ class TypeKeyTest {
     }
 
     @Test
-    fun testForTypeKeyTypeParameter() = codegen(
+    fun testForTypeKeyTypeParameter() = singleAndMultiCodegen(
         """
             inline fun <@ForTypeKey T> listTypeKeyOf() = typeKeyOf<List<T>>()
-            fun invoke() = listTypeKeyOf<String>() 
+        """,
+        """
+           fun invoke() = listTypeKeyOf<String>()  
         """
     ) {
         invokeSingleFile() shouldBe "kotlin.collections.List<kotlin.String>"
@@ -133,7 +133,7 @@ class TypeKeyTest {
     }
     
     @Test
-    fun testForTypeKeyTypeParameterInInterface() = codegen(
+    fun testForTypeKeyTypeParameterInInterface() = singleAndMultiCodegen(
         """
             interface KeyFactory {
                 fun <@ForTypeKey T> listTypeKeyOf(): TypeKey<List<T>>
@@ -141,122 +141,64 @@ class TypeKeyTest {
                     override fun <@ForTypeKey T> listTypeKeyOf() = typeKeyOf<List<T>>()
                 }
             }
-            fun invoke() = KeyFactory.listTypeKeyOf<String>() 
+        """,
+        """
+           fun invoke() = KeyFactory.listTypeKeyOf<String>()  
         """
     ) {
         invokeSingleFile() shouldBe "kotlin.collections.List<kotlin.String>"
     }
 
     @Test
-    fun testForTypeKeyTypeParameterMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                    inline fun <@ForTypeKey T> listTypeKeyOf() = typeKeyOf<List<T>>()
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    fun invoke() = listTypeKeyOf<String>()
-                """,
-                name = "File.kt"
-            )
-        )
-    ) {
-        it.invokeSingleFile() shouldBe "kotlin.collections.List<kotlin.String>"
-    }
-
-    @Test
-    fun testClassWithForTypeKeyParameterInInitializer() = codegen(
+    fun testClassWithForTypeKeyParameterInInitializer() = singleAndMultiCodegen(
         """
             class MyClass<@ForTypeKey T> {
                 val typeKey = typeKeyOf<T>()
             }
-            fun invoke() = MyClass<String>().typeKey
+        """,
+        """
+           fun invoke() = MyClass<String>().typeKey 
         """
     ) {
         invokeSingleFile() shouldBe "kotlin.String"
     }
 
     @Test
-    fun testClassWithForTypeKeyParameterInFunction() = codegen(
+    fun testClassWithForTypeKeyParameterInFunction() = singleAndMultiCodegen(
         """
             class MyClass<@ForTypeKey T> {
                 fun typeKey() = typeKeyOf<T>()
             }
-            fun invoke() = MyClass<String>().typeKey()
+        """,
+        """
+           fun invoke() = MyClass<String>().typeKey() 
         """
     ) {
         invokeSingleFile() shouldBe "kotlin.String"
     }
 
     @Test
-    fun testClassWithForTypeKeyParameterMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                class MyClass<@ForTypeKey T> {
-                    val typeKey = typeKeyOf<T>()
-                }
-            """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    fun invoke() = MyClass<String>().typeKey
-                """,
-                name = "File.kt"
-            )
-        )
-    ) {
-        it.invokeSingleFile() shouldBe "kotlin.String"
-    }
-
-    @Test
-    fun testClassWithForTypeKeyParameterSubClass() = codegen(
+    fun testClassWithForTypeKeyParameterSubClass() = singleAndMultiCodegen(
         """
             abstract class MySuperClass<@ForTypeKey T> {
                 val typeKey = typeKeyOf<T>()
             }
+        """,
+        """
             class MyClass<@ForTypeKey T> : MySuperClass<T>()
-            fun invoke() = MyClass<String>().typeKey
+            fun invoke() = MyClass<String>().typeKey 
         """
     ) {
         invokeSingleFile() shouldBe "kotlin.String"
     }
 
     @Test
-    fun testClassWithForTypeKeyParameterSubClassMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                    abstract class MySuperClass<@ForTypeKey T> {
-                        val typeKey = typeKeyOf<T>()
-                    }
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    class MyClass<@ForTypeKey T> : MySuperClass<T>()
-                    fun invoke() = MyClass<String>().typeKey
-                """,
-                name = "File.kt"
-            )
-        )
-    ) {
-        it.invokeSingleFile() shouldBe "kotlin.String"
-    }
-
-    @Test
-    fun testTypeKeyFromGivenCall() = codegen(
+    fun testTypeKeyFromGivenCall() = singleAndMultiCodegen(
         """
             @Given fun <@ForTypeKey T> listKey(): TypeKey<List<T>> = typeKeyOf<List<T>>()
-            fun invoke() = given<TypeKey<List<@Qualifier1 Foo>>>()
+        """,
+        """
+           fun invoke() = given<TypeKey<List<@Qualifier1 Foo>>>() 
         """
     ) {
         invokeSingleFile() shouldBe
@@ -264,15 +206,17 @@ class TypeKeyTest {
     }
 
     @Test
-    fun testNonForTypeKeyTypeParameterOverride() = codegen(
+    fun testNonForTypeKeyTypeParameterOverride() = singleAndMultiCodegen(
         """
             abstract class MySuperClass {
                 abstract fun <@ForTypeKey T> func()
             }
-            class MySubClass : MySuperClass() {
+        """,
+        """
+           class MySubClass : MySuperClass() {
                 override fun <T> func() {
                 }
-            }
+            } 
         """
     ) {
         compilationShouldHaveFailed("Conflicting overloads")
@@ -288,34 +232,14 @@ class TypeKeyTest {
     }
 
     @Test
-    fun testPropertyWithForTypeKeyParameter() = codegen(
+    fun testPropertyWithForTypeKeyParameter() = singleAndMultiCodegen(
         """
             val <@ForTypeKey T> T.typeKey: TypeKey<T> get() = typeKeyOf<T>()
-            fun invoke() = "".typeKey
+        """,
+        """
+           fun invoke() = "".typeKey 
         """
     ) {
         invokeSingleFile() shouldBe "kotlin.String"
     }
-
-    @Test
-    fun testPropertyWithForTypeKeyParameterMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                val <@ForTypeKey T> T.typeKey: TypeKey<T> get() = typeKeyOf<T>()
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    fun invoke() = "".typeKey
-                """,
-                name = "File.kt"
-            )
-        )
-    ) {
-        it.invokeSingleFile() shouldBe "kotlin.String"
-    }
-
 }

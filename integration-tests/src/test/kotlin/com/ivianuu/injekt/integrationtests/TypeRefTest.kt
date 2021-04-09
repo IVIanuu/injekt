@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.resolution.typeWith
 import org.junit.Test
 
 class TypeRefTest {
-
     @Test
     fun testSimpleTypeWithSameClassifierIsAssignable() = withTypeCheckerContext {
         stringType shouldBeAssignable stringType
@@ -262,5 +261,4 @@ class TypeRefTest {
     fun testComparableStackOverflowBug() = withTypeCheckerContext {
         floatType shouldNotBeSubTypeOf comparable.typeWith(intType)
     }
-
 }

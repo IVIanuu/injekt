@@ -21,13 +21,11 @@ import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.multiCodegen
-import com.ivianuu.injekt.test.source
+import com.ivianuu.injekt.test.singleAndMultiCodegen
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
 class ProviderTest {
-
     @Test
     fun testProviderGiven() = codegen(
         """
@@ -76,11 +74,9 @@ class ProviderTest {
     }
 
     @Test
-    fun testProviderWithGenericGivenArgs() = codegen(
+    fun testProviderWithGenericGivenArgs() = singleAndMultiCodegen(
         """ 
             typealias GivenScopeA = DefaultGivenScope
-
-            fun createGivenScopeA() = given<GivenScopeA>()
 
             typealias GivenScopeB = DefaultGivenScope
 
@@ -97,6 +93,9 @@ class ProviderTest {
                 @Given parent: GivenScopeB,
                 @Given scopeFactory: () -> GivenScopeC
             ): @GivenScopeElementBinding<GivenScopeB> () -> GivenScopeC = scopeFactory
+            """,
+        """
+            fun createGivenScopeA() = given<GivenScopeA>()
 
             @GivenScopeElementBinding<GivenScopeC>
             @Given
@@ -104,51 +103,8 @@ class ProviderTest {
                 @Given val a: GivenScopeA,
                 @Given val b: GivenScopeB,
                 @Given val c: GivenScopeC
-            )
-            """
-    )
-
-    @Test
-    fun testProviderWithGenericGivenArgsMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                    typealias GivenScopeA = DefaultGivenScope
-
-                    fun createGivenScopeA() = given<GivenScopeA>()
-        
-                    typealias GivenScopeB = DefaultGivenScope
-
-                    @Given
-                    fun givenScopeBFactory(
-                        @Given parent: GivenScopeA,
-                        @Given scopeFactory: () -> GivenScopeB
-                    ): @GivenScopeElementBinding<GivenScopeA> () -> GivenScopeB = scopeFactory
-        
-                    typealias GivenScopeC = GivenScope
-
-                    @Given 
-                    fun givenScopeCFactory(
-                        @Given parent: GivenScopeB,
-                        @Given scopeFactory: () -> GivenScopeC
-                    ): @GivenScopeElementBinding<GivenScopeB> () -> GivenScopeC = scopeFactory
-                        """
-                    )
-        ),
-        listOf(
-            source(
-                """
-                    fun createGivenScopeA() = given<GivenScopeA>()
-
-                    @GivenScopeElementBinding<GivenScopeC>
-                    @Given class MyComponent(
-                        @Given val a: GivenScopeA,
-                        @Given val b: GivenScopeB,
-                        @Given val c: GivenScopeC
-                    )
-                """
-            )
-        )
+            ) 
+        """
     )
 
     @Test
@@ -221,5 +177,4 @@ class ProviderTest {
     ) {
         compilationShouldHaveFailed("no given argument found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter value of function com.ivianuu.injekt.given")
     }
-
 }

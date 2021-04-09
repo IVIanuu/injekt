@@ -23,12 +23,10 @@ import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiPlatformCodegen
 import com.ivianuu.injekt.test.shouldContainMessage
 import com.ivianuu.injekt.test.shouldNotContainMessage
-import com.ivianuu.injekt.test.source
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
 class GivenDeclarationCheckTest {
-
     @Test
     fun testClassWithGivenAnnotationAndGivenConstructor() = codegen(
         """
@@ -291,84 +289,52 @@ class GivenDeclarationCheckTest {
 
     @Test
     fun testActualGivenFunctionWithoutGivenAnnotation() = multiPlatformCodegen(
-        commonSources = listOf(
-            source(
+        """
+            @Given expect fun foo(): Foo 
+                """,
+        """
+            actual fun foo(): Foo = Foo()
                 """
-                    @Given expect fun foo(): Foo 
-                """
-            )
-        ),
-        platformSources = listOf(
-            source(
-                """
-                    actual fun foo(): Foo = Foo()
-                """
-            )
-        )
     ) {
         compilationShouldHaveFailed("Actual function 'foo' has no corresponding expected declaration")
     }
 
     @Test
     fun testActualGivenPropertyWithoutGivenAnnotation() = multiPlatformCodegen(
-        commonSources = listOf(
-            source(
+        """
+            @Given expect val foo: Foo 
+                """,
+        """
+            actual val foo: Foo = Foo()
                 """
-                    @Given expect val foo: Foo 
-                """
-            )
-        ),
-        platformSources = listOf(
-            source(
-                """
-                    actual val foo: Foo = Foo()
-                """
-            )
-        )
     ) {
         compilationShouldHaveFailed("Actual property 'foo' has no corresponding expected declaration")
     }
 
     @Test
     fun testActualGivenClassWithoutGivenAnnotation() = multiPlatformCodegen(
-        commonSources = listOf(
-            source(
+        """
+            @Given expect class Dep 
+                """,
+        """
+            actual class Dep
                 """
-                    @Given expect class Dep 
-                """
-            )
-        ),
-        platformSources = listOf(
-            source(
-                """
-                    actual class Dep
-                """
-            )
-        )
     ) {
         compilationShouldHaveFailed("Actual class 'Dep' has no corresponding expected declaration")
     }
 
     @Test
     fun testActualGivenConstructorWithoutGivenAnnotation() = multiPlatformCodegen(
-        commonSources = listOf(
-            source(
+        """
+           expect class Dep {
+                @Given constructor()
+           } 
+        """,
+        """
+            actual class Dep {
+                actual constructor()
+            }
                 """
-                    expect class Dep {
-                        @Given constructor()
-                    }
-                """
-            )
-        ),
-        platformSources = listOf(
-            source(
-                """
-                    actual class Dep {
-                        actual constructor()
-                    }
-                """
-            )
-        )
     ) {
         compilationShouldHaveFailed("Actual constructor of 'Dep' has no corresponding expected declaration")
     }

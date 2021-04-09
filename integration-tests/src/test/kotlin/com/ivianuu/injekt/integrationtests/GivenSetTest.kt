@@ -32,7 +32,6 @@ import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
 class GivenSetTest {
-
     @Test
     fun testSet() = codegen(
         """

@@ -22,7 +22,6 @@ import com.ivianuu.injekt.test.invokeSingleFile
 import org.junit.Test
 
 class AbstractGivenTest {
-
     @Test
     fun testGivenInterface() = codegen(
         """

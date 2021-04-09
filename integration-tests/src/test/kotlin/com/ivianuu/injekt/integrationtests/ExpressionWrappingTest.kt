@@ -23,7 +23,6 @@ import com.ivianuu.injekt.test.irShouldNotContain
 import org.junit.Test
 
 class ExpressionWrappingTest {
-
     @Test
     fun testDoesFunctionWrapGivenWithMultipleUsages() = codegen(
         """
@@ -145,5 +144,4 @@ class ExpressionWrappingTest {
     ) {
         invokeSingleFile()
     }
-
 }

@@ -16,10 +16,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
 import io.kotest.matchers.maps.shouldContain
 import io.kotest.matchers.maps.shouldHaveSize
@@ -28,7 +25,6 @@ import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
 class TypeSubstitutionTest {
-
     @Test
     fun testGetSubstitutionMap() = withTypeCheckerContext {
         val superType = typeParameter()
@@ -144,5 +140,4 @@ class TypeSubstitutionTest {
         map[typeParameterT.classifier] shouldBe substitutionType
         map[typeParameterS.classifier] shouldBe stringType.qualified(qualifier2)
     }
-
 }

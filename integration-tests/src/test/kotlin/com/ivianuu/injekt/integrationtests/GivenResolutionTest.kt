@@ -20,9 +20,11 @@ import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
+import com.ivianuu.injekt.test.invokableSource
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.irShouldContain
 import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.singleAndMultiCodegen
 import com.ivianuu.injekt.test.source
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
@@ -32,65 +34,57 @@ import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
 class GivenResolutionTest {
-
     @Test
     fun testResolvesExternalGivenInSamePackage() = multiCodegen(
-        listOf(
-            source(
+        """
+            @Given val foo = Foo()
+        """,
+        """
+            fun invoke() = given<Foo>()
                 """
-                    @Given val foo = Foo()
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    fun invoke() = given<Foo>()
-                """,
-                name = "File.kt"
-            )
-        )
     ) {
-        it.invokeSingleFile().shouldBeTypeOf<Foo>()
+        invokeSingleFile().shouldBeTypeOf<Foo>()
     }
 
     @Test
     fun testResolvesExternalGivenInDifferentPackage() = multiCodegen(
         listOf(
-            source(
-                """
+            listOf(
+                source(
+                    """
                     @Given val foo = Foo()
                 """,
-                packageFqName = FqName("givens")
-            )
-        ),
-        listOf(
-            source(
-                """
+                    packageFqName = FqName("givens")
+                )
+            ),
+            listOf(
+                invokableSource(
+                    """
                     import givens.*
                     fun invoke() = given<Foo>()
-                """,
-                name = "File.kt"
+                """
+                )
             )
         )
     ) {
-        it.invokeSingleFile().shouldBeTypeOf<Foo>()
+        invokeSingleFile().shouldBeTypeOf<Foo>()
     }
 
     @Test
     fun testResolvesInternalGivenFromDifferentPackageWithAllUnderImport() = codegen(
-        source(
-            """
+        listOf(
+            source(
+                """
                 @Given val foo = Foo()
             """,
-            packageFqName = FqName("givens")
-        ),
-        source(
-            """
+                packageFqName = FqName("givens")
+            ),
+            invokableSource(
+                """
                 import givens.*
                 fun invoke() = given<Foo>()
-            """,
-            name = "File.kt"
+            """
+            )
         )
     ) {
         invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -98,18 +92,19 @@ class GivenResolutionTest {
 
     @Test
     fun testResolvesInternalGivenFromDifferentPackage() = codegen(
-        source(
-            """
+        listOf(
+            source(
+                """
                 @Given val foo = Foo()
             """,
-            packageFqName = FqName("givens")
-        ),
-        source(
-            """
+                packageFqName = FqName("givens")
+            ),
+            invokableSource(
+                """
                 import givens.foo
                 fun invoke() = given<Foo>()
-            """,
-            name = "File.kt"
+            """
+            )
         )
     ) {
         invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -127,31 +122,22 @@ class GivenResolutionTest {
 
     @Test
     fun testPrefersInternalGivenOverExternal() = multiCodegen(
-        listOf(
-            source(
-                """
-                    @Given lateinit var externalFoo: Foo
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    @Given lateinit var internalFoo: Foo
+        """
+            @Given lateinit var externalFoo: Foo
+            """,
+        """
+            @Given lateinit var internalFoo: Foo
 
-                    fun invoke(internal: Foo, external: Foo): Foo {
-                        externalFoo = external
-                        internalFoo = internal
-                        return given<Foo>()
-                    }
-                """,
-                name = "File.kt"
-            )
-        )
+            fun invoke(internal: Foo, external: Foo): Foo {
+                externalFoo = external
+                internalFoo = internal
+                return given<Foo>()
+            }
+            """
     ) {
         val internal = Foo()
         val external = Foo()
-        val result = it.invokeSingleFile(internal, external)
+        val result = invokeSingleFile(internal, external)
         result shouldBeSameInstanceAs internal
     }
 
@@ -446,35 +432,15 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testNestedUnresolvedGiven() = codegen(
+    fun testNestedUnresolvedGiven() = singleAndMultiCodegen(
         """
             @Given fun bar(@Given foo: Foo) = Bar(foo)
-            fun invoke() = given<Bar>()
+        """,
+        """
+           fun invoke() = given<Bar>() 
         """
     ) {
         compilationShouldHaveFailed(" no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
-    }
-
-    @Test
-    fun testNestedUnresolvedGivenMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                   @Given fun bar(@Given foo: Foo) = Bar(foo) 
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    fun callee(@Given bar: Bar) = bar
-                    fun invoke() = callee()
-                """
-            )
-        )
-    ) {
-        it.last()
-            .compilationShouldHaveFailed(" no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
     }
 
     @Test
@@ -639,23 +605,15 @@ class GivenResolutionTest {
     )
 
     @Test
-    fun testPrefersModuleGivenConstraint() = multiCodegen(
-        listOf(
-            source(
+    fun testPrefersModuleGivenConstraint() = singleAndMultiCodegen(
+        """
+            @Given class MyModule<@Given T : @Qualifier1 S, S> {
+                @Given fun unqualified(@Given v: T): S = v 
+            }
+                """,
+        """
+            fun invoke() = given<(@Given @Qualifier1 TypeKey<Foo>) -> TypeKey<Foo>>() 
                 """
-                    @Given class MyModule<@Given T : @Qualifier1 S, S> {
-                        @Given fun unqualified(@Given v: T): S = v 
-                    }
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                   fun invoke() = given<(@Given @Qualifier1 TypeKey<Foo>) -> TypeKey<Foo>>() 
-                """
-            )
-        )
     )
 
     @Test
@@ -892,22 +850,14 @@ class GivenResolutionTest {
 
     @Test
     fun testCannotResolveExternalInternalGiven() = multiCodegen(
-        listOf(
-            source(
-                """
-                    @Given internal val foo = Foo()
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    fun invoke() = given<Foo>()
-                """
-            )
-        )
+        """
+            @Given internal val foo = Foo()
+            """,
+        """
+            fun invoke() = given<Foo>()
+            """
     ) {
-        it.last().compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo")
+        compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo")
     }
 
     @Test

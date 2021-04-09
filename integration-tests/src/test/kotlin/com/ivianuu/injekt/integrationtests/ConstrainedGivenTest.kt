@@ -21,16 +21,14 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.irShouldContain
-import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.shouldNotContainMessage
-import com.ivianuu.injekt.test.source
+import com.ivianuu.injekt.test.singleAndMultiCodegen
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
 class ConstrainedGivenTest {
-
     @Test
     fun testGivenWithGivenConstraint() = codegen(
         """
@@ -102,83 +100,41 @@ class ConstrainedGivenTest {
     }
 
     @Test
-    fun testGivenConstraintWithQualifierWithTypeParameter() = codegen(
+    fun testGivenConstraintWithQualifierWithTypeParameter() = singleAndMultiCodegen(
         """
             @Qualifier annotation class Trigger<S>
             @Given fun <@Given @ForTypeKey T : @Trigger<S> Any?, @ForTypeKey S> triggerImpl() = 
                 typeKeyOf<S>()
-
-            @Given fun foo(): @Trigger<Bar> Foo = Foo()
-
-            fun invoke() = given<TypeKey<Bar>>().value
+        """,
+        """
+           @Given fun foo(): @Trigger<Bar> Foo = Foo() 
+        """,
+        """
+           fun invoke() = given<TypeKey<Bar>>().value 
         """
     ) {
         "com.ivianuu.injekt.test.Bar" shouldBe invokeSingleFile()
     }
 
     @Test
-    fun testGivenConstraintWithQualifierWithTypeParameterMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                    @Qualifier annotation class Trigger<S>
-                    @Given fun <@Given @ForTypeKey T : @Trigger<S> Any?, @ForTypeKey S> triggerImpl() = 
-                        typeKeyOf<S>()
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    @Given fun foo(): @Trigger<Bar> Foo = Foo()
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    fun <T> givenTypeKeyOf(@Given value: () -> TypeKey<T>) = value()
-                    fun invoke() = givenTypeKeyOf<Bar>().value
-                """,
-                name = "File.kt"
-            )
-        )
+    fun testGivenConstraintWithQualifierWithTypeParameter2() = singleAndMultiCodegen(
+        """
+            @Qualifier annotation class Trigger<S>
+            @Given fun <@Given @ForTypeKey T : @Trigger<S> Any?, @ForTypeKey S> triggerImpl() = 
+                typeKeyOf<S>()
+        """,
+        """
+            @Given
+            object FooModule {
+                @Given fun fooModule(): @Trigger<Bar> Foo = Foo()
+            }
+        """,
+        """
+            fun <T> givenKeyOf(@Given value: () -> TypeKey<T>) = value()
+            fun invoke() = givenKeyOf<Bar>().value
+        """
     ) {
-        "com.ivianuu.injekt.test.Bar" shouldBe it.invokeSingleFile()
-    }
-
-    @Test
-    fun testGivenConstraintWithQualifierWithTypeParameterMulti2() = multiCodegen(
-        listOf(
-            source(
-                """
-                    @Qualifier annotation class Trigger<S>
-                    @Given fun <@Given @ForTypeKey T : @Trigger<S> Any?, @ForTypeKey S> triggerImpl() = 
-                        typeKeyOf<S>()
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    @Given
-                    object FooModule {
-                        @Given fun fooModule(): @Trigger<Bar> Foo = Foo()
-                    }
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    fun <T> givenKeyOf(@Given value: () -> TypeKey<T>) = value()
-                    fun invoke() = givenKeyOf<Bar>().value
-                """,
-                name = "File.kt"
-            )
-        )
-    ) {
-        "com.ivianuu.injekt.test.Bar" shouldBe it.invokeSingleFile()
+        "com.ivianuu.injekt.test.Bar" shouldBe invokeSingleFile()
     }
 
     @Test
@@ -223,33 +179,22 @@ class ConstrainedGivenTest {
             fun invoke() = given<Set<Foo>>().single()
         """
     ) {
-        invokeSingleFile()
-            .shouldBeTypeOf<Foo>()
+        invokeSingleFile().shouldBeTypeOf<Foo>()
     }
 
     @Test
-    fun testScoped() = multiCodegen(
-        listOf(
-            source(
-                """
-                    typealias ActivityGivenScope = DefaultGivenScope
-                    @Given val activityGivenScopeModule = 
-                        ChildGivenScopeModule0<AppGivenScope, ActivityGivenScope>()
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    @Given fun foo(): @Scoped<AppGivenScope> Foo = Foo()
-                    fun invoke() = given<Foo>()
+    fun testScoped() = singleAndMultiCodegen(
+        """
+                typealias ActivityGivenScope = DefaultGivenScope
+                @Given val activityGivenScopeModule = 
+                    ChildGivenScopeModule0<AppGivenScope, ActivityGivenScope>()
                 """,
-                name = "File.kt"
-            )
-        )
+        """
+                @Given fun foo(): @Scoped<AppGivenScope> Foo = Foo()
+                fun invoke() = given<Foo>()
+                """
     ) {
-        it.invokeSingleFile()
-            .shouldBeTypeOf<Foo>()
+        invokeSingleFile().shouldBeTypeOf<Foo>()
     }
 
     @Test

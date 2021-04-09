@@ -24,7 +24,6 @@ import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
 class GivenLambdaTest {
-
     @Test
     fun testGivenLambda() = codegen(
         """
@@ -55,5 +54,4 @@ class GivenLambdaTest {
             fun invoke() = given<(@Given @Composable () -> Unit) -> MyComposeView>()
         """
     )
-
 }

@@ -22,64 +22,48 @@ import com.ivianuu.injekt.test.compilationShouldBeOk
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.irShouldNotContain
-import com.ivianuu.injekt.test.multiCodegen
-import com.ivianuu.injekt.test.source
+import com.ivianuu.injekt.test.singleAndMultiCodegen
 import io.kotest.matchers.types.shouldBeTypeOf
 import io.kotest.matchers.types.shouldNotBeSameInstanceAs
 import org.junit.Test
 
 class QualifierTest {
-
     @Test
-    fun testDistinctQualifier() = codegen(
+    fun testDistinctQualifier() = singleAndMultiCodegen(
         """
             @Given val foo = Foo()
             @Given val qualifiedFoo: @Qualifier1 Foo = Foo()
-       
-            fun invoke(): Pair<Foo, Foo> {
+            """,
+        """
+           fun invoke(): Pair<Foo, Foo> {
                 return given<Foo>() to given<@Qualifier1 Foo>()
-            }
-            """
+           } 
+        """
     ) {
         val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
         foo1 shouldNotBeSameInstanceAs foo2
     }
 
     @Test
-    fun testTypeParameterWithQualifierUpperBound() = codegen(
+    fun testTypeParameterWithQualifierUpperBound() = singleAndMultiCodegen(
         """
             @Given class Dep<T>(@Given val value: @Qualifier1 T)
             
             @Given fun qualified(): @Qualifier1 String = ""
-            
-            fun invoke() = given<Dep<String>>()
-            """
+            """,
+        """
+           fun invoke() = given<Dep<String>>() 
+        """
     )
 
     @Test
-    fun testQualifiedClass() = codegen(
+    fun testQualifiedClass() = singleAndMultiCodegen(
         """ 
             @Given @Qualifier1 class Dep
+            """,
+        """
             fun invoke() = given<@Qualifier1 Dep>()
-            """
-    )
-
-    @Test
-    fun testQualifiedClassMulti() = multiCodegen(
-        listOf(
-            source(
-                """ 
-                    @Given @Qualifier1 class Dep
-            """
-            )
-        ),
-        listOf(
-            source(
-                """ 
-                    fun invoke() = given<@Qualifier1 Dep>()
-            """
-            )
-        )
+        """
     )
 
     @Test
@@ -101,74 +85,30 @@ class QualifierTest {
     }
 
     @Test
-    fun testQualifierWithTypeArguments() = codegen(
+    fun testQualifierWithTypeArguments() = singleAndMultiCodegen(
         """
             @Qualifier annotation class MyQualifier<T>
             @Given val qualifiedFoo: @MyQualifier<String> Foo = Foo()
-       
-            fun invoke() = given<@MyQualifier<String> Foo>()
-            """
+            """,
+        """
+           fun invoke() = given<@MyQualifier<String> Foo>() 
+        """
     ) {
         invokeSingleFile()
             .shouldBeTypeOf<Foo>()
     }
 
     @Test
-    fun testQualifierWithTypeArgumentsMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                    @Qualifier annotation class MyQualifier<T>
-                    @Given val qualifiedFoo: @MyQualifier<String> Foo = Foo()
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    fun invoke() = given<@MyQualifier<String> Foo>()
-                """,
-                name = "File.kt"
-            )
-        )
-    ) {
-        it.invokeSingleFile()
-            .shouldBeTypeOf<Foo>()
-    }
-
-    @Test
-    fun testQualifierWithGenericTypeArguments() = codegen(
+    fun testQualifierWithGenericTypeArguments() = singleAndMultiCodegen(
         """
             @Qualifier annotation class MyQualifier<T>
             @Given fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
-       
-            fun invoke() = given<@MyQualifier<String> Foo>()
-            """
+            """,
+        """
+           fun invoke() = given<@MyQualifier<String> Foo>() 
+        """
     ) {
         invokeSingleFile()
-            .shouldBeTypeOf<Foo>()
-    }
-
-    @Test
-    fun testQualifierWithGenericTypeArgumentsMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                    @Qualifier annotation class MyQualifier<T>
-                    @Given fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    fun invoke() = given<@MyQualifier<String> Foo>()
-                """,
-                name = "File.kt"
-            )
-        )
-    ) {
-        it.invokeSingleFile()
             .shouldBeTypeOf<Foo>()
     }
 
@@ -211,6 +151,5 @@ class QualifierTest {
         compilationShouldBeOk()
         irShouldNotContain("scopedImpl<Foo, Foo, U>(")
     }
-
 }
 

@@ -22,7 +22,6 @@ import com.tschuchort.compiletesting.PluginOption
 import org.junit.Test
 
 class ConfigurationTest {
-
     @Test
     fun testCannotPerformGivenCallsWithoutFlag() = codegen(
         """
@@ -70,5 +69,4 @@ class ConfigurationTest {
             )
         }
     )
-
 }
