@@ -576,34 +576,9 @@ private fun GivenGraph.Success.postProcess(
     onEachResult: (ResolutionResult.Success.WithCandidate.Value) -> Unit,
     usages: MutableMap<UsageKey, MutableList<GivenRequest>>
 ) {
-    val typeParametersInScope = scope.allScopes
-        .flatMap { scope ->
-            (scope.ownerDescriptor.safeAs<ClassDescriptor>()
-                ?.declaredTypeParameters ?:
-            scope.ownerDescriptor.safeAs<FunctionDescriptor>()
-                ?.typeParameters ?:
-            scope.ownerDescriptor.safeAs<PropertyDescriptor>()
-                ?.typeParameters)
-                ?.map { it.toClassifierRef(scope.context, scope.trace) }
-                ?: emptyList()
-        }
-
     fun ResolutionResult.Success.WithCandidate.Value.postProcess(request: GivenRequest) {
         usages.getOrPut(usageKey) { mutableListOf() } += request
         onEachResult(this)
-        fun TypeRef.validate() {
-            if (classifier.isTypeParameter &&
-                classifier !in typeParametersInScope) {
-                error("Invalid graph: unsubstituted type parameter $classifier")
-            }
-
-            arguments.forEach { it.validate() }
-            qualifiers.forEach { it.validate() }
-        }
-        candidate.type.validate()
-        if (candidate is CallableGivenNode) {
-            candidate.callable.typeArguments.forEach { it.value.validate() }
-        }
         dependencyResults
             .forEach { (request, result) ->
                 if (result is ResolutionResult.Success.WithCandidate.Value) {
