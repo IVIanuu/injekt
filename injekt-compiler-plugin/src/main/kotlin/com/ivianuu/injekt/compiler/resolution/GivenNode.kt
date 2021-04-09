@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithVisibility
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
@@ -107,7 +108,8 @@ class ProviderGivenNode(
             callableFqName = callableFqName,
             parameterName = "instance".asNameId(),
             isInline = false,
-            isLazy = true
+            isLazy = true,
+            requestDescriptor = ownerScope.ownerDescriptor.cast()
         )
     )
 
@@ -176,7 +178,8 @@ class AbstractGivenNode(
                 callableFqName = callableFqName,
                 parameterName = requestCallable.callable.name,
                 isInline = false,
-                isLazy = true
+                isLazy = true,
+                requestDescriptor = ownerScope.ownerDescriptor.cast()
             )
         }
 
@@ -260,7 +263,8 @@ fun CallableRef.getGivenRequests(
             callableFqName = callableFqNameProvider(parameter),
             parameterName = name.asNameId(),
             isInline = InlineUtil.isInlineParameter(parameter),
-            isLazy = false
+            isLazy = false,
+            requestDescriptor = callable
         )
     }
     .toList()
@@ -271,5 +275,6 @@ data class GivenRequest(
     val callableFqName: FqName,
     val parameterName: Name,
     val isInline: Boolean,
-    val isLazy: Boolean
+    val isLazy: Boolean,
+    val requestDescriptor: DeclarationDescriptorWithVisibility
 )

@@ -43,6 +43,7 @@ import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.inline.InlineUtil
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class GivenCallChecker(
     private val context: InjektContext,
@@ -83,7 +84,8 @@ class GivenCallChecker(
                     callableFqName = resultingDescriptor.fqNameSafe,
                     parameterName = parameterDescriptor.name,
                     isInline = InlineUtil.isInlineParameter(parameterDescriptor),
-                    isLazy = false
+                    isLazy = false,
+                    requestDescriptor = context.scope.ownerDescriptor.cast()
                 )
             }
             .toList()

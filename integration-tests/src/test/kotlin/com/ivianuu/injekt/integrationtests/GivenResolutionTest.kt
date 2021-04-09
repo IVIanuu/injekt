@@ -693,6 +693,19 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testCanResolveInternalGivenIfRequestedFromTheSameModule() = multiCodegen(
+        """
+            
+            @Given
+            internal val foo = Foo()
+            @Given fun bar(@Given foo: Foo) = Bar(foo)
+        """,
+        """
+            fun invoke() = given<Bar>()
+        """
+    )
+
+    @Test
     fun testFunctionInvocationWithGivens() = codegen(
         """
                 @Given val foo = Foo()

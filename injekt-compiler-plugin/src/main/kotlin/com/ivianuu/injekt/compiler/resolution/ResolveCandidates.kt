@@ -20,9 +20,6 @@ import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isForTypeKey
 import com.ivianuu.injekt.compiler.unsafeLazy
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -199,7 +196,7 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
             request.type.qualifiers.isEmpty() &&
             request.type.isFunctionTypeWithOnlyGivenParameters
     if (!isInlineProviderCandidateType) resultsByType[request.type]?.let { return it }
-    val userGivens = givensForType(request.type)
+    val userGivens = givensForRequest(request)
     val result = if (userGivens != null) {
         resolveCandidates(request, userGivens)
     } else {

@@ -20,12 +20,14 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.generateFrameworkKey
+import com.ivianuu.injekt.compiler.isExternalDeclaration
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -39,6 +41,7 @@ import org.jetbrains.kotlin.resolve.scopes.ImportingScope
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.resolve.scopes.LexicalScopeKind
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstance
 
 class ResolutionScope(
@@ -173,26 +176,35 @@ class ResolutionScope(
         constrainedGivens.forEach { recordLookup(it.callable.callable) }
     }
 
-    fun givensForType(type: TypeRef): List<GivenNode>? {
-        if (givens.isEmpty()) return parent?.givensForType(type)
+    fun givensForRequest(request: GivenRequest): List<GivenNode>? {
+        if (givens.isEmpty()) return parent?.givensForRequest(request)
         // we return merged collections
-        if (type.frameworkKey == null &&
-            type.classifier == context.setClassifier) return null
-        return givensByType.getOrPut(type) {
+        if (request.type.frameworkKey == null &&
+            request.type.classifier == context.setClassifier) return null
+        return givensByType.getOrPut(request.type) {
             val thisGivens = givens
                 .asSequence()
                 .filter {
-                    it.value.type.frameworkKey == type.frameworkKey
-                            && it.value.type.isAssignableTo(context, type) &&
+                    it.value.type.frameworkKey == request.type.frameworkKey
+                            && it.value.type.isAssignableTo(context, request.type) &&
                             it.value.isApplicable()
                 }
-                .map { it.value.toGivenNode(type, this) }
+                .map { it.value.toGivenNode(request.type, this) }
                 .toList()
                 .takeIf { it.isNotEmpty() }
-            val parentGivens = parent?.givensForType(type)
+            val parentGivens = parent?.givensForRequest(request)
             if (parentGivens != null && thisGivens != null) parentGivens + thisGivens
             else thisGivens ?: parentGivens
-        }
+        }?.filter { given ->
+            given !is CallableGivenNode ||
+                    given.callable.callable.visibility != DescriptorVisibilities.INTERNAL ||
+                    !given.callable.callable.isExternalDeclaration() ||
+                    DescriptorVisibilities.INTERNAL.isVisible(
+                        null,
+                        given.callable.callable,
+                        request.requestDescriptor
+                    )
+        }?.takeIf { it.isNotEmpty() }
     }
 
     fun frameworkGivensForRequest(request: GivenRequest): List<GivenNode>? {
@@ -245,7 +257,8 @@ class ResolutionScope(
                             callableFqName = FqName("com.ivianuu.injekt.givenSetOf<${request.type.arguments[0].render()}>"),
                             parameterName = "element$index".asNameId(),
                             isInline = false,
-                            isLazy = false
+                            isLazy = false,
+                            requestDescriptor = ownerDescriptor.cast()
                         )
                     }
                 return listOf(
