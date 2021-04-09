@@ -41,21 +41,18 @@ interface GivenScope : GivenScopeDisposable {
      * Returns the scoped value [T] for [key] or null
      */
     fun <T : Any> getScopedValueOrNull(key: Any): T?
-    // todo remove once inline class boxing is fixed
     fun <T : Any> getScopedValueOrNull(key: TypeKey<T>): T? =
         getScopedValueOrNull(key.value)
     /**
      * Sets the scoped value [T] for [key] to [value]
      */
     fun <T : Any> setScopedValue(key: Any, value: T)
-    // todo remove once inline class boxing is fixed
     fun <T : Any> setScopedValue(key: TypeKey<T>, value: T) =
         setScopedValue(key.value, value)
     /**
      * Removes the scoped value for [key]
      */
     fun removeScopedValue(key: Any)
-    // todo remove once inline class boxing is fixed
     fun removeScopedValue(key: TypeKey<*>) = removeScopedValue(key.value)
 }
 
@@ -76,7 +73,7 @@ fun <@ForTypeKey T : Any> GivenScope.element(): T = element(typeKeyOf())
  */
 inline fun <T : Any> GivenScope.getOrCreateScopedValue(key: Any, init: () -> T): T {
     getScopedValueOrNull<T>(key)?.let { return it }
-    synchronized(this) {
+    withLock {
         getScopedValueOrNull<T>(key)?.let { return it }
         val value = init()
         setScopedValue(key, value)
@@ -87,7 +84,6 @@ inline fun <T : Any> GivenScope.getOrCreateScopedValue(key: Any, init: () -> T):
 inline fun <@ForTypeKey T : Any> GivenScope.getOrCreateScopedValue(init: () -> T): T =
     getOrCreateScopedValue(typeKeyOf(), init)
 
-// todo remove once inline class boxing is fixed
 inline fun <T : Any> GivenScope.getOrCreateScopedValue(key: TypeKey<T>, init: () -> T): T =
     getOrCreateScopedValue(key.value, init)
 
@@ -102,7 +98,7 @@ fun GivenScope.invokeOnDispose(action: () -> Unit): GivenScopeDisposable {
         action()
         return NoOpScopeDisposable
     }
-    synchronized(this) {
+    withLock {
         if (isDisposed) {
             action()
             return NoOpScopeDisposable
@@ -119,6 +115,8 @@ fun GivenScope.invokeOnDispose(action: () -> Unit): GivenScopeDisposable {
     }
 }
 
+inline fun <R> GivenScope.withLock(block: () -> R): R = synchronized(this, block)
+
 private class InvokeOnDisposeKey
 
 private val NoOpScopeDisposable = GivenScopeDisposable {  }
@@ -132,12 +130,17 @@ inline fun <S : DefaultGivenScope> defaultGivenScope(
 ): S {
     val scope = GivenScopeImpl()
     scope as S
-    elements(scope).forEach { scope.elements[it.first] = it.second }
+    val finalElements = elements(scope)
+    scope.elements = if (finalElements.isEmpty()) emptyMap()
+    else HashMap<String, () -> Any>(finalElements.size).apply {
+        finalElements.forEach { this[it.key.value] = it.factory }
+    }
     initializers(scope).forEach { it() }
     return scope
 }
 
-typealias GivenScopeElement<@Suppress("unused", "UNUSED_TYPEALIAS_PARAMETER") S> = Pair<TypeKey<Any>, () -> Any>
+@Suppress("unused")
+data class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: () -> Any)
 
 /**
  * Registers the declaration a element in the [GivenScope] [S]
@@ -162,7 +165,7 @@ class GivenScopeElementModule<@Given T : @GivenScopeElementBinding<S> U, U : Any
     fun elementIntoSet(
         @Given factory: () -> T,
         @Given key: TypeKey<U>
-    ): GivenScopeElement<S> = key to factory
+    ): GivenScopeElement<S> = GivenScopeElement(key, factory)
 
     @Given
     fun element(@Given scope: S, @Given key: TypeKey<U>): U = scope.element(key)
@@ -173,7 +176,8 @@ class GivenScopeElementModule<@Given T : @GivenScopeElementBinding<S> U, U : Any
  *
  * Example:
  * ```
- * @Given fun imageLoaderInitializer(@Given app: App): GivenScopeInitializer<AppGivenScope> = {
+ * @Given
+ * fun imageLoaderInitializer(@Given app: App): GivenScopeInitializer<AppGivenScope> = {
  *     ImageLoader.init(app)
  * }
  * ```
@@ -189,25 +193,21 @@ internal class GivenScopeImpl : GivenScope {
             return synchronized(this) { _isDisposed }
         }
 
-    val elements = mutableMapOf<TypeKey<*>, () -> Any>()
-    private val scopedValues = mutableMapOf<Any, Any>()
+    lateinit var elements: Map<String, () -> Any>
+    private var _scopedValues: MutableMap<Any, Any>? = null
+    private fun scopedValues(): MutableMap<Any, Any> =
+        (_scopedValues ?: hashMapOf<Any, Any>().also { _scopedValues = it })
 
-    override fun <T : Any> element(key: TypeKey<T>): T = elements[key]?.invoke() as? T
+    override fun <T : Any> element(key: TypeKey<T>): T = elements[key.value]?.invoke() as? T
         ?: error("No element found for $key in $this")
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T : Any> getScopedValueOrNull(key: Any): T? =
-        scopedValues[key] as? T
-    @Suppress("CAST_NEVER_SUCCEEDS")
-    override fun <T : Any> getScopedValueOrNull(key: TypeKey<T>): T? {
-        val keyString: String = key as String
-        return scopedValues[keyString] as? T
-    }
+    override fun <T : Any> getScopedValueOrNull(key: Any): T? = _scopedValues?.get(key) as? T
 
     override fun <T : Any> setScopedValue(key: Any, value: T) {
         synchronizedWithDisposedCheck {
             removeScopedValueImpl(key)
-            scopedValues[key] = value
+            scopedValues()[key] = value
         } ?: kotlin.run {
             (value as? GivenScopeDisposable)?.dispose()
         }
@@ -220,8 +220,8 @@ internal class GivenScopeImpl : GivenScope {
     override fun dispose() {
         synchronizedWithDisposedCheck {
             _isDisposed = true
-            if (scopedValues.isNotEmpty()) {
-                scopedValues.keys
+            if (_scopedValues != null && _scopedValues!!.isNotEmpty()) {
+                _scopedValues!!.keys
                     .toList()
                     .forEach { removeScopedValueImpl(it) }
             }
@@ -229,7 +229,7 @@ internal class GivenScopeImpl : GivenScope {
     }
 
     private fun removeScopedValueImpl(key: Any) {
-        (scopedValues.remove(key) as? GivenScopeDisposable)?.dispose()
+        (_scopedValues?.remove(key) as? GivenScopeDisposable)?.dispose()
     }
 
     private inline fun <R> synchronizedWithDisposedCheck(block: () -> R): R? {

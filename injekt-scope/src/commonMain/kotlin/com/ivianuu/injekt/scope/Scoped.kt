@@ -46,4 +46,4 @@ inline fun <@Given T : @Scoped<S> U, U : Any, S : GivenScope> scopedImpl(
     @Given scope: S,
     @Given factory: () -> T,
     @Given key: TypeKey<U>
-): U = scope.getOrCreateScopedValue<U>(key, factory)
+): U = scope.getOrCreateScopedValue(key, factory)
