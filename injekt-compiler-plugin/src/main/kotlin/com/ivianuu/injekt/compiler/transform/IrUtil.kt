@@ -272,7 +272,6 @@ fun IrBuilderWithScope.jvmNameAnnotation(
 fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
     val descriptor = descriptor
     val newDescriptor = wrapDescriptor(descriptor)
-
     return IrFunctionImpl(
         startOffset,
         endOffset,

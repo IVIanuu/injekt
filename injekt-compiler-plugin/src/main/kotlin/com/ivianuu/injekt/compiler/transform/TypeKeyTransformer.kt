@@ -68,7 +68,6 @@ class TypeKeyTransformer(
     private val trace: BindingTrace,
     private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
-
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
     private val transformedClasses = mutableSetOf<IrClass>()
 
@@ -478,6 +477,5 @@ class TypeKeyTransformer(
         }
         return null
     }
-
 }
 

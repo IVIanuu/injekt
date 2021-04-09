@@ -30,6 +30,7 @@ import com.ivianuu.injekt.compiler.toPersistedCallableInfo
 import com.ivianuu.injekt.compiler.toPersistedClassifierInfo
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.annotations.AnnotatedImpl
@@ -41,8 +42,10 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
+import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -50,6 +53,7 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.constants.StringValue
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 
@@ -58,7 +62,6 @@ class InfoTransformer(
     private val pluginContext: IrPluginContext,
     private val trace: BindingTrace
 ) : IrElementTransformerVoid() {
-
     @Suppress("NewApi")
     override fun visitClass(declaration: IrClass): IrStatement {
         val classifierRef = declaration.descriptor.toClassifierRef(context, trace)
@@ -86,107 +89,75 @@ class InfoTransformer(
     @Suppress("NewApi")
     override fun visitFunction(declaration: IrFunction): IrStatement {
         if (declaration.descriptor is PropertyAccessorDescriptor) return super.visitFunction(declaration)
-        val descriptor = declaration.descriptor
-        val callableRef = descriptor.toCallableRef(context, trace)
-        val isGiven = declaration.hasAnnotation(InjektFqNames.Given) ||
-                (declaration is IrConstructor &&
-                        declaration.constructedClass.hasAnnotation(InjektFqNames.Given))
-        val hasGivenParameters =
-            declaration.valueParameters.any { it.descriptor.isGiven(context, trace) }
-        val requiresTypeFix = callableRef.type.anyType {
-            it.qualifiers.isNotEmpty()
-        } || callableRef.parameterTypes.any { (_, parameterType) ->
-            parameterType.anyType {
-                it.qualifiers.isNotEmpty() ||
-                        (it.classifier.isTypeAlias &&
-                                it.fullyExpandedType.isSuspendFunctionType)
-            }
-        }
-        if (descriptor is AnnotatedImpl && (isGiven || hasGivenParameters || requiresTypeFix)) {
-            val info = callableRef.toPersistedCallableInfo(this@InfoTransformer.context, trace)
-            val serializedValue = info.encode()
-
-            val field = AnnotatedImpl::class.java.declaredFields
-                .single { it.name == "annotations" }
-            field.isAccessible = true
-            val modifiersField: Field = Field::class.java.getDeclaredField("modifiers")
-            modifiersField.isAccessible = true
-            modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
-            field.set(
-                descriptor,
-                Annotations.create(
-                    descriptor.annotations.toList() + AnnotationDescriptorImpl(
-                        pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(
-                            InjektFqNames.CallableInfo
-                        ))!!.defaultType,
-                        mapOf("value".asNameId() to StringValue(serializedValue)),
-                        SourceElement.NO_SOURCE
-                    )
-                )
-            )
-
-            declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
-                .run {
-                    irCall(
-                        pluginContext.referenceClass(InjektFqNames.CallableInfo)!!
-                            .constructors
-                            .single()
-                    ).apply {
-                        putValueArgument(0, irString(serializedValue))
-                    }
-                }
-        }
+        addInfoToCallableIfNeeded(declaration, declaration.symbol)
         return super.visitFunction(declaration)
     }
 
     @Suppress("NewApi")
     override fun visitProperty(declaration: IrProperty): IrStatement {
-        val descriptor = declaration.descriptor
-        val callableRef = descriptor.toCallableRef(context, trace)
-        val requiresTypeFix = callableRef.type.anyType {
-            it.qualifiers.isNotEmpty()
-        } || callableRef.parameterTypes.any { (_, parameterType) ->
-            parameterType.anyType {
-                it.qualifiers.isNotEmpty() ||
-                        (it.classifier.isTypeAlias &&
-                                it.fullyExpandedType.isSuspendFunctionType)
-            }
-        }
-        if (descriptor is AnnotatedImpl && (declaration.hasAnnotation(InjektFqNames.Given) || requiresTypeFix)) {
-            val info = callableRef.toPersistedCallableInfo(this@InfoTransformer.context, trace)
-            val serializedValue = info.encode()
-
-            val field = AnnotatedImpl::class.java.declaredFields
-                .single { it.name == "annotations" }
-            field.isAccessible = true
-            val modifiersField: Field = Field::class.java.getDeclaredField("modifiers")
-            modifiersField.isAccessible = true
-            modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
-            field.set(
-                descriptor,
-                Annotations.create(
-                    descriptor.annotations.toList() + AnnotationDescriptorImpl(
-                        pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(
-                            InjektFqNames.CallableInfo
-                        ))!!.defaultType,
-                        mapOf("value".asNameId() to StringValue(serializedValue)),
-                        SourceElement.NO_SOURCE
-                    )
-                )
-            )
-
-            declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
-                .run {
-                    irCall(
-                        pluginContext.referenceClass(InjektFqNames.CallableInfo)!!
-                            .constructors
-                            .single()
-                    ).apply {
-                        putValueArgument(0, irString(serializedValue))
-                    }
-                }
-        }
+        addInfoToCallableIfNeeded(declaration, declaration.symbol)
         return super.visitProperty(declaration)
     }
 
+    private fun addInfoToCallableIfNeeded(
+        declaration: IrDeclarationWithName,
+        symbol: IrSymbol
+    ) {
+        val descriptor = declaration.descriptor as CallableDescriptor
+        if (descriptor !is AnnotatedImpl) return
+        var needsInfo = declaration.hasAnnotation(InjektFqNames.Given) ||
+                (declaration is IrConstructor &&
+                        declaration.constructedClass.hasAnnotation(InjektFqNames.Given))
+        if (!needsInfo) {
+            needsInfo = declaration
+                .safeAs<IrFunction>()
+                ?.valueParameters
+                ?.any { it.descriptor.isGiven(context, trace) } == true
+        }
+        val callableRef = descriptor.toCallableRef(context, trace)
+        if (!needsInfo) {
+            callableRef.type.anyType {
+                it.qualifiers.isNotEmpty()
+            } || callableRef.parameterTypes.any { (_, parameterType) ->
+                parameterType.anyType {
+                    it.qualifiers.isNotEmpty() ||
+                            (it.classifier.isTypeAlias &&
+                                    it.fullyExpandedType.isSuspendFunctionType)
+                }
+            }
+        }
+        if (!needsInfo) return
+        val info = callableRef.toPersistedCallableInfo(this@InfoTransformer.context, trace)
+        val serializedValue = info.encode()
+
+        val field = AnnotatedImpl::class.java.declaredFields
+            .single { it.name == "annotations" }
+        field.isAccessible = true
+        val modifiersField: Field = Field::class.java.getDeclaredField("modifiers")
+        modifiersField.isAccessible = true
+        modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
+        field.set(
+            descriptor,
+            Annotations.create(
+                descriptor.annotations.toList() + AnnotationDescriptorImpl(
+                    pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(
+                        InjektFqNames.CallableInfo
+                    ))!!.defaultType,
+                    mapOf("value".asNameId() to StringValue(serializedValue)),
+                    SourceElement.NO_SOURCE
+                )
+            )
+        )
+
+        declaration.annotations += DeclarationIrBuilder(pluginContext, symbol)
+            .run {
+                irCall(
+                    pluginContext.referenceClass(InjektFqNames.CallableInfo)!!
+                        .constructors
+                        .single()
+                ).apply {
+                    putValueArgument(0, irString(serializedValue))
+                }
+            }
+    }
 }

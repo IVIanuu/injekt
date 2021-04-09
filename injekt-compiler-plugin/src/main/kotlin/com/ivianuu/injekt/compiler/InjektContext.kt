@@ -34,7 +34,6 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 @Suppress("NewApi")
 class InjektContext(val module: ModuleDescriptor) {
-
     val setClassifier by unsafeLazy {
         module.builtIns.set.toClassifierRef(this, null)
     }
@@ -144,5 +143,4 @@ class InjektContext(val module: ModuleDescriptor) {
 
         return classDescriptor.unsubstitutedMemberScope
     }
-
 }

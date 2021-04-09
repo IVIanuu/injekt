@@ -101,7 +101,6 @@ class GivenCallTransformer(
     private val context: InjektContext,
     private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
-
     private inner class GraphContext(val graph: GivenGraph.Success) {
         val statements = mutableListOf<IrStatement>()
 
@@ -854,5 +853,4 @@ class GivenCallTransformer(
                 +result
             }
     }
-
 }

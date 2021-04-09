@@ -52,6 +52,7 @@ class TypeKeyChecker(private val context: InjektContext) : CallChecker, Declarat
                             .on(it.findPsi()!!)
                     )
                 }
+            return
         }
 
         if (descriptor !is CallableDescriptor) return
