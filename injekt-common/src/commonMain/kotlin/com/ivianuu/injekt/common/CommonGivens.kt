@@ -22,7 +22,7 @@ import com.ivianuu.injekt.Given
 import kotlin.reflect.KClass
 
 /**
- * Converts a [Set<Pair<K, V>] to a [Map<K, V>]
+ * Allows to request a Map<K, V> for each Set<Pair<K, V>>
  */
 @Given
 inline fun <K, V> setOfPairsToMap(@Given pairs: Set<Pair<K, V>>): Map<K, V> = pairs.toMap()

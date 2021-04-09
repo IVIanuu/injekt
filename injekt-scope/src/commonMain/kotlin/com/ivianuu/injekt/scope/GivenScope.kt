@@ -132,8 +132,7 @@ inline fun <S : DefaultGivenScope> defaultGivenScope(
 ): S {
     val scope = GivenScopeImpl()
     scope as S
-    elements(scope)
-        .forEach { scope.elements[it.first] = it.second }
+    elements(scope).forEach { scope.elements[it.first] = it.second }
     initializers(scope).forEach { it() }
     return scope
 }
