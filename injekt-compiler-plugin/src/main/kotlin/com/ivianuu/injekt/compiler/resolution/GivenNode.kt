@@ -243,7 +243,7 @@ fun CallableRef.toGivenNode(
 fun CallableRef.getGivenRequests(
     context: InjektContext,
     trace: BindingTrace?,
-    callableFqNameProvider: (CallableDescriptor) -> FqName = { it.fqNameSafe }
+    callableFqNameProvider: (CallableDescriptor) -> FqName = { it.containingDeclaration.fqNameSafe }
 ): List<GivenRequest> = callable.allParameters
     .asSequence()
     .filter {
