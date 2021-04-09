@@ -25,9 +25,7 @@ import kotlin.reflect.KClass
  * Converts a [Set<Pair<K, V>] to a [Map<K, V>]
  */
 @Given
-inline fun <K, V> setOfPairsToMap(
-    @Given pairs: Set<Pair<K, V>>
-): Map<K, V> = pairs.toMap()
+inline fun <K, V> setOfPairsToMap(@Given pairs: Set<Pair<K, V>>): Map<K, V> = pairs.toMap()
 
 @Given
 inline fun <reified T : Any> givenKClass(): KClass<T> = T::class
