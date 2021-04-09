@@ -22,7 +22,7 @@ import com.ivianuu.injekt.common.ForTypeKey
 import com.ivianuu.injekt.common.TypeKey
 
 /**
- * Converts a [@Scoped<S> T] to a [T] which is scoped to the lifecycle of [S]
+ * Reuses the same instance within scope [S]
  *
  * In the following example each request to Repo resolvers to the same instance
  * ```
