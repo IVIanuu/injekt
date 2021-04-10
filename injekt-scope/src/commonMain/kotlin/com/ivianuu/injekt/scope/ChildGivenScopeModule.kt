@@ -24,9 +24,8 @@ annotation class ChildGivenScopeFactory
 
 class ChildGivenScopeModule<P : GivenScope, T, S : T> {
     @Given
-    fun factory(
-        @Given scopeFactory: S
-    ): @GivenScopeElementBinding<P> @ChildGivenScopeFactory T = scopeFactory
+    fun factory(@Given scopeFactory: S):
+            @GivenScopeElementBinding<P> @ChildGivenScopeFactory T = scopeFactory
 }
 
 fun <P : GivenScope, C : GivenScope> ChildGivenScopeModule0() =
