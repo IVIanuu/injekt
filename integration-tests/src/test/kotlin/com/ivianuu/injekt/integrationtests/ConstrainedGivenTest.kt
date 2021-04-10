@@ -292,19 +292,6 @@ class ConstrainedGivenTest {
     }
 
     @Test
-    fun testDivergentConstrainedGiven() = codegen(
-        """
-            @Given fun <@Given T> constrainedGiven(@Given instance: T): T = instance
-
-            @Given fun foo() = Foo()
-
-            fun invoke() = given<Foo>()
-        """
-    ) {
-        compilationShouldHaveFailed("constrained given return type must not be assignable to the constraint type")
-    }
-
-    @Test
     fun testComplexGivenConstraintSetup() = codegen(
         """
             typealias App = Any

@@ -331,13 +331,4 @@ class GivenDeclarationTest {
             fun invoke() = given<Foo>()
         """
     )
-
-    @Test
-    fun testDivergentGiven() = codegen(
-        """
-            @Given fun <T> divergentGiven(@Given instance: T): T = instance
-        """
-    ) {
-        compilationShouldHaveFailed("given cannot have a value parameter with the same type as it's return type")
-    }
 }

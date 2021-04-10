@@ -303,34 +303,6 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                     )
                 }
         }
-
-        if (givenConstraints.size == 1) {
-            val callable = descriptor.toCallableRef(this.context, trace)
-            val constraintType = callable.typeParameters
-                .single { it.isGivenConstraint }
-                .defaultType
-            if (callable.type.isAssignableTo(this.context, constraintType)) {
-                trace.report(
-                    InjektErrors.DIVERGENT_GIVEN_CONSTRAINT
-                        .on(declaration.safeAs<KtNamedFunction>()?.typeReference
-                            ?: givenConstraints.single().findPsi() ?: declaration)
-                )
-            }
-        }
-
-        if (descriptor.valueParameters.isNotEmpty()) {
-            val callable = descriptor.toCallableRef(this.context, trace)
-            callable.parameterTypes
-                .filter { callable.type == it.value }
-                .forEach { (divergentParameterName) ->
-                    trace.report(
-                        InjektErrors.DIVERGENT_GIVEN
-                            .on(declaration.safeAs<KtFunction>()
-                                ?.valueParameters
-                                ?.firstOrNull { it.name == divergentParameterName } ?: declaration)
-                    )
-                }
-        }
     }
 
     private fun checkOverrides(
