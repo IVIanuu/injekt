@@ -45,6 +45,19 @@ inline fun <T> given(@Given value: T): T = value
 @Suppress("NOTHING_TO_INLINE")
 inline fun <T : Any> givenOrNull(@Given value: T? = null): T? = value
 
+@Target(
+    AnnotationTarget.CLASS,
+    AnnotationTarget.CONSTRUCTOR,
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.LOCAL_VARIABLE,
+    AnnotationTarget.VALUE_PARAMETER,
+    AnnotationTarget.TYPE
+)
+@Repeatable
+@Retention(AnnotationRetention.SOURCE)
+annotation class NotGiven<T>
+
 /**
  * Marks an annotation as an qualifier which can then be used
  * to distinct types

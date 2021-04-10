@@ -20,6 +20,8 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringGiven
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektName
+import com.ivianuu.injekt.compiler.isExternalDeclaration
+import com.ivianuu.injekt.compiler.toTypeRef
 import com.ivianuu.injekt.compiler.transform.toKotlinType
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -48,6 +50,7 @@ sealed class GivenNode {
     abstract val ownerScope: ResolutionScope
     abstract val isFrameworkGiven: Boolean
     abstract val cacheExpressionResultIfPossible: Boolean
+    abstract val notGivens: List<TypeRef>
 }
 
 class CallableGivenNode(
@@ -69,6 +72,8 @@ class CallableGivenNode(
         get() = false
     override val cacheExpressionResultIfPossible: Boolean
         get() = false
+    override val notGivens: List<TypeRef>
+        get() = callable.notGivens
 }
 
 class SetGivenNode(
@@ -89,6 +94,8 @@ class SetGivenNode(
         get() = true
     override val cacheExpressionResultIfPossible: Boolean
         get() = false
+    override val notGivens: List<TypeRef>
+        get() = emptyList()
 }
 
 class ProviderGivenNode(
@@ -109,6 +116,7 @@ class ProviderGivenNode(
             parameterName = "instance".asNameId(),
             isInline = false,
             isLazy = true,
+            forNotGiven = false,
             requestDescriptor = ownerScope.ownerDescriptor.cast()
         )
     )
@@ -147,6 +155,8 @@ class ProviderGivenNode(
         get() = true
     override val cacheExpressionResultIfPossible: Boolean
         get() = true
+    override val notGivens: List<TypeRef>
+        get() = emptyList()
 }
 
 class AbstractGivenNode(
@@ -179,7 +189,8 @@ class AbstractGivenNode(
                 parameterName = requestCallable.callable.name,
                 isInline = false,
                 isLazy = true,
-                requestDescriptor = ownerScope.ownerDescriptor.cast()
+                forNotGiven = false,
+                requestDescriptor = type.classifier.descriptor!!.cast()
             )
         }
 
@@ -221,6 +232,14 @@ class AbstractGivenNode(
         get() = true
     override val cacheExpressionResultIfPossible: Boolean
         get() = false
+    override val notGivens: List<TypeRef> = if (type.classifier.descriptor!!.original.isExternalDeclaration()) {
+        ownerScope.context.classifierInfoFor(
+            type.classifier.descriptor!!,
+            ownerScope.trace
+        )?.notGivens
+            ?.map { it.toTypeRef(ownerScope.context, ownerScope.trace) }
+            ?: emptyList()
+    } else type.classifier.notGivens(ownerScope.context, ownerScope.trace)
 }
 
 fun CallableRef.toGivenNode(
@@ -264,6 +283,7 @@ fun CallableRef.getGivenRequests(
             parameterName = name.asNameId(),
             isInline = InlineUtil.isInlineParameter(parameter),
             isLazy = false,
+            forNotGiven = false,
             requestDescriptor = callable
         )
     }
@@ -276,5 +296,6 @@ data class GivenRequest(
     val parameterName: Name,
     val isInline: Boolean,
     val isLazy: Boolean,
+    val forNotGiven: Boolean,
     val requestDescriptor: DeclarationDescriptorWithVisibility
 )

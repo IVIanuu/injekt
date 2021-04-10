@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.isExternalDeclaration
@@ -13,6 +14,7 @@ import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 data class CallableRef(
     val callable: CallableDescriptor,
@@ -20,9 +22,10 @@ data class CallableRef(
     val originalType: TypeRef,
     val typeParameters: List<ClassifierRef>,
     val parameterTypes: Map<String, TypeRef>,
-    val givenParameters: Set<String>,
+    val givenParameters: List<String>,
     val typeArguments: Map<ClassifierRef, TypeRef>,
     val isGiven: Boolean,
+    val notGivens: List<TypeRef>,
     val constrainedGivenSource: CallableRef?,
     val callContext: CallContext,
     val owner: ClassifierRef?,
@@ -33,6 +36,7 @@ fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
     if (map.isEmpty()) return this
     return copy(
         type = type.substitute(map),
+        notGivens = notGivens.map { it.substitute(map) },
         parameterTypes = parameterTypes
             .mapValues { it.value.substitute(map) },
         typeArguments = typeArguments
@@ -68,6 +72,11 @@ fun CallableDescriptor.toCallableRef(
             } else null
         }
         ?: returnType!!.toTypeRef(context, trace)
+    val notGivens = info?.notGivens
+        ?.map { it.toTypeRef(context, trace) }
+        ?: (annotations + returnType!!.annotations)
+            .filter { it.type.constructor.declarationDescriptor!!.fqNameSafe == InjektFqNames.NotGiven }
+            .map { it.type.arguments.single().type.toTypeRef(context, trace) }
     val typeParameters = info
         ?.typeParameters
         ?.map { it.toClassifierRef(context, trace) } ?: typeParameters
@@ -81,7 +90,8 @@ fun CallableDescriptor.toCallableRef(
     val givenParameters = info?.givenParameters ?: (if (this is ConstructorDescriptor) valueParameters else allParameters)
         .asSequence()
         .filter { it.isGiven(context, trace) }
-        .mapTo(mutableSetOf()) { it.injektName() }
+        .map { it.injektName() }
+        .toList()
     return CallableRef(
         callable = this,
         type = type,
@@ -89,6 +99,7 @@ fun CallableDescriptor.toCallableRef(
         typeParameters = typeParameters,
         parameterTypes = parameterTypes,
         givenParameters = givenParameters,
+        notGivens = notGivens,
         typeArguments = typeParameters
             .map { it to it.defaultType }
             .toMap(),

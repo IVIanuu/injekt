@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isForTypeKey
@@ -188,7 +189,7 @@ fun ResolutionScope.resolveRequests(
     else GivenGraph.Error(this, failureRequest!!, failure)
 }
 
-private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult {
+fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult {
     // do not cache inlined providers because the call context can be different
     // which can lead to unexpected results
     val isInlineProviderCandidateType = request.isInline &&
@@ -326,6 +327,25 @@ private fun ResolutionScope.resolveCandidate(
                 )
             }
         }
+    }
+
+    for (notGiven in candidate.notGivens) {
+        val notGivenRequest = GivenRequest(
+            type = notGiven,
+            isRequired = true,
+            callableFqName = candidate.callableFqName,
+            parameterName = "notGiven".asNameId(),
+            isInline = false,
+            isLazy = false,
+            forNotGiven = true,
+            requestDescriptor = when (candidate) {
+                is AbstractGivenNode -> candidate.type.classifier.descriptor!!.cast()
+                is CallableGivenNode -> candidate.callable.callable
+                else -> throw AssertionError()
+            }
+        )
+        if (resolveRequest(notGivenRequest) is ResolutionResult.Success)
+            return@computeForCandidate ResolutionResult.Failure.NoCandidates
     }
 
     if (candidate.dependencies.isEmpty())

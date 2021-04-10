@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.forTypeKeyTypeParameters
 import com.ivianuu.injekt.compiler.resolution.givenConstraintTypeParameters
+import com.ivianuu.injekt.compiler.resolution.notGivens
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -42,7 +43,8 @@ data class PersistedCallableInfo(
     @SerialName("0") val type: PersistedTypeRef,
     @SerialName("1") val typeParameters: List<PersistedClassifierInfo> = emptyList(),
     @SerialName("2") val parameterTypes: Map<String, PersistedTypeRef> = emptyMap(),
-    @SerialName("3") val givenParameters: Set<String> = emptySet()
+    @SerialName("3") val givenParameters: List<String> = emptyList(),
+    @SerialName("4") val notGivens: List<PersistedTypeRef> = emptyList()
 )
 
 fun CallableRef.toPersistedCallableInfo(
@@ -53,18 +55,20 @@ fun CallableRef.toPersistedCallableInfo(
     typeParameters = typeParameters.map { it.toPersistedClassifierInfo(context, trace) },
     parameterTypes = parameterTypes
         .mapValues { it.value.toPersistedTypeRef(context) },
-    givenParameters = givenParameters
+    givenParameters = givenParameters,
+    notGivens = notGivens.map { it.toPersistedTypeRef(context) }
 )
 
 @Serializable
 data class PersistedClassifierInfo(
     @SerialName("0") val key: String,
-    @SerialName("1") val qualifiers: List<PersistedTypeRef> = emptyList(),
-    @SerialName("2") val superTypes: List<PersistedTypeRef> = emptyList(),
-    @SerialName("3") val primaryConstructorPropertyParameters: List<String> = emptyList(),
-    @SerialName("4") val forTypeKeyTypeParameters: List<String> = emptyList(),
-    @SerialName("5") val givenConstraintTypeParameters: List<String> = emptyList(),
-    @SerialName("6") val isOptimizableGiven: Boolean = false
+    @SerialName("1") val superTypes: List<PersistedTypeRef> = emptyList(),
+    @SerialName("2") val qualifiers: List<PersistedTypeRef> = emptyList(),
+    @SerialName("3") val notGivens: List<PersistedTypeRef> = emptyList(),
+    @SerialName("4") val primaryConstructorPropertyParameters: List<String> = emptyList(),
+    @SerialName("5") val forTypeKeyTypeParameters: List<String> = emptyList(),
+    @SerialName("6") val givenConstraintTypeParameters: List<String> = emptyList(),
+    @SerialName("7") val isOptimizableGiven: Boolean = false
 )
 
 fun ClassifierRef.toPersistedClassifierInfo(
@@ -80,8 +84,9 @@ fun ClassifierRef.toPersistedClassifierInfo(
             ?.uniqueKey(context)
             ?: descriptor.uniqueKey(context)
     } else descriptor!!.uniqueKey(context),
-    qualifiers = qualifiers.map { it.toPersistedTypeRef(context) },
     superTypes = superTypes.map { it.toPersistedTypeRef(context) },
+    qualifiers = qualifiers.map { it.toPersistedTypeRef(context) },
+    notGivens = notGivens(context, trace).map { it.toPersistedTypeRef(context) },
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
         .map { it.asString() },
     forTypeKeyTypeParameters = forTypeKeyTypeParameters

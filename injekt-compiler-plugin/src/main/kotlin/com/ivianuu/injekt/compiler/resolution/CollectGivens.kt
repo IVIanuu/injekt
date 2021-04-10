@@ -197,10 +197,23 @@ fun ClassDescriptor.getGivenConstructor(
         ?.toCallableRef(context, trace)
         ?.makeGiven()
     val finalConstructor = if (rawGivenConstructor != null) {
-        if (rawGivenConstructor.type.classifier.qualifiers.isNotEmpty()) {
+        val additionalNotGivens = if (original.isExternalDeclaration()) {
+            context.classifierInfoFor(
+                rawGivenConstructor.type.classifier.descriptor!!,
+                trace
+            )?.notGivens
+                ?.map { it.toTypeRef(context, trace) }
+                ?: emptyList()
+        } else rawGivenConstructor.type.classifier.notGivens(context, trace)
+        if (rawGivenConstructor.type.classifier.qualifiers.isNotEmpty() ||
+                additionalNotGivens.isNotEmpty()) {
             val qualifiedType = rawGivenConstructor.type
                 .copy(qualifiers = rawGivenConstructor.type.classifier.qualifiers)
-            rawGivenConstructor.copy(type = qualifiedType, originalType = qualifiedType)
+            rawGivenConstructor.copy(
+                type = qualifiedType,
+                originalType = qualifiedType,
+                notGivens = additionalNotGivens
+            )
         } else {
             rawGivenConstructor
         }

@@ -85,6 +85,7 @@ class GivenCallChecker(
                     parameterName = parameterDescriptor.name,
                     isInline = InlineUtil.isInlineParameter(parameterDescriptor),
                     isLazy = false,
+                    forNotGiven = false,
                     requestDescriptor = context.scope.ownerDescriptor.cast()
                 )
             }

@@ -97,6 +97,7 @@ class ResolutionScope(
     private data class ConstrainedGivenCandidate(
         val type: TypeRef,
         val rawType: TypeRef,
+        val notGivens: List<TypeRef>,
         val source: CallableRef
     )
 
@@ -122,6 +123,7 @@ class ResolutionScope(
                         constrainedGivenCandidates += ConstrainedGivenCandidate(
                             type = typeWithFrameworkKey,
                             rawType = callable.type,
+                            notGivens = callable.notGivens,
                             source = callable
                         )
                     },
@@ -133,6 +135,7 @@ class ResolutionScope(
                         constrainedGivenCandidates += ConstrainedGivenCandidate(
                             type = typeWithFrameworkKey,
                             rawType = callable.type,
+                            notGivens = callable.notGivens,
                             source = callable
                         )
                    },
@@ -176,35 +179,38 @@ class ResolutionScope(
         constrainedGivens.forEach { recordLookup(it.callable.callable) }
     }
 
-    fun givensForRequest(request: GivenRequest): List<GivenNode>? {
-        if (givens.isEmpty()) return parent?.givensForRequest(request)
-        // we return merged collections
-        if (request.type.frameworkKey == null &&
-            request.type.classifier == context.setClassifier) return null
-        return givensByType.getOrPut(request.type) {
-            val thisGivens = givens
-                .asSequence()
-                .filter {
-                    it.value.type.frameworkKey == request.type.frameworkKey
-                            && it.value.type.isAssignableTo(context, request.type) &&
-                            it.value.isApplicable()
-                }
-                .map { it.value.toGivenNode(request.type, this) }
-                .toList()
-                .takeIf { it.isNotEmpty() }
-            val parentGivens = parent?.givensForRequest(request)
-            if (parentGivens != null && thisGivens != null) parentGivens + thisGivens
-            else thisGivens ?: parentGivens
-        }?.filter { given ->
+    fun givensForRequest(request: GivenRequest): List<GivenNode>? = givensForType(request.type)
+        ?.filter { given ->
             given !is CallableGivenNode ||
-                    given.callable.callable.visibility != DescriptorVisibilities.INTERNAL ||
+                    (given.callable.callable.visibility != DescriptorVisibilities.INTERNAL ||
                     !given.callable.callable.isExternalDeclaration() ||
                     DescriptorVisibilities.INTERNAL.isVisible(
                         null,
                         given.callable.callable,
                         request.requestDescriptor
-                    )
+                    )) && (!request.forNotGiven || request.requestDescriptor != given.callable.callable)
         }?.takeIf { it.isNotEmpty() }
+
+    fun givensForType(type: TypeRef): List<GivenNode>? {
+        if (givens.isEmpty()) return parent?.givensForType(type)
+        // we return merged collections
+        if (type.frameworkKey == null &&
+            type.classifier == context.setClassifier) return null
+        return givensByType.getOrPut(type) {
+            val thisGivens = givens
+                .asSequence()
+                .filter {
+                    it.value.type.frameworkKey == type.frameworkKey
+                            && it.value.type.isAssignableTo(context, type) &&
+                            it.value.isApplicable()
+                }
+                .map { it.value.toGivenNode(type, this) }
+                .toList()
+                .takeIf { it.isNotEmpty() }
+            val parentGivens = parent?.givensForType(type)
+            if (parentGivens != null && thisGivens != null) parentGivens + thisGivens
+            else thisGivens ?: parentGivens
+        }
     }
 
     fun frameworkGivensForRequest(request: GivenRequest): List<GivenNode>? {
@@ -248,19 +254,29 @@ class ResolutionScope(
                     }
             }
 
-            if (elements != null) {
-                val elementRequests = elements
-                    .mapIndexed { index, element ->
-                        GivenRequest(
-                            type = element,
-                            isRequired = true,
-                            callableFqName = FqName("com.ivianuu.injekt.givenSetOf<${request.type.arguments[0].render()}>"),
-                            parameterName = "element$index".asNameId(),
-                            isInline = false,
-                            isLazy = false,
-                            requestDescriptor = ownerDescriptor.cast()
-                        )
-                    }
+            val elementRequests = elements
+                ?.map { element ->
+                    GivenRequest(
+                        type = element,
+                        isRequired = true,
+                        callableFqName = FqName("com.ivianuu.injekt.givenSetOf<${request.type.arguments[0].render()}>"),
+                        parameterName = "element".asNameId(),
+                        isInline = false,
+                        isLazy = false,
+                        forNotGiven = false,
+                        requestDescriptor = ownerDescriptor.cast()
+                    )
+                }
+                ?.filter { candidateRequest ->
+                    val candidate = (givensForRequest(candidateRequest)
+                        ?: frameworkGivensForRequest(candidateRequest))!!.single()
+                    candidate.notGivens.isEmpty() || resolveRequest(
+                        candidateRequest.copy(forNotGiven = true)
+                    ) is ResolutionResult.Failure.NoCandidates
+                }
+                ?.takeIf { it.isNotEmpty() }
+
+            if (elementRequests != null) {
                 return listOf(
                     SetGivenNode(
                         type = request.type,
@@ -317,11 +333,11 @@ class ResolutionScope(
                         }
                     )
                 }
-                .map { callable ->
-                    val typeWithFrameworkKey = callable.type.copy(
+                .map { candidate ->
+                    val typeWithFrameworkKey = candidate.type.copy(
                         frameworkKey = generateFrameworkKey()
                     )
-                    addGivenIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey))
+                    addGivenIfAbsentOrBetter(candidate.copy(type = typeWithFrameworkKey))
                     typeWithFrameworkKey
                 }
                 .toList()
@@ -383,15 +399,20 @@ class ResolutionScope(
         if (outputsSubstitutionMap.size != constrainedGiven.callable.typeParameters.size)
             return
         val newGivenType = constrainedGiven.callable.type.substitute(outputsSubstitutionMap)
-        val newGiven = constrainedGiven.callable.substituteInputs(inputsSubstitutionMap)
-            .copy(
-                constrainedGivenSource = candidate.source,
-                typeArguments = constrainedGiven.callable
-                    .typeArguments
-                    .mapValues { it.value.substitute(inputsSubstitutionMap) },
-                type = newGivenType,
-                originalType = newGivenType
-            )
+        val newGiven = constrainedGiven.callable
+            .substituteInputs(inputsSubstitutionMap)
+            .let { tmp ->
+                tmp.copy(
+                    constrainedGivenSource = candidate.source,
+                    typeArguments = constrainedGiven.callable
+                        .typeArguments
+                        .mapValues { it.value.substitute(inputsSubstitutionMap) },
+                    notGivens = tmp.notGivens + candidate.notGivens
+                        .map { it.substitute(outputsSubstitutionMap) },
+                    type = newGivenType,
+                    originalType = newGivenType
+                )
+            }
 
         newGiven.collectGivens(
             context = context,
@@ -414,6 +435,7 @@ class ResolutionScope(
                 val newCandidate = ConstrainedGivenCandidate(
                     type = newInnerGivenWithFrameworkKey.type,
                     rawType = finalNewInnerGiven.type,
+                    notGivens = finalNewInnerGiven.notGivens,
                     source = candidate.source
                 )
                 constrainedGivenCandidates += newCandidate
@@ -436,6 +458,7 @@ class ResolutionScope(
                 val newCandidate = ConstrainedGivenCandidate(
                     type = newInnerGivenWithFrameworkKey.type,
                     rawType = finalNewInnerAbstractGiven.type,
+                    notGivens = finalNewInnerAbstractGiven.notGivens,
                     source = candidate.source
                 )
                 constrainedGivenCandidates += newCandidate

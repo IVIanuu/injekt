@@ -87,6 +87,10 @@ val ClassifierRef.forTypeKeyTypeParameters: List<Name>
         .map { it.fqName.shortName() }
         .toList()
 
+fun ClassifierRef.notGivens(context: InjektContext, trace: BindingTrace?): List<TypeRef> = descriptor!!.annotations
+    .filter { it.type.constructor.declarationDescriptor!!.fqNameSafe == InjektFqNames.NotGiven }
+    .map { it.type.arguments.single().type.toTypeRef(context, trace) }
+
 fun ClassifierDescriptor.toClassifierRef(
     context: InjektContext,
     trace: BindingTrace?
