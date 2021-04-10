@@ -1,4 +1,5 @@
 import com.ivianuu.injekt.gradle.setupForInjekt
+import com.ivianuu.injekt.gradle.withGivenCalls
 
 /*
  * Copyright 2020 Manuel Wrage
@@ -24,6 +25,7 @@ kotlin {
     jvm {
         withJava()
         compilations.forEach {
+            if (it.name == "test") it.withGivenCalls()
             it.kotlinOptions {
                 jvmTarget = "1.8"
             }
@@ -35,6 +37,12 @@ kotlin {
             dependencies {
                 configurations.getByName("kotlinCompilerPluginClasspath")
                     .dependencies.add(project(":injekt-compiler-plugin"))
+            }
+        }
+        named("jvmTest") {
+            dependencies {
+                implementation(Deps.junit)
+                implementation(Deps.kotestAssertions)
             }
         }
     }
