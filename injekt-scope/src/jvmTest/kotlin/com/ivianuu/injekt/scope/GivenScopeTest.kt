@@ -18,7 +18,6 @@ package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.common.*
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
@@ -27,7 +26,7 @@ import org.junit.Test
 class GivenScopeTest {
     @Test
     fun testGetElement() {
-        @Given val element: @GivenScopeElementBinding<TestGivenScope1> String = "value"
+        @Given val element: @InstallElement<TestGivenScope1> String = "value"
         val scope = given<TestGivenScope1>()
         scope.element<String>() shouldBe "value"
     }
@@ -54,7 +53,7 @@ class GivenScopeTest {
         @Given
         val childScopeModule = ChildGivenScopeModule1<TestGivenScope1, String, TestGivenScope2>()
         val parentScope = given<TestGivenScope1>()
-        val childScope = parentScope.element<@ChildGivenScopeFactory (String) -> TestGivenScope2>()("42")
+        val childScope = parentScope.element<@ChildScopeFactory (String) -> TestGivenScope2>()("42")
         childScope.element<String>() shouldBe "42"
     }
 

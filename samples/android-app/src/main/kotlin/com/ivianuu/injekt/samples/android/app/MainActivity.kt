@@ -21,9 +21,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.android.ActivityGivenScope
-import com.ivianuu.injekt.android.AppContext
 import com.ivianuu.injekt.android.activityGivenScope
-import com.ivianuu.injekt.scope.GivenScopeElementBinding
+import com.ivianuu.injekt.scope.InstallElement
 import com.ivianuu.injekt.samples.android.ui.SampleAppUi
 import com.ivianuu.injekt.samples.android.ui.SampleTheme
 import com.ivianuu.injekt.scope.element
@@ -44,7 +43,7 @@ class MainActivity : ComponentActivity() {
 
 // Declare dependencies we want to retrieve from the activity scope
 @Given
-@GivenScopeElementBinding<ActivityGivenScope>
+@InstallElement<ActivityGivenScope>
 interface MainActivityDependencies {
     @Given
     val theme: SampleTheme

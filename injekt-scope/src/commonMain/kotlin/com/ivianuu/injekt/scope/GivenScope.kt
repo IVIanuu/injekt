@@ -157,10 +157,10 @@ data class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: (
  * ```
  */
 @Qualifier
-annotation class GivenScopeElementBinding<S : GivenScope>
+annotation class InstallElement<S : GivenScope>
 
 @Given
-class GivenScopeElementModule<@Given T : @GivenScopeElementBinding<S> U, U : Any, S : GivenScope> {
+class GivenScopeElementModule<@Given T : @InstallElement<S> U, U : Any, S : GivenScope> {
     @Given
     fun elementIntoSet(
         @Given factory: () -> T,

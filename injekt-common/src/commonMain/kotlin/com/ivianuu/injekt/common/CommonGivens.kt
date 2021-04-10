@@ -22,13 +22,19 @@ import com.ivianuu.injekt.Given
 import kotlin.reflect.KClass
 
 /**
- * Allows to request a Map<K, V> for each Set<Pair<K, V>>
+ * Allows to use a Map<K, V> for each Set<Pair<K, V>>
  */
 @Given
 inline fun <K, V> setOfPairsToMap(@Given pairs: Set<Pair<K, V>>): Map<K, V> = pairs.toMap()
 
+/**
+ * Allows to use a [KClass] of type [Ŧ]
+ */
 @Given
 inline fun <reified T : Any> givenKClass(): KClass<T> = T::class
 
+/**
+ * Allows to use a [TypeKey] of type [T]
+ */
 @Given
 inline fun <@ForTypeKey T> givenTypeKey(): TypeKey<T> = typeKeyOf()

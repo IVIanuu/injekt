@@ -27,5 +27,9 @@ import com.ivianuu.injekt.samples.android.domain.*
 import com.ivianuu.injekt.samples.android.ui.*
 
 class App : Application(), AppGivenScopeOwner {
-    override val appGivenScope by lazy { createAppGivenScope() }
+    override lateinit var appGivenScope: AppGivenScope
+    override fun onCreate() {
+        appGivenScope = createAppGivenScope()
+        super.onCreate()
+    }
 }

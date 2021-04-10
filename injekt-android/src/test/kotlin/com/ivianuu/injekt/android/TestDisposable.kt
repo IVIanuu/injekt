@@ -17,13 +17,10 @@
 package com.ivianuu.injekt.android
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.common.ForTypeKey
-import com.ivianuu.injekt.common.TypeKey
 import com.ivianuu.injekt.scope.GivenScope
-import com.ivianuu.injekt.scope.GivenScopeElementBinding
+import com.ivianuu.injekt.scope.InstallElement
 import com.ivianuu.injekt.scope.GivenScopeDisposable
 import com.ivianuu.injekt.scope.Scoped
-import com.ivianuu.injekt.scope.getOrCreateScopedValue
 
 class TestGivenScopeDisposable<S : GivenScope> : GivenScopeDisposable {
     var disposed = false
@@ -34,5 +31,5 @@ class TestGivenScopeDisposable<S : GivenScope> : GivenScopeDisposable {
 
 @Given
 fun <S : GivenScope> testGivenScopeDisposable():
-        @GivenScopeElementBinding<S> @Scoped<S> TestGivenScopeDisposable<S> =
+        @InstallElement<S> @Scoped<S> TestGivenScopeDisposable<S> =
     TestGivenScopeDisposable()

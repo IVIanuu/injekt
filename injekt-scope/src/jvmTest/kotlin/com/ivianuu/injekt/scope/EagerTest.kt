@@ -20,7 +20,6 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.given
 import io.kotest.matchers.shouldBe
 import org.junit.Test
-import com.ivianuu.injekt.common.*
 
 class EagerTest {
     @Test
@@ -35,7 +34,7 @@ class EagerTest {
         @Given
         fun fooElement(
             @Given foo: Foo
-        ): @GivenScopeElementBinding<TestGivenScope1> Foo = foo
+        ): @InstallElement<TestGivenScope1> Foo = foo
         val scope = given<TestGivenScope1>()
         callCount shouldBe 1
         scope.element<Foo>()

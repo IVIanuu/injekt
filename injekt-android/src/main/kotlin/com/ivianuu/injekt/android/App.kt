@@ -25,8 +25,11 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.scope.AppGivenScope
-import com.ivianuu.injekt.scope.GivenScopeElementBinding
+import com.ivianuu.injekt.scope.InstallElement
 
+/**
+ * Returns the [AppGivenScope] which is stored in the [Application]
+ */
 val Application.appGivenScope: AppGivenScope
     get() = (this as? AppGivenScopeOwner)?.appGivenScope
         ?: error("application does not implement AppGivenScopeOwner")
@@ -36,7 +39,7 @@ interface AppGivenScopeOwner {
 }
 
 inline fun Application.createAppGivenScope(
-    @Given scopeFactory: (@Given @GivenScopeElementBinding<AppGivenScope> Application) -> AppGivenScope
+    @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Application) -> AppGivenScope
 ): AppGivenScope = scopeFactory(this)
 
 typealias AppContext = Context

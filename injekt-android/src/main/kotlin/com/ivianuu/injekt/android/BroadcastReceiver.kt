@@ -22,18 +22,20 @@ import android.content.Context
 import android.content.Intent
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.scope.AppGivenScope
-import com.ivianuu.injekt.scope.ChildGivenScopeFactory
+import com.ivianuu.injekt.scope.ChildScopeFactory
 import com.ivianuu.injekt.scope.ChildGivenScopeModule3
 import com.ivianuu.injekt.scope.DefaultGivenScope
-import com.ivianuu.injekt.scope.GivenScope
 import com.ivianuu.injekt.scope.element
 
+/**
+ * Returns a new [ReceiverGivenScope] which must be manually stored and disposed
+ */
 fun BroadcastReceiver.createReceiverGivenScope(
     context: Context,
     intent: Intent,
 ): ReceiverGivenScope = (context.applicationContext as Application)
     .appGivenScope
-    .element<@ChildGivenScopeFactory (BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverGivenScope>()
+    .element<@ChildScopeFactory (BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverGivenScope>()
     .invoke(this, context, intent)
 
 typealias ReceiverGivenScope = DefaultGivenScope

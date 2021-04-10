@@ -23,7 +23,7 @@ class AppTest {
 }
 
 @Given
-@GivenScopeElementBinding<AppGivenScope>
+@InstallElement<AppGivenScope>
 @Scoped<AppGivenScope>
 class ScopeDisposeListener : GivenScopeDisposable {
     var disposed = false

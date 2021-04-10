@@ -19,16 +19,19 @@ package com.ivianuu.injekt.android
 import androidx.activity.ComponentActivity
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.scope.AppGivenScope
-import com.ivianuu.injekt.scope.ChildGivenScopeFactory
+import com.ivianuu.injekt.scope.ChildScopeFactory
 import com.ivianuu.injekt.scope.ChildGivenScopeModule0
 import com.ivianuu.injekt.scope.DefaultGivenScope
-import com.ivianuu.injekt.scope.GivenScope
 import com.ivianuu.injekt.scope.element
 
+/**
+ * Returns the [ActivityGivenScope] of this [ComponentActivity]
+ * whose lifecycle is bound the retained lifecycle of the activity
+ */
 val ComponentActivity.activityRetainedGivenScope: ActivityRetainedGivenScope
     get() = viewModelStore.givenScope {
         application.appGivenScope
-            .element<@ChildGivenScopeFactory () -> ActivityRetainedGivenScope>()
+            .element<@ChildScopeFactory () -> ActivityRetainedGivenScope>()
             .invoke()
     }
 

@@ -4,7 +4,7 @@ import com.ivianuu.injekt.Given
 import io.ktor.application.Application
 import io.ktor.util.AttributeKey
 import com.ivianuu.injekt.scope.AppGivenScope
-import com.ivianuu.injekt.scope.GivenScopeElementBinding
+import com.ivianuu.injekt.scope.InstallElement
 import io.ktor.application.ApplicationCall
 import io.ktor.application.ApplicationStopped
 import io.ktor.routing.Routing
@@ -20,7 +20,7 @@ val ApplicationCall.appGivenScope: AppGivenScope
     get() = application.appGivenScope
 
 fun Application.initializeAppGivenScope(
-    @Given scopeFactory: (@Given @GivenScopeElementBinding<AppGivenScope> Application) -> AppGivenScope
+    @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Application) -> AppGivenScope
 ) {
     val scope = scopeFactory(this)
     attributes.put(AppGivenScopeKey, scope)

@@ -3,7 +3,7 @@ package com.ivianuu.injekt.android
 import android.os.PowerManager
 import androidx.test.core.app.ActivityScenario
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.scope.GivenScopeElementBinding
+import com.ivianuu.injekt.scope.InstallElement
 import com.ivianuu.injekt.scope.element
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,5 +25,5 @@ class SystemServiceTest {
 }
 
 @Given
-@GivenScopeElementBinding<ActivityGivenScope>
+@InstallElement<ActivityGivenScope>
 class SystemServiceComponent(@Given val powerManager: @SystemService PowerManager)

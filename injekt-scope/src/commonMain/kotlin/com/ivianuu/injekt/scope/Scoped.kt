@@ -35,7 +35,6 @@ import com.ivianuu.injekt.common.TypeKey
  *     val repo2 = given<MyRepo>()
  *     // repo === repo2
  * }
- *
  * ```
  */
 @Qualifier

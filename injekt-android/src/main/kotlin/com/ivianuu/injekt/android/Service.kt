@@ -23,15 +23,17 @@ import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.scope.AppGivenScope
-import com.ivianuu.injekt.scope.ChildGivenScopeFactory
+import com.ivianuu.injekt.scope.ChildScopeFactory
 import com.ivianuu.injekt.scope.ChildGivenScopeModule1
 import com.ivianuu.injekt.scope.DefaultGivenScope
-import com.ivianuu.injekt.scope.GivenScope
 import com.ivianuu.injekt.scope.element
 
+/**
+ * Returns a new [ServiceGivenScope] which must be manually stored and disposed
+ */
 fun Service.createServiceGivenScope(): ServiceGivenScope =
     application.appGivenScope
-        .element<@ChildGivenScopeFactory (Service) -> ServiceGivenScope>()
+        .element<@ChildScopeFactory (Service) -> ServiceGivenScope>()
         .invoke(this)
 
 typealias ServiceGivenScope = DefaultGivenScope

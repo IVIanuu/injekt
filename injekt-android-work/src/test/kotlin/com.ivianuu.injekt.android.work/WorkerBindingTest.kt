@@ -28,7 +28,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import com.ivianuu.injekt.common.*
 
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)
@@ -41,7 +40,7 @@ class WorkerBindingTest {
     }
 }
 
-@WorkerBinding
+@InstallWorker
 @Given
 class TestWorker(
     @Given appContext: Context,

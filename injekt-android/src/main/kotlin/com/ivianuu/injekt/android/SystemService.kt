@@ -24,11 +24,21 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Qualifier
 import kotlin.reflect.KClass
 
+/**
+ * Allows to use any android system service
+ *
+ * Example:
+ * ```
+ * fun Notification.post(@Given notificationManager: @SystemService NotificationManager) { ... }
+ * ```
+ */
 @Qualifier
-annotation class SystemService
-
-@Given
-fun <T : Any> systemService(
-    @Given context: Context,
-    @Given serviceClass: KClass<T>
-): @SystemService T = ContextCompat.getSystemService(context, serviceClass.java)!!
+annotation class SystemService {
+    companion object {
+        @Given
+        fun <T : Any> systemService(
+            @Given context: Context,
+            @Given serviceClass: KClass<T>
+        ): @SystemService T = ContextCompat.getSystemService(context, serviceClass.java)!!
+    }
+}

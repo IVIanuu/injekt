@@ -20,42 +20,42 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Qualifier
 
 @Qualifier
-annotation class ChildGivenScopeFactory
+annotation class ChildScopeFactory
 
 class ChildGivenScopeModule<P : GivenScope, T, S : T> {
     @Given
     fun factory(@Given scopeFactory: S):
-            @GivenScopeElementBinding<P> @ChildGivenScopeFactory T = scopeFactory
+            @InstallElement<P> @ChildScopeFactory T = scopeFactory
 }
 
 fun <P : GivenScope, C : GivenScope> ChildGivenScopeModule0() =
     ChildGivenScopeModule<P, () -> C, () -> C>()
 
 fun <P : GivenScope, P1, C : GivenScope> ChildGivenScopeModule1() =
-    ChildGivenScopeModule<P, (P1) -> C, (@Given @GivenScopeElementBinding<C> P1) -> C>()
+    ChildGivenScopeModule<P, (P1) -> C, (@Given @InstallElement<C> P1) -> C>()
 
 fun <P : GivenScope, P1, P2, C : GivenScope> ChildGivenScopeModule2() =
     ChildGivenScopeModule<P, (P1, P2) -> C,
-                (@Given @GivenScopeElementBinding<C> P1,
-                 @Given @GivenScopeElementBinding<C> P2) -> C>()
+                (@Given @InstallElement<C> P1,
+                 @Given @InstallElement<C> P2) -> C>()
 
 fun <P : GivenScope, P1, P2, P3, C : GivenScope> ChildGivenScopeModule3() =
     ChildGivenScopeModule<P, (P1, P2, P3) -> C,
-                (@Given @GivenScopeElementBinding<C> P1,
-                 @Given @GivenScopeElementBinding<C> P2,
-                 @Given @GivenScopeElementBinding<C> P3) -> C>()
+                (@Given @InstallElement<C> P1,
+                 @Given @InstallElement<C> P2,
+                 @Given @InstallElement<C> P3) -> C>()
 
 fun <P : GivenScope, P1, P2, P3, P4, C : GivenScope> ChildGivenScopeModule4() =
     ChildGivenScopeModule<P, (P1, P2, P3, P4) -> C,
-            (@Given @GivenScopeElementBinding<C> P1,
-             @Given @GivenScopeElementBinding<C> P2,
-             @Given @GivenScopeElementBinding<C> P3,
-             @Given @GivenScopeElementBinding<C> P4) -> C>()
+            (@Given @InstallElement<C> P1,
+             @Given @InstallElement<C> P2,
+             @Given @InstallElement<C> P3,
+             @Given @InstallElement<C> P4) -> C>()
 
 fun <P : GivenScope, P1, P2, P3, P4, P5, C : GivenScope> ChildGivenScopeModule5() =
     ChildGivenScopeModule<P, (P1, P2, P3, P4, P5) -> C,
-            (@Given @GivenScopeElementBinding<C> P1,
-             @Given @GivenScopeElementBinding<C> P2,
-             @Given @GivenScopeElementBinding<C> P3,
-             @Given @GivenScopeElementBinding<C> P4,
-             @Given @GivenScopeElementBinding<C> P5) -> C>()
+            (@Given @InstallElement<C> P1,
+             @Given @InstallElement<C> P2,
+             @Given @InstallElement<C> P3,
+             @Given @InstallElement<C> P4,
+             @Given @InstallElement<C> P5) -> C>()
