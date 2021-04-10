@@ -67,16 +67,3 @@ inline fun <T> given(@Given value: T): T = value
  */
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Qualifier
-
-@Target(
-    AnnotationTarget.CLASS,
-    AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.PROPERTY,
-    AnnotationTarget.LOCAL_VARIABLE,
-    AnnotationTarget.VALUE_PARAMETER,
-    AnnotationTarget.TYPE
-)
-@Repeatable
-@Retention(AnnotationRetention.SOURCE)
-annotation class NotGiven<T>
