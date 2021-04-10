@@ -253,7 +253,7 @@ class ResolutionScope(
                     .mapIndexed { index, element ->
                         GivenRequest(
                             type = element,
-                            isRequired = true,
+                            defaultStrategy = GivenRequest.DefaultStrategy.NONE,
                             callableFqName = FqName("com.ivianuu.injekt.givenSetOf<${request.type.arguments[0].render()}>"),
                             parameterName = "element$index".asNameId(),
                             isInline = false,

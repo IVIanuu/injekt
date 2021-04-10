@@ -175,12 +175,13 @@ fun ResolutionScope.resolveRequests(
     for (request in requests) {
         when (val result = resolveRequest(request)) {
             is ResolutionResult.Success -> successes[request] = result
-            is ResolutionResult.Failure ->
-                if ((request.isRequired || result !is ResolutionResult.Failure.NoCandidates) &&
-                    compareResult(result, failure) < 0) {
-                    failureRequest = request
-                    failure = result
-                }
+            is ResolutionResult.Failure -> if ((request.defaultStrategy == GivenRequest.DefaultStrategy.NONE ||
+                        (request.defaultStrategy == GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN &&
+                                result !is ResolutionResult.Failure.NoCandidates)) &&
+                compareResult(result, failure) < 0) {
+                failureRequest = request
+                failure = result
+            }
         }
     }
     val usages = mutableMapOf<UsageKey, MutableList<GivenRequest>>()
@@ -341,15 +342,12 @@ private fun ResolutionScope.resolveCandidate(
                 when {
                     candidate is ProviderGivenNode && dependencyResult is ResolutionResult.Failure.NoCandidates ->
                         return@computeForCandidate ResolutionResult.Failure.NoCandidates
-                    dependency.isRequired || dependencyResult !is ResolutionResult.Failure.NoCandidates -> {
+                    dependency.defaultStrategy == GivenRequest.DefaultStrategy.NONE ||
+                            (dependency.defaultStrategy == GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN &&
+                                    dependencyResult !is ResolutionResult.Failure.NoCandidates) ->
                         return@computeForCandidate ResolutionResult.Failure.DependencyFailure(
-                            dependency,
-                            dependencyResult
-                        )
-                    }
-                    else -> {
-                        successDependencyResults[dependency] = ResolutionResult.Success.DefaultValue
-                    }
+                            dependency, dependencyResult)
+                    else -> successDependencyResults[dependency] = ResolutionResult.Success.DefaultValue
                 }
             }
         }

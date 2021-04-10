@@ -1,7 +1,9 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.toClassifierRef
@@ -21,6 +23,7 @@ data class CallableRef(
     val typeParameters: List<ClassifierRef>,
     val parameterTypes: Map<String, TypeRef>,
     val givenParameters: Set<String>,
+    val useDefaultOnAllErrorParameters: Set<String>,
     val typeArguments: Map<ClassifierRef, TypeRef>,
     val isGiven: Boolean,
     val constrainedGivenSource: CallableRef?,
@@ -79,8 +82,16 @@ fun CallableDescriptor.toCallableRef(
             .map { it.injektName() to it.type.toTypeRef(context, trace) }
             .toMap()
     val givenParameters = info?.givenParameters ?: (if (this is ConstructorDescriptor) valueParameters else allParameters)
-        .asSequence()
         .filter { it.isGiven(context, trace) }
+        .mapTo(mutableSetOf()) { it.injektName() }
+    val useDefaultOnAllErrorsParameters = info?.useDefaultOnAllErrorsParameters ?: valueParameters
+        .asSequence()
+        .filter {
+            it.annotations.findAnnotation(InjektFqNames.Given)
+                ?.allValueArguments
+                ?.get("useDefaultOnAllErrors".asNameId())
+                ?.value == true
+        }
         .mapTo(mutableSetOf()) { it.injektName() }
     return CallableRef(
         callable = this,
@@ -89,6 +100,7 @@ fun CallableDescriptor.toCallableRef(
         typeParameters = typeParameters,
         parameterTypes = parameterTypes,
         givenParameters = givenParameters,
+        useDefaultOnAllErrorParameters = useDefaultOnAllErrorsParameters,
         typeArguments = typeParameters
             .map { it to it.defaultType }
             .toMap(),

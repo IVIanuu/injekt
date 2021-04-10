@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringGiven
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektName
@@ -104,7 +105,7 @@ class ProviderGivenNode(
     override val dependencies: List<GivenRequest> = listOf(
         GivenRequest(
             type = type.arguments.last(),
-            isRequired = true,
+            defaultStrategy = GivenRequest.DefaultStrategy.NONE,
             callableFqName = callableFqName,
             parameterName = "instance".asNameId(),
             isInline = false,
@@ -172,9 +173,16 @@ class AbstractGivenNode(
         .associateWith { requestCallable ->
             GivenRequest(
                 type = requestCallable.type,
-                isRequired = requestCallable.callable
-                    .cast<CallableMemberDescriptor>()
-                    .modality == Modality.ABSTRACT,
+                defaultStrategy = when {
+                    requestCallable.callable
+                        .cast<CallableMemberDescriptor>()
+                        .modality == Modality.ABSTRACT -> GivenRequest.DefaultStrategy.NONE
+                    requestCallable.callable.annotations.findAnnotation(InjektFqNames.Given)
+                        !!.allValueArguments["useDefaultOnAllErrors".asNameId()]
+                        ?.value == true ->
+                        GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
+                    else -> GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
+                },
                 callableFqName = callableFqName,
                 parameterName = requestCallable.callable.name,
                 isInline = false,
@@ -259,7 +267,10 @@ fun CallableRef.getGivenRequests(
         val name = parameter.injektName()
         GivenRequest(
             type = parameterTypes[name]!!,
-            isRequired = parameter !is ValueParameterDescriptor || !parameter.hasDefaultValueIgnoringGiven,
+            defaultStrategy = if (parameter is ValueParameterDescriptor && parameter.hasDefaultValueIgnoringGiven) {
+                if (name in useDefaultOnAllErrorParameters) GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
+                else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
+            } else GivenRequest.DefaultStrategy.NONE,
             callableFqName = callableFqNameProvider(parameter),
             parameterName = name.asNameId(),
             isInline = InlineUtil.isInlineParameter(parameter),
@@ -271,10 +282,14 @@ fun CallableRef.getGivenRequests(
 
 data class GivenRequest(
     val type: TypeRef,
-    val isRequired: Boolean,
+    val defaultStrategy: DefaultStrategy,
     val callableFqName: FqName,
     val parameterName: Name,
     val isInline: Boolean,
     val isLazy: Boolean,
     val requestDescriptor: DeclarationDescriptorWithVisibility
-)
+) {
+    enum class DefaultStrategy {
+        NONE, DEFAULT_IF_NOT_GIVEN, DEFAULT_ON_ALL_ERRORS
+    }
+}

@@ -514,6 +514,20 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testDoesUseDefaultValueIfCandidateHasFailuresButHasUseDefaultValueOnAllError() = codegen(
+        """
+                @Given fun bar(@Given foo: Foo) = Bar(foo)
+                fun invoke(foo: Foo): Foo {
+                    fun inner(@Given(useDefaultOnAllErrors = true) bar: Bar = Bar(foo)) = bar
+                    return inner().foo
+                }
+            """
+    ) {
+        val foo = Foo()
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    }
+
+    @Test
     fun testPrefersSubTypeParameters() = codegen(
         """
             import com.ivianuu.injekt.integrationtests.Priority.*

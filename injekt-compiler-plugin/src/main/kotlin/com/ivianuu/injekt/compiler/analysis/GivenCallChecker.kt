@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.resolution.CallableGivenNode
 import com.ivianuu.injekt.compiler.resolution.GivenGraph
 import com.ivianuu.injekt.compiler.resolution.GivenRequest
@@ -33,6 +34,7 @@ import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
@@ -77,13 +79,18 @@ class GivenCallChecker(
                 }
             }
             .filter { resolvedCall.valueArguments[it] is DefaultValueArgument }
-            .map { parameterDescriptor ->
+            .map { parameter ->
                 GivenRequest(
-                    type = callable.parameterTypes[parameterDescriptor.name.asString()]!!,
-                    isRequired = !parameterDescriptor.hasDefaultValueIgnoringGiven,
+                    type = callable.parameterTypes[parameter.name.asString()]!!,
+                    defaultStrategy = if (parameter is ValueParameterDescriptor &&
+                        parameter.hasDefaultValueIgnoringGiven) {
+                        if (parameter.injektName() in callable.useDefaultOnAllErrorParameters)
+                            GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
+                        else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
+                    } else GivenRequest.DefaultStrategy.NONE,
                     callableFqName = resultingDescriptor.fqNameSafe,
-                    parameterName = parameterDescriptor.name,
-                    isInline = InlineUtil.isInlineParameter(parameterDescriptor),
+                    parameterName = parameter.name,
+                    isInline = InlineUtil.isInlineParameter(parameter),
                     isLazy = false,
                     requestDescriptor = context.scope.ownerDescriptor.cast()
                 )
@@ -94,8 +101,9 @@ class GivenCallChecker(
 
         val callExpression = resolvedCall.call.callElement
 
-        if (!allowGivenCalls(callExpression) &&
-                requests.any { it.isRequired }) {
+        if (!allowGivenCalls(callExpression) && requests.any {
+            it.defaultStrategy == GivenRequest.DefaultStrategy.NONE
+        }) {
             context.trace.report(
                 InjektErrors.GIVEN_CALLS_NOT_ALLOWED
                     .on(callExpression)

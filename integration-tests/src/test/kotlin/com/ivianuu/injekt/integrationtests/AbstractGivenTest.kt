@@ -104,7 +104,7 @@ class AbstractGivenTest {
     }
 
     @Test
-    fun testAbstractGivenWithUnresolvableRequestButDefaultImplementationIsNoError() = codegen(
+    fun testAbstractGivenWithUnexistingRequestButDefaultImplementationIsNoError() = codegen(
         """
             @Given interface BarComponent {
                 @Given fun bar(@Given foo: Foo): Bar = Bar(foo)
@@ -114,6 +114,22 @@ class AbstractGivenTest {
             val foo = Foo()
 
             fun invoke() = given<BarComponent>().bar(Foo())
+        """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testAbstractGivenWithErrorRequestButDefaultImplementationIsNoError() = codegen(
+        """
+            @Given interface BarComponent {
+                @Given(useDefaultOnAllErrors = true)
+                fun bar(): Bar = Bar(Foo())
+            }
+
+            @Given fun bar(@Given foo: Foo) = Bar(foo)
+
+            fun invoke() = given<BarComponent>().bar()
         """
     ) {
         invokeSingleFile()

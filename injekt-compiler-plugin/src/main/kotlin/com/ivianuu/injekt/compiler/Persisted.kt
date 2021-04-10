@@ -42,7 +42,8 @@ data class PersistedCallableInfo(
     @SerialName("0") val type: PersistedTypeRef,
     @SerialName("1") val typeParameters: List<PersistedClassifierInfo> = emptyList(),
     @SerialName("2") val parameterTypes: Map<String, PersistedTypeRef> = emptyMap(),
-    @SerialName("3") val givenParameters: Set<String> = emptySet()
+    @SerialName("3") val givenParameters: Set<String> = emptySet(),
+    @SerialName("4") val useDefaultOnAllErrorsParameters: Set<String> = emptySet()
 )
 
 fun CallableRef.toPersistedCallableInfo(
@@ -53,7 +54,8 @@ fun CallableRef.toPersistedCallableInfo(
     typeParameters = typeParameters.map { it.toPersistedClassifierInfo(context, trace) },
     parameterTypes = parameterTypes
         .mapValues { it.value.toPersistedTypeRef(context) },
-    givenParameters = givenParameters
+    givenParameters = givenParameters,
+    useDefaultOnAllErrorsParameters = useDefaultOnAllErrorParameters
 )
 
 @Serializable
