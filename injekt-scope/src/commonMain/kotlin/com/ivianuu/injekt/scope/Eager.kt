@@ -27,6 +27,7 @@ annotation class Eager<S : GivenScope>
 
 @Given
 class EagerModule<@Given T : @Eager<S> U, U : Any, S : GivenScope> {
+    @Suppress("NOTHING_TO_INLINE")
     @Given
     inline fun scopedInstance(@Given instance: T): @Scoped<S> U = instance
 
