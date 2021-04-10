@@ -309,18 +309,18 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
             val constraintType = callable.typeParameters
                 .single { it.isGivenConstraint }
                 .defaultType
-            if (callable.type.isAssignableTo(this.context, constraintType)) {
+            /*if (callable.type.isAssignableTo(this.context, constraintType)) {
                 trace.report(
                     InjektErrors.DIVERGENT_GIVEN_CONSTRAINT
                         .on(declaration.safeAs<KtNamedFunction>()?.typeReference
                             ?: givenConstraints.single().findPsi() ?: declaration)
                 )
-            }
+            }*/
         }
 
         if (descriptor.valueParameters.isNotEmpty()) {
             val callable = descriptor.toCallableRef(this.context, trace)
-            callable.parameterTypes
+            /*callable.parameterTypes
                 .filter { callable.type == it.value }
                 .forEach { (divergentParameterName) ->
                     trace.report(
@@ -329,7 +329,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                                 ?.valueParameters
                                 ?.firstOrNull { it.name == divergentParameterName } ?: declaration)
                     )
-                }
+                }*/
         }
     }
 

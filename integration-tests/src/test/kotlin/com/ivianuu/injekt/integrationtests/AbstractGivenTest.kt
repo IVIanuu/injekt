@@ -23,6 +23,17 @@ import org.junit.Test
 
 class AbstractGivenTest {
     @Test
+    fun lolo() = codegen(
+        """
+            fun invoke() {
+                @Given val notGiven: @com.ivianuu.injekt.common.NotGiven<String> Unit = Unit
+                @Given val string = ""
+                givenOrNull<Unit>()
+            }
+        """
+    )
+
+    @Test
     fun testGivenInterface() = codegen(
         """
             @Given interface FooComponent {
