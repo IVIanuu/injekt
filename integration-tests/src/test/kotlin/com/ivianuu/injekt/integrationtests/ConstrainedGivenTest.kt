@@ -404,4 +404,22 @@ class ConstrainedGivenTest {
     ) {
         irShouldContain(1, "setOf")
     }
+
+    @Test
+    fun testNestedConstrainedGivensWithGenerics() = codegen(
+        """
+            @Qualifier annotation class A<T>
+
+            @Given class Outer<@Given T : @A<U> S, S, U> {
+                @Given fun <@Given K : U> inner(): Unit = Unit
+            }
+
+            @Given fun dummy(): @A<String> Long = 0L
+
+
+            fun invoke() = given<Unit>()
+        """
+    ) {
+        compilationShouldHaveFailed()
+    }
 }

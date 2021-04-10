@@ -83,7 +83,7 @@ class ResolutionScope(
         val callable: CallableRef,
         val constraintType: TypeRef = callable.typeParameters.single {
             it.isGivenConstraint
-        }.defaultType,
+        }.defaultType.substitute(callable.typeArguments),
         val processedCandidateTypes: MutableSet<TypeRef> = mutableSetOf(),
         val resultingFrameworkKeys: MutableSet<Int> = mutableSetOf()
     ) {
@@ -374,14 +374,18 @@ class ResolutionScope(
             listOf(candidate.type to constrainedGiven.constraintType)
         )
         // if we could not get all type arguments it must be an incompatible type
-        if (constrainedGiven.callable.typeParameters.any { it !in inputsSubstitutionMap })
-            return
+        if (constrainedGiven.callable.typeParameters.any {
+                constrainedGiven.callable.typeArguments[it] == it.defaultType &&
+                        it !in inputsSubstitutionMap
+        }) return
         val outputsSubstitutionMap = getSubstitutionMap(
             context,
             listOf(candidate.rawType to constrainedGiven.constraintType)
         )
-        if (constrainedGiven.callable.typeParameters.any { it !in outputsSubstitutionMap })
-            return
+        if (constrainedGiven.callable.typeParameters.any {
+                constrainedGiven.callable.typeArguments[it] == it.defaultType &&
+                        it !in outputsSubstitutionMap
+        }) return
         val newGivenType = constrainedGiven.callable.type.substitute(outputsSubstitutionMap)
         val newGiven = constrainedGiven.callable.substituteInputs(inputsSubstitutionMap)
             .copy(
