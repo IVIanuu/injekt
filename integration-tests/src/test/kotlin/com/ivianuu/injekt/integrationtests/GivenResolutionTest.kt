@@ -16,41 +16,20 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldBeOk
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
-import com.ivianuu.injekt.test.invokableSource
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.irShouldContain
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.singleAndMultiCodegen
-import com.ivianuu.injekt.test.source
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
-import io.kotest.matchers.types.shouldBeTypeOf
-import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
 class GivenResolutionTest {
-    @Test
-    fun testPrefersSubType() = codegen(
-        """
-            import com.ivianuu.injekt.integrationtests.Priority.*
-            sealed class Priority {
-                @Given open class Low : Priority()
-                @Given class High : Low()
-            }
-
-            @Given fun value1(@Given value: Priority.Low) = "low"
-            @Given fun value2(@Given value: Priority.High) = "high"
-
-            fun invoke() = given<String>()
-        """
-    )
-
     @Test
     fun testPrefersInternalGivenOverExternal() = multiCodegen(
         """
@@ -533,4 +512,20 @@ class GivenResolutionTest {
     ) {
         compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
     }
+
+    @Test
+    fun testPrefersSubTypeParameters() = codegen(
+        """
+            import com.ivianuu.injekt.integrationtests.Priority.*
+            sealed class Priority {
+                @Given open class Low : Priority()
+                @Given class High : Low()
+            }
+
+            @Given fun value1(@Given value: Priority.Low) = "low"
+            @Given fun value2(@Given value: Priority.High) = "high"
+
+            fun invoke() = given<String>()
+        """
+    )
 }
