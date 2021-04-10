@@ -20,7 +20,7 @@ import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.typeWith
 import org.junit.Test
 
-class TypeRefTest {
+class SubtypingTest {
     @Test
     fun testSimpleTypeWithSameClassifierIsAssignable() = withTypeCheckerContext {
         stringType shouldBeAssignable stringType

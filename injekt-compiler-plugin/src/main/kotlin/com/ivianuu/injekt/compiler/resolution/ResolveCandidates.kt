@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isForTypeKey
@@ -414,22 +415,15 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     a!!
     b!!
 
-    var diff = compareType(a.originalType, b.originalType)
+    var diff: Int
+
+    diff = compareSpecificity(a.type, a.originalType, b.originalType, context)
     if (diff < 0) return -1
     if (diff > 0) return 1
 
-    val aSubtypeDepth = when {
-        a.originalType.isSubTypeOf(context, a.type) -> a.originalType.subtypeDepth(a.type.classifier)
-        a.type.isSubTypeOf(context, a.originalType) -> a.type.subtypeDepth(a.originalType.classifier)
-        else -> -1
-    }
-    val bSubtypeDepth = when {
-        b.originalType.isSubTypeOf(context, b.type) -> b.originalType.subtypeDepth(b.type.classifier)
-        b.type.isSubTypeOf(context, b.originalType) -> b.type.subtypeDepth(b.originalType.classifier)
-        else -> -1
-    }
-    if (aSubtypeDepth != -1 && aSubtypeDepth < bSubtypeDepth) return -1
-    if (bSubtypeDepth != -1 && bSubtypeDepth < aSubtypeDepth) return 1
+    diff = compareType(a.originalType, b.originalType, context)
+    if (diff < 0) return -1
+    if (diff > 0) return 1
 
     if (!a.isFrameworkGiven && !b.isFrameworkGiven) {
         if (a.ownerScope.allParents.size > b.ownerScope.allParents.size) return -1
@@ -459,7 +453,7 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     diff = 0
     for (aDependency in a.dependencies) {
         for (bDependency in b.dependencies) {
-            diff += compareType(aDependency.type, bDependency.type)
+            diff += compareType(aDependency.type, bDependency.type, context)
         }
     }
     if (diff < 0) return -1
@@ -481,22 +475,15 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     a!!
     b!!
 
-    var diff = compareType(a.originalType, b.originalType)
+    var diff: Int
+
+    diff = compareSpecificity(a.type, a.originalType, b.originalType, context)
     if (diff < 0) return -1
     if (diff > 0) return 1
 
-    val aSubtypeDepth = when {
-        a.originalType.isSubTypeOf(context, a.type) -> a.originalType.subtypeDepth(a.type.classifier)
-        a.type.isSubTypeOf(context, a.originalType) -> a.type.subtypeDepth(a.originalType.classifier)
-        else -> -1
-    }
-    val bSubtypeDepth = when {
-        b.originalType.isSubTypeOf(context, b.type) -> b.originalType.subtypeDepth(b.type.classifier)
-        b.type.isSubTypeOf(context, b.originalType) -> b.type.subtypeDepth(b.originalType.classifier)
-        else -> -1
-    }
-    if (aSubtypeDepth != -1 && aSubtypeDepth < bSubtypeDepth) return -1
-    if (bSubtypeDepth != -1 && bSubtypeDepth < aSubtypeDepth) return 1
+    diff = compareType(a.originalType, b.originalType, context)
+    if (diff < 0) return -1
+    if (diff > 0) return 1
 
     if (a.owner != null && a.owner == b.owner) {
         if (a.overriddenDepth < b.overriddenDepth) return -1
@@ -514,7 +501,7 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     diff = 0
     for (aDependency in a.parameterTypes) {
         for (bDependency in b.parameterTypes) {
-            diff += compareType(aDependency.value, bDependency.value)
+            diff += compareType(aDependency.value, bDependency.value, context)
         }
     }
     if (diff < 0) return -1
@@ -528,7 +515,28 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     return 0
 }
 
-fun compareType(a: TypeRef, b: TypeRef): Int {
+private fun compareSpecificity(
+    expected: TypeRef,
+    a: TypeRef,
+    b: TypeRef,
+    context: InjektContext
+): Int {
+    val aSubtypeDepth = when {
+        a.isSubTypeOf(context, expected) -> a.subtypeDepth(expected.classifier)
+        expected.isSubTypeOf(context, a) -> expected.subtypeDepth(a.classifier)
+        else -> -1
+    }
+    val bSubtypeDepth = when {
+        b.isSubTypeOf(context, expected) -> b.subtypeDepth(expected.classifier)
+        expected.isSubTypeOf(context, b) -> expected.subtypeDepth(b.classifier)
+        else -> -1
+    }
+    if (aSubtypeDepth != -1 && aSubtypeDepth < bSubtypeDepth) return -1
+    if (bSubtypeDepth != -1 && bSubtypeDepth < aSubtypeDepth) return 1
+    return 0
+}
+
+fun compareType(a: TypeRef, b: TypeRef, context: InjektContext): Int {
     if (a === b) return 0
     if (!a.isStarProjection && b.isStarProjection) return -1
     if (a.isStarProjection && !b.isStarProjection) return 1
@@ -545,18 +553,19 @@ fun compareType(a: TypeRef, b: TypeRef): Int {
     if (a.frameworkKey != null && b.frameworkKey == null) return -1
     if (b.frameworkKey != null && a.frameworkKey == null) return 1
 
-    if (a.classifier != b.classifier) return 0
-
-    var diff = 0
-    a.arguments.forEachWith(b.arguments) { aTypeArgument, bTypeArgument ->
-        diff += compareType(aTypeArgument, bTypeArgument)
+    if (a.classifier != b.classifier) {
+        if (a.isSubTypeOf(context, b)) return -1
+        if (b.isSubTypeOf(context, a)) return 1
+    } else {
+        var diff = 0
+        a.arguments.forEachWith(b.arguments) { aTypeArgument, bTypeArgument ->
+            diff += compareType(aTypeArgument, bTypeArgument, context)
+        }
+        if (diff < 0) return -1
+        if (diff > 0) return 1
     }
 
-    return when {
-        diff < 0 -> -1
-        diff > 0 -> 1
-        else -> 0
-    }
+    return 0
 }
 
 private fun GivenGraph.Success.postProcess(
