@@ -539,8 +539,8 @@ fun compareType(a: TypeRef, b: TypeRef): Int {
     if (a.arguments.size < b.arguments.size) return -1
     if (b.arguments.size < a.arguments.size) return 1
 
-    if (a.qualifiers.isEmpty() && b.qualifiers.isNotEmpty()) return -1
-    if (b.qualifiers.isEmpty() && a.qualifiers.isNotEmpty()) return 1
+    if (a.qualifiers.size < b.qualifiers.size) return -1
+    if (b.qualifiers.size < a.qualifiers.size) return 1
 
     if (a.frameworkKey != null && b.frameworkKey == null) return -1
     if (b.frameworkKey != null && a.frameworkKey == null) return 1
