@@ -100,10 +100,12 @@ fun TypeRef.collectGivens(
                     overriddenDepth = overriddenDepth,
                     owner = this.classifier,
                     isGiven = true,
-                    parameterTypes = callable.parameterTypes.toMutableMap()
-                        .also {
-                            it[callable.callable.dispatchReceiverParameter!!.injektName()] = this
-                        }
+                    parameterTypes = if (callable.callable.dispatchReceiverParameter != null) {
+                        callable.parameterTypes.toMutableMap()
+                            .also {
+                                it[callable.callable.dispatchReceiverParameter!!.injektName()] = this
+                            }
+                    } else callable.parameterTypes
                 )
             }
         type.superTypes.forEach { collectInner(it, overriddenDepth + 1) }
