@@ -374,13 +374,13 @@ class ResolutionScope(
             listOf(candidate.type to constrainedGiven.constraintType)
         )
         // if we could not get all type arguments it must be an incompatible type
-        if (inputsSubstitutionMap.size != constrainedGiven.callable.typeParameters.size)
+        if (constrainedGiven.callable.typeParameters.any { it !in inputsSubstitutionMap })
             return
         val outputsSubstitutionMap = getSubstitutionMap(
             context,
             listOf(candidate.rawType to constrainedGiven.constraintType)
         )
-        if (outputsSubstitutionMap.size != constrainedGiven.callable.typeParameters.size)
+        if (constrainedGiven.callable.typeParameters.any { it !in outputsSubstitutionMap })
             return
         val newGivenType = constrainedGiven.callable.type.substitute(outputsSubstitutionMap)
         val newGiven = constrainedGiven.callable.substituteInputs(inputsSubstitutionMap)
