@@ -23,18 +23,18 @@ import kotlin.reflect.KClass
 
 class CommonGivensTest {
     @Test
-    fun testCanRequestMapForSetOfPairs() {
+    fun testCanUseMapForSetOfPairs() {
         @Given val set = setOf("key" to "value")
         val map = given<Map<String, String>>()
     }
 
     @Test
-    fun testCanRequestKClass() {
+    fun testCanUseKClass() {
         val clazz = given<KClass<Foo>>()
     }
 
     @Test
-    fun testCanRequestType() {
+    fun testCanUseType() {
         val type = given<TypeKey<Foo>>()
     }
 
