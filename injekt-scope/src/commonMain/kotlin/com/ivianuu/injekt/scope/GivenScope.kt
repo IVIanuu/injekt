@@ -147,7 +147,7 @@ data class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: (
  *
  * Example:
  * ```
- * @GivenScopeElementBinding<AppGivenScope>
+ * @InstallElement<AppGivenScope>
  * @Given
  * class MyAppDeps(@Given api: Api, @Given database: Database)
  *

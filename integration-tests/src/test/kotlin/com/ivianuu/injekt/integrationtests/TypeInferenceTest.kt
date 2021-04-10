@@ -12,11 +12,11 @@ class TypeInferenceTest {
                 @Given
                 fun factory(
                     @Given scopeFactory: S
-                ): @GivenScopeElementBinding<P> @ChildGivenScopeFactory T = scopeFactory
+                ): @InstallElement<P> @ChildScopeFactory T = scopeFactory
             }
             fun <P : GivenScope, P1, C : GivenScope> ChildGivenScopeModule1() = 
                 ChildGivenScopeModule<P, 
-                (P1) -> C, (@Given @GivenScopeElementBinding<C> P1) -> C>()
+                (P1) -> C, (@Given @InstallElement<C> P1) -> C>()
 
             typealias MyGivenScope = DefaultGivenScope
             """,
@@ -28,7 +28,7 @@ class TypeInferenceTest {
             @Given fun bar(@Given foo: Foo) = Bar(foo)
 
             fun invoke(@Given appGivenScope: AppGivenScope) = 
-                given<@ChildGivenScopeFactory (Foo) -> MyGivenScope>()
+                given<@ChildScopeFactory (Foo) -> MyGivenScope>()
                 """
     )
 
@@ -39,11 +39,11 @@ class TypeInferenceTest {
                 @Given
                 fun factory(
                     @Given scopeFactory: S
-                ): @GivenScopeElementBinding<P> @ChildGivenScopeFactory T = scopeFactory
+                ): @InstallElement<P> @ChildScopeFactory T = scopeFactory
             }
             fun <P : GivenScope, P1, C : GivenScope> ChildGivenScopeModule1() = 
                 ChildGivenScopeModule<P, 
-                (P1) -> C, (@Given @GivenScopeElementBinding<C> P1) -> C>()
+                (P1) -> C, (@Given @InstallElement<C> P1) -> C>()
 
             typealias MyGivenScope = DefaultGivenScope
             """,
@@ -55,7 +55,7 @@ class TypeInferenceTest {
             @Given fun bar(@Given foo: Foo) = Bar(foo)
 
             fun invoke(@Given appGivenScope: AppGivenScope) = 
-                given<@ChildGivenScopeFactory (Foo) -> MyGivenScope>()
+                given<@ChildScopeFactory (Foo) -> MyGivenScope>()
                 """
     )
 }

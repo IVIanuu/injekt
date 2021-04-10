@@ -139,7 +139,7 @@ class QualifierTest {
             @Given
             val childGivenScopeModule = ChildGivenScopeModule0<AppGivenScope, ChildGivenScope>()
 
-            @GivenScopeElementBinding<ChildGivenScope>
+            @InstallElement<ChildGivenScope>
             @Given
             class MyElement(@Given val foo: Foo)
 

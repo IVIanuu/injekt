@@ -465,11 +465,6 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     if (diff < 0) return -1
     if (diff > 0) return 1
 
-    val isAFromConstrainedGiven = a is CallableGivenNode && a.callable.constrainedGivenSource != null
-    val isBFromConstrainedGiven = b is CallableGivenNode && b.callable.constrainedGivenSource != null
-    if (isAFromConstrainedGiven && !isBFromConstrainedGiven) return -1
-    if (isBFromConstrainedGiven && !isAFromConstrainedGiven) return 1
-
     if (callContext == a.callContext &&
             callContext != b.callContext) return -1
     if (callContext == b.callContext &&
@@ -524,11 +519,6 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     }
     if (diff < 0) return -1
     if (diff > 0) return 1
-
-    val isAFromGivenConstraint = a.constrainedGivenSource != null
-    val isBFromGivenConstraint = b.constrainedGivenSource != null
-    if (isAFromGivenConstraint && !isBFromGivenConstraint) return -1
-    if (isBFromGivenConstraint && !isAFromGivenConstraint) return 1
 
     if (callContext == a.callContext &&
         callContext != b.callContext) return -1

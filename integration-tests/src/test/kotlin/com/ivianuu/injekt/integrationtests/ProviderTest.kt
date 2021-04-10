@@ -84,7 +84,7 @@ class ProviderTest {
             fun givenScopeBFactory(
                 @Given parent: GivenScopeA,
                 @Given scopeFactory: () -> GivenScopeB
-            ): @GivenScopeElementBinding<GivenScopeA> () -> GivenScopeB = scopeFactory
+            ): @InstallElement<GivenScopeA> () -> GivenScopeB = scopeFactory
 
             typealias GivenScopeC = GivenScope
 
@@ -92,12 +92,12 @@ class ProviderTest {
             fun givenScopeCFactory(
                 @Given parent: GivenScopeB,
                 @Given scopeFactory: () -> GivenScopeC
-            ): @GivenScopeElementBinding<GivenScopeB> () -> GivenScopeC = scopeFactory
+            ): @InstallElement<GivenScopeB> () -> GivenScopeC = scopeFactory
             """,
         """
             fun createGivenScopeA() = given<GivenScopeA>()
 
-            @GivenScopeElementBinding<GivenScopeC>
+            @InstallElement<GivenScopeC>
             @Given
             class MyComponent(
                 @Given val a: GivenScopeA,

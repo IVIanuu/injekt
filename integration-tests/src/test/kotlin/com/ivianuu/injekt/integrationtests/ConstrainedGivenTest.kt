@@ -322,9 +322,9 @@ class ConstrainedGivenTest {
             class DepWrapper2(@Given dep: () -> Dep, @Given wrapper: () -> DepWrapper)
 
             fun invoke() {
-                given<(@Given @GivenScopeElementBinding<AppGivenScope> App) -> AppGivenScope>()
+                given<(@Given @InstallElement<AppGivenScope> App) -> AppGivenScope>()
             }
-            @GivenScopeElementBinding<AppGivenScope>
+            @InstallElement<AppGivenScope>
             @Given
             class MyComponent(@Given dep: Dep, @Given wrapper: () -> () -> DepWrapper, @Given wrapper2: () -> DepWrapper2)
 

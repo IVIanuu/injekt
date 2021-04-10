@@ -99,7 +99,7 @@ class PersistenceTest {
     fun testNonGivenFunctionWithGivenParameters() = singleAndMultiCodegen(
         """
             fun myFunction(
-                @Given scopeFactory: (@Given @GivenScopeElementBinding<AppGivenScope> Any) -> AppGivenScope
+                @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Any) -> AppGivenScope
             ): AppGivenScope = TODO()
                 """,
         """
@@ -111,7 +111,7 @@ class PersistenceTest {
     fun testNonGivenPrimaryConstructorWithGivenParameters() = singleAndMultiCodegen(
         """
             class MyClass(
-                @Given scopeFactory: (@Given @GivenScopeElementBinding<AppGivenScope> Any) -> AppGivenScope
+                @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Any) -> AppGivenScope
             )
                 """,
         """
@@ -124,7 +124,7 @@ class PersistenceTest {
         """
             class MyClass {
                 constructor(
-                    @Given scopeFactory: (@Given @GivenScopeElementBinding<AppGivenScope> Any) -> AppGivenScope
+                    @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Any) -> AppGivenScope
                 )
             }
                 """,
@@ -155,12 +155,12 @@ class PersistenceTest {
                 @Given
                 fun factory(
                     @Given scopeFactory: S
-                ): @GivenScopeElementBinding<P> @ChildGivenScopeFactory T = scopeFactory
+                ): @InstallElement<P> @ChildScopeFactory T = scopeFactory
             }
             
             class MyChildGivenScopeModule1<P : GivenScope, P1, C : GivenScope> : MyAbstractChildGivenScopeModule<P,
                         (P1) -> C,
-                        (@Given @GivenScopeElementBinding<C> P1) -> C>()
+                        (@Given @InstallElement<C> P1) -> C>()
             """,
         """
             typealias TestGivenScope1 = DefaultGivenScope
@@ -170,7 +170,7 @@ class PersistenceTest {
                 val childScopeModule =
                     MyChildGivenScopeModule1<TestGivenScope1, String, TestGivenScope2>()
                 val parentScope = given<TestGivenScope1>()
-                val childScope = parentScope.element<@ChildGivenScopeFactory (String) -> TestGivenScope2>()("42")
+                val childScope = parentScope.element<@ChildScopeFactory (String) -> TestGivenScope2>()("42")
                 childScope.element<String>()
             }
             """
