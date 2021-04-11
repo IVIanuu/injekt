@@ -77,7 +77,7 @@ class InjektWorkerFactory(
 @Given
 object WorkerInitializer {
     /**
-     * Defines the [GivenScopeInitializer] in the [AppGivenScope]
+     * Defines the [GivenScopeInitializer] for work manager initialization in the [AppGivenScope]
      */
     @Given
     fun workerScopeInitializer(
