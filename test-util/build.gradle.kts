@@ -1,3 +1,5 @@
+import com.ivianuu.injekt.gradle.withGivenCalls
+
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -13,33 +15,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ plugins {
+     kotlin("multiplatform")
+ }
 
-plugins {
-    kotlin("jvm")
+kotlin {
+    jvm {
+        withJava()
+        compilations.forEach {
+            if (it.name == "test") it.withGivenCalls()
+            it.kotlinOptions {
+                jvmTarget = "1.8"
+            }
+        }
+    }
+    sourceSets {
+        named("jvmMain") {
+            dependencies {
+                api(project(":injekt-scope"))
+                configurations.getByName("kotlinCompilerPluginClasspath")
+                    .dependencies.add(project(":injekt-compiler-plugin"))
+                api(project(":injekt-compiler-plugin"))
+
+                api(Deps.AndroidX.Compose.compiler)
+
+                api(Deps.Coroutines.core)
+                api(Deps.Coroutines.test)
+
+                api(Deps.Kotlin.compilerEmbeddable)
+                api(Deps.kotlinCompileTesting)
+
+                api(Deps.kotestAssertions)
+
+                api(Deps.junit)
+                api(Deps.AndroidX.Test.core)
+                api(Deps.AndroidX.Test.junit)
+                api(Deps.roboelectric)
+            }
+        }
+        named("jvmTest") {
+            dependencies {
+                implementation(Deps.junit)
+                implementation(Deps.kotestAssertions)
+            }
+        }
+    }
 }
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
-
-dependencies {
-    api(Deps.AndroidX.Compose.compiler)
-
-    api(project(":injekt-compiler-plugin"))
-    api(project(":injekt-core"))
-
-    api(Deps.Coroutines.core)
-    api(Deps.Coroutines.test)
-
-    api(Deps.Kotlin.compilerEmbeddable)
-    api(Deps.kotlinCompileTesting)
-
-    api(Deps.kotestAssertions)
-
-    api(Deps.junit)
-    api(Deps.AndroidX.Test.core)
-    api(Deps.AndroidX.Test.junit)
-    api(Deps.roboelectric)
-
-    // todo remove compile testing deps
-    api("com.squareup.okio:okio:2.10.0")
-}
+plugins.apply("com.vanniktech.maven.publish")
