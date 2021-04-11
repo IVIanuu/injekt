@@ -38,11 +38,13 @@ import com.ivianuu.injekt.common.TypeKey
  * ```
  */
 @Qualifier
-annotation class Scoped<S : GivenScope>
-
-@Given
-inline fun <@Given T : @Scoped<S> U, U : Any, S : GivenScope> scopedImpl(
-    @Given scope: S,
-    @Given factory: () -> T,
-    @Given key: TypeKey<U>
-): U = scope.getOrCreateScopedValue(key, factory)
+annotation class Scoped<S : GivenScope> {
+    companion object {
+        @Given
+        inline fun <@Given T : @Scoped<S> U, U : Any, S : GivenScope> scopedInstance(
+            @Given scope: S,
+            @Given factory: () -> T,
+            @Given key: TypeKey<U>
+        ): U = scope.getOrCreateScopedValue(key, factory)
+    }
+}

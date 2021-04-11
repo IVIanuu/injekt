@@ -133,6 +133,23 @@ class GivenResolveTest {
     }
 
     @Test
+    fun testResolvesClassCompanionClassGivenFromOuterClass() = codegen(
+        """
+            class MyClass {
+                companion object {
+                    @Given class MyModule {
+                        @Given val foo = Foo()
+                    }
+                }
+            }
+
+            fun invoke() = given<Foo>()
+        """
+    ) {
+        invokeSingleFile().shouldBeTypeOf<Foo>()
+    }
+
+    @Test
     fun testResolvesClassConstructorGiven() = codegen(
         """
             class MyClass(@Given val foo: Foo = Foo()) {

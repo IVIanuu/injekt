@@ -157,18 +157,20 @@ data class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: (
  * ```
  */
 @Qualifier
-annotation class InstallElement<S : GivenScope>
+annotation class InstallElement<S : GivenScope> {
+    companion object {
+        @Given
+        class Module<@Given T : @InstallElement<S> U, U : Any, S : GivenScope> {
+            @Given
+            fun elementIntoSet(
+                @Given factory: () -> T,
+                @Given key: TypeKey<U>
+            ): GivenScopeElement<S> = GivenScopeElement(key, factory)
 
-@Given
-class GivenScopeElementModule<@Given T : @InstallElement<S> U, U : Any, S : GivenScope> {
-    @Given
-    fun elementIntoSet(
-        @Given factory: () -> T,
-        @Given key: TypeKey<U>
-    ): GivenScopeElement<S> = GivenScopeElement(key, factory)
-
-    @Given
-    fun element(@Given scope: S, @Given key: TypeKey<U>): U = scope.element(key)
+            @Given
+            fun element(@Given scope: S, @Given key: TypeKey<U>): U = scope.element(key)
+        }
+    }
 }
 
 /**

@@ -22,6 +22,7 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.given
+import com.ivianuu.injekt.common.*
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.mockk.mockk
 import org.junit.Test
@@ -31,7 +32,7 @@ import org.robolectric.annotation.Config
 
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)
-class WorkerBindingTest {
+class InstallWorkerTest {
     @Test
     fun testWorkerBinding() {
         val workerFactory = given<(@Given Context) -> WorkerFactory>()(mockk())
