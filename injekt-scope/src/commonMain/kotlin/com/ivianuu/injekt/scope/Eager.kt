@@ -32,7 +32,7 @@ annotation class Eager<S : GivenScope> {
             inline fun scopedInstance(@Given instance: T): @Scoped<S> U = instance
 
             @Given
-            fun initializer(@Given factory: () -> U): GivenScopeInitializer<S> = {
+            inline fun initializer(@Given crossinline factory: () -> U): GivenScopeInitializer<S> = {
                 factory()
             }
         }
