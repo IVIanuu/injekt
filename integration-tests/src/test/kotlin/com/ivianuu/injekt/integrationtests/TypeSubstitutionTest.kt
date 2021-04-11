@@ -18,6 +18,7 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
+import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.maps.shouldContain
 import io.kotest.matchers.maps.shouldHaveSize
 import io.kotest.matchers.shouldBe
@@ -29,7 +30,15 @@ class TypeSubstitutionTest {
     fun testGetSubstitutionMap() = withTypeCheckerContext {
         val superType = typeParameter()
         val map = getSubstitutionMap(context, listOf(stringType to superType))
-        stringType shouldBe map[superType.classifier]
+        map[superType.classifier] shouldBe stringType
+    }
+
+    @Test
+    fun testGetSubstitutionMapWithNullableTypes() = withTypeCheckerContext {
+        val superType = typeParameter()
+        val map = getSubstitutionMap(context, listOf(stringType to superType.nullable()))
+        map[superType.classifier] shouldBe stringType.nullable()
+        map[superType.classifier]!!.isMarkedNullable.shouldBeTrue()
     }
 
     @Test

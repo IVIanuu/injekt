@@ -260,7 +260,8 @@ class KotlinTypeRef(
     }
     override val isGiven: Boolean
         get() = kotlinType.isGiven(context, trace)
-    override val isMarkedNullable: Boolean get() = kotlinType.isMarkedNullable
+    override val isMarkedNullable: Boolean
+        get() = kotlinType.isMarkedNullable
     override val arguments: List<TypeRef> by unsafeLazy {
         (kotlinType.getAbbreviation() ?: kotlinType).arguments
             // we use the take here because an inner class also contains the type parameters
@@ -330,7 +331,8 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
             .map { it.substitute(map) } + substitution.qualifiers)
             .distinctBy { it.classifier })
             .sortedQualifiers()
-        val newNullability = if (!isStarProjection) isMarkedNullable else substitution.isMarkedNullable
+        val newNullability = if (isStarProjection) substitution.isMarkedNullable
+        else isMarkedNullable || substitution.isMarkedNullable
         val newGiven = isGiven || substitution.isGiven
         return if (newQualifiers != substitution.qualifiers ||
                 newNullability != substitution.isMarkedNullable ||
@@ -338,9 +340,10 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
             substitution.copy(
                 // we copy nullability to support T : Any? -> String
                 isMarkedNullable = newNullability,
-                // we prefer the existing qualifier to support @MyQualifier T -> @MyQualifier String
-                // but we fallback to the substitution qualifier to also support T -> @MyQualifier String
-                // in case of an overlap we merge the original qualifiers with substitution qualifiers
+                // we merge qualifiers to support
+                // * @MyQualifier T -> @MyQualifier String
+                // * support T -> @MyQualifier String
+                // * @MyQualifier T -> @MyQualifier @MyOtherQualifier String
                 qualifiers = newQualifiers,
                 // we copy given kind to support @Given C -> @Given String
                 // fallback to substitution given
@@ -461,15 +464,19 @@ fun getSubstitutionMap(
 
         if (baseType.classifier.isTypeParameter &&
             (baseType.classifier !in substitutionMap || fromInput)) {
-            val finalSubstitutionType = if ((thisType.qualifiers.isEmpty() &&
+            val finalSubstitutionType = if (((thisType.qualifiers.isEmpty() &&
                         baseType.qualifiers.isEmpty()) ||
-                (baseType.qualifiers.isEmpty() && thisType.qualifiers.isNotEmpty())) thisType
-            else thisType.copy(qualifiers = thisType.qualifiers
-                .filter { thisQualifier ->
-                    baseType.qualifiers.none {
-                        it.classifier == thisQualifier.classifier
+                        (baseType.qualifiers.isEmpty() && thisType.qualifiers.isNotEmpty())) &&
+                    baseType.isMarkedNullable == thisType.isMarkedNullable) thisType
+            else thisType.copy(
+                isMarkedNullable = baseType.isMarkedNullable || thisType.isMarkedNullable,
+                qualifiers = thisType.qualifiers
+                    .filter { thisQualifier ->
+                        baseType.qualifiers.none {
+                            it.classifier == thisQualifier.classifier
+                        }
                     }
-                })
+            )
             substitutionMap[baseType.classifier] = finalSubstitutionType
         }
 
