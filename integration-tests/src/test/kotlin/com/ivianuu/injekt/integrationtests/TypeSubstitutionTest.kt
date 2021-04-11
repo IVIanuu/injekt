@@ -38,7 +38,6 @@ class TypeSubstitutionTest {
         val superType = typeParameter()
         val map = getSubstitutionMap(context, listOf(stringType to superType.nullable()))
         map[superType.classifier] shouldBe stringType.nullable()
-        map[superType.classifier]!!.isMarkedNullable.shouldBeTrue()
     }
 
     @Test

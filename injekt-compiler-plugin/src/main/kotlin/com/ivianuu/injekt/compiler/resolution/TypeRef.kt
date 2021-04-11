@@ -163,9 +163,8 @@ sealed class TypeRef {
 
     private val _hashCode by unsafeLazy {
         var result = classifier.hashCode()
-        // todo result = 31 * result + isMarkedNullable.hashCode()
+        result = 31 * result + isMarkedNullable.hashCode()
         result = 31 * result + arguments.hashCode()
-        // todo result result = 31 * result + variance.hashCode()
         result = 31 * result + isMarkedComposable.hashCode()
         result = 31 * result + isStarProjection.hashCode()
         result = 31 * result + qualifiers.hashCode()
@@ -432,6 +431,7 @@ fun TypeRef.uniqueTypeName(depth: Int = 0): String {
             append(typeArgument.uniqueTypeName(depth + 1))
             if (index != arguments.lastIndex) append("_/_")
         }
+        if (isMarkedNullable && !isStarProjection) append("?")
     }
 }
 
