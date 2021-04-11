@@ -23,24 +23,6 @@ import org.junit.Test
 
 class AbstractGivenTest {
     @Test
-    fun testLolo() = codegen(
-        """
-            var callCount = 0
-            @Given
-            fun scopedFoo(): @Scoped<AppGivenScope> Foo {
-                callCount++
-                return Foo()
-            }
-            @Given
-            fun fooElement(
-                @Given foo: Foo
-            ): @InstallElement<AppGivenScope> Foo = foo
-            fun invoke() {
-                given<AppGivenScope>()
-            }
-        """
-    )
-    @Test
     fun testGivenInterface() = codegen(
         """
             @Given interface FooComponent {
