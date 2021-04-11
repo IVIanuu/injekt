@@ -47,7 +47,6 @@ sealed class GivenNode {
     abstract val callableFqName: FqName
     abstract val callContext: CallContext
     abstract val ownerScope: ResolutionScope
-    abstract val isFrameworkGiven: Boolean
     abstract val cacheExpressionResultIfPossible: Boolean
 }
 
@@ -66,8 +65,6 @@ class CallableGivenNode(
         get() = emptyMap()
     override val originalType: TypeRef
         get() = callable.originalType
-    override val isFrameworkGiven: Boolean
-        get() = false
     override val cacheExpressionResultIfPossible: Boolean
         get() = false
 }
@@ -86,8 +83,6 @@ class SetGivenNode(
         get() = emptyMap()
     override val originalType: TypeRef
         get() = type.classifier.defaultType
-    override val isFrameworkGiven: Boolean
-        get() = true
     override val cacheExpressionResultIfPossible: Boolean
         get() = false
 }
@@ -144,8 +139,6 @@ class ProviderGivenNode(
         get() = CallContext.DEFAULT
     override val originalType: TypeRef
         get() = type.classifier.defaultType
-    override val isFrameworkGiven: Boolean
-        get() = true
     override val cacheExpressionResultIfPossible: Boolean
         get() = true
 }
@@ -225,8 +218,6 @@ class AbstractGivenNode(
 
     override val callContext: CallContext
         get() = CallContext.DEFAULT
-    override val isFrameworkGiven: Boolean
-        get() = true
     override val cacheExpressionResultIfPossible: Boolean
         get() = false
 }

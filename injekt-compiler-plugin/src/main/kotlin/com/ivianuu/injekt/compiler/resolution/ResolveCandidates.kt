@@ -405,134 +405,85 @@ private fun ResolutionScope.compareResult(a: ResolutionResult?, b: ResolutionRes
     return a.failureOrdering.compareTo(b.failureOrdering)
 }
 
-private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int {
-    if (a === b) return 0
-    if (a != null && b == null) return -1
-    if (b != null && a == null) return 1
-    if (a == null && b == null) return 0
-    a!!
-    b!!
-
-    var diff: Int
-
-    diff = compareSpecificity(a.type, a.originalType, b.originalType, context)
-    if (diff < 0) return -1
-    if (diff > 0) return 1
-
-    diff = compareType(a.originalType, b.originalType, context)
-    if (diff < 0) return -1
-    if (diff > 0) return 1
-
-    if (!a.isFrameworkGiven && !b.isFrameworkGiven) {
-        if (a.ownerScope.allParents.size > b.ownerScope.allParents.size) return -1
-        if (b.ownerScope.allParents.size > a.ownerScope.allParents.size) return 1
-    }
-
-    if (a is CallableGivenNode && b is CallableGivenNode) {
-        if (a.callable.owner != null && a.callable.owner == b.callable.owner) {
-            if (a.callable.overriddenDepth < b.callable.overriddenDepth) return -1
-            if (b.callable.overriddenDepth < a.callable.overriddenDepth) return 1
-        }
-    }
-
-    if (a is CallableGivenNode && b is CallableGivenNode) {
-        if (!a.callable.callable.isExternalDeclaration() &&
-            b.callable.callable.isExternalDeclaration()) return -1
-        if (!b.callable.callable.isExternalDeclaration() &&
-            a.callable.callable.isExternalDeclaration()) return 1
-    }
-
-    if (!a.isFrameworkGiven && b.isFrameworkGiven) return -1
-    if (!b.isFrameworkGiven && a.isFrameworkGiven) return 1
-
-    if (a.dependencies.size < b.dependencies.size) return -1
-    if (b.dependencies.size < a.dependencies.size) return 1
-
-    diff = 0
-    for (aDependency in a.dependencies) {
-        for (bDependency in b.dependencies) {
-            diff += compareType(aDependency.type, bDependency.type, context)
-        }
-    }
-    if (diff < 0) return -1
-    if (diff > 0) return 1
-
-    if (callContext == a.callContext &&
-            callContext != b.callContext) return -1
-    if (callContext == b.callContext &&
-        callContext != a.callContext) return 1
-
-    return 0
-}
-
-fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
-    if (a === b) return 0
-    if (a != null && b == null) return -1
-    if (b != null && a == null) return 1
-    if (a == null && b == null) return 0
-    a!!
-    b!!
-
-    var diff: Int
-
-    diff = compareSpecificity(a.type, a.originalType, b.originalType, context)
-    if (diff < 0) return -1
-    if (diff > 0) return 1
-
-    diff = compareType(a.originalType, b.originalType, context)
-    if (diff < 0) return -1
-    if (diff > 0) return 1
-
-    if (a.owner != null && a.owner == b.owner) {
-        if (a.overriddenDepth < b.overriddenDepth) return -1
-        if (b.overriddenDepth < a.overriddenDepth) return 1
-    }
-
-    if (!a.callable.isExternalDeclaration() &&
-        b.callable.isExternalDeclaration()) return -1
-    if (!b.callable.isExternalDeclaration() &&
-        a.callable.isExternalDeclaration()) return 1
-
-    if (a.parameterTypes.size < b.parameterTypes.size) return -1
-    if (b.parameterTypes.size < a.parameterTypes.size) return 1
-
-    diff = 0
-    for (aDependency in a.parameterTypes) {
-        for (bDependency in b.parameterTypes) {
-            diff += compareType(aDependency.value, bDependency.value, context)
-        }
-    }
-    if (diff < 0) return -1
-    if (diff > 0) return 1
-
-    if (callContext == a.callContext &&
-        callContext != b.callContext) return -1
-    if (callContext == b.callContext &&
-        callContext != a.callContext) return 1
-
-    return 0
-}
-
-private fun compareSpecificity(
-    expected: TypeRef,
-    a: TypeRef,
-    b: TypeRef,
-    context: InjektContext
+private inline fun <T> ResolutionScope.compareCandidate(
+    a: T?,
+    b: T?,
+    type: (T) -> TypeRef,
+    scopeNesting: (T) -> Int,
+    owner: (T) -> ClassifierRef?,
+    subClassNesting: (T) -> Int,
+    isInternal: (T) -> Boolean,
+    dependencies: (T) -> Collection<TypeRef>
 ): Int {
-    val aSubtypeDepth = when {
-        a.isSubTypeOf(context, expected) -> a.subtypeDepth(expected.classifier)
-        expected.isSubTypeOf(context, a) -> expected.subtypeDepth(a.classifier)
-        else -> -1
+    if (a === b) return 0
+    if (a != null && b == null) return -1
+    if (b != null && a == null) return 1
+    if (a == null && b == null) return 0
+    a!!
+    b!!
+
+    var diff = compareType(type(a), type(b), context)
+    if (diff < 0) return -1
+    if (diff > 0) return 1
+
+    val aScopeNesting = scopeNesting(a)
+    val bScopeNesting = scopeNesting(b)
+    if (aScopeNesting > bScopeNesting) return -1
+    if (bScopeNesting > aScopeNesting) return 1
+
+    val ownerA = owner(a)
+    val ownerB = owner(b)
+    if (ownerA != null && ownerA == ownerB) {
+        val aSubClassNesting = subClassNesting(a)
+        val bSubClassNesting = subClassNesting(b)
+
+        if (aSubClassNesting < bSubClassNesting) return -1
+        if (bSubClassNesting < aSubClassNesting) return 1
     }
-    val bSubtypeDepth = when {
-        b.isSubTypeOf(context, expected) -> b.subtypeDepth(expected.classifier)
-        expected.isSubTypeOf(context, b) -> expected.subtypeDepth(b.classifier)
-        else -> -1
+
+    val aIsInternal = isInternal(a)
+    val bIsInternal = isInternal(b)
+    if (aIsInternal && !bIsInternal) return -1
+    if (bIsInternal && !aIsInternal) return 1
+
+    val aDependencies = dependencies(a)
+    val bDependencies = dependencies(b)
+    if (aDependencies.size < bDependencies.size) return -1
+    if (bDependencies.size < aDependencies.size) return 1
+
+    diff = 0
+    for (aDependency in aDependencies) {
+        for (bDependency in bDependencies) {
+            diff += compareType(aDependency, bDependency, context)
+        }
     }
-    if (aSubtypeDepth != -1 && aSubtypeDepth < bSubtypeDepth) return -1
-    if (bSubtypeDepth != -1 && bSubtypeDepth < aSubtypeDepth) return 1
+    if (diff < 0) return -1
+    if (diff > 0) return 1
+
     return 0
 }
+
+private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int = compareCandidate(
+    a = a,
+    b = b,
+    type = { it.originalType },
+    scopeNesting = { it.ownerScope.allParents.size },
+    owner = { (it as? CallableGivenNode)?.callable?.owner },
+    subClassNesting = { (it as? CallableGivenNode)?.callable?.overriddenDepth ?: 0 },
+    isInternal = { it !is CallableGivenNode || !it.callable.callable.isExternalDeclaration() },
+    dependencies = { it.dependencies.map { it.type } },
+)
+
+fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int = compareCandidate(
+    a = a,
+    b = b,
+    type = { it.originalType },
+    scopeNesting = { -1 },
+    owner = { it.owner },
+    subClassNesting = { it.overriddenDepth },
+    isInternal = { !it.callable.isExternalDeclaration() },
+    dependencies = { it.parameterTypes.values },
+)
 
 fun compareType(a: TypeRef, b: TypeRef, context: InjektContext): Int {
     if (a === b) return 0

@@ -331,39 +331,6 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testPrefersMoreSpecificType3() = codegen(
-        """
-            interface Logger
-            @Given class LoggerImpl : Logger
-            @Given object NoopLogger : Logger
-            @Given fun logger(
-                @Given loggerProvider: () -> LoggerImpl,
-                @Given noopLoggerProvider: () -> NoopLogger
-            ): Logger = TODO()
-            fun invoke() = given<Logger>()
-        """
-    ) {
-        compilationShouldBeOk()
-        shouldThrowAny { invokeSingleFile() }
-    }
-
-    @Test
-    fun testPrefersMoreSpecificType4() = codegen(
-        """
-            interface Logger
-            open class IntermediateLogger : Logger
-            open class IntermediateLogger2 : IntermediateLogger()
-            open class IntermediateLogger3 : IntermediateLogger2()
-            @Given class WorseLogger(@Given foo: Foo) : IntermediateLogger3()
-            @Given class BetterLogger(@Given foo: Foo) : IntermediateLogger2()
-            @Given val foo = Foo()
-            fun invoke() = given<IntermediateLogger>()
-        """
-    ) {
-        irShouldContain(1, "given<IntermediateLogger>(value = BetterLogger(")
-    }
-
-    @Test
     fun testPrefersShorterTree() = codegen(
         """
             @Given val a = "a"
@@ -373,22 +340,6 @@ class GivenResolutionTest {
         """
     ) {
         "a" shouldBe invokeSingleFile()
-    }
-
-    @Test
-    fun testPrefersExactCallContext() = codegen(
-        """
-            @Given lateinit var _foo: Foo
-            val suspendFoo = Foo()
-            @Given suspend fun suspendFoo() = suspendFoo
-            fun invoke(foo: Foo): Foo {
-                _foo = foo
-                return given()
-            }
-        """
-    ) {
-        val foo = Foo()
-        invokeSingleFile(foo) shouldBeSameInstanceAs foo
     }
 
     @Test
