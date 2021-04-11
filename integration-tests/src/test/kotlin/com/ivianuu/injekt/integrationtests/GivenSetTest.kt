@@ -157,8 +157,10 @@ class GivenSetTest {
             }
         """
     ) {
-        val set = invokeSingleFile<Set<Any>>()
+        val set = invokeSingleFile<Set<Any>>().toList()
         set.shouldHaveSize(2)
+        set[0] shouldBe "a"
+        set[1] shouldBe "b"
     }
 
     @Test
@@ -171,4 +173,17 @@ class GivenSetTest {
             fun invoke(): Set<MyComponent> = given()
         """
     )
+
+    @Test
+    fun testSetWithIgnoreElementsWithErrors() = codegen(
+        """
+            @Given val a = "a"
+            @Given fun b(@Given foo: Foo) = "b"
+            fun invoke(): @IgnoreElementsWithErrors Set<String> = given()
+        """
+    ) {
+        val set = invokeSingleFile<Set<Any>>().toList()
+        set.shouldHaveSize(1)
+        set[0] shouldBe "a"
+    }
 }

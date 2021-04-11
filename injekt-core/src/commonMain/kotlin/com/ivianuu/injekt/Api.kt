@@ -86,3 +86,9 @@ annotation class Qualifier
     AnnotationTarget.VALUE_PARAMETER
 )
 annotation class DefaultOnAllErrors
+
+/**
+ * Only includes successful elements in the [Set] and ignores elements with errors
+ */
+@Target(AnnotationTarget.TYPE)
+annotation class IgnoreElementsWithErrors

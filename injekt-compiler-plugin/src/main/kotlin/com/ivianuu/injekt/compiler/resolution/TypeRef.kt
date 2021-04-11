@@ -154,6 +154,7 @@ sealed class TypeRef {
     abstract val qualifiers: List<TypeRef>
     abstract val frameworkKey: Int?
     abstract val defaultOnAllErrors: Boolean
+    abstract val ignoreElementsWithErrors: Boolean
 
     private val typeName by unsafeLazy { uniqueTypeName() }
 
@@ -280,6 +281,8 @@ class KotlinTypeRef(
         get() = null
     override val defaultOnAllErrors: Boolean
         get() = kotlinType.hasAnnotation(InjektFqNames.DefaultOnAllErrors)
+    override val ignoreElementsWithErrors: Boolean
+        get() = kotlinType.hasAnnotation(InjektFqNames.IgnoreElementsWithErrors)
 }
 
 class SimpleTypeRef(
@@ -291,7 +294,8 @@ class SimpleTypeRef(
     override val isStarProjection: Boolean = false,
     override val qualifiers: List<TypeRef> = emptyList(),
     override val frameworkKey: Int? = null,
-    override val defaultOnAllErrors: Boolean = false
+    override val defaultOnAllErrors: Boolean = false,
+    override val ignoreElementsWithErrors: Boolean = false
 ) : TypeRef() {
     init {
         check(arguments.size == classifier.typeParameters.size) {
@@ -316,7 +320,8 @@ fun TypeRef.copy(
     isStarProjection: Boolean = this.isStarProjection,
     qualifiers: List<TypeRef> = this.qualifiers,
     frameworkKey: Int? = this.frameworkKey,
-    defaultOnAllErrors: Boolean = this.defaultOnAllErrors
+    defaultOnAllErrors: Boolean = this.defaultOnAllErrors,
+    ignoreElementsWithErrors: Boolean = this.ignoreElementsWithErrors
 ): SimpleTypeRef = SimpleTypeRef(
     classifier,
     isMarkedNullable,
@@ -326,7 +331,8 @@ fun TypeRef.copy(
     isStarProjection,
     qualifiers,
     frameworkKey,
-    defaultOnAllErrors
+    defaultOnAllErrors,
+    ignoreElementsWithErrors
 )
 
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {

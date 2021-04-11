@@ -613,7 +613,8 @@ class GivenCallTransformer(
 
                 result.dependencyResults
                     .forEach { (_, dependency) ->
-                        dependency as ResolutionResult.Success.WithCandidate.Value
+                        if (dependency !is ResolutionResult.Success.WithCandidate.Value)
+                            return@forEach
                         if (dependency.candidate.type.isAssignableTo(
                                 this@GivenCallTransformer.context,
                                 given.collectionElementType)) {
