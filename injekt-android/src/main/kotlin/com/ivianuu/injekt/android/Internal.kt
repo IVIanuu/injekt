@@ -24,10 +24,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
-import androidx.lifecycle.lifecycleScope
 import com.ivianuu.injekt.scope.GivenScope
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.launch
 
 internal val givenScopesByLifecycle = mutableMapOf<Lifecycle, GivenScope>()
 
@@ -57,12 +54,12 @@ internal inline fun <T : GivenScope> ViewModelStore.givenScope(crossinline init:
         this,
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                ViewModelGivenScopeHolder(init()) as T
+                GivenScopeHolder(init()) as T
         }
-    )[ViewModelGivenScopeHolder::class.java].givenScope as T
+    )[GivenScopeHolder::class.java].givenScope as T
 }
 
-internal class ViewModelGivenScopeHolder<T : GivenScope>(val givenScope: T) : ViewModel() {
+internal class GivenScopeHolder<T : GivenScope>(val givenScope: T) : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         givenScope.dispose()
