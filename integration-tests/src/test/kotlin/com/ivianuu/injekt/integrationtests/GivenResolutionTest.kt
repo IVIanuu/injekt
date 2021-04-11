@@ -331,6 +331,17 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testPrefersNonNullType() = codegen(
+        """
+            @Given val nonNull = "nonnull"
+            @Given val nullable: String? = "nullable"
+            fun invoke() = given<String?>()
+        """
+    ) {
+        invokeSingleFile() shouldBe "nonnull"
+    }
+
+    @Test
     fun testPrefersShorterTree() = codegen(
         """
             @Given val a = "a"

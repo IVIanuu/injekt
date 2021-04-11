@@ -502,6 +502,9 @@ fun compareType(a: TypeRef, b: TypeRef, context: InjektContext): Int {
     if (a.frameworkKey != null && b.frameworkKey == null) return -1
     if (b.frameworkKey != null && a.frameworkKey == null) return 1
 
+    if (!a.isMarkedNullable && b.isMarkedNullable) return -1
+    if (!b.isMarkedNullable && a.isMarkedNullable) return 1
+
     if (a.classifier != b.classifier) {
         if (a.isSubTypeOf(context, b)) return -1
         if (b.isSubTypeOf(context, a)) return 1
