@@ -55,7 +55,7 @@ fun CallableRef.toPersistedCallableInfo(
     parameterTypes = parameterTypes
         .mapValues { it.value.toPersistedTypeRef(context) },
     givenParameters = givenParameters,
-    useDefaultOnAllErrorsParameters = useDefaultOnAllErrorParameters
+    useDefaultOnAllErrorsParameters = defaultOnAllErrorParameters
 )
 
 @Serializable
@@ -101,7 +101,8 @@ data class PersistedTypeRef(
     @SerialName("3") val isStarProjection: Boolean,
     @SerialName("4") val isMarkedNullable: Boolean,
     @SerialName("5") val isMarkedComposable: Boolean,
-    @SerialName("6") val isGiven: Boolean
+    @SerialName("6") val isGiven: Boolean,
+    @SerialName("7") val defaultOnAllErrors: Boolean
 )
 
 fun TypeRef.toPersistedTypeRef(context: InjektContext): PersistedTypeRef = PersistedTypeRef(
@@ -111,7 +112,8 @@ fun TypeRef.toPersistedTypeRef(context: InjektContext): PersistedTypeRef = Persi
     isStarProjection = isStarProjection,
     isMarkedNullable = isMarkedNullable,
     isMarkedComposable = isMarkedComposable,
-    isGiven = isGiven
+    isGiven = isGiven,
+    defaultOnAllErrors = defaultOnAllErrors
 )
 
 fun PersistedTypeRef.toTypeRef(context: InjektContext, trace: BindingTrace?): TypeRef {
@@ -124,7 +126,8 @@ fun PersistedTypeRef.toTypeRef(context: InjektContext, trace: BindingTrace?): Ty
             arguments = arguments.map { it.toTypeRef(context, trace) },
             isMarkedNullable = isMarkedNullable,
             isMarkedComposable = isMarkedComposable,
-            isGiven = isGiven
+            isGiven = isGiven,
+            defaultOnAllErrors = defaultOnAllErrors
         )
 }
 

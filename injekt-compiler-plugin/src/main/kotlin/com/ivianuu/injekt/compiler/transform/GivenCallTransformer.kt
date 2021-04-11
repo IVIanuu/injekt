@@ -500,27 +500,28 @@ class GivenCallTransformer(
             given.type.toIrType(pluginContext, localClasses, context),
             parameterNameProvider = { "p${graphContext.variableIndex++}" }
         ) { function ->
-            val dependencyResult = result.dependencyResults.values.single()
-            if (dependencyResult is ResolutionResult.Success.DefaultValue)
-                return@irLambda irNull()
-            dependencyResult as ResolutionResult.Success.WithCandidate.Value
-            val dependencyScopeContext = ScopeContext(
-                this@providerExpression, graphContext, given.dependencyScopes.values.single(), scope)
-            val expression = with(dependencyScopeContext) {
-                val previousParametersMap = parameterMap.toMap()
-                given.parameterDescriptors
-                    .forEachWith(function.valueParameters) { a, b -> parameterMap[a] = b }
-                expressionFor(dependencyResult)
-                    .also {
-                        parameterMap.clear()
-                        parameterMap.putAll(previousParametersMap)
+            when (val dependencyResult = result.dependencyResults.values.single()) {
+                is ResolutionResult.Success.DefaultValue -> return@irLambda irNull()
+                is ResolutionResult.Success.WithCandidate -> {
+                    val dependencyScopeContext = ScopeContext(
+                        this@providerExpression, graphContext, given.dependencyScopes.values.single(), scope)
+                    val expression = with(dependencyScopeContext) {
+                        val previousParametersMap = parameterMap.toMap()
+                        given.parameterDescriptors
+                            .forEachWith(function.valueParameters) { a, b -> parameterMap[a] = b }
+                        expressionFor(dependencyResult)
+                            .also {
+                                parameterMap.clear()
+                                parameterMap.putAll(previousParametersMap)
+                            }
                     }
-            }
-            if (dependencyScopeContext.statements.isEmpty()) expression
-            else {
-                irBlock {
-                    dependencyScopeContext.statements.forEach { +it }
-                    +expression
+                    if (dependencyScopeContext.statements.isEmpty()) expression
+                    else {
+                        irBlock {
+                            dependencyScopeContext.statements.forEach { +it }
+                            +expression
+                        }
+                    }
                 }
             }
         }

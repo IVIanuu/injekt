@@ -101,7 +101,9 @@ class ProviderGivenNode(
         GivenRequest(
             type = type.arguments.last(),
             defaultStrategy = if (type.arguments.last().isNullableType)
-                GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
+                if (type.defaultOnAllErrors)
+                    GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
+                else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
             else GivenRequest.DefaultStrategy.NONE,
             callableFqName = callableFqName,
             parameterName = "instance".asNameId(),
@@ -172,9 +174,7 @@ class AbstractGivenNode(
                     requestCallable.callable
                         .cast<CallableMemberDescriptor>()
                         .modality == Modality.ABSTRACT -> GivenRequest.DefaultStrategy.NONE
-                    requestCallable.callable.annotations.findAnnotation(InjektFqNames.Given)
-                        !!.allValueArguments["useDefaultOnAllErrors".asNameId()]
-                        ?.value == true ->
+                    requestCallable.callable.annotations.hasAnnotation(InjektFqNames.DefaultOnAllErrors) ->
                         GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
                     else -> GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
                 },
@@ -261,7 +261,7 @@ fun CallableRef.getGivenRequests(
         GivenRequest(
             type = parameterTypes[name]!!,
             defaultStrategy = if (parameter is ValueParameterDescriptor && parameter.hasDefaultValueIgnoringGiven) {
-                if (name in useDefaultOnAllErrorParameters) GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
+                if (name in defaultOnAllErrorParameters) GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
                 else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
             } else GivenRequest.DefaultStrategy.NONE,
             callableFqName = callableFqNameProvider(parameter),

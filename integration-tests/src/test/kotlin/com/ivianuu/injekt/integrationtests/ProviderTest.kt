@@ -187,4 +187,14 @@ class ProviderTest {
     ) {
         invokeSingleFile().shouldBeNull()
     }
+
+    @Test
+    fun testProviderWithNullableReturnTypeAndDefaultOnAllErrors() = codegen(
+        """
+            @Given fun bar(@Given foo: Foo) = Bar(foo)
+            fun invoke() = given<@DefaultOnAllErrors () -> Bar?>()()
+        """
+    ) {
+        invokeSingleFile().shouldBeNull()
+    }
 }

@@ -123,7 +123,7 @@ class AbstractGivenTest {
     fun testAbstractGivenWithErrorRequestButDefaultImplementationIsNoError() = codegen(
         """
             @Given interface BarComponent {
-                @Given(useDefaultOnAllErrors = true)
+                @Given @DefaultOnAllErrors
                 fun bar(): Bar = Bar(Foo())
             }
 

@@ -480,7 +480,7 @@ class GivenResolutionTest {
         """
                 @Given fun bar(@Given foo: Foo) = Bar(foo)
                 fun invoke(foo: Foo): Foo {
-                    fun inner(@Given(useDefaultOnAllErrors = true) bar: Bar = Bar(foo)) = bar
+                    fun inner(@Given @DefaultOnAllErrors bar: Bar = Bar(foo)) = bar
                     return inner().foo
                 }
             """

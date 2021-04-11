@@ -31,13 +31,7 @@ package com.ivianuu.injekt
     AnnotationTarget.TYPE,
     AnnotationTarget.TYPE_PARAMETER
 )
-annotation class Given(
-    /**
-     * Falls back to the default value even if a given exists but has an error.
-     * Normally the default value will only be used if no given was found
-     */
-    val useDefaultOnAllErrors: Boolean = false
-)
+annotation class Given
 
 /**
  * Returns a given argument of type [T]
@@ -49,7 +43,7 @@ inline fun <T> given(@Given value: T): T = value
  * Returns a given argument of type [T] or null
  */
 @Suppress("NOTHING_TO_INLINE")
-inline fun <T : Any> givenOrNull(@Given(useDefaultOnAllErrors = true) value: T? = null): T? = value
+inline fun <T : Any> givenOrNull(@Given @DefaultOnAllErrors value: T? = null): T? = value
 
 /**
  * Marks an annotation as an qualifier which can then be used
@@ -79,3 +73,16 @@ inline fun <T : Any> givenOrNull(@Given(useDefaultOnAllErrors = true) value: T? 
  */
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Qualifier
+
+
+/**
+ * Falls back to the default value even if a given exists but has an error.
+ * Normally the default value will only be used if no given was found not if it has errors
+ */
+@Target(
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.TYPE,
+    AnnotationTarget.VALUE_PARAMETER
+)
+annotation class DefaultOnAllErrors

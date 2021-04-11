@@ -84,7 +84,7 @@ class GivenCallChecker(
                     type = callable.parameterTypes[parameter.name.asString()]!!,
                     defaultStrategy = if (parameter is ValueParameterDescriptor &&
                         parameter.hasDefaultValueIgnoringGiven) {
-                        if (parameter.injektName() in callable.useDefaultOnAllErrorParameters)
+                        if (parameter.injektName() in callable.defaultOnAllErrorParameters)
                             GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
                         else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
                     } else GivenRequest.DefaultStrategy.NONE,
