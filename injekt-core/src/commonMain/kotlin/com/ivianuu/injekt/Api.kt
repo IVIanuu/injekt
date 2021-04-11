@@ -74,7 +74,6 @@ inline fun <T : Any> givenOrNull(@Given @DefaultOnAllErrors value: T? = null): T
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Qualifier
 
-
 /**
  * Falls back to the default value even if a given exists but has an error.
  * Normally the default value will only be used if no given was found not if it has errors
