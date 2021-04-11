@@ -500,13 +500,17 @@ class GivenCallTransformer(
             given.type.toIrType(pluginContext, localClasses, context),
             parameterNameProvider = { "p${graphContext.variableIndex++}" }
         ) { function ->
+            val dependencyResult = result.dependencyResults.values.single()
+            if (dependencyResult is ResolutionResult.Success.DefaultValue)
+                return@irLambda irNull()
+            dependencyResult as ResolutionResult.Success.WithCandidate.Value
             val dependencyScopeContext = ScopeContext(
                 this@providerExpression, graphContext, given.dependencyScopes.values.single(), scope)
             val expression = with(dependencyScopeContext) {
                 val previousParametersMap = parameterMap.toMap()
                 given.parameterDescriptors
                     .forEachWith(function.valueParameters) { a, b -> parameterMap[a] = b }
-                expressionFor(result.dependencyResults.values.single().cast())
+                expressionFor(dependencyResult)
                     .also {
                         parameterMap.clear()
                         parameterMap.putAll(previousParametersMap)

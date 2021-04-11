@@ -100,7 +100,9 @@ class ProviderGivenNode(
     override val dependencies: List<GivenRequest> = listOf(
         GivenRequest(
             type = type.arguments.last(),
-            defaultStrategy = GivenRequest.DefaultStrategy.NONE,
+            defaultStrategy = if (type.arguments.last().isNullableType)
+                GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
+            else GivenRequest.DefaultStrategy.NONE,
             callableFqName = callableFqName,
             parameterName = "instance".asNameId(),
             isInline = false,

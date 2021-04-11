@@ -203,10 +203,10 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
         resolveCandidates(request, userGivens)
     } else {
         val frameworkCandidates = frameworkGivensForRequest(request)
-        if (frameworkCandidates != null) {
-            resolveCandidates(request, frameworkCandidates)
-        } else {
-            ResolutionResult.Failure.NoCandidates
+        when {
+            frameworkCandidates != null -> resolveCandidates(request, frameworkCandidates)
+            request.defaultStrategy == GivenRequest.DefaultStrategy.NONE -> ResolutionResult.Failure.NoCandidates
+            else -> ResolutionResult.Success.DefaultValue
         }
     }
     if (!isInlineProviderCandidateType) resultsByType[request.type] = result
