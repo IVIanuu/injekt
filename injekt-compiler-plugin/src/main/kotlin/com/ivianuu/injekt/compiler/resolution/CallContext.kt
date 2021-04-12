@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.backend.common.descriptors.isSuspend
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
@@ -52,6 +53,7 @@ fun CallContext.canCall(other: CallContext) =
 fun CallableDescriptor.callContext(
     bindingContext: BindingContext
 ): CallContext {
+    if (this is ConstructorDescriptor) return CallContext.DEFAULT
     var node: PsiElement? = findPsi()
     if (node == null) return callContextOfThis
     loop@while (node != null) {
