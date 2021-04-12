@@ -171,7 +171,21 @@ class TypeKeyTransformer(
                 .filter { it.isForTypeKey(context, trace) }
             typeKeyParameters.forEach {
                 function.addValueParameter(
-                    "_${it}TypeKey",
+                    "_${it.name}TypeKey",
+                    pluginContext.irBuiltIns.stringType
+                )
+            }
+            transformedFunctions[function] = function
+            return function
+        }
+
+        if (function.descriptor.original.isExternalDeclaration()) {
+            val typeKeyParameters = function
+                .typeParameters
+                .filter { it.descriptor.isForTypeKey(context, trace) }
+            typeKeyParameters.forEach {
+                function.addValueParameter(
+                    "_${it.name}TypeKey",
                     pluginContext.irBuiltIns.stringType
                 )
             }
@@ -249,7 +263,7 @@ class TypeKeyTransformer(
 
         val transformedCallee = transformFunctionIfNeeded(callee)
         if (expression is IrCall &&
-            expression.symbol == transformedCallee.symbol) return expression
+            expression.valueArgumentsCount == transformedCallee.valueParameters.size) return expression
         return when (expression) {
             is IrCall -> {
                 IrCallImpl(

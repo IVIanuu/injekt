@@ -172,13 +172,12 @@ annotation class InstallElement<S : GivenScope> {
         }
 
         @Qualifier
-        internal annotation class Private
+        private annotation class Private
+
+        @Given
+        inline fun <@ForTypeKey T> elementTypeKey(): @Private TypeKey<T> = typeKeyOf()
     }
 }
-
-@Given
-inline fun <@ForTypeKey T> elementTypeKey(): @InstallElement.Companion.Private TypeKey<T> =
-    typeKeyOf()
 
 /**
  * Will get invoked once [GivenScope] [S] is initialized

@@ -19,6 +19,7 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import io.kotest.matchers.shouldBe
 import org.junit.Test
@@ -243,14 +244,12 @@ class TypeKeyTest {
         invokeSingleFile() shouldBe "kotlin.String"
     }
 
-    // todo @Test
+    @Test
     fun testNonTopLevelInlineForTypeKeyFunction() = singleAndMultiCodegen(
         """
-            class MyClass {
-                companion object {
-                    @Given
-                    inline fun <@ForTypeKey T> myKey(): @Qualifier1 TypeKey<T> = typeKeyOf()
-                }
+            @Given object MyClass {
+                @Given
+                inline fun <@ForTypeKey T> myKey(): @Qualifier1 TypeKey<T> = typeKeyOf()
             }
         """,
         """
