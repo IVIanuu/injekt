@@ -164,19 +164,20 @@ annotation class InstallElement<S : GivenScope> {
             @Given
             inline fun elementIntoSet(
                 @Given noinline factory: () -> T,
-                @Given key: ElementTypeKey<U>
+                @Given key: @ForElement TypeKey<U>
             ): GivenScopeElement<S> = GivenScopeElement(key, factory)
 
             @Given
-            inline fun element(@Given scope: S, @Given key: ElementTypeKey<U>): U = scope.element(key)
+            inline fun element(@Given scope: S, @Given key: @ForElement TypeKey<U>): U = scope.element(key)
         }
     }
 }
 
-private typealias ElementTypeKey<T> = TypeKey<T>
+@Qualifier
+private annotation class ForElement
 
 @Given
-inline fun <@ForTypeKey T> elementTypeKey(): ElementTypeKey<T> = typeKeyOf()
+inline fun <@ForTypeKey T> elementTypeKey(): @ForElement TypeKey<T> = typeKeyOf()
 
 /**
  * Will get invoked once [GivenScope] [S] is initialized
