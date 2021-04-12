@@ -36,13 +36,11 @@ annotation class Given
 /**
  * Returns a given argument of type [T]
  */
-@Suppress("NOTHING_TO_INLINE")
 inline fun <T> given(@Given value: T): T = value
 
 /**
  * Returns a given argument of type [T] or null
  */
-@Suppress("NOTHING_TO_INLINE")
 inline fun <T : Any> givenOrNull(@Given @DefaultOnAllErrors value: T? = null): T? = value
 
 /**

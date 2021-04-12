@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-@file:Suppress("NOTHING_TO_INLINE")
-
 package com.ivianuu.injekt.android
 
 import android.content.Context
@@ -42,3 +40,4 @@ annotation class SystemService {
         ): @SystemService T = ContextCompat.getSystemService(context, serviceClass.java)!!
     }
 }
+U
