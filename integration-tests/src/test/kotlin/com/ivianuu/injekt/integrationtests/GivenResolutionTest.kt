@@ -283,6 +283,17 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testPrefersHigherPriority() = codegen(
+        """
+            @Given @Priority(1) val high = "high"
+            @Given @Priority(0) val low = "low"
+            fun invoke(): String = given()
+        """
+    ) {
+        invokeSingleFile() shouldBe "high"
+    }
+
+    @Test
     fun testAmbiguousGivens() = codegen(
         """
             @Given val a = "a"

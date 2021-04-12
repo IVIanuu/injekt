@@ -91,3 +91,22 @@ annotation class DefaultOnAllErrors
  */
 @Target(AnnotationTarget.TYPE)
 annotation class IgnoreElementsWithErrors
+
+/**
+ * Specify the priority of the given
+ */
+@Target(
+    AnnotationTarget.CLASS,
+    AnnotationTarget.CONSTRUCTOR,
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.LOCAL_VARIABLE,
+    AnnotationTarget.VALUE_PARAMETER,
+    AnnotationTarget.TYPE
+)
+annotation class Priority(val value: Int) {
+    companion object {
+        const val NORMAL = 0
+        const val LOW = -1
+    }
+}

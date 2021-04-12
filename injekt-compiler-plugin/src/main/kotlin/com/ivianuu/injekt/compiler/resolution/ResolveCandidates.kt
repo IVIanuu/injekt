@@ -413,6 +413,7 @@ private inline fun <T> ResolutionScope.compareCandidate(
     owner: (T) -> ClassifierRef?,
     subClassNesting: (T) -> Int,
     isInternal: (T) -> Boolean,
+    priority: (T) -> Int,
     dependencies: (T) -> Collection<TypeRef>
 ): Int {
     if (a === b) return 0
@@ -425,6 +426,11 @@ private inline fun <T> ResolutionScope.compareCandidate(
     var diff = compareType(type(a), type(b), context)
     if (diff < 0) return -1
     if (diff > 0) return 1
+
+    val aPriority = priority(a)
+    val bPriority = priority(b)
+    if (aPriority > bPriority) return -1
+    if (bPriority > aPriority) return 1
 
     val aScopeNesting = scopeNesting(a)
     val bScopeNesting = scopeNesting(b)
@@ -471,6 +477,7 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     owner = { (it as? CallableGivenNode)?.callable?.owner },
     subClassNesting = { (it as? CallableGivenNode)?.callable?.overriddenDepth ?: 0 },
     isInternal = { it !is CallableGivenNode || !it.callable.callable.isExternalDeclaration() },
+    priority = { it.safeAs<CallableGivenNode>()?.callable?.priority ?: 0 },
     dependencies = { it.dependencies.map { it.type } },
 )
 
@@ -482,6 +489,7 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int = com
     owner = { it.owner },
     subClassNesting = { it.overriddenDepth },
     isInternal = { !it.callable.isExternalDeclaration() },
+    priority = { it.priority },
     dependencies = { it.parameterTypes.values },
 )
 
