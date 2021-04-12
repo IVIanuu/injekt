@@ -81,11 +81,11 @@ inline fun <T : Any> GivenScope.getOrCreateScopedValue(key: Any, init: () -> T):
     }
 }
 
-inline fun <@ForTypeKey T : Any> GivenScope.getOrCreateScopedValue(init: () -> T): T =
-    getOrCreateScopedValue(typeKeyOf(), init)
-
 inline fun <T : Any> GivenScope.getOrCreateScopedValue(key: TypeKey<T>, init: () -> T): T =
     getOrCreateScopedValue(key.value, init)
+
+inline fun <@ForTypeKey T : Any> GivenScope.getOrCreateScopedValue(init: () -> T): T =
+    getOrCreateScopedValue(typeKeyOf(), init)
 
 /**
  * Invokes the [action] function once [this] scope get's disposed
