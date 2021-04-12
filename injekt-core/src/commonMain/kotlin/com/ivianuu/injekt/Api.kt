@@ -41,7 +41,7 @@ inline fun <T> given(@Given value: T): T = value
 /**
  * Returns a given argument of type [T] or null
  */
-inline fun <T : Any> givenOrNull(@Given @DefaultOnAllErrors value: T? = null): T? = value
+inline fun <T> givenOrNull(@Given @DefaultOnAllErrors value: T? = null): T? = value
 
 /**
  * Marks an annotation as an qualifier which can then be used
