@@ -91,6 +91,11 @@ interface InjektErrors {
                 .also { MAP.put(it, "enum class cannot be @Given") }
 
         @JvmField
+        val GIVEN_INNER_CLASS =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also { MAP.put(it, "@Given class cannot be inner") }
+
+        @JvmField
         val ABSTRACT_NON_GIVEN_MEMBER_IN_ABSTRACT_GIVEN =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also { MAP.put(it, "abstract @Given can only have abstract @Given members. Implement the member yourself or remove it") }
@@ -99,11 +104,6 @@ interface InjektErrors {
         val ABSTRACT_GIVEN_WITH_MUTABLE_PROPERTY =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also { MAP.put(it, "abstract @Given cannot contain mutable properties") }
-
-        @JvmField
-        val GIVEN_INNER_CLASS =
-            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "@Given class cannot be inner") }
 
         @JvmField
         val GIVEN_SEALED_CLASS =
@@ -126,20 +126,8 @@ interface InjektErrors {
                             override fun render(
                                 obj: TypeParameterDescriptor,
                                 renderingContext: RenderingContext
-                            ): String {
-                                return obj.name.asString()
-                            }
+                            ): String = obj.name.asString()
                         }
-                    )
-                }
-
-        @JvmField
-        val FOR_TYPE_KEY_TYPE_PARAMETER_ON_TYPE_ALIAS =
-            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also {
-                    MAP.put(
-                        it,
-                        "cannot mark type alias type parameter with @ForTypeKey"
                     )
                 }
 

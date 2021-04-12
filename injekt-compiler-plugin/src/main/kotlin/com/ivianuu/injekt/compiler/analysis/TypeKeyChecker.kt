@@ -43,18 +43,6 @@ class TypeKeyChecker(private val context: InjektContext) : CallChecker, Declarat
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (descriptor is TypeAliasDescriptor) {
-            descriptor.declaredTypeParameters
-                .filter { it.isForTypeKey(this.context, context.trace) }
-                .forEach {
-                    context.trace.report(
-                        InjektErrors.FOR_TYPE_KEY_TYPE_PARAMETER_ON_TYPE_ALIAS
-                            .on(it.findPsi()!!)
-                    )
-                }
-            return
-        }
-
         if (descriptor !is CallableDescriptor) return
 
         if (descriptor.typeParameters.isEmpty()) return

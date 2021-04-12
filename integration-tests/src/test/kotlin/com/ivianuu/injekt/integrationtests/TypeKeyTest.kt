@@ -224,15 +224,6 @@ class TypeKeyTest {
     }
 
     @Test
-    fun testForTypeKeyTypeParameterOnTypeAlias() = codegen(
-        """
-            typealias MyAlias<@ForTypeKey T> = String
-        """
-    ) {
-        compilationShouldHaveFailed("cannot mark type alias type parameter with @ForTypeKey")
-    }
-
-    @Test
     fun testPropertyWithForTypeKeyParameter() = singleAndMultiCodegen(
         """
             val <@ForTypeKey T> T.typeKey: TypeKey<T> get() = typeKeyOf<T>()
