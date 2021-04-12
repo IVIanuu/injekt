@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="injekt-ktor-jvm-0.0.1-dev520">
+    <output-path>$PROJECT_DIR$/injekt-ktor/build/libs</output-path>
+    <root id="archive" name="injekt-ktor-jvm-0.0.1-dev520.jar">
+      <element id="module-output" name="injekt.injekt-ktor.jvmMain" />
+    </root>
+  </artifact>
+</component>

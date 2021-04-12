@@ -34,7 +34,7 @@ import kotlin.reflect.KClass
 annotation class SystemService {
     companion object {
         @Given
-        fun <T : Any> systemService(
+        inline fun <T : Any> systemService(
             @Given context: Context,
             @Given serviceClass: KClass<T>
         ): @SystemService T = ContextCompat.getSystemService(context, serviceClass.java)!!

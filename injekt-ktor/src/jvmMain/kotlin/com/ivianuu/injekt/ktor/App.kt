@@ -19,10 +19,15 @@ val Routing.appGivenScope: AppGivenScope
 val ApplicationCall.appGivenScope: AppGivenScope
     get() = application.appGivenScope
 
-fun Application.initializeAppGivenScope(
+inline fun Application.initializeAppGivenScope(
     @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Application) -> AppGivenScope
 ) {
     val scope = scopeFactory(this)
+    registerAppGivenScope(scope)
+}
+
+@PublishedApi
+internal fun Application.registerAppGivenScope(scope: AppGivenScope) {
     attributes.put(AppGivenScopeKey, scope)
     environment.monitor.subscribe(ApplicationStopped) {
         scope.dispose()

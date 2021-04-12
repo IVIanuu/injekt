@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("NOTHING_TO_INLINE")
+
 package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.Given
@@ -24,35 +26,35 @@ annotation class ChildScopeFactory
 
 class ChildGivenScopeModule<P : GivenScope, T, S : T> {
     @Given
-    fun factory(@Given scopeFactory: S):
+    inline fun factory(@Given scopeFactory: S):
             @InstallElement<P> @ChildScopeFactory T = scopeFactory
 }
 
-fun <P : GivenScope, C : GivenScope> ChildGivenScopeModule0() =
+inline fun <P : GivenScope, C : GivenScope> ChildGivenScopeModule0() =
     ChildGivenScopeModule<P, () -> C, () -> C>()
 
-fun <P : GivenScope, P1, C : GivenScope> ChildGivenScopeModule1() =
+inline fun <P : GivenScope, P1, C : GivenScope> ChildGivenScopeModule1() =
     ChildGivenScopeModule<P, (P1) -> C, (@Given @InstallElement<C> P1) -> C>()
 
-fun <P : GivenScope, P1, P2, C : GivenScope> ChildGivenScopeModule2() =
+inline fun <P : GivenScope, P1, P2, C : GivenScope> ChildGivenScopeModule2() =
     ChildGivenScopeModule<P, (P1, P2) -> C,
                 (@Given @InstallElement<C> P1,
                  @Given @InstallElement<C> P2) -> C>()
 
-fun <P : GivenScope, P1, P2, P3, C : GivenScope> ChildGivenScopeModule3() =
+inline fun <P : GivenScope, P1, P2, P3, C : GivenScope> ChildGivenScopeModule3() =
     ChildGivenScopeModule<P, (P1, P2, P3) -> C,
                 (@Given @InstallElement<C> P1,
                  @Given @InstallElement<C> P2,
                  @Given @InstallElement<C> P3) -> C>()
 
-fun <P : GivenScope, P1, P2, P3, P4, C : GivenScope> ChildGivenScopeModule4() =
+inline fun <P : GivenScope, P1, P2, P3, P4, C : GivenScope> ChildGivenScopeModule4() =
     ChildGivenScopeModule<P, (P1, P2, P3, P4) -> C,
             (@Given @InstallElement<C> P1,
              @Given @InstallElement<C> P2,
              @Given @InstallElement<C> P3,
              @Given @InstallElement<C> P4) -> C>()
 
-fun <P : GivenScope, P1, P2, P3, P4, P5, C : GivenScope> ChildGivenScopeModule5() =
+inline fun <P : GivenScope, P1, P2, P3, P4, P5, C : GivenScope> ChildGivenScopeModule5() =
     ChildGivenScopeModule<P, (P1, P2, P3, P4, P5) -> C,
             (@Given @InstallElement<C> P1,
              @Given @InstallElement<C> P2,

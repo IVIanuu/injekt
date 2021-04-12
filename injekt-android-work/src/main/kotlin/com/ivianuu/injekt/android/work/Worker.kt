@@ -47,8 +47,8 @@ import kotlin.reflect.KClass
 annotation class InstallWorker {
     companion object {
         @Given
-        fun <@Given T : @InstallWorker S, S : ListenableWorker> workerFactory(
-            @Given factory: (@Given WorkerParameters) -> T,
+        inline fun <@Given T : @InstallWorker S, S : ListenableWorker> workerFactory(
+            @Given noinline factory: (@Given WorkerParameters) -> T,
             @Given workerClass: KClass<S>
         ): Pair<String, SingleWorkerFactory> = workerClass.java.name to factory
     }
@@ -97,5 +97,5 @@ object WorkerInitializer {
 }
 
 @Given
-val AppContext.workManager: WorkManager
+inline val AppContext.workManager: WorkManager
     get() = WorkManager.getInstance(this)
