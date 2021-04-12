@@ -164,20 +164,21 @@ annotation class InstallElement<S : GivenScope> {
             @Given
             inline fun elementIntoSet(
                 @Given noinline factory: () -> T,
-                @Given key: @ForElement TypeKey<U>
+                @Given key: @Private TypeKey<U>
             ): GivenScopeElement<S> = GivenScopeElement(key, factory)
 
             @Given
-            inline fun element(@Given scope: S, @Given key: @ForElement TypeKey<U>): U = scope.element(key)
+            inline fun element(@Given scope: S, @Given key: @Private TypeKey<U>): U = scope.element(key)
         }
+
+        @Qualifier
+        internal annotation class Private
     }
 }
 
-@Qualifier
-private annotation class ForElement
-
 @Given
-inline fun <@ForTypeKey T> elementTypeKey(): @ForElement TypeKey<T> = typeKeyOf()
+inline fun <@ForTypeKey T> elementTypeKey(): @InstallElement.Companion.Private TypeKey<T> =
+    typeKeyOf()
 
 /**
  * Will get invoked once [GivenScope] [S] is initialized
