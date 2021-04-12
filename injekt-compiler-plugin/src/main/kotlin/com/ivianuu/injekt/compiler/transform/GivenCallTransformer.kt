@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.resolution.*
@@ -277,7 +278,7 @@ class GivenCallTransformer(
         functionWrappedExpressions.getOrPut(result.candidate.type) {
             val function = IrFactoryImpl.buildFun {
                 origin = IrDeclarationOrigin.DEFINED
-                name = Name.special("<anonymous>")
+                name = "local${graphContext.variableIndex++}".asNameId()
                 returnType = result.candidate.type.toIrType(pluginContext, localClasses, context)
                 visibility = DescriptorVisibilities.LOCAL
                 isSuspend = scope.callContext == CallContext.SUSPEND
