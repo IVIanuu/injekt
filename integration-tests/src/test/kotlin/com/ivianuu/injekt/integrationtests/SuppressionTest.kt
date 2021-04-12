@@ -28,4 +28,14 @@ class SuppressionTest {
     ) {
         invokeSingleFile() shouldBe "42"
     }
+
+    @Test
+    fun testDoesNotWarnInlineOnGivenDeclaration() = codegen(
+        """
+            @Given inline fun func() {
+            }
+        """
+    ) {
+        shouldNotContainMessage("Expected performance impact from inlining is insignificant. Inlining works best for functions with parameters of functional types")
+    }
 }

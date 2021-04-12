@@ -24,7 +24,9 @@ import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtTypeParameter
+import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -42,6 +44,12 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
 
         if (diagnostic.factory == Errors.FINAL_UPPER_BOUND)
             return true
+
+        if (diagnostic.factory == Errors.NOTHING_TO_INLINE) {
+            val function = diagnostic.psiElement.getParentOfType<KtNamedFunction>(false)
+            if (function?.hasAnnotation(InjektFqNames.Given) == true)
+                return true
+        }
 
         if (diagnostic.factory == Errors.UNSUPPORTED) {
             val typeParameter = diagnostic.psiElement.parent?.parent as? KtTypeParameter
