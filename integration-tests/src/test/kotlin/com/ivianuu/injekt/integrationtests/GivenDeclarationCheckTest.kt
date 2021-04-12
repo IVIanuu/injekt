@@ -108,7 +108,7 @@ class GivenDeclarationCheckTest {
     @Test
     fun testGivenReceiverOnFunction() = codegen(
         """
-            fun @Given Foo.bar() = Bar(this)
+            fun @receiver:Given Foo.bar() = Bar(this)
         """
     ) {
         compilationShouldHaveFailed("receiver cannot be marked as @Given because it is implicitly @Given")
@@ -117,7 +117,7 @@ class GivenDeclarationCheckTest {
     @Test
     fun testGivenReceiverOnNonGivenFunction() = codegen(
         """
-            val @Given Foo.bar get() = Bar(this)
+            val @receiver:Given Foo.bar get() = Bar(this)
         """
     ) {
         compilationShouldHaveFailed("receiver cannot be marked as @Given because it is implicitly @Given")
