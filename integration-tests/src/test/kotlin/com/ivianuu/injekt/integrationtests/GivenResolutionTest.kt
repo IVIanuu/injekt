@@ -366,7 +366,7 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testPrefersGivenFromAGivenConstraint() = codegen(
+    fun testPrefersBetterDispatchReceiver() = codegen(
         """
             @MyQualifier
             @Given 
@@ -382,71 +382,6 @@ class GivenResolutionTest {
             fun <@Given T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
 
             fun invoke() = given<Foo>()
-        """
-    )
-
-    @Test
-    fun testPrefersModuleGivenConstraint() = singleAndMultiCodegen(
-        """
-            @Given class MyModule<@Given T : @Qualifier1 S, S> {
-                @Given fun unqualified(@Given v: T): S = v 
-            }
-                """,
-        """
-            fun invoke() = given<(@Given @Qualifier1 TypeKey<Foo>) -> TypeKey<Foo>>() 
-                """
-    )
-
-    @Test
-    fun testPrefersGivenConstraintWithBetterTypeOverNonGivenConstraint() = codegen(
-        """
-            typealias Collector<T> = (T) -> Unit
-        
-            @Given
-            fun <T> worseCollector(): Collector<T> = {}
-
-            @Qualifier
-            annotation class MyScoped<S : GivenScope>
-
-            @Given
-            inline fun <@Given T : @MyScoped<S> U, @ForTypeKey U : Any, S : GivenScope> myScopedImpl(
-                @Given scope: S,
-                @Given factory: () -> T
-            ): U = scope.getOrCreateScopedValue<U>(factory)
-
-            @Given
-            fun <T> betterCollector(): @MyScoped<AppGivenScope> Collector<List<T>> = {}
-
-            fun invoke() {
-                @Given val appGivenScope = given<AppGivenScope>()
-                given<Collector<List<String>>>()
-            }
-        """
-    ) {
-        irShouldContain(1, "return betterCollector<String>()")
-    }
-
-    @Test
-    fun testPrefersUserGivenWithWorseTypeOverFrameworkGiven() = codegen(
-        """
-            class MyElementModule<T : S, S> {
-                @Given
-                fun userProvider(@Given value: () -> T): () -> S = value
-            }
-
-            @Qualifier
-            annotation class MyElement
-
-            @Given
-            fun <@Given T : @MyElement S, S> myElementModule() = MyElementModule<T, S>()
-
-            @Given
-            val myElementFoo: @MyElement Foo = Foo()
-        
-            @Given
-            val foo = Foo()
-
-            fun invoke() = given<() -> Foo>()
         """
     )
 
@@ -515,5 +450,7 @@ class GivenResolutionTest {
 
             fun invoke() = given<String>()
         """
-    )
+    ) {
+        invokeSingleFile() shouldBe "high"
+    }
 }

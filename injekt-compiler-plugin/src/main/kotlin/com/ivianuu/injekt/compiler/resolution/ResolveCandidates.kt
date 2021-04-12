@@ -397,7 +397,8 @@ private inline fun <T> ResolutionScope.compareCandidate(
     subClassNesting: (T) -> Int,
     isInternal: (T) -> Boolean,
     priority: (T) -> Int,
-    dependencies: (T) -> Collection<TypeRef>
+    dependencies: (T) -> Collection<TypeRef>,
+    receiver: (T) -> TypeRef?
 ): Int {
     if (a === b) return 0
     if (a != null && b == null) return -1
@@ -449,6 +450,14 @@ private inline fun <T> ResolutionScope.compareCandidate(
     if (diff < 0) return -1
     if (diff > 0) return 1
 
+    val aReceiver = receiver(a)
+    val bReceiver = receiver(b)
+    if (aReceiver != null && bReceiver != null) {
+        diff = compareType(aReceiver, bReceiver, context)
+        if (diff < 0) return -1
+        if (diff > 0) return 1
+    }
+
     return 0
 }
 
@@ -465,6 +474,11 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
         it.dependencies
             .mapNotNull { if (it.parameterName.asString() == "_dispatchReceiver") null else it.type }
     },
+    receiver = {
+        it.dependencies
+            .singleOrNull { it.parameterName.asString() == "_dispatchReceiver" }
+            ?.type
+    }
 )
 
 fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int = compareCandidate(
@@ -481,6 +495,7 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int = com
             .filterKeys { it != "_dispatchReceiver" }
             .values
     },
+    receiver = { it.parameterTypes["_dispatchReceiver"] }
 )
 
 fun compareType(a: TypeRef, b: TypeRef, context: InjektContext): Int {
