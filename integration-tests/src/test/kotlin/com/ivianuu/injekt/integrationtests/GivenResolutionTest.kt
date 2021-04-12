@@ -353,18 +353,6 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testPrefersShorterTree() = codegen(
-        """
-            @Given val a = "a"
-            @Given val foo = Foo()
-            @Given fun b(@Given foo: Foo) = "b"
-            fun invoke() = given<String>()
-        """
-    ) {
-        "a" shouldBe invokeSingleFile()
-    }
-
-    @Test
     fun testPrefersGivenFromAGivenConstraint() = codegen(
         """
             @MyQualifier

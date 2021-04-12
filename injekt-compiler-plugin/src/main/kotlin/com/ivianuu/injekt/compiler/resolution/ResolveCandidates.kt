@@ -376,33 +376,16 @@ private fun ResolutionScope.compareResult(a: ResolutionResult?, b: ResolutionRes
             a is ResolutionResult.Success.DefaultValue) return 1
 
         if (a is ResolutionResult.Success.WithCandidate &&
-            b is ResolutionResult.Success.WithCandidate) {
-            var diff = compareCandidate(a.candidate, b.candidate)
-            if (diff < 0) return -1
-            else if (diff > 0) return 1
+            b is ResolutionResult.Success.WithCandidate)
+                return compareCandidate(a.candidate, b.candidate)
 
-            diff = 0
+        return 0
+    } else {
+        a as ResolutionResult.Failure
+        b as ResolutionResult.Failure
 
-            if (a is ResolutionResult.Success.WithCandidate.Value &&
-                    b is ResolutionResult.Success.WithCandidate.Value) {
-                for (aDependency in a.dependencyResults) {
-                    for (bDependency in b.dependencyResults) {
-                        diff += compareResult(aDependency.value, bDependency.value)
-                    }
-                }
-            }
-            return when {
-                diff < 0 -> -1
-                diff > 0 -> 1
-                else -> 0
-            }
-        } else return 0
+        return a.failureOrdering.compareTo(b.failureOrdering)
     }
-
-    a as ResolutionResult.Failure
-    b as ResolutionResult.Failure
-
-    return a.failureOrdering.compareTo(b.failureOrdering)
 }
 
 private inline fun <T> ResolutionScope.compareCandidate(
@@ -498,20 +481,14 @@ fun compareType(a: TypeRef, b: TypeRef, context: InjektContext): Int {
     if (!a.isStarProjection && b.isStarProjection) return -1
     if (a.isStarProjection && !b.isStarProjection) return 1
 
+    if (!a.isMarkedNullable && b.isMarkedNullable) return -1
+    if (!b.isMarkedNullable && a.isMarkedNullable) return 1
+
     if (!a.classifier.isTypeParameter && b.classifier.isTypeParameter) return -1
     if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
 
-    if (a.arguments.size < b.arguments.size) return -1
-    if (b.arguments.size < a.arguments.size) return 1
-
     if (a.qualifiers.size < b.qualifiers.size) return -1
     if (b.qualifiers.size < a.qualifiers.size) return 1
-
-    if (a.frameworkKey != null && b.frameworkKey == null) return -1
-    if (b.frameworkKey != null && a.frameworkKey == null) return 1
-
-    if (!a.isMarkedNullable && b.isMarkedNullable) return -1
-    if (!b.isMarkedNullable && a.isMarkedNullable) return 1
 
     if (a.classifier != b.classifier) {
         if (a.isSubTypeOf(context, b)) return -1
