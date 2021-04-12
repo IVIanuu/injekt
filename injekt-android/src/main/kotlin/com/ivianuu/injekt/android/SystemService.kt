@@ -35,7 +35,7 @@ annotation class SystemService {
     companion object {
         @Given
         inline fun <T : Any> systemService(
-            @Given context: Context,
+            @Given context: AppContext,
             @Given serviceClass: KClass<T>
         ): @SystemService T = ContextCompat.getSystemService(context, serviceClass.java)!!
     }
