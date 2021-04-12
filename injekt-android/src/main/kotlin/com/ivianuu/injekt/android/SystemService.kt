@@ -40,4 +40,3 @@ annotation class SystemService {
         ): @SystemService T = ContextCompat.getSystemService(context, serviceClass.java)!!
     }
 }
-U
