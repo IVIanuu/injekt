@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.android
 
-import android.content.Context
 import androidx.core.content.ContextCompat
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Qualifier
