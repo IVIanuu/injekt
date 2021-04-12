@@ -242,4 +242,21 @@ class TypeKeyTest {
     ) {
         invokeSingleFile() shouldBe "kotlin.String"
     }
+
+    // todo @Test
+    fun testNonTopLevelInlineForTypeKeyFunction() = singleAndMultiCodegen(
+        """
+            class MyClass {
+                companion object {
+                    @Given
+                    inline fun <@ForTypeKey T> myKey(): @Qualifier1 TypeKey<T> = typeKeyOf()
+                }
+            }
+        """,
+        """
+           fun invoke() = given<@Qualifier1 TypeKey<String>>()
+        """
+    ) {
+        invokeSingleFile() shouldBe "kotlin.String"
+    }
 }
