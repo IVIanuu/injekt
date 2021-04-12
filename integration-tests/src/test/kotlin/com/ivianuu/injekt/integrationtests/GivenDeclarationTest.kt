@@ -84,6 +84,18 @@ class GivenDeclarationTest {
     }
 
     @Test
+    fun testGivenClassWithMultipleGivenConstructors() = codegen(
+        """
+            class Dep {
+                @Given constructor(@Given foo: Foo)
+                @Given constructor(@Given bar: Bar)
+            }
+            @Given val foo = Foo()
+            fun invoke() = given<Dep>()
+        """
+    )
+
+    @Test
     fun testNestedGivenClass() = codegen(
         """
             import com.ivianuu.injekt.integrationtests.Outer.Dep

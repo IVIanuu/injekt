@@ -150,20 +150,15 @@ class ProviderGivenNode(
 class AbstractGivenNode(
     override val type: TypeRef,
     override val originalType: TypeRef,
-    override val ownerScope: ResolutionScope
+    override val ownerScope: ResolutionScope,
+    val superConstructor: CallableRef
 ) : GivenNode() {
     override val callableFqName: FqName = FqName(type.classifier.fqName.asString() + "Impl")
 
-    val superConstructor = type.classifier
-        .descriptor
-        .cast<ClassDescriptor>()
-        .getGivenConstructor(ownerScope.context, ownerScope.trace)
-
     val requestCallables: List<CallableRef> = type
         .collectGivens(ownerScope.context, ownerScope.trace)
-        .filter {
-            superConstructor == null ||
-                    it.callable.name !in type.classifier.primaryConstructorPropertyParameters
+        . filter {
+            it.callable.name !in type.classifier.primaryConstructorPropertyParameters
         }
 
     val requestsByRequestCallables = requestCallables
@@ -187,8 +182,7 @@ class AbstractGivenNode(
         }
 
     val constructorDependencies = superConstructor
-        ?.getGivenRequests(ownerScope.context, ownerScope.trace) { callableFqName }
-        ?: emptyList()
+        .getGivenRequests(ownerScope.context, ownerScope.trace) { callableFqName }
 
     override val dependencies: List<GivenRequest> = requestsByRequestCallables
         .values + constructorDependencies
@@ -230,7 +224,7 @@ fun CallableRef.toGivenNode(
 ): GivenNode {
     val finalCallable = substitute(getSubstitutionMap(ownerScope.context, listOf(type to this.type)))
     return if (finalCallable.isForAbstractGiven(ownerScope.context, ownerScope.trace)) {
-        AbstractGivenNode(type, finalCallable.originalType, ownerScope)
+        AbstractGivenNode(type, finalCallable.originalType, ownerScope, this)
     } else {
         CallableGivenNode(
             type,

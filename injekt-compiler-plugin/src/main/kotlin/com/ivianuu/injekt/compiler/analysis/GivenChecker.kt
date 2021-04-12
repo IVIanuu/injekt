@@ -25,10 +25,8 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isGivenConstraint
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.forEachType
-import com.ivianuu.injekt.compiler.resolution.getGivenConstructor
-import com.ivianuu.injekt.compiler.resolution.isAssignableTo
+import com.ivianuu.injekt.compiler.resolution.getGivenConstructors
 import com.ivianuu.injekt.compiler.resolution.isGiven
-import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -50,7 +48,6 @@ import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -122,12 +119,11 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         descriptor: ClassDescriptor,
         trace: BindingTrace
     ) {
-        val hasGivenAnnotation = descriptor.hasAnnotation(InjektFqNames.Given)
-        val givenConstructors = descriptor.constructors
-            .filter { it.hasAnnotation(InjektFqNames.Given) }
+        val givenConstructors = descriptor.getGivenConstructors(context, trace)
+        val isGiven = givenConstructors.isNotEmpty()
 
         if (descriptor.kind == ClassKind.ANNOTATION_CLASS) {
-            if (hasGivenAnnotation) {
+            if (isGiven) {
                 trace.report(
                     InjektErrors.GIVEN_ANNOTATION_CLASS
                         .on(
@@ -136,19 +132,9 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                         )
                 )
             }
-
-            if (givenConstructors.isNotEmpty()) {
-                givenConstructors
-                    .forEach {
-                        trace.report(
-                            InjektErrors.GIVEN_CONSTRUCTOR_ON_ANNOTATION_CLASS
-                                .on(it.findPsi() ?: declaration)
-                        )
-                    }
-            }
         }
 
-        if (hasGivenAnnotation && descriptor.kind == ClassKind.ENUM_CLASS) {
+        if (isGiven && descriptor.kind == ClassKind.ENUM_CLASS) {
             trace.report(
                 InjektErrors.GIVEN_ENUM_CLASS
                     .on(
@@ -158,7 +144,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
             )
         }
 
-        if (hasGivenAnnotation && descriptor.modality == Modality.ABSTRACT) {
+        if (isGiven && descriptor.modality == Modality.ABSTRACT) {
             descriptor.unsubstitutedMemberScope
                 .getContributedDescriptors()
                 .asSequence()
@@ -186,7 +172,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                 }
         }
 
-        if (hasGivenAnnotation && descriptor.isInner) {
+        if (isGiven && descriptor.isInner) {
             trace.report(
                 InjektErrors.GIVEN_INNER_CLASS
                     .on(
@@ -197,7 +183,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
             )
         }
 
-        if (hasGivenAnnotation && descriptor.isSealed()) {
+        if (isGiven && descriptor.isSealed()) {
             trace.report(
                 InjektErrors.GIVEN_SEALED_CLASS
                     .on(
@@ -208,9 +194,11 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
             )
         }
 
-        if (hasGivenAnnotation && givenConstructors.isNotEmpty()) {
+        if (descriptor.hasAnnotation(InjektFqNames.Given) &&
+                descriptor.unsubstitutedPrimaryConstructor
+                    ?.hasAnnotation(InjektFqNames.Given) == true) {
             trace.report(
-                InjektErrors.GIVEN_ON_CLASS_WITH_GIVEN_CONSTRUCTOR
+                InjektErrors.GIVEN_ON_CLASS_WITH_PRIMARY_GIVEN_CONSTRUCTOR
                     .on(
                         declaration.findAnnotation(InjektFqNames.Given)
                             ?: declaration
@@ -218,21 +206,12 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
             )
         }
 
-        if (givenConstructors.size > 1) {
+        if (givenConstructors.isNotEmpty()) {
             givenConstructors
-                .drop(1)
                 .forEach {
-                    trace.report(
-                        InjektErrors.CLASS_WITH_MULTIPLE_GIVEN_CONSTRUCTORS
-                            .on(it.findPsi() ?: declaration)
-                    )
+                    checkConstrainedGiven(declaration, it.callable,
+                        descriptor.declaredTypeParameters, trace)
                 }
-        }
-
-        val singleGivenConstructor = descriptor.getGivenConstructor(context, trace)
-        if (singleGivenConstructor != null) {
-            checkConstrainedGiven(declaration, singleGivenConstructor.callable,
-                descriptor.declaredTypeParameters, trace)
         } else {
             checkGivenConstraintsOnNonGivenDeclaration(descriptor.declaredTypeParameters, trace)
         }

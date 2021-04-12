@@ -281,7 +281,7 @@ class ResolutionScope(
                             && it.type.isAssignableTo(context, request.type) &&
                             it.isApplicable()
                 }
-                .map { AbstractGivenNode(request.type, it.type, this) }
+                .map { AbstractGivenNode(request.type, it.type, this, it) }
                 .toList()
                 .takeIf { it.isNotEmpty() }
                 ?.let { return it }

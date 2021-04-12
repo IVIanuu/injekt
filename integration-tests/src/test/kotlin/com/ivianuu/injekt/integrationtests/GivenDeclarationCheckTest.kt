@@ -28,27 +28,6 @@ import org.junit.Test
 
 class GivenDeclarationCheckTest {
     @Test
-    fun testClassWithGivenAnnotationAndGivenConstructor() = codegen(
-        """
-            @Given class Dep @Given constructor()
-        """
-    ) {
-        compilationShouldHaveFailed("class cannot be marked with @Given if it has a @Given marked constructor")
-    }
-
-    @Test
-    fun testClassWithMultipleGivenConstructors() = codegen(
-        """
-            class Dep {
-                @Given constructor(@Given foo: Foo)
-                @Given constructor(@Given bar: Bar)
-            }
-        """
-    ) {
-        compilationShouldHaveFailed("class cannot have multiple @Given constructors")
-    }
-
-    @Test
     fun testGivenAnnotationClass() = codegen(
         """
             @Given annotation class MyAnnotation
@@ -63,7 +42,7 @@ class GivenDeclarationCheckTest {
             annotation class MyAnnotation @Given constructor()
         """
     ) {
-        compilationShouldHaveFailed("annotation class constructor cannot be @Given")
+        compilationShouldHaveFailed("annotation class cannot be @Given")
     }
 
     @Test

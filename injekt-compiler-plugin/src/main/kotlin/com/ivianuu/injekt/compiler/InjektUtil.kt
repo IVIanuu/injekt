@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.GivenFunctionDescriptor
-import com.ivianuu.injekt.compiler.resolution.getGivenConstructor
+import com.ivianuu.injekt.compiler.resolution.getGivenConstructors
 import com.ivianuu.injekt.compiler.resolution.uniqueTypeName
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -252,7 +252,11 @@ fun ClassifierDescriptor.isSingletonGiven(
         return it
     }
     var isSingletonGiven = kind == ClassKind.CLASS &&
-            getGivenConstructor(context, trace)?.callable?.valueParameters?.isEmpty() == true &&
+            getGivenConstructors(context, trace)
+                .let { givenConstructors ->
+                    givenConstructors.isNotEmpty() &&
+                            givenConstructors.all { it.callable.valueParameters.isEmpty() }
+                } &&
             declaredTypeParameters.none { it.isForTypeKey(context, trace) } &&
             unsubstitutedMemberScope.getContributedDescriptors()
                 .none { it is PropertyDescriptor && it.backingField != null }

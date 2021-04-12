@@ -362,7 +362,7 @@ class GivenCallTransformer(
                     if (given.type.classifier.descriptor!!.cast<ClassDescriptor>()
                             .kind == ClassKind.CLASS) {
                         +irDelegatingConstructorCall(
-                            given.superConstructor!!.callable
+                            given.superConstructor.callable
                                 .cast<ClassConstructorDescriptor>()
                                 .irConstructor()
                         ).apply {

@@ -76,24 +76,14 @@ interface InjektErrors {
                 }
 
         @JvmField
-        val GIVEN_ON_CLASS_WITH_GIVEN_CONSTRUCTOR =
+        val GIVEN_ON_CLASS_WITH_PRIMARY_GIVEN_CONSTRUCTOR =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "class cannot be marked with @Given if it has a @Given marked constructor") }
-
-        @JvmField
-        val CLASS_WITH_MULTIPLE_GIVEN_CONSTRUCTORS =
-            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "class cannot have multiple @Given constructors") }
+                .also { MAP.put(it, "class cannot be marked with @Given if it has a @Given primary constructor") }
 
         @JvmField
         val GIVEN_ANNOTATION_CLASS =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also { MAP.put(it, "annotation class cannot be @Given") }
-
-        @JvmField
-        val GIVEN_CONSTRUCTOR_ON_ANNOTATION_CLASS =
-            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "annotation class constructor cannot be @Given") }
 
         @JvmField
         val GIVEN_ENUM_CLASS =

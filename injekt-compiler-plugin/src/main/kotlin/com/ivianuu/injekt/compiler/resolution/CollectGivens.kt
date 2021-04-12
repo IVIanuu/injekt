@@ -25,15 +25,10 @@ import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.isExternalDeclaration
-import com.ivianuu.injekt.compiler.toClassifierRef
 import com.ivianuu.injekt.compiler.toMap
-import com.ivianuu.injekt.compiler.toTypeRef
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -46,10 +41,7 @@ import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.impl.FunctionDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
-import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.KtFunction
-import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
@@ -120,10 +112,8 @@ fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
 ): List<CallableRef> = getContributedDescriptors()
     .flatMap { declaration ->
         when (declaration) {
-            is ClassDescriptor -> listOfNotNull(
-                declaration
-                    .getGivenConstructor(context, trace)
-            ) + listOfNotNull(
+            is ClassDescriptor -> declaration
+                .getGivenConstructors(context, trace) + listOfNotNull(
                 declaration.companionObjectDescriptor
                     ?.thisAsReceiverParameter
                     ?.toCallableRef(context, trace)
@@ -183,30 +173,33 @@ fun Annotated.isGiven(context: InjektContext, trace: BindingTrace?): Boolean {
     return isGiven
 }
 
-fun ClassDescriptor.getGivenConstructor(
+fun ClassDescriptor.getGivenConstructors(
     context: InjektContext,
     trace: BindingTrace
-): CallableRef? {
-    trace.get(InjektWritableSlices.GIVEN_CONSTRUCTOR, this)?.let { return it.value }
-    val rawGivenConstructor = if (isGiven(context, trace))
-        unsubstitutedPrimaryConstructor?.toCallableRef(context, trace)
-            ?: AbstractGivenFakeConstructor(this).toCallableRef(context, trace)
-                .makeGiven()
-    else constructors
-        .singleOrNull { it.hasAnnotation(InjektFqNames.Given) }
-        ?.toCallableRef(context, trace)
-        ?.makeGiven()
-    val finalConstructor = if (rawGivenConstructor != null) {
-        if (rawGivenConstructor.type.classifier.qualifiers.isNotEmpty()) {
-            val qualifiedType = rawGivenConstructor.type
-                .copy(qualifiers = rawGivenConstructor.type.classifier.qualifiers)
-            rawGivenConstructor.copy(type = qualifiedType, originalType = qualifiedType)
-        } else {
-            rawGivenConstructor
+): List<CallableRef> {
+    trace.get(InjektWritableSlices.GIVEN_CONSTRUCTORS, this)?.let { return it }
+    val givenConstructors = constructors
+        .filter { constructor ->
+            constructor.hasAnnotation(InjektFqNames.Given) ||
+                    (constructor.isPrimary && hasAnnotation(InjektFqNames.Given))
         }
-    } else null
-    trace.record(InjektWritableSlices.GIVEN_CONSTRUCTOR, this, Tuple1(finalConstructor))
-    return finalConstructor
+        .let { givenConstructors ->
+            if (givenConstructors.isEmpty() && hasAnnotation(InjektFqNames.Given)) {
+                listOf(AbstractGivenFakeConstructor(this))
+            } else givenConstructors
+        }
+        .map { constructor ->
+            val callable = constructor.toCallableRef(context, trace)
+            val qualifiedType = callable.type
+                .copy(qualifiers = callable.type.classifier.qualifiers)
+            callable.copy(
+                isGiven = true,
+                type = qualifiedType,
+                originalType = qualifiedType
+            )
+        }
+    trace.record(InjektWritableSlices.GIVEN_CONSTRUCTORS, this, givenConstructors)
+    return givenConstructors
 }
 
 class AbstractGivenFakeConstructor(
