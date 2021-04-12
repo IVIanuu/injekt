@@ -140,7 +140,7 @@ inline fun <S : DefaultGivenScope> defaultGivenScope(
 }
 
 @Suppress("unused")
-data class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: () -> Any)
+class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: () -> Any)
 
 /**
  * Registers the declaration a element in the [GivenScope] [S]
