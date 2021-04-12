@@ -461,7 +461,10 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     subClassNesting = { (it as? CallableGivenNode)?.callable?.overriddenDepth ?: 0 },
     isInternal = { it !is CallableGivenNode || !it.callable.callable.isExternalDeclaration() },
     priority = { it.safeAs<CallableGivenNode>()?.callable?.priority ?: 0 },
-    dependencies = { it.dependencies.map { it.type } },
+    dependencies = {
+        it.dependencies
+            .mapNotNull { if (it.parameterName.asString() == "_dispatchReceiver") null else it.type }
+    },
 )
 
 fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int = compareCandidate(
@@ -473,7 +476,11 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int = com
     subClassNesting = { it.overriddenDepth },
     isInternal = { !it.callable.isExternalDeclaration() },
     priority = { it.priority },
-    dependencies = { it.parameterTypes.values },
+    dependencies = {
+        it.parameterTypes
+            .filterKeys { it != "_dispatchReceiver" }
+            .values
+    },
 )
 
 fun compareType(a: TypeRef, b: TypeRef, context: InjektContext): Int {

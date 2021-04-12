@@ -320,6 +320,19 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testDoesNotDiscriminateMemberGivens() = codegen(
+        """
+            @Given object MyObject {
+                @Given val foo = Foo()
+            }
+            @Given val foo = Foo()
+            fun invoke() = given<Foo>()
+        """
+    ) {
+        compilationShouldHaveFailed("ambiguous given arguments")
+    }
+
+    @Test
     fun testPrefersMoreSpecificType() = codegen(
         """
             @Given fun stringList(): List<String> = listOf("a", "b", "c")
