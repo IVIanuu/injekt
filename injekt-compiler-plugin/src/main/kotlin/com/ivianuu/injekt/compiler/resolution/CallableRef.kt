@@ -29,7 +29,6 @@ data class CallableRef(
     val defaultOnAllErrorParameters: Set<String>,
     val typeArguments: Map<ClassifierRef, TypeRef>,
     val isGiven: Boolean,
-    val priority: Int,
     val constrainedGivenSource: CallableRef?,
     val callContext: CallContext,
     val owner: ClassifierRef?,
@@ -104,16 +103,6 @@ fun CallableDescriptor.toCallableRef(
             .map { it to it.defaultType }
             .toMap(),
         isGiven = isGiven(context, trace),
-        priority = (annotations.findAnnotation(InjektFqNames.Priority)
-            ?: containingDeclaration
-                .safeAs<ClassDescriptor>()
-                ?.takeIf { it.hasAnnotation(InjektFqNames.Given) }
-                ?.annotations
-                ?.findAnnotation(InjektFqNames.Priority))
-            ?.allValueArguments
-            ?.get("value".asNameId())
-            ?.value
-            ?.safeAs() ?: 0,
         constrainedGivenSource = null,
         callContext = callContext(trace.bindingContext),
         owner = null,

@@ -23,7 +23,6 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Priority
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.android.AppContext
 import com.ivianuu.injekt.scope.AppGivenScope
@@ -88,7 +87,6 @@ object WorkerInitializer {
      * Defines the worker configuration which is used by [workerScopeInitializer] to initialize the [WorkManager]
      */
     @Given
-    @Priority(Priority.LOW)
     fun workerConfiguration(
         @Given workerFactory: WorkerFactory
     ): Configuration = Configuration.Builder()

@@ -25,7 +25,6 @@ object InjektFqNames {
     val DefaultOnAllErrors = InjektPackage.child("DefaultOnAllErrors".asNameId())
     val Given = InjektPackage.child("Given".asNameId())
     val IgnoreElementsWithErrors = InjektPackage.child("IgnoreElementsWithErrors".asNameId())
-    val Priority = InjektPackage.child("Priority".asNameId())
     val Qualifier = InjektPackage.child("Qualifier".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
