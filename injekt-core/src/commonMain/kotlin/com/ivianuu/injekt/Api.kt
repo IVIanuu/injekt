@@ -73,8 +73,8 @@ inline fun <T> givenOrNull(@Given @DefaultOnAllErrors value: T? = null): T? = va
 annotation class Qualifier
 
 /**
- * Falls back to the default value even if a given exists but has an error.
- * Normally the default value will only be used if no given was found not if it has errors
+ * Falls back to the default value if a given exists but has an error.
+ * Normally the default value will only be used if no given was found but not if it has errors
  */
 @Target(
     AnnotationTarget.FUNCTION,
