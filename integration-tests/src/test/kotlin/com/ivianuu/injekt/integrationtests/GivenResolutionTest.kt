@@ -426,5 +426,4 @@ class GivenResolutionTest {
             fun invoke() = given<Foo>()
         """
     )
-
 }
