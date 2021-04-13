@@ -506,16 +506,27 @@ fun HierarchicalResolutionScope(
         }
         .toList()
 
+    val (externalImportedGivens, internalImportedGivens) = importScopes
+        .flatMap { it.collectGivens(context, trace) }
+        .partition { it.callable.original.isExternalDeclaration() }
+
     val importsResolutionScope = trace.get(InjektWritableSlices.IMPORT_RESOLUTION_SCOPE, importScopes)
         ?: ResolutionScope(
-            name = "IMPORTS",
+            name = "INTERNAL IMPORTS",
             context = context,
             callContext = CallContext.DEFAULT,
-            parent = null,
+            parent = ResolutionScope(
+                name = "EXTERNAL IMPORTS",
+                context = context,
+                callContext = CallContext.DEFAULT,
+                parent = null,
+                ownerDescriptor = null,
+                trace = trace,
+                initialGivens = externalImportedGivens
+            ),
             ownerDescriptor = null,
             trace = trace,
-            initialGivens = importScopes
-                .flatMap { it.collectGivens(context, trace) }
+            initialGivens = internalImportedGivens
         ).also { trace.record(InjektWritableSlices.IMPORT_RESOLUTION_SCOPE, importScopes, it) }
 
     return allScopes

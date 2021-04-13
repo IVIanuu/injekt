@@ -395,7 +395,6 @@ private inline fun <T> ResolutionScope.compareCandidate(
     scopeNesting: (T) -> Int,
     owner: (T) -> ClassifierRef?,
     subClassNesting: (T) -> Int,
-    isInternal: (T) -> Boolean,
     dependencies: (T) -> Collection<TypeRef>,
     receiver: (T) -> TypeRef?
 ): Int {
@@ -424,11 +423,6 @@ private inline fun <T> ResolutionScope.compareCandidate(
         if (aSubClassNesting < bSubClassNesting) return -1
         if (bSubClassNesting < aSubClassNesting) return 1
     }
-
-    val aIsInternal = isInternal(a)
-    val bIsInternal = isInternal(b)
-    if (aIsInternal && !bIsInternal) return -1
-    if (bIsInternal && !aIsInternal) return 1
 
     val aDependencies = dependencies(a)
     val bDependencies = dependencies(b)
@@ -462,7 +456,6 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     scopeNesting = { it.ownerScope.allParents.size },
     owner = { (it as? CallableGivenNode)?.callable?.owner },
     subClassNesting = { (it as? CallableGivenNode)?.callable?.overriddenDepth ?: 0 },
-    isInternal = { it !is CallableGivenNode || !it.callable.callable.isExternalDeclaration() },
     dependencies = {
         it.dependencies
             .mapNotNull { if (it.parameterName.asString() == "_dispatchReceiver") null else it.type }
@@ -481,7 +474,6 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int = com
     scopeNesting = { -1 },
     owner = { it.owner },
     subClassNesting = { it.overriddenDepth },
-    isInternal = { !it.callable.isExternalDeclaration() },
     dependencies = {
         it.parameterTypes
             .filterKeys { it != "_dispatchReceiver" }
