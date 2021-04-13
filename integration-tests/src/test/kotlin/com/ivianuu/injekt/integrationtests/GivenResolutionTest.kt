@@ -377,12 +377,12 @@ class GivenResolutionTest {
     @Test
     fun testDoesNotUseFrameworkGivensIfThereAreUserGivens() = codegen(
         """
-            fun <T> diyProvider(@Given unit: Unit): () -> T = { TODO() } 
+            @Given fun <T> diyProvider(@Given unit: Unit): () -> T = { TODO() } 
 
             fun invoke() = given<() -> Foo>()
         """
     ) {
-        compilationShouldHaveFailed("no given argument found of type kotlin.Function0<com.ivianuu.injekt.test.Foo>")
+        compilationShouldHaveFailed("no given argument found of type kotlin.Unit for parameter unit of function com.ivianuu.injekt.integrationtests.diyProvider")
     }
 
     @Test
