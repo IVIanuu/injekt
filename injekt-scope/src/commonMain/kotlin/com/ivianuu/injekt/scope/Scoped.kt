@@ -41,7 +41,7 @@ import com.ivianuu.injekt.common.TypeKey
 annotation class Scoped<S : GivenScope> {
     companion object {
         @Given
-        inline fun <@Given T : @Scoped<S> U, U : Any, S : GivenScope> scopedInstance(
+        inline fun <@Given T : @Scoped<S> U, U : Any, S : GivenScope> scopedValue(
             @Given scope: S,
             @Given factory: () -> T,
             @Given key: TypeKey<U>

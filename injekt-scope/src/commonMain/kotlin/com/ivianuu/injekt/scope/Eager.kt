@@ -28,7 +28,7 @@ annotation class Eager<S : GivenScope> {
         @Given
         class Module<@Given T : @Eager<S> U, U : Any, S : GivenScope> {
             @Given
-            inline fun scopedInstance(@Given instance: T): @Scoped<S> U = instance
+            inline fun scopedValue(@Given value: T): @Scoped<S> U = value
 
             @Given
             inline fun initializer(@Given crossinline factory: () -> U): GivenScopeInitializer<S> = {
