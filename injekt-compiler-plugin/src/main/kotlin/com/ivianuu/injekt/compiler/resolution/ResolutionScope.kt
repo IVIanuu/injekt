@@ -64,8 +64,12 @@ class ResolutionScope(
     )
 
     private val CallableRef.givenKey: GivenKey
-        get() = GivenKey(type, callable, constrainedGivenSource)
+        get() = GivenKey(type, callable, source)
 
+    /**
+     * There should be only one given for a type + callable combination
+     * If there are duplicates we choose the best version
+     */
     private fun addGivenIfAbsentOrBetter(callable: CallableRef) {
         val key = callable.givenKey
         val existing = givens[key]
@@ -97,7 +101,7 @@ class ResolutionScope(
     private data class ConstrainedGivenCandidate(
         val type: TypeRef,
         val rawType: TypeRef,
-        val source: CallableRef
+        val source: CallableRef?
     )
 
     val allParents: List<ResolutionScope> = parent?.allScopes ?: emptyList()
@@ -115,7 +119,7 @@ class ResolutionScope(
                     scope = this,
                     trace = trace,
                     addGiven = { callable ->
-                        addGivenIfAbsentOrBetter(callable)
+                        addGivenIfAbsentOrBetter(callable.copy(source = given))
                         val typeWithFrameworkKey = callable.type
                             .copy(frameworkKey = generateFrameworkKey())
                         addGivenIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey))
@@ -391,7 +395,7 @@ class ResolutionScope(
         val newGivenType = constrainedGiven.callable.type.substitute(outputsSubstitutionMap)
         val newGiven = constrainedGiven.callable.substituteInputs(inputsSubstitutionMap)
             .copy(
-                constrainedGivenSource = candidate.source,
+                source = candidate.source,
                 typeArguments = constrainedGiven.callable
                     .typeArguments
                     .mapValues { it.value.substitute(inputsSubstitutionMap) },
@@ -406,7 +410,7 @@ class ResolutionScope(
             addGiven = { newInnerGiven ->
                 val finalNewInnerGiven = newInnerGiven
                     .copy(
-                        constrainedGivenSource = candidate.source,
+                        source = candidate.source,
                         originalType = newInnerGiven.type
                     )
                 addGivenIfAbsentOrBetter(finalNewInnerGiven)
@@ -428,7 +432,7 @@ class ResolutionScope(
             addAbstractGiven = { newInnerAbstractGiven ->
                 val finalNewInnerAbstractGiven = newInnerAbstractGiven
                     .copy(
-                        constrainedGivenSource = candidate.source,
+                        source = candidate.source,
                         originalType = newInnerAbstractGiven.type
                     )
                 abstractGivens += finalNewInnerAbstractGiven
@@ -450,7 +454,7 @@ class ResolutionScope(
             addConstrainedGiven = { newInnerConstrainedGiven ->
                 val finalNewInnerConstrainedGiven = newInnerConstrainedGiven
                     .copy(
-                        constrainedGivenSource = candidate.source,
+                        source = candidate.source,
                         originalType = newInnerConstrainedGiven.type
                     )
                 val newConstrainedGiven = ConstrainedGivenNode(finalNewInnerConstrainedGiven)

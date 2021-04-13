@@ -18,13 +18,9 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.compilationShouldBeOk
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.irShouldContain
 import com.ivianuu.injekt.test.multiCodegen
-import com.ivianuu.injekt.test.singleAndMultiCodegen
-import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import org.junit.Test
@@ -328,31 +324,6 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testPrefersLesserParameters() = codegen(
-        """
-            @Given val a = "a"
-            @Given val foo = Foo()
-            @Given fun b(@Given foo: Foo) = "b"
-            fun invoke() = given<String>()
-        """
-    ) {
-        "a" shouldBe invokeSingleFile()
-    }
-
-    @Test
-    fun testDoesNotDiscriminateMemberGivens() = codegen(
-        """
-            @Given object MyObject {
-                @Given val foo = Foo()
-            }
-            @Given val foo = Foo()
-            fun invoke() = given<Foo>()
-        """
-    ) {
-        compilationShouldHaveFailed("ambiguous given arguments")
-    }
-
-    @Test
     fun testPrefersMoreSpecificType() = codegen(
         """
             @Given fun stringList(): List<String> = listOf("a", "b", "c")
@@ -384,26 +355,6 @@ class GivenResolutionTest {
     ) {
         invokeSingleFile() shouldBe "nonnull"
     }
-
-    @Test
-    fun testPrefersBetterDispatchReceiver() = codegen(
-        """
-            @MyQualifier
-            @Given 
-            class FooModule {
-                @Given
-                val foo = Foo()
-            }
-
-            @Qualifier
-            annotation class MyQualifier
-
-            @Given
-            fun <@Given T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
-
-            fun invoke() = given<Foo>()
-        """
-    )
 
     @Test
     fun testDoesNotUseFrameworkGivensIfThereAreUserGivens() = codegen(
@@ -457,20 +408,23 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testPrefersSubTypeParameters() = codegen(
+    fun testConstrainedGivenWithTheSameOrigin() = codegen(
         """
-            import com.ivianuu.injekt.integrationtests.Priority.*
-            sealed class Priority {
-                @Given open class Low : Priority()
-                @Given class High : Low()
+            @MyQualifier
+            @Given 
+            class FooModule {
+                @Given
+                val foo = Foo()
             }
 
-            @Given fun value1(@Given value: Priority.Low) = "low"
-            @Given fun value2(@Given value: Priority.High) = "high"
+            @Qualifier
+            annotation class MyQualifier
 
-            fun invoke() = given<String>()
+            @Given
+            fun <@Given T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
+
+            fun invoke() = given<Foo>()
         """
-    ) {
-        invokeSingleFile() shouldBe "high"
-    }
+    )
+
 }

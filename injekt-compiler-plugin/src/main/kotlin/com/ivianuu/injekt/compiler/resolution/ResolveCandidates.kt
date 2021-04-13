@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.forEachWith
-import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isForTypeKey
 import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
@@ -394,9 +393,7 @@ private inline fun <T> ResolutionScope.compareCandidate(
     type: (T) -> TypeRef,
     scopeNesting: (T) -> Int,
     owner: (T) -> ClassifierRef?,
-    subClassNesting: (T) -> Int,
-    dependencies: (T) -> Collection<TypeRef>,
-    receiver: (T) -> TypeRef?
+    subClassNesting: (T) -> Int
 ): Int {
     if (a === b) return 0
     if (a != null && b == null) return -1
@@ -405,7 +402,7 @@ private inline fun <T> ResolutionScope.compareCandidate(
     a!!
     b!!
 
-    var diff = compareType(type(a), type(b), context)
+    val diff = compareType(type(a), type(b), context)
     if (diff < 0) return -1
     if (diff > 0) return 1
 
@@ -424,8 +421,37 @@ private inline fun <T> ResolutionScope.compareCandidate(
         if (bSubClassNesting < aSubClassNesting) return 1
     }
 
-    val aDependencies = dependencies(a)
-    val bDependencies = dependencies(b)
+    return 0
+}
+
+private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int = compareCandidate(
+    a = a,
+    b = b,
+    type = { it.originalType },
+    scopeNesting = { it.ownerScope.allParents.size },
+    owner = { (it as? CallableGivenNode)?.callable?.owner },
+    subClassNesting = { (it as? CallableGivenNode)?.callable?.overriddenDepth ?: 0 }
+)
+
+fun ResolutionScope.compareCallable(
+    a: CallableRef?,
+    b: CallableRef?
+): Int {
+    var diff = compareCandidate(
+        a = a,
+        b = b,
+        type = { it.originalType },
+        scopeNesting = { -1 },
+        owner = { it.owner },
+        subClassNesting = { it.overriddenDepth }
+    )
+    if (diff < 0) return -1
+    if (diff > 0) return 1
+
+    if (a == null || b == null) return 0
+
+    val aDependencies = a.parameterTypes.values
+    val bDependencies = b.parameterTypes.values
     if (aDependencies.size < bDependencies.size) return -1
     if (bDependencies.size < aDependencies.size) return 1
 
@@ -438,49 +464,8 @@ private inline fun <T> ResolutionScope.compareCandidate(
     if (diff < 0) return -1
     if (diff > 0) return 1
 
-    val aReceiver = receiver(a)
-    val bReceiver = receiver(b)
-    if (aReceiver != null && bReceiver != null) {
-        diff = compareType(aReceiver, bReceiver, context)
-        if (diff < 0) return -1
-        if (diff > 0) return 1
-    }
-
     return 0
 }
-
-private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int = compareCandidate(
-    a = a,
-    b = b,
-    type = { it.originalType },
-    scopeNesting = { it.ownerScope.allParents.size },
-    owner = { (it as? CallableGivenNode)?.callable?.owner },
-    subClassNesting = { (it as? CallableGivenNode)?.callable?.overriddenDepth ?: 0 },
-    dependencies = {
-        it.dependencies
-            .mapNotNull { if (it.parameterName.asString() == "_dispatchReceiver") null else it.type }
-    },
-    receiver = {
-        it.dependencies
-            .singleOrNull { it.parameterName.asString() == "_dispatchReceiver" }
-            ?.type
-    }
-)
-
-fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int = compareCandidate(
-    a = a,
-    b = b,
-    type = { it.originalType },
-    scopeNesting = { -1 },
-    owner = { it.owner },
-    subClassNesting = { it.overriddenDepth },
-    dependencies = {
-        it.parameterTypes
-            .filterKeys { it != "_dispatchReceiver" }
-            .values
-    },
-    receiver = { it.parameterTypes["_dispatchReceiver"] }
-)
 
 fun compareType(a: TypeRef, b: TypeRef, context: InjektContext): Int {
     if (a === b) return 0
@@ -490,11 +475,11 @@ fun compareType(a: TypeRef, b: TypeRef, context: InjektContext): Int {
     if (!a.isMarkedNullable && b.isMarkedNullable) return -1
     if (!b.isMarkedNullable && a.isMarkedNullable) return 1
 
-    if (!a.classifier.isTypeParameter && b.classifier.isTypeParameter) return -1
-    if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
-
     if (a.qualifiers.size < b.qualifiers.size) return -1
     if (b.qualifiers.size < a.qualifiers.size) return 1
+
+    if (!a.classifier.isTypeParameter && b.classifier.isTypeParameter) return -1
+    if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
 
     if (a.classifier != b.classifier) {
         if (a.isSubTypeOf(context, b)) return -1

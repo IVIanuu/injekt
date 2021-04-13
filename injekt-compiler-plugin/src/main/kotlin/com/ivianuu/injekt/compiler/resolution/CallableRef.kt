@@ -3,21 +3,17 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.toClassifierRef
 import com.ivianuu.injekt.compiler.toTypeRef
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 data class CallableRef(
     val callable: CallableDescriptor,
@@ -29,7 +25,7 @@ data class CallableRef(
     val defaultOnAllErrorParameters: Set<String>,
     val typeArguments: Map<ClassifierRef, TypeRef>,
     val isGiven: Boolean,
-    val constrainedGivenSource: CallableRef?,
+    val source: CallableRef?,
     val callContext: CallContext,
     val owner: ClassifierRef?,
     val overriddenDepth: Int
@@ -103,7 +99,7 @@ fun CallableDescriptor.toCallableRef(
             .map { it to it.defaultType }
             .toMap(),
         isGiven = isGiven(context, trace),
-        constrainedGivenSource = null,
+        source = null,
         callContext = callContext(trace.bindingContext),
         owner = null,
         overriddenDepth = 0

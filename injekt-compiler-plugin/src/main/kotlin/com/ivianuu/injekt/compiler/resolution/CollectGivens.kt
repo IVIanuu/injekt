@@ -239,7 +239,7 @@ fun CallableRef.collectGivens(
     seen += this
     if (!scope.canSee(this)) return
 
-    if (constrainedGivenSource == null && typeParameters.any { it.isGivenConstraint }) {
+    if (source == null && typeParameters.any { it.isGivenConstraint }) {
         addConstrainedGiven(this)
         return
     }
