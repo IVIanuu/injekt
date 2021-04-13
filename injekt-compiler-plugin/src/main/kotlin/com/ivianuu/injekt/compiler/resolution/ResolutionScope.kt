@@ -609,9 +609,10 @@ fun HierarchicalResolutionScope(
                                 .ownerDescriptor,
                             trace = trace,
                             initialGivens = next.collectGivens(context, trace)
-                        ).also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, next, it) }
+                        )//.also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, next, it) }
                 }
             }
         }
-        .also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, scope, it) }
+        //.also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, scope, it) }
 }
+

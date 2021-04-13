@@ -272,6 +272,21 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testPrefsInnerBlockGiven() = codegen(
+        """
+            fun invoke(): Pair<String, String> {
+                @Given val givenA = "a"
+                return given<String>() to run {
+                    @Given val givenB = "b"
+                    given<String>()
+                }
+            }
+        """
+    ) {
+        invokeSingleFile() shouldBe ("a" to "b")
+    }
+
+    @Test
     fun testPrefersResolvableGiven() = codegen(
         """
             @Given fun a() = "a"
@@ -293,6 +308,22 @@ class GivenResolutionTest {
         compilationShouldHaveFailed("ambiguous given arguments:\n" +
                 "com.ivianuu.injekt.integrationtests.a\n" +
                 "com.ivianuu.injekt.integrationtests.b\n" +
+                "do all match type kotlin.String for parameter value of function com.ivianuu.injekt.given")
+    }
+
+    @Test
+    fun testCannotDeclareMultipleGivensOfTheSameTypeInTheSameCodeBlock() = codegen(
+        """
+            fun invoke() {
+                @Given val givenA = "a"
+                @Given val givenB = "b"
+                given<String>()
+            }
+        """
+    ) {
+        compilationShouldHaveFailed("ambiguous given arguments:\n" +
+                "com.ivianuu.injekt.integrationtests.invoke.givenA\n" +
+                "com.ivianuu.injekt.integrationtests.invoke.givenB\n" +
                 "do all match type kotlin.String for parameter value of function com.ivianuu.injekt.given")
     }
 
