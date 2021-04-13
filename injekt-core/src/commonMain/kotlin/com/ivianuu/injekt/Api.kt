@@ -20,6 +20,17 @@ package com.ivianuu.injekt
 
 /**
  * Considers the annotated declaration in the current scope when resolving given arguments
+ *
+ * Example
+ * ```
+ * @Given val foo = Foo()
+ * @Given fun bar(@Given foo: Foo) = Bar(foo)
+ *
+ * fun main() {
+ *     val bar = given<Bar>()
+ *     println("Got $bar")
+ * }
+ * ```
  */
 @Target(
     AnnotationTarget.CLASS,
