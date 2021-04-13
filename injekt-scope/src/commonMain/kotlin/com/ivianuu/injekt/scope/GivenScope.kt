@@ -162,13 +162,13 @@ annotation class InstallElement<S : GivenScope> {
         @Given
         class Module<@Given T : @InstallElement<S> U, U : Any, S : GivenScope> {
             @Given
-            inline fun elementIntoSet(
+            inline fun givenScopeElement(
                 @Given noinline factory: () -> T,
                 @Given key: @Private TypeKey<U>
             ): GivenScopeElement<S> = GivenScopeElement(key, factory)
 
             @Given
-            inline fun element(@Given scope: S, @Given key: @Private TypeKey<U>): U = scope.element(key)
+            inline fun elementAccessor(@Given scope: S, @Given key: @Private TypeKey<U>): U = scope.element(key)
         }
 
         @Qualifier
