@@ -581,14 +581,6 @@ class GivenCallTransformer(
             .owner
     }
 
-    private fun PropertyGetterDescriptor.irPropertyGetter(): IrFunction {
-        val property = propertyIfAccessor as PropertyDescriptor
-        return pluginContext.referenceProperties(property.fqNameSafe)
-            .single { it.descriptor.uniqueKey(context) == property.uniqueKey(context) }
-            .owner
-            .getter!!
-    }
-
     private fun FunctionDescriptor.irFunction(): IrFunction {
         if (visibility == DescriptorVisibilities.LOCAL) {
             return localFunctions.single {
