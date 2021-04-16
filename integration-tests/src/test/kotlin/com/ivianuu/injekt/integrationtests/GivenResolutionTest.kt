@@ -422,4 +422,26 @@ class GivenResolutionTest {
             fun invoke() = given<Foo>()
         """
     )
+
+    @Test
+    fun testConstrainedGivenWithTheSameOrigin2() = codegen(
+        """
+            abstract class FooModule {
+                @Given
+                val foo = Foo()
+                companion object {
+                    @Given fun create(): @MyQualifier FooModule = object : FooModule() {
+                    }
+                }
+            }
+
+            @Qualifier
+            annotation class MyQualifier
+
+            @Given
+            fun <@Given T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
+
+            fun invoke() = given<Foo>()
+        """
+    )
 }
