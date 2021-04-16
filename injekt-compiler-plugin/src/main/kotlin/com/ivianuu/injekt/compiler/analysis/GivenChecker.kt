@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.lexer.*
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.checkers.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
@@ -92,16 +93,14 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         val givenConstructors = descriptor.getGivenConstructors(context, trace)
         val isGiven = givenConstructors.isNotEmpty()
 
-        if (descriptor.kind == ClassKind.ANNOTATION_CLASS) {
-            if (isGiven) {
-                trace.report(
-                    InjektErrors.GIVEN_ANNOTATION_CLASS
-                        .on(
-                            declaration.findAnnotation(InjektFqNames.Given)
-                                ?: declaration
-                        )
-                )
-            }
+        if (isGiven && descriptor.kind == ClassKind.ANNOTATION_CLASS) {
+            trace.report(
+                InjektErrors.GIVEN_ANNOTATION_CLASS
+                    .on(
+                        declaration.findAnnotation(InjektFqNames.Given)
+                            ?: declaration
+                    )
+            )
         }
 
         if (isGiven && descriptor.kind == ClassKind.ENUM_CLASS) {
@@ -114,32 +113,25 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
             )
         }
 
+        if (descriptor.kind == ClassKind.INTERFACE &&
+            descriptor.hasAnnotation(InjektFqNames.Given)) {
+            trace.report(
+                InjektErrors.GIVEN_INTERFACE
+                    .on(
+                        declaration.findAnnotation(InjektFqNames.Given)
+                            ?: declaration
+                    )
+            )
+        }
+
         if (isGiven && descriptor.modality == Modality.ABSTRACT) {
-            descriptor.unsubstitutedMemberScope
-                .getContributedDescriptors()
-                .asSequence()
-                .filterIsInstance<CallableMemberDescriptor>()
-                .filter { it.modality == Modality.ABSTRACT }
-                .filter { it.dispatchReceiverParameter?.type != descriptor.module.builtIns.anyType }
-                .forEach {
-                    if (!it.isGiven(context, trace)) {
-                        trace.report(
-                            InjektErrors.ABSTRACT_NON_GIVEN_MEMBER_IN_ABSTRACT_GIVEN
-                                .on(
-                                    if (it.overriddenTreeUniqueAsSequence(false).count() > 1) declaration
-                                    else it.findPsi() ?: declaration
-                                )
-                        )
-                    } else if (it is PropertyDescriptor && it.isVar) {
-                        trace.report(
-                            InjektErrors.ABSTRACT_GIVEN_WITH_MUTABLE_PROPERTY
-                                .on(
-                                    if (it.overriddenTreeUniqueAsSequence(false).count() > 1) declaration
-                                    else it.findPsi() ?: declaration
-                                )
-                        )
-                    }
-                }
+            trace.report(
+                InjektErrors.GIVEN_ABSTRACT_CLASS
+                    .on(
+                        declaration.modalityModifier()
+                            ?: declaration
+                    )
+            )
         }
 
         if (isGiven && descriptor.isInner) {
@@ -148,17 +140,6 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                     .on(
                         declaration.modifierList
                             ?.getModifier(KtTokens.INNER_KEYWORD)
-                            ?: declaration
-                    )
-            )
-        }
-
-        if (isGiven && descriptor.isSealed()) {
-            trace.report(
-                InjektErrors.GIVEN_SEALED_CLASS
-                    .on(
-                        declaration.modifierList
-                            ?.getModifier(KtTokens.SEALED_KEYWORD)
                             ?: declaration
                     )
             )

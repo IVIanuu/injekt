@@ -35,23 +35,6 @@ class ExpressionWrappingTest {
     }
 
     @Test
-    fun testDoesFunctionWrapAbstractGivenWithMultipleUsages() = codegen(
-        """
-            @Given val foo = Foo()
-            @Given fun bar(@Given foo: Foo) = Bar(foo)
-            @Given interface BarComponent {
-                @Given val bar: Bar
-            }
-            @Given fun <T> pair(@Given a: T, @Given b: T): Pair<T, T> = a to b
-            fun invoke() {
-                given<Pair<BarComponent, BarComponent>>()
-            }
-        """
-    ) {
-        irShouldContain(1, "local class BarComponentImpl")
-    }
-
-    @Test
     fun testDoesFunctionWrapGivenWithMultipleUsagesInDifferentScopes() = codegen(
         """
             @Given val foo = Foo()
