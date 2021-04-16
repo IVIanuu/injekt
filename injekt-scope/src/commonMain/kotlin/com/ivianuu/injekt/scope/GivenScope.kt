@@ -18,11 +18,8 @@
 
 package com.ivianuu.injekt.scope
 
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.common.ForTypeKey
-import com.ivianuu.injekt.common.TypeKey
-import com.ivianuu.injekt.common.typeKeyOf
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.common.*
 
 /**
  * A hierarchical construct with a lifecycle which hosts a map of keys to elements

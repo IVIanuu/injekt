@@ -16,23 +16,12 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.CallableRef
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.copy
-import com.ivianuu.injekt.compiler.resolution.forTypeKeyTypeParameters
-import com.ivianuu.injekt.compiler.resolution.givenConstraintTypeParameters
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import com.ivianuu.injekt.compiler.resolution.*
+import kotlinx.serialization.*
+import kotlinx.serialization.json.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 inline fun <reified T> T.encode(): String = Json.encodeToString(this)
 inline fun <reified T> String.decode(): T = Json.decodeFromString(this)

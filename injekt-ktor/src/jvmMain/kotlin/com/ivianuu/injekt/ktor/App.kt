@@ -1,13 +1,10 @@
 package com.ivianuu.injekt.ktor
 
-import com.ivianuu.injekt.Given
-import io.ktor.application.Application
-import io.ktor.util.AttributeKey
-import com.ivianuu.injekt.scope.AppGivenScope
-import com.ivianuu.injekt.scope.InstallElement
-import io.ktor.application.ApplicationCall
-import io.ktor.application.ApplicationStopped
-import io.ktor.routing.Routing
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.scope.*
+import io.ktor.application.*
+import io.ktor.routing.*
+import io.ktor.util.*
 
 val Application.appGivenScope: AppGivenScope
     get() = attributes.getOrNull(AppGivenScopeKey)

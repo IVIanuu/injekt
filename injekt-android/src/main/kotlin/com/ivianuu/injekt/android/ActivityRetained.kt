@@ -16,13 +16,9 @@
 
 package com.ivianuu.injekt.android
 
-import androidx.activity.ComponentActivity
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.scope.AppGivenScope
-import com.ivianuu.injekt.scope.ChildScopeFactory
-import com.ivianuu.injekt.scope.ChildGivenScopeModule0
-import com.ivianuu.injekt.scope.DefaultGivenScope
-import com.ivianuu.injekt.scope.element
+import androidx.activity.*
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.scope.*
 
 /**
  * Returns the [ActivityGivenScope] of this [ComponentActivity]

@@ -16,27 +16,19 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.google.auto.service.AutoService
-import com.ivianuu.injekt.compiler.analysis.GivenCallResolutionInterceptorExtension
-import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
-import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
-import com.ivianuu.injekt.compiler.analysis.InjektTypeResolutionInterceptorExtension
-import com.ivianuu.injekt.compiler.transform.InfoDescriptorSerializationPlugin
-import com.ivianuu.injekt.compiler.transform.InjektIrDumper
-import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
-import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
-import org.jetbrains.kotlin.com.intellij.mock.MockProject
-import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
-import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
-import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
-import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.config.JVMConfigurationKeys
-import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
-import org.jetbrains.kotlin.extensions.internal.CandidateInterceptor
-import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
-import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
-import org.jetbrains.kotlin.serialization.DescriptorSerializerPlugin
-import java.io.File
+import com.google.auto.service.*
+import com.ivianuu.injekt.compiler.analysis.*
+import com.ivianuu.injekt.compiler.transform.*
+import org.jetbrains.kotlin.backend.common.extensions.*
+import org.jetbrains.kotlin.com.intellij.mock.*
+import org.jetbrains.kotlin.com.intellij.openapi.extensions.*
+import org.jetbrains.kotlin.compiler.plugin.*
+import org.jetbrains.kotlin.config.*
+import org.jetbrains.kotlin.extensions.*
+import org.jetbrains.kotlin.extensions.internal.*
+import org.jetbrains.kotlin.resolve.diagnostics.*
+import org.jetbrains.kotlin.serialization.*
+import java.io.*
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {

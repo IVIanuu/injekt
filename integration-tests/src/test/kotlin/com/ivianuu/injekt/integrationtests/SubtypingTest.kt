@@ -16,9 +16,8 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.compiler.resolution.copy
-import com.ivianuu.injekt.compiler.resolution.typeWith
-import org.junit.Test
+import com.ivianuu.injekt.compiler.resolution.*
+import org.junit.*
 
 class SubtypingTest {
     @Test

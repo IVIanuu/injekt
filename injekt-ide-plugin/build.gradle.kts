@@ -1,4 +1,4 @@
-import org.jetbrains.intellij.tasks.PublishTask
+import org.jetbrains.intellij.tasks.*
 
 /*
  * Copyright 2020 Manuel Wrage

@@ -16,14 +16,10 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.compilationShouldHaveFailed
-import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.multiCodegen
-import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeSameInstanceAs
-import org.junit.Test
+import com.ivianuu.injekt.test.*
+import io.kotest.matchers.*
+import io.kotest.matchers.types.*
+import org.junit.*
 
 class GivenResolutionTest {
     @Test

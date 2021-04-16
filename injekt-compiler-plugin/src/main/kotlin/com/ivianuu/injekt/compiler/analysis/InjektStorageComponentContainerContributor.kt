@@ -16,13 +16,12 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.InjektContext
-import org.jetbrains.kotlin.container.StorageComponentContainer
-import org.jetbrains.kotlin.container.useInstance
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
-import org.jetbrains.kotlin.platform.TargetPlatform
-import org.jetbrains.kotlin.psi.KtElement
+import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.container.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.extensions.*
+import org.jetbrains.kotlin.platform.*
+import org.jetbrains.kotlin.psi.*
 
 class InjektStorageComponentContainerContributor(
     private val allowGivenCalls: (KtElement) -> Boolean

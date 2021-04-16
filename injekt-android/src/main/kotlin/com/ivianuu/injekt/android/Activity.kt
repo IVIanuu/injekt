@@ -16,20 +16,13 @@
 
 package com.ivianuu.injekt.android
 
-import android.content.Context
-import android.content.res.Resources
-import androidx.activity.ComponentActivity
-import androidx.activity.OnBackPressedDispatcherOwner
-import androidx.lifecycle.LifecycleCoroutineScope
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ViewModelStoreOwner
-import androidx.lifecycle.lifecycleScope
-import androidx.savedstate.SavedStateRegistryOwner
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.scope.ChildScopeFactory
-import com.ivianuu.injekt.scope.ChildGivenScopeModule1
-import com.ivianuu.injekt.scope.DefaultGivenScope
-import com.ivianuu.injekt.scope.element
+import android.content.*
+import android.content.res.*
+import androidx.activity.*
+import androidx.lifecycle.*
+import androidx.savedstate.*
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.scope.*
 
 /**
  * Returns the [ActivityGivenScope] of this [ComponentActivity]

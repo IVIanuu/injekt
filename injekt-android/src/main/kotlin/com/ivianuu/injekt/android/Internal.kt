@@ -18,13 +18,8 @@
 
 package com.ivianuu.injekt.android
 
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStore
-import com.ivianuu.injekt.scope.GivenScope
+import androidx.lifecycle.*
+import com.ivianuu.injekt.scope.*
 
 internal val givenScopesByLifecycle = mutableMapOf<Lifecycle, GivenScope>()
 

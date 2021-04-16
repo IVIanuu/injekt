@@ -16,12 +16,10 @@
 
 package com.ivianuu.injekt.samples.android.domain
 
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.scope.AppGivenScope
-import com.ivianuu.injekt.samples.android.data.CounterStorage
-import com.ivianuu.injekt.scope.Scoped
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.samples.android.data.*
+import com.ivianuu.injekt.scope.*
+import kotlinx.coroutines.flow.*
 
 @Given
 @Scoped<AppGivenScope>

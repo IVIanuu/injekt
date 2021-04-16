@@ -1,11 +1,8 @@
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.irShouldNotContain
-import com.ivianuu.injekt.test.singleAndMultiCodegen
-import io.kotest.matchers.types.shouldBeSameInstanceAs
-import org.junit.Test
+import com.ivianuu.injekt.test.*
+import io.kotest.matchers.types.*
+import org.junit.*
 
 class SingletonGivenTest {
     @Test

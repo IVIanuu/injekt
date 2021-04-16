@@ -16,8 +16,7 @@
 
 package com.ivianuu.injekt.scope
 
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.*
 
 /**
  * Creates a scoped instance as soon as scope [S] gets initialized

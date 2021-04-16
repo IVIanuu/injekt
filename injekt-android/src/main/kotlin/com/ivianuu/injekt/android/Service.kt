@@ -16,15 +16,11 @@
 
 package com.ivianuu.injekt.android
 
-import android.app.Service
-import android.content.Context
-import android.content.res.Resources
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.scope.AppGivenScope
-import com.ivianuu.injekt.scope.ChildScopeFactory
-import com.ivianuu.injekt.scope.ChildGivenScopeModule1
-import com.ivianuu.injekt.scope.DefaultGivenScope
-import com.ivianuu.injekt.scope.element
+import android.app.*
+import android.content.*
+import android.content.res.*
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.scope.*
 
 /**
  * Returns a new [ServiceGivenScope] which must be manually stored and disposed

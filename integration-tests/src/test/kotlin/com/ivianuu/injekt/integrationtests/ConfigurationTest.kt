@@ -16,10 +16,9 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.compilationShouldHaveFailed
-import com.tschuchort.compiletesting.PluginOption
-import org.junit.Test
+import com.ivianuu.injekt.test.*
+import com.tschuchort.compiletesting.*
+import org.junit.*
 
 class ConfigurationTest {
     @Test

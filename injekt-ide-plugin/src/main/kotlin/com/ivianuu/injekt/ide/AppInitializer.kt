@@ -16,25 +16,19 @@
 
 package com.ivianuu.injekt.ide
 
-import com.intellij.ide.ApplicationInitializedListener
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.extensions.Extensions
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.project.ProjectManagerListener
-import com.intellij.psi.PsiElement
-import com.ivianuu.injekt.compiler.analysis.GivenCallResolutionInterceptorExtension
-import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
-import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
-import com.ivianuu.injekt.compiler.analysis.InjektTypeResolutionInterceptorExtension
-import org.jetbrains.kotlin.analyzer.ModuleInfo
-import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
-import org.jetbrains.kotlin.extensions.internal.CandidateInterceptor
-import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
-import org.jetbrains.kotlin.idea.core.unwrapModuleSourceInfo
-import org.jetbrains.kotlin.idea.caches.project.getModuleInfo
-import org.jetbrains.kotlin.idea.facet.KotlinFacet
-import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
+import com.intellij.ide.*
+import com.intellij.openapi.application.*
+import com.intellij.openapi.extensions.*
+import com.intellij.openapi.project.*
+import com.intellij.psi.*
+import com.ivianuu.injekt.compiler.analysis.*
+import org.jetbrains.kotlin.analyzer.*
+import org.jetbrains.kotlin.extensions.*
+import org.jetbrains.kotlin.extensions.internal.*
+import org.jetbrains.kotlin.idea.caches.project.*
+import org.jetbrains.kotlin.idea.core.*
+import org.jetbrains.kotlin.idea.facet.*
+import org.jetbrains.kotlin.resolve.diagnostics.*
 
 @Suppress("UnstableApiUsage")
 class AppInitializer : ApplicationInitializedListener {

@@ -16,32 +16,17 @@
 
 package com.ivianuu.injekt.samples.android.ui
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
-import androidx.compose.material.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.android.ActivityRetainedGivenScope
-import com.ivianuu.injekt.samples.android.domain.CounterRepo
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.Flow
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.unit.dp
-import com.ivianuu.injekt.scope.GivenScopeDisposable
-import com.ivianuu.injekt.scope.Scoped
-import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.unit.*
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.android.*
+import com.ivianuu.injekt.samples.android.domain.*
+import com.ivianuu.injekt.scope.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 
 typealias SampleAppUi = @Composable () -> Unit
 

@@ -1,8 +1,8 @@
 package com.ivianuu.injekt
 
-import io.kotest.matchers.nulls.shouldBeNull
-import io.kotest.matchers.shouldBe
-import org.junit.Test
+import io.kotest.matchers.*
+import io.kotest.matchers.nulls.*
+import org.junit.*
 
 class GivenTest {
     @Test

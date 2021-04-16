@@ -16,11 +16,8 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.irShouldContain
-import com.ivianuu.injekt.test.irShouldNotContain
-import org.junit.Test
+import com.ivianuu.injekt.test.*
+import org.junit.*
 
 class ExpressionWrappingTest {
     @Test

@@ -16,18 +16,12 @@
 
 package com.ivianuu.injekt.android.work
 
-import android.content.Context
-import androidx.work.Configuration
-import androidx.work.ListenableWorker
-import androidx.work.WorkManager
-import androidx.work.WorkerFactory
-import androidx.work.WorkerParameters
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.android.AppContext
-import com.ivianuu.injekt.scope.AppGivenScope
-import com.ivianuu.injekt.scope.GivenScopeInitializer
-import kotlin.reflect.KClass
+import android.content.*
+import androidx.work.*
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.android.*
+import com.ivianuu.injekt.scope.*
+import kotlin.reflect.*
 
 /**
  * Installs the given worker in the [InjektWorkerFactory]

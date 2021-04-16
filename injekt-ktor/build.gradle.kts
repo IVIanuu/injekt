@@ -1,4 +1,4 @@
-import com.ivianuu.injekt.gradle.withGivenCalls
+import com.ivianuu.injekt.gradle.*
 
 /*
  * Copyright 2020 Manuel Wrage

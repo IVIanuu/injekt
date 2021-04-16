@@ -16,15 +16,9 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.compilationShouldHaveFailed
-import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.multiPlatformCodegen
-import com.ivianuu.injekt.test.shouldContainMessage
-import com.ivianuu.injekt.test.shouldNotContainMessage
-import io.kotest.matchers.types.shouldBeTypeOf
-import org.junit.Test
+import com.ivianuu.injekt.test.*
+import io.kotest.matchers.types.*
+import org.junit.*
 
 class GivenDeclarationCheckTest {
     @Test

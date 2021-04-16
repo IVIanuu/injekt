@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.android
 
-import android.app.Application
+import android.app.*
 import com.ivianuu.injekt.common.*
 import com.ivianuu.injekt.scope.*
 

@@ -16,16 +16,13 @@
 
 package com.ivianuu.injekt.samples.android.app
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.android.ActivityGivenScope
-import com.ivianuu.injekt.android.activityGivenScope
-import com.ivianuu.injekt.scope.InstallElement
-import com.ivianuu.injekt.samples.android.ui.SampleAppUi
-import com.ivianuu.injekt.samples.android.ui.SampleTheme
-import com.ivianuu.injekt.scope.element
+import android.os.*
+import androidx.activity.*
+import androidx.activity.compose.*
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.android.*
+import com.ivianuu.injekt.samples.android.ui.*
+import com.ivianuu.injekt.scope.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -18,10 +18,10 @@
 
 package com.ivianuu.injekt.samples.android.app
 
-import android.app.Application
-import com.ivianuu.injekt.scope.*
-import com.ivianuu.injekt.common.*
+import android.app.*
 import com.ivianuu.injekt.android.*
+import com.ivianuu.injekt.common.*
+import com.ivianuu.injekt.scope.*
 import com.ivianuu.injekt.samples.android.data.*
 import com.ivianuu.injekt.samples.android.domain.*
 import com.ivianuu.injekt.samples.android.ui.*

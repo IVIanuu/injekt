@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Given
-import kotlin.reflect.KClass
+import com.ivianuu.injekt.*
+import kotlin.reflect.*
 
 /**
  * Allows to use a Map<K, V> for each Set<Pair<K, V>>

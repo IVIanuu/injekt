@@ -16,17 +16,14 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektContext
-import com.ivianuu.injekt.compiler.resolution.isGiven
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.metadata.ProtoBuf
-import org.jetbrains.kotlin.metadata.deserialization.Flags.HAS_ANNOTATIONS
-import org.jetbrains.kotlin.metadata.serialization.MutableVersionRequirementTable
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
-import org.jetbrains.kotlin.serialization.DescriptorSerializer
-import org.jetbrains.kotlin.serialization.DescriptorSerializerPlugin
-import org.jetbrains.kotlin.serialization.SerializerExtension
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.resolution.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.metadata.*
+import org.jetbrains.kotlin.metadata.deserialization.Flags.*
+import org.jetbrains.kotlin.metadata.serialization.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.serialization.*
 
 class InfoDescriptorSerializationPlugin : DescriptorSerializerPlugin {
     private val hasAnnotationFlag = HAS_ANNOTATIONS.toFlags(true)

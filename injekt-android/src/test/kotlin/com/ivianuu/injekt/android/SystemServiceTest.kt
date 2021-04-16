@@ -1,14 +1,13 @@
 package com.ivianuu.injekt.android
 
-import android.os.PowerManager
-import androidx.test.core.app.ActivityScenario
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.given
+import android.os.*
+import androidx.test.core.app.*
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.*
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
+import org.junit.*
+import org.junit.runner.*
+import org.robolectric.*
+import org.robolectric.annotation.*
 
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)

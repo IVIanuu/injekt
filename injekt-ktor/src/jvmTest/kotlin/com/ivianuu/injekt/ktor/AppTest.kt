@@ -1,12 +1,10 @@
 package com.ivianuu.injekt.ktor
 
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.common.*
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.scope.*
-import io.kotest.matchers.booleans.shouldBeFalse
-import io.kotest.matchers.booleans.shouldBeTrue
-import io.ktor.server.testing.withTestApplication
-import org.junit.Test
+import io.kotest.matchers.booleans.*
+import io.ktor.server.testing.*
+import org.junit.*
 
 class AppTest {
     @Test

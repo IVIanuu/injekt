@@ -1,5 +1,5 @@
-import com.ivianuu.injekt.gradle.withGivenCalls
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import com.ivianuu.injekt.gradle.*
+import org.jetbrains.kotlin.gradle.tasks.*
 
 /*
  * Copyright 2020 Manuel Wrage

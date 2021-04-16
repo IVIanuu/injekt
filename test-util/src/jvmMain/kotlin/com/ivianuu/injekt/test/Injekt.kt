@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.test
 
-import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.*
 
 class Foo
 

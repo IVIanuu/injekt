@@ -16,9 +16,8 @@
 
 package com.ivianuu.injekt.gradle
 
-import org.gradle.api.provider.Provider
-import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
-import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+import org.gradle.api.provider.*
+import org.jetbrains.kotlin.gradle.plugin.*
 
 fun KotlinCompilation<*>.setupForInjekt(): Provider<List<SubpluginOption>> {
     (compileKotlinTask as? org.jetbrains.kotlin.gradle.tasks.KotlinCompile)

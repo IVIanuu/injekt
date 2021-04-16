@@ -16,10 +16,9 @@
 
 package com.ivianuu.injekt.android
 
-import androidx.core.content.ContextCompat
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Qualifier
-import kotlin.reflect.KClass
+import androidx.core.content.*
+import com.ivianuu.injekt.*
+import kotlin.reflect.*
 
 /**
  * Allows to use any android system service

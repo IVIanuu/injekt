@@ -16,14 +16,12 @@
 
 package com.ivianuu.injekt.android
 
-import android.app.Application
-import android.content.Context
-import android.content.res.Resources
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ProcessLifecycleOwner
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.scope.AppGivenScope
-import com.ivianuu.injekt.scope.InstallElement
+import android.app.*
+import android.content.*
+import android.content.res.*
+import androidx.lifecycle.*
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.scope.*
 
 /**
  * Returns the [AppGivenScope] which is stored in the [Application]

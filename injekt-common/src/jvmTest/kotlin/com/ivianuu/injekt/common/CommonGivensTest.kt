@@ -16,10 +16,9 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.given
-import org.junit.Test
-import kotlin.reflect.KClass
+import com.ivianuu.injekt.*
+import org.junit.*
+import kotlin.reflect.*
 
 class CommonGivensTest {
     @Test

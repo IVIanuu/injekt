@@ -18,8 +18,7 @@
 
 package com.ivianuu.injekt.scope
 
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.*
 
 @Qualifier
 annotation class ChildScopeFactory

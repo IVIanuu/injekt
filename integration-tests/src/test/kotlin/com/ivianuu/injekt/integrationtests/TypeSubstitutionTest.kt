@@ -16,14 +16,11 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.getSubstitutionMap
-import io.kotest.matchers.booleans.shouldBeTrue
-import io.kotest.matchers.maps.shouldContain
-import io.kotest.matchers.maps.shouldHaveSize
-import io.kotest.matchers.shouldBe
-import org.jetbrains.kotlin.name.FqName
-import org.junit.Test
+import com.ivianuu.injekt.compiler.resolution.*
+import io.kotest.matchers.*
+import io.kotest.matchers.maps.*
+import org.jetbrains.kotlin.name.*
+import org.junit.*
 
 class TypeSubstitutionTest {
     @Test

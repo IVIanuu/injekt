@@ -16,15 +16,14 @@
 
 package com.ivianuu.injekt.android
 
-import androidx.lifecycle.Lifecycle
-import androidx.test.core.app.ActivityScenario
-import com.ivianuu.injekt.scope.element
-import io.kotest.matchers.booleans.shouldBeFalse
-import io.kotest.matchers.booleans.shouldBeTrue
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
+import androidx.lifecycle.*
+import androidx.test.core.app.*
+import com.ivianuu.injekt.scope.*
+import io.kotest.matchers.booleans.*
+import org.junit.*
+import org.junit.runner.*
+import org.robolectric.*
+import org.robolectric.annotation.*
 
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)

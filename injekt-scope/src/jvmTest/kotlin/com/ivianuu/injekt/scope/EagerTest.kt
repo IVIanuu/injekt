@@ -16,12 +16,10 @@
 
 package com.ivianuu.injekt.scope
 
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.given
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.*
-import io.kotest.matchers.shouldBe
-import org.junit.Test
+import io.kotest.matchers.*
+import org.junit.*
 
 class EagerTest {
     @Qualifier

@@ -16,11 +16,8 @@
 
 package com.ivianuu.injekt.android
 
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.scope.GivenScope
-import com.ivianuu.injekt.scope.InstallElement
-import com.ivianuu.injekt.scope.GivenScopeDisposable
-import com.ivianuu.injekt.scope.Scoped
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.scope.*
 
 class TestGivenScopeDisposable<S : GivenScope> : GivenScopeDisposable {
     var disposed = false

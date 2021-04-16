@@ -16,13 +16,11 @@
 
 package com.ivianuu.injekt.scope
 
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.given
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.*
-import io.kotest.matchers.booleans.shouldBeFalse
-import io.kotest.matchers.booleans.shouldBeTrue
-import io.kotest.matchers.shouldBe
-import org.junit.Test
+import io.kotest.matchers.*
+import io.kotest.matchers.booleans.*
+import org.junit.*
 
 class GivenScopeTest {
     @Test
