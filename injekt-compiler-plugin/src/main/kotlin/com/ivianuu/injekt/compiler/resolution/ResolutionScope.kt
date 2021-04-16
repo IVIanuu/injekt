@@ -62,7 +62,6 @@ class ResolutionScope(
     }
 
     private val givens = mutableMapOf<GivenKey, CallableRef>()
-    private val abstractGivens = mutableListOf<CallableRef>()
 
     private val constrainedGivens = mutableListOf<ConstrainedGivenNode>()
     private val constrainedGivenCandidates = mutableListOf<ConstrainedGivenCandidate>()
@@ -95,7 +94,6 @@ class ResolutionScope(
     private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>?>()
 
     init {
-        if (parent != null) abstractGivens += parent.abstractGivens
         initialGivens
             .forEach { given ->
                 given.collectGivens(
@@ -113,17 +111,6 @@ class ResolutionScope(
                             source = given
                         )
                     },
-                    addAbstractGiven = { callable ->
-                        abstractGivens += callable
-                        val typeWithFrameworkKey = callable.type
-                            .copy(frameworkKey = generateFrameworkKey())
-                        abstractGivens += callable.copy(type = typeWithFrameworkKey)
-                        constrainedGivenCandidates += ConstrainedGivenCandidate(
-                            type = typeWithFrameworkKey,
-                            rawType = callable.type,
-                            source = given
-                        )
-                   },
                     addConstrainedGiven = { constrainedGivens += ConstrainedGivenNode(it) }
                 )
             }
@@ -195,33 +182,22 @@ class ResolutionScope(
         }?.takeIf { it.isNotEmpty() }
     }
 
-    fun frameworkGivensForRequest(request: GivenRequest): List<GivenNode>? {
-        if (request.type.frameworkKey == null &&
-            request.type.qualifiers.isEmpty() &&
-            request.type.isFunctionTypeWithOnlyGivenParameters) {
-            return listOf(
-                ProviderGivenNode(
-                    type = request.type,
-                    ownerScope = this,
-                    dependencyCallContext = if (request.isInline) callContext
-                    else request.type.callContext
-                )
+    fun frameworkGivenForRequest(request: GivenRequest): GivenNode? {
+        if (request.type.frameworkKey != null ||
+                request.type.qualifiers.isNotEmpty()) return null
+        if (request.type.isFunctionTypeWithOnlyGivenParameters) {
+            return ProviderGivenNode(
+                type = request.type,
+                ownerScope = this,
+                dependencyCallContext = if (request.isInline) callContext
+                else request.type.callContext
             )
-        } else if (request.type.frameworkKey == null &&
-            request.type.qualifiers.isEmpty() &&
-            request.type.classifier == context.setClassifier) {
+        } else if (request.type.classifier == context.setClassifier) {
             val singleElementType = request.type.arguments[0]
             val collectionElementType = context.collectionClassifier.defaultType
                 .typeWith(listOf(singleElementType))
 
-            val frameworkElements =
-                frameworkSetElementsForType(singleElementType, collectionElementType)
-            var elements = if (frameworkElements != null) {
-                setElementsForType(singleElementType, collectionElementType)
-                    ?.let { it + frameworkElements } ?: frameworkElements
-            } else {
-                setElementsForType(singleElementType, collectionElementType)
-            }
+            var elements = setElementsForType(singleElementType, collectionElementType)
             if (elements == null &&
                 singleElementType.qualifiers.isEmpty() &&
                 singleElementType.isFunctionTypeWithOnlyGivenParameters) {
@@ -251,28 +227,14 @@ class ResolutionScope(
                             requestDescriptor = ownerDescriptor.cast()
                         )
                     }
-                return listOf(
-                    SetGivenNode(
-                        type = request.type,
-                        ownerScope = this,
-                        dependencies = elementRequests,
-                        singleElementType = singleElementType,
-                        collectionElementType = collectionElementType
-                    )
+                return SetGivenNode(
+                    type = request.type,
+                    ownerScope = this,
+                    dependencies = elementRequests,
+                    singleElementType = singleElementType,
+                    collectionElementType = collectionElementType
                 )
             }
-        } else if (abstractGivens.isNotEmpty()) {
-            abstractGivens
-                .asSequence()
-                .filter {
-                    it.type.frameworkKey == request.type.frameworkKey
-                            && it.type.isAssignableTo(context, request.type) &&
-                            it.isApplicable()
-                }
-                .map { AbstractGivenNode(request.type, it.type, this, it) }
-                .toList()
-                .takeIf { it.isNotEmpty() }
-                ?.let { return it }
         }
 
         return null
@@ -320,29 +282,6 @@ class ResolutionScope(
             if (parentElements != null && thisElements != null) parentElements + thisElements
             else thisElements ?: parentElements
         }
-    }
-
-    private fun frameworkSetElementsForType(
-        singleElementType: TypeRef,
-        collectionElementType: TypeRef
-    ): List<TypeRef>? {
-        if (abstractGivens.isEmpty()) return null
-        return abstractGivens
-            .toList()
-            .asSequence()
-            .filter {
-                it.type.isAssignableTo(context, singleElementType) ||
-                        it.type.isAssignableTo(context, collectionElementType)
-            }
-            .map { callable ->
-                val typeWithFrameworkKey = callable.type.copy(
-                    frameworkKey = generateFrameworkKey()
-                )
-                abstractGivens += callable.copy(type = typeWithFrameworkKey)
-                typeWithFrameworkKey
-            }
-            .toList()
-            .takeIf { it.isNotEmpty() }
     }
 
     private fun collectConstrainedGivens(candidate: ConstrainedGivenCandidate) {
@@ -413,34 +352,12 @@ class ResolutionScope(
                 constrainedGivenCandidates += newCandidate
                 collectConstrainedGivens(newCandidate)
             },
-            addAbstractGiven = { newInnerAbstractGiven ->
-                val finalNewInnerAbstractGiven = newInnerAbstractGiven
-                    .copy(
-                        source = candidate.source,
-                        originalType = newInnerAbstractGiven.type
-                    )
-                abstractGivens += finalNewInnerAbstractGiven
-                val newInnerGivenWithFrameworkKey = finalNewInnerAbstractGiven.copy(
-                    type = finalNewInnerAbstractGiven.type.copy(
-                        frameworkKey = generateFrameworkKey()
-                            .also { constrainedGiven.resultingFrameworkKeys += it }
-                    )
-                )
-                abstractGivens += newInnerGivenWithFrameworkKey
-                val newCandidate = ConstrainedGivenCandidate(
-                    type = newInnerGivenWithFrameworkKey.type,
-                    rawType = finalNewInnerAbstractGiven.type,
-                    source = candidate.source
-                )
-                constrainedGivenCandidates += newCandidate
-                collectConstrainedGivens(newCandidate)
-            },
             addConstrainedGiven = { newInnerConstrainedGiven ->
                 val finalNewInnerConstrainedGiven = newInnerConstrainedGiven
                     .copy(
                         source = candidate.source,
                         originalType = newInnerConstrainedGiven.type
-        callable            )
+                    )
                 val newConstrainedGiven = ConstrainedGivenNode(finalNewInnerConstrainedGiven)
                 constrainedGivens += newConstrainedGiven
                 constrainedGivenCandidates

@@ -125,18 +125,4 @@ class DivergenceTest {
     ) {
         invokeSingleFile()
     }
-
-    @Test
-    fun testAbstractGivenBreaksCircularDependency() = codegen(
-        """
-            @Given class A(@Given b: B)
-            @Given class B(@Given aComponent: AComponent)
-            @Given interface AComponent {
-                @Given val a: A
-            }
-            fun invoke() = given<B>()
-       """
-    ) {
-        invokeSingleFile()
-    }
 }

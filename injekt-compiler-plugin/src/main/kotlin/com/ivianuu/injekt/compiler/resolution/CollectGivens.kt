@@ -162,11 +162,6 @@ fun ClassDescriptor.getGivenConstructors(
             constructor.hasAnnotation(InjektFqNames.Given) ||
                     (constructor.isPrimary && hasAnnotation(InjektFqNames.Given))
         }
-        .let { givenConstructors ->
-            if (givenConstructors.isEmpty() && hasAnnotation(InjektFqNames.Given)) {
-                listOf(AbstractGivenFakeConstructor(this))
-            } else givenConstructors
-        }
         .map { constructor ->
             val callable = constructor.toCallableRef(context, trace)
             val qualifiedType = callable.type
@@ -181,37 +176,11 @@ fun ClassDescriptor.getGivenConstructors(
     return givenConstructors
 }
 
-class AbstractGivenFakeConstructor(
-    clazz: ClassDescriptor
-) : FunctionDescriptorImpl(clazz, null, Annotations.EMPTY,
-    Name.special("<init>"), CallableMemberDescriptor.Kind.SYNTHESIZED, clazz.source) {
-    init {
-        initialize(
-            null,
-            null,
-            emptyList(),
-            emptyList(),
-            clazz.defaultType,
-            null,
-            clazz.visibility
-        )
-    }
-    override fun createSubstitutedCopy(
-        p0: DeclarationDescriptor,
-        p1: FunctionDescriptor?,
-        p2: CallableMemberDescriptor.Kind,
-        p3: Name?,
-        p4: Annotations,
-        p5: SourceElement
-    ): FunctionDescriptorImpl = TODO()
-}
-
 fun CallableRef.collectGivens(
     context: InjektContext,
     scope: ResolutionScope,
     trace: BindingTrace,
     addGiven: (CallableRef) -> Unit,
-    addAbstractGiven: (CallableRef) -> Unit,
     addConstrainedGiven: (CallableRef) -> Unit,
     seen: MutableSet<CallableRef> = mutableSetOf()
 ) {
@@ -221,11 +190,6 @@ fun CallableRef.collectGivens(
 
     if (source == null && typeParameters.any { it.isGivenConstraint }) {
         addConstrainedGiven(this)
-        return
-    }
-
-    if (isForAbstractGiven(context, trace)) {
-        addAbstractGiven(this)
         return
     }
 
@@ -245,7 +209,6 @@ fun CallableRef.collectGivens(
                 scope,
                 trace,
                 addGiven,
-                addAbstractGiven,
                 addConstrainedGiven,
                 seen
             )
@@ -265,12 +228,3 @@ private fun ResolutionScope.canSee(callable: CallableRef): Boolean =
                                     it.ownerDescriptor.toClassifierRef(context, trace) == callable.owner)
                 }
             }
-
-fun CallableRef.isForAbstractGiven(context: InjektContext, trace: BindingTrace?): Boolean {
-    return callable is AbstractGivenFakeConstructor ||
-            type.classifier.descriptor!!
-                .safeAs<ClassDescriptor>()?.let {
-                    it.modality == Modality.ABSTRACT &&
-                            it.isGiven(context, trace)
-                } == true
-}

@@ -155,17 +155,6 @@ class GivenSetTest {
     }
 
     @Test
-    fun testSetWithAbstractGiven() = codegen(
-        """
-            @Given interface MyComponent {
-                @Given val foo: Foo
-            }  
-            @Given val foo = Foo()
-            fun invoke(): Set<MyComponent> = given()
-        """
-    )
-
-    @Test
     fun testSetWithIgnoreElementsWithErrors() = codegen(
         """
             @Given val a = "a"

@@ -32,7 +32,7 @@ sealed class GivenNode {
     abstract val type: TypeRef
     abstract val originalType: TypeRef
     abstract val dependencies: List<GivenRequest>
-    abstract val dependencyScopes: Map<GivenRequest, ResolutionScope>
+    abstract val dependencyScope: ResolutionScope?
     abstract val callableFqName: FqName
     abstract val callContext: CallContext
     abstract val ownerScope: ResolutionScope
@@ -50,8 +50,8 @@ class CallableGivenNode(
     else callable.callable.fqNameSafe
     override val callContext: CallContext
         get() = callable.callContext
-    override val dependencyScopes: Map<GivenRequest, ResolutionScope>
-        get() = emptyMap()
+    override val dependencyScope: ResolutionScope?
+        get() = null
     override val originalType: TypeRef
         get() = callable.originalType
     override val cacheExpressionResultIfPossible: Boolean
@@ -68,8 +68,8 @@ class SetGivenNode(
     override val callableFqName: FqName = FqName("com.ivianuu.injekt.givenSetOf<${type.arguments[0].render()}>")
     override val callContext: CallContext
         get() = CallContext.DEFAULT
-    override val dependencyScopes: Map<GivenRequest, ResolutionScope>
-        get() = emptyMap()
+    override val dependencyScope: ResolutionScope?
+        get() = null
     override val originalType: TypeRef
         get() = type.classifier.defaultType
     override val cacheExpressionResultIfPossible: Boolean
@@ -104,29 +104,27 @@ class ProviderGivenNode(
 
     val parameterDescriptors = mutableListOf<ParameterDescriptor>()
 
-    override val dependencyScopes = mapOf(
-        dependencies.single() to ResolutionScope(
-            callableFqName.shortName().asString(),
-            parent = ownerScope,
-            context = ownerScope.context,
-            callContext = dependencyCallContext,
-            ownerDescriptor = ownerScope.ownerDescriptor,
-            trace = ownerScope.trace,
-            initialGivens = type
-                .toKotlinType(ownerScope.context)
-                .memberScope
-                .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
-                .first()
-                .valueParameters
-                .asSequence()
-                .onEach { parameterDescriptors += it }
-                .mapIndexed { index, parameter ->
-                    parameter
-                        .toCallableRef(ownerScope.context, ownerScope.trace)
-                        .copy(isGiven = true, type = type.arguments[index])
-                }
-                .toList()
-        )
+    override val dependencyScope = ResolutionScope(
+        callableFqName.shortName().asString(),
+        parent = ownerScope,
+        context = ownerScope.context,
+        callContext = dependencyCallContext,
+        ownerDescriptor = ownerScope.ownerDescriptor,
+        trace = ownerScope.trace,
+        initialGivens = type
+            .toKotlinType(ownerScope.context)
+            .memberScope
+            .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
+            .first()
+            .valueParameters
+            .asSequence()
+            .onEach { parameterDescriptors += it }
+            .mapIndexed { index, parameter ->
+                parameter
+                    .toCallableRef(ownerScope.context, ownerScope.trace)
+                    .copy(isGiven = true, type = type.arguments[index])
+            }
+            .toList()
     )
     override val callContext: CallContext
         get() = CallContext.DEFAULT
@@ -136,92 +134,17 @@ class ProviderGivenNode(
         get() = true
 }
 
-class AbstractGivenNode(
-    override val type: TypeRef,
-    override val originalType: TypeRef,
-    override val ownerScope: ResolutionScope,
-    val superConstructor: CallableRef
-) : GivenNode() {
-    override val callableFqName: FqName = FqName(type.classifier.fqName.asString() + "Impl")
-
-    val requestCallables: List<CallableRef> = type
-        .collectGivens(ownerScope.context, ownerScope.trace)
-        . filter {
-            it.callable.name !in type.classifier.primaryConstructorPropertyParameters
-        }
-
-    val requestsByRequestCallables = requestCallables
-        .associateWith { requestCallable ->
-            GivenRequest(
-                type = requestCallable.type,
-                defaultStrategy = when {
-                    requestCallable.callable
-                        .cast<CallableMemberDescriptor>()
-                        .modality == Modality.ABSTRACT -> GivenRequest.DefaultStrategy.NONE
-                    requestCallable.callable.annotations.hasAnnotation(InjektFqNames.DefaultOnAllErrors) ->
-                        GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
-                    else -> GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
-                },
-                callableFqName = callableFqName,
-                parameterName = requestCallable.callable.name,
-                isInline = false,
-                isLazy = true,
-                requestDescriptor = ownerScope.ownerDescriptor.cast()
-            )
-        }
-
-    val constructorDependencies = superConstructor
-        .getGivenRequests(ownerScope.context, ownerScope.trace) { callableFqName }
-
-    override val dependencies: List<GivenRequest> = requestsByRequestCallables
-        .values + constructorDependencies
-
-    val dependencyScopesByRequestCallable = requestCallables
-        .associateWith { requestCallable ->
-            ResolutionScope(
-                name = callableFqName.child(requestCallable.callable.name).asString(),
-                parent = ownerScope,
-                context = ownerScope.context,
-                callContext = requestCallable.callContext,
-                ownerDescriptor = ownerScope.ownerDescriptor,
-                trace = ownerScope.trace,
-                initialGivens = requestCallable.callable.allParameters
-                    .asSequence()
-                    .filter { it != requestCallable.callable.dispatchReceiverParameter }
-                    .map { parameter ->
-                        parameter.toCallableRef(ownerScope.context, ownerScope.trace)
-                    }
-                    .toList()
-            )
-        }
-
-    override val dependencyScopes: Map<GivenRequest, ResolutionScope> = dependencyScopesByRequestCallable
-        .mapKeys {
-            val index = requestCallables.indexOf(it.key)
-            dependencies[index]
-        }
-
-    override val callContext: CallContext
-        get() = CallContext.DEFAULT
-    override val cacheExpressionResultIfPossible: Boolean
-        get() = false
-}
-
 fun CallableRef.toGivenNode(
     type: TypeRef,
     ownerScope: ResolutionScope
 ): GivenNode {
     val finalCallable = substitute(getSubstitutionMap(ownerScope.context, listOf(type to this.type)))
-    return if (finalCallable.isForAbstractGiven(ownerScope.context, ownerScope.trace)) {
-        AbstractGivenNode(type, finalCallable.originalType, ownerScope, this)
-    } else {
-        CallableGivenNode(
-            type,
-            finalCallable.getGivenRequests(ownerScope.context, ownerScope.trace),
-            ownerScope,
-            finalCallable
-        )
-    }
+    return CallableGivenNode(
+        type,
+        finalCallable.getGivenRequests(ownerScope.context, ownerScope.trace),
+        ownerScope,
+        finalCallable
+    )
 }
 
 fun CallableRef.getGivenRequests(

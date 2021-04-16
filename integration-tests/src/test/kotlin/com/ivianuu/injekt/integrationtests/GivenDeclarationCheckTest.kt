@@ -61,15 +61,6 @@ class GivenDeclarationCheckTest {
     }
 
     @Test
-    fun testGivenSealedClass() = codegen(
-        """
-            @Given sealed class MyAbstractClass
-        """
-    ) {
-        compilationShouldHaveFailed("abstract @Given cannot be sealed")
-    }
-
-    @Test
     fun testGivenInnerClass() = codegen(
         """
             class MyOuterClass {
@@ -79,6 +70,24 @@ class GivenDeclarationCheckTest {
         """
     ) {
         compilationShouldHaveFailed("@Given class cannot be inner")
+    }
+
+    @Test
+    fun testGivenAbstractClass() = codegen(
+        """
+            @Given abstract class MyClass
+        """
+    ) {
+        compilationShouldHaveFailed("@Given class cannot be abstract")
+    }
+
+    @Test
+    fun testGivenInterface() = codegen(
+        """
+            @Given interface MyInterface
+        """
+    ) {
+        compilationShouldHaveFailed("interface cannot be @Given")
     }
 
     @Test

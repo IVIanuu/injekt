@@ -315,24 +315,6 @@ class ConstrainedGivenTest {
     )
 
     @Test
-    fun testGivenConstraintWithAbstractGiven() = codegen(
-        """
-            @Qualifier annotation class Trigger
-            @Given fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): S = instance
-
-            @Given
-            @Trigger
-            interface FooComponent {
-                @Given val foo: Foo
-            }
-
-            @Given val foo = Foo()
-
-            fun invoke() = given<FooComponent>()
-        """
-    )
-
-    @Test
     fun testConstrainedGivenWithModuleLikeConstrainedReturnType() = codegen(
         """
             @Qualifier

@@ -56,7 +56,7 @@ sealed class ResolutionResult {
                             it.allParents.size >= candidate.ownerScope.allParents.size &&
                                     it.callContext.canCall(candidate.callContext)
                         }
-                        candidate.dependencyScopes.isNotEmpty() -> {
+                        candidate.dependencyScope != null -> {
                             val allOuterMostScopes = mutableListOf<ResolutionScope>()
                             fun Value.visit() {
                                 allOuterMostScopes += outerMostScope
@@ -69,8 +69,8 @@ sealed class ResolutionResult {
                                 .asSequence()
                                 .sortedBy { it.allParents.size }
                                 .filter { outerMostScope ->
-                                    candidate.dependencyScopes.values
-                                        .all { outerMostScope.allParents.size < it.allParents.size }
+                                    outerMostScope.allParents.size <
+                                            candidate.dependencyScope!!.allParents.size
                                 }
                                 .lastOrNull {
                                     it.callContext.canCall(candidate.callContext)
@@ -197,9 +197,9 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
     val result = if (userGivens != null) {
         resolveCandidates(request, userGivens)
     } else {
-        val frameworkCandidates = frameworkGivensForRequest(request)
+        val frameworkCandidate = frameworkGivenForRequest(request)
         when {
-            frameworkCandidates != null -> resolveCandidates(request, frameworkCandidates)
+            frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate)
             request.defaultStrategy == GivenRequest.DefaultStrategy.NONE -> ResolutionResult.Failure.NoCandidates
             else -> ResolutionResult.Success.DefaultValue
         }
@@ -330,7 +330,7 @@ private fun ResolutionScope.resolveCandidate(
 
     val successDependencyResults = mutableMapOf<GivenRequest, ResolutionResult.Success>()
     for (dependency in candidate.dependencies) {
-        val dependencyScope = candidate.dependencyScopes[dependency] ?: this
+        val dependencyScope = candidate.dependencyScope ?: this
         when (val dependencyResult = dependencyScope.resolveRequest(dependency)) {
             is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
             is ResolutionResult.Failure -> {
@@ -386,6 +386,7 @@ private fun ResolutionScope.compareResult(a: ResolutionResult?, b: ResolutionRes
 private inline fun <T> ResolutionScope.compareCandidate(
     a: T?,
     b: T?,
+    expectedType: TypeRef?,
     type: (T) -> TypeRef,
     scopeNesting: (T) -> Int,
     owner: (T) -> ClassifierRef?,
@@ -398,7 +399,18 @@ private inline fun <T> ResolutionScope.compareCandidate(
     a!!
     b!!
 
-    val diff = compareType(type(a), type(b), context)
+    var diff: Int
+
+    val typeA = type(a)
+    val typeB = type(b)
+
+    if (expectedType != null) {
+        diff = compareSpecificity(expectedType, typeA, typeB, context)
+        if (diff < 0) return -1
+        if (diff > 0) return 1
+    }
+
+    diff = compareType(typeA, typeB, context)
     if (diff < 0) return -1
     if (diff > 0) return 1
 
@@ -423,6 +435,7 @@ private inline fun <T> ResolutionScope.compareCandidate(
 private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int = compareCandidate(
     a = a,
     b = b,
+    expectedType = a?.type,
     type = { it.originalType },
     scopeNesting = { it.ownerScope.allParents.size },
     owner = { (it as? CallableGivenNode)?.callable?.owner },
@@ -436,6 +449,7 @@ fun ResolutionScope.compareCallable(
     var diff = compareCandidate(
         a = a,
         b = b,
+        expectedType = null,
         type = { it.originalType },
         scopeNesting = { -1 },
         owner = { it.owner },
@@ -460,6 +474,27 @@ fun ResolutionScope.compareCallable(
     if (diff < 0) return -1
     if (diff > 0) return 1
 
+    return 0
+}
+
+private fun compareSpecificity(
+    expected: TypeRef,
+    a: TypeRef,
+    b: TypeRef,
+    context: InjektContext
+): Int {
+    val aSubtypeDepth = when {
+        a.isSubTypeOf(context, expected) -> a.subtypeDepth(expected.classifier)
+        expected.isSubTypeOf(context, a) -> expected.subtypeDepth(a.classifier)
+        else -> -1
+    }
+    val bSubtypeDepth = when {
+        b.isSubTypeOf(context, expected) -> b.subtypeDepth(expected.classifier)
+        expected.isSubTypeOf(context, b) -> expected.subtypeDepth(b.classifier)
+        else -> -1
+    }
+    if (aSubtypeDepth != -1 && aSubtypeDepth < bSubtypeDepth) return -1
+    if (bSubtypeDepth != -1 && bSubtypeDepth < aSubtypeDepth) return 1
     return 0
 }
 

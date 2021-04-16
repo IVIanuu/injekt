@@ -584,6 +584,13 @@ fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
         ?.let { return it }
 }
 
+fun TypeRef.subtypeDepth(classifier: ClassifierRef, depth: Int = 0): Int {
+    if (this.classifier == classifier) return depth
+    return superTypes
+        .map { it.subtypeDepth(classifier, depth + 1) }
+        .minOrNull() ?: -1
+}
+
 fun List<TypeRef>.areQualifiersAssignable(
     context: InjektContext,
     superQualifiers: List<TypeRef>,
