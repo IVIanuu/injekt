@@ -398,10 +398,6 @@ private inline fun <T> ResolutionScope.compareCandidate(
     a!!
     b!!
 
-    val diff = compareType(type(a), type(b), context)
-    if (diff < 0) return -1
-    if (diff > 0) return 1
-
     val aScopeNesting = scopeNesting(a)
     val bScopeNesting = scopeNesting(b)
     if (aScopeNesting > bScopeNesting) return -1
@@ -416,6 +412,10 @@ private inline fun <T> ResolutionScope.compareCandidate(
         if (aSubClassNesting < bSubClassNesting) return -1
         if (bSubClassNesting < aSubClassNesting) return 1
     }
+
+    val diff = compareType(type(a), type(b), context)
+    if (diff < 0) return -1
+    if (diff > 0) return 1
 
     return 0
 }

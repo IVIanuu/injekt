@@ -290,6 +290,21 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testPrefersNearerGivenOverBetterType() = codegen(
+        """
+            fun invoke(): CharSequence {
+                @Given val a: String = "a"
+                run {
+                    @Given val b: CharSequence = "b"
+                    return given<CharSequence>()
+                }
+            }
+        """
+    ) {
+        "b" shouldBe invokeSingleFile()
+    }
+
+    @Test
     fun testAmbiguousGivens() = codegen(
         """
             @Given val a = "a"
