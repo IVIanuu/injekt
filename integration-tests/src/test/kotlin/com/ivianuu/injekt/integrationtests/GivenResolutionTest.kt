@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.*
-import io.kotest.assertions.throwables.*
 import io.kotest.matchers.*
 import io.kotest.matchers.types.*
 import org.junit.*
@@ -340,39 +339,6 @@ class GivenResolutionTest {
         """
     ) {
         invokeSingleFile() shouldBe listOf(listOf("a", "b", "c"))
-    }
-
-    @Test
-    fun testPrefersMoreSpecificType3() = codegen(
-        """
-            interface Logger
-            @Given class LoggerImpl : Logger
-            @Given object NoopLogger : Logger
-            @Given fun logger(
-                @Given loggerProvider: () -> LoggerImpl,
-                @Given noopLoggerProvider: () -> NoopLogger
-            ): Logger = TODO()
-            fun invoke() = given<Logger>()
-        """
-    ) {
-        compilationShouldBeOk()
-        shouldThrowAny { invokeSingleFile() }
-    }
-
-    @Test
-    fun testPrefersMoreSpecificType4() = codegen(
-        """
-            interface Logger
-            open class IntermediateLogger : Logger
-            open class IntermediateLogger2 : IntermediateLogger()
-            open class IntermediateLogger3 : IntermediateLogger2()
-            @Given class WorseLogger(@Given foo: Foo) : IntermediateLogger3()
-            @Given class BetterLogger(@Given foo: Foo) : IntermediateLogger2()
-            @Given val foo = Foo()
-            fun invoke() = given<IntermediateLogger>()
-        """
-    ) {
-        irShouldContain(1, "given<IntermediateLogger>(value = BetterLogger(")
     }
 
     @Test
