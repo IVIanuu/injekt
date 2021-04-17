@@ -17,14 +17,17 @@
 package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.*
+import io.kotest.matchers.*
 import org.junit.*
 import kotlin.reflect.*
 
 class CommonGivensTest {
     @Test
     fun testCanUseMapForSetOfPairs() {
-        @Given val set = setOf("key" to "value")
+        @Given val elements = setOf("key" to "value")
         val map = given<Map<String, String>>()
+        map.size shouldBe 1
+        map["key"] shouldBe "value"
     }
 
     @Test
@@ -37,5 +40,5 @@ class CommonGivensTest {
         val type = given<TypeKey<Foo>>()
     }
 
-    class Foo
+    private class Foo
 }
