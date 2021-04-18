@@ -147,15 +147,4 @@ class CallContextTest {
             fun invoke() = runBlocking { initialize() }
         """
     )
-
-    // todo our code works but compose compiler does not get that the lambda is inlined @Test
-    fun testComposableCanBeRequestFromInlineProviderInComposableContext() = codegen(
-        """
-            @Given @Composable fun composableFoo() = Foo()
-            @Composable inline fun initialize(@Given provider: () -> Foo) {
-            }
-
-            @Composable fun invoke() = initialize()
-        """
-    )
 }

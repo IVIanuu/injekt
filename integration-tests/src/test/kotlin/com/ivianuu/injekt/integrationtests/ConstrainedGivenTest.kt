@@ -81,7 +81,7 @@ class ConstrainedGivenTest {
             val <@Given T> T.prop get() = Unit
         """
     ) {
-        compilationShouldHaveFailed("a @Given type constraint is only supported on @Given functions")
+        compilationShouldHaveFailed("a @Given type constraint is only supported on @Given functions and @Given classes")
     }
 
     @Test
@@ -107,7 +107,7 @@ class ConstrainedGivenTest {
            fun invoke() = given<TypeKey<Bar>>().value 
         """
     ) {
-        "com.ivianuu.injekt.test.Bar" shouldBe invokeSingleFile()
+        invokeSingleFile() shouldBe "com.ivianuu.injekt.test.Bar"
     }
 
     @Test

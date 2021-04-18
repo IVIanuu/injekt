@@ -82,6 +82,15 @@ class GivenDeclarationCheckTest {
     }
 
     @Test
+    fun testGivenConstructorAbstractClass() = codegen(
+        """
+            abstract class MyClass @Given constructor()
+        """
+    ) {
+        compilationShouldHaveFailed("@Given class cannot be abstract")
+    }
+
+    @Test
     fun testGivenInterface() = codegen(
         """
             @Given interface MyInterface
