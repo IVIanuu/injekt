@@ -515,6 +515,7 @@ fun TypeRef.isAssignableTo(
     superType: TypeRef
 ): Boolean {
     if (superType.isStarProjection) return true
+    if (classifier.fqName == InjektFqNames.Nothing) return true
     if (superType.classifier.isTypeParameter)
         return isSubTypeOfTypeParameter(context, superType)
     if (classifier.isTypeParameter)
@@ -556,6 +557,7 @@ fun TypeRef.isSubTypeOf(
     superType: TypeRef
 ): Boolean {
     if (superType.isStarProjection) return true
+    if (classifier.fqName == InjektFqNames.Nothing) return true
     if (isNullableType && !superType.isNullableType) return false
     if (superType.classifier.fqName == InjektFqNames.Any)
         return superType.qualifiers.isEmpty() ||

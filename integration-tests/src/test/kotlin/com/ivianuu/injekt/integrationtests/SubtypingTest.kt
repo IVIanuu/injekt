@@ -71,8 +71,18 @@ class SubtypingTest {
     }
 
     @Test
-    fun testRandomTypeIsNotSubTypeOfTypeAliasWithAnyExpandedType() = withTypeCheckerContext {
-        stringType shouldNotBeAssignable typeAlias(anyType)
+    fun testNothingIsAssignableToAnyType() = withTypeCheckerContext {
+        nothingType shouldBeAssignable stringType
+    }
+
+    @Test
+    fun testNothingIsAssignableToNullableType() = withTypeCheckerContext {
+        nothingType shouldBeAssignable stringType.nullable()
+    }
+
+    @Test
+    fun testNothingIsAssignableToQualifiedType() = withTypeCheckerContext {
+        nothingType shouldBeAssignable stringType.qualified(qualifier1)
     }
 
     @Test
