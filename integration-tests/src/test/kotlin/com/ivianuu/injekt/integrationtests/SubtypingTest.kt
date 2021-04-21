@@ -52,17 +52,22 @@ class SubtypingTest {
 
     @Test
     fun testAnyTypeIsAssignableToStarProjectedType() = withTypeCheckerContext {
-        starProjectedType shouldBeAssignable stringType
+        stringType shouldBeAssignable starProjectedType
     }
 
     @Test
-    fun testStarProjectedTypeMatchesNullableType() = withTypeCheckerContext {
-        starProjectedType shouldBeAssignable stringType.nullable()
+    fun testStarIsNotAssignableToAnyType() = withTypeCheckerContext {
+        starProjectedType shouldNotBeAssignable stringType
     }
 
     @Test
-    fun testStarProjectedTypeMatchesQualifiedType() = withTypeCheckerContext {
-        starProjectedType shouldBeAssignable stringType.qualified(qualifier1)
+    fun testNullableTypeIsAssignableToStarProjectedType() = withTypeCheckerContext {
+        stringType.nullable() shouldBeAssignable starProjectedType
+    }
+
+    @Test
+    fun testQualifiedTypeIsAssignableToStarProjectedType() = withTypeCheckerContext {
+        stringType.qualified(qualifier1) shouldBeAssignable starProjectedType
     }
 
     @Test

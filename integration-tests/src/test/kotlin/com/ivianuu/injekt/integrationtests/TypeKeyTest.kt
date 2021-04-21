@@ -17,8 +17,10 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.*
+import io.kotest.assertions.throwables.*
 import io.kotest.matchers.*
 import org.junit.*
+import java.lang.IllegalStateException
 
 class TypeKeyTest {
     @Test
@@ -244,5 +246,25 @@ class TypeKeyTest {
         """
     ) {
         invokeSingleFile() shouldBe "kotlin.String"
+    }
+
+    @Test
+    fun testTypeKeyWithStar() = codegen(
+        """
+           fun invoke() = typeKeyOf<List<*>>() 
+        """
+    ) {
+        invokeSingleFile() shouldBe "kotlin.collections.List<*>"
+    }
+
+    @Test
+    fun testTypeKeyWithStar2() = codegen(
+        """
+            val scope = given<(@Given @InstallElement<AppGivenScope> List<*>) -> AppGivenScope>()
+                .invoke(emptyList<Any?>())
+            fun invoke() = scope.element<List<*>>()
+        """
+    ) {
+        shouldNotThrow<IllegalStateException> { invokeSingleFile() }
     }
 }

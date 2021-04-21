@@ -76,6 +76,7 @@ class TypeCheckerContext(val module: ModuleDescriptor) {
     val listType = typeFor(StandardNames.FqNames.list)
     val mutableListType = typeFor(StandardNames.FqNames.mutableList)
     val starProjectedType = STAR_PROJECTION_TYPE
+    val nothingType = typeFor(StandardNames.FqNames.nothing.toSafe())
 
     fun composableFunction(parameterCount: Int) = typeFor(
         FqName("kotlin.Function$parameterCount")

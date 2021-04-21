@@ -46,8 +46,8 @@ fun TypeRef.toIrType(
     pluginContext: IrPluginContext,
     localClasses: List<IrClass>,
     context: InjektContext
-): IrType {
-    if (isStarProjection) return pluginContext.irBuiltIns.anyType
+): IrTypeArgument {
+    if (isStarProjection) return IrStarProjectionImpl
     return if (classifier.isTypeAlias) {
         superTypes.single()
             .toIrType(pluginContext, localClasses, context)
@@ -85,13 +85,14 @@ fun TypeRef.toIrType(
         IrSimpleTypeImpl(
             irClassifier,
             isMarkedNullable,
-            arguments.map { makeTypeProjection(it.toIrType(pluginContext, localClasses, context), Variance.INVARIANT) },
+            arguments.map { it.toIrType(pluginContext, localClasses, context) },
             buildList<IrConstructorCall> {
                 this += qualifiers
                     .map { it.toIrType(pluginContext, localClasses, context) }
                     .map {
-                        DeclarationIrBuilder(pluginContext, it.classifierOrFail)
-                            .irCall(it.classOrNull!!.owner.constructors.single().symbol, it, it.classOrNull!!.owner)
+                        DeclarationIrBuilder(pluginContext, it.typeOrNull!!.classifierOrFail)
+                            .irCall(it.typeOrNull!!.classOrNull!!.owner.constructors.single().symbol,
+                                it.typeOrNull!!, it.typeOrNull!!.classOrNull!!.owner)
                     }
                 if (isMarkedComposable) {
                     val composableConstructor = pluginContext.referenceConstructors(InjektFqNames.Composable)
@@ -114,14 +115,13 @@ private fun TypeRef.toIrAbbreviation(
     return IrTypeAbbreviationImpl(
         typeAlias,
         isMarkedNullable,
-        arguments.map {
-            makeTypeProjection(it.toIrType(pluginContext, localClasses, context), Variance.INVARIANT)
-        },
+        arguments.map { it.toIrType(pluginContext, localClasses, context) },
         qualifiers
             .map { it.toIrType(pluginContext, localClasses, context) }
             .map {
-                DeclarationIrBuilder(pluginContext, it.classifierOrFail)
-                    .irCall(it.classOrNull!!.owner.constructors.single().symbol, it, it.classOrNull!!.owner)
+                DeclarationIrBuilder(pluginContext, it.typeOrNull!!.classifierOrFail)
+                    .irCall(it.typeOrNull!!.classOrNull!!.owner.constructors.single().symbol,
+                        it.typeOrNull!!, it.typeOrNull!!.classOrNull!!.owner)
             }
     )
 }

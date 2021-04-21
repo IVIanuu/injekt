@@ -195,6 +195,7 @@ class GivenCallTransformer(
             if (initializing) {
                 if (block == null) {
                     val resultType = result.candidate.type.toIrType(pluginContext, localClasses, context)
+                        .typeOrNull!!
                     block = DeclarationIrBuilder(pluginContext, symbol)
                         .irBlock(resultType = resultType) {
                             tmpVariable = irTemporary(
@@ -257,6 +258,7 @@ class GivenCallTransformer(
                 origin = IrDeclarationOrigin.DEFINED
                 name = "local${graphContext.variableIndex++}".asNameId()
                 returnType = result.candidate.type.toIrType(pluginContext, localClasses, context)
+                    .typeOrNull!!
                 visibility = DescriptorVisibilities.LOCAL
                 isSuspend = scope.callContext == CallContext.SUSPEND
             }.apply {
@@ -321,7 +323,7 @@ class GivenCallTransformer(
         given: ProviderGivenNode
     ): IrExpression = DeclarationIrBuilder(pluginContext, symbol)
         .irLambda(
-            given.type.toIrType(pluginContext, localClasses, context),
+            given.type.toIrType(pluginContext, localClasses, context).typeOrNull!!,
             parameterNameProvider = { "p${graphContext.variableIndex++}" }
         ) { function ->
             when (val dependencyResult = result.dependencyResults.values.single()) {
@@ -396,7 +398,7 @@ class GivenCallTransformer(
                                     pluginContext,
                                     localClasses,
                                     context
-                                )
+                                ).typeOrNull
                             )
                         }
                 }
@@ -409,7 +411,7 @@ class GivenCallTransformer(
                                 pluginContext,
                                 localClasses,
                                 context
-                            )
+                            ).typeOrNull
                         )
                         putValueArgument(
                             0,
@@ -429,7 +431,7 @@ class GivenCallTransformer(
                                     pluginContext,
                                     localClasses,
                                     this@GivenCallTransformer.context
-                                )
+                                ).typeOrNull
                             )
                         },
                     nameHint = "${graphContext.variableIndex++}"
@@ -561,7 +563,8 @@ class GivenCallTransformer(
             .typeArguments
             .values
             .forEachIndexed { index, typeArgument ->
-                putTypeArgument(index, typeArgument.toIrType(pluginContext, localClasses, context))
+                putTypeArgument(index, typeArgument.toIrType(pluginContext, localClasses, context)
+                    .typeOrNull)
             }
     }
 

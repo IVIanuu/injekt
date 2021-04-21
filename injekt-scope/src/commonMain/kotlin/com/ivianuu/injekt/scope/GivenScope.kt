@@ -31,9 +31,9 @@ interface GivenScope : GivenScopeDisposable {
      */
     val isDisposed: Boolean
     /**
-     * Returns the element [T] or throws
+     * Returns the element [T] or null
      */
-    fun <T : Any> element(key: TypeKey<T>): T
+    fun <T> elementOrNull(key: TypeKey<T>): T?
     /**
      * Returns the scoped value [T] for [key] or null
      */
@@ -63,7 +63,15 @@ fun interface GivenScopeDisposable {
     fun dispose()
 }
 
-fun <@ForTypeKey T : Any> GivenScope.element(): T = element(typeKeyOf())
+fun <@ForTypeKey T> GivenScope.elementOrNull(): T? = elementOrNull(typeKeyOf())
+
+fun <@ForTypeKey T> GivenScope.element(): T = element(typeKeyOf())
+
+/**
+ * Returns the element [T] or throws
+ */
+fun <T> GivenScope.element(key: TypeKey<T>): T = elementOrNull(key)
+    ?: error("No element found for $key in $this")
 
 /**
  * Returns an existing instance of [T] for key [key] or creates and caches a new instance by calling function [init]
@@ -165,7 +173,8 @@ annotation class InstallElement<S : GivenScope> {
             ): GivenScopeElement<S> = GivenScopeElement(key, factory)
 
             @Given
-            inline fun elementAccessor(@Given scope: S, @Given key: @Private TypeKey<U>): U = scope.element(key)
+            inline fun elementAccessor(@Given scope: S, @Given key: @Private TypeKey<U>): U =
+                scope.element(key)
         }
 
         @Qualifier
@@ -203,8 +212,7 @@ internal class GivenScopeImpl : GivenScope {
     private fun scopedValues(): MutableMap<Any, Any> =
         (_scopedValues ?: hashMapOf<Any, Any>().also { _scopedValues = it })
 
-    override fun <T : Any> element(key: TypeKey<T>): T = elements[key.value]?.invoke() as? T
-        ?: error("No element found for $key in $this")
+    override fun <T> elementOrNull(key: TypeKey<T>): T? = elements[key.value]?.invoke() as? T
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : Any> getScopedValueOrNull(key: Any): T? = _scopedValues?.get(key) as? T

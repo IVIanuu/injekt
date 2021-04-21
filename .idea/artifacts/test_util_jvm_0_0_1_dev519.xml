@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="test-util-jvm-0.0.1-dev519">
-    <output-path>$PROJECT_DIR$/test-util/build/libs</output-path>
-    <root id="archive" name="test-util-jvm-0.0.1-dev519.jar">
-      <element id="module-output" name="injekt.test-util.jvmMain" />
-    </root>
-  </artifact>
-</component>
