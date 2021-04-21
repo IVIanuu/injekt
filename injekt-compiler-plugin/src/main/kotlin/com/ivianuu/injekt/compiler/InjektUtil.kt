@@ -253,7 +253,12 @@ fun ClassifierDescriptor.isSingletonGiven(
                 } &&
             declaredTypeParameters.none { it.isForTypeKey(context, trace) } &&
             unsubstitutedMemberScope.getContributedDescriptors()
-                .none { it is PropertyDescriptor && it.backingField != null }
+                .none {
+                    (it is ClassDescriptor &&
+                            it.isInner) ||
+                    (it is PropertyDescriptor &&
+                            it.hasBackingField(trace.bindingContext))
+                }
 
     if (!isSingletonGiven && original.isExternalDeclaration()) {
         isSingletonGiven = context.classifierInfoFor(this, trace)

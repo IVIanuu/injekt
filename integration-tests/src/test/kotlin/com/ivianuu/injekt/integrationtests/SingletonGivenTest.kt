@@ -77,4 +77,29 @@ class SingletonGivenTest {
     ) {
         irShouldNotContain("var INSTANCE: MyModule")
     }
+
+    @Test
+    fun testDoesNotOptimizeGivenWithInnerClass() = codegen(
+        """
+            @Given class MyModule {
+                inner class Inner
+            }
+            @Given val foo = Foo()
+            fun invoke() = given<Foo>()
+        """
+    ) {
+        irShouldNotContain("var INSTANCE: MyModule")
+    }
+
+    @Test
+    fun testDoesOptimizeGivenWithComputedProperties() = codegen(
+        """
+            @Given class MyModule {
+                @Given val foo get() = Foo()
+            }
+            fun invoke() = given<Foo>()
+        """
+    ) {
+        irShouldContain(1, "var INSTANCE: MyModule")
+    }
 }
