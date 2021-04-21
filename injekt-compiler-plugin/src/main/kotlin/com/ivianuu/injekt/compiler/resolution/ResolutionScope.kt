@@ -444,6 +444,8 @@ fun HierarchicalResolutionScope(
                             it.kind == LexicalScopeKind.CLASS_MEMBER_SCOPE) ||
                             (it.ownerDescriptor is FunctionDescriptor &&
                                     it.kind == LexicalScopeKind.FUNCTION_INNER_SCOPE) ||
+                            (it.ownerDescriptor is PropertyDescriptor &&
+                                    it.kind == LexicalScopeKind.PROPERTY_INITIALIZER_OR_DELEGATE) ||
                             it.kind == LexicalScopeKind.CODE_BLOCK ||
                             it.kind == LexicalScopeKind.CLASS_INITIALIZER
                     )
