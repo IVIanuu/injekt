@@ -74,8 +74,11 @@ object WorkerInitializer {
     @Given
     fun workerScopeInitializer(
         @Given context: AppContext,
-        @Given configuration: Configuration
-    ): GivenScopeInitializer<AppGivenScope> = { WorkManager.initialize(context, configuration) }
+        @Given configuration: Configuration? = null,
+        @Given defaultConfiguration: @Default () -> Configuration
+    ): GivenScopeInitializer<AppGivenScope> = {
+        WorkManager.initialize(context, configuration ?: defaultConfiguration())
+    }
 
     /**
      * Defines the worker configuration which is used by [workerScopeInitializer] to initialize the [WorkManager]
@@ -83,9 +86,12 @@ object WorkerInitializer {
     @Given
     fun workerConfiguration(
         @Given workerFactory: WorkerFactory
-    ): Configuration = Configuration.Builder()
+    ): @Default Configuration = Configuration.Builder()
         .setWorkerFactory(workerFactory)
         .build()
+
+    @Qualifier
+    private annotation class Default
 }
 
 @Given
