@@ -27,6 +27,14 @@ import com.ivianuu.injekt.common.*
  */
 interface GivenScope : GivenScopeDisposable {
     /**
+     * The type key of this scope
+     */
+    val typeKey: TypeKey<GivenScope>
+    /**
+     * The parent scope or null
+     */
+    val parent: GivenScope?
+    /**
      * Whether or not this scope is disposed
      */
     val isDisposed: Boolean
@@ -126,15 +134,17 @@ private class InvokeOnDisposeKey
 
 private val NoOpScopeDisposable = GivenScopeDisposable {  }
 
-typealias DefaultGivenScope = GivenScope
-
 @Given
-inline fun <S : DefaultGivenScope> defaultGivenScope(
+inline fun <S : GivenScope> GivenScope(
+    @Given parent: GivenScope? = null,
+    @Given typeKey: TypeKey<S>,
     @Given elements: (@Given S) -> Set<GivenScopeElement<S>> = { emptySet() },
     @Given initializers: (@Given S) -> Set<GivenScopeInitializer<S>> = { emptySet() }
 ): S {
-    val scope = GivenScopeImpl()
+    val scope = GivenScopeImpl(typeKey, parent)
     scope as S
+    val parentDisposable = parent?.invokeOnDispose { scope.dispose() }
+    scope.invokeOnDispose { parentDisposable?.dispose() }
     val finalElements = elements(scope)
     scope.elements = if (finalElements.isEmpty()) emptyMap()
     else HashMap<String, () -> Any>(finalElements.size).apply {
@@ -199,7 +209,10 @@ annotation class InstallElement<S : GivenScope> {
 typealias GivenScopeInitializer<@Suppress("unused", "UNUSED_TYPEALIAS_PARAMETER") S> = () -> Unit
 
 @PublishedApi
-internal class GivenScopeImpl : GivenScope {
+internal class GivenScopeImpl(
+    override val typeKey: TypeKey<GivenScope>,
+    override val parent: GivenScope?
+) : GivenScope {
     private var _isDisposed = false
     override val isDisposed: Boolean
         get() {
@@ -212,7 +225,8 @@ internal class GivenScopeImpl : GivenScope {
     private fun scopedValues(): MutableMap<Any, Any> =
         (_scopedValues ?: hashMapOf<Any, Any>().also { _scopedValues = it })
 
-    override fun <T> elementOrNull(key: TypeKey<T>): T? = elements[key.value]?.invoke() as? T
+    override fun <T> elementOrNull(key: TypeKey<T>): T? =
+        elements[key.value]?.invoke() as? T ?: parent?.elementOrNull(key)
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : Any> getScopedValueOrNull(key: Any): T? = _scopedValues?.get(key) as? T

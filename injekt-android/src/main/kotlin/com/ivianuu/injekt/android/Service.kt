@@ -30,7 +30,7 @@ fun Service.createServiceGivenScope(): ServiceGivenScope =
         .element<@ChildScopeFactory (Service) -> ServiceGivenScope>()
         .invoke(this)
 
-typealias ServiceGivenScope = DefaultGivenScope
+typealias ServiceGivenScope = GivenScope
 
 @Given
 val serviceGivenScopeModule =

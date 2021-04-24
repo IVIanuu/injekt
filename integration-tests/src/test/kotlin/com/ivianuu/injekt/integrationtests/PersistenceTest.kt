@@ -160,8 +160,8 @@ class PersistenceTest {
                         (@Given @InstallElement<C> P1) -> C>()
             """,
         """
-            typealias TestGivenScope1 = DefaultGivenScope
-            typealias TestGivenScope2 = DefaultGivenScope
+            typealias TestGivenScope1 = GivenScope
+            typealias TestGivenScope2 = GivenScope
             fun invoke() {
                 @Given
                 val childScopeModule =

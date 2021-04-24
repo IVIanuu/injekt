@@ -17,7 +17,7 @@ class TypeInferenceTest {
                 ChildGivenScopeModule<P, 
                 (P1) -> C, (@Given @InstallElement<C> P1) -> C>()
 
-            typealias MyGivenScope = DefaultGivenScope
+            typealias MyGivenScope = GivenScope
             """,
         """
             @Given
@@ -44,7 +44,7 @@ class TypeInferenceTest {
                 ChildGivenScopeModule<P, 
                 (P1) -> C, (@Given @InstallElement<C> P1) -> C>()
 
-            typealias MyGivenScope = DefaultGivenScope
+            typealias MyGivenScope = GivenScope
             """,
         """
             @Given

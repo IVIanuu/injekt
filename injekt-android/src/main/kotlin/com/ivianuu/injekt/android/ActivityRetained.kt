@@ -31,7 +31,7 @@ val ComponentActivity.activityRetainedGivenScope: ActivityRetainedGivenScope
             .invoke()
     }
 
-typealias ActivityRetainedGivenScope = DefaultGivenScope
+typealias ActivityRetainedGivenScope = GivenScope
 
 @Given
 val activityRetainedGivenScopeModule =

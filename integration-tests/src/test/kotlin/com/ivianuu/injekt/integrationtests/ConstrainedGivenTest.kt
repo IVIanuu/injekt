@@ -179,7 +179,7 @@ class ConstrainedGivenTest {
     @Test
     fun testScoped() = singleAndMultiCodegen(
         """
-                typealias ActivityGivenScope = DefaultGivenScope
+                typealias ActivityGivenScope = GivenScope
                 @Given val activityGivenScopeModule = 
                     ChildGivenScopeModule0<AppGivenScope, ActivityGivenScope>()
                 """,

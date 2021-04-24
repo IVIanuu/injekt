@@ -32,7 +32,7 @@ fun BroadcastReceiver.createReceiverGivenScope(
     .element<@ChildScopeFactory (BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverGivenScope>()
     .invoke(this, context, intent)
 
-typealias ReceiverGivenScope = DefaultGivenScope
+typealias ReceiverGivenScope = GivenScope
 
 @Given
 val receiverGivenScopeModule =

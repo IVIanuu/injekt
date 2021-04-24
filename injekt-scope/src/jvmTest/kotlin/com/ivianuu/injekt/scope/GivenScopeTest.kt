@@ -20,6 +20,7 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.*
 import io.kotest.matchers.*
 import io.kotest.matchers.booleans.*
+import io.kotest.matchers.types.*
 import org.junit.*
 
 class GivenScopeTest {
@@ -143,5 +144,49 @@ class GivenScopeTest {
         called.shouldBeFalse()
         scope.dispose()
         called.shouldBeFalse()
+    }
+
+    @Test
+    fun testTypeKey() {
+        val scope = given<TestGivenScope1>()
+        scope.typeKey shouldBe typeKeyOf<TestGivenScope1>()
+    }
+
+    @Test
+    fun testParentScope() {
+        @Given
+        val childScopeModule = ChildGivenScopeModule0<TestGivenScope1, TestGivenScope2>()
+        @Given
+        val childScope2Module = ChildGivenScopeModule0<TestGivenScope2, TestGivenScope3>()
+        val parentScope = given<TestGivenScope1>()
+        val childScope1 = parentScope.element<@ChildScopeFactory () -> TestGivenScope2>()
+            .invoke()
+        val childScope2 = childScope1.element<@ChildScopeFactory () -> TestGivenScope3>()
+            .invoke()
+        childScope1.parent shouldBeSameInstanceAs parentScope
+        childScope2.parent shouldBeSameInstanceAs childScope1
+    }
+
+    @Test
+    fun testChildReturnsParentElement() {
+        @Given val parentElement: @InstallElement<TestGivenScope1> String = "value"
+        @Given
+        val childScopeModule = ChildGivenScopeModule0<TestGivenScope1, TestGivenScope2>()
+        val parentScope = given<TestGivenScope1>()
+        val childScope = parentScope.element<@ChildScopeFactory () -> TestGivenScope2>()
+            .invoke()
+        childScope.element<String>() shouldBe "value"
+    }
+
+    @Test
+    fun testDisposingParentDisposesChild() {
+        @Given
+        val childScopeModule = ChildGivenScopeModule0<TestGivenScope1, TestGivenScope2>()
+        val parentScope = given<TestGivenScope1>()
+        val childScope = parentScope.element<@ChildScopeFactory () -> TestGivenScope2>()
+            .invoke()
+        childScope.isDisposed.shouldBeFalse()
+        parentScope.dispose()
+        childScope.isDisposed.shouldBeTrue()
     }
 }

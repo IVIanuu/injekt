@@ -72,9 +72,9 @@ class ProviderTest {
     @Test
     fun testProviderWithGenericGivenArgs() = singleAndMultiCodegen(
         """ 
-            typealias GivenScopeA = DefaultGivenScope
+            typealias GivenScopeA = GivenScope
 
-            typealias GivenScopeB = DefaultGivenScope
+            typealias GivenScopeB = GivenScope
 
             @Given
             fun givenScopeBFactory(
@@ -138,7 +138,7 @@ class ProviderTest {
     @Test
     fun testMultipleProvidersInSetWithDependencyDerivedByProviderArgument() = codegen(
         """
-            typealias MyGivenScope = DefaultGivenScope
+            typealias MyGivenScope = GivenScope
             @Given val MyGivenScope.key: String get() = ""
             @Given fun foo(@Given key: String) = Foo()
             @Given fun fooIntoSet(@Given provider: (@Given MyGivenScope) -> Foo): (MyGivenScope) -> Any = provider as (MyGivenScope) -> Any 
