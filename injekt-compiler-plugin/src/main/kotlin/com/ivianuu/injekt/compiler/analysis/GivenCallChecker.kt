@@ -39,6 +39,8 @@ class GivenCallChecker(
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
+        if (isIde) return
+
         val resultingDescriptor = resolvedCall.resultingDescriptor
         if (resultingDescriptor !is FunctionDescriptor) return
 
@@ -93,9 +95,6 @@ class GivenCallChecker(
             )
             return
         }
-
-        // todo
-        if (Project::class.java.name == "com.intellij.openapi.project.Project") return
 
         val scope = HierarchicalResolutionScope(this.context, context.scope, context.trace)
         scope.recordLookup(KotlinLookupLocation(callExpression))
