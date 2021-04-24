@@ -9,8 +9,8 @@ import kotlin.coroutines.*
 /**
  * A [CoroutineScope] which is bound to the lifecycle of the [GivenScope] S
  *
- * Context of the scope can be specified with a given [GivenCoroutineContext]<S> and
- * defaults to a [DefaultDispatcher]
+ * [CoroutineContext] of the scope can be specified with a given [GivenCoroutineContext]<S> and
+ * defaults to [DefaultDispatcher]
  */
 typealias GivenCoroutineScope<S> = CoroutineScope
 

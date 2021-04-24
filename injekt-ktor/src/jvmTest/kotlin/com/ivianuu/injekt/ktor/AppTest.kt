@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.ktor
 
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.common.*
 import com.ivianuu.injekt.scope.*
 import io.kotest.matchers.booleans.*
 import io.ktor.server.testing.*
