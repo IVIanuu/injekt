@@ -75,7 +75,7 @@ object WorkerInitializer {
     fun workerScopeInitializer(
         @Given context: AppContext,
         @Given configuration: Configuration? = null,
-        @Given defaultConfiguration: @Default () -> Configuration
+        @Given defaultConfiguration: () -> @Default Configuration
     ): GivenScopeInitializer<AppGivenScope> = {
         WorkManager.initialize(context, configuration ?: defaultConfiguration())
     }
