@@ -33,20 +33,14 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                api(project(":injekt-coroutines"))
                 api(project(":injekt-scope"))
+                api(Deps.Coroutines.core)
                 configurations.getByName("kotlinCompilerPluginClasspath")
                     .dependencies.add(project(":injekt-compiler-plugin"))
             }
         }
-        named("jvmMain") {
-            dependencies {
-                api(Deps.Ktor.core)
-            }
-        }
         named("jvmTest") {
             dependencies {
-                api(Deps.Ktor.serverTestHost)
                 implementation(Deps.junit)
                 implementation(Deps.kotestAssertions)
             }

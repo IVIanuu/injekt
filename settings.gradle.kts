@@ -4,6 +4,7 @@ include(
     ":injekt-common",
     ":injekt-compiler-plugin",
     ":injekt-core",
+    ":injekt-coroutines",
     ":injekt-gradle-plugin",
     ":injekt-ide-plugin",
     ":injekt-ktor",

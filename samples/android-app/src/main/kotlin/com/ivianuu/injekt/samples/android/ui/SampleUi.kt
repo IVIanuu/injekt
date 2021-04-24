@@ -23,6 +23,7 @@ import androidx.compose.ui.*
 import androidx.compose.ui.unit.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.*
+import com.ivianuu.injekt.coroutines.*
 import com.ivianuu.injekt.samples.android.domain.*
 import com.ivianuu.injekt.scope.*
 import kotlinx.coroutines.*
@@ -61,9 +62,11 @@ fun sampleUi(@Given viewModel: CounterViewModel): SampleAppUi = {
 
 @Given
 @Scoped<ActivityRetainedGivenScope>
-class CounterViewModel(@Given private val repo: CounterRepo) : GivenScopeDisposable {
+class CounterViewModel(
+    @Given private val repo: CounterRepo,
+    @Given private val scope: GivenCoroutineScope<ActivityRetainedGivenScope>
+) {
     val state: Flow<Int> get() = repo.counterState
-    private val scope = CoroutineScope(Dispatchers.Default)
 
     fun inc() {
         scope.launch {
@@ -75,9 +78,5 @@ class CounterViewModel(@Given private val repo: CounterRepo) : GivenScopeDisposa
         scope.launch {
             repo.dec()
         }
-    }
-
-    override fun dispose() {
-        scope.cancel()
     }
 }

@@ -33,7 +33,7 @@ intellij {
 }
 
 tasks.withType<PublishTask> {
-    token(project.property("ideaToken") as String)
+    //token(project.property("ideaToken") as String)
 }
 
 dependencies {

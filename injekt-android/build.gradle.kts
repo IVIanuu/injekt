@@ -38,6 +38,7 @@ tasks.withType<KotlinCompile> {
 }
 
 dependencies {
+    api(project(":injekt-coroutines"))
     api(project(":injekt-scope"))
     kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
     api(Deps.AndroidX.Activity.activity)
