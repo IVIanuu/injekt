@@ -30,8 +30,8 @@ fun <@ForTypeKey T : Any> rememberElement(): T = LocalGivenScope.current.element
 
 /**
  * Remember the value produced by [init]. It behaves similarly to [remember],
- * but the stored value will be scoped in the [LocalGivenScope] with the [key]
- * or the [currentCompositeKeyHash] if not key was provided
+ * but the stored value will be stored in the [LocalGivenScope] with the [key]
+ * or the [currentCompositeKeyHash] if no key was provided
  */
 @Composable
 fun <T : Any> rememberScopedValue(
