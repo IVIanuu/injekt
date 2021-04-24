@@ -32,31 +32,40 @@ import org.jetbrains.kotlin.gradle.tasks.*
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 plugins {
-    id("com.android.application")
+    id("com.android.library")
     kotlin("android")
 }
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-lib.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8-android.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-source-sets-android.gradle")
 
+android {
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+}
+
 tasks.withType<KotlinCompile> {
-    withGivenCalls()
+    if (name.toLowerCase().contains("test"))
+        withGivenCalls()
 }
 
 dependencies {
-    implementation(Deps.AndroidX.Activity.activity)
-    implementation(Deps.AndroidX.Activity.compose)
-    implementation(project(":injekt-android"))
-    implementation(project(":injekt-android-work"))
-    implementation(project(":injekt-compose"))
-    implementation(project(":injekt-core"))
-    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
-
-    implementation(Deps.AndroidX.Compose.runtime)
+    api(project(":injekt-scope"))
+    api(Deps.AndroidX.Compose.runtime)
+    debugImplementation(Deps.AndroidX.Activity.compose)
     kotlinCompilerPluginClasspath(Deps.AndroidX.Compose.compiler)
-    implementation(Deps.AndroidX.Compose.material)
+    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
+    testImplementation(Deps.AndroidX.Compose.test)
+    testImplementation(Deps.AndroidX.Test.core)
+    testImplementation(Deps.AndroidX.Test.junit)
+    testImplementation(Deps.kotestAssertions)
+    testImplementation(Deps.mockk)
+    testImplementation(Deps.roboelectric)
 }
+
+plugins.apply("com.vanniktech.maven.publish")
+

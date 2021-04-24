@@ -41,6 +41,7 @@ object Deps {
             const val compiler = "androidx.compose.compiler:compiler:$version"
             const val material = "androidx.compose.material:material:$version"
             const val runtime = "androidx.compose.runtime:runtime:$version"
+            const val test = "androidx.compose.ui:ui-test-junit4:$version"
         }
 
         object Lifecycle {

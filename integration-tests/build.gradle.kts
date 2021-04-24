@@ -26,6 +26,7 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 
 dependencies {
     implementation(Deps.AndroidX.Compose.runtime)
+    implementation(Deps.AndroidX.Activity.compose)
     implementation(project(":injekt-core"))
     implementation(project(":injekt-common"))
     implementation(project(":injekt-scope"))

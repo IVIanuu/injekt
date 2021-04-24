@@ -1,4 +1,4 @@
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   ~ Copyright 2021 Manuel Wrage
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +13,7 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
-<manifest package="com.ivianuu.injekt.integrationtests"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
         <activity android:name="androidx.activity.ComponentActivity" />
     </application>
