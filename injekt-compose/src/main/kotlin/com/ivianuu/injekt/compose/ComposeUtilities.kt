@@ -26,7 +26,7 @@ val LocalGivenScope = staticCompositionLocalOf<GivenScope> { error("No GivenScop
  * Returns the element [T] of the [LocalGivenScope]
  */
 @Composable
-fun <@ForTypeKey T : Any> element(): T = LocalGivenScope.current.element()
+fun <@ForTypeKey T : Any> rememberElement(): T = LocalGivenScope.current.element()
 
 /**
  * Remember the value produced by [init]. It behaves similarly to [remember],
@@ -34,7 +34,7 @@ fun <@ForTypeKey T : Any> element(): T = LocalGivenScope.current.element()
  * or the [currentCompositeKeyHash] if not key was provided
  */
 @Composable
-fun <T : Any> rememberScoped(
+fun <T : Any> rememberScopedValue(
     vararg inputs: Any?,
     key: Any? = null,
     init: () -> T

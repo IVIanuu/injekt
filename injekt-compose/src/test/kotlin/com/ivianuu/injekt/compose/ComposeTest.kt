@@ -20,12 +20,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.test.junit4.*
 import androidx.test.ext.junit.runners.*
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.*
 import com.ivianuu.injekt.scope.*
 import io.kotest.matchers.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.test.*
 import org.junit.*
 import org.junit.runner.*
 
@@ -35,22 +31,22 @@ class ComposeTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun testElement() {
+    fun testRememberElement() {
         @Given val element: @InstallElement<TestGivenScope1> String = "value"
         val scope = given<TestGivenScope1>()
         composeRule.setContent {
             CompositionLocalProvider(LocalGivenScope provides scope) {
-                element<String>() shouldBe "value"
+                rememberElement<String>() shouldBe "value"
             }
         }
     }
 
     @Test
-    fun testInitialRememberScoped() {
+    fun testInitialRememberScopedValue() {
         val scope = given<TestGivenScope1>()
         composeRule.setContent {
             CompositionLocalProvider(LocalGivenScope provides scope) {
-                val value = rememberScoped(key = "key") { "a" }
+                val value = rememberScopedValue(key = "key") { "a" }
                 value shouldBe "a"
                 DisposableEffect(Unit) {
                     scope.getScopedValueOrNull<String>("key")
@@ -62,12 +58,12 @@ class ComposeTest {
     }
 
     @Test
-    fun testExistingInitialRememberScoped() {
+    fun testExistingInitialRememberScopedValue() {
         val scope = given<TestGivenScope1>()
         scope.setScopedValue("key", "b")
         composeRule.setContent {
             CompositionLocalProvider(LocalGivenScope provides scope) {
-                val value = rememberScoped(key = "key") { "a" }
+                val value = rememberScopedValue(key = "key") { "a" }
                 value shouldBe "b"
                 DisposableEffect(Unit) {
                     scope.getScopedValueOrNull<String>("key")
@@ -79,7 +75,7 @@ class ComposeTest {
     }
 
     /*@Test
-    fun testRememberScopedAcrossRecompositions() {
+    fun testRememberScopedValueAcrossRecompositions() {
         val scope = given<TestGivenScope1>()
         val composed = MutableStateFlow(0)
         composeRule.setContent {
