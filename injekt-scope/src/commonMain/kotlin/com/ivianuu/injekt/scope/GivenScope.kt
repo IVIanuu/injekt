@@ -45,14 +45,14 @@ interface GivenScope : GivenScopeDisposable {
     /**
      * Returns the scoped value [T] for [key] or null
      */
-    fun <T> getScopedValueOrNull(key: Any): T?
-    fun <T> getScopedValueOrNull(key: TypeKey<T>): T? =
+    fun <T : Any> getScopedValueOrNull(key: Any): T?
+    fun <T : Any> getScopedValueOrNull(key: TypeKey<T>): T? =
         getScopedValueOrNull(key.value)
     /**
      * Sets the scoped value [T] for [key] to [value]
      */
-    fun <T> setScopedValue(key: Any, value: T)
-    fun <T> setScopedValue(key: TypeKey<T>, value: T) =
+    fun <T : Any> setScopedValue(key: Any, value: T)
+    fun <T : Any> setScopedValue(key: TypeKey<T>, value: T) =
         setScopedValue(key.value, value)
     /**
      * Removes the scoped value for [key]
@@ -84,7 +84,7 @@ fun <T> GivenScope.element(key: TypeKey<T>): T = elementOrNull(key)
 /**
  * Returns an existing instance of [T] for key [key] or creates and caches a new instance by calling function [init]
  */
-inline fun <T> GivenScope.getOrCreateScopedValue(key: Any, init: () -> T): T {
+inline fun <T : Any> GivenScope.getOrCreateScopedValue(key: Any, init: () -> T): T {
     getScopedValueOrNull<T>(key)?.let { return it }
     withLock {
         getScopedValueOrNull<T>(key)?.let { return it }
@@ -94,10 +94,10 @@ inline fun <T> GivenScope.getOrCreateScopedValue(key: Any, init: () -> T): T {
     }
 }
 
-inline fun <T> GivenScope.getOrCreateScopedValue(key: TypeKey<T>, init: () -> T): T =
+inline fun <T : Any> GivenScope.getOrCreateScopedValue(key: TypeKey<T>, init: () -> T): T =
     getOrCreateScopedValue(key.value, init)
 
-inline fun <@ForTypeKey T> GivenScope.getOrCreateScopedValue(init: () -> T): T =
+inline fun <@ForTypeKey T : Any> GivenScope.getOrCreateScopedValue(init: () -> T): T =
     getOrCreateScopedValue(typeKeyOf(), init)
 
 /**
@@ -147,7 +147,7 @@ inline fun <S : GivenScope> GivenScope(
     scope.invokeOnDispose { parentDisposable?.dispose() }
     val finalElements = elements(scope)
     scope.elements = if (finalElements.isEmpty()) emptyMap()
-    else HashMap<String, () -> Any?>(finalElements.size).apply {
+    else HashMap<String, () -> Any>(finalElements.size).apply {
         finalElements.forEach { this[it.key.value] = it.factory }
     }
     initializers(scope).forEach { it() }
@@ -155,7 +155,7 @@ inline fun <S : GivenScope> GivenScope(
 }
 
 @Suppress("unused")
-class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: () -> Any?)
+class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: () -> Any)
 
 /**
  * Registers the declaration a element in the [GivenScope] [S]
@@ -175,7 +175,7 @@ class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: () -> 
 annotation class InstallElement<S : GivenScope> {
     companion object {
         @Given
-        class Module<@Given T : @InstallElement<S> U, U, S : GivenScope> {
+        class Module<@Given T : @InstallElement<S> U, U : Any, S : GivenScope> {
             @Given
             inline fun givenScopeElement(
                 @Given noinline factory: () -> T,
@@ -220,18 +220,18 @@ internal class GivenScopeImpl(
             return synchronized(this) { _isDisposed }
         }
 
-    lateinit var elements: Map<String, () -> Any?>
-    private var _scopedValues: MutableMap<Any, Any?>? = null
-    private fun scopedValues(): MutableMap<Any, Any?> =
-        (_scopedValues ?: hashMapOf<Any, Any?>().also { _scopedValues = it })
+    lateinit var elements: Map<String, () -> Any>
+    private var _scopedValues: MutableMap<Any, Any>? = null
+    private fun scopedValues(): MutableMap<Any, Any> =
+        (_scopedValues ?: hashMapOf<Any, Any>().also { _scopedValues = it })
 
     override fun <T> elementOrNull(key: TypeKey<T>): T? =
         elements[key.value]?.invoke() as? T ?: parent?.elementOrNull(key)
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T> getScopedValueOrNull(key: Any): T? = _scopedValues?.get(key) as? T
+    override fun <T : Any> getScopedValueOrNull(key: Any): T? = _scopedValues?.get(key) as? T
 
-    override fun <T> setScopedValue(key: Any, value: T) {
+    override fun <T : Any> setScopedValue(key: Any, value: T) {
         synchronizedWithDisposedCheck {
             removeScopedValueImpl(key)
             scopedValues()[key] = value
