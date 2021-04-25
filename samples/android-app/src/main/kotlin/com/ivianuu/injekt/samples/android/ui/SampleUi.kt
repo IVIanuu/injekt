@@ -32,6 +32,9 @@ import kotlinx.coroutines.flow.*
 typealias SampleAppUi = @Composable () -> Unit
 
 @Given
+fun <T : GivenScope> givenScopeToCoroutineScope() = Conversion<T, CoroutineScope> { it.element() }
+
+@Given
 fun sampleUi(@Given viewModel: CounterViewModel): SampleAppUi = {
     Scaffold(
         topBar = {

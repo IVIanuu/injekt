@@ -33,6 +33,10 @@ class InjektContext(val module: ModuleDescriptor) {
     val collectionClassifier by unsafeLazy {
         module.builtIns.collection.toClassifierRef(this, null)
     }
+    val conversionClassifier by unsafeLazy {
+        classifierDescriptorForFqName(InjektFqNames.Conversion)!!
+            .toClassifierRef(this, null)
+    }
 
     fun callableInfoFor(
         callable: CallableDescriptor,

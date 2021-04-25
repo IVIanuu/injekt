@@ -174,6 +174,7 @@ class ResolutionScope(
             given !is CallableGivenNode ||
                     given.callable.callable.visibility != DescriptorVisibilities.INTERNAL ||
                     !given.callable.callable.isExternalDeclaration() ||
+                    request.requestDescriptor == null ||
                     DescriptorVisibilities.INTERNAL.isVisible(
                         null,
                         given.callable.callable,

@@ -18,21 +18,29 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.injekt.compiler.transform.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.annotations.*
+import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.extensions.internal.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.calls.*
 import org.jetbrains.kotlin.resolve.calls.context.*
 import org.jetbrains.kotlin.resolve.calls.tower.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.resolve.scopes.ResolutionScope
 import org.jetbrains.kotlin.resolve.scopes.receivers.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 @Suppress("INVISIBLE_REFERENCE", "EXPERIMENTAL_IS_NOT_ENABLED")
 @OptIn(org.jetbrains.kotlin.extensions.internal.InternalNonStableExtensionPoints::class)
 class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtension {
     private var context: InjektContext? = null
+
     override fun interceptFunctionCandidates(
         candidates: Collection<FunctionDescriptor>,
         scopeTower: ImplicitScopeTower,
@@ -44,17 +52,81 @@ class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtensi
         dispatchReceiver: ReceiverValueWithSmartCastInfo?,
         extensionReceiver: ReceiverValueWithSmartCastInfo?,
     ): Collection<FunctionDescriptor> {
-        return if (candidates.isEmpty()) emptyList()
-        else candidates
-            .map { candidate ->
-                if (context?.module != candidate.module) {
-                    context = InjektContext(candidate.module)
+        if (context?.module != scopeTower.lexicalScope.ownerDescriptor.module) {
+            context = InjektContext(scopeTower.lexicalScope.ownerDescriptor.module)
+        }
+
+        if (candidates.isEmpty() && dispatchReceiver == null && extensionReceiver == null)
+            return candidates
+
+        val newCandidates = candidates.toMutableList()
+
+        if (dispatchReceiver != null || extensionReceiver != null) {
+            val scope = HierarchicalResolutionScope(context!!,
+                resolutionContext.scope, resolutionContext.trace)
+            val conversions = listOfNotNull(dispatchReceiver, extensionReceiver)
+                .map { it.receiverValue.type.toTypeRef(context!!, resolutionContext.trace) }
+                .map {
+                    context!!.conversionClassifier.defaultType
+                        .typeWith(listOf(it, STAR_PROJECTION_TYPE))
                 }
-                if (candidate.allParameters.any { it.isGiven(context!!, resolutionContext.trace) }) {
-                    candidate.toGivenFunctionDescriptor(context!!, resolutionContext.trace)
-                } else {
-                    candidate
+                .flatMap {
+                    scope.givensForRequest(
+                        GivenRequest(it, GivenRequest.DefaultStrategy.NONE,
+                        FqName.ROOT, "l".asNameId(), false, false, null)
+                    ) ?: emptyList()
                 }
+            if (conversions.isNotEmpty()) {
+                newCandidates += generateSequence<HierarchicalScope>(resolutionContext.scope) { it.parent }
+                    .flatMap { it.getContributedDescriptors() }
+                    .filter { it.name == name }
+                    .filterIsInstance<CallableMemberDescriptor>()
+                    .flatMap { callable ->
+                        val receiverType = callable.extensionReceiverParameter?.type?.toTypeRef(context!!, resolutionContext.trace)
+                            ?: return@flatMap emptyList()
+                        conversions.filter {
+                            it.originalType.arguments[1]
+                                .isSubTypeOf(context!!, receiverType)
+                        }.map { conversion ->
+                            SimpleFunctionDescriptorImpl.create(
+                                callable.containingDeclaration,
+                                callable.annotations,
+                                callable.name,
+                                CallableMemberDescriptor.Kind.SYNTHESIZED,
+                                callable.source
+                            ).apply {
+                                initialize(
+                                    DescriptorFactory.createExtensionReceiverParameterForCallable(
+                                        this,
+                                        conversion.originalType.arguments[1]
+                                            .toKotlinType(context!!),
+                                        callable.extensionReceiverParameter!!.annotations
+                                    ),
+                                    callable.dispatchReceiverParameter,
+                                    callable.typeParameters,
+                                    callable.valueParameters,
+                                    callable.returnType,
+                                    callable.modality,
+                                    callable.visibility,
+                                    null
+                                )
+                            }
+                        }
+                    }
             }
+        }
+
+        if (candidates.isNotEmpty()) {
+            candidates
+                .map { candidate ->
+                    if (candidate.allParameters.any { it.isGiven(context!!, resolutionContext.trace) }) {
+                        candidate.toGivenFunctionDescriptor(context!!, resolutionContext.trace)
+                    } else {
+                        candidate
+                    }
+                }
+        }
+
+        return newCandidates
     }
 }
