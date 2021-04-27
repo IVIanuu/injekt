@@ -657,7 +657,7 @@ fun effectiveVariance(
     declared: TypeVariance,
     useSite: TypeVariance,
     originalDeclared: TypeVariance
-): TypeVariance? {
+): TypeVariance {
     if (useSite != TypeVariance.INV) return useSite
     if (declared != TypeVariance.INV) return declared
     return originalDeclared
