@@ -134,10 +134,19 @@ fun DeclarationDescriptor.uniqueKey(context: InjektContext): String {
         is FunctionDescriptor -> "function:$fqNameSafe:${
             listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
                 .plus(original.valueParameters)
-                .joinToString(",") {
-                    it.type
-                        .fullyAbbreviatedType
-                        .uniqueTypeName()
+                .joinToString(",") { parameter ->
+                    buildString { 
+                        when  {
+                            parameter === original.dispatchReceiverParameter -> append("d:")
+                            parameter === original.extensionReceiverParameter -> append("e:")
+                            else -> append("p:")
+                        }
+                        append(
+                            parameter.type
+                                .fullyAbbreviatedType
+                                .uniqueTypeName()
+                        )
+                    }
                 }
         }"
         is PropertyDescriptor -> "property:$fqNameSafe:${
