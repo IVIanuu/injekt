@@ -50,6 +50,9 @@ fun <S : GivenScope> givenCoroutineScopeElement(
 val GivenScope.coroutineScope: CoroutineScope get() = element()
 
 @Given
+fun <A : GivenScope> givenScopeToCoroutineScope(): Conversion<A, CoroutineScope> = { it.element() }
+
+@Given
 inline fun <S : GivenScope> coroutineScopeElement(
     @Given scope: GivenCoroutineScope<S>
 ): @InstallElement<S> CoroutineScope = scope

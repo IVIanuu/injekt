@@ -101,6 +101,4 @@ annotation class DefaultOnAllErrors
 @Target(AnnotationTarget.TYPE)
 annotation class IgnoreElementsWithErrors
 
-fun interface Conversion<in A, out B> {
-    fun apply(a: A): B
-}
+typealias Conversion<A, B> = (A) -> B

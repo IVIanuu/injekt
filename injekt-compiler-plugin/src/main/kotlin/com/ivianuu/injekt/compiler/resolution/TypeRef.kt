@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.ir.types.impl.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
@@ -26,6 +27,7 @@ import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.typeUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 data class ClassifierRef(
@@ -120,7 +122,8 @@ fun KotlinType.toTypeRef(
 ): TypeRef = if (isStarProjection) STAR_PROJECTION_TYPE else {
     val key = System.identityHashCode(this)
     trace?.get(InjektWritableSlices.TYPE_REF_FOR_TYPE, key)?.let { return it }
-    KotlinTypeRef(this, isStarProjection, context, trace)
+    val finalType = this.upperIfFlexible().unCapture()
+    KotlinTypeRef(finalType, isStarProjection, context, trace)
         .also { trace?.record(InjektWritableSlices.TYPE_REF_FOR_TYPE, key, it) }
 }
 
@@ -233,7 +236,8 @@ class KotlinTypeRef(
 ) : TypeRef() {
     override val classifier: ClassifierRef by unsafeLazy {
         (kotlinType.getAbbreviation() ?: kotlinType)
-            .constructor.declarationDescriptor!!.toClassifierRef(context, trace)
+            .constructor.declarationDescriptor?.toClassifierRef(context, trace)
+            ?: error("Corrupt type $kotlinType ${kotlinType.javaClass}")
     }
     override val isMarkedComposable: Boolean by unsafeLazy {
         (kotlinType.getAbbreviation() ?: kotlinType)

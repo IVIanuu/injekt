@@ -26,11 +26,15 @@ import com.ivianuu.injekt.scope.*
 import com.ivianuu.injekt.samples.android.data.*
 import com.ivianuu.injekt.samples.android.domain.*
 import com.ivianuu.injekt.samples.android.ui.*
+import kotlinx.coroutines.*
 
 class App : Application(), AppGivenScopeOwner {
     override lateinit var appGivenScope: AppGivenScope
     override fun onCreate() {
         appGivenScope = createAppGivenScope()
+        appGivenScope.launch {
+
+        }
         super.onCreate()
     }
 }

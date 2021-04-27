@@ -42,45 +42,63 @@ class GivenCallChecker(
         if (isIde) return
 
         val resultingDescriptor = resolvedCall.resultingDescriptor
-        if (resultingDescriptor !is FunctionDescriptor) return
 
-        if (resultingDescriptor.valueParameters.none {
-                it.isGiven(this.context, context.trace)
-        }) return
-
-        val substitutionMap = resolvedCall.typeArguments
-            .mapKeys { it.key.toClassifierRef(this.context, context.trace) }
-            .mapValues { it.value.toTypeRef(this.context, context.trace) }
-            .filter { it.key != it.value.classifier }
-
-        val callable = resultingDescriptor.toCallableRef(this.context, context.trace)
-            .substitute(substitutionMap)
-
-        val requests = callable.givenParameters
-            .asSequence()
-            .map { parameterName ->
-                callable.callable.valueParameters.single {
-                    it.name.asString() == parameterName
-                }
-            }
-            .filter { resolvedCall.valueArguments[it] is DefaultValueArgument }
-            .map { parameter ->
-                GivenRequest(
-                    type = callable.parameterTypes[parameter.name.asString()]!!,
-                    defaultStrategy = if (parameter is ValueParameterDescriptor &&
-                        parameter.hasDefaultValueIgnoringGiven) {
-                        if (parameter.injektName() in callable.defaultOnAllErrorParameters)
-                            GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
-                        else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
-                    } else GivenRequest.DefaultStrategy.NONE,
-                    callableFqName = resultingDescriptor.fqNameSafe,
-                    parameterName = parameter.name,
-                    isInline = InlineUtil.isInlineParameter(parameter),
-                    isLazy = false,
-                    requestDescriptor = context.scope.ownerDescriptor.cast()
+        val requests: List<GivenRequest> = when {
+            resultingDescriptor.original is ConversionCallableDescriptor -> {
+                listOf(
+                    GivenRequest(
+                        type = resultingDescriptor.original.cast<ConversionCallableDescriptor>()
+                            .conversion.originalType,
+                        defaultStrategy = GivenRequest.DefaultStrategy.NONE,
+                        callableFqName = resultingDescriptor.fqNameSafe,
+                        parameterName = "conversion".asNameId(),
+                        isInline = false,
+                        isLazy = false,
+                        requestDescriptor = context.scope.ownerDescriptor.cast(),
+                        resultingDescriptor = resultingDescriptor.original
+                    )
                 )
             }
-            .toList()
+            resultingDescriptor is FunctionDescriptor &&
+                    resultingDescriptor.valueParameters.any {
+                        it.isGiven(this.context, context.trace)
+                    } -> {
+                val substitutionMap = resolvedCall.typeArguments
+                    .mapKeys { it.key.toClassifierRef(this.context, context.trace) }
+                    .mapValues { it.value.toTypeRef(this.context, context.trace) }
+                    .filter { it.key != it.value.classifier }
+
+                val callable = resultingDescriptor.toCallableRef(this.context, context.trace)
+                    .substitute(substitutionMap)
+
+                callable.givenParameters
+                    .asSequence()
+                    .map { parameterName ->
+                        callable.callable.valueParameters.single {
+                            it.name.asString() == parameterName
+                        }
+                    }
+                    .filter { resolvedCall.valueArguments[it] is DefaultValueArgument }
+                    .map { parameter ->
+                        GivenRequest(
+                            type = callable.parameterTypes[parameter.name.asString()]!!,
+                            defaultStrategy = if (parameter is ValueParameterDescriptor &&
+                                parameter.hasDefaultValueIgnoringGiven) {
+                                if (parameter.injektName() in callable.defaultOnAllErrorParameters)
+                                    GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
+                                else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
+                            } else GivenRequest.DefaultStrategy.NONE,
+                            callableFqName = resultingDescriptor.fqNameSafe,
+                            parameterName = parameter.name,
+                            isInline = InlineUtil.isInlineParameter(parameter),
+                            isLazy = false,
+                            requestDescriptor = context.scope.ownerDescriptor.cast()
+                        )
+                    }
+                    .toList()
+                    }
+            else -> emptyList()
+        }
 
         if (requests.isEmpty()) return
 

@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import androidx.compose.compiler.plugins.kotlin.lower.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.backend.common.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
@@ -26,19 +28,8 @@ import org.jetbrains.kotlin.backend.common.lower.*
 import org.jetbrains.kotlin.cfg.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.*
-import org.jetbrains.kotlin.ir.builders.Scope
+import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.*
-import org.jetbrains.kotlin.ir.builders.irBlock
-import org.jetbrains.kotlin.ir.builders.irBlockBody
-import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irCallConstructor
-import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
-import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.builders.irGetObject
-import org.jetbrains.kotlin.ir.builders.irNull
-import org.jetbrains.kotlin.ir.builders.irReturn
-import org.jetbrains.kotlin.ir.builders.irSet
-import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.*
 import org.jetbrains.kotlin.ir.expressions.*
@@ -58,7 +49,6 @@ import kotlin.collections.component2
 import kotlin.collections.count
 import kotlin.collections.emptyList
 import kotlin.collections.filter
-import kotlin.collections.filterKeys
 import kotlin.collections.first
 import kotlin.collections.forEach
 import kotlin.collections.forEachIndexed
@@ -157,6 +147,41 @@ class GivenCallTransformer(
             val irExpression = expression.run { get() }
             initializingExpressions -= result.candidate
             return irExpression
+        }
+    }
+
+    private fun IrBlockBuilder.conversion(
+        context: ScopeContext,
+        descriptor: ConversionCallableDescriptor,
+        original: IrFunctionAccessExpression,
+        result: ResolutionResult.Success
+    ): IrExpression {
+        return irCall(
+            with(context) {
+                when (descriptor) {
+                    is ConversionFunctionDescriptor -> with(descriptor.delegate) { irFunction() }
+                    is ConversionPropertyDescriptor -> with(descriptor.delegate) { irProperty() }
+                        .getter!!
+                    else -> throw AssertionError(descriptor)
+                }
+            }
+        ).apply {
+            (0 until original.typeArgumentsCount).forEach {
+                putTypeArgument(it, original.getTypeArgument(it))
+            }
+            dispatchReceiver = original.dispatchReceiver
+            extensionReceiver = irCall(
+                pluginContext.function(1)
+                    .owner
+                    .functions
+                    .first { it.name.asString() == "invoke" }
+            ).apply {
+                dispatchReceiver = context.expressionFor(result.cast())
+                putValueArgument(0, original.extensionReceiver)
+            }
+            (0 until original.valueArgumentsCount).forEach {
+                putValueArgument(it, original.getValueArgument(it))
+            }
         }
     }
 
@@ -510,9 +535,8 @@ class GivenCallTransformer(
         given: CallableGivenNode,
         descriptor: PropertyDescriptor
     ): IrExpression {
-        val property = pluginContext.referenceProperties(descriptor.fqNameSafe)
-            .single { it.descriptor.uniqueKey(context) == descriptor.uniqueKey(context) }
-        val getter = property.owner.getter!!
+        val property = descriptor.irProperty()
+        val getter = property.getter!!
         return DeclarationIrBuilder(pluginContext, symbol)
             .irCall(getter.symbol)
             .apply {
@@ -584,10 +608,14 @@ class GivenCallTransformer(
             .owner
     }
 
-    private fun FunctionDescriptor.irFunction(): IrFunction {
+    fun PropertyDescriptor.irProperty(): IrProperty = pluginContext.referenceProperties(fqNameSafe)
+        .single { it.descriptor.uniqueKey(context) == uniqueKey(context) }
+        .owner
+
+    fun FunctionDescriptor.irFunction(): IrFunction {
         if (visibility == DescriptorVisibilities.LOCAL) {
             return localFunctions.single {
-                it.descriptor.uniqueKey(context) == uniqueKey(context)
+                it.descriptor.original.uniqueKey(context) == original.uniqueKey(context)
             }
         }
         return pluginContext.referenceFunctions(fqNameSafe)
@@ -665,17 +693,31 @@ class GivenCallTransformer(
         return DeclarationIrBuilder(pluginContext, result.symbol)
             .irBlock {
                 try {
-                    ScopeContext(
+                    val context = ScopeContext(
                         parent = null,
                         graphContext = graphContext,
                         scope = graph.scope,
                         irScope = scope
-                    ).run { result.fillGivens(this, graph.results) }
+                    )
+                    val conversionCallableDescriptor = graph.results
+                        .entries
+                        .singleOrNull()
+                        ?.key
+                        ?.resultingDescriptor
+                        ?.safeAs<ConversionCallableDescriptor>()
+                    if (conversionCallableDescriptor != null) {
+                        val conversionExpression = conversion(context, conversionCallableDescriptor,
+                            result, graph.results.values.single())
+                        graphContext.statements.forEach { +it }
+                        +conversionExpression
+                    } else {
+                        context.run { result.fillGivens(this, graph.results) }
+                        graphContext.statements.forEach { +it }
+                        +result
+                    }
                 } catch (e: Throwable) {
                     throw RuntimeException("Wtf ${expression.dump()}", e)
                 }
-                graphContext.statements.forEach { +it }
-                +result
             }
     }
 }

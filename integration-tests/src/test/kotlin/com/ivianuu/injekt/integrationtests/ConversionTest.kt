@@ -17,18 +17,67 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.*
+import io.kotest.matchers.*
 import org.junit.*
 
 class ConversionTest {
     @Test
-    fun testSimpleConversion() = codegen(
+    fun testConversionWithFunctionExtensionMember() = codegen(
         """
-            @Given val string2CoroutineScope = Conversion<String, CoroutineScope> {
+            @Given fun string2CoroutineScope(@Given int: Int): Conversion<String, CoroutineScope> = {
                 CoroutineScope(Job())
             }
-            fun main() {
-                "".launch {
+            @Given val int: Int = 0
+            val CoroutineScope.property: Int get() = 0
+            fun invoke() = "".property
+        """
+    ) {
+        invokeSingleFile() shouldBe 0
+    }
+
+    @Test
+    fun testConversionWithFunctionMember() = codegen(
+        """
+            class MyClass {
+                fun foo() {
                 }
+            }
+            @Given fun string2MyClass(@Given int: Int): Conversion<String, MyClass> = {
+                MyClass()
+            }
+            @Given val int: Int = 0
+            fun main() {
+                "".foo()
+            }
+        """
+    )
+
+    @Test
+    fun testConversionWithPropertyExtensionMember() = codegen(
+        """
+            @Given fun string2CoroutineScope(@Given int: Int): Conversion<String, CoroutineScope> = {
+                CoroutineScope(Job())
+            }
+            @Given val int: Int = 0
+            val CoroutineScope.property: Int get() = 0
+            fun invoke() = "".property
+        """
+    ) {
+        invokeSingleFile() shouldBe 0
+    }
+
+    @Test
+    fun testConversionWithPropertyMember() = codegen(
+        """
+            class MyClass {
+                val foo = Foo()
+            }
+            @Given fun string2MyClass(@Given int: Int): Conversion<String, MyClass> = {
+                MyClass()
+            }
+            @Given val int: Int = 0
+            fun main() {
+                "".foo
             }
         """
     )

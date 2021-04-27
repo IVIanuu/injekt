@@ -186,7 +186,8 @@ data class GivenRequest(
     val parameterName: Name,
     val isInline: Boolean,
     val isLazy: Boolean,
-    val requestDescriptor: DeclarationDescriptorWithVisibility?
+    val requestDescriptor: DeclarationDescriptorWithVisibility?,
+    val resultingDescriptor: DeclarationDescriptor? = null
 ) {
     enum class DefaultStrategy {
         NONE, DEFAULT_IF_NOT_GIVEN, DEFAULT_ON_ALL_ERRORS
