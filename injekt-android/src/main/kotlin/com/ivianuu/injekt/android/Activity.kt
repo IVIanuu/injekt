@@ -24,16 +24,15 @@ import androidx.savedstate.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.scope.*
 
-/**
- * Returns the [ActivityGivenScope] of this [ComponentActivity]
- * whose lifecycle is bound to the activity
- */
-val ComponentActivity.activityGivenScope: ActivityGivenScope
-    get() = lifecycle.givenScope {
-        activityRetainedGivenScope
-            .element<@ChildScopeFactory (ComponentActivity) -> ActivityGivenScope>()
-            .invoke(this)
-    }
+@Given
+object ActivityScopeOwner : ScopeOwner<ComponentActivity, ActivityGivenScope> {
+    override fun scope(value: ComponentActivity): ActivityGivenScope =
+        value.lifecycle.givenScope {
+            value.activityRetainedGivenScope
+                .element<@ChildScopeFactory (ComponentActivity) -> ActivityGivenScope>()
+                .invoke(value)
+        }
+}
 
 typealias ActivityGivenScope = GivenScope
 
