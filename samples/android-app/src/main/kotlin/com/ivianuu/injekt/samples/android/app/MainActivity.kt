@@ -21,14 +21,20 @@ import androidx.activity.*
 import androidx.activity.compose.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.*
+import com.ivianuu.injekt.common.*
+import com.ivianuu.injekt.coroutines.*
 import com.ivianuu.injekt.samples.android.ui.*
 import com.ivianuu.injekt.scope.*
+import kotlinx.coroutines.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // retrieve our dependencies from the activity scope
-        val dependencies = activityGivenScope.element<MainActivityDependencies>()
+        val dependencies = element(typeKeyOf<MainActivityDependencies>())
+        coroutineScope().launch {
+
+        }
         // display ui
         setContent {
             dependencies.theme {

@@ -45,6 +45,12 @@ fun <S : GivenScope> givenCoroutineScopeElement(
 }
 
 /**
+ * Returns the [CoroutineScope] bound to the [GivenScope] of [owner]
+ */
+fun <T> T.coroutineScope(@Given owner: ScopeOwner<T, GivenScope>): CoroutineScope = scope(owner)
+    .coroutineScope
+
+/**
  * Returns the [CoroutineScope] bound to this scope
  */
 val GivenScope.coroutineScope: CoroutineScope get() = element()
