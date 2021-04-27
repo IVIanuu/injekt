@@ -17,6 +17,8 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.injekt.test.*
+import org.jetbrains.kotlin.types.model.*
 import org.junit.*
 
 class SubtypingTest {
@@ -73,6 +75,16 @@ class SubtypingTest {
     @Test
     fun testNothingIsAssignableToAnyType() = withTypeCheckerContext {
         nothingType shouldBeAssignable stringType
+    }
+
+    @Test
+    fun testInvariant() = withTypeCheckerContext {
+        val typeClass = classType(
+            typeParameters = listOf(typeParameter(variance = TypeVariance.IN).classifier)
+        )
+        val charSequenceTypeClass = classType(typeClass.typeWith(charSequenceType))
+        val stringTypeClass = typeClass.typeWith(stringType)
+        charSequenceTypeClass shouldBeAssignable stringTypeClass
     }
 
     @Test

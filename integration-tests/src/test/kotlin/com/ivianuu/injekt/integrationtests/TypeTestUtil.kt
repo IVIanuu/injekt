@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.jvm.extensions.*
+import org.jetbrains.kotlin.types.model.*
 
 fun withTypeCheckerContext(
     block: TypeCheckerContext.() -> Unit,
@@ -111,27 +112,32 @@ class TypeCheckerContext(val module: ModuleDescriptor) {
 
     fun classType(
         vararg superTypes: TypeRef,
+        typeParameters: List<ClassifierRef> = emptyList(),
         fqName: FqName = FqName("ClassType${id++}"),
     ) = ClassifierRef(
         fqName = fqName,
         superTypes = if (superTypes.isNotEmpty()) superTypes.toList() else listOf(anyType),
+        typeParameters = typeParameters
     ).defaultType
 
     fun typeParameter(
         fqName: FqName = FqName("TypeParameter${id++}"),
         nullable: Boolean = true,
+        variance: TypeVariance = TypeVariance.INV
     ): TypeRef =
-        typeParameter(upperBounds = *emptyArray(), nullable = nullable, fqName = fqName)
+        typeParameter(upperBounds = *emptyArray(), nullable = nullable, fqName = fqName, variance = variance)
 
     fun typeParameter(
         vararg upperBounds: TypeRef,
         nullable: Boolean = true,
+        variance: TypeVariance = TypeVariance.INV,
         fqName: FqName = FqName("TypeParameter${id++}"),
     ) = ClassifierRef(
         fqName = fqName,
         superTypes = if (upperBounds.isNotEmpty()) upperBounds.toList() else
             listOf(anyType.copy(isMarkedNullable = nullable)),
-        isTypeParameter = true
+        isTypeParameter = true,
+        variance = variance
     ).defaultType
 
     fun typeFor(fqName: FqName) = module.findClassifierAcrossModuleDependencies(
