@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.model.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 data class ClassifierRef(
@@ -39,7 +40,8 @@ data class ClassifierRef(
     val qualifiers: List<TypeRef> = emptyList(),
     val isGivenConstraint: Boolean = false,
     val isForTypeKey: Boolean = false,
-    val primaryConstructorPropertyParameters: List<Name> = emptyList()
+    val primaryConstructorPropertyParameters: List<Name> = emptyList(),
+    val variance: TypeVariance = TypeVariance.INV
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
     override fun hashCode(): Int = fqName.hashCode()
@@ -48,7 +50,8 @@ data class ClassifierRef(
         SimpleTypeRef(
             this,
             arguments = typeParameters.map { it.defaultType },
-            qualifiers = qualifiers
+            qualifiers = qualifiers,
+            variance = variance
         )
     }
 }
@@ -107,7 +110,8 @@ fun ClassifierDescriptor.toClassifierRef(
             ?.filter { it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true }
             ?.map { it.name }
             ?.toList()
-            ?: emptyList()
+            ?: emptyList(),
+        variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
     ).also {
         trace?.record(InjektWritableSlices.CLASSIFIER_REF_FOR_CLASSIFIER, this, it)
     }
@@ -116,11 +120,12 @@ fun ClassifierDescriptor.toClassifierRef(
 fun KotlinType.toTypeRef(
     context: InjektContext,
     trace: BindingTrace?,
-    isStarProjection: Boolean = false
+    isStarProjection: Boolean = false,
+    variance: TypeVariance = TypeVariance.INV
 ): TypeRef = if (isStarProjection) STAR_PROJECTION_TYPE else {
     val key = System.identityHashCode(this)
     trace?.get(InjektWritableSlices.TYPE_REF_FOR_TYPE, key)?.let { return it }
-    KotlinTypeRef(this, isStarProjection, context, trace)
+    KotlinTypeRef(this, isStarProjection, variance, context, trace)
         .also { trace?.record(InjektWritableSlices.TYPE_REF_FOR_TYPE, key, it) }
 }
 
@@ -135,6 +140,7 @@ sealed class TypeRef {
     abstract val frameworkKey: Int?
     abstract val defaultOnAllErrors: Boolean
     abstract val ignoreElementsWithErrors: Boolean
+    abstract val variance: TypeVariance
 
     private val typeName by unsafeLazy { uniqueTypeName() }
 
@@ -228,6 +234,7 @@ fun TypeRef.anyType(action: (TypeRef) -> Boolean): Boolean =
 class KotlinTypeRef(
     private val kotlinType: KotlinType,
     override val isStarProjection: Boolean = false,
+    override val variance: TypeVariance,
     val context: InjektContext,
     val trace: BindingTrace?
 ) : TypeRef() {
@@ -249,7 +256,7 @@ class KotlinTypeRef(
             // of it's parent class which is irrelevant for us
             .asSequence()
             .take(classifier.typeParameters.size)
-            .map { it.type.toTypeRef(context, trace, it.isStarProjection) }
+            .map { it.type.toTypeRef(context, trace, it.isStarProjection, it.projectionKind.convertVariance()) }
             .toList()
     }
     override val qualifiers: List<TypeRef> by unsafeLazy {
@@ -275,7 +282,8 @@ class SimpleTypeRef(
     override val qualifiers: List<TypeRef> = emptyList(),
     override val frameworkKey: Int? = null,
     override val defaultOnAllErrors: Boolean = false,
-    override val ignoreElementsWithErrors: Boolean = false
+    override val ignoreElementsWithErrors: Boolean = false,
+    override val variance: TypeVariance = TypeVariance.INV
 ) : TypeRef() {
     init {
         check(arguments.size == classifier.typeParameters.size) {
@@ -301,7 +309,8 @@ fun TypeRef.copy(
     qualifiers: List<TypeRef> = this.qualifiers,
     frameworkKey: Int? = this.frameworkKey,
     defaultOnAllErrors: Boolean = this.defaultOnAllErrors,
-    ignoreElementsWithErrors: Boolean = this.ignoreElementsWithErrors
+    ignoreElementsWithErrors: Boolean = this.ignoreElementsWithErrors,
+    variance: TypeVariance = this.variance
 ): SimpleTypeRef = SimpleTypeRef(
     classifier,
     isMarkedNullable,
@@ -312,7 +321,8 @@ fun TypeRef.copy(
     qualifiers,
     frameworkKey,
     defaultOnAllErrors,
-    ignoreElementsWithErrors
+    ignoreElementsWithErrors,
+    variance
 )
 
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
@@ -325,9 +335,11 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
         val newNullability = if (isStarProjection) substitution.isMarkedNullable
         else isMarkedNullable || substitution.isMarkedNullable
         val newGiven = isGiven || substitution.isGiven
+        val newVariance = variance
         return if (newQualifiers != substitution.qualifiers ||
                 newNullability != substitution.isMarkedNullable ||
-                newGiven != substitution.isGiven) {
+                newGiven != substitution.isGiven ||
+                newVariance != substitution.variance) {
             substitution.copy(
                 // we copy nullability to support T : Any? -> String
                 isMarkedNullable = newNullability,
@@ -338,7 +350,8 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
                 qualifiers = newQualifiers,
                 // we copy given kind to support @Given C -> @Given String
                 // fallback to substitution given
-                isGiven = newGiven
+                isGiven = newGiven,
+                variance = newVariance
             )
         } else substitution
     }
@@ -545,9 +558,15 @@ private fun TypeRef.isSubTypeOfSameClassifier(
     if (!qualifiers.areSubQualifiersOf(context, superType.qualifiers))
         return false
     if (isMarkedComposable != superType.isMarkedComposable) return false
-    arguments.forEachWith(superType.arguments) { a, b ->
-        if (!a.isAssignableTo(context, b))
-            return false
+    for (i in arguments.indices) {
+        val argument = arguments[i]
+        val parameter = superType.arguments[i]
+        val originalParameter = superType.classifier.defaultType.arguments[i]
+        val argumentOk = if (effectiveVariance(parameter.variance,
+                argument.variance, originalParameter.variance)!! == TypeVariance.IN)
+                    parameter.isAssignableTo(context, argument)
+        else argument.isAssignableTo(context, parameter)
+        if (!argumentOk) return false
     }
     return true
 }
@@ -633,3 +652,13 @@ val TypeRef.isFunctionTypeWithOnlyGivenParameters: Boolean
 
 fun List<TypeRef>.sortedQualifiers(): List<TypeRef> =
     sortedBy { it.classifier.fqName.asString() }
+
+fun effectiveVariance(
+    declared: TypeVariance,
+    useSite: TypeVariance,
+    originalDeclared: TypeVariance
+): TypeVariance {
+    if (useSite != TypeVariance.INV) return useSite
+    if (declared != TypeVariance.INV) return declared
+    return originalDeclared
+}
