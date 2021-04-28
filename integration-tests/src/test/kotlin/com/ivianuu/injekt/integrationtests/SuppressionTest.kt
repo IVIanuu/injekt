@@ -52,4 +52,12 @@ class SuppressionTest {
     ) {
         shouldNotContainMessage("Expected performance impact from inlining is insignificant. Inlining works best for functions with parameters of functional types")
     }
+
+    @Test
+    fun testCanUseUnderscoreForGivenParameter() = codegen(
+        """
+            @Given fun func(@Given _: String) {
+            }
+        """
+    )
 }
