@@ -121,7 +121,7 @@ class InjektContext(val module: ModuleDescriptor) {
         )?.toList() ?: emptyList()
     }
 
-    private fun memberScopeForFqName(fqName: FqName): MemberScope? {
+    fun memberScopeForFqName(fqName: FqName): MemberScope? {
         val pkg = module.getPackage(fqName)
 
         if (fqName.isRoot || pkg.fragments.isNotEmpty()) return pkg.memberScope

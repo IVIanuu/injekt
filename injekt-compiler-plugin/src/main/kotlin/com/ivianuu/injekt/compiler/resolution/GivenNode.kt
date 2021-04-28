@@ -124,7 +124,8 @@ class ProviderGivenNode(
                     .toCallableRef(ownerScope.context, ownerScope.trace)
                     .copy(isGiven = true, type = type.arguments[index])
             }
-            .toList()
+            .toList(),
+        imports = emptyList()
     )
     override val callContext: CallContext
         get() = CallContext.DEFAULT

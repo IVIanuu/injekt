@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.*
-import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.calls.checkers.*
 import org.jetbrains.kotlin.resolve.calls.model.*
@@ -91,14 +90,6 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
                     InjektWritableSlices.USED_GIVEN,
                     it.candidate.callable.callable,
                     Unit
-                )
-                val existingUsedGivensForFile =
-                    context.trace.bindingContext[InjektWritableSlices.USED_GIVENS_FOR_FILE,
-                            callExpression.containingKtFile.virtualFilePath] ?: emptyList()
-                context.trace.record(
-                    InjektWritableSlices.USED_GIVENS_FOR_FILE,
-                    callExpression.containingKtFile.virtualFilePath,
-                    existingUsedGivensForFile + it.candidate.callable.callable
                 )
             }
         }) {

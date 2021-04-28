@@ -94,11 +94,11 @@ class GivenDeclarationTest {
     @Test
     fun testNestedGivenClass() = codegen(
         """
-            import com.ivianuu.injekt.integrationtests.Outer.Dep
             @Given val foo = Foo()
             class Outer {
                 @Given class Dep(@Given val foo: Foo)
             }
+            @GivenImports("com.ivianuu.injekt.integrationtests.Outer.Dep")
             fun invoke() = given<Outer.Dep>()
         """
     ) {

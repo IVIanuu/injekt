@@ -44,6 +44,17 @@ package com.ivianuu.injekt
 )
 annotation class Given
 
+@Target(
+    AnnotationTarget.CLASS,
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.CONSTRUCTOR,
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.FILE
+)
+annotation class GivenImports(vararg val paths: String)
+
+inline fun <R> withGivenImports(vararg paths: String, block: () -> R): R = block()
+
 /**
  * Returns a given argument of type [T]
  */
