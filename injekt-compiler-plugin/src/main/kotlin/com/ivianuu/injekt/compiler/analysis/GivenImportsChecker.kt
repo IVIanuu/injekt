@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.diagnostics.*
@@ -34,9 +35,7 @@ import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.resolve.scopes.utils.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-class GivenImportsChecker(
-    private val context: InjektContext
-) : DeclarationChecker, CallChecker {
+class GivenImportsChecker(private val context: InjektContext) : DeclarationChecker, CallChecker {
     override fun check(
         declaration: KtDeclaration,
         descriptor: DeclarationDescriptor,
@@ -44,6 +43,7 @@ class GivenImportsChecker(
     ) {
         val annotation = declaration.findAnnotation(InjektFqNames.GivenImports)
             ?: return
+        descriptor.annotations.findAnnotation(InjektFqNames.GivenImports)?.allValueArguments
         val outerImports = descriptor.parents
             .distinct()
             .flatMap {
@@ -51,23 +51,29 @@ class GivenImportsChecker(
                     .safeAs<KtAnnotated>()
                     ?.findAnnotation(InjektFqNames.GivenImports)
                     ?.valueArguments
-                    ?.mapNotNull { argument ->
-                        argument.getArgumentExpression()
-                            ?.let { ConstantExpressionEvaluator.getConstant(it, context.trace.bindingContext)}
-                            ?.toConstantValue(this.context.module.builtIns.stringType)
-                            ?.value
-                            ?.cast<String>()
+                    ?.map { argument ->
+                        GivenImport(
+                            argument.asElement(),
+                            argument.getArgumentExpression()
+                                ?.let { ConstantExpressionEvaluator.getConstant(it, context.trace.bindingContext)}
+                                ?.toConstantValue(this.context.module.builtIns.stringType)
+                                ?.value
+                                ?.cast()
+                        )
                     } ?: emptyList()
             }
             .toList()
         val imports = annotation
             .valueArguments
             .map { argument ->
-                (argument.asElement() to argument.getArgumentExpression()
-                    ?.let { ConstantExpressionEvaluator.getConstant(it, context.trace.bindingContext)}
-                    ?.toConstantValue(this.context.module.builtIns.stringType)
-                    ?.value
-                    ?.cast<String>())
+                GivenImport(
+                    argument.asElement(),
+                    argument.getArgumentExpression()
+                        ?.let { ConstantExpressionEvaluator.getConstant(it, context.trace.bindingContext)}
+                        ?.toConstantValue(this.context.module.builtIns.stringType)
+                        ?.value
+                        ?.cast()
+                )
             }
         checkImports(outerImports, imports, context.trace)
     }
@@ -87,12 +93,15 @@ class GivenImportsChecker(
                     .safeAs<KtAnnotated>()
                     ?.findAnnotation(InjektFqNames.GivenImports)
                     ?.valueArguments
-                    ?.mapNotNull { argument ->
-                        argument.getArgumentExpression()
-                            ?.let { ConstantExpressionEvaluator.getConstant(it, context.trace.bindingContext)}
-                            ?.toConstantValue(this.context.module.builtIns.stringType)
-                            ?.value
-                            ?.cast<String>()
+                    ?.map { argument ->
+                        GivenImport(
+                            argument.asElement(),
+                            argument.getArgumentExpression()
+                                ?.let { ConstantExpressionEvaluator.getConstant(it, context.trace.bindingContext)}
+                                ?.toConstantValue(this.context.module.builtIns.stringType)
+                                ?.value
+                                ?.cast()
+                        )
                     } ?: emptyList()
             }
             .toList()
@@ -101,11 +110,14 @@ class GivenImportsChecker(
             .firstOrNull()
             ?.arguments
             ?.map { argument ->
-                (argument.asElement() to argument.getArgumentExpression()
-                    ?.let { ConstantExpressionEvaluator.getConstant(it, context.trace.bindingContext)}
-                    ?.toConstantValue(this.context.module.builtIns.stringType)
-                    ?.value
-                    ?.cast<String>())
+                GivenImport(
+                    argument.asElement(),
+                    argument.getArgumentExpression()
+                        ?.let { ConstantExpressionEvaluator.getConstant(it, context.trace.bindingContext)}
+                        ?.toConstantValue(this.context.module.builtIns.stringType)
+                        ?.value
+                        ?.cast()
+                )
             }
             ?.let {
                 checkImports(outerImports, it, context.trace)
@@ -114,31 +126,35 @@ class GivenImportsChecker(
     }
 
     private fun checkImports(
-        outerImports: List<String>,
-        imports: List<Pair<KtElement, String?>>,
+        outerImports: List<GivenImport>,
+        imports: List<GivenImport>,
         trace: BindingTrace
     ) {
         if (imports.isEmpty()) return
 
         imports
-            .filter { it.second != null }
-            .filter { it.second in outerImports }
+            .filter { it.importPath != null }
+            .filter { import ->
+                outerImports.any {
+                    it.importPath == import.importPath
+                }
+            }
             .forEach { (element, _) ->
                 trace.report(
                     InjektErrors.DUPLICATED_GIVEN_IMPORT
-                        .on(element)
+                        .on(element!!)
                 )
             }
 
         imports
-            .filter { it.second != null }
-            .groupBy { it.second }
+            .filter { it.importPath != null }
+            .groupBy { it.importPath }
             .filter { it.value.size > 1 }
             .forEach { (_, imports) ->
                 imports.forEach {
                     trace.report(
                         InjektErrors.DUPLICATED_GIVEN_IMPORT
-                            .on(it.first)
+                            .on(it.element!!)
                     )
                 }
             }
@@ -147,7 +163,7 @@ class GivenImportsChecker(
             if (import == null) {
                 trace.report(
                     InjektErrors.GIVEN_IMPORT_MUST_BE_CONSTANT
-                        .on(element)
+                        .on(element!!)
                 )
                 return@forEach
             }
@@ -160,7 +176,7 @@ class GivenImportsChecker(
             ) {
                 trace.report(
                     InjektErrors.MALFORMED_GIVEN_IMPORT
-                        .on(element)
+                        .on(element!!)
                 )
                 return@forEach
             }
@@ -169,8 +185,9 @@ class GivenImportsChecker(
                 if (context.memberScopeForFqName(packageFqName) == null) {
                     trace.report(
                         InjektErrors.UNRESOLVED_GIVEN_IMPORT
-                            .on(element)
+                            .on(element!!)
                     )
+                    return@forEach
                 }
             } else {
                 val fqName = FqName(import.removeSuffix(".*"))
@@ -186,10 +203,16 @@ class GivenImportsChecker(
                 if (importedDeclarations == null || importedDeclarations.isEmpty()) {
                     trace.report(
                         InjektErrors.UNRESOLVED_GIVEN_IMPORT
-                            .on(element)
+                            .on(element!!)
                     )
+                    return@forEach
                 }
             }
+
+            trace.report(
+                InjektErrors.UNUSED_GIVEN_IMPORT
+                    .on(element!!)
+            )
         }
     }
 }

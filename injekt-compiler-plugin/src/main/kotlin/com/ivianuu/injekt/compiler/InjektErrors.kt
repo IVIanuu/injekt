@@ -198,6 +198,12 @@ interface InjektErrors {
                     )
                 }
 
+        @JvmField
+        val UNUSED_GIVEN_IMPORT = DiagnosticFactory0.create<PsiElement>(Severity.WARNING)
+            .also {
+                MAP.put(it, "Unused given import")
+            }
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,
@@ -208,7 +214,6 @@ interface InjektErrors {
         object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             override fun getMap() = MAP
         }
-
     }
 }
 

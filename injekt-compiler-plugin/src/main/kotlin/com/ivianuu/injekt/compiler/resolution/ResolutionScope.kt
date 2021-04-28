@@ -28,7 +28,6 @@ import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.calls.callUtil.*
 import org.jetbrains.kotlin.resolve.calls.model.*
-import org.jetbrains.kotlin.resolve.constants.*
 import org.jetbrains.kotlin.resolve.constants.evaluate.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.scopes.*
@@ -43,7 +42,7 @@ class ResolutionScope(
     val ownerDescriptor: DeclarationDescriptor?,
     val trace: BindingTrace,
     initialGivens: List<CallableRef>,
-    val imports: List<String>
+    val imports: List<GivenImport>
 ) {
     val chain: MutableList<Pair<GivenRequest, GivenNode>> = parent?.chain ?: mutableListOf()
     val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
@@ -97,6 +96,8 @@ class ResolutionScope(
 
     val allParents: List<ResolutionScope> = parent?.allScopes ?: emptyList()
     val allScopes: List<ResolutionScope> = allParents + this
+
+    val allImports = allScopes.flatMap { it.imports }
 
     private val givensByType = mutableMapOf<TypeRef, List<GivenNode>?>()
     private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>?>()
@@ -158,8 +159,8 @@ class ResolutionScope(
         givens.forEach { recordLookup(it.value.callable) }
         constrainedGivens.forEach { recordLookup(it.callable.callable) }
         imports
-            .filter { it.endsWith(".*") }
-            .map { FqName(it.removeSuffix(".*")) }
+            .filter { it.importPath!!.endsWith(".*") }
+            .map { FqName(it.importPath!!.removeSuffix(".*")) }
             .forEach { fqName ->
                 context.memberScopeForFqName(fqName)!!
                     .recordLookup("givens".asNameId(), location)
@@ -423,15 +424,19 @@ fun HierarchicalResolutionScope(
 
     val fileImports = ((file
         .findAnnotation(InjektFqNames.GivenImports)
-        ?.let { trace.bindingContext[BindingContext.ANNOTATION, it] }
-        ?.allValueArguments
-        ?.values
-        ?.single()
-        ?.cast<ArrayValue>()
-        ?.value
-        ?.map { it.cast<StringValue>().value }
-        ?: emptyList()) + "${file.packageFqName}.*")
-        .sorted()
+        ?.also { trace[BindingContext.ANNOTATION, it]?.allValueArguments }
+        ?.valueArguments
+        ?.map { argument ->
+            GivenImport(
+                argument.asElement(),
+                argument.getArgumentExpression()
+                    ?.let { ConstantExpressionEvaluator.getConstant(it, trace.bindingContext)}
+                    ?.toConstantValue(context.module.builtIns.stringType)
+                    ?.value
+                    ?.cast()
+            )
+        } ?: emptyList()) + GivenImport(null, "${file.packageFqName}.*"))
+        .sortedBy { it.importPath }
 
     val importsResolutionScope = trace.get(InjektWritableSlices.IMPORT_RESOLUTION_SCOPE, fileImports)
         ?: run {
@@ -462,17 +467,24 @@ fun HierarchicalResolutionScope(
                     val clazz = next.ownerDescriptor as ClassDescriptor
                     val companionScope = clazz.companionObjectDescriptor
                         ?.let { companionDescriptor ->
+                            companionDescriptor.annotations.findAnnotation(InjektFqNames.GivenImports)?.allValueArguments
                             trace.get(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, companionDescriptor)
                                 ?: run {
                                     val finalParent = companionDescriptor
-                                        .annotations
-                                        .findAnnotation(InjektFqNames.GivenImports)
-                                        ?.allValueArguments
-                                        ?.values
-                                        ?.single()
-                                        ?.cast<ArrayValue>()
-                                        ?.value
-                                        ?.map { it.cast<StringValue>().value }
+                                        .findPsi()
+                                        .safeAs<KtClassOrObject>()
+                                        ?.findAnnotation(InjektFqNames.GivenImports)
+                                        ?.valueArguments
+                                        ?.map { argument ->
+                                            GivenImport(
+                                                argument.asElement(),
+                                                argument.getArgumentExpression()
+                                                    ?.let { ConstantExpressionEvaluator.getConstant(it, trace.bindingContext)}
+                                                    ?.toConstantValue(context.module.builtIns.stringType)
+                                                    ?.value
+                                                    ?.cast()
+                                            )
+                                        }
                                         ?.takeIf { it.isNotEmpty() }
                                         ?.toImportResolutionScope("CLASS COMPANION ${clazz.fqNameSafe}", parent, context, trace)
                                         ?: parent
@@ -494,14 +506,20 @@ fun HierarchicalResolutionScope(
                                 }
                         }
                     val finalParent = clazz
-                        .annotations
-                        .findAnnotation(InjektFqNames.GivenImports)
-                        ?.allValueArguments
-                        ?.values
-                        ?.single()
-                        ?.cast<ArrayValue>()
-                        ?.value
-                        ?.map { it.cast<StringValue>().value }
+                        .findPsi()
+                        .safeAs<KtClassOrObject>()
+                        ?.findAnnotation(InjektFqNames.GivenImports)
+                        ?.valueArguments
+                        ?.map { argument ->
+                            GivenImport(
+                                argument.asElement(),
+                                argument.getArgumentExpression()
+                                    ?.let { ConstantExpressionEvaluator.getConstant(it, trace.bindingContext)}
+                                    ?.toConstantValue(context.module.builtIns.stringType)
+                                    ?.value
+                                    ?.cast()
+                            )
+                        }
                         ?.takeIf { it.isNotEmpty() }
                         ?.toImportResolutionScope("CLASS ${clazz.fqNameSafe}",
                             companionScope ?: parent, context, trace)
@@ -524,17 +542,24 @@ fun HierarchicalResolutionScope(
                 next is LexicalScope && next.ownerDescriptor is FunctionDescriptor &&
                 next.kind == LexicalScopeKind.FUNCTION_INNER_SCOPE -> {
                     val function = next.ownerDescriptor as FunctionDescriptor
+                    function.annotations.findAnnotation(InjektFqNames.GivenImports)?.allValueArguments
                     trace.get(InjektWritableSlices.FUNCTION_RESOLUTION_SCOPE, function)
                         ?: run {
                             val finalParent = function
-                                .annotations
-                                .findAnnotation(InjektFqNames.GivenImports)
-                                ?.allValueArguments
-                                ?.values
-                                ?.single()
-                                ?.cast<ArrayValue>()
-                                ?.value
-                                ?.map { it.cast<StringValue>().value }
+                                .findPsi()
+                                .safeAs<KtFunction>()
+                                ?.findAnnotation(InjektFqNames.GivenImports)
+                                ?.valueArguments
+                                ?.map { argument ->
+                                    GivenImport(
+                                        argument.asElement(),
+                                        argument.getArgumentExpression()
+                                            ?.let { ConstantExpressionEvaluator.getConstant(it, trace.bindingContext)}
+                                            ?.toConstantValue(context.module.builtIns.stringType)
+                                            ?.value
+                                            ?.cast()
+                                    )
+                                }
                                 ?.takeIf { it.isNotEmpty() }
                                 ?.toImportResolutionScope("FUNCTION ${function.fqNameSafe}", parent, context, trace)
                                 ?: parent
@@ -556,17 +581,28 @@ fun HierarchicalResolutionScope(
                 }
                 next is LexicalScope && next.ownerDescriptor is PropertyDescriptor -> {
                     val property = next.ownerDescriptor as PropertyDescriptor
+                    property.annotations.findAnnotation(InjektFqNames.GivenImports)?.allValueArguments
                     trace.get(InjektWritableSlices.PROPERTY_RESOLUTION_SCOPE, property)
                         ?: run {
                             val finalParent = property
-                                .annotations
-                                .findAnnotation(InjektFqNames.GivenImports)
-                                ?.allValueArguments
-                                ?.values
-                                ?.single()
-                                ?.cast<ArrayValue>()
-                                ?.value
-                                ?.map { it.cast<StringValue>().value }
+                                .findPsi()
+                                .safeAs<KtProperty>()
+                                ?.findAnnotation(InjektFqNames.GivenImports)
+                                ?.valueArguments
+                                ?.map { argument ->
+                                    argument.getArgumentExpression()
+                                    GivenImport(
+                                        argument.asElement(),
+                                        argument.getArgumentExpression()
+                                            ?.let { ConstantExpressionEvaluator.getConstant(it, trace.bindingContext)}
+                                            ?.toConstantValue(context.module.builtIns.stringType)
+                                            ?.value
+                                            ?.cast<String>()
+                                            .also {
+                                                println()
+                                            }
+                                    )
+                                }
                                 ?.takeIf { it.isNotEmpty() }
                                 ?.toImportResolutionScope("PROPERTY ${property.fqNameSafe}", parent, context, trace)
                                 ?: parent
@@ -596,12 +632,14 @@ fun HierarchicalResolutionScope(
                         ?.firstOrNull()
                         ?.safeAs<VarargValueArgument>()
                         ?.arguments
-                        ?.mapNotNull { it.getArgumentExpression() }
-                        ?.mapNotNull {
-                            ConstantExpressionEvaluator.getConstant(it, trace.bindingContext)
-                                ?.toConstantValue(context.module.builtIns.stringType)
-                                ?.value
-                                ?.cast<String>()
+                        ?.map {
+                            GivenImport(
+                                it.asElement(),
+                                ConstantExpressionEvaluator.getConstant(it.getArgumentExpression()!!, trace.bindingContext)
+                                    ?.toConstantValue(context.module.builtIns.stringType)
+                                    ?.value
+                                    ?.cast()
+                            )
                         }
                         ?.takeIf { it.isNotEmpty() }
                         ?.toImportResolutionScope("BLOCK", parent, context, trace)
@@ -623,7 +661,7 @@ fun HierarchicalResolutionScope(
         .also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, scope, it) }
 }
 
-private fun List<String>.toImportResolutionScope(
+private fun List<GivenImport>.toImportResolutionScope(
     namePrefix: String,
     parent: ResolutionScope?,
     context: InjektContext,

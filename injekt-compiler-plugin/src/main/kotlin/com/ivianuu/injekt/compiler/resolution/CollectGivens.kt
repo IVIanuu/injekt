@@ -214,14 +214,14 @@ fun CallableRef.collectGivens(
         }
 }
 
-fun List<String>.collectImportGivens(context: InjektContext, trace: BindingTrace): List<CallableRef> =
-    flatMap { importPath ->
-        (if (importPath.endsWith("*")) {
-            val packageFqName = FqName(importPath.removeSuffix(".*"))
+fun List<GivenImport>.collectImportGivens(context: InjektContext, trace: BindingTrace): List<CallableRef> =
+    flatMap { import ->
+        (if (import.importPath!!.endsWith("*")) {
+            val packageFqName = FqName(import.importPath.removeSuffix(".*"))
             context.memberScopeForFqName(packageFqName)
                 ?.collectGivens(context, trace)
         } else {
-            val fqName = FqName(importPath)
+            val fqName = FqName(import.importPath)
             val parentFqName = fqName.parent()
             val name = fqName.shortName()
             context.memberScopeForFqName(parentFqName)

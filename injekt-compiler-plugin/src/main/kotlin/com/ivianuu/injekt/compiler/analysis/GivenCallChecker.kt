@@ -84,13 +84,28 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
         val scope = HierarchicalResolutionScope(this.context, context.scope, context.trace)
         scope.recordLookup(KotlinLookupLocation(callExpression))
 
-        when (val graph = scope.resolveRequests(requests) {
-            if (it.candidate is CallableGivenNode) {
+        when (val graph = scope.resolveRequests(requests) { result ->
+            if (result.candidate is CallableGivenNode) {
                 context.trace.record(
                     InjektWritableSlices.USED_GIVEN,
-                    it.candidate.callable.callable,
+                    result.candidate.callable.callable,
                     Unit
                 )
+                scope.allImports
+                    .filter {
+                        it.element != null &&
+                                (it.importPath == result.candidate.callableFqName.asString() ||
+                                        (it.importPath!!.removeSuffix(".*") ==
+                                                result.candidate.callable.callable
+                                                    .containingDeclaration.fqNameSafe.asString()))
+                    }
+                    .forEach {
+                        context.trace.record(
+                            InjektWritableSlices.USED_IMPORT,
+                            it.element,
+                            Unit
+                        )
+                    }
             }
         }) {
             is GivenGraph.Success -> {

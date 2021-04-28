@@ -81,6 +81,10 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
             }
         }
 
+        if (diagnostic.factory == InjektErrors.UNUSED_GIVEN_IMPORT)
+            return bindingContext[InjektWritableSlices.USED_IMPORT,
+                    diagnostic.psiElement.cast()] != null
+
         return false
     }
 }

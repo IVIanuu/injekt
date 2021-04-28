@@ -93,6 +93,59 @@ class GivenImportsTest {
     }
 
     @Test
+    fun testUnusedImport() = codegen(
+        """
+            @GivenImports("kotlin.collections.*")
+            fun invoke() {
+            }
+        """
+    ) {
+        shouldContainMessage("Unused given import")
+    }
+
+    @Test
+    fun testUsedImport() = codegen(
+        listOf(
+            source(
+                """
+                    @Given val foo = Foo()
+                """,
+                packageFqName = FqName("givens")
+            ),
+            source(
+                """
+                    @GivenImports("givens.foo")
+                    fun invoke() = given<Foo>()
+                    """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        shouldNotContainMessage("Unused given import")
+    }
+
+    @Test
+    fun testUsedStarImport() = codegen(
+        listOf(
+            source(
+                """
+                    @Given val foo = Foo()
+                """,
+                packageFqName = FqName("givens")
+            ),
+            source(
+                """
+                    @GivenImports("givens.*")
+                    fun invoke() = given<Foo>()
+                    """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        shouldNotContainMessage("Unused given import")
+    }
+
+    @Test
     fun testClassWithGivenImports() = multiCodegen(
         listOf(
             listOf(
