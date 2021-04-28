@@ -27,7 +27,7 @@ object InjektWritableSlices {
     val GIVEN_GRAPH =
         BasicWritableSlice<SourcePosition, GivenGraph.Success>(RewritePolicy.DO_NOTHING)
     val USED_GIVEN = BasicWritableSlice<DeclarationDescriptor, Unit>(RewritePolicy.DO_NOTHING)
-    val USED_IMPORT = BasicWritableSlice<KtElement, Unit>(RewritePolicy.DO_NOTHING)
+    val USED_IMPORT = BasicWritableSlice<SourcePosition, Unit>(RewritePolicy.DO_NOTHING)
     val FILE_HAS_GIVEN_CALLS = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
     val IMPORT_RESOLUTION_SCOPE = BasicWritableSlice<List<GivenImport>, ResolutionScope>(
         RewritePolicy.DO_NOTHING)
@@ -60,8 +60,4 @@ object InjektWritableSlices {
     val EXPECTED_TYPE = BasicWritableSlice<KtExpression, TypeRef>(RewritePolicy.DO_NOTHING)
 }
 
-data class SourcePosition(
-    val filePath: String,
-    val startOffset: Int,
-    val endOffset: Int,
-)
+data class SourcePosition(val filePath: String, val startOffset: Int)

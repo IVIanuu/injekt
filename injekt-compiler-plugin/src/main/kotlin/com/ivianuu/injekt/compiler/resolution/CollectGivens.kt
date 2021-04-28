@@ -220,6 +220,7 @@ fun List<GivenImport>.collectImportGivens(context: InjektContext, trace: Binding
             val packageFqName = FqName(import.importPath.removeSuffix(".*"))
             context.memberScopeForFqName(packageFqName)
                 ?.collectGivens(context, trace)
+                ?.map { it.copy(import = import) }
         } else {
             val fqName = FqName(import.importPath)
             val parentFqName = fqName.parent()
@@ -232,6 +233,7 @@ fun List<GivenImport>.collectImportGivens(context: InjektContext, trace: Binding
                                 ?.constructedClass
                                 ?.name == name
                 }
+                ?.map { it.copy(import = import) }
         }) ?: emptyList()
     }
 

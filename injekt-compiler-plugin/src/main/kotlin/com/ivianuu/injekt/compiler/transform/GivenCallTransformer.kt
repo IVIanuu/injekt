@@ -32,7 +32,6 @@ import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
-import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
@@ -50,31 +49,9 @@ import org.jetbrains.kotlin.ir.visitors.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
-import kotlin.collections.Map
-import kotlin.collections.MutableMap
-import kotlin.collections.buildList
 import kotlin.collections.component1
 import kotlin.collections.component2
-import kotlin.collections.count
-import kotlin.collections.emptyList
-import kotlin.collections.filter
-import kotlin.collections.filterKeys
-import kotlin.collections.first
-import kotlin.collections.forEach
-import kotlin.collections.forEachIndexed
-import kotlin.collections.getOrPut
-import kotlin.collections.isNotEmpty
-import kotlin.collections.last
-import kotlin.collections.minusAssign
-import kotlin.collections.mutableListOf
-import kotlin.collections.mutableMapOf
-import kotlin.collections.none
-import kotlin.collections.plus
-import kotlin.collections.plusAssign
 import kotlin.collections.set
-import kotlin.collections.single
-import kotlin.collections.singleOrNull
-import kotlin.collections.toMap
 
 class GivenCallTransformer(
     private val context: InjektContext,
@@ -655,11 +632,7 @@ class GivenCallTransformer(
         val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
         val graph = pluginContext.bindingContext[
                 InjektWritableSlices.GIVEN_GRAPH,
-                SourcePosition(
-                    fileStack.last().fileEntry.name,
-                    result.startOffset,
-                    result.endOffset
-                )
+                SourcePosition(fileStack.last().fileEntry.name, result.startOffset)
         ] ?: return result
         val graphContext = GraphContext(graph)
         return DeclarationIrBuilder(pluginContext, result.symbol)

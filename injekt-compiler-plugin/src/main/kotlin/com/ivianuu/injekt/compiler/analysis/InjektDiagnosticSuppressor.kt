@@ -30,7 +30,8 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
         isSuppressed(diagnostic, null)
 
     override fun isSuppressed(diagnostic: Diagnostic, bindingContext: BindingContext?): Boolean {
-        if (bindingContext == null) return false
+        if (bindingContext == null)
+            return false
 
         if (diagnostic.factory == Errors.UNUSED_TYPEALIAS_PARAMETER)
             return true
@@ -86,7 +87,10 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
 
         if (diagnostic.factory == InjektErrors.UNUSED_GIVEN_IMPORT)
             return bindingContext[InjektWritableSlices.USED_IMPORT,
-                    diagnostic.psiElement.cast()] != null
+                    SourcePosition(
+                        diagnostic.psiElement.containingFile.cast<KtFile>().virtualFilePath,
+                        diagnostic.psiElement.startOffset
+                    )] != null
 
         return false
     }

@@ -91,23 +91,13 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
                     result.candidate.callable.callable,
                     Unit
                 )
-                scope.allImports
-                    .filter {
-                        val callable = result.candidate.callable.callable
-                        val callableFqName = if (callable is ClassConstructorDescriptor)
-                            callable.constructedClass.fqNameSafe else callable.fqNameSafe
-                        it.element != null &&
-                                (it.importPath == callableFqName.asString() ||
-                                        (it.importPath!!.removeSuffix(".*") ==
-                                                callableFqName.parent().asString()))
-                    }
-                    .forEach {
-                        context.trace.record(
-                            InjektWritableSlices.USED_IMPORT,
-                            it.element,
-                            Unit
-                        )
-                    }
+                result.candidate.callable.import?.element?.let {
+                    context.trace.record(
+                        InjektWritableSlices.USED_IMPORT,
+                        SourcePosition(it.containingKtFile.virtualFilePath, it.startOffset),
+                        Unit
+                    )
+                }
             }
         }) {
             is GivenGraph.Success -> {
@@ -120,8 +110,7 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
                     InjektWritableSlices.GIVEN_GRAPH,
                     SourcePosition(
                         callExpression.containingKtFile.virtualFilePath,
-                        callExpression.startOffset,
-                        callExpression.endOffset
+                        callExpression.startOffset
                     ),
                     graph
                 )

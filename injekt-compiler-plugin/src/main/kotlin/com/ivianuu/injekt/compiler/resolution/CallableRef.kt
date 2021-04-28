@@ -36,7 +36,8 @@ data class CallableRef(
     val source: CallableRef?,
     val callContext: CallContext,
     val owner: ClassifierRef?,
-    val overriddenDepth: Int
+    val overriddenDepth: Int,
+    val import: GivenImport?
 )
 
 fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
@@ -110,7 +111,8 @@ fun CallableDescriptor.toCallableRef(
         source = null,
         callContext = callContext(trace.bindingContext),
         owner = null,
-        overriddenDepth = 0
+        overriddenDepth = 0,
+        import = null
     ).also {
         trace.record(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this, it)
     }

@@ -97,8 +97,6 @@ class ResolutionScope(
     val allParents: List<ResolutionScope> = parent?.allScopes ?: emptyList()
     val allScopes: List<ResolutionScope> = allParents + this
 
-    val allImports = allScopes.flatMap { it.imports }
-
     private val givensByType = mutableMapOf<TypeRef, List<GivenNode>?>()
     private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>?>()
 
@@ -598,9 +596,6 @@ fun HierarchicalResolutionScope(
                                             ?.toConstantValue(context.module.builtIns.stringType)
                                             ?.value
                                             ?.cast<String>()
-                                            .also {
-                                                println()
-                                            }
                                     )
                                 }
                                 ?.takeIf { it.isNotEmpty() }
