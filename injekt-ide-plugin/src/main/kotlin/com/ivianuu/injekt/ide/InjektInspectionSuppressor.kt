@@ -19,8 +19,10 @@ package com.ivianuu.injekt.ide
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
 import com.intellij.psi.impl.source.tree.*
+import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.idea.caches.resolve.*
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.resolve.bindingContextUtil.*
 import org.jetbrains.kotlin.resolve.lazy.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.typeUtil.*
@@ -31,6 +33,16 @@ class InjektInspectionSuppressor : InspectionSuppressor {
 
     override fun isSuppressedFor(element: PsiElement, toolId: String): Boolean {
         when (toolId) {
+            "RedundantExplicitType" -> {
+                if (element is KtTypeReference)
+                    element.getResolutionFacade().analyze(element, BodyResolveMode.FULL)
+                        .let { element.getAbbreviatedTypeOrType(it) }
+                        .let {
+                            return it?.getAnnotatedAnnotations(InjektFqNames.Qualifier)
+                                ?.isNotEmpty() == true
+                        }
+                else return false
+            }
             "RedundantUnitReturnType" -> return element is KtUserType && element.text != "Unit"
             "RemoveExplicitTypeArguments" -> {
                 if (element !is KtTypeArgumentList) return false
