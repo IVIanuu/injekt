@@ -57,6 +57,17 @@ class GivenImportsTest {
     }
 
     @Test
+    fun testCompileTimeConstant() = codegen(
+        """
+            fun invoke() = withGivenImports(if (true) "com.ivianuu.injekt.common.*" else "com.ivianuu.injekt.scope.*") {
+                
+            }
+        """
+    ) {
+        compilationShouldHaveFailed("Given import path must be a compile time constant")
+    }
+
+    @Test
     fun testClassWithGivenImports() = multiCodegen(
         listOf(
             listOf(
