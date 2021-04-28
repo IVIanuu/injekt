@@ -64,7 +64,32 @@ class GivenImportsTest {
             }
         """
     ) {
-        compilationShouldHaveFailed("Given import path must be a compile time constant")
+        compilationShouldHaveFailed("Given import must be a compile time constant")
+    }
+
+    @Test
+    fun testDuplicatedImports() = codegen(
+        """
+            @GivenImports("kotlin.collections.*", "kotlin.collections.*")
+            fun invoke() {
+            }
+        """
+    ) {
+        compilationShouldHaveFailed("Duplicated given import")
+    }
+
+    @Test
+    fun testNestedDuplicatedImports() = codegen(
+        """
+            @GivenImports("kotlin.collections.*")
+            fun invoke() {
+                withGivenImports("kotlin.collections.*") {
+                    
+                }
+            }
+        """
+    ) {
+        compilationShouldHaveFailed("Duplicated given import")
     }
 
     @Test

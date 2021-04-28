@@ -164,7 +164,7 @@ interface InjektErrors {
                 .also {
                     MAP.put(
                         it,
-                        "Given import path must be a compile time constant"
+                        "Given import must be a compile time constant"
                     )
                 }
 
@@ -185,6 +185,16 @@ interface InjektErrors {
                     MAP.put(
                         it,
                         "Unresolved given import"
+                    )
+                }
+
+        @JvmField
+        val DUPLICATED_GIVEN_IMPORT =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "Duplicated given import"
                     )
                 }
 

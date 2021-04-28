@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.diagnostics.*
+import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.*
@@ -29,6 +30,8 @@ import org.jetbrains.kotlin.resolve.checkers.*
 import org.jetbrains.kotlin.resolve.constants.*
 import org.jetbrains.kotlin.resolve.constants.evaluate.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.resolve.scopes.*
+import org.jetbrains.kotlin.resolve.scopes.utils.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class GivenImportsChecker(
@@ -41,6 +44,22 @@ class GivenImportsChecker(
     ) {
         val annotation = declaration.findAnnotation(InjektFqNames.GivenImports)
             ?: return
+        val outerImports = descriptor.parents
+            .distinct()
+            .flatMap {
+                it.findPsi()
+                    .safeAs<KtAnnotated>()
+                    ?.findAnnotation(InjektFqNames.GivenImports)
+                    ?.valueArguments
+                    ?.mapNotNull { argument ->
+                        argument.getArgumentExpression()
+                            ?.let { ConstantExpressionEvaluator.getConstant(it, context.trace.bindingContext)}
+                            ?.toConstantValue(this.context.module.builtIns.stringType)
+                            ?.value
+                            ?.cast<String>()
+                    } ?: emptyList()
+            }
+            .toList()
         val imports = annotation
             .valueArguments
             .map { argument ->
@@ -50,7 +69,7 @@ class GivenImportsChecker(
                     ?.value
                     ?.cast<String>())
             }
-        checkImports(imports, context.trace)
+        checkImports(outerImports, imports, context.trace)
     }
 
     override fun check(
@@ -60,6 +79,23 @@ class GivenImportsChecker(
     ) {
         if (resolvedCall.resultingDescriptor.fqNameSafe !=
             InjektFqNames.withGivenImports) return
+        val outerImports = context.scope.parentsWithSelf
+            .filterIsInstance<LexicalScope>()
+            .distinctBy { it.ownerDescriptor }
+            .flatMap {
+                it.ownerDescriptor.findPsi()
+                    .safeAs<KtAnnotated>()
+                    ?.findAnnotation(InjektFqNames.GivenImports)
+                    ?.valueArguments
+                    ?.mapNotNull { argument ->
+                        argument.getArgumentExpression()
+                            ?.let { ConstantExpressionEvaluator.getConstant(it, context.trace.bindingContext)}
+                            ?.toConstantValue(this.context.module.builtIns.stringType)
+                            ?.value
+                            ?.cast<String>()
+                    } ?: emptyList()
+            }
+            .toList()
         resolvedCall.valueArguments
             .values
             .firstOrNull()
@@ -71,15 +107,42 @@ class GivenImportsChecker(
                     ?.value
                     ?.cast<String>())
             }
-            ?.let { checkImports(it, context.trace) }
+            ?.let {
+                checkImports(outerImports, it, context.trace)
+            }
 
     }
 
     private fun checkImports(
+        outerImports: List<String>,
         imports: List<Pair<KtElement, String?>>,
         trace: BindingTrace
     ) {
         if (imports.isEmpty()) return
+
+        imports
+            .filter { it.second != null }
+            .filter { it.second in outerImports }
+            .forEach { (element, _) ->
+                trace.report(
+                    InjektErrors.DUPLICATED_GIVEN_IMPORT
+                        .on(element)
+                )
+            }
+
+        imports
+            .filter { it.second != null }
+            .groupBy { it.second }
+            .filter { it.value.size > 1 }
+            .forEach { (_, imports) ->
+                imports.forEach {
+                    trace.report(
+                        InjektErrors.DUPLICATED_GIVEN_IMPORT
+                            .on(it.first)
+                    )
+                }
+            }
+
         imports.forEach { (element, import) ->
             if (import == null) {
                 trace.report(
