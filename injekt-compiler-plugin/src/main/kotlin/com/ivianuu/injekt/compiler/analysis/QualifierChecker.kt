@@ -33,8 +33,6 @@ class QualifierChecker(private val context: InjektContext) : DeclarationChecker,
         expressionTypeWithSmartCast: KotlinType,
         c: ResolutionContext<*>
     ) {
-        if (isIde) return
-
         val resolvedCall = expression.getResolvedCall(c.trace.bindingContext) ?: return
         val callee = resolvedCall.resultingDescriptor
         if (!callee.isDeserializedDeclaration()) return

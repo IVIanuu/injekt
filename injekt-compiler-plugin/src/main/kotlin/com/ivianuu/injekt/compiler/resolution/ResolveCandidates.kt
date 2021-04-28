@@ -17,18 +17,20 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
+import kotlinx.coroutines.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 sealed class GivenGraph {
+    abstract val scope: ResolutionScope
     data class Success(
-        val scope: ResolutionScope,
+        override val scope: ResolutionScope,
         val results: Map<GivenRequest, ResolutionResult.Success>,
         val usages: Map<UsageKey, List<GivenRequest>>
     ) : GivenGraph()
 
     data class Error(
-        val scope: ResolutionScope,
+        override val scope: ResolutionScope,
         val failureRequest: GivenRequest,
         val failure: ResolutionResult.Failure
     ) : GivenGraph()
@@ -160,14 +162,12 @@ sealed class ResolutionResult {
 
 data class UsageKey(val type: TypeRef, val outerMostScope: ResolutionScope)
 
-fun ResolutionScope.resolveRequests(
-    requests: List<GivenRequest>,
-    onEachResult: (ResolutionResult.Success.WithCandidate.Value) -> Unit
-): GivenGraph {
+suspend fun ResolutionScope.resolveRequests(requests: List<GivenRequest>): GivenGraph {
     val successes = mutableMapOf<GivenRequest, ResolutionResult.Success>()
     var failureRequest: GivenRequest? = null
     var failure: ResolutionResult.Failure? = null
     for (request in requests) {
+        yield()
         when (val result = resolveRequest(request)) {
             is ResolutionResult.Success -> successes[request] = result
             is ResolutionResult.Failure -> if ((request.defaultStrategy == GivenRequest.DefaultStrategy.NONE ||
@@ -181,11 +181,12 @@ fun ResolutionScope.resolveRequests(
     }
     val usages = mutableMapOf<UsageKey, MutableList<GivenRequest>>()
     return if (failure == null) GivenGraph.Success(this, successes, usages)
-        .also { it.postProcess(onEachResult, usages) }
+        .also { it.collectUsages(usages) }
     else GivenGraph.Error(this, failureRequest!!, failure)
 }
 
-private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult {
+private suspend fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult {
+    yield()
     // do not cache inlined providers because the call context can be different
     // which can lead to unexpected results
     val isInlineProviderCandidateType = request.isInline &&
@@ -208,10 +209,10 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
     return result
 }
 
-private fun ResolutionScope.computeForCandidate(
+private suspend fun ResolutionScope.computeForCandidate(
     request: GivenRequest,
     candidate: GivenNode,
-    compute: () -> ResolutionResult,
+    compute: suspend () -> ResolutionResult,
 ): ResolutionResult {
     resultsByCandidate[candidate]?.let { return it }
     if (candidate.dependencies.isEmpty())
@@ -245,10 +246,11 @@ private fun ResolutionScope.computeForCandidate(
     return result
 }
 
-private fun ResolutionScope.resolveCandidates(
+private suspend fun ResolutionScope.resolveCandidates(
     request: GivenRequest,
     candidates: List<GivenNode>,
 ): ResolutionResult {
+    yield()
     if (candidates.size == 1) {
         val candidate = candidates.single()
         return resolveCandidate(request, candidate)
@@ -261,6 +263,7 @@ private fun ResolutionScope.resolveCandidates(
         .sortedWith { a, b -> compareCandidate(a, b) }
         .toMutableList()
     while (remaining.isNotEmpty()) {
+        yield()
         val candidate = remaining.removeAt(0)
         if (compareCandidate(successes.firstOrNull()
                 ?.safeAs<ResolutionResult.Success.WithCandidate>()?.candidate, candidate) < 0) {
@@ -292,7 +295,7 @@ private fun ResolutionScope.resolveCandidates(
     } else failure!!
 }
 
-private fun ResolutionScope.resolveCandidate(
+private suspend fun ResolutionScope.resolveCandidate(
     request: GivenRequest,
     candidate: GivenNode
 ): ResolutionResult = computeForCandidate(request, candidate) {
@@ -330,6 +333,7 @@ private fun ResolutionScope.resolveCandidate(
 
     val successDependencyResults = mutableMapOf<GivenRequest, ResolutionResult.Success>()
     for (dependency in candidate.dependencies) {
+        yield()
         val dependencyScope = candidate.dependencyScope ?: this
         when (val dependencyResult = dependencyScope.resolveRequest(dependency)) {
             is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
@@ -492,17 +496,19 @@ fun compareType(a: TypeRef, b: TypeRef, context: InjektContext): Int {
     return 0
 }
 
-private fun GivenGraph.Success.postProcess(
-    onEachResult: (ResolutionResult.Success.WithCandidate.Value) -> Unit,
-    usages: MutableMap<UsageKey, MutableList<GivenRequest>>
-) {
-    fun ResolutionResult.Success.WithCandidate.Value.postProcess(request: GivenRequest) {
-        usages.getOrPut(usageKey) { mutableListOf() } += request
-        onEachResult(this)
+private fun GivenGraph.Success.collectUsages(usages: MutableMap<UsageKey, MutableList<GivenRequest>>) {
+    visitRecursive { request, value ->
+        usages.getOrPut(value.usageKey) { mutableListOf() } += request
+    }
+}
+
+fun GivenGraph.Success.visitRecursive(action: (GivenRequest, ResolutionResult.Success.WithCandidate.Value) -> Unit) {
+    fun ResolutionResult.Success.WithCandidate.Value.visit(request: GivenRequest) {
+        action(request, this)
         dependencyResults
             .forEach { (request, result) ->
                 if (result is ResolutionResult.Success.WithCandidate.Value) {
-                    result.postProcess(request)
+                    result.visit(request)
                 }
             }
     }
@@ -510,7 +516,7 @@ private fun GivenGraph.Success.postProcess(
     results
         .forEach { (request, result) ->
             if (result is ResolutionResult.Success.WithCandidate.Value) {
-                result.postProcess(request)
+                result.visit(request)
             }
         }
 }

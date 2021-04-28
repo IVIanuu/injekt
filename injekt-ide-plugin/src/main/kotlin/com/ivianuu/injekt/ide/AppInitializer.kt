@@ -42,7 +42,7 @@ class AppInitializer : ApplicationInitializedListener {
                     override fun projectOpened(project: Project) {
                         StorageComponentContainerContributor.registerExtension(
                             project,
-                            InjektStorageComponentContainerContributor()
+                            InjektStorageComponentContainerContributor(IdeResolutionRunner)
                         )
                         CandidateInterceptor.registerExtension(
                             project,

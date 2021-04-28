@@ -17,13 +17,15 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.container.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.extensions.*
 import org.jetbrains.kotlin.platform.*
-import org.jetbrains.kotlin.psi.*
 
-class InjektStorageComponentContainerContributor : StorageComponentContainerContributor {
+class InjektStorageComponentContainerContributor(
+    private val resolutionRunner: ResolutionRunner
+) : StorageComponentContainerContributor {
     override fun registerModuleComponents(
         container: StorageComponentContainer,
         platform: TargetPlatform,
@@ -32,7 +34,7 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
         val context = InjektContext(moduleDescriptor)
         container.useInstance(GivenChecker(context))
         container.useInstance(TypeKeyChecker(context))
-        container.useInstance(GivenCallChecker(context))
+        container.useInstance(GivenCallChecker(context, resolutionRunner))
         container.useInstance(QualifierChecker(context))
     }
 }

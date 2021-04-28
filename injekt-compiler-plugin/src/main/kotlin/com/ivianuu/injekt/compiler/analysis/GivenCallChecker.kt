@@ -18,25 +18,27 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
+import kotlinx.coroutines.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.*
-import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.calls.checkers.*
 import org.jetbrains.kotlin.resolve.calls.model.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.inline.*
+import org.jetbrains.kotlin.resolve.scopes.utils.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-class GivenCallChecker(private val context: InjektContext) : CallChecker {
+class GivenCallChecker(
+    private val context: InjektContext,
+    private val resolutionRunner: ResolutionRunner
+) : CallChecker {
     override fun check(
         resolvedCall: ResolvedCall<*>,
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
-        if (isIde) return
-
         val resultingDescriptor = resolvedCall.resultingDescriptor
         if (resultingDescriptor !is FunctionDescriptor) return
 
@@ -82,41 +84,54 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
 
         val callExpression = resolvedCall.call.callElement
 
-        val scope = HierarchicalResolutionScope(this.context, context.scope, context.trace)
-        scope.recordLookup(KotlinLookupLocation(callExpression))
+        val (initTime, scope) = measureTimeMillisWithResult {
+            HierarchicalResolutionScope(this@GivenCallChecker.context, context.scope.takeSnapshot(),
+                "", context.trace)
+        }
 
-        when (val graph = scope.resolveRequests(requests) {
-            if (it.candidate is CallableGivenNode) {
-                context.trace.record(
-                    InjektWritableSlices.USED_GIVEN,
-                    it.candidate.callable.callable,
-                    Unit
-                )
-                val existingUsedGivensForFile =
-                    context.trace.bindingContext[InjektWritableSlices.USED_GIVENS_FOR_FILE,
-                            callExpression.containingKtFile.virtualFilePath] ?: emptyList()
-                context.trace.record(
-                    InjektWritableSlices.USED_GIVENS_FOR_FILE,
-                    callExpression.containingKtFile.virtualFilePath,
-                    existingUsedGivensForFile + it.candidate.callable.callable
-                )
-            }
-        }) {
+        println("initializing scope ${scope.name} took $initTime ms")
+
+        if (!isIde) {
+            scope.recordLookup(KotlinLookupLocation(callExpression))
+        }
+
+        when (val graph = runBlocking { resolutionRunner.computeResult(scope, requests) }) {
             is GivenGraph.Success -> {
-                context.trace.record(
-                    InjektWritableSlices.FILE_HAS_GIVEN_CALLS,
-                    callExpression.containingKtFile.virtualFilePath,
-                    Unit
-                )
-                context.trace.record(
-                    InjektWritableSlices.GIVEN_GRAPH,
-                    SourcePosition(
+                try {
+                    context.trace.record(
+                        InjektWritableSlices.FILE_HAS_GIVEN_CALLS,
                         callExpression.containingKtFile.virtualFilePath,
-                        callExpression.startOffset,
-                        callExpression.endOffset
-                    ),
-                    graph
-                )
+                        Unit
+                    )
+                    context.trace.record(
+                        InjektWritableSlices.GIVEN_GRAPH,
+                        SourcePosition(
+                            callExpression.containingKtFile.virtualFilePath,
+                            callExpression.startOffset,
+                            callExpression.endOffset
+                        ),
+                        graph
+                    )
+
+                    graph.visitRecursive { _, result ->
+                        if (result.candidate is CallableGivenNode) {
+                            context.trace.record(
+                                InjektWritableSlices.USED_GIVEN,
+                                result.candidate.callable.callable,
+                                Unit
+                            )
+                            val existingUsedGivensForFile =
+                                context.trace.bindingContext[InjektWritableSlices.USED_GIVENS_FOR_FILE,
+                                        callExpression.containingKtFile.virtualFilePath] ?: emptyList()
+                            context.trace.record(
+                                InjektWritableSlices.USED_GIVENS_FOR_FILE,
+                                callExpression.containingKtFile.virtualFilePath,
+                                existingUsedGivensForFile + result.candidate.callable.callable
+                            )
+                        }
+                    }
+                } catch (e: Throwable) {
+                }
             }
             is GivenGraph.Error -> context.trace.report(
                 InjektErrors.UNRESOLVED_GIVEN

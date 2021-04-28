@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.resolve.lazy.*
 import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.resolve.scopes.utils.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
+import kotlin.system.*
 
 class ResolutionScope(
     val name: String,
@@ -35,7 +36,7 @@ class ResolutionScope(
     val callContext: CallContext,
     val ownerDescriptor: DeclarationDescriptor?,
     val trace: BindingTrace,
-    initialGivens: List<CallableRef>
+    private val initialGivens: List<CallableRef>
 ) {
     val chain: MutableList<Pair<GivenRequest, GivenNode>> = parent?.chain ?: mutableListOf()
     val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
@@ -94,26 +95,28 @@ class ResolutionScope(
     private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>?>()
 
     init {
-        initialGivens
-            .forEach { given ->
-                given.collectGivens(
-                    context = context,
-                    scope = this,
-                    trace = trace,
-                    addGiven = { callable ->
-                        addGivenIfAbsentOrBetter(callable.copy(source = given))
-                        val typeWithFrameworkKey = callable.type
-                            .copy(frameworkKey = generateFrameworkKey())
-                        addGivenIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey, source = given))
-                        constrainedGivenCandidates += ConstrainedGivenCandidate(
-                            type = typeWithFrameworkKey,
-                            rawType = callable.type,
-                            source = given
-                        )
-                    },
-                    addConstrainedGiven = { constrainedGivens += ConstrainedGivenNode(it) }
-                )
-            }
+        measureTimeMillis {
+            initialGivens
+                .forEach { given ->
+                    given.collectGivens(
+                        context = context,
+                        scope = this,
+                        trace = trace,
+                        addGiven = { callable ->
+                            addGivenIfAbsentOrBetter(callable.copy(source = given))
+                            val typeWithFrameworkKey = callable.type
+                                .copy(frameworkKey = generateFrameworkKey())
+                            addGivenIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey, source = given))
+                            constrainedGivenCandidates += ConstrainedGivenCandidate(
+                                type = typeWithFrameworkKey,
+                                rawType = callable.type,
+                                source = given
+                            )
+                        },
+                        addConstrainedGiven = { constrainedGivens += ConstrainedGivenNode(it) }
+                    )
+                }
+        }.let { println("$name collect initial givens took $it ms") }
 
         val hasConstrainedGivens = constrainedGivens.isNotEmpty()
         val hasConstrainedGivensCandidates = constrainedGivenCandidates.isNotEmpty()
@@ -126,40 +129,14 @@ class ResolutionScope(
             constrainedGivenCandidates.addAll(0, parent.constrainedGivenCandidates)
         }
 
-        if ((hasConstrainedGivens && constrainedGivenCandidates.isNotEmpty()) ||
-            (hasConstrainedGivensCandidates && constrainedGivens.isNotEmpty())) {
-            constrainedGivenCandidates
-                .toList()
-                .forEach { collectConstrainedGivens(it) }
-        }
-    }
-
-    fun recordLookup(location: KotlinLookupLocation) {
-        parent?.recordLookup(location)
-        fun recordLookup(declaration: DeclarationDescriptor) {
-            if (declaration is ConstructorDescriptor) {
-                recordLookup(declaration.constructedClass)
-                return
+        measureTimeMillis {
+            if ((hasConstrainedGivens && constrainedGivenCandidates.isNotEmpty()) ||
+                (hasConstrainedGivensCandidates && constrainedGivens.isNotEmpty())) {
+                constrainedGivenCandidates
+                    .toList()
+                    .forEach { collectConstrainedGivens(it) }
             }
-            when (val containingDeclaration = declaration.containingDeclaration) {
-                is ClassDescriptor -> containingDeclaration.unsubstitutedMemberScope
-                is PackageFragmentDescriptor -> containingDeclaration.getMemberScope()
-                else -> null
-            }?.recordLookup(declaration.name, location)
-        }
-        givens.forEach { recordLookup(it.value.callable) }
-        constrainedGivens.forEach { recordLookup(it.callable.callable) }
-        if (parent == null) {
-            location.element.containingKtFile
-                .importDirectives
-                .mapNotNull { it.importPath }
-                .filter { it.isAllUnder }
-                .forEach {
-                    context.module.getPackage(it.fqName)
-                        .memberScope
-                        .recordLookup("givens".asNameId(), location)
-                }
-        }
+        }.let { println("$name collect constrained givens took $it ms") }
     }
 
     fun givensForRequest(request: GivenRequest): List<GivenNode>? {
@@ -396,6 +373,49 @@ class ResolutionScope(
                 !containingClassifier.descriptor!!.isGiven(context, trace)
     }
 
+    fun recordLookup(location: KotlinLookupLocation) {
+        parent?.recordLookup(location)
+        fun recordLookup(declaration: DeclarationDescriptor) {
+            if (declaration is ConstructorDescriptor) {
+                recordLookup(declaration.constructedClass)
+                return
+            }
+            when (val containingDeclaration = declaration.containingDeclaration) {
+                is ClassDescriptor -> containingDeclaration.unsubstitutedMemberScope
+                is PackageFragmentDescriptor -> containingDeclaration.getMemberScope()
+                else -> null
+            }?.recordLookup(declaration.name, location)
+        }
+        givens.forEach { recordLookup(it.value.callable) }
+        constrainedGivens.forEach { recordLookup(it.callable.callable) }
+        if (parent == null) {
+            location.element.containingKtFile
+                .importDirectives
+                .mapNotNull { it.importPath }
+                .filter { it.isAllUnder }
+                .forEach {
+                    context.module.getPackage(it.fqName)
+                        .memberScope
+                        .recordLookup("givens".asNameId(), location)
+                }
+        }
+    }
+
+    val key: String get() = allScopes
+        .joinToString { it.name }
+
+    override fun equals(other: Any?): Boolean = other is ResolutionScope &&
+            other.hashCode() == hashCode()
+
+    override fun hashCode(): Int {
+        var result = 0
+        if (parent != null) result = 31 * result + parent.hashCode()
+        result = 31 * result + initialGivens
+            .map { it.callable.uniqueKey(context) }
+            .hashCode()
+        return result
+    }
+
     override fun toString(): String = "ResolutionScope($name)"
 
 }
@@ -403,6 +423,7 @@ class ResolutionScope(
 fun HierarchicalResolutionScope(
     context: InjektContext,
     scope: HierarchicalScope,
+    filePath: String,
     trace: BindingTrace
 ): ResolutionScope {
     trace[InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, scope]?.let { return it }
@@ -428,11 +449,11 @@ fun HierarchicalResolutionScope(
 
     val importsResolutionScope = trace.get(InjektWritableSlices.IMPORT_RESOLUTION_SCOPE, importScopes)
         ?: ResolutionScope(
-            name = "INTERNAL IMPORTS",
+            name = "$filePath INTERNAL IMPORTS",
             context = context,
             callContext = CallContext.DEFAULT,
             parent = ResolutionScope(
-                name = "EXTERNAL IMPORTS",
+                name = "$filePath EXTERNAL IMPORTS",
                 context = context,
                 callContext = CallContext.DEFAULT,
                 parent = null,
@@ -516,21 +537,21 @@ fun HierarchicalResolutionScope(
                         ).also { trace.record(InjektWritableSlices.FUNCTION_RESOLUTION_SCOPE, function, it) }
                 }
                 else -> {
-                    trace.get(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, next)
-                        ?: ResolutionScope(
-                            name = "Hierarchical $next",
-                            context = context,
-                            callContext = next.callContext(trace.bindingContext),
-                            parent = parent,
-                            ownerDescriptor = next.parentsWithSelf
-                                .firstIsInstance<LexicalScope>()
-                                .ownerDescriptor,
-                            trace = trace,
-                            initialGivens = next.collectGivens(context, trace)
-                        )//.also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, next, it) }
+                    val next = next.takeSnapshot()
+                    val owner = next.parentsWithSelf
+                        .firstIsInstance<LexicalScope>()
+                        .ownerDescriptor
+                    ResolutionScope(
+                        name = "Hierarchical ${owner.fqNameSafe}",
+                        context = context,
+                        callContext = next.callContext(trace.bindingContext),
+                        parent = parent,
+                        ownerDescriptor = owner,
+                        trace = trace,
+                        initialGivens = next.collectGivens(context, trace)
+                    ).also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, next, it) }
                 }
             }
         }
-        //.also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, scope, it) }
+        .also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, scope, it) }
 }
-

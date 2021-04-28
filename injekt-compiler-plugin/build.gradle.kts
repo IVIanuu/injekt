@@ -49,6 +49,7 @@ dependencies {
     kapt(Deps.autoService)
     api(Deps.Kotlin.compilerEmbeddable)
     compileOnly(Deps.AndroidX.Compose.compiler)
+    compileOnly(Deps.Coroutines.core)
     implementation(Deps.Kotlin.stdlibJvm)
     implementation(Deps.KotlinSerialization.json)
 }

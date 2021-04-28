@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.*
 import com.ivianuu.injekt.compiler.analysis.*
+import com.ivianuu.injekt.compiler.resolution.*
 import com.ivianuu.injekt.compiler.transform.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.com.intellij.mock.*
@@ -47,7 +48,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
 
         StorageComponentContainerContributor.registerExtension(
             project,
-            InjektStorageComponentContainerContributor()
+            InjektStorageComponentContainerContributor(CliResolutionRunner)
         )
         IrGenerationExtension.registerExtensionWithLoadingOrder(
             project,
