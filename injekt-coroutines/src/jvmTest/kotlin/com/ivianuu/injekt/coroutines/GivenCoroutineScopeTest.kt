@@ -17,13 +17,16 @@
 package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.*
 import com.ivianuu.injekt.scope.*
 import io.kotest.matchers.booleans.*
 import io.kotest.matchers.types.*
 import kotlinx.coroutines.*
 import org.junit.*
 
+@GivenImports(
+    "com.ivianuu.injekt.common.*",
+    "com.ivianuu.injekt.scope.*"
+)
 class GivenCoroutineScopeTest {
     @Test
     fun testGivenCoroutineScopeLifecycle() {

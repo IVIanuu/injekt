@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
-import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.*
@@ -214,6 +213,27 @@ fun CallableRef.collectGivens(
             )
         }
 }
+
+fun List<String>.collectImportGivens(context: InjektContext, trace: BindingTrace): List<CallableRef> =
+    flatMap { importPath ->
+        if (importPath.endsWith("*")) {
+            val packageFqName = FqName(importPath.removeSuffix(".*"))
+            context.memberScopeForFqName(packageFqName)!!
+                .collectGivens(context, trace)
+        } else {
+            val fqName = FqName(importPath)
+            val parentFqName = fqName.parent()
+            val name = fqName.shortName()
+            context.memberScopeForFqName(parentFqName)!!
+                .collectGivens(context, trace)
+                .filter {
+                    it.callable.name == name ||
+                            it.callable.safeAs<ClassConstructorDescriptor>()
+                                ?.constructedClass
+                                ?.name == name
+                }
+        }
+    }
 
 private fun ResolutionScope.canSee(callable: CallableRef): Boolean =
     callable.callable.visibility == DescriptorVisibilities.PUBLIC ||

@@ -17,9 +17,13 @@
 package com.ivianuu.injekt.android
 
 import android.app.*
-import com.ivianuu.injekt.common.*
-import com.ivianuu.injekt.scope.*
+import com.ivianuu.injekt.*
 
+@GivenImports(
+    "com.ivianuu.injekt.android.*",
+    "com.ivianuu.injekt.common.*",
+    "com.ivianuu.injekt.scope.*"
+)
 class AndroidTestApplication : Application(), AppGivenScopeOwner {
     override val appGivenScope by lazy { createAppGivenScope() }
 }

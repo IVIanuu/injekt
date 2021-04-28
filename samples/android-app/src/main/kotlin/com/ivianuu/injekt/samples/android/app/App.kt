@@ -14,23 +14,28 @@
  * limitations under the License.
  */
 
-@file:Suppress("UnusedImport")
-
 package com.ivianuu.injekt.samples.android.app
 
 import android.app.*
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.*
-import com.ivianuu.injekt.common.*
-import com.ivianuu.injekt.coroutines.*
 import com.ivianuu.injekt.scope.*
-import com.ivianuu.injekt.samples.android.data.*
-import com.ivianuu.injekt.samples.android.domain.*
-import com.ivianuu.injekt.samples.android.ui.*
 
 class App : Application(), AppGivenScopeOwner {
     override lateinit var appGivenScope: AppGivenScope
     override fun onCreate() {
-        appGivenScope = createAppGivenScope()
+        withGivenImports(
+            "com.ivianuu.injekt.*",
+            "com.ivianuu.injekt.android.*",
+            "com.ivianuu.injekt.common.*",
+            "com.ivianuu.injekt.coroutines.*",
+            "com.ivianuu.injekt.scope.*",
+            "com.ivianuu.injekt.samples.android.data.*",
+            "com.ivianuu.injekt.samples.android.domain.*",
+            "com.ivianuu.injekt.samples.android.ui.*",
+        ) {
+            appGivenScope = createAppGivenScope()
+        }
         super.onCreate()
     }
 }

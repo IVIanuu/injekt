@@ -19,7 +19,6 @@ package com.ivianuu.injekt.android.work
 import android.content.*
 import androidx.work.*
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.*
 import io.kotest.matchers.nulls.*
 import io.mockk.*
 import org.junit.*
@@ -29,6 +28,7 @@ import org.robolectric.annotation.*
 
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)
+@GivenImports("com.ivianuu.injekt.common.*")
 class InstallWorkerTest {
     @Test
     fun testWorkerBinding() {

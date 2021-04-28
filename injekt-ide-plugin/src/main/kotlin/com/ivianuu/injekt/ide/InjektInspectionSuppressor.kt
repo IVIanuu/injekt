@@ -20,10 +20,8 @@ import com.intellij.codeInspection.*
 import com.intellij.psi.*
 import com.intellij.psi.impl.source.tree.*
 import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.backend.common.serialization.*
 import org.jetbrains.kotlin.idea.caches.resolve.*
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.lazy.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.typeUtil.*
@@ -35,19 +33,6 @@ class InjektInspectionSuppressor : InspectionSuppressor {
     override fun isSuppressedFor(element: PsiElement, toolId: String): Boolean {
         when (toolId) {
             "RedundantUnitReturnType" -> return element is KtUserType && element.text != "Unit"
-            "UnusedImport" -> {
-                if (element !is KtImportDirective) return false
-                val file = element.containingKtFile
-                val bindingContext = file.analyze(BodyResolveMode.FULL)
-                val usedGivensByFile = bindingContext[InjektWritableSlices.USED_GIVENS_FOR_FILE,
-                        element.containingKtFile.virtualFilePath]
-                    ?: return false
-                return usedGivensByFile
-                    .any {
-                        if (element.isAllUnder) it.findPackage().fqName == element.importedFqName
-                        else it.fqNameSafe == element.importedFqName
-                    }
-            }
             "RemoveExplicitTypeArguments" -> {
                 if (element !is KtTypeArgumentList) return false
                 val call = element.parent as? KtCallExpression

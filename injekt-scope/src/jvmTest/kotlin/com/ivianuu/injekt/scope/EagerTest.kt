@@ -17,10 +17,10 @@
 package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.*
 import io.kotest.matchers.*
 import org.junit.*
 
+@GivenImports("com.ivianuu.injekt.common.*")
 class EagerTest {
     @Qualifier
     annotation class Element

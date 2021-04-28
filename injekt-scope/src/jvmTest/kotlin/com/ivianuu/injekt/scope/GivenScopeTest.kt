@@ -23,6 +23,7 @@ import io.kotest.matchers.booleans.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
+@GivenImports("com.ivianuu.injekt.common.*")
 class GivenScopeTest {
     @Test
     fun testGetElement() {
