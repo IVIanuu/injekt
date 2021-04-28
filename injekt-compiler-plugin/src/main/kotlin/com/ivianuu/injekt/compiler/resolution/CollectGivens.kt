@@ -141,7 +141,7 @@ fun Annotated.isGiven(context: InjektContext, trace: BindingTrace?): Boolean {
     if (!isGiven && this is ParameterDescriptor) {
         isGiven = type.isGiven(context, trace) ||
                 containingDeclaration.safeAs<FunctionDescriptor>()
-                    ?.takeIf { it.isExternalDeclaration(context) }
+                    ?.takeIf { it.isDeserializedDeclaration() }
                     ?.let { context.callableInfoFor(it, trace) }
                     ?.let { name.asString() in it.givenParameters } == true
     }

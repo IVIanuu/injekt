@@ -164,7 +164,7 @@ class TypeKeyTransformer(
         if (function in transformedFunctions.values) return function
 
         if (function is IrConstructor) {
-            if (!function.descriptor.isExternalDeclaration(context)) {
+            if (!function.descriptor.isDeserializedDeclaration()) {
                 transformClassIfNeeded(function.constructedClass)
                 return function
             }
@@ -182,7 +182,7 @@ class TypeKeyTransformer(
             return function
         }
 
-        if (function.descriptor.isExternalDeclaration(context)) {
+        if (function.descriptor.isDeserializedDeclaration()) {
             val typeKeyParameters = function
                 .typeParameters
                 .filter { it.descriptor.isForTypeKey(context, trace) }
