@@ -56,7 +56,9 @@ class SuppressionTest {
     @Test
     fun testCanUseUnderscoreForGivenParameter() = codegen(
         """
-            @Given fun func(@Given _: String) {
+            fun func(@Given _: String, @Given _: Int) {
+                given<String>()
+                given<Int>()
             }
         """
     )
