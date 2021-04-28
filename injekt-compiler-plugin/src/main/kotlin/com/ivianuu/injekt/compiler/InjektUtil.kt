@@ -99,6 +99,11 @@ fun <D : DeclarationDescriptor> KtDeclaration.descriptor(
 fun DeclarationDescriptor.isExternalDeclaration(context: InjektContext): Boolean =
     module != context.module
 
+fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
+        (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
+        (this is GivenFunctionDescriptor && invokeDescriptor.isDeserializedDeclaration()) ||
+        this is DeserializedTypeParameterDescriptor
+
 fun String.asNameId() = Name.identifier(this)
 
 fun <T> unsafeLazy(init: () -> T) = lazy(LazyThreadSafetyMode.NONE, init)
@@ -216,7 +221,7 @@ fun TypeParameterDescriptor.isGivenConstraint(
     trace?.get(InjektWritableSlices.IS_GIVEN_CONSTRAINT, this)?.let { return it }
     var isGivenConstraint = hasAnnotation(InjektFqNames.Given) ||
             findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.Given) == true
-    if (!isGivenConstraint && isExternalDeclaration(context) &&
+    if (!isGivenConstraint && isDeserializedDeclaration() &&
         containingDeclaration is ClassDescriptor) {
         isGivenConstraint = name.asString() in context.classifierInfoFor(containingDeclaration.cast(), trace)
             ?.givenConstraintTypeParameters ?: emptyList()
@@ -235,7 +240,7 @@ fun TypeParameterDescriptor.isForTypeKey(
     }
     var isForTypeKey = hasAnnotation(InjektFqNames.ForTypeKey) ||
             findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.ForTypeKey) == true
-    if (!isForTypeKey && isExternalDeclaration(context) &&
+    if (!isForTypeKey && isDeserializedDeclaration() &&
         containingDeclaration is ClassDescriptor) {
         isForTypeKey = name.asString() in context.classifierInfoFor(containingDeclaration.cast(), trace)
             ?.forTypeKeyTypeParameters ?: emptyList()
@@ -268,7 +273,7 @@ fun ClassifierDescriptor.isSingletonGiven(
                             it.hasBackingField(trace.bindingContext))
                 }
 
-    if (!isSingletonGiven && isExternalDeclaration(context)) {
+    if (!isSingletonGiven && isDeserializedDeclaration()) {
         isSingletonGiven = context.classifierInfoFor(this, trace)
             ?.isOptimizableGiven == true
     }

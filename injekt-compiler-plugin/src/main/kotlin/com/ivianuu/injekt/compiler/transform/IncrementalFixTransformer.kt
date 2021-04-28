@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFactory
 import org.jetbrains.kotlin.ir.declarations.impl.*
 import org.jetbrains.kotlin.ir.descriptors.*
 import org.jetbrains.kotlin.ir.symbols.impl.*
+import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
@@ -42,10 +43,10 @@ class IncrementalFixTransformer(
     private val trace: BindingTrace,
     private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
-    private val filesWithGivens = mutableSetOf<IrFile>()
+    private val givensByFile = mutableMapOf<IrFile, MutableSet<IrType>>()
     override fun visitFile(declaration: IrFile): IrFile {
         super.visitFile(declaration)
-        if (declaration !in filesWithGivens) return declaration
+        val givens = givensByFile[declaration] ?: return declaration
 
         val clazz = IrFactoryImpl.buildClass {
             name = "${pluginContext.moduleDescriptor.name
@@ -61,38 +62,43 @@ class IncrementalFixTransformer(
             declaration.addChild(this)
         }
 
-        val function = IrFunctionImpl(
-            UNDEFINED_OFFSET,
-            UNDEFINED_OFFSET,
-            IrDeclarationOrigin.DEFINED,
-            IrSimpleFunctionSymbolImpl(
-                object : WrappedSimpleFunctionDescriptor() {
-                    override fun hasStableParameterNames(): Boolean = true
+        val functions = givens.indices.map { index ->
+            IrFunctionImpl(
+                UNDEFINED_OFFSET,
+                UNDEFINED_OFFSET,
+                IrDeclarationOrigin.DEFINED,
+                IrSimpleFunctionSymbolImpl(
+                    object : WrappedSimpleFunctionDescriptor() {
+                        override fun hasStableParameterNames(): Boolean = true
+                    }
+                ),
+                "givens".asNameId(),
+                DescriptorVisibilities.PUBLIC,
+                Modality.FINAL,
+                pluginContext.irBuiltIns.unitType,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ).apply {
+                descriptor.cast<WrappedSimpleFunctionDescriptor>().bind(this)
+                parent = declaration
+                declaration.addChild(this)
+                addValueParameter("marker", clazz.defaultType)
+                repeat(index) {
+                    addValueParameter("type$it", pluginContext.irBuiltIns.anyNType)
                 }
-            ),
-            "givens".asNameId(),
-            DescriptorVisibilities.PUBLIC,
-            Modality.FINAL,
-            pluginContext.irBuiltIns.unitType,
-            false,
-            false,
-            false,
-            false,
-            false,
-            false,
-            false
-        ).apply {
-            descriptor.cast<WrappedSimpleFunctionDescriptor>().bind(this)
-            parent = declaration
-            declaration.addChild(this)
-            addValueParameter("marker", clazz.defaultType)
-            body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
+                body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
+                }
             }
         }
 
         declaration.metadata = DescriptorMetadataSource.File(
             declaration.metadata.cast<DescriptorMetadataSource.File>()
-                .descriptors + function.descriptor
+                .descriptors + functions.map { it.descriptor }
         )
 
         return declaration
@@ -104,7 +110,12 @@ class IncrementalFixTransformer(
                     declaration.visibility == DescriptorVisibilities.INTERNAL ||
                     declaration.visibility == DescriptorVisibilities.PROTECTED) &&
                 declaration.descriptor.isGiven(context, trace)) {
-            filesWithGivens += declaration.file
+            givensByFile.getOrPut(declaration.file) { mutableSetOf() } += when (declaration) {
+                is IrClass -> declaration.defaultType
+                is IrFunction -> declaration.returnType
+                is IrProperty -> declaration.getter!!.returnType
+                else -> return super.visitDeclaration(declaration)
+            }
         }
         return super.visitDeclaration(declaration)
     }
