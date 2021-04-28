@@ -82,16 +82,6 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
 
         val callExpression = resolvedCall.call.callElement
 
-        resolvedCall.call.callElement.containingKtFile
-            .importDirectives
-            .mapNotNull { it.importPath }
-            .filter { it.isAllUnder }
-            .forEach {
-                context.moduleDescriptor.getPackage(it.fqName)
-                    .memberScope
-                    .recordLookup("givens".asNameId(), KotlinLookupLocation(callExpression))
-            }
-
         val scope = HierarchicalResolutionScope(this.context, context.scope, context.trace)
         scope.recordLookup(KotlinLookupLocation(callExpression))
 

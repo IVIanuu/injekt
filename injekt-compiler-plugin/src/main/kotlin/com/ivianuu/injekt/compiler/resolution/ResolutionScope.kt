@@ -149,6 +149,17 @@ class ResolutionScope(
         }
         givens.forEach { recordLookup(it.value.callable) }
         constrainedGivens.forEach { recordLookup(it.callable.callable) }
+        if (parent == null) {
+            location.element.containingKtFile
+                .importDirectives
+                .mapNotNull { it.importPath }
+                .filter { it.isAllUnder }
+                .forEach {
+                    context.module.getPackage(it.fqName)
+                        .memberScope
+                        .recordLookup("givens".asNameId(), location)
+                }
+        }
     }
 
     fun givensForRequest(request: GivenRequest): List<GivenNode>? {
