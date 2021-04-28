@@ -45,7 +45,6 @@ kotlin {
             }
         }
     }
-    withGivenCalls()
     sourceSets {
         commonMain {
             dependencies {
