@@ -158,6 +158,36 @@ interface InjektErrors {
                     )
                 }
 
+        @JvmField
+        val GIVEN_IMPORT_MUST_BE_CONSTANT =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "Given import path must be a compile time constant"
+                    )
+                }
+
+        @JvmField
+        val MALFORMED_GIVEN_IMPORT =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "Cannot read given import"
+                    )
+                }
+
+        @JvmField
+        val UNRESOLVED_GIVEN_IMPORT =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also {
+                    MAP.put(
+                        it,
+                        "Unresolved given import"
+                    )
+                }
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,

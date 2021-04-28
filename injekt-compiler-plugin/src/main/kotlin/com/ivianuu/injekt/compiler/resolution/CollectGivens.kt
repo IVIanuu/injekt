@@ -216,23 +216,23 @@ fun CallableRef.collectGivens(
 
 fun List<String>.collectImportGivens(context: InjektContext, trace: BindingTrace): List<CallableRef> =
     flatMap { importPath ->
-        if (importPath.endsWith("*")) {
+        (if (importPath.endsWith("*")) {
             val packageFqName = FqName(importPath.removeSuffix(".*"))
-            context.memberScopeForFqName(packageFqName)!!
-                .collectGivens(context, trace)
+            context.memberScopeForFqName(packageFqName)
+                ?.collectGivens(context, trace)
         } else {
             val fqName = FqName(importPath)
             val parentFqName = fqName.parent()
             val name = fqName.shortName()
-            context.memberScopeForFqName(parentFqName)!!
-                .collectGivens(context, trace)
-                .filter {
+            context.memberScopeForFqName(parentFqName)
+                ?.collectGivens(context, trace)
+                ?.filter {
                     it.callable.name == name ||
                             it.callable.safeAs<ClassConstructorDescriptor>()
                                 ?.constructedClass
                                 ?.name == name
                 }
-        }
+        }) ?: emptyList()
     }
 
 private fun ResolutionScope.canSee(callable: CallableRef): Boolean =

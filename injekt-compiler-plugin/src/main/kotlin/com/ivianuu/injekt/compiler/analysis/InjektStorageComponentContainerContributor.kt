@@ -21,7 +21,6 @@ import org.jetbrains.kotlin.container.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.extensions.*
 import org.jetbrains.kotlin.platform.*
-import org.jetbrains.kotlin.psi.*
 
 class InjektStorageComponentContainerContributor : StorageComponentContainerContributor {
     override fun registerModuleComponents(
@@ -32,7 +31,8 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
         val context = InjektContext(moduleDescriptor)
         container.useInstance(GivenChecker(context))
         container.useInstance(TypeKeyChecker(context))
-        container.useInstance(GivenCallChecker(context))
         container.useInstance(QualifierChecker(context))
+        container.useInstance(GivenImportsChecker(context))
+        container.useInstance(GivenCallChecker(context))
     }
 }

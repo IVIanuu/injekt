@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.*
-import io.kotest.matchers.*
 import io.kotest.matchers.types.*
 import org.jetbrains.kotlin.name.*
 import org.junit.*
@@ -79,102 +78,6 @@ class GivenResolveTest {
         )
     ) {
         invokeSingleFile().shouldBeTypeOf<Foo>()
-    }
-
-    @Test
-    fun testClassWithGivenImports() = multiCodegen(
-        listOf(
-            listOf(
-                source(
-                    """
-                    @Given val foo = Foo()
-                """,
-                    packageFqName = FqName("givens")
-                )
-            ),
-            listOf(
-                source(
-                    """
-                    @GivenImports("givens.*")
-                    class MyClass {
-                        fun invoke() = given<Foo>()
-                    }
-                    fun invoke() = MyClass().invoke()
-                    """,
-                    name = "File.kt"
-                )
-            )
-        )
-    ) {
-        invokeSingleFile().shouldBeTypeOf<Foo>()
-    }
-
-    @Test
-    fun testFunctionWithGivenImports() = multiCodegen(
-        listOf(
-            listOf(
-                source(
-                    """
-                    @Given val foo = Foo()
-                """,
-                    packageFqName = FqName("givens")
-                )
-            ),
-            listOf(
-                source(
-                    """
-                    @GivenImports("givens.*")
-                    fun invoke() = given<Foo>()
-                    """,
-                    name = "File.kt"
-                )
-            )
-        )
-    ) {
-        invokeSingleFile().shouldBeTypeOf<Foo>()
-    }
-
-    @Test
-    fun testPropertyWithGivenImports() = multiCodegen(
-        listOf(
-            listOf(
-                source(
-                    """
-                    @Given val foo = Foo()
-                """,
-                    packageFqName = FqName("givens")
-                )
-            ),
-            listOf(
-                source(
-                    """
-                    @GivenImports("givens.*")
-                    val givenFoo = given<Foo>()
-                    fun invoke() = givenFoo
-                    """,
-                    name = "File.kt"
-                )
-            )
-        )
-    ) {
-        invokeSingleFile().shouldBeTypeOf<Foo>()
-    }
-
-    @Test
-    fun testWithGivenImports() = codegen(
-        listOf(
-            source(
-                """
-                    fun invoke() = withGivenImports("com.ivianuu.injekt.common.*") {
-                        given<TypeKey<Foo>>().value
-                    }
-                """,
-                name = "File.kt",
-                givenImports = emptyList()
-            )
-        )
-    ) {
-        invokeSingleFile() shouldBe "com.ivianuu.injekt.test.Foo"
     }
 
     @Test

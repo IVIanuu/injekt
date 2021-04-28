@@ -27,6 +27,7 @@ object InjektFqNames {
     val GivenImports = InjektPackage.child("GivenImports".asNameId())
     val IgnoreElementsWithErrors = InjektPackage.child("IgnoreElementsWithErrors".asNameId())
     val Qualifier = InjektPackage.child("Qualifier".asNameId())
+    val withGivenImports = InjektPackage.child("withGivenImports".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
     val CallableInfo = InternalPackage.child("CallableInfo".asNameId())
