@@ -164,7 +164,10 @@ interface InjektErrors {
                 .also {
                     MAP.put(
                         it,
-                        "Given import must be a compile time constant"
+                        object : DiagnosticRenderer<Diagnostic> {
+                            override fun render(diagnostic: Diagnostic): String =
+                                "Given import must be a compile time constant: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
+                        }
                     )
                 }
 
@@ -174,7 +177,10 @@ interface InjektErrors {
                 .also {
                     MAP.put(
                         it,
-                        "Cannot read given import"
+                        object : DiagnosticRenderer<Diagnostic> {
+                            override fun render(diagnostic: Diagnostic): String =
+                                "Cannot read given import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
+                        }
                     )
                 }
 
@@ -184,7 +190,10 @@ interface InjektErrors {
                 .also {
                     MAP.put(
                         it,
-                        "Unresolved given import"
+                        object : DiagnosticRenderer<Diagnostic> {
+                            override fun render(diagnostic: Diagnostic): String =
+                                "Unresolved given import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
+                        }
                     )
                 }
 
@@ -194,14 +203,20 @@ interface InjektErrors {
                 .also {
                     MAP.put(
                         it,
-                        "Duplicated given import"
+                        object : DiagnosticRenderer<Diagnostic> {
+                            override fun render(diagnostic: Diagnostic): String =
+                                "Duplicated given import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
+                        }
                     )
                 }
 
         @JvmField
         val UNUSED_GIVEN_IMPORT = DiagnosticFactory0.create<PsiElement>(Severity.WARNING)
             .also {
-                MAP.put(it, "Unused given import")
+                MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
+                    override fun render(diagnostic: Diagnostic): String =
+                        "Unused given import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
+                })
             }
 
         init {
