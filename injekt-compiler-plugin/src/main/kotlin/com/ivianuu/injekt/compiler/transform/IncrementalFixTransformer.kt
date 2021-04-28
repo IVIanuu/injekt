@@ -48,7 +48,12 @@ class IncrementalFixTransformer(
         if (declaration !in filesWithGivens) return declaration
 
         val clazz = IrFactoryImpl.buildClass {
-            name = "GivensMarker".asNameId()
+            name = "${pluginContext.moduleDescriptor.name
+                .asString().replace("<", "")
+                .replace(">", "")}_${declaration.fileEntry.name.removeSuffix(".kt")
+                .substringAfterLast(".")
+                .substringAfterLast("/")
+                }_GivensMarker".asNameId()
             visibility = DescriptorVisibilities.PRIVATE
         }.apply {
             createImplicitParameterDeclarationWithWrappedDescriptor()
