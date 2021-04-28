@@ -159,6 +159,10 @@ class ResolutionScope(
                         .memberScope
                         .recordLookup("givens".asNameId(), location)
                 }
+
+            context.module.getPackage(location.element.containingKtFile.packageFqName)
+                .memberScope
+                .recordLookup("givens".asNameId(), location)
         }
     }
 
