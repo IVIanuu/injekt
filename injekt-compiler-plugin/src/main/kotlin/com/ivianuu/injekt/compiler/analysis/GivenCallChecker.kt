@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
-import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.*
@@ -30,10 +29,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.inline.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-class GivenCallChecker(
-    private val context: InjektContext,
-    private val allowGivenCalls: (KtElement) -> Boolean
-) : CallChecker {
+class GivenCallChecker(private val context: InjektContext) : CallChecker {
     override fun check(
         resolvedCall: ResolvedCall<*>,
         reportOn: PsiElement,
@@ -85,16 +81,6 @@ class GivenCallChecker(
         if (requests.isEmpty()) return
 
         val callExpression = resolvedCall.call.callElement
-
-        if (!allowGivenCalls(callExpression) && requests.any {
-            it.defaultStrategy == GivenRequest.DefaultStrategy.NONE
-        }) {
-            context.trace.report(
-                InjektErrors.GIVEN_CALLS_NOT_ALLOWED
-                    .on(callExpression)
-            )
-            return
-        }
 
         val scope = HierarchicalResolutionScope(this.context, context.scope, context.trace)
         scope.recordLookup(KotlinLookupLocation(callExpression))

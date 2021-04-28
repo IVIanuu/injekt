@@ -149,6 +149,17 @@ class ResolutionScope(
         }
         givens.forEach { recordLookup(it.value.callable) }
         constrainedGivens.forEach { recordLookup(it.callable.callable) }
+        if (parent == null) {
+            location.element.containingKtFile
+                .importDirectives
+                .mapNotNull { it.importPath }
+                .filter { it.isAllUnder }
+                .forEach {
+                    context.module.getPackage(it.fqName)
+                        .memberScope
+                        .recordLookup("givens".asNameId(), location)
+                }
+        }
     }
 
     fun givensForRequest(request: GivenRequest): List<GivenNode>? {
@@ -173,7 +184,7 @@ class ResolutionScope(
         }?.filter { given ->
             given !is CallableGivenNode ||
                     given.callable.callable.visibility != DescriptorVisibilities.INTERNAL ||
-                    !given.callable.callable.isExternalDeclaration() ||
+                    !given.callable.callable.isExternalDeclaration(context) ||
                     DescriptorVisibilities.INTERNAL.isVisible(
                         null,
                         given.callable.callable,
@@ -413,7 +424,7 @@ fun HierarchicalResolutionScope(
 
     val (externalImportedGivens, internalImportedGivens) = importScopes
         .flatMap { it.collectGivens(context, trace) }
-        .partition { it.callable.original.isExternalDeclaration() }
+        .partition { it.callable.isExternalDeclaration(context) }
 
     val importsResolutionScope = trace.get(InjektWritableSlices.IMPORT_RESOLUTION_SCOPE, importScopes)
         ?: ResolutionScope(

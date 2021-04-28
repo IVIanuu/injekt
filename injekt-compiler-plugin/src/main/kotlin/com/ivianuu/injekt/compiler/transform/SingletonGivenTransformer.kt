@@ -61,11 +61,11 @@ class SingletonGivenTransformer(
             name = "INSTANCE".asNameId()
             isStatic = true
             type = module.defaultType
-            origin = if (module.descriptor.isExternalDeclaration()) IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
+            origin = if (module.descriptor.isDeserializedDeclaration()) IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
             else IrDeclarationOrigin.DEFINED
         }.apply {
             parent = module
-            if (!module.descriptor.original.isExternalDeclaration()) {
+            if (!module.descriptor.isDeserializedDeclaration()) {
                 initializer = DeclarationIrBuilder(pluginContext, symbol).run {
                     irExprBody(
                         irCall(module.constructors.single())

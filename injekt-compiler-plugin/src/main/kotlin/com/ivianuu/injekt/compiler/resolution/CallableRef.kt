@@ -66,7 +66,7 @@ fun CallableDescriptor.toCallableRef(
     trace: BindingTrace
 ): CallableRef {
     trace.get(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this)?.let { return it }
-    val info = if (original.isExternalDeclaration()) context.callableInfoFor(this, trace)
+    val info = if (isDeserializedDeclaration()) context.callableInfoFor(this, trace)
     else null
     val type = info?.type?.toTypeRef(context, trace)
         ?: kotlin.run {

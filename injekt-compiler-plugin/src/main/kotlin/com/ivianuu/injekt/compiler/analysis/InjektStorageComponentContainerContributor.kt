@@ -23,9 +23,7 @@ import org.jetbrains.kotlin.extensions.*
 import org.jetbrains.kotlin.platform.*
 import org.jetbrains.kotlin.psi.*
 
-class InjektStorageComponentContainerContributor(
-    private val allowGivenCalls: (KtElement) -> Boolean
-) : StorageComponentContainerContributor {
+class InjektStorageComponentContainerContributor : StorageComponentContainerContributor {
     override fun registerModuleComponents(
         container: StorageComponentContainer,
         platform: TargetPlatform,
@@ -34,7 +32,7 @@ class InjektStorageComponentContainerContributor(
         val context = InjektContext(moduleDescriptor)
         container.useInstance(GivenChecker(context))
         container.useInstance(TypeKeyChecker(context))
-        container.useInstance(GivenCallChecker(context, allowGivenCalls))
+        container.useInstance(GivenCallChecker(context))
         container.useInstance(QualifierChecker(context))
     }
 }

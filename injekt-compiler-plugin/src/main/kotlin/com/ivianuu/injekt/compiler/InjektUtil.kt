@@ -96,9 +96,12 @@ fun <D : DeclarationDescriptor> KtDeclaration.descriptor(
     bindingContext: BindingContext,
 ) = bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
 
-fun DeclarationDescriptor.isExternalDeclaration(): Boolean = this is DeserializedDescriptor ||
-        (this is PropertyAccessorDescriptor && correspondingProperty.isExternalDeclaration()) ||
-        (this is GivenFunctionDescriptor && invokeDescriptor.isExternalDeclaration()) ||
+fun DeclarationDescriptor.isExternalDeclaration(context: InjektContext): Boolean =
+    module != context.module
+
+fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
+        (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
+        (this is GivenFunctionDescriptor && invokeDescriptor.isDeserializedDeclaration()) ||
         this is DeserializedTypeParameterDescriptor
 
 fun String.asNameId() = Name.identifier(this)
@@ -218,8 +221,7 @@ fun TypeParameterDescriptor.isGivenConstraint(
     trace?.get(InjektWritableSlices.IS_GIVEN_CONSTRAINT, this)?.let { return it }
     var isGivenConstraint = hasAnnotation(InjektFqNames.Given) ||
             findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.Given) == true
-    if (!isGivenConstraint &&
-        original.isExternalDeclaration() &&
+    if (!isGivenConstraint && isDeserializedDeclaration() &&
         containingDeclaration is ClassDescriptor) {
         isGivenConstraint = name.asString() in context.classifierInfoFor(containingDeclaration.cast(), trace)
             ?.givenConstraintTypeParameters ?: emptyList()
@@ -238,8 +240,7 @@ fun TypeParameterDescriptor.isForTypeKey(
     }
     var isForTypeKey = hasAnnotation(InjektFqNames.ForTypeKey) ||
             findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.ForTypeKey) == true
-    if (!isForTypeKey &&
-        original.isExternalDeclaration() &&
+    if (!isForTypeKey && isDeserializedDeclaration() &&
         containingDeclaration is ClassDescriptor) {
         isForTypeKey = name.asString() in context.classifierInfoFor(containingDeclaration.cast(), trace)
             ?.forTypeKeyTypeParameters ?: emptyList()
@@ -272,7 +273,7 @@ fun ClassifierDescriptor.isSingletonGiven(
                             it.hasBackingField(trace.bindingContext))
                 }
 
-    if (!isSingletonGiven && original.isExternalDeclaration()) {
+    if (!isSingletonGiven && isDeserializedDeclaration()) {
         isSingletonGiven = context.classifierInfoFor(this, trace)
             ?.isOptimizableGiven == true
     }

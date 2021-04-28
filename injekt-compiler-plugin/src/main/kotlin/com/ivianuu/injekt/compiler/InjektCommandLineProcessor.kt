@@ -25,10 +25,7 @@ import java.io.*
 class InjektCommandLineProcessor : CommandLineProcessor {
     override val pluginId = "com.ivianuu.injekt"
 
-    override val pluginOptions = listOf(
-        AllowGivenCallsOption,
-        DumpDirOption
-    )
+    override val pluginOptions = listOf(DumpDirOption)
 
     override fun processOption(
         option: AbstractCliOption,
@@ -36,27 +33,16 @@ class InjektCommandLineProcessor : CommandLineProcessor {
         configuration: CompilerConfiguration,
     ) {
         when (option.optionName) {
-            AllowGivenCallsOption.optionName -> configuration.put(AllowGivenCallsKey, value.toBoolean())
             DumpDirOption.optionName -> configuration.put(DumpDirKey, value)
         }
     }
 }
 
-val AllowGivenCallsOption = CliOption(
-    optionName = "allowGivenCalls",
-    valueDescription = "allowGivenCalls",
-    description = "allowGivenCalls",
-    required = false
-)
 val DumpDirOption = CliOption(
     optionName = "dumpDir",
     valueDescription = "dumpDir",
     description = "dumpDir"
 )
-
-val AllowGivenCallsKey = CompilerConfigurationKey<Boolean>("allowGivenCalls")
-fun allowGivenCalls(configuration: CompilerConfiguration): Boolean =
-    configuration.get(AllowGivenCallsKey) ?: false
 
 val DumpDirKey = CompilerConfigurationKey<String>("dumpDir")
 fun dumpDir(configuration: CompilerConfiguration): File =

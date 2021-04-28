@@ -42,9 +42,7 @@ class AppInitializer : ApplicationInitializedListener {
                     override fun projectOpened(project: Project) {
                         StorageComponentContainerContributor.registerExtension(
                             project,
-                            InjektStorageComponentContainerContributor { element ->
-                                (element as PsiElement).getModuleInfo().allowGivenCalls()
-                            }
+                            InjektStorageComponentContainerContributor()
                         )
                         CandidateInterceptor.registerExtension(
                             project,
@@ -62,15 +60,4 @@ class AppInitializer : ApplicationInitializedListener {
                 }
             )
     }
-}
-
-private fun ModuleInfo.allowGivenCalls(): Boolean {
-    val module = unwrapModuleSourceInfo()?.module
-    val facet = module?.let { KotlinFacet.get(it) }
-        ?: return false
-    val commonArgs = facet.configuration.settings.compilerArguments
-        ?: return false
-    return commonArgs.pluginOptions?.any {
-        it == "plugin:com.ivianuu.injekt:allowGivenCalls=true"
-    } == true
 }

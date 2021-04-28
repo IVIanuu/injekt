@@ -75,7 +75,7 @@ fun ClassifierDescriptor.toClassifierRef(
     trace: BindingTrace?
 ): ClassifierRef {
     trace?.get(InjektWritableSlices.CLASSIFIER_REF_FOR_CLASSIFIER, this)?.let { return it }
-    val info = if (original.isExternalDeclaration()) context.classifierInfoFor(this, trace)
+    val info = if (isDeserializedDeclaration()) context.classifierInfoFor(this, trace)
     else null
     val expandedType = if (info == null) (original as? TypeAliasDescriptor)?.underlyingType
         ?.toTypeRef(context, trace) else null
