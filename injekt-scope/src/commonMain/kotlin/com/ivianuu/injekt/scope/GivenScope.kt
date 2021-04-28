@@ -206,7 +206,7 @@ annotation class InstallElement<S : GivenScope> {
  * }
  * ```
  */
-typealias GivenScopeInitializer<@Suppress("unused", "UNUSED_TYPEALIAS_PARAMETER") S> = () -> Unit
+typealias GivenScopeInitializer<S> = () -> Unit
 
 @PublishedApi
 internal class GivenScopeImpl(

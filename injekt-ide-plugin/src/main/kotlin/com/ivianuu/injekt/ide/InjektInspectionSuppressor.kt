@@ -19,7 +19,6 @@ package com.ivianuu.injekt.ide
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
 import com.intellij.psi.impl.source.tree.*
-import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.idea.caches.resolve.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.lazy.*
@@ -47,9 +46,7 @@ class InjektInspectionSuppressor : InspectionSuppressor {
             }
             "unused" -> {
                 if (element !is LeafPsiElement) return false
-                val typeParameter = element.parent as? KtTypeParameter
-                    ?: return false
-                return typeParameter.hasAnnotation(InjektFqNames.Given)
+                return element.parent is KtTypeParameter
             }
             else -> return false
         }
