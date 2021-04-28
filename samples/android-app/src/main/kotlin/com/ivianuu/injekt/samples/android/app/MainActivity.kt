@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:GivenImports("com.ivianuu.injekt.android.*")
+
 package com.ivianuu.injekt.samples.android.app
 
 import android.os.*
