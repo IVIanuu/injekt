@@ -48,11 +48,6 @@ android {
     }
 }
 
-tasks.withType<KotlinCompile> {
-    if (name.toLowerCase().contains("test"))
-        withGivenCalls()
-}
-
 dependencies {
     api(project(":injekt-coroutines"))
     api(project(":injekt-scope"))

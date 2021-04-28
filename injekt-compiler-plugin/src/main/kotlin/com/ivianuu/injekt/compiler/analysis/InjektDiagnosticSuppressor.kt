@@ -26,7 +26,6 @@ import org.jetbrains.kotlin.resolve.diagnostics.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class InjektDiagnosticSuppressor : DiagnosticSuppressor {
-
     override fun isSuppressed(diagnostic: Diagnostic): Boolean =
         isSuppressed(diagnostic, null)
 

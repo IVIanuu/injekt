@@ -22,12 +22,8 @@ import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.util.*
 import java.io.*
 
-class InjektIrDumper(
-    private val allowGivenCalls: Boolean,
-    private val dumpDir: File
-) : IrGenerationExtension {
+class InjektIrDumper(private val dumpDir: File) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        if (!allowGivenCalls) return
         dumpDir.deleteRecursively()
         moduleFragment.files
             .asSequence()

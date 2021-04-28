@@ -44,7 +44,6 @@ kotlin {
             }
         }
     }
-    withGivenCalls()
     sourceSets {
         named("jvmMain") {
             dependencies {

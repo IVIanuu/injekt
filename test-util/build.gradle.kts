@@ -39,7 +39,6 @@ kotlin {
     jvm {
         withJava()
         compilations.forEach {
-            if (it.name == "test") it.withGivenCalls()
             it.kotlinOptions {
                 jvmTarget = "1.8"
             }

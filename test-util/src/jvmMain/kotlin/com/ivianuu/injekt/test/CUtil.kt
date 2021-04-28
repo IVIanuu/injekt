@@ -245,11 +245,6 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
     kotlincArguments += "-XXLanguage:+NewInference"
     pluginOptions += PluginOption(
         "com.ivianuu.injekt",
-        "allowGivenCalls",
-        "true"
-    )
-    pluginOptions += PluginOption(
-        "com.ivianuu.injekt",
         "dumpDir",
         workingDir.resolve("injekt/dump").absolutePath
     )
