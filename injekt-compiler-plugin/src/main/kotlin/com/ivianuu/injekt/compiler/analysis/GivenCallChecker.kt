@@ -93,11 +93,13 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
                 )
                 scope.allImports
                     .filter {
+                        val callable = result.candidate.callable.callable
+                        val callableFqName = if (callable is ClassConstructorDescriptor)
+                            callable.constructedClass.fqNameSafe else callable.fqNameSafe
                         it.element != null &&
-                                (it.importPath == result.candidate.callableFqName.asString() ||
+                                (it.importPath == callableFqName.asString() ||
                                         (it.importPath!!.removeSuffix(".*") ==
-                                                result.candidate.callable.callable
-                                                    .containingDeclaration.fqNameSafe.asString()))
+                                                callableFqName.parent().asString()))
                     }
                     .forEach {
                         context.trace.record(
