@@ -184,7 +184,7 @@ class ResolutionScope(
         }?.filter { given ->
             given !is CallableGivenNode ||
                     given.callable.callable.visibility != DescriptorVisibilities.INTERNAL ||
-                    !given.callable.callable.isExternalDeclaration() ||
+                    !given.callable.callable.isExternalDeclaration(context) ||
                     DescriptorVisibilities.INTERNAL.isVisible(
                         null,
                         given.callable.callable,
@@ -424,7 +424,7 @@ fun HierarchicalResolutionScope(
 
     val (externalImportedGivens, internalImportedGivens) = importScopes
         .flatMap { it.collectGivens(context, trace) }
-        .partition { it.callable.original.isExternalDeclaration() }
+        .partition { it.callable.isExternalDeclaration(context) }
 
     val importsResolutionScope = trace.get(InjektWritableSlices.IMPORT_RESOLUTION_SCOPE, importScopes)
         ?: ResolutionScope(
