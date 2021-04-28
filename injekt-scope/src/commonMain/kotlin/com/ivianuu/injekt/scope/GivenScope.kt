@@ -154,7 +154,6 @@ inline fun <S : GivenScope> GivenScope(
     return scope
 }
 
-@Suppress("unused")
 class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: () -> Any)
 
 /**

@@ -19,7 +19,7 @@ package com.ivianuu.injekt.common
 /**
  * A key for a injekt type which can be used as a map key or similar
  */
-@Suppress("EXPERIMENTAL_FEATURE_WARNING", "unused")
+@Suppress("EXPERIMENTAL_FEATURE_WARNING")
 inline class TypeKey<out T>(val value: String)
 
 /**
