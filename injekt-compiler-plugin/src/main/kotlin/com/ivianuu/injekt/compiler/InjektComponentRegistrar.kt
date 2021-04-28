@@ -45,10 +45,9 @@ class InjektComponentRegistrar : ComponentRegistrar {
         val isGenerateKaptStubs = kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
         if (isGenerateKaptStubs) return
 
-        val allowGivenCalls = allowGivenCalls(configuration)
         StorageComponentContainerContributor.registerExtension(
             project,
-            InjektStorageComponentContainerContributor { allowGivenCalls }
+            InjektStorageComponentContainerContributor()
         )
         IrGenerationExtension.registerExtensionWithLoadingOrder(
             project,
@@ -58,7 +57,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
         IrGenerationExtension.registerExtensionWithLoadingOrder(
             project,
             LoadingOrder.LAST,
-            InjektIrDumper(allowGivenCalls, dumpDir(configuration))
+            InjektIrDumper(dumpDir(configuration))
         )
         CandidateInterceptor.registerExtension(
             project,

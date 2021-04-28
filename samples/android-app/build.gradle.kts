@@ -43,10 +43,6 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/ja
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-source-sets-android.gradle")
 
-tasks.withType<KotlinCompile> {
-    withGivenCalls()
-}
-
 dependencies {
     implementation(Deps.AndroidX.Activity.activity)
     implementation(Deps.AndroidX.Activity.compose)
