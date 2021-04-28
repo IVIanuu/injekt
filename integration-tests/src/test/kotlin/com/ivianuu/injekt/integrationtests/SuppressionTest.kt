@@ -32,6 +32,15 @@ class SuppressionTest {
     }
 
     @Test
+    fun testTypeAliasTypeParameter() = codegen(
+        """
+            typealias Alias<T> = String
+        """
+    ) {
+        shouldNotContainMessage("Type alias parameter T is not used in the expanded type String and does not affect type checking")
+    }
+
+    @Test
     fun testCanUseExtensionFunctionTypeUpperBound() = codegen(
         """
             typealias MyBuilder = StringBuilder.() -> Unit
