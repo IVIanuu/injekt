@@ -40,39 +40,54 @@ dependencies {
     classpath("com.ivianuu.injekt:injekt-common:${latest_version}")
     // optional - scope runtime
     classpath("com.ivianuu.injekt:injekt-scope:${latest_version}")
+    // optional - coroutines support
+    classpath("com.ivianuu.injekt:injekt-coroutines:${latest_version}")
     // optional - android support
     classpath("com.ivianuu.injekt:injekt-android:${latest_version}")
     // optional - androidx work support
     classpath("com.ivianuu.injekt:injekt-android-work:${latest_version}")
+    // optional - compose support
+    classpath("com.ivianuu.injekt:injekt-compose:${latest_version}")
+    // optional - ktor support
+    classpath("com.ivianuu.injekt:injekt-ktor:${latest_version}")
 }
 ```
 It's also required to install the Injekt IDE plugin
 
-# Request dependencies
+# Declare givens
 TODO
 
-# Declare dependencies
-TODO
-
-# Sets
-TODO
-
-# Qualifiers
+# Use givens
 TODO
 
 # Type aliases
 TODO
 
+# Qualifiers
+TODO
+
+# Sets
+TODO
+
 # Providers
 TODO
 
-# Given scopes
+# Scopes
+TODO
+
+# Coroutines
 TODO
 
 # Android
 TODO
 
 # Android work
+TODO
+
+# Compose
+TODO
+
+# Ktor
 TODO
 
 # Type keys
