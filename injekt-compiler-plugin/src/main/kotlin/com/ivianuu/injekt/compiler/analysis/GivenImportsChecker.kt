@@ -159,15 +159,16 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
                 }
             }
 
-        imports.forEach { (element, import) ->
-            if (import == null) {
+        imports.forEach { import ->
+            val (element, importPath) = import
+            if (importPath == null) {
                 trace.report(
                     InjektErrors.GIVEN_IMPORT_MUST_BE_CONSTANT
                         .on(element!!)
                 )
                 return@forEach
             }
-            if (import
+            if (importPath
                     .any {
                         !it.isLetter() &&
                                 it != '.' &&
@@ -180,32 +181,52 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
                 )
                 return@forEach
             }
-            if (import.endsWith(".*")) {
-                val packageFqName = FqName(import.removeSuffix(".*"))
+            if (importPath.endsWith(".*")) {
+                val packageFqName = FqName(importPath.removeSuffix(".*"))
                 if (context.memberScopeForFqName(packageFqName) == null) {
                     trace.report(
                         InjektErrors.UNRESOLVED_GIVEN_IMPORT
                             .on(element!!)
                     )
                     return@forEach
+                } else if (listOf(import).collectImportGivens(context, trace).isEmpty()) {
+                    trace.report(
+                        InjektErrors.NON_GIVEN_IMPORT
+                            .on(element!!)
+                    )
+                    return@forEach
                 }
             } else {
-                val fqName = FqName(import.removeSuffix(".*"))
-                val shortName = fqName.shortName()
+                val fqName = FqName(importPath.removeSuffix(".*"))
                 val parentFqName = fqName.parent()
-                val importedDeclarations = context.memberScopeForFqName(parentFqName)
-                    ?.getContributedDescriptors()
-                    ?.filter {
-                        it.name == shortName ||
-                                (it is ClassConstructorDescriptor &&
-                                        it.constructedClass.name == shortName)
-                    }
-                if (importedDeclarations == null || importedDeclarations.isEmpty()) {
+                if (context.memberScopeForFqName(parentFqName) == null) {
                     trace.report(
                         InjektErrors.UNRESOLVED_GIVEN_IMPORT
                             .on(element!!)
                     )
                     return@forEach
+                } else {
+                    val shortName = fqName.shortName()
+                    val importedDeclarations = context.memberScopeForFqName(parentFqName)
+                        ?.getContributedDescriptors()
+                        ?.filter {
+                            it.name == shortName ||
+                                    (it is ClassConstructorDescriptor &&
+                                            it.constructedClass.name == shortName)
+                        }
+                    if (importedDeclarations == null || importedDeclarations.isEmpty()) {
+                        trace.report(
+                            InjektErrors.UNRESOLVED_GIVEN_IMPORT
+                                .on(element!!)
+                        )
+                        return@forEach
+                    } else if (listOf(import).collectImportGivens(context, trace).isEmpty()) {
+                        trace.report(
+                            InjektErrors.NON_GIVEN_IMPORT
+                                .on(element!!)
+                        )
+                        return@forEach
+                    }
                 }
             }
 

@@ -93,6 +93,48 @@ class GivenImportsTest {
     }
 
     @Test
+    fun testImportIsNotGiven() = codegen(
+        listOf(
+            source(
+                """
+                    val foo = Foo()
+                """,
+                packageFqName = FqName("givens")
+            ),
+            source(
+                """
+                    @GivenImports("givens.foo")
+                    fun invoke() = Unit
+                    """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        compilationShouldHaveFailed("Given import does not contain given declarations")
+    }
+
+    @Test
+    fun testStarImportHasNoGivens() = codegen(
+        listOf(
+            source(
+                """
+                    val foo = Foo()
+                """,
+                packageFqName = FqName("givens")
+            ),
+            source(
+                """
+                    @GivenImports("givens.foo")
+                    fun invoke() = Unit
+                    """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        compilationShouldHaveFailed("Given import does not contain given declarations")
+    }
+
+    @Test
     fun testUnusedImport() = codegen(
         """
             @GivenImports("kotlin.collections.*")

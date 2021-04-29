@@ -219,6 +219,15 @@ interface InjektErrors {
                 })
             }
 
+        @JvmField
+        val NON_GIVEN_IMPORT = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+            .also {
+                MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
+                    override fun render(diagnostic: Diagnostic): String =
+                        "Given import does not contain given declarations: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
+                })
+            }
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,
