@@ -193,9 +193,9 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
             request.type.qualifiers.isEmpty() &&
             request.type.isFunctionTypeWithOnlyGivenParameters
     if (!isInlineProviderCandidateType) resultsByType[request.type]?.let { return it }
-    val userGivens = givensForRequest(request)
-    val result = if (userGivens != null) {
-        resolveCandidates(request, userGivens)
+    val userCandidates = givensForRequest(request)
+    val result = if (userCandidates != null) {
+        resolveCandidates(request, userCandidates)
     } else {
         val frameworkCandidate = frameworkGivenForRequest(request)
         when {
@@ -429,10 +429,7 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
     subClassNesting = { (it as? CallableGivenNode)?.callable?.overriddenDepth ?: 0 }
 )
 
-fun ResolutionScope.compareCallable(
-    a: CallableRef?,
-    b: CallableRef?
-): Int {
+fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     var diff = compareCandidate(
         a = a,
         b = b,
