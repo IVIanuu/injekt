@@ -63,7 +63,11 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
-        val file = reportOn.containingFile as KtFile
+        val file = context.scope
+            .ownerDescriptor
+            .findPsi()!!
+            .cast<KtElement>()
+            .containingKtFile
         if (resolvedCall.resultingDescriptor.fqNameSafe !=
             InjektFqNames.withGivenImports) return
         val outerImports = file.getGivenImports() + context.scope.parentsWithSelf
