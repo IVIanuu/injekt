@@ -20,7 +20,6 @@ import android.app.*
 import com.ivianuu.injekt.*
 
 @GivenImports(
-    "com.ivianuu.injekt.android.*",
     "com.ivianuu.injekt.common.*",
     "com.ivianuu.injekt.scope.*"
 )
