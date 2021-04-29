@@ -24,7 +24,6 @@ import java.io.*
 
 class InjektIrDumper(private val dumpDir: File) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        dumpDir.deleteRecursively()
         moduleFragment.files
             .asSequence()
             .filter {
