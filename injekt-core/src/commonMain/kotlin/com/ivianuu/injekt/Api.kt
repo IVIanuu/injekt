@@ -45,7 +45,7 @@ package com.ivianuu.injekt
 annotation class Given
 
 /**
- * Imports givens from the specified [paths]
+ * Imports givens from the specified [paths] and use them when resolving given arguments
  */
 @Target(
     AnnotationTarget.CLASS,
@@ -57,7 +57,7 @@ annotation class Given
 annotation class GivenImports(vararg val paths: String)
 
 /**
- * Runs the [block] and imports givens from [paths]
+ * Runs the [block] and imports givens from [paths] and use them when resolving given arguments inside [block]
  */
 inline fun <R> withGivenImports(
     @Suppress("UNUSED_PARAMETER") vararg paths: String,
