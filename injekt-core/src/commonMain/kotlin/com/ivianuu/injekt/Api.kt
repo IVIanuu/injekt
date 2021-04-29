@@ -44,6 +44,9 @@ package com.ivianuu.injekt
 )
 annotation class Given
 
+/**
+ * Imports givens from the specified [paths]
+ */
 @Target(
     AnnotationTarget.CLASS,
     AnnotationTarget.PROPERTY,
@@ -53,7 +56,13 @@ annotation class Given
 )
 annotation class GivenImports(vararg val paths: String)
 
-inline fun <R> withGivenImports(vararg paths: String, block: () -> R): R = block()
+/**
+ * Runs the [block] and imports givens from [paths]
+ */
+inline fun <R> withGivenImports(
+    @Suppress("UNUSED_PARAMETER") vararg paths: String,
+    block: () -> R
+): R = block()
 
 /**
  * Returns a given argument of type [T]
