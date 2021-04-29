@@ -36,7 +36,7 @@ import org.jetbrains.kotlin.resolve.scopes.utils.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class GivenImportsChecker(private val context: InjektContext) : DeclarationChecker, CallChecker {
-    private val checkedFiles = mutableSetOf<String>()
+    private val checkedFiles = mutableSetOf<KtFile>()
     override fun check(
         declaration: KtDeclaration,
         descriptor: DeclarationDescriptor,
@@ -91,8 +91,8 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
     }
 
     private fun checkFile(file: KtFile, trace: BindingTrace) {
-        if (file.virtualFilePath in checkedFiles) return
-        checkedFiles += file.virtualFilePath
+        if (file in checkedFiles) return
+        checkedFiles += file
         checkImports(file.packageFqName, emptyList(), file.getGivenImports(), trace)
     }
 
