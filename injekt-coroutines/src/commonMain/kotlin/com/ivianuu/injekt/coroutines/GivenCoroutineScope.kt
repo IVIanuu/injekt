@@ -30,6 +30,9 @@ import kotlin.coroutines.*
  */
 typealias GivenCoroutineScope<S> = CoroutineScope
 
+/**
+ * Installs a [GivenCoroutineScope] for scope [S]
+ */
 @Given
 fun <S : GivenScope> givenCoroutineScopeElement(
     @Given scope: S,
@@ -49,6 +52,9 @@ fun <S : GivenScope> givenCoroutineScopeElement(
  */
 val GivenScope.coroutineScope: CoroutineScope get() = element()
 
+/**
+ * Installs a [CoroutineScope] for scope [S]
+ */
 @Given
 inline fun <S : GivenScope> coroutineScopeElement(
     @Given scope: GivenCoroutineScope<S>
@@ -59,7 +65,10 @@ inline fun <S : GivenScope> coroutineScopeElement(
  */
 typealias GivenCoroutineContext<S> = CoroutineContext
 
+/**
+ * The default [GivenCoroutineContext] for type [S]
+ */
 @Given
-inline fun <S : GivenScope> givenCoroutineContext(
+inline fun <S : GivenScope> defaultGivenCoroutineContext(
     @Given dispatcher: DefaultDispatcher
 ): GivenCoroutineContext<S> = dispatcher
