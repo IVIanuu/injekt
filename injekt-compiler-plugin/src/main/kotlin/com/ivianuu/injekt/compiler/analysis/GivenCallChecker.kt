@@ -94,7 +94,7 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
                 result.candidate.callable.import?.element?.let {
                     context.trace.record(
                         InjektWritableSlices.USED_IMPORT,
-                        SourcePosition(it.containingKtFile.virtualFilePath, it.startOffset),
+                        SourcePosition(it.containingKtFile.virtualFilePath, it.startOffset, it.endOffset),
                         Unit
                     )
                 }
@@ -110,7 +110,8 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
                     InjektWritableSlices.GIVEN_GRAPH,
                     SourcePosition(
                         callExpression.containingKtFile.virtualFilePath,
-                        callExpression.startOffset
+                        callExpression.startOffset,
+                        callExpression.endOffset
                     ),
                     graph
                 )

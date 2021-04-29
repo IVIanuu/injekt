@@ -632,7 +632,7 @@ class GivenCallTransformer(
         val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
         val graph = pluginContext.bindingContext[
                 InjektWritableSlices.GIVEN_GRAPH,
-                SourcePosition(fileStack.last().fileEntry.name, result.startOffset)
+                SourcePosition(fileStack.last().fileEntry.name, result.startOffset, result.endOffset)
         ] ?: return result
         val graphContext = GraphContext(graph)
         return DeclarationIrBuilder(pluginContext, result.symbol)

@@ -60,4 +60,4 @@ object InjektWritableSlices {
     val EXPECTED_TYPE = BasicWritableSlice<KtExpression, TypeRef>(RewritePolicy.DO_NOTHING)
 }
 
-data class SourcePosition(val filePath: String, val startOffset: Int)
+data class SourcePosition(val filePath: String, val startOffset: Int, val endOffset: Int)

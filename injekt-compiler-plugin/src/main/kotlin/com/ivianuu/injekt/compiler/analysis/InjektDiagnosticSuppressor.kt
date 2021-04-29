@@ -89,7 +89,8 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
             return bindingContext[InjektWritableSlices.USED_IMPORT,
                     SourcePosition(
                         diagnostic.psiElement.containingFile.cast<KtFile>().virtualFilePath,
-                        diagnostic.psiElement.startOffset
+                        diagnostic.psiElement.startOffset,
+                        diagnostic.psiElement.endOffset
                     )] != null
 
         return false
