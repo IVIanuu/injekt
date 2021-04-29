@@ -48,10 +48,9 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
         val outerImports = file.getGivenImports() + descriptor.parents
             .distinct()
             .flatMap { parent ->
-                val list = parent.findPsi()
+                parent.findPsi()
                     .safeAs<KtAnnotated>()
                     ?.getGivenImports() ?: emptyList()
-                list
             }
             .toList()
         checkImports(file.packageFqName, outerImports,
