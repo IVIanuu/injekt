@@ -188,6 +188,29 @@ class GivenImportsTest {
     }
 
     @Test
+    fun testStarImportSamePackage() = codegen(
+        """
+            @GivenImports("com.ivianuu.injekt.integrationtests.*")
+            fun invoke() {
+            }
+        """
+    ) {
+        compilationShouldHaveFailed("Givens of the same package are automatically imported")
+    }
+
+    @Test
+    fun testImportGivenSamePackage() = codegen(
+        """
+            @Given val foo = Foo()
+            @GivenImports("com.ivianuu.injekt.integrationtests.foo")
+            fun invoke() {
+            }
+        """
+    ) {
+        compilationShouldHaveFailed("Givens of the same package are automatically imported")
+    }
+
+    @Test
     fun testClassWithGivenImports() = multiCodegen(
         listOf(
             listOf(

@@ -36,11 +36,14 @@ import org.jetbrains.kotlin.resolve.scopes.utils.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class GivenImportsChecker(private val context: InjektContext) : DeclarationChecker, CallChecker {
+    private val checkedFiles = mutableSetOf<KtFile>()
     override fun check(
         declaration: KtDeclaration,
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
+        val file = declaration.containingKtFile
+        checkFile(file, context.trace)
         val annotation = declaration.findAnnotation(InjektFqNames.GivenImports)
             ?: return
         descriptor.annotations.findAnnotation(InjektFqNames.GivenImports)?.allValueArguments
@@ -75,7 +78,7 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
                         ?.cast()
                 )
             }
-        checkImports(outerImports, imports, context.trace)
+        checkImports(file.packageFqName, outerImports, imports, context.trace)
     }
 
     override fun check(
@@ -83,6 +86,7 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
+        val file = reportOn.containingFile as KtFile
         if (resolvedCall.resultingDescriptor.fqNameSafe !=
             InjektFqNames.withGivenImports) return
         val outerImports = context.scope.parentsWithSelf
@@ -120,12 +124,34 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
                 )
             }
             ?.let {
-                checkImports(outerImports, it, context.trace)
+                checkImports(file.packageFqName, outerImports, it, context.trace)
             }
 
     }
 
+    private fun checkFile(file: KtFile, trace: BindingTrace) {
+        if (file in checkedFiles) return
+        checkedFiles += file
+        val annotation = file.findAnnotation(InjektFqNames.GivenImports)
+            ?: return
+        trace[BindingContext.ANNOTATION, annotation]?.allValueArguments
+        val imports = annotation
+            .valueArguments
+            .map { argument ->
+                GivenImport(
+                    argument.asElement(),
+                    argument.getArgumentExpression()
+                        ?.let { ConstantExpressionEvaluator.getConstant(it, trace.bindingContext)}
+                        ?.toConstantValue(this.context.module.builtIns.stringType)
+                        ?.value
+                        ?.cast()
+                )
+            }
+        checkImports(file.packageFqName, emptyList(), imports, trace)
+    }
+
     private fun checkImports(
+        currentPackage: FqName,
         outerImports: List<GivenImport>,
         imports: List<GivenImport>,
         trace: BindingTrace
@@ -183,6 +209,13 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
             }
             if (importPath.endsWith(".*")) {
                 val packageFqName = FqName(importPath.removeSuffix(".*"))
+                if (packageFqName == currentPackage) {
+                    trace.report(
+                        InjektErrors.DECLARATION_PACKAGE_GIVEN_IMPORT
+                            .on(element!!)
+                    )
+                    return@forEach
+                }
                 if (context.memberScopeForFqName(packageFqName) == null) {
                     trace.report(
                         InjektErrors.UNRESOLVED_GIVEN_IMPORT
@@ -199,6 +232,13 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
             } else {
                 val fqName = FqName(importPath.removeSuffix(".*"))
                 val parentFqName = fqName.parent()
+                if (parentFqName == currentPackage) {
+                    trace.report(
+                        InjektErrors.DECLARATION_PACKAGE_GIVEN_IMPORT
+                            .on(element!!)
+                    )
+                    return@forEach
+                }
                 if (context.memberScopeForFqName(parentFqName) == null) {
                     trace.report(
                         InjektErrors.UNRESOLVED_GIVEN_IMPORT

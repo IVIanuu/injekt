@@ -228,6 +228,15 @@ interface InjektErrors {
                 })
             }
 
+        @JvmField
+        val DECLARATION_PACKAGE_GIVEN_IMPORT = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+            .also {
+                MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
+                    override fun render(diagnostic: Diagnostic): String =
+                        "Givens of the same package are automatically imported: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
+                })
+            }
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,

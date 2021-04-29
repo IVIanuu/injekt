@@ -32,7 +32,6 @@ import kotlin.reflect.*
 var fileIndex = 0
 
 val defaultGivenImports = listOf(
-    "com.ivianuu.injekt.*",
     "com.ivianuu.injekt.common.*",
     "com.ivianuu.injekt.scope.*"
 )
