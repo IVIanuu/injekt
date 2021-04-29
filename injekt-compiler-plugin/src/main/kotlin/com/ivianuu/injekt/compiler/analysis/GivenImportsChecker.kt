@@ -36,7 +36,7 @@ import org.jetbrains.kotlin.resolve.scopes.utils.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class GivenImportsChecker(private val context: InjektContext) : DeclarationChecker, CallChecker {
-    private val checkedFiles = mutableSetOf<KtFile>()
+    private val checkedFiles = mutableSetOf<String>()
     override fun check(
         declaration: KtDeclaration,
         descriptor: DeclarationDescriptor,
@@ -44,41 +44,18 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
     ) {
         val file = declaration.containingKtFile
         checkFile(file, context.trace)
-        val annotation = declaration.findAnnotation(InjektFqNames.GivenImports)
-            ?: return
-        descriptor.annotations.findAnnotation(InjektFqNames.GivenImports)?.allValueArguments
-        val outerImports = descriptor.parents
+        if (!declaration.hasAnnotation(InjektFqNames.GivenImports)) return
+        val outerImports = file.getGivenImports() + descriptor.parents
             .distinct()
-            .flatMap {
-                it.findPsi()
+            .flatMap { parent ->
+                val list = parent.findPsi()
                     .safeAs<KtAnnotated>()
-                    ?.findAnnotation(InjektFqNames.GivenImports)
-                    ?.valueArguments
-                    ?.map { argument ->
-                        GivenImport(
-                            argument.asElement(),
-                            argument.getArgumentExpression()
-                                ?.let { ConstantExpressionEvaluator.getConstant(it, context.trace.bindingContext)}
-                                ?.toConstantValue(this.context.module.builtIns.stringType)
-                                ?.value
-                                ?.cast()
-                        )
-                    } ?: emptyList()
+                    ?.getGivenImports() ?: emptyList()
+                list
             }
             .toList()
-        val imports = annotation
-            .valueArguments
-            .map { argument ->
-                GivenImport(
-                    argument.asElement(),
-                    argument.getArgumentExpression()
-                        ?.let { ConstantExpressionEvaluator.getConstant(it, context.trace.bindingContext)}
-                        ?.toConstantValue(this.context.module.builtIns.stringType)
-                        ?.value
-                        ?.cast()
-                )
-            }
-        checkImports(file.packageFqName, outerImports, imports, context.trace)
+        checkImports(file.packageFqName, outerImports,
+            declaration.getGivenImports(), context.trace)
     }
 
     override fun check(
@@ -89,40 +66,20 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
         val file = reportOn.containingFile as KtFile
         if (resolvedCall.resultingDescriptor.fqNameSafe !=
             InjektFqNames.withGivenImports) return
-        val outerImports = context.scope.parentsWithSelf
+        val outerImports = file.getGivenImports() + context.scope.parentsWithSelf
             .filterIsInstance<LexicalScope>()
             .distinctBy { it.ownerDescriptor }
-            .flatMap {
-                it.ownerDescriptor.findPsi()
+            .flatMap { scope ->
+                scope.ownerDescriptor.findPsi()
                     .safeAs<KtAnnotated>()
-                    ?.findAnnotation(InjektFqNames.GivenImports)
-                    ?.valueArguments
-                    ?.map { argument ->
-                        GivenImport(
-                            argument.asElement(),
-                            argument.getArgumentExpression()
-                                ?.let { ConstantExpressionEvaluator.getConstant(it, context.trace.bindingContext)}
-                                ?.toConstantValue(this.context.module.builtIns.stringType)
-                                ?.value
-                                ?.cast()
-                        )
-                    } ?: emptyList()
+                    ?.getGivenImports() ?: emptyList()
             }
             .toList()
         resolvedCall.valueArguments
             .values
             .firstOrNull()
             ?.arguments
-            ?.map { argument ->
-                GivenImport(
-                    argument.asElement(),
-                    argument.getArgumentExpression()
-                        ?.let { ConstantExpressionEvaluator.getConstant(it, context.trace.bindingContext)}
-                        ?.toConstantValue(this.context.module.builtIns.stringType)
-                        ?.value
-                        ?.cast()
-                )
-            }
+            ?.map { it.toGivenImport() }
             ?.let {
                 checkImports(file.packageFqName, outerImports, it, context.trace)
             }
@@ -130,24 +87,9 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
     }
 
     private fun checkFile(file: KtFile, trace: BindingTrace) {
-        if (file in checkedFiles) return
-        checkedFiles += file
-        val annotation = file.findAnnotation(InjektFqNames.GivenImports)
-            ?: return
-        trace[BindingContext.ANNOTATION, annotation]?.allValueArguments
-        val imports = annotation
-            .valueArguments
-            .map { argument ->
-                GivenImport(
-                    argument.asElement(),
-                    argument.getArgumentExpression()
-                        ?.let { ConstantExpressionEvaluator.getConstant(it, trace.bindingContext)}
-                        ?.toConstantValue(this.context.module.builtIns.stringType)
-                        ?.value
-                        ?.cast()
-                )
-            }
-        checkImports(file.packageFqName, emptyList(), imports, trace)
+        if (file.virtualFilePath in checkedFiles) return
+        checkedFiles += file.virtualFilePath
+        checkImports(file.packageFqName, emptyList(), file.getGivenImports(), trace)
     }
 
     private fun checkImports(
@@ -187,14 +129,7 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
 
         imports.forEach { import ->
             val (element, importPath) = import
-            if (importPath == null) {
-                trace.report(
-                    InjektErrors.GIVEN_IMPORT_MUST_BE_CONSTANT
-                        .on(element!!)
-                )
-                return@forEach
-            }
-            if (importPath
+            if (importPath == null || importPath
                     .any {
                         !it.isLetter() &&
                                 it != '.' &&

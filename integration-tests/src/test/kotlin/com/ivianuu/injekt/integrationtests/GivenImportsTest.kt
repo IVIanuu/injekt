@@ -57,17 +57,6 @@ class GivenImportsTest {
     }
 
     @Test
-    fun testCompileTimeConstant() = codegen(
-        """
-            fun invoke() = withGivenImports(if (true) "com.ivianuu.injekt.common.*" else "com.ivianuu.injekt.scope.*") {
-                
-            }
-        """
-    ) {
-        compilationShouldHaveFailed("Given import must be a compile time constant")
-    }
-
-    @Test
     fun testDuplicatedImports() = codegen(
         """
             @GivenImports("kotlin.collections.*", "kotlin.collections.*")
@@ -152,14 +141,16 @@ class GivenImportsTest {
                 """
                     @Given val foo = Foo()
                 """,
-                packageFqName = FqName("givens")
+                packageFqName = FqName("givens"),
+                givenImports = emptyList()
             ),
             source(
                 """
                     @GivenImports("givens.foo")
                     fun invoke() = given<Foo>()
                     """,
-                name = "File.kt"
+                name = "File.kt",
+                givenImports = emptyList()
             )
         )
     ) {
@@ -173,14 +164,16 @@ class GivenImportsTest {
                 """
                     @Given val foo = Foo()
                 """,
-                packageFqName = FqName("givens")
+                packageFqName = FqName("givens"),
+                givenImports = emptyList()
             ),
             source(
                 """
                     @GivenImports("givens.*")
                     fun invoke() = given<Foo>()
                     """,
-                name = "File.kt"
+                name = "File.kt",
+                givenImports = emptyList()
             )
         )
     ) {

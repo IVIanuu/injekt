@@ -159,19 +159,6 @@ interface InjektErrors {
                 }
 
         @JvmField
-        val GIVEN_IMPORT_MUST_BE_CONSTANT =
-            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also {
-                    MAP.put(
-                        it,
-                        object : DiagnosticRenderer<Diagnostic> {
-                            override fun render(diagnostic: Diagnostic): String =
-                                "Given import must be a compile time constant: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
-                        }
-                    )
-                }
-
-        @JvmField
         val MALFORMED_GIVEN_IMPORT =
             DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
                 .also {

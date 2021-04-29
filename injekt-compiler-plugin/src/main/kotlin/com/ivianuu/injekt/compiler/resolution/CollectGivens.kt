@@ -216,6 +216,9 @@ fun CallableRef.collectGivens(
 
 fun List<GivenImport>.collectImportGivens(context: InjektContext, trace: BindingTrace): List<CallableRef> =
     flatMap { import ->
+        checkNotNull(import.importPath) {
+            "Wtf $import $this"
+        }
         (if (import.importPath!!.endsWith("*")) {
             val packageFqName = FqName(import.importPath.removeSuffix(".*"))
             context.memberScopeForFqName(packageFqName)

@@ -16,9 +16,15 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.psi.*
 
-data class GivenImport(
-    val element: KtElement?,
-    val importPath: String?
+data class GivenImport(val element: KtElement?, val importPath: String?)
+
+fun KtAnnotated.getGivenImports(): List<GivenImport> = findAnnotation(InjektFqNames.GivenImports)
+    ?.valueArguments
+    ?.map { it.toGivenImport() } ?: emptyList()
+
+fun ValueArgument.toGivenImport() = GivenImport(
+    getArgumentExpression(), getArgumentExpression()?.text?.removeSurrounding("\"")
 )
