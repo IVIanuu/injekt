@@ -24,7 +24,7 @@ import com.ivianuu.injekt.scope.*
 import kotlin.reflect.*
 
 /**
- * Installs the given worker in the [InjektWorkerFactory]
+ * Installs the given [ListenableWorker] in the [InjektWorkerFactory]
  *
  * Example:
  * ```
@@ -50,7 +50,7 @@ annotation class InstallWorker {
 internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
 
 /**
- * Factory which is able to create [ListenableWorker]s which are installed via [InstallWorker]
+ * Factory which is able to create [ListenableWorker]s installed via [InstallWorker]
  */
 @Given
 class InjektWorkerFactory(

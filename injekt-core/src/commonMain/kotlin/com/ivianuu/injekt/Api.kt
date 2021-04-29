@@ -33,19 +33,28 @@ package com.ivianuu.injekt
  * ```
  */
 @Target(
+    // @Given class MyClass
     AnnotationTarget.CLASS,
+    // class MyClass @Given constructor()
     AnnotationTarget.CONSTRUCTOR,
+    // @Given myFunction(): Foo = ...
     AnnotationTarget.FUNCTION,
+    // @Given val myProperty: Foo get() = ...
     AnnotationTarget.PROPERTY,
+    // @Given val myVariable: Foo = ...
     AnnotationTarget.LOCAL_VARIABLE,
+    // fun func(@Given Foo: Foo)
     AnnotationTarget.VALUE_PARAMETER,
+    // Providers
+    // val provider = given<(@Given Foo) -> Bar>()
     AnnotationTarget.TYPE,
+    // fun <@Given T> func()
     AnnotationTarget.TYPE_PARAMETER
 )
 annotation class Given
 
 /**
- * Imports givens from the specified [paths] and use them when resolving given arguments
+ * Imports givens from the specified [paths] and use them when resolving given arguments inside the declaration
  */
 @Target(
     AnnotationTarget.CLASS,
@@ -108,15 +117,22 @@ annotation class Qualifier
  * Normally the default value will only be used if no given was found but not if it has errors
  */
 @Target(
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.PROPERTY,
-    AnnotationTarget.TYPE,
-    AnnotationTarget.VALUE_PARAMETER
+    // value parameters
+    // fun func(@Given @DefaultOnAllErrors p: String = "default")
+    AnnotationTarget.VALUE_PARAMETER,
+    // nullable providers
+    // val elements = given<@DefaultOnAllErrors () -> Bar?>()
+    AnnotationTarget.TYPE
 )
 annotation class DefaultOnAllErrors
 
 /**
  * Only includes successful elements in the [Set] and ignores elements with errors
+ *
+ * Should be used like so:
+ * ```
+ * val elements = given<@IgnoreElementsWithErrors Set<Interceptor>>()
+ * ```
  */
 @Target(AnnotationTarget.TYPE)
 annotation class IgnoreElementsWithErrors
