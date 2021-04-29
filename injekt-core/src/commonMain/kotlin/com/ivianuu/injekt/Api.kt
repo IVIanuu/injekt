@@ -35,20 +35,27 @@ package com.ivianuu.injekt
 @Target(
     // @Given class MyClass
     AnnotationTarget.CLASS,
+
     // class MyClass @Given constructor()
     AnnotationTarget.CONSTRUCTOR,
+
     // @Given myFunction(): Foo = ...
     AnnotationTarget.FUNCTION,
+
     // @Given val myProperty: Foo get() = ...
     AnnotationTarget.PROPERTY,
+
     // @Given val myVariable: Foo = ...
     AnnotationTarget.LOCAL_VARIABLE,
+
     // fun func(@Given Foo: Foo)
     AnnotationTarget.VALUE_PARAMETER,
+
     // Providers
     // val provider = given<(@Given Foo) -> Bar>()
     AnnotationTarget.TYPE,
-    // fun <@Given T> func()
+
+    // @Given fun <@Given T> func()
     AnnotationTarget.TYPE_PARAMETER
 )
 annotation class Given
@@ -120,6 +127,7 @@ annotation class Qualifier
     // value parameters
     // fun func(@Given @DefaultOnAllErrors p: String = "default")
     AnnotationTarget.VALUE_PARAMETER,
+
     // nullable providers
     // val elements = given<@DefaultOnAllErrors () -> Bar?>()
     AnnotationTarget.TYPE
