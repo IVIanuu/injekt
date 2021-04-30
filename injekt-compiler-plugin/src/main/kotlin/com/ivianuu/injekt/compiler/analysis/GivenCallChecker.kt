@@ -34,8 +34,6 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
-        if (isIde) return
-
         val resultingDescriptor = resolvedCall.resultingDescriptor
         if (resultingDescriptor !is FunctionDescriptor) return
 

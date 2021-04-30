@@ -208,12 +208,10 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
                 }
             }
 
-            if (!isIde) {
-                trace.report(
-                    InjektErrors.UNUSED_GIVEN_IMPORT
-                        .on(element!!)
-                )
-            }
+            trace.report(
+                InjektErrors.UNUSED_GIVEN_IMPORT
+                    .on(element!!)
+            )
         }
     }
 }
