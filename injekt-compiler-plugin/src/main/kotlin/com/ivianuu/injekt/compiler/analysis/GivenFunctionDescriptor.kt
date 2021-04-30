@@ -39,7 +39,7 @@ class GivenValueParameterDescriptor(
     underlyingDescriptor,
     underlyingDescriptor.index,
     underlyingDescriptor.annotations,
-    underlyingDescriptor.name,
+    underlyingDescriptor.injektName().asNameId(),
     underlyingDescriptor.type,
     underlyingDescriptor.isGiven(context, trace) ||
             underlyingDescriptor.declaresDefaultValue(),

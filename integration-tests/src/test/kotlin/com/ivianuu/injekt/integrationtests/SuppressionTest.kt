@@ -71,8 +71,7 @@ class SuppressionTest {
             }
             fun invoke() {
                 @Given val string = ""
-                @Given val int = 0
-                func()
+                func(int = 0)
             }
         """
     )
