@@ -114,6 +114,7 @@ fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
             else -> emptyList()
         }
     }
+    .distinctBy { it.callable.uniqueKey(context) }
 
 fun Annotated.isGiven(context: InjektContext, trace: BindingTrace?): Boolean {
     @Suppress("IMPLICIT_CAST_TO_ANY")
@@ -216,9 +217,6 @@ fun CallableRef.collectGivens(
 
 fun List<GivenImport>.collectImportGivens(context: InjektContext, trace: BindingTrace): List<CallableRef> =
     flatMap { import ->
-        checkNotNull(import.importPath) {
-            "Wtf $import $this"
-        }
         (if (import.importPath!!.endsWith("*")) {
             val packageFqName = FqName(import.importPath.removeSuffix(".*"))
             context.memberScopeForFqName(packageFqName)
