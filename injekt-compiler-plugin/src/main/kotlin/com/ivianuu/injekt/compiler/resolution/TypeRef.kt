@@ -434,9 +434,9 @@ fun TypeRef.uniqueTypeName(depth: Int = 0): String {
         arguments.forEachIndexed { index, typeArgument ->
             if (index == 0) append("_")
             append(typeArgument.uniqueTypeName(depth + 1))
-            if (index != arguments.lastIndex) append("_/_")
+            if (index != arguments.lastIndex) append("___")
         }
-        if (isMarkedNullable && !isStarProjection) append("?")
+        if (isMarkedNullable && !isStarProjection) append("_nullable")
     }
 }
 
@@ -447,8 +447,9 @@ fun KotlinType.uniqueTypeName(depth: Int = 0): String {
         arguments.forEachIndexed { index, typeArgument ->
             if (index == 0) append("_")
             append(typeArgument.type.uniqueTypeName(depth + 1))
-            if (index != arguments.lastIndex) append("_/_")
+            if (index != arguments.lastIndex) append("___")
         }
+        if (isMarkedNullable) append("_nullable")
     }
 }
 

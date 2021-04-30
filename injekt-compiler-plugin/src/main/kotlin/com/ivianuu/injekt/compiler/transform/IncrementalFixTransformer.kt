@@ -21,29 +21,26 @@ import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.backend.common.ir.*
 import org.jetbrains.kotlin.backend.common.lower.*
-import org.jetbrains.kotlin.backend.common.lower.irBlockBody
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.*
 import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.*
 import org.jetbrains.kotlin.ir.declarations.*
-import org.jetbrains.kotlin.ir.visitors.*
-import org.jetbrains.kotlin.ir.builders.declarations.buildFun
-import org.jetbrains.kotlin.ir.declarations.IrFactory
 import org.jetbrains.kotlin.ir.declarations.impl.*
 import org.jetbrains.kotlin.ir.descriptors.*
 import org.jetbrains.kotlin.ir.symbols.impl.*
-import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.*
+import org.jetbrains.kotlin.ir.visitors.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
+import java.util.*
 
 class IncrementalFixTransformer(
     private val context: InjektContext,
     private val trace: BindingTrace,
     private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
-    private val givensByFile = mutableMapOf<IrFile, MutableSet<IrType>>()
+    private val givensByFile = mutableMapOf<IrFile, MutableSet<CallableRef>>()
     override fun visitFile(declaration: IrFile): IrFile {
         super.visitFile(declaration)
         val givens = givensByFile[declaration] ?: return declaration
@@ -51,6 +48,7 @@ class IncrementalFixTransformer(
         val clazz = IrFactoryImpl.buildClass {
             name = "${pluginContext.moduleDescriptor.name
                 .asString().replace("<", "")
+                .replace("-", "")
                 .replace(">", "")}_${declaration.fileEntry.name.removeSuffix(".kt")
                 .substringAfterLast(".")
                 .substringAfterLast("/")
@@ -62,7 +60,7 @@ class IncrementalFixTransformer(
             declaration.addChild(this)
         }
 
-        val functions = givens.indices.map { index ->
+        val functions = givens.mapIndexed { index, callable ->
             IrFunctionImpl(
                 UNDEFINED_OFFSET,
                 UNDEFINED_OFFSET,
@@ -89,8 +87,26 @@ class IncrementalFixTransformer(
                 declaration.addChild(this)
                 addValueParameter("marker", clazz.defaultType)
                 repeat(index) {
-                    addValueParameter("type$it", pluginContext.irBuiltIns.anyNType)
+                    addValueParameter("index$it", pluginContext.irBuiltIns.stringType)
                 }
+                val callableInfo = callable.toPersistedCallableInfo(context, trace).encode()
+                val classifierInfo = callable
+                    .takeIf { it.callable is ClassConstructorDescriptor }
+                    ?.type?.classifier?.toPersistedClassifierInfo(context, trace)?.encode()
+
+                val finalHash = String(
+                    Base64.getEncoder()
+                        .encode((callableInfo + classifierInfo.orEmpty()).toByteArray())
+                )
+
+                finalHash
+                    .chunked(100)
+                    .forEachIndexed { index, value ->
+                        addValueParameter(
+                            "hash_${index}_$value",
+                            pluginContext.irBuiltIns.intType
+                        )
+                    }
                 body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
                 }
             }
@@ -111,9 +127,9 @@ class IncrementalFixTransformer(
                     declaration.visibility == DescriptorVisibilities.PROTECTED) &&
                 declaration.descriptor.isGiven(context, trace)) {
             givensByFile.getOrPut(declaration.file) { mutableSetOf() } += when (declaration) {
-                is IrClass -> declaration.defaultType
-                is IrFunction -> declaration.returnType
-                is IrProperty -> declaration.getter!!.returnType
+                is IrClass -> declaration.descriptor.getGivenConstructors(context, trace)
+                is IrFunction -> listOf(declaration.descriptor.toCallableRef(context, trace))
+                is IrProperty -> listOf(declaration.descriptor.toCallableRef(context, trace))
                 else -> return super.visitDeclaration(declaration)
             }
         }

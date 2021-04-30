@@ -20,7 +20,6 @@ import com.ivianuu.injekt.test.*
 import io.kotest.assertions.throwables.*
 import io.kotest.matchers.*
 import org.junit.*
-import java.lang.IllegalStateException
 
 class TypeKeyTest {
     @Test

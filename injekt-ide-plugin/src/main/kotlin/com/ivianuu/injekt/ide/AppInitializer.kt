@@ -20,14 +20,9 @@ import com.intellij.ide.*
 import com.intellij.openapi.application.*
 import com.intellij.openapi.extensions.*
 import com.intellij.openapi.project.*
-import com.intellij.psi.*
 import com.ivianuu.injekt.compiler.analysis.*
-import org.jetbrains.kotlin.analyzer.*
 import org.jetbrains.kotlin.extensions.*
 import org.jetbrains.kotlin.extensions.internal.*
-import org.jetbrains.kotlin.idea.caches.project.*
-import org.jetbrains.kotlin.idea.core.*
-import org.jetbrains.kotlin.idea.facet.*
 import org.jetbrains.kotlin.resolve.diagnostics.*
 
 @Suppress("UnstableApiUsage")

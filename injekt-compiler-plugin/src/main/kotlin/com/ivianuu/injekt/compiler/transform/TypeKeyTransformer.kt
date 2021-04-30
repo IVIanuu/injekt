@@ -35,36 +35,9 @@ import org.jetbrains.kotlin.load.java.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
-import kotlin.collections.List
-import kotlin.collections.Map
-import kotlin.collections.asSequence
-import kotlin.collections.associateWith
 import kotlin.collections.component1
 import kotlin.collections.component2
-import kotlin.collections.emptyMap
-import kotlin.collections.filter
-import kotlin.collections.firstOrNull
-import kotlin.collections.forEach
-import kotlin.collections.forEachIndexed
-import kotlin.collections.get
-import kotlin.collections.isNotEmpty
-import kotlin.collections.lastIndex
-import kotlin.collections.listOfNotNull
-import kotlin.collections.map
-import kotlin.collections.mapValues
-import kotlin.collections.minusAssign
-import kotlin.collections.mutableListOf
-import kotlin.collections.mutableMapOf
-import kotlin.collections.mutableSetOf
-import kotlin.collections.none
-import kotlin.collections.plus
-import kotlin.collections.plusAssign
-import kotlin.collections.reduce
-import kotlin.collections.reversed
 import kotlin.collections.set
-import kotlin.collections.single
-import kotlin.collections.sortedBy
-import kotlin.collections.toList
 
 class TypeKeyTransformer(
     private val context: InjektContext,
