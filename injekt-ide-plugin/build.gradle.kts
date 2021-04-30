@@ -48,6 +48,10 @@ intellij {
     localPath = "/home/manu/android-studio"
 }
 
+tasks.withType<RunIdeTask> {
+    jvmArgs("-Xmx3072m")
+}
+
 tasks.withType<PublishTask> {
     //token(project.property("ideaToken") as String)
 }
