@@ -69,6 +69,11 @@ class SuppressionTest {
                 given<String>()
                 given<Int>()
             }
+            fun invoke() {
+                @Given val string = ""
+                @Given val int = 0
+                func()
+            }
         """
     )
 

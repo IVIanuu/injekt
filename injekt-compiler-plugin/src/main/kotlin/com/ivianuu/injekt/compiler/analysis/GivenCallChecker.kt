@@ -55,13 +55,13 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
             .asSequence()
             .map { parameterName ->
                 callable.callable.valueParameters.single {
-                    it.name.asString() == parameterName
+                    it.injektName() == parameterName
                 }
             }
             .filter { resolvedCall.valueArguments[it] is DefaultValueArgument }
             .map { parameter ->
                 GivenRequest(
-                    type = callable.parameterTypes[parameter.name.asString()]!!,
+                    type = callable.parameterTypes[parameter.injektName()]!!,
                     defaultStrategy = if (parameter is ValueParameterDescriptor &&
                         parameter.hasDefaultValueIgnoringGiven) {
                         if (parameter.injektName() in callable.defaultOnAllErrorParameters)
@@ -69,7 +69,7 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
                         else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
                     } else GivenRequest.DefaultStrategy.NONE,
                     callableFqName = resultingDescriptor.fqNameSafe,
-                    parameterName = parameter.name,
+                    parameterName = parameter.injektName().asNameId(),
                     isInline = InlineUtil.isInlineParameter(parameter),
                     isLazy = false,
                     requestDescriptor = context.scope.ownerDescriptor.cast()

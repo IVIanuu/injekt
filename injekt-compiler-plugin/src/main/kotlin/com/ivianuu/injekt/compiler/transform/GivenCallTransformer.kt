@@ -152,7 +152,7 @@ class GivenCallTransformer(
                         putValueArgument(
                             symbol.owner
                                 .valueParameters
-                                .first { it.name == request.parameterName }
+                                .first { it.descriptor.injektName() == request.parameterName.asString() }
                                 .index,
                             expression
                         )

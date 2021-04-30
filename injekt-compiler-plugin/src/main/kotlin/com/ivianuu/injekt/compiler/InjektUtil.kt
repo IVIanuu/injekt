@@ -166,12 +166,10 @@ fun ParameterDescriptor.injektName(): String {
         original == callable?.dispatchReceiverParameter?.original ||
                 (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor)-> "_dispatchReceiver"
         original == callable?.extensionReceiverParameter?.original -> "_extensionReceiver"
-        else -> {
-            if (name.isSpecial)
-                type.constructor.declarationDescriptor!!.name
-                    .asString().decapitalize()
-            else name.asString()
-        }
+        else -> if (name.isSpecial)
+            type.constructor.declarationDescriptor!!.name
+                .asString().decapitalize()
+        else name.asString()
     }
 }
 
