@@ -147,9 +147,9 @@ fun DeclarationDescriptor.uniqueKey(context: InjektContext): String {
         is TypeAliasDescriptor -> "typealias:$fqNameSafe"
         is TypeParameterDescriptor ->
             "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey(context)}"
-        is ParameterDescriptor -> ""
-        is ValueParameterDescriptor -> ""
-        is VariableDescriptor -> ""
+        is ReceiverParameterDescriptor -> "receiver:$fqNameSafe"
+        is ValueParameterDescriptor -> "value_parameter:$fqNameSafe"
+        is VariableDescriptor -> "variable:${fqNameSafe}"
         else -> error("Unexpected declaration $this")
     }
 }
