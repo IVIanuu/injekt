@@ -87,7 +87,7 @@ class IncrementalFixTransformer(
                 declaration.addChild(this)
                 addValueParameter("marker", clazz.defaultType)
                 repeat(index) {
-                    addValueParameter("index$it", pluginContext.irBuiltIns.stringType)
+                    addValueParameter("index$it", pluginContext.irBuiltIns.byteType)
                 }
                 val callableInfo = callable.toPersistedCallableInfo(context, trace).encode()
                 val classifierInfo = callable
