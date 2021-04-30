@@ -33,23 +33,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
-import kotlin.collections.List
-import kotlin.collections.Map
-import kotlin.collections.all
-import kotlin.collections.any
-import kotlin.collections.asSequence
-import kotlin.collections.emptyList
-import kotlin.collections.emptyMap
-import kotlin.collections.filter
-import kotlin.collections.firstOrNull
-import kotlin.collections.indices
-import kotlin.collections.isNotEmpty
-import kotlin.collections.joinToString
-import kotlin.collections.listOfNotNull
-import kotlin.collections.mapNotNull
-import kotlin.collections.mutableMapOf
-import kotlin.collections.none
-import kotlin.collections.plus
 import kotlin.collections.set
 
 val isIde: Boolean get() = Project::class.java.name == "com.intellij.openapi.project.Project"
@@ -219,12 +202,13 @@ fun TypeParameterDescriptor.isGivenConstraint(
     trace: BindingTrace?
 ): Boolean {
     trace?.get(InjektWritableSlices.IS_GIVEN_CONSTRAINT, this)?.let { return it }
-    var isGivenConstraint = hasAnnotation(InjektFqNames.Given) ||
-            findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.Given) == true
-    if (!isGivenConstraint && isDeserializedDeclaration() &&
-        containingDeclaration is ClassDescriptor) {
-        isGivenConstraint = name.asString() in context.classifierInfoFor(containingDeclaration.cast(), trace)
+
+    val isGivenConstraint = if (isDeserializedDeclaration() && containingDeclaration is ClassDescriptor) {
+        name.asString() in context.classifierInfoFor(containingDeclaration.cast(), trace)
             ?.givenConstraintTypeParameters ?: emptyList()
+    } else {
+        hasAnnotation(InjektFqNames.Given) ||
+                findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.Given) == true
     }
 
     trace?.record(InjektWritableSlices.IS_GIVEN_CONSTRAINT, this, isGivenConstraint)
@@ -238,12 +222,14 @@ fun TypeParameterDescriptor.isForTypeKey(
     trace?.get(InjektWritableSlices.IS_FOR_TYPE_KEY, this)?.let {
         return it
     }
-    var isForTypeKey = hasAnnotation(InjektFqNames.ForTypeKey) ||
-            findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.ForTypeKey) == true
-    if (!isForTypeKey && isDeserializedDeclaration() &&
+
+    val isForTypeKey = if (isDeserializedDeclaration() &&
         containingDeclaration is ClassDescriptor) {
-        isForTypeKey = name.asString() in context.classifierInfoFor(containingDeclaration.cast(), trace)
+        name.asString() in context.classifierInfoFor(containingDeclaration.cast(), trace)
             ?.forTypeKeyTypeParameters ?: emptyList()
+    } else {
+        hasAnnotation(InjektFqNames.ForTypeKey) ||
+                findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.ForTypeKey) == true
     }
 
     trace?.record(InjektWritableSlices.IS_FOR_TYPE_KEY, this, isForTypeKey)
@@ -258,24 +244,24 @@ fun ClassifierDescriptor.isSingletonGiven(
     trace.get(InjektWritableSlices.IS_SINGLETON_GIVEN, this)?.let {
         return it
     }
-    var isSingletonGiven = kind == ClassKind.CLASS &&
-            getGivenConstructors(context, trace)
-                .let { givenConstructors ->
-                    givenConstructors.isNotEmpty() &&
-                            givenConstructors.all { it.callable.valueParameters.isEmpty() }
-                } &&
-            declaredTypeParameters.none { it.isForTypeKey(context, trace) } &&
-            unsubstitutedMemberScope.getContributedDescriptors()
-                .none {
-                    (it is ClassDescriptor &&
-                            it.isInner) ||
-                    (it is PropertyDescriptor &&
-                            it.hasBackingField(trace.bindingContext))
-                }
-
-    if (!isSingletonGiven && isDeserializedDeclaration()) {
-        isSingletonGiven = context.classifierInfoFor(this, trace)
+    var isSingletonGiven = if (isDeserializedDeclaration()) {
+        context.classifierInfoFor(this, trace)
             ?.isOptimizableGiven == true
+    } else {
+        kind == ClassKind.CLASS &&
+                getGivenConstructors(context, trace)
+                    .let { givenConstructors ->
+                        givenConstructors.isNotEmpty() &&
+                                givenConstructors.all { it.callable.valueParameters.isEmpty() }
+                    } &&
+                declaredTypeParameters.none { it.isForTypeKey(context, trace) } &&
+                unsubstitutedMemberScope.getContributedDescriptors()
+                    .none {
+                        (it is ClassDescriptor &&
+                                it.isInner) ||
+                                (it is PropertyDescriptor &&
+                                        it.hasBackingField(trace.bindingContext))
+                    }
     }
 
     trace.record(InjektWritableSlices.IS_SINGLETON_GIVEN, this, isSingletonGiven)
