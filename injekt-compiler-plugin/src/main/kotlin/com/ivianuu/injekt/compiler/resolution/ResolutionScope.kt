@@ -190,7 +190,7 @@ class ResolutionScope(
                     DescriptorVisibilities.INTERNAL.isVisible(
                         null,
                         given.callable.callable,
-                        request.requestDescriptor
+                        request.requestDescriptor!!
                     )
         }?.takeIf { it.isNotEmpty() }
     }

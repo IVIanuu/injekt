@@ -33,6 +33,12 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
         if (bindingContext == null)
             return false
 
+        if (diagnostic.factory == Errors.INAPPLICABLE_INFIX_MODIFIER ||
+                diagnostic.factory == Errors.INAPPLICABLE_OPERATOR_MODIFIER)
+            return diagnostic.psiElement.parent.parent.safeAs<KtNamedFunction>()
+                ?.valueParameters
+                ?.count { !it.hasAnnotation(InjektFqNames.Given) } == 1
+
         if (diagnostic.factory == Errors.UNUSED_TYPEALIAS_PARAMETER)
             return true
 

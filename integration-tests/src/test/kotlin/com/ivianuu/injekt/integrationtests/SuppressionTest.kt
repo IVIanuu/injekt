@@ -71,4 +71,44 @@ class SuppressionTest {
             }
         """
     )
+
+    @Test
+    fun testCanUseInfixWithGiven() = codegen(
+        """
+            interface Combine<T> {
+                fun plus(a: T, b: T): T
+            }
+
+            infix fun <T> T.combine(other: T, @Given combine: Combine<T>): T = combine.plus(this, other)
+            
+            @Given object StringCombine : Combine<String> {
+                override fun plus(a: String, b: String) = a + b
+            }
+
+            fun invoke() {
+                "a" combine "b"
+            }
+        """
+    )
+
+    @Test
+    fun testCanUseOperatorWithGiven() = codegen(
+        """
+            interface Combine<T> {
+                fun plus(a: T, b: T): T
+            }
+
+            operator fun <T> T.plus(other: T, @Given combine: Combine<T>): T = combine.plus(this, other)
+
+            inline class Key(val value: String)
+
+            @Given object KeyCombine : Combine<Key> {
+                override fun plus(a: Key, b: Key) = Key(a.value + b.value)
+            }
+
+            fun invoke() {
+                Key("a") + Key("b")
+            }
+        """
+    )
 }
