@@ -475,8 +475,10 @@ fun compareType(a: TypeRef, b: TypeRef, context: InjektContext): Int {
     if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
 
     if (a.classifier != b.classifier) {
-        if (a.isSubTypeOf(context, b)) return -1
-        if (b.isSubTypeOf(context, a)) return 1
+        val aSubTypeOfB = a.isSubTypeOf(context, b)
+        val bSubTypeOfA = b.isSubTypeOf(context, a)
+        if (aSubTypeOfB && !bSubTypeOfA) return -1
+        if (bSubTypeOfA && !aSubTypeOfB) return 1
     } else {
         var diff = 0
         a.arguments.forEachWith(b.arguments) { aTypeArgument, bTypeArgument ->
