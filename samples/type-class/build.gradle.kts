@@ -14,21 +14,25 @@
  * limitations under the License.
  */
 
-include(
-    ":injekt-android",
-    ":injekt-android-work",
-    ":injekt-common",
-    ":injekt-compiler-plugin",
-    ":injekt-compose",
-    ":injekt-core",
-    ":injekt-coroutines",
-    ":injekt-gradle-plugin",
-    ":injekt-ide-plugin",
-    ":injekt-ktor",
-    ":injekt-scope",
-    ":integration-tests",
-    ":samples:type-class",
-    ":test-util",
-    "samples:android-app",
-    "samples:coffee-maker"
-)
+plugins {
+    kotlin("multiplatform")
+}
+
+kotlin {
+    jvm {
+        compilations.forEach {
+            it.kotlinOptions {
+                jvmTarget = "1.8"
+            }
+        }
+    }
+    sourceSets {
+        named("jvmMain") {
+            dependencies {
+                api(project(":injekt-core"))
+                configurations.getByName("kotlinCompilerPluginClasspath")
+                    .dependencies.add(project(":injekt-compiler-plugin"))
+            }
+        }
+    }
+}

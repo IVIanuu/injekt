@@ -14,21 +14,24 @@
  * limitations under the License.
  */
 
-include(
-    ":injekt-android",
-    ":injekt-android-work",
-    ":injekt-common",
-    ":injekt-compiler-plugin",
-    ":injekt-compose",
-    ":injekt-core",
-    ":injekt-coroutines",
-    ":injekt-gradle-plugin",
-    ":injekt-ide-plugin",
-    ":injekt-ktor",
-    ":injekt-scope",
-    ":integration-tests",
-    ":samples:type-class",
-    ":test-util",
-    "samples:android-app",
-    "samples:coffee-maker"
-)
+package com.ivianuu.injekt.samples.typeclass
+
+import com.ivianuu.injekt.*
+
+interface Ord<in T> {
+    fun compare(a: T, b: T): Int
+}
+
+infix fun <T> T.compare(other: T, @Given ord: Ord<T>): Int = ord.compare(this, other)
+
+fun <T> List<T>.ordered(): List<T> =
+    sortedWith { a, b -> a.compare(b, IntOrd) }
+
+@Given
+object IntOrd : Ord<Int> {
+    override fun compare(a: Int, b: Int): Int = a.compareTo(b)
+}
+
+fun main() {
+    val items = listOf(5, 3, 4, 1, 2).ordered()
+}
