@@ -160,12 +160,6 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
                             .on(element!!)
                     )
                     return@forEach
-                } else if (listOf(import).collectImportGivens(context, trace).isEmpty()) {
-                    trace.report(
-                        InjektErrors.NON_GIVEN_IMPORT
-                            .on(element!!)
-                    )
-                    return@forEach
                 }
             } else {
                 val fqName = FqName(importPath.removeSuffix(".*"))
@@ -195,12 +189,6 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
                     if (importedDeclarations == null || importedDeclarations.isEmpty()) {
                         trace.report(
                             InjektErrors.UNRESOLVED_GIVEN_IMPORT
-                                .on(element!!)
-                        )
-                        return@forEach
-                    } else if (listOf(import).collectImportGivens(context, trace).isEmpty()) {
-                        trace.report(
-                            InjektErrors.NON_GIVEN_IMPORT
                                 .on(element!!)
                         )
                         return@forEach
