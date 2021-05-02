@@ -26,19 +26,19 @@ import kotlin.reflect.*
 inline fun <K, V> setOfPairsToMap(@Given pairs: Set<Pair<K, V>>): Map<K, V> = pairs.toMap()
 
 /**
- * Allows to use a [KClass] of type [Ŧ]
+ * Allows to use a [KClass] for [T]
  */
 @Given
 inline fun <reified T : Any> givenKClass(): KClass<T> = T::class
 
 /**
- * Allows to use a [TypeKey] of type [T]
+ * Allows to use a [TypeKey] for [T]
  */
 @Given
 inline fun <@ForTypeKey T> givenTypeKey(): TypeKey<T> = typeKeyOf()
 
 /**
- * Allows to use a [Lazy] for [Ŧ]
+ * Allows to use a [Lazy] for [T]
  */
 @Given
 inline fun <T> givenLazy(@Given noinline init: () -> T): Lazy<T> = lazy(init)
