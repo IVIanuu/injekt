@@ -24,8 +24,8 @@ interface Ord<in T> {
 
 infix fun <T> T.compare(other: T, @Given ord: Ord<T>): Int = ord.compare(this, other)
 
-fun <T> List<T>.ordered(): List<T> =
-    sortedWith { a, b -> a.compare(b, IntOrd) }
+fun <T> List<T>.ordered(@Given ord: Ord<T>): List<T> =
+    sortedWith { a, b -> a.compare(b) }
 
 @Given
 object IntOrd : Ord<Int> {
