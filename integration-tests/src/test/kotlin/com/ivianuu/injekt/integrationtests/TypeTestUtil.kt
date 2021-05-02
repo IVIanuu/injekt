@@ -144,13 +144,13 @@ class TypeCheckerContext(val module: ModuleDescriptor) {
         ClassId.topLevel(fqName)
     )!!.defaultType.toTypeRef(context, null)
 
-    infix fun TypeRef.shouldBeAssignable(other: TypeRef) {
+    infix fun TypeRef.shouldBeAssignableTo(other: TypeRef) {
         if (!isAssignableTo(context, other)) {
             throw AssertionError("'$this' is not assignable to '$other'")
         }
     }
 
-    infix fun TypeRef.shouldNotBeAssignable(other: TypeRef) {
+    infix fun TypeRef.shouldNotBeAssignableTo(other: TypeRef) {
         if (isAssignableTo(context, other)) {
             throw AssertionError("'$this' is assignable to '$other'")
         }
