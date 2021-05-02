@@ -361,9 +361,9 @@ class GivenCallTransformer(
                 result.dependencyResults.values.single()
                     .cast<ResolutionResult.Success.WithCandidate.Value>()
             when {
-                singleDependency.candidate.type.isSubTypeOf(context, given.type) ->
+                singleDependency.candidate.type.isSubTypeOf(scope.typeContext, given.type) ->
                     expressionFor(result.dependencyResults.values.single().cast())
-                singleDependency.candidate.type.isSubTypeOf(context, given.collectionElementType) -> {
+                singleDependency.candidate.type.isSubTypeOf(scope.typeContext, given.collectionElementType) -> {
                     DeclarationIrBuilder(pluginContext, symbol)
                         .irCall(iterableToSet)
                         .apply {
@@ -419,7 +419,7 @@ class GivenCallTransformer(
                         if (dependency !is ResolutionResult.Success.WithCandidate.Value)
                             return@forEach
                         if (dependency.candidate.type.isSubTypeOf(
-                                this@GivenCallTransformer.context,
+                                this@setExpression.scope.typeContext,
                                 given.collectionElementType)) {
                             +irCall(setAddAll).apply {
                                 dispatchReceiver = irGet(tmpSet)

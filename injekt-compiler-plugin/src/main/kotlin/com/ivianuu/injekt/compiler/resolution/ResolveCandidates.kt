@@ -193,11 +193,11 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
             request.type.qualifiers.isEmpty() &&
             request.type.isFunctionTypeWithOnlyGivenParameters
     if (!isInlineProviderCandidateType) resultsByType[request.type]?.let { return it }
-    val userCandidates = givensForRequest(request)
+    val userCandidates = givensForRequest(request, typeContext)
     val result = if (userCandidates != null) {
         resolveCandidates(request, userCandidates)
     } else {
-        val frameworkCandidate = frameworkGivenForRequest(request)
+        val frameworkCandidate = frameworkGivenForRequest(request, typeContext)
         when {
             frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate)
             request.defaultStrategy == GivenRequest.DefaultStrategy.NONE -> ResolutionResult.Failure.NoCandidates
@@ -413,7 +413,7 @@ private inline fun <T> ResolutionScope.compareCandidate(
         if (bSubClassNesting < aSubClassNesting) return 1
     }
 
-    val diff = compareType(type(a), type(b), context)
+    val diff = compareType(type(a), type(b), typeContext)
     if (diff < 0) return -1
     if (diff > 0) return 1
 
@@ -451,7 +451,7 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     diff = 0
     for (aDependency in aDependencies) {
         for (bDependency in bDependencies) {
-            diff += compareType(aDependency, bDependency, context)
+            diff += compareType(aDependency, bDependency, typeContext)
         }
     }
     if (diff < 0) return -1
@@ -460,7 +460,7 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     return 0
 }
 
-fun compareType(a: TypeRef, b: TypeRef, context: InjektContext): Int {
+fun compareType(a: TypeRef, b: TypeRef, context: TypeContext): Int {
     if (a === b) return 0
     if (!a.isStarProjection && b.isStarProjection) return -1
     if (a.isStarProjection && !b.isStarProjection) return 1

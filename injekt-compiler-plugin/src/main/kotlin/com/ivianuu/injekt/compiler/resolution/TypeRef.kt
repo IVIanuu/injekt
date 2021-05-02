@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.types.model.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 data class ClassifierRef(
+    val key: String,
     val fqName: FqName,
     val typeParameters: List<ClassifierRef> = emptyList(),
     val superTypes: List<TypeRef> = emptyList(),
@@ -43,8 +44,8 @@ data class ClassifierRef(
     val primaryConstructorPropertyParameters: List<Name> = emptyList(),
     val variance: TypeVariance = TypeVariance.INV
 ) {
-    override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
-    override fun hashCode(): Int = fqName.hashCode()
+    override fun equals(other: Any?): Boolean = (other is ClassifierRef) && key == other.key
+    override fun hashCode(): Int = key.hashCode()
 
     val defaultType: TypeRef by unsafeLazy {
         SimpleTypeRef(
@@ -85,6 +86,7 @@ fun ClassifierDescriptor.toClassifierRef(
             .sortedQualifiers()
 
     return ClassifierRef(
+        key = original.uniqueKey(context),
         fqName = original.fqNameSafe,
         typeParameters = (original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
             ?.map { it.toClassifierRef(context, trace) } ?: emptyList(),
@@ -220,12 +222,6 @@ sealed class TypeRef {
                     }
             }
     }
-}
-
-fun TypeRef.forEachType(action: (TypeRef) -> Unit) {
-    action(this)
-    arguments.forEach { it.forEachType(action) }
-    qualifiers.forEach { it.forEachType(action) }
 }
 
 fun TypeRef.anyType(action: (TypeRef) -> Boolean): Boolean =
@@ -378,7 +374,7 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
 }
 
 val STAR_PROJECTION_TYPE = SimpleTypeRef(
-    classifier = ClassifierRef(StandardNames.FqNames.any.toSafe()),
+    classifier = ClassifierRef("*", StandardNames.FqNames.any.toSafe()),
     isStarProjection = true
 )
 
@@ -454,7 +450,7 @@ fun KotlinType.uniqueTypeName(depth: Int = 0): String {
 }
 
 fun getSubstitutionMap(
-    context: InjektContext,
+    context: TypeContext,
     pairs: List<Pair<TypeRef, TypeRef>>
 ): Map<ClassifierRef, TypeRef> {
     if (pairs.isEmpty()) return emptyMap()
@@ -525,14 +521,19 @@ fun getSubstitutionMap(
 }
 
 fun TypeRef.isAssignableTo(
-    context: InjektContext,
+    context: TypeContext,
     superType: TypeRef
 ): Boolean {
     if (superType.isStarProjection) return true
     if (classifier.fqName == InjektFqNames.Nothing) return true
 
-    if (classifier.isTypeParameter)
+    if (classifier.isTypeParameter &&
+        classifier !in context.staticTypeParameters)
         return superType.isAssignableToTypeParameter(context, this)
+
+    if (superType.classifier.isTypeParameter &&
+        superType.classifier !in context.staticTypeParameters)
+            return isAssignableToTypeParameter(context, superType)
 
     if (!qualifiers.areQualifiersAssignable(context, superType.qualifiers))
         return false
@@ -541,7 +542,7 @@ fun TypeRef.isAssignableTo(
 }
 
 private fun TypeRef.isAssignableToTypeParameter(
-    context: InjektContext,
+    context: TypeContext,
     typeParameter: TypeRef
 ): Boolean {
     if (typeParameter.qualifiers.isNotEmpty() &&
@@ -553,7 +554,7 @@ private fun TypeRef.isAssignableToTypeParameter(
 }
 
 private fun TypeRef.isSubTypeOfSameClassifier(
-    context: InjektContext,
+    context: TypeContext,
     superType: TypeRef
 ): Boolean {
     if (this == superType) return true
@@ -574,7 +575,7 @@ private fun TypeRef.isSubTypeOfSameClassifier(
 }
 
 fun TypeRef.isSubTypeOf(
-    context: InjektContext,
+    context: TypeContext,
     superType: TypeRef
 ): Boolean {
     if (superType.isStarProjection) return true
@@ -582,15 +583,18 @@ fun TypeRef.isSubTypeOf(
     if (isNullableType && !superType.isNullableType) return false
     if (superType.classifier.fqName == InjektFqNames.Any)
         return superType.qualifiers.isEmpty() ||
-                (qualifiers.isNotEmpty() && qualifiers.areSubQualifiersOf(context, superType.qualifiers))
+                (qualifiers.isNotEmpty() &&
+                        qualifiers.areSubQualifiersOf(context, superType.qualifiers))
 
     val subTypeView = subtypeView(superType.classifier)
     if (subTypeView != null)
         return subTypeView.isSubTypeOfSameClassifier(context, superType)
 
-    if (superType.classifier.isTypeParameter) {
+    if (superType.classifier.isTypeParameter &&
+            superType.classifier !in context.staticTypeParameters) {
         if (superType.qualifiers.isNotEmpty() &&
-            (qualifiers.isEmpty() || !qualifiers.areSubQualifiersOf(context, superType.qualifiers))
+            (qualifiers.isEmpty() ||
+                    !qualifiers.areSubQualifiersOf(context, superType.qualifiers))
         ) return false
         return superType.superTypes.all { isSubTypeOf(context, it) }
     }
@@ -606,8 +610,8 @@ fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
 }
 
 fun List<TypeRef>.areQualifiersAssignable(
-    context: InjektContext,
-    superQualifiers: List<TypeRef>,
+    context: TypeContext,
+    superQualifiers: List<TypeRef>
 ): Boolean {
     if (size != superQualifiers.size) return false
     forEachWith(superQualifiers) { thisQualifier, superQualifier ->
@@ -618,8 +622,8 @@ fun List<TypeRef>.areQualifiersAssignable(
 }
 
 fun List<TypeRef>.areSubQualifiersOf(
-    context: InjektContext,
-    superQualifiers: List<TypeRef>,
+    context: TypeContext,
+    superQualifiers: List<TypeRef>
 ): Boolean {
     for (superQualifier in superQualifiers) {
         val thisQualifier = firstOrNull { it.classifier == superQualifier.classifier }
@@ -661,4 +665,22 @@ fun effectiveVariance(
     if (useSite != TypeVariance.INV) return useSite
     if (declared != TypeVariance.INV) return declared
     return originalDeclared
+}
+
+class TypeContext(
+    val injektContext: InjektContext,
+    val staticTypeParameters: List<ClassifierRef>
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as TypeContext
+
+        if (staticTypeParameters != other.staticTypeParameters) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = staticTypeParameters.hashCode()
 }

@@ -26,23 +26,25 @@ class TypeSubstitutionTest {
     @Test
     fun testGetSubstitutionMap() = withTypeCheckerContext {
         val superType = typeParameter()
-        val map = getSubstitutionMap(context, listOf(stringType to superType))
+        val map = getSubstitutionMap(typeContext, listOf(stringType to superType))
         map[superType.classifier] shouldBe stringType
     }
 
     @Test
     fun testGetSubstitutionMapWithNullableTypes() = withTypeCheckerContext {
         val superType = typeParameter()
-        val map = getSubstitutionMap(context, listOf(stringType to superType.nullable()))
+        val map = getSubstitutionMap(typeContext, listOf(stringType to superType.nullable()))
         map[superType.classifier] shouldBe stringType.nullable()
     }
 
     @Test
     fun testGetSubstitutionMapWithQualifierInSuperType() = withTypeCheckerContext {
         val qualifier = ClassifierRef(
+            "MyQualifier",
             FqName("MyQualifier"),
             typeParameters = listOf(
                 ClassifierRef(
+                    key = "MyQualifier.T",
                     fqName = FqName("MyQualifier.T")
                 )
             )
@@ -50,7 +52,7 @@ class TypeSubstitutionTest {
         val classType = classType(anyType.qualified(qualifier.typeWith(stringType)))
         val typeParameter = typeParameter()
         val superType = typeParameter(anyNType.qualified(qualifier.typeWith(typeParameter)))
-        val map = getSubstitutionMap(context, listOf(classType to superType))
+        val map = getSubstitutionMap(typeContext, listOf(classType to superType))
         map[superType.classifier] shouldBe classType
         map[typeParameter.classifier] shouldBe stringType
     }
@@ -61,7 +63,7 @@ class TypeSubstitutionTest {
         val typeParameterS = typeParameter(listType.typeWith(typeParameterU))
         val typeParameterT = typeParameter(typeParameterS)
         val substitutionType = listType.typeWith(stringType)
-        val map = getSubstitutionMap(context, listOf(substitutionType to typeParameterT))
+        val map = getSubstitutionMap(typeContext, listOf(substitutionType to typeParameterT))
         map[typeParameterT.classifier] shouldBe substitutionType
         map[typeParameterS.classifier] shouldBe substitutionType
         map[typeParameterU.classifier] shouldBe stringType
@@ -70,7 +72,7 @@ class TypeSubstitutionTest {
     @Test
     fun testGetSubstitutionMapWithNestedGenerics() = withTypeCheckerContext {
         val superType = typeParameter()
-        val map = getSubstitutionMap(context, listOf(listType.typeWith(stringType) to listType.typeWith(superType)))
+        val map = getSubstitutionMap(typeContext, listOf(listType.typeWith(stringType) to listType.typeWith(superType)))
         map[superType.classifier] shouldBe stringType
     }
 
@@ -79,7 +81,7 @@ class TypeSubstitutionTest {
         val unqualifiedSuperType = typeParameter()
         val qualifiedSuperType = unqualifiedSuperType.qualified(qualifier1)
         val substitutionType = stringType.qualified(qualifier1)
-        val map = getSubstitutionMap(context, listOf(substitutionType to qualifiedSuperType))
+        val map = getSubstitutionMap(typeContext, listOf(substitutionType to qualifiedSuperType))
         map[unqualifiedSuperType.classifier] shouldBe stringType
     }
 
@@ -88,16 +90,18 @@ class TypeSubstitutionTest {
         val typeParameter1 = typeParameter()
         val typeParameter2 = typeParameter()
         val qualifier = ClassifierRef(
+            "MyQualifier",
             FqName("MyQualifier"),
             typeParameters = listOf(
                 ClassifierRef(
+                    key = "MyQualifier.T",
                     fqName = FqName("MyQualifier.T")
                 )
             )
         )
         val superType = typeParameter1.qualified(qualifier.defaultType.typeWith(typeParameter2))
         val substitutionType = stringType.qualified(qualifier.defaultType.typeWith(intType))
-        val map = getSubstitutionMap(context, listOf(substitutionType to superType))
+        val map = getSubstitutionMap(typeContext, listOf(substitutionType to superType))
         map[typeParameter1.classifier] shouldBe stringType
         map[typeParameter2.classifier] shouldBe intType
     }
@@ -107,7 +111,7 @@ class TypeSubstitutionTest {
         val typeParameter1 = typeParameter()
         val typeParameter2 = typeParameter(typeParameter1)
         val map = getSubstitutionMap(
-            context,
+            typeContext,
             listOf(
                 listType.typeWith(stringType) to listType.typeWith(typeParameter2),
                 charSequenceType to typeParameter1
@@ -121,7 +125,7 @@ class TypeSubstitutionTest {
     fun testGetSubstitutionMapWithSubClass() = withTypeCheckerContext {
         val classType = classType(listType.typeWith(stringType))
         val typeParameter = typeParameter()
-        val map = getSubstitutionMap(context, listOf(classType to listType.typeWith(typeParameter)))
+        val map = getSubstitutionMap(typeContext, listOf(classType to listType.typeWith(typeParameter)))
         map.shouldHaveSize(1)
         map.shouldContain(typeParameter.classifier, stringType)
     }
@@ -131,7 +135,7 @@ class TypeSubstitutionTest {
         val typeParameterS = typeParameter()
         val typeParameterT = typeParameter(typeParameterS.qualified(qualifier1))
         val substitutionType = stringType.qualified(qualifier1)
-        val map = getSubstitutionMap(context, listOf(substitutionType to typeParameterT))
+        val map = getSubstitutionMap(typeContext, listOf(substitutionType to typeParameterT))
         map[typeParameterT.classifier] shouldBe substitutionType
         map[typeParameterS.classifier] shouldBe stringType
     }
@@ -141,7 +145,7 @@ class TypeSubstitutionTest {
         val typeParameterS = typeParameter()
         val typeParameterT = typeParameter(typeParameterS.qualified(qualifier1))
         val substitutionType = stringType.qualified(qualifier1, qualifier2)
-        val map = getSubstitutionMap(context, listOf(substitutionType to typeParameterT))
+        val map = getSubstitutionMap(typeContext, listOf(substitutionType to typeParameterT))
         map[typeParameterT.classifier] shouldBe substitutionType
         map[typeParameterS.classifier] shouldBe stringType.qualified(qualifier2)
     }

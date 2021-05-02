@@ -164,6 +164,30 @@ class SubtypingTest {
     }
 
     @Test
+    fun testIsNotSubTypeOfTypeParameterInScope() = withTypeCheckerContext {
+        val typeParameter = typeParameter()
+        if (stringType.isSubTypeOf(
+                TypeContext(injektContext, listOf(typeParameter.classifier)),
+                typeParameter
+            )) {
+            throw AssertionError("'$stringType' is sub type of '$typeParameter'")
+        }
+    }
+
+    @Test
+    fun testIsSubTypeOfTypeParameterInScope() = withTypeCheckerContext {
+        val superTypeParameter = typeParameter()
+        val subTypeParameter = typeParameter(superTypeParameter)
+        if (!subTypeParameter.isSubTypeOf(
+                TypeContext(injektContext, listOf(superTypeParameter.classifier,
+                    subTypeParameter.classifier)),
+                superTypeParameter
+            )) {
+            throw AssertionError("'$subTypeParameter' is not sub type of '$superTypeParameter'")
+        }
+    }
+
+    @Test
     fun testComposableSubTypeOfTypeParameterWithNullableAnyUpperBound() = withTypeCheckerContext {
         composableFunction(0) shouldBeAssignableTo typeParameter()
     }

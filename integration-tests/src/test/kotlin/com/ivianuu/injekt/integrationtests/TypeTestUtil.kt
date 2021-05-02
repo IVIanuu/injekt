@@ -65,8 +65,8 @@ fun withTypeCheckerContext(
 }
 
 class TypeCheckerContext(val module: ModuleDescriptor) {
-
-    val context = InjektContext(module)
+    val injektContext = InjektContext(module)
+    val typeContext = TypeContext(injektContext, emptyList())
     val comparable = typeFor(StandardNames.FqNames.comparable)
     val anyType = typeFor(StandardNames.FqNames.any.toSafe())
     val anyNType = anyType.copy(isMarkedNullable = true)
@@ -97,6 +97,7 @@ class TypeCheckerContext(val module: ModuleDescriptor) {
         vararg superTypes: TypeRef,
         fqName: FqName = FqName("SubType${id}"),
     ) = ClassifierRef(
+        key = fqName.asString(),
         fqName = fqName,
         superTypes = if (superTypes.isNotEmpty()) superTypes.toList() else listOf(anyType),
     ).defaultType
@@ -105,6 +106,7 @@ class TypeCheckerContext(val module: ModuleDescriptor) {
         expandedType: TypeRef,
         fqName: FqName = FqName("Alias${id++}"),
     ) = ClassifierRef(
+        key = fqName.asString(),
         fqName = fqName,
         superTypes = listOf(expandedType),
         isTypeAlias = true
@@ -115,6 +117,7 @@ class TypeCheckerContext(val module: ModuleDescriptor) {
         typeParameters: List<ClassifierRef> = emptyList(),
         fqName: FqName = FqName("ClassType${id++}"),
     ) = ClassifierRef(
+        key = fqName.asString(),
         fqName = fqName,
         superTypes = if (superTypes.isNotEmpty()) superTypes.toList() else listOf(anyType),
         typeParameters = typeParameters
@@ -133,6 +136,7 @@ class TypeCheckerContext(val module: ModuleDescriptor) {
         variance: TypeVariance = TypeVariance.INV,
         fqName: FqName = FqName("TypeParameter${id++}"),
     ) = ClassifierRef(
+        key = fqName.asString(),
         fqName = fqName,
         superTypes = if (upperBounds.isNotEmpty()) upperBounds.toList() else
             listOf(anyType.copy(isMarkedNullable = nullable)),
@@ -142,28 +146,28 @@ class TypeCheckerContext(val module: ModuleDescriptor) {
 
     fun typeFor(fqName: FqName) = module.findClassifierAcrossModuleDependencies(
         ClassId.topLevel(fqName)
-    )!!.defaultType.toTypeRef(context, null)
+    )!!.defaultType.toTypeRef(injektContext, null)
 
     infix fun TypeRef.shouldBeAssignableTo(other: TypeRef) {
-        if (!isAssignableTo(context, other)) {
+        if (!isAssignableTo(typeContext, other)) {
             throw AssertionError("'$this' is not assignable to '$other'")
         }
     }
 
     infix fun TypeRef.shouldNotBeAssignableTo(other: TypeRef) {
-        if (isAssignableTo(context, other)) {
+        if (isAssignableTo(typeContext, other)) {
             throw AssertionError("'$this' is assignable to '$other'")
         }
     }
 
     infix fun TypeRef.shouldBeSubTypeOf(other: TypeRef) {
-        if (!isSubTypeOf(context, other)) {
+        if (!isSubTypeOf(typeContext, other)) {
             throw AssertionError("'$this' is not sub type of '$other'")
         }
     }
 
     infix fun TypeRef.shouldNotBeSubTypeOf(other: TypeRef) {
-        if (isSubTypeOf(context, other)) {
+        if (isSubTypeOf(typeContext, other)) {
             throw AssertionError("'$this' is sub type of '$other'")
         }
     }
