@@ -32,10 +32,12 @@ class GivenLambdaTest {
     }
 
     @Test
-    fun testGivenLambdaChain() = codegen(
+    fun testGivenLambdaChain() = singleAndMultiCodegen(
         """
             @Given val fooModule: @Given () -> @Given () -> Foo = { { Foo() } }
-            fun invoke() = given<Foo>()
+        """,
+        """
+           fun invoke() = given<Foo>() 
         """
     ) {
         invokeSingleFile()
@@ -43,12 +45,14 @@ class GivenLambdaTest {
     }
 
     @Test
-    fun testCanRequestGivenLambda() = codegen(
+    fun testCanRequestGivenLambda() = singleAndMultiCodegen(
         """
             typealias MyAlias = @Composable () -> Unit
             @Given fun myAlias(): MyAlias = {}
             @Given class MyComposeView(@Given val content: @Composable () -> Unit)
-            fun invoke() = given<(@Given @Composable () -> Unit) -> MyComposeView>()
+        """,
+        """
+           fun invoke() = given<(@Given @Composable () -> Unit) -> MyComposeView>() 
         """
     )
 }

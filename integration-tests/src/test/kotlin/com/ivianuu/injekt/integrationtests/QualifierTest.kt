@@ -106,23 +106,24 @@ class QualifierTest {
     }
 
     @Test
-    fun testUiState() = codegen(
+    fun testUiState() = singleAndMultiCodegen(
         """
             @Qualifier annotation class UiState
 
             @Given fun <T> uiState(@Given instance: @UiState T): T = instance
 
             @Given val foo: @UiState Foo = Foo()
-
-            fun invoke() = given<Foo>()
-            """
+            """,
+        """
+            fun invoke() = given<Foo>() 
+        """
     ) {
         invokeSingleFile()
             .shouldBeTypeOf<Foo>()
     }
 
     @Test
-    fun testSubstitutesQualifierTypeParameters() = codegen(
+    fun testSubstitutesQualifierTypeParameters() = singleAndMultiCodegen(
         """
             @Given 
             fun foo(): @Eager<AppGivenScope> Foo = Foo()
@@ -135,11 +136,12 @@ class QualifierTest {
             @InstallElement<ChildGivenScope>
             @Given
             class MyElement(@Given val foo: Foo)
-
+        """,
+        """
             @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
             fun invoke() {
                 val givenScope = given<AppGivenScope>()
-            }
+            } 
         """
     ) {
         compilationShouldBeOk()

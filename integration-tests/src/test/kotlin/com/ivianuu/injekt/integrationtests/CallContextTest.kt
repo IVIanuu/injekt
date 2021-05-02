@@ -21,64 +21,76 @@ import org.junit.*
 
 class CallContextTest {
     @Test
-    fun testSuspendCannotBeRequestedFromNonSuspend() = codegen(
+    fun testSuspendCannotBeRequestedFromNonSuspend() = singleAndMultiCodegen(
         """
             @Given suspend fun foo() = Foo()
             @Given suspend fun bar(@Given foo: Foo) = Bar(foo)
-            @Composable fun invoke() = given<Bar>()
+        """,
         """
+            @Composable fun invoke() = given<Bar>()
+        """.trimIndent()
     ) {
         compilationShouldHaveFailed("given argument com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.given is a suspend function but current call context is composable")
     }
 
     @Test
-    fun testNonSuspendGivenCanReceiveSuspendGivenInSuspendContext() = codegen(
+    fun testNonSuspendGivenCanReceiveSuspendGivenInSuspendContext() = singleAndMultiCodegen(
         """
             @Given suspend fun foo() = Foo()
             @Given fun bar(@Given foo: Foo) = Bar(foo)
-            fun invoke() = runBlocking { given<Bar>() }
+        """,
+        """
+           fun invoke() = runBlocking { given<Bar>() } 
         """
     )
 
     @Test
-    fun testComposableDependencyCannotBeRequestedFromNonComposable() = codegen(
+    fun testComposableDependencyCannotBeRequestedFromNonComposable() = singleAndMultiCodegen(
         """
             @Given @Composable fun foo() = Foo()
             @Given @Composable fun bar(@Given foo: Foo) = Bar(foo)
-            suspend fun invoke() {
+        """,
+        """
+           suspend fun invoke() {
                 given<Bar>()
-            }
+           } 
         """
     ) {
         compilationShouldHaveFailed("given argument com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.given is a composable function but current call context is suspend")
     }
 
     @Test
-    fun testCanRequestSuspendDependencyFromNonSuspendFunctionInSuspendLambda() = codegen(
+    fun testCanRequestSuspendDependencyFromNonSuspendFunctionInSuspendLambda() = singleAndMultiCodegen(
         """
             @Given suspend fun foo() = Foo()
             @Given fun lazyBar(): suspend () -> Bar = { Bar(given()) }
-            fun invoke() {
+        """,
+        """
+           fun invoke() {
                 given<suspend () -> Bar>()
-            }
+           } 
         """
     )
 
     @Test
-    fun testSuspendProviderCanRequestSuspendDependencyInDefaultContext() = codegen(
+    fun testSuspendProviderCanRequestSuspendDependencyInDefaultContext() = singleAndMultiCodegen(
         """
             @Given suspend fun foo() = Foo()
             @Given fun bar(@Given foo: Foo) = Bar(foo)
-            fun invoke() = given<suspend () -> Bar>()
+        """,
+        """
+           fun invoke() = given<suspend () -> Bar>() 
         """
     )
 
     @Test
-    fun testCanRequestSuspendDependencyFromNonSuspendFunctionInSuspendLambdaWithAlias() = codegen(
+    fun testCanRequestSuspendDependencyFromNonSuspendFunctionInSuspendLambdaWithAlias() = singleAndMultiCodegen(
         """
             typealias SuspendFactory<T> = suspend () -> T
             @Given suspend fun foo() = Foo()
             @Given fun lazyBar(): SuspendFactory<Bar> = { Bar(given()) }
+        """,
+        """
             fun invoke() {
                 given<SuspendFactory<Bar>>()
             }
@@ -86,65 +98,74 @@ class CallContextTest {
     )
 
     @Test
-    fun testCanRequestComposableDependencyFromNonComposableFunctionInComposableLambda() = codegen(
+    fun testCanRequestComposableDependencyFromNonComposableFunctionInComposableLambda() = singleAndMultiCodegen(
         """
             @Given @Composable fun foo() = Foo()
             @Given fun lazyBar(): @Composable () -> Bar = { Bar(given()) }
-            fun invoke() {
+        """,
+        """
+           fun invoke() {
                 given<@Composable () -> Bar>()
-            }
+           } 
         """
     )
 
     @Test
     fun testCanRequestComposableDependencyFromNonComposableFunctionInComposableLambdaWithAlias() =
-        codegen(
+        singleAndMultiCodegen(
             """
             typealias ComposableFactory<T> = @Composable () -> T
             @Given @Composable fun foo() = Foo()
             @Given fun lazyBar(): ComposableFactory<Bar> = { Bar(given()) }
+            """,
+            """
             fun invoke() {
                 given<ComposableFactory<Bar>>()
             }
-        """
+            """
         )
 
     @Test
-    fun testSuspendCanBeRequestedFromInlineLambdaInSuspendContext() = codegen(
+    fun testSuspendCanBeRequestedFromInlineLambdaInSuspendContext() = singleAndMultiCodegen(
         """
             @Given suspend fun suspendFoo() = Foo()
-            fun invoke() = runBlocking {
+        """,
+        """
+           fun invoke() = runBlocking {
                 run {
                     run {
                         given<Foo>()
                     }
                 }
-            }
+            } 
         """
     )
 
     @Test
-    fun testComposableCanBeRequestedFromInlineLambdaInComposableContext() = codegen(
+    fun testComposableCanBeRequestedFromInlineLambdaInComposableContext() = singleAndMultiCodegen(
         """
             @Given @Composable fun composableFoo() = Foo()
-            @Composable fun invoke() {
+        """,
+        """
+           @Composable fun invoke() {
                 run {
                     run {
                         given<Foo>()
                     }
                 }
-            }
+            } 
         """
     )
 
     @Test
-    fun testSuspendCanBeRequestFromInlineProviderInSuspendContext() = codegen(
+    fun testSuspendCanBeRequestFromInlineProviderInSuspendContext() = singleAndMultiCodegen(
         """
             @Given suspend fun suspendFoo() = Foo()
             suspend inline fun initialize(@Given provider: () -> Foo) {
             }
-
-            fun invoke() = runBlocking { initialize() }
+        """,
+        """
+           fun invoke() = runBlocking { initialize() } 
         """
     )
 }

@@ -24,11 +24,13 @@ import org.junit.*
 
 class GivenSetTest {
     @Test
-    fun testSet() = codegen(
+    fun testSet() = singleAndMultiCodegen(
         """
             @Given fun commandA() = CommandA()
             @Given fun commandsB() = setOf(CommandB())
-            fun invoke() = given<Set<Command>>()
+        """,
+        """
+           fun invoke() = given<Set<Command>>() 
         """
     ) {
         val set = invokeSingleFile<Set<Command>>().toList()
@@ -38,7 +40,7 @@ class GivenSetTest {
     }
 
     @Test
-    fun testNestedSet() = codegen(
+    fun testNestedSet() = singleAndMultiCodegen(
         """
             @Given fun commandA() = CommandA()
 
@@ -46,8 +48,9 @@ class GivenSetTest {
                 @Given fun commandsB() = listOf(CommandB())
                 val set = given<Set<Command>>()
             }
-
-            fun invoke() = given<Set<Command>>() to InnerObject().set
+        """,
+        """
+           fun invoke() = given<Set<Command>>() to InnerObject().set 
         """
     ) {
         val (parentSet, childSet) = invokeSingleFile<Pair<Set<Command>, Set<Command>>>()
@@ -60,30 +63,36 @@ class GivenSetTest {
     }
 
     @Test
-    fun testSetWithSingleElement() = codegen(
+    fun testSetWithSingleElement() = singleAndMultiCodegen(
         """
             @Given fun commandA() = CommandA()
-            fun invoke() = given<Set<Command>>()
+        """,
+        """
+            fun invoke() = given<Set<Command>>() 
         """
     ) {
         irShouldContain(1, "setOf")
     }
 
     @Test
-    fun testSetWithSingleCollectionElement() = codegen(
+    fun testSetWithSingleCollectionElement() = singleAndMultiCodegen(
         """
             @Given fun commandA() = listOf(CommandA())
-            fun invoke() = given<Set<Command>>()
+        """,
+        """
+           fun invoke() = given<Set<Command>>() 
         """
     ) {
         irShouldContain(1, "toSet")
     }
 
     @Test
-    fun testSetWithSingleSetCollectionElement() = codegen(
+    fun testSetWithSingleSetCollectionElement() = singleAndMultiCodegen(
         """
             @Given fun commandA() = setOf(CommandA())
-            fun invoke() = given<Set<Command>>()
+        """,
+        """
+           fun invoke() = given<Set<Command>>() 
         """
     ) {
         irShouldContain(1, "given<Set<Command>>(value = commandA())")
@@ -99,12 +108,13 @@ class GivenSetTest {
     }
 
     @Test
-    fun testImplicitProviderSet() = codegen(
+    fun testImplicitProviderSet() = singleAndMultiCodegen(
         """
             @Given
             fun bar(@Given foo: Foo) = Bar(foo)
-
-            fun invoke() = given<Set<(@Given Foo) -> Bar>>()
+        """,
+        """
+           fun invoke() = given<Set<(@Given Foo) -> Bar>>() 
         """
     ) {
         val set = invokeSingleFile<Set<(Foo) -> Bar>>().toList()
@@ -116,7 +126,7 @@ class GivenSetTest {
     }
 
     @Test
-    fun testNestedImplicitProviderSet() = codegen(
+    fun testNestedImplicitProviderSet() = singleAndMultiCodegen(
         """
             @Given
             fun bar(@Given foo: Foo): Any = Bar(foo)
@@ -127,8 +137,9 @@ class GivenSetTest {
                 @Given fun commandB(): Command = CommandB()
                 val set = given<Set<() -> Command>>()
             }
-
-            fun invoke() = given<Set<() -> Command>>() to InnerObject().set
+        """,
+        """
+           fun invoke() = given<Set<() -> Command>>() to InnerObject().set 
         """
     ) {
         val (parentSet, childSet) = invokeSingleFile<Pair<Set<() -> Command>, Set<() -> Command>>>()
@@ -155,11 +166,13 @@ class GivenSetTest {
     }
 
     @Test
-    fun testSetWithIgnoreElementsWithErrors() = codegen(
+    fun testSetWithIgnoreElementsWithErrors() = singleAndMultiCodegen(
         """
             @Given val a = "a"
             @Given fun b(@Given foo: Foo) = "b"
-            fun invoke(): @IgnoreElementsWithErrors Set<String> = given()
+        """,
+        """
+           fun invoke(): @IgnoreElementsWithErrors Set<String> = given() 
         """
     ) {
         val set = invokeSingleFile<Set<Any>>().toList()

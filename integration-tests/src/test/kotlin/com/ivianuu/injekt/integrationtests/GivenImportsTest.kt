@@ -93,20 +93,24 @@ class GivenImportsTest {
     }
 
     @Test
-    fun testUsedImport() = codegen(
+    fun testUsedImport() = singleAndMultiCodegen(
         listOf(
-            source(
-                """
+            listOf(
+                source(
+                    """
                     @Given val foo = Foo()
                 """,
-                packageFqName = FqName("givens")
+                    packageFqName = FqName("givens")
+                )
             ),
-            source(
-                """
+            listOf(
+                source(
+                    """
                     @GivenImports("givens.foo")
                     fun invoke() = given<Foo>()
                     """,
-                name = "File.kt"
+                    name = "File.kt"
+                )
             )
         )
     ) {
@@ -114,20 +118,24 @@ class GivenImportsTest {
     }
 
     @Test
-    fun testUsedStarImport() = codegen(
+    fun testUsedStarImport() = singleAndMultiCodegen(
         listOf(
-            source(
-                """
+            listOf(
+                source(
+                    """
                     @Given val foo = Foo()
                 """,
-                packageFqName = FqName("givens")
+                    packageFqName = FqName("givens")
+                )
             ),
-            source(
-                """
+            listOf(
+                source(
+                    """
                     @GivenImports("givens.*")
                     fun invoke() = given<Foo>()
                     """,
-                name = "File.kt"
+                    name = "File.kt"
+                )
             )
         )
     ) {
@@ -158,7 +166,7 @@ class GivenImportsTest {
     }
 
     @Test
-    fun testClassWithGivenImports() = multiCodegen(
+    fun testClassWithGivenImports() = singleAndMultiCodegen(
         listOf(
             listOf(
                 source(
@@ -186,7 +194,7 @@ class GivenImportsTest {
     }
 
     @Test
-    fun testFunctionWithGivenImports() = multiCodegen(
+    fun testFunctionWithGivenImports() = singleAndMultiCodegen(
         listOf(
             listOf(
                 source(
@@ -211,7 +219,7 @@ class GivenImportsTest {
     }
 
     @Test
-    fun testPropertyWithGivenImports() = multiCodegen(
+    fun testPropertyWithGivenImports() = singleAndMultiCodegen(
         listOf(
             listOf(
                 source(

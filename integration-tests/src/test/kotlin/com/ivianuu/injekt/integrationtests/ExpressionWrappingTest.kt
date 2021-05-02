@@ -21,67 +21,77 @@ import org.junit.*
 
 class ExpressionWrappingTest {
     @Test
-    fun testDoesFunctionWrapGivenWithMultipleUsages() = codegen(
+    fun testDoesFunctionWrapGivenWithMultipleUsages() = singleAndMultiCodegen(
         """
             @Given val foo = Foo()
             @Given fun bar(@Given foo: Foo) = Bar(foo)
             @Given fun <T> pair(@Given a: T, @Given b: T): Pair<T, T> = a to b
+        """,
+        """
             fun invoke() {
                 given<Pair<Bar, Bar>>()
-            }
+            } 
         """
     ) {
         irShouldContain(1, "bar(foo = ")
     }
 
     @Test
-    fun testDoesFunctionWrapGivenWithMultipleUsagesInDifferentScopes() = codegen(
+    fun testDoesFunctionWrapGivenWithMultipleUsagesInDifferentScopes() = singleAndMultiCodegen(
         """
             @Given val foo = Foo()
             @Given fun bar(@Given foo: Foo) = Bar(foo)
             @Given fun <T> pair(@Given a: T, @Given b: () -> T): Pair<T, () -> T> = a to b
+        """,
+        """
             fun invoke() {
                 given<Pair<Bar, () -> Bar>>()
-            }
+            } 
         """
     ) {
         irShouldContain(1, "bar(foo = ")
     }
 
     @Test
-    fun testDoesNotFunctionWrapGivenWithSingleUsage() = codegen(
+    fun testDoesNotFunctionWrapGivenWithSingleUsage() = singleAndMultiCodegen(
         """
             @Given val foo = Foo()
             @Given fun bar(@Given foo: Foo) = Bar(foo)
+        """,
+        """
             fun invoke() {
                 given<Bar>()
-            }
+            } 
         """
     ) {
         irShouldNotContain("local fun <anonymous>(): Bar {")
     }
 
     @Test
-    fun testDoesNotWrapGivenWithMultipleUsagesButWithoutDependencies() = codegen(
+    fun testDoesNotWrapGivenWithMultipleUsagesButWithoutDependencies() = singleAndMultiCodegen(
         """
             @Given val foo = Foo()
             @Given fun <T> pair(@Given a: T, @Given b: T): Pair<T, T> = a to b
+        """,
+        """
             fun invoke() {
                 given<Pair<Foo, Foo>>()
-            }
+            } 
         """
     ) {
         irShouldNotContain("local fun <anonymous>(): Foo {")
     }
 
     @Test
-    fun testDoesCacheProviderWithMultipleUsages() = codegen(
+    fun testDoesCacheProviderWithMultipleUsages() = singleAndMultiCodegen(
         """
             @Given val foo = Foo()
             @Given fun <T> pair(@Given a: T, @Given b: T): Pair<T, T> = a to b
+        """,
+        """
             fun invoke() {
                 given<Pair<() -> Foo, () -> Foo>>()
-            }
+            } 
         """
     ) {
         irShouldNotContain("local fun <anonymous>(): Function0<Foo> {")
@@ -89,38 +99,44 @@ class ExpressionWrappingTest {
     }
 
     @Test
-    fun testDoesNotCacheProviderWithSingleUsage() = codegen(
+    fun testDoesNotCacheProviderWithSingleUsage() = singleAndMultiCodegen(
         """
             @Given val foo = Foo()
+        """,
+        """
             fun invoke() {
                 given<() -> Foo>()
-            }
+            } 
         """
     ) {
         irShouldNotContain("val tmp0_0: Function0<Foo> = local fun <anonymous>(): Foo {")
     }
 
     @Test
-    fun testDoesNotCacheInlineProvider() = codegen(
+    fun testDoesNotCacheInlineProvider() = singleAndMultiCodegen(
         """
             @Given val foo = Foo()
             @Given inline fun bar(@Given fooProvider: () -> Foo) = Bar(fooProvider())
             @Given fun <T> pair(@Given a: T, @Given b: T): Pair<T, T> = a to b
+        """,
+        """
             fun invoke() {
                 given<Pair<Bar, Bar>>()
-            }
+            } 
         """
     ) {
         irShouldNotContain("val tmp0_0: Function0<Foo> = local fun <anonymous>(): Foo {")
     }
 
     @Test
-    fun testDoesNotCacheCircularDependency() = codegen(
+    fun testDoesNotCacheCircularDependency() = singleAndMultiCodegen(
         """
             @Given class A(@Given b: B)
             @Given class B(@Given a: () -> A, @Given a2: () -> A)
-            fun invoke() = given<B>()
-       """
+       """,
+        """
+           fun invoke() = given<B>() 
+        """
     ) {
         invokeSingleFile()
     }

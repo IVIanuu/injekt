@@ -22,12 +22,14 @@ import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.util.*
 import java.io.*
 
+var dumpAllFiles = false
+
 class InjektIrDumper(private val dumpDir: File) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         moduleFragment.files
             .asSequence()
             .filter {
-                pluginContext.bindingContext[InjektWritableSlices.FILE_HAS_GIVEN_CALLS,
+                dumpAllFiles || pluginContext.bindingContext[InjektWritableSlices.FILE_HAS_GIVEN_CALLS,
                         it.fileEntry.name] != null
             }
             .forEach { irFile ->

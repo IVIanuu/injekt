@@ -37,85 +37,106 @@ class SingletonGivenTest {
     }
 
     @Test
-    fun testDoesNotOptimizeNormalClass() = codegen(
+    fun testDoesNotOptimizeNormalClass() = singleAndMultiCodegen(
         """
             class MyModule
             @Given val foo = Foo()
-            fun invoke() = given<Foo>()
+        """,
+        """
+           fun invoke() = given<Foo>() 
         """
     ) {
-        irShouldNotContain("var INSTANCE: MyModule")
+        irShouldNotContain("INSTANCE")
+        invokeSingleFile()
     }
 
     @Test
-    fun testDoesNotOptimizeObject() = codegen(
+    fun testDoesNotOptimizeObject() = singleAndMultiCodegen(
         """
             @Given object MyModule {
                 @Given val foo = Foo()
             }
-            fun invoke() = given<Foo>()
+        """,
+        """
+           fun invoke() = given<Foo>() 
         """
     ) {
-        irShouldNotContain("var INSTANCE: MyModule")
+        irShouldNotContain("INSTANCE")
+        invokeSingleFile()
     }
 
     @Test
-    fun testDoesNotOptimizeGivenWithConstructorParameters() = codegen(
+    fun testDoesNotOptimizeGivenWithConstructorParameters() = singleAndMultiCodegen(
         """
             @Given class MyModule(@Given val foo: Foo)
             @Given val foo = Foo()
-            fun invoke() = given<Foo>()
+        """,
+        """
+           fun invoke() = given<Foo>() 
         """
     ) {
-        irShouldNotContain("var INSTANCE: MyModule")
+        irShouldNotContain("INSTANCE")
+        invokeSingleFile()
     }
 
     @Test
-    fun testDoesNotOptimizeGivenWithForTypeKeyParameters() = codegen(
+    fun testDoesNotOptimizeGivenWithForTypeKeyParameters() = singleAndMultiCodegen(
         """
             @Given class MyModule<@ForTypeKey T> {
                 @Given val instance = Foo() as T
             }
-            fun invoke() = given<Foo>()
+        """,
+        """
+           fun invoke() = given<Foo>() 
         """
     ) {
-        irShouldNotContain("var INSTANCE: MyModule")
+        irShouldNotContain("INSTANCE")
+        invokeSingleFile()
     }
 
     @Test
-    fun testDoesNotOptimizeGivenWithFields() = codegen(
+    fun testDoesNotOptimizeGivenWithFields() = singleAndMultiCodegen(
         """
             @Given class MyModule {
                 @Given val foo = Foo()
             }
-            fun invoke() = given<Foo>()
+        """,
+        """
+           fun invoke() = given<Foo>() 
         """
     ) {
-        irShouldNotContain("var INSTANCE: MyModule")
+        irShouldNotContain("INSTANCE")
+        invokeSingleFile()
     }
 
     @Test
-    fun testDoesNotOptimizeGivenWithInnerClass() = codegen(
+    fun testDoesNotOptimizeGivenWithInnerClass() = singleAndMultiCodegen(
         """
             @Given class MyModule {
                 inner class Inner
             }
             @Given val foo = Foo()
-            fun invoke() = given<Foo>()
+        """,
+        """
+           fun invoke() = given<Foo>() 
         """
     ) {
-        irShouldNotContain("var INSTANCE: MyModule")
+        irShouldNotContain("INSTANCE")
+        invokeSingleFile()
     }
 
     @Test
-    fun testDoesOptimizeGivenWithComputedProperties() = codegen(
+    fun testDoesOptimizeGivenWithComputedProperties() = singleAndMultiCodegen(
         """
             @Given class MyModule {
                 @Given val foo get() = Foo()
             }
-            fun invoke() = given<Foo>()
+        """,
+        """
+           fun invoke() = given<Foo>() 
         """
     ) {
-        irShouldContain(1, "var INSTANCE: MyModule")
+        irShouldContain(if (!it) 2 else 1, "INSTANCE")
+        invokeSingleFile()
     }
 }

@@ -21,15 +21,16 @@ import org.junit.*
 
 class DivergenceTest {
     @Test
-    fun testUnresolvableDivergence() = codegen(
+    fun testUnresolvableDivergence() = singleAndMultiCodegen(
         """
             interface Wrapper<T> {
                 val value: T
             }
 
             @Given fun <T> unwrapped(@Given wrapped: Wrapper<T>): T = wrapped.value
-
-            fun lol() {
+        """,
+        """
+            fun invoke() {
                 given<Foo>()
             }
         """
@@ -38,19 +39,21 @@ class DivergenceTest {
     }
 
     @Test
-    fun testUnresolvableDivergenceWithQualifiers() = codegen(
+    fun testUnresolvableDivergenceWithQualifiers() = singleAndMultiCodegen(
         """
             @Given fun <T> unwrapped(@Given qualified: @Qualifier1 T): T = qualified
-            fun lol() {
+        """,
+        """
+            fun invoke() {
                 given<Foo>()
-            }
+            } 
         """
     ) {
         compilationShouldHaveFailed("diverging")
     }
 
     @Test
-    fun testResolvableDivergence() = codegen(
+    fun testResolvableDivergence() = singleAndMultiCodegen(
         """
             interface Wrapper<T> {
                 val value: T
@@ -59,69 +62,79 @@ class DivergenceTest {
             @Given fun <T> unwrapped(@Given wrapped: Wrapper<T>): T = wrapped.value
 
             @Given fun fooWrapper(): Wrapper<Wrapper<Foo>> = error("")
-
-            fun lol() {
+        """,
+        """
+            fun invoke() {
                 given<Foo>()
-            }
+            } 
         """
     )
 
     @Test
-    fun testResolvableDivergenceWithQualifiers() = codegen(
+    fun testResolvableDivergenceWithQualifiers() = singleAndMultiCodegen(
         """
             @Given fun <T> unwrapped(@Given qualified: @Qualifier1 T): T = qualified
 
             @Given fun qualifiedFoo(): @Qualifier1 Foo = error("")
-
-            fun lol() {
+        """,
+        """
+            fun invoke() {
                 given<Foo>()
-            }
+            } 
         """
     )
 
     @Test
-    fun testCircularDependencyFails() = codegen(
+    fun testCircularDependencyFails() = singleAndMultiCodegen(
         """
             @Given class A(@Given b: B)
             @Given class B(@Given a: A)
-            fun invoke() = given<A>()
+        """,
+        """
+           fun invoke() = given<A>() 
         """
     ) {
         compilationShouldHaveFailed("diverging")
     }
 
     @Test
-    fun testProviderBreaksCircularDependency() = codegen(
+    fun testProviderBreaksCircularDependency() = singleAndMultiCodegen(
         """
             @Given class A(@Given b: B)
             @Given class B(@Given a: () -> A)
+       """,
+        """
             fun invoke() = given<B>()
-       """
+        """
     ) {
         invokeSingleFile()
     }
 
     @Test
-    fun testIrrelevantProviderInChainDoesNotBreakCircularDependency() = codegen(
+    fun testIrrelevantProviderInChainDoesNotBreakCircularDependency() = singleAndMultiCodegen(
         """
             @Given class A(@Given b: () -> B)
             @Given class B(@Given b: C)
             @Given class C(@Given b: B)
-            fun invoke() = given<C>()
-       """
+       """,
+        """
+           fun invoke() = given<C>() 
+        """
     ) {
         compilationShouldHaveFailed("diverging")
     }
 
     @Test
-    fun testLazyRequestInSetBreaksCircularDependency() = codegen(
+    fun testLazyRequestInSetBreaksCircularDependency() = singleAndMultiCodegen(
         """
             typealias A = () -> Unit
             @Given fun a(@Given b: () -> B): A = {}
             typealias B = () -> Unit
             @Given fun b(@Given a: () -> A): B = {}
-            fun invoke() = given<Set<() -> Unit>>()
-       """
+       """,
+        """
+           fun invoke() = given<Set<() -> Unit>>() 
+        """
     ) {
         invokeSingleFile()
     }

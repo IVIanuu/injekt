@@ -153,19 +153,20 @@ class GivenDeclarationCheckTest {
     }
 
     @Test
-    fun testGivenFunctionOverrideWithGivenAnnotation() = codegen(
+    fun testGivenFunctionOverrideWithGivenAnnotation() = singleAndMultiCodegen(
         """
             abstract class MySuperClass {
                 @Given abstract fun foo(): Foo
             }
-
+        """,
+        """
             @Given
             class MySubClass : MySuperClass() {
                 @Given
                 override fun foo() = Foo()
             }
 
-            fun invoke() = given<Foo>()
+            fun invoke() = given<Foo>() 
         """
     ) {
         invokeSingleFile()
@@ -173,7 +174,7 @@ class GivenDeclarationCheckTest {
     }
 
     @Test
-    fun testFunctionOverrideWithGivenAnnotation() = codegen(
+    fun testFunctionOverrideWithGivenAnnotation() = singleAndMultiCodegen(
         """
             abstract class MySuperClass {
                 abstract fun foo(): Foo
@@ -184,8 +185,9 @@ class GivenDeclarationCheckTest {
                 @Given
                 override fun foo() = Foo()
             }
-
-            fun invoke() = given<Foo>()
+        """,
+        """
+           fun invoke() = given<Foo>() 
         """
     ) {
         invokeSingleFile()
@@ -198,40 +200,43 @@ class GivenDeclarationCheckTest {
             abstract class MySuperClass {
                 @Given abstract fun foo(): Foo
             }
-
+        """,
+        """
             class MySubClass : MySuperClass() {
                 override fun foo() = Foo()
-            }
+            } 
         """
     ) {
         compilationShouldHaveFailed("'foo' overrides nothing")
     }
 
     @Test
-    fun testNonGivenTypeParameterOverrideWithGivenOverridden() = codegen(
+    fun testNonGivenTypeParameterOverrideWithGivenOverridden() = singleAndMultiCodegen(
         """
             abstract class MySuperClass {
                 @Given abstract fun <@Given T : Bar> foo(): Foo
             }
-
+        """,
+        """
             class MySubClass : MySuperClass() {
                 @Given override fun <T : Bar> foo(): Foo = TODO()
-            }
+            } 
         """
     ) {
         compilationShouldHaveFailed("Conflicting overloads")
     }
 
     @Test
-    fun testGivenPropertyOverrideWithoutGivenAnnotation() = codegen(
+    fun testGivenPropertyOverrideWithoutGivenAnnotation() = singleAndMultiCodegen(
         """
             abstract class MySuperClass {
                 @Given abstract val foo: Foo
             }
-
+        """,
+        """
             class MySubClass : MySuperClass() {
                 override val foo = Foo()
-            }
+            } 
         """
     ) {
         compilationShouldHaveFailed("'foo' overrides nothing")

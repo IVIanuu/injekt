@@ -41,12 +41,14 @@ class SuppressionTest {
     }
 
     @Test
-    fun testCanUseExtensionFunctionTypeUpperBound() = codegen(
+    fun testCanUseExtensionFunctionTypeUpperBound() = singleAndMultiCodegen(
         """
             typealias MyBuilder = StringBuilder.() -> Unit
             @Given fun <@Given T : MyBuilder> toString(@Given builder: MyBuilder): String = buildString(builder)
             @Given val myBuilder: MyBuilder = { append("42") }
-            fun invoke() = given<String>()
+        """,
+        """
+            fun invoke() = given<String>() 
         """
     ) {
         invokeSingleFile() shouldBe "42"
@@ -63,21 +65,23 @@ class SuppressionTest {
     }
 
     @Test
-    fun testCanUseUnderscoreForGivenParameter() = codegen(
+    fun testCanUseUnderscoreForGivenParameter() = singleAndMultiCodegen(
         """
             fun func(@Given _: String, @Given _: Int) {
                 given<String>()
                 given<Int>()
             }
+        """,
+        """
             fun invoke() {
                 @Given val string = ""
                 func(int = 0)
-            }
+            } 
         """
     )
 
     @Test
-    fun testCanUseInfixWithGiven() = codegen(
+    fun testCanUseInfixWithGiven() = singleAndMultiCodegen(
         """
             interface Combine<T> {
                 fun plus(a: T, b: T): T
@@ -88,15 +92,16 @@ class SuppressionTest {
             @Given object StringCombine : Combine<String> {
                 override fun plus(a: String, b: String) = a + b
             }
-
+        """,
+        """
             fun invoke() {
                 "a" combine "b"
-            }
+            } 
         """
     )
 
     @Test
-    fun testCanUseOperatorWithGiven() = codegen(
+    fun testCanUseOperatorWithGiven() = singleAndMultiCodegen(
         """
             interface Combine<T> {
                 fun plus(a: T, b: T): T
@@ -109,10 +114,11 @@ class SuppressionTest {
             @Given object KeyCombine : Combine<Key> {
                 override fun plus(a: Key, b: Key) = Key(a.value + b.value)
             }
-
+        """,
+        """
             fun invoke() {
                 Key("a") + Key("b")
-            }
+            } 
         """
     )
 }

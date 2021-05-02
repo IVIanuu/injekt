@@ -153,16 +153,17 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testPrefersSubClassGivenOverSuperClassGiven() = codegen(
+    fun testPrefersSubClassGivenOverSuperClassGiven() = singleAndMultiCodegen(
         """
             abstract class MySuperClass(@Given val superClassFoo: Foo)
             class MySubClass(@Given val subClassFoo: Foo, superClassFoo: Foo) : MySuperClass(superClassFoo) {
                 fun finalFoo(): Foo = given()
             }
-
+        """,
+        """
             fun invoke(subClassFoo: Foo, superClassFoo: Foo): Foo {
                 return MySubClass(subClassFoo, superClassFoo).finalFoo()
-            }
+            } 
         """
     ) {
         val subClassFoo = Foo()
@@ -279,11 +280,13 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testPrefersResolvableGiven() = codegen(
+    fun testPrefersResolvableGiven() = singleAndMultiCodegen(
         """
             @Given fun a() = "a"
             @Given fun b(@Given long: Long) = "b"
-            fun invoke() = given<String>()
+        """,
+        """
+           fun invoke() = given<String>() 
         """
     ) {
         "a" shouldBe invokeSingleFile()
@@ -309,7 +312,9 @@ class GivenResolutionTest {
         """
             @Given val a = "a"
             @Given val b = "b"
-            fun invoke() = given<String>()
+        """,
+        """
+           fun invoke() = given<String>() 
         """
     ) {
         compilationShouldHaveFailed("ambiguous given arguments:\n" +
@@ -335,44 +340,51 @@ class GivenResolutionTest {
     }
 
     @Test
-    fun testPrefersMoreSpecificType() = codegen(
+    fun testPrefersMoreSpecificType() = singleAndMultiCodegen(
         """
             @Given fun stringList(): List<String> = listOf("a", "b", "c")
             @Given fun <T> anyList(): List<T> = emptyList()
-            fun invoke() = given<List<String>>()
+        """,
+        """
+           fun invoke() = given<List<String>>() 
         """
     ) {
         listOf("a", "b", "c") shouldBe invokeSingleFile()
     }
 
     @Test
-    fun testPrefersMoreSpecificType2() = codegen(
+    fun testPrefersMoreSpecificType2() = singleAndMultiCodegen(
         """
             @Given fun <T> list(): List<T> = emptyList()
             @Given fun <T> listList(): List<List<T>> = listOf(listOf("a", "b", "c")) as List<List<T>>
-            fun invoke() = given<List<List<String>>>()
+        """,
+        """
+           fun invoke() = given<List<List<String>>>() 
         """
     ) {
         invokeSingleFile() shouldBe listOf(listOf("a", "b", "c"))
     }
 
     @Test
-    fun testPrefersNonNullType() = codegen(
+    fun testPrefersNonNullType() = singleAndMultiCodegen(
         """
             @Given val nonNull = "nonnull"
             @Given val nullable: String? = "nullable"
-            fun invoke() = given<String?>()
+        """,
+        """
+           fun invoke() = given<String?>() 
         """
     ) {
         invokeSingleFile() shouldBe "nonnull"
     }
 
     @Test
-    fun testDoesNotUseFrameworkGivensIfThereAreUserGivens() = codegen(
+    fun testDoesNotUseFrameworkGivensIfThereAreUserGivens() = singleAndMultiCodegen(
         """
             @Given fun <T> diyProvider(@Given unit: Unit): () -> T = { TODO() } 
-
-            fun invoke() = given<() -> Foo>()
+        """,
+        """
+           fun invoke() = given<() -> Foo>() 
         """
     ) {
         compilationShouldHaveFailed("no given argument found of type kotlin.Unit for parameter unit of function com.ivianuu.injekt.integrationtests.diyProvider")
@@ -380,12 +392,12 @@ class GivenResolutionTest {
 
     @Test
     fun testUsesDefaultValueIfNoCandidateExists() = codegen(
+    """
+            fun invoke(_foo: Foo): Foo {
+                fun inner(@Given foo: Foo = _foo) = foo
+                return inner()
+            }
         """
-                fun invoke(_foo: Foo): Foo {
-                    fun inner(@Given foo: Foo = _foo) = foo
-                    return inner()
-                }
-            """
     ) {
         val foo = Foo()
         foo shouldBeSameInstanceAs invokeSingleFile(foo)
@@ -393,33 +405,33 @@ class GivenResolutionTest {
 
     @Test
     fun testDoesNotUseDefaultValueIfCandidateHasFailures() = codegen(
+    """
+            @Given fun bar(@Given foo: Foo) = Bar(foo)
+            fun invoke() {
+                fun inner(@Given bar: Bar = Bar(Foo())) = bar
+                return inner()
+            }
         """
-                @Given fun bar(@Given foo: Foo) = Bar(foo)
-                fun invoke() {
-                    fun inner(@Given bar: Bar = Bar(Foo())) = bar
-                    return inner()
-                }
-            """
     ) {
         compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
     }
 
     @Test
     fun testDoesUseDefaultValueIfCandidateHasFailuresButHasUseDefaultValueOnAllError() = codegen(
+    """
+            @Given fun bar(@Given foo: Foo) = Bar(foo)
+            fun invoke(foo: Foo): Foo {
+                fun inner(@Given @DefaultOnAllErrors bar: Bar = Bar(foo)) = bar
+                return inner().foo
+            }
         """
-                @Given fun bar(@Given foo: Foo) = Bar(foo)
-                fun invoke(foo: Foo): Foo {
-                    fun inner(@Given @DefaultOnAllErrors bar: Bar = Bar(foo)) = bar
-                    return inner().foo
-                }
-            """
     ) {
         val foo = Foo()
         foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
     @Test
-    fun testConstrainedGivenWithTheSameOrigin() = codegen(
+    fun testConstrainedGivenWithTheSameOrigin() = singleAndMultiCodegen(
         """
             @MyQualifier
             @Given 
@@ -433,13 +445,14 @@ class GivenResolutionTest {
 
             @Given
             fun <@Given T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
-
-            fun invoke() = given<Foo>()
+        """,
+        """
+           fun invoke() = given<Foo>() 
         """
     )
 
     @Test
-    fun testConstrainedGivenWithTheSameOrigin2() = codegen(
+    fun testConstrainedGivenWithTheSameOrigin2() = singleAndMultiCodegen(
         """
             abstract class FooModule {
                 @Given
@@ -455,8 +468,9 @@ class GivenResolutionTest {
 
             @Given
             fun <@Given T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
-
-            fun invoke() = given<Foo>()
+        """,
+        """
+           fun invoke() = given<Foo>() 
         """
     )
 }

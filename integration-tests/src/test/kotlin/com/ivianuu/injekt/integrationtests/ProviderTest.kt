@@ -23,12 +23,14 @@ import org.junit.*
 
 class ProviderTest {
     @Test
-    fun testProviderGiven() = codegen(
+    fun testProviderGiven() = singleAndMultiCodegen(
         """
             @Given val foo = Foo()
+        """,
+        """
             fun invoke(): Foo {
                 return given<() -> Foo>()()
-            }
+            } 
         """
     ) {
         invokeSingleFile()
@@ -50,7 +52,9 @@ class ProviderTest {
     fun testProviderWithGivenArgs() = codegen(
         """
             @Given fun bar(@Given foo: Foo) = Bar(foo)
-            fun invoke() = given<(@Given Foo) -> Bar>()(Foo())
+        """,
+        """
+           fun invoke() = given<(@Given Foo) -> Bar>()(Foo()) 
         """
     ) {
         invokeSingleFile()
@@ -58,11 +62,13 @@ class ProviderTest {
     }
 
     @Test
-    fun testProviderWithQualifiedGivenArgs() = codegen(
+    fun testProviderWithQualifiedGivenArgs() = singleAndMultiCodegen(
         """
             @Qualifier annotation class MyQualifier
             @Given fun bar(@Given foo: @MyQualifier Foo) = Bar(foo)
-            fun invoke() = given<(@Given @MyQualifier Foo) -> Bar>()(Foo())
+        """,
+        """
+           fun invoke() = given<(@Given @MyQualifier Foo) -> Bar>()(Foo()) 
         """
     ) {
         invokeSingleFile()
@@ -105,21 +111,25 @@ class ProviderTest {
     )
 
     @Test
-    fun testProviderModule() = codegen(
+    fun testProviderModule() = singleAndMultiCodegen(
         """
             @Given fun bar(@Given foo: Foo) = Bar(foo)
             class FooModule(@Given val foo: Foo)
+        """,
+        """
             fun invoke(): Bar {
                 return given<(@Given FooModule) -> Bar>()(FooModule(Foo()))
-            }
+            } 
         """
     )
 
     @Test
-    fun testSuspendProviderGiven() = codegen(
+    fun testSuspendProviderGiven() = singleAndMultiCodegen(
         """
             @Given suspend fun foo() = Foo()
-            fun invoke(): Foo = runBlocking { given<suspend () -> Foo>()() }
+        """,
+        """
+           fun invoke(): Foo = runBlocking { given<suspend () -> Foo>()() } 
         """
     ) {
         invokeSingleFile()
@@ -127,17 +137,19 @@ class ProviderTest {
     }
 
     @Test
-    fun testComposableProviderGiven() = codegen(
+    fun testComposableProviderGiven() = singleAndMultiCodegen(
         """
             @Given val foo: Foo @Composable get() = Foo()
-            fun invoke() = given<@Composable () -> Foo>()
+        """,
+        """
+           fun invoke() = given<@Composable () -> Foo>() 
         """
     ) {
         invokeSingleFile()
     }
 
     @Test
-    fun testMultipleProvidersInSetWithDependencyDerivedByProviderArgument() = codegen(
+    fun testMultipleProvidersInSetWithDependencyDerivedByProviderArgument() = singleAndMultiCodegen(
         """
             typealias MyGivenScope = GivenScope
             @Given val MyGivenScope.key: String get() = ""
@@ -145,19 +157,23 @@ class ProviderTest {
             @Given fun fooIntoSet(@Given provider: (@Given MyGivenScope) -> Foo): (MyGivenScope) -> Any = provider as (MyGivenScope) -> Any 
             @Given class Dep(@Given key: String)
             @Given fun depIntoSet(@Given provider: (@Given MyGivenScope) -> Dep): (MyGivenScope) -> Any = provider as (MyGivenScope) -> Any
+        """,
+        """
             fun invoke() {
                 given<Set<(MyGivenScope) -> Any>>()
-            }
+            } 
         """
     )
 
     @Test
-    fun testProviderWhichReturnsItsParameter() = codegen(
+    fun testProviderWhichReturnsItsParameter() = singleAndMultiCodegen(
         """
             @Given val foo = Foo()
+        """,
+        """
             fun invoke(): Foo {
                 return given<(@Given Foo) -> Foo>()(Foo())
-            }
+            } 
         """
     ) {
         invokeSingleFile()

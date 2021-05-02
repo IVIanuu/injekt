@@ -24,21 +24,22 @@ import org.junit.*
 
 class ConstrainedGivenTest {
     @Test
-    fun testGivenWithGivenConstraint() = codegen(
+    fun testGivenWithGivenConstraint() = singleAndMultiCodegen(
         """
             @Qualifier annotation class Trigger
             @Given fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): S = instance
 
             @Given fun foo(): @Trigger Foo = Foo()
-
-            fun invoke() = given<Foo>()
+        """,
+        """
+           fun invoke() = given<Foo>() 
         """
     ) {
         invokeSingleFile().shouldBeTypeOf<Foo>()
     }
 
     @Test
-    fun testClassWithGivenConstraint() = codegen(
+    fun testClassWithGivenConstraint() = singleAndMultiCodegen(
         """
             @Given
             class MyModule<@Given T : @Trigger S, S> {
@@ -50,8 +51,9 @@ class ConstrainedGivenTest {
 
             @Given fun foo(): @Trigger Foo = Foo()
             @Given fun string(): @Trigger String = ""
-
-            fun invoke() = given<Set<@Final Foo>>()
+        """,
+        """
+           fun invoke() = given<Set<@Final Foo>>() 
         """
     ) {
         invokeSingleFile<Set<Foo>>().size shouldBe 1
@@ -132,21 +134,22 @@ class ConstrainedGivenTest {
     }
 
     @Test
-    fun testGivenConstraintTriggeredByClass() = codegen(
+    fun testGivenConstraintTriggeredByClass() = singleAndMultiCodegen(
         """
             @Qualifier annotation class Trigger
             @Given fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): S = instance
 
             @Trigger @Given class NotAny
-
-            fun invoke() = given<NotAny>()
+        """,
+        """
+           fun invoke() = given<NotAny>() 
         """
     ) {
         invokeSingleFile()
     }
 
     @Test
-    fun testGivenConstraintChain() = codegen(
+    fun testGivenConstraintChain() = singleAndMultiCodegen(
         """
             @Qualifier annotation class A
 
@@ -169,8 +172,9 @@ class ConstrainedGivenTest {
             @Given fun <@Given T : @C Any?> cImpl() = Foo()
 
             @Given fun dummy(): @A Long = 0L
-            
-            fun invoke() = given<Set<Foo>>().single()
+        """,
+        """
+           fun invoke() = given<Set<Foo>>().single() 
         """
     ) {
         invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -178,30 +182,31 @@ class ConstrainedGivenTest {
 
     @Test
     fun testScoped() = singleAndMultiCodegen(
-        """
-                typealias ActivityGivenScope = GivenScope
-                @Given val activityGivenScopeModule = 
-                    ChildGivenScopeModule0<AppGivenScope, ActivityGivenScope>()
-                """,
-        """
-                @Given fun foo(): @Scoped<AppGivenScope> Foo = Foo()
-                @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-                fun invoke() = given<Foo>()
-                """
+    """
+            typealias ActivityGivenScope = GivenScope
+            @Given val activityGivenScopeModule = 
+                ChildGivenScopeModule0<AppGivenScope, ActivityGivenScope>()
+            """,
+    """
+            @Given fun foo(): @Scoped<AppGivenScope> Foo = Foo()
+            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+            fun invoke() = given<Foo>()
+            """
     ) {
         invokeSingleFile().shouldBeTypeOf<Foo>()
     }
 
     @Test
-    fun testMultipleConstrainedContributionsWithSameType() = codegen(
+    fun testMultipleConstrainedContributionsWithSameType() = singleAndMultiCodegen(
         """
             @Qualifier annotation class Trigger
             @Given fun <@Given T : @Trigger String> triggerImpl(@Given instance: T): String = instance
 
             @Given fun a(): @Trigger String = "a"
             @Given fun b(): @Trigger String = "b"
-
-            fun invoke() = given<Set<String>>()
+        """,
+        """
+           fun invoke() = given<Set<String>>() 
         """
     ) {
         invokeSingleFile<Set<String>>()
@@ -229,7 +234,7 @@ class ConstrainedGivenTest {
     }
 
     @Test
-    fun testCanResolveTypeBasedOnGivenConstraintType() = codegen(
+    fun testCanResolveTypeBasedOnGivenConstraintType() = singleAndMultiCodegen(
         """
             @Qualifier annotation class Trigger
             @Given fun <@Given T : @Trigger S, S> triggerImpl(
@@ -241,13 +246,14 @@ class ConstrainedGivenTest {
 
             @Given
             fun stringPair() = "a" to "b"
-
-            fun invoke() = given<Int>()
+        """,
+        """
+           fun invoke() = given<Int>() 
         """
     )
 
     @Test
-    fun testCanResolveTypeWithConstraintTypeArgument() = codegen(
+    fun testCanResolveTypeWithConstraintTypeArgument() = singleAndMultiCodegen(
         """
             @Given fun <@Given T : String> triggerImpl(
                 @Given pair: Pair<T, T>
@@ -258,13 +264,14 @@ class ConstrainedGivenTest {
 
             @Given
             fun stringPair() = "a" to "b"
-
-            fun invoke() = given<Int>()
+        """,
+        """
+           fun invoke() = given<Int>() 
         """
     )
 
     @Test
-    fun testUiDecorator() = codegen(
+    fun testUiDecorator() = singleAndMultiCodegen(
         """
             typealias UiDecorator = @Composable (@Composable () -> Unit) -> Unit
 
@@ -279,15 +286,16 @@ class ConstrainedGivenTest {
 
             @Given
             fun rootSystemBarsProvider(): @UiDecoratorBinding RootSystemBarsProvider = {}
-
-            fun invoke() = given<Set<UiDecorator>>().size
+        """,
+        """
+           fun invoke() = given<Set<UiDecorator>>().size 
         """
     ) {
         1 shouldBe invokeSingleFile()
     }
 
     @Test
-    fun testComplexGivenConstraintSetup() = codegen(
+    fun testComplexGivenConstraintSetup() = singleAndMultiCodegen(
         """
             typealias App = Any
 
@@ -303,21 +311,23 @@ class ConstrainedGivenTest {
             @Given
             class DepWrapper2(@Given dep: () -> Dep, @Given wrapper: () -> DepWrapper)
 
-            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-            fun invoke() {
-                given<(@Given @InstallElement<AppGivenScope> App) -> AppGivenScope>()
-            }
             @InstallElement<AppGivenScope>
             @Given
             class MyComponent(@Given dep: Dep, @Given wrapper: () -> () -> DepWrapper, @Given wrapper2: () -> DepWrapper2)
 
             @Given
             fun myInitializer(@Given dep: Dep, @Given wrapper: () -> () -> DepWrapper, @Given wrapper2: () -> DepWrapper2): GivenScopeInitializer<AppGivenScope> = {}
+        """,
+        """
+            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+            fun invoke() {
+                given<(@Given @InstallElement<AppGivenScope> App) -> AppGivenScope>()
+            } 
         """
     )
 
     @Test
-    fun testConstrainedGivenWithModuleLikeConstrainedReturnType() = codegen(
+    fun testConstrainedGivenWithModuleLikeConstrainedReturnType() = singleAndMultiCodegen(
         """
             @Qualifier
             annotation class ClassSingleton
@@ -336,16 +346,17 @@ class ConstrainedGivenTest {
                 @ClassSingleton MyModule<T, S> = MyModule()
 
             @Given val foo: @Qualifier1 Foo = Foo()
-
+        """,
+        """
             @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-            fun invoke() = given<Foo>()
+            fun invoke() = given<Foo>() 
         """
     ) {
         irShouldContain(1, "classSingleton<@ClassSingleton MyModule")
     }
 
     @Test
-    fun testConstrainedGivenWithModuleLikeConstrainedReturnType2() = codegen(
+    fun testConstrainedGivenWithModuleLikeConstrainedReturnType2() = singleAndMultiCodegen(
         """
             @Qualifier
             annotation class ClassSingleton
@@ -364,16 +375,17 @@ class ConstrainedGivenTest {
                 @ClassSingleton MyModule<T, S> = MyModule()
 
             @Given val foo: @Qualifier1 Foo = Foo()
-
+        """,
+        """
             @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-            fun invoke() = given<Set<Foo>>()
+            fun invoke() = given<Set<Foo>>() 
         """
     ) {
         irShouldContain(1, "setOf")
     }
 
     @Test
-    fun testNestedConstrainedGivensWithGenerics() = codegen(
+    fun testNestedConstrainedGivensWithGenerics() = singleAndMultiCodegen(
         """
             @Qualifier annotation class A<T>
 
@@ -382,11 +394,11 @@ class ConstrainedGivenTest {
             }
 
             @Given fun dummy(): @A<String> Long = 0L
-
-
-            fun invoke() = given<Unit>()
+        """,
+        """
+           fun invoke() = given<Unit>() 
         """
     ) {
-        compilationShouldHaveFailed()
+        compilationShouldHaveFailed("no given argument found of type kotlin.Unit for parameter value of function com.ivianuu.injekt.given")
     }
 }

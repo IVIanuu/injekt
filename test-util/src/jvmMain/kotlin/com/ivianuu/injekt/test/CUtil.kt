@@ -20,6 +20,7 @@ package com.ivianuu.injekt.test
 
 import androidx.compose.compiler.plugins.kotlin.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.transform.*
 import com.tschuchort.compiletesting.*
 import io.kotest.matchers.*
 import io.kotest.matchers.string.*
@@ -244,12 +245,13 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
     jvmTarget = "1.8"
     verbose = false
     kotlincArguments += "-XXLanguage:+NewInference"
+    block()
     pluginOptions += PluginOption(
         "com.ivianuu.injekt",
         "dumpDir",
         workingDir.resolve("injekt/dump").absolutePath
     )
-    block()
+    dumpAllFiles = true
 }
 
 fun compile(block: KotlinCompilation.() -> Unit = {}) = compilation(block).compile()
