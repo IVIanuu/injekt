@@ -564,7 +564,7 @@ private fun TypeRef.isSubTypeOfSameClassifier(
         val parameter = superType.arguments[i]
         val originalParameter = superType.classifier.defaultType.arguments[i]
         val argumentOk = if (effectiveVariance(parameter.variance,
-                argument.variance, originalParameter.variance)!! == TypeVariance.IN)
+                argument.variance, originalParameter.variance) == TypeVariance.IN)
                     parameter.isAssignableTo(context, argument)
         else argument.isAssignableTo(context, parameter)
         if (!argumentOk) return false
