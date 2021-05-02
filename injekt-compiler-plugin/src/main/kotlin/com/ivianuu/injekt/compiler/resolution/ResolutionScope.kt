@@ -41,7 +41,8 @@ class ResolutionScope(
     val ownerDescriptor: DeclarationDescriptor?,
     val trace: BindingTrace,
     initialGivens: List<CallableRef>,
-    val imports: List<GivenImport>
+    val imports: List<GivenImport>,
+    val typeParameters: List<ClassifierRef>
 ) {
     val chain: MutableList<Pair<GivenRequest, GivenNode>> = parent?.chain ?: mutableListOf()
     val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
@@ -96,8 +97,12 @@ class ResolutionScope(
     val allParents: List<ResolutionScope> = parent?.allScopes ?: emptyList()
     val allScopes: List<ResolutionScope> = allParents + this
 
-    private val givensByType = mutableMapOf<TypeRef, List<GivenNode>?>()
-    private val setElementsByType = mutableMapOf<TypeRef, List<TypeRef>?>()
+    val typeContext = TypeContext(context, allScopes.flatMap { it.typeParameters })
+
+    private val givensByType = mutableMapOf<RequestKey, List<GivenNode>?>()
+    private val setElementsByType = mutableMapOf<RequestKey, List<TypeRef>?>()
+
+    data class RequestKey(val type: TypeRef, val context: TypeContext)
 
     init {
         initialGivens
@@ -164,38 +169,43 @@ class ResolutionScope(
             }
     }
 
-    fun givensForRequest(request: GivenRequest): List<GivenNode>? {
-        if (givens.isEmpty()) return parent?.givensForRequest(request)
+    fun givensForRequest(request: GivenRequest, typeContext: TypeContext): List<GivenNode>? {
         // we return merged collections
         if (request.type.frameworkKey == null &&
             request.type.classifier == context.setClassifier) return null
-        return givensByType.getOrPut(request.type) {
+        return givensForType(RequestKey(request.type, typeContext))
+            ?.filter { given ->
+                given !is CallableGivenNode ||
+                        given.callable.callable.visibility != DescriptorVisibilities.INTERNAL ||
+                        !given.callable.callable.isExternalDeclaration(context) ||
+                        DescriptorVisibilities.INTERNAL.isVisible(
+                            null,
+                            given.callable.callable,
+                            request.requestDescriptor!!
+                        )
+            }?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun givensForType(key: RequestKey): List<GivenNode>? {
+        if (givens.isEmpty()) return parent?.givensForType(key)
+        return givensByType.getOrPut(key) {
             val thisGivens = givens
                 .asSequence()
                 .filter {
-                    it.value.type.frameworkKey == request.type.frameworkKey
-                            && it.value.type.isAssignableTo(context, request.type) &&
+                    it.value.type.frameworkKey == key.type.frameworkKey
+                            && it.value.type.isAssignableTo(key.context, key.type) &&
                             it.value.isApplicable()
                 }
-                .map { it.value.toGivenNode(request.type, this) }
+                .map { it.value.toGivenNode(key.type, key.context, this) }
                 .toList()
                 .takeIf { it.isNotEmpty() }
-            val parentGivens = parent?.givensForRequest(request)
+            val parentGivens = parent?.givensForType(key)
             if (parentGivens != null && thisGivens != null) parentGivens + thisGivens
             else thisGivens ?: parentGivens
-        }?.filter { given ->
-            given !is CallableGivenNode ||
-                    given.callable.callable.visibility != DescriptorVisibilities.INTERNAL ||
-                    !given.callable.callable.isExternalDeclaration(context) ||
-                    DescriptorVisibilities.INTERNAL.isVisible(
-                        null,
-                        given.callable.callable,
-                        request.requestDescriptor!!
-                    )
-        }?.takeIf { it.isNotEmpty() }
+        }
     }
 
-    fun frameworkGivenForRequest(request: GivenRequest): GivenNode? {
+    fun frameworkGivenForRequest(request: GivenRequest, typeContext: TypeContext): GivenNode? {
         if (request.type.frameworkKey != null ||
                 request.type.qualifiers.isNotEmpty()) return null
         if (request.type.isFunctionTypeWithOnlyGivenParameters) {
@@ -210,13 +220,17 @@ class ResolutionScope(
             val collectionElementType = context.collectionClassifier.defaultType
                 .typeWith(listOf(singleElementType))
 
-            var elements = setElementsForType(singleElementType, collectionElementType)
+            var elements = setElementsForType(singleElementType, collectionElementType,
+                RequestKey(request.type, typeContext)
+            )
             if (elements == null &&
                 singleElementType.qualifiers.isEmpty() &&
                 singleElementType.isFunctionTypeWithOnlyGivenParameters) {
                 val providerReturnType = singleElementType.arguments.last()
                 elements = setElementsForType(providerReturnType, context.collectionClassifier
-                    .defaultType.typeWith(listOf(providerReturnType)))
+                    .defaultType.typeWith(listOf(providerReturnType)),
+                    RequestKey(providerReturnType, typeContext)
+                )
                     ?.map { elementType ->
                         singleElementType.copy(
                             arguments = singleElementType.arguments
@@ -255,28 +269,29 @@ class ResolutionScope(
 
     private fun setElementsForType(
         singleElementType: TypeRef,
-        collectionElementType: TypeRef
+        collectionElementType: TypeRef,
+        key: RequestKey
     ): List<TypeRef>? {
         if (givens.isEmpty())
-            return parent?.setElementsForType(singleElementType, collectionElementType)
-        return setElementsByType.getOrPut(singleElementType) {
+            return parent?.setElementsForType(singleElementType, collectionElementType, key)
+        return setElementsByType.getOrPut(key) {
             val thisElements = givens
                 .toList()
                 .asSequence()
                 .filter { (_, candidate) ->
                     ((candidate.type.frameworkKey == singleElementType.frameworkKey &&
-                            candidate.type.isAssignableTo(context, singleElementType)) ||
+                            candidate.type.isAssignableTo(key.context, singleElementType)) ||
                             (candidate.type.frameworkKey == collectionElementType.frameworkKey) &&
-                            candidate.type.isAssignableTo(context, collectionElementType)) &&
+                            candidate.type.isAssignableTo(key.context, collectionElementType)) &&
                             candidate.isApplicable()
                 }
                 .map { (_, candidate) ->
                     candidate.substitute(
                         when {
-                            candidate.type.isAssignableTo(context, singleElementType) ->
-                                getSubstitutionMap(context, listOf(singleElementType to candidate.type))
-                            candidate.type.isAssignableTo(context, collectionElementType) ->
-                                getSubstitutionMap(context,
+                            candidate.type.isAssignableTo(key.context, singleElementType) ->
+                                getSubstitutionMap(key.context, listOf(singleElementType to candidate.type))
+                            candidate.type.isAssignableTo(key.context, collectionElementType) ->
+                                getSubstitutionMap(key.context,
                                     listOf(collectionElementType to candidate.type.subtypeView(context.collectionClassifier)!!))
                             else -> throw AssertionError()
                         }
@@ -291,7 +306,7 @@ class ResolutionScope(
                 }
                 .toList()
                 .takeIf { it.isNotEmpty() }
-            val parentElements = parent?.setElementsForType(singleElementType, collectionElementType)
+            val parentElements = parent?.setElementsForType(singleElementType, collectionElementType, key)
             if (parentElements != null && thisElements != null) parentElements + thisElements
             else thisElements ?: parentElements
         }
@@ -309,10 +324,10 @@ class ResolutionScope(
         if (candidate.type.frameworkKey in constrainedGiven.resultingFrameworkKeys) return
         if (candidate.type in constrainedGiven.processedCandidateTypes) return
         constrainedGiven.processedCandidateTypes += candidate.type
-        if (!candidate.rawType.isSubTypeOf(context, constrainedGiven.constraintType)) return
+        if (!candidate.rawType.isSubTypeOf(typeContext, constrainedGiven.constraintType)) return
 
         val inputsSubstitutionMap = getSubstitutionMap(
-            context,
+            typeContext,
             listOf(candidate.type to constrainedGiven.constraintType)
         )
         // if we could not get all type arguments it must be an incompatible type
@@ -321,7 +336,7 @@ class ResolutionScope(
                         it !in inputsSubstitutionMap
         }) return
         val outputsSubstitutionMap = getSubstitutionMap(
-            context,
+            typeContext,
             listOf(candidate.rawType to constrainedGiven.constraintType)
         )
         if (constrainedGiven.callable.typeParameters.any {
@@ -473,7 +488,8 @@ fun HierarchicalResolutionScope(
                                                 .toCallableRef(context, trace)
                                                 .makeGiven()
                                         ),
-                                        imports = emptyList()
+                                        imports = emptyList(),
+                                        typeParameters = emptyList()
                                     ).also { trace.record(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, companionDescriptor, it) }
                                 }
                         }
@@ -497,7 +513,8 @@ fun HierarchicalResolutionScope(
                                 clazz.thisAsReceiverParameter.toCallableRef(context, trace)
                                     .makeGiven()
                             ),
-                            imports = emptyList()
+                            imports = emptyList(),
+                            typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(context, trace) }
                         ).also { trace.record(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, clazz, it) }
                 }
                 next is LexicalScope && next.ownerDescriptor is FunctionDescriptor &&
@@ -524,7 +541,8 @@ fun HierarchicalResolutionScope(
                                     .filter { it.isGiven(context, trace) || it === function.extensionReceiverParameter }
                                     .map { it.toCallableRef(context, trace).makeGiven() }
                                     .toList(),
-                                imports = emptyList()
+                                imports = emptyList(),
+                                typeParameters = function.typeParameters.map { it.toClassifierRef(context, trace) }
                             ).also { trace.record(InjektWritableSlices.FUNCTION_RESOLUTION_SCOPE, function, it) }
                         }
                 }
@@ -547,7 +565,8 @@ fun HierarchicalResolutionScope(
                                 ownerDescriptor = property,
                                 trace = trace,
                                 initialGivens = next.collectGivens(context, trace),
-                                imports = emptyList()
+                                imports = emptyList(),
+                                typeParameters = property.typeParameters.map { it.toClassifierRef(context, trace) }
                             ).also { trace.record(InjektWritableSlices.PROPERTY_RESOLUTION_SCOPE, property, it) }
                         }
                 }
@@ -578,7 +597,8 @@ fun HierarchicalResolutionScope(
                             ownerDescriptor = ownerDescriptor,
                             trace = trace,
                             initialGivens = next.collectGivens(context, trace),
-                            imports = emptyList()
+                            imports = emptyList(),
+                            typeParameters = emptyList()
                         )//.also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, next, it) }
                 }
             }
@@ -607,11 +627,13 @@ private fun List<GivenImport>.toImportResolutionScope(
             ownerDescriptor = null,
             trace = trace,
             initialGivens = externalImportedGivens,
-            imports = emptyList()
+            imports = emptyList(),
+            typeParameters = emptyList()
         ),
         ownerDescriptor = null,
         trace = trace,
         initialGivens = internalImportedGivens,
-        imports = this
+        imports = this,
+        typeParameters = emptyList()
     )
 }

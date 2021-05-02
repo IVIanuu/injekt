@@ -125,7 +125,8 @@ class ProviderGivenNode(
                     .copy(isGiven = true, type = type.arguments[index])
             }
             .toList(),
-        imports = emptyList()
+        imports = emptyList(),
+        typeParameters = emptyList()
     )
     override val callContext: CallContext
         get() = CallContext.DEFAULT
@@ -137,9 +138,10 @@ class ProviderGivenNode(
 
 fun CallableRef.toGivenNode(
     type: TypeRef,
+    typeContext: TypeContext,
     ownerScope: ResolutionScope
 ): GivenNode {
-    val finalCallable = substitute(getSubstitutionMap(ownerScope.context, listOf(type to this.type)))
+    val finalCallable = substitute(getSubstitutionMap(typeContext, listOf(type to this.type)))
     return CallableGivenNode(
         type,
         finalCallable.getGivenRequests(ownerScope.context, ownerScope.trace),
