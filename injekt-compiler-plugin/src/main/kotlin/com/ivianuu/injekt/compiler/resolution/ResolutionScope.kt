@@ -161,11 +161,12 @@ class ResolutionScope(
         givens.forEach { recordLookup(it.value.callable) }
         constrainedGivens.forEach { recordLookup(it.callable.callable) }
         imports
+            .filter { it.importPath != null }
             .filter { it.importPath!!.endsWith(".*") }
             .map { FqName(it.importPath!!.removeSuffix(".*")) }
             .forEach { fqName ->
-                context.memberScopeForFqName(fqName)!!
-                    .recordLookup("givens".asNameId(), location)
+                context.memberScopeForFqName(fqName)
+                    ?.recordLookup("givens".asNameId(), location)
             }
     }
 
