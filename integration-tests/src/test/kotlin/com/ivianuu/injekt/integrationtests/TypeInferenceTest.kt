@@ -42,6 +42,7 @@ class TypeInferenceTest {
 
             @Given fun bar(@Given foo: Foo) = Bar(foo)
 
+            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
             fun invoke(@Given appGivenScope: AppGivenScope) = 
                 given<@ChildScopeFactory (Foo) -> MyGivenScope>()
                 """
@@ -69,6 +70,7 @@ class TypeInferenceTest {
 
             @Given fun bar(@Given foo: Foo) = Bar(foo)
 
+            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
             fun invoke(@Given appGivenScope: AppGivenScope) = 
                 given<@ChildScopeFactory (Foo) -> MyGivenScope>()
                 """

@@ -48,10 +48,10 @@ class GivenResolveTest {
             listOf(
                 source(
                     """
+                    @GivenImports("givens.*")
                     fun invoke() = given<Foo>()
                     """,
-                    name = "File.kt",
-                    givenImports = listOf("givens.*")
+                    name = "File.kt"
                 )
             )
         )
@@ -70,10 +70,10 @@ class GivenResolveTest {
             ),
             source(
                 """
+                    @GivenImports("givens.*")
                     fun invoke() = given<Foo>()
                     """,
-                name = "File.kt",
-                givenImports = listOf("givens.*")
+                name = "File.kt"
             )
         )
     ) {

@@ -99,16 +99,14 @@ class GivenImportsTest {
                 """
                     @Given val foo = Foo()
                 """,
-                packageFqName = FqName("givens"),
-                givenImports = emptyList()
+                packageFqName = FqName("givens")
             ),
             source(
                 """
                     @GivenImports("givens.foo")
                     fun invoke() = given<Foo>()
                     """,
-                name = "File.kt",
-                givenImports = emptyList()
+                name = "File.kt"
             )
         )
     ) {
@@ -122,16 +120,14 @@ class GivenImportsTest {
                 """
                     @Given val foo = Foo()
                 """,
-                packageFqName = FqName("givens"),
-                givenImports = emptyList()
+                packageFqName = FqName("givens")
             ),
             source(
                 """
                     @GivenImports("givens.*")
                     fun invoke() = given<Foo>()
                     """,
-                name = "File.kt",
-                givenImports = emptyList()
+                name = "File.kt"
             )
         )
     ) {
@@ -249,8 +245,7 @@ class GivenImportsTest {
                         given<TypeKey<Foo>>().value
                     }
                 """,
-                name = "File.kt",
-                givenImports = emptyList()
+                name = "File.kt"
             )
         )
     ) {

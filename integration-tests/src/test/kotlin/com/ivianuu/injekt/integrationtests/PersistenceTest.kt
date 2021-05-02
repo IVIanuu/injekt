@@ -100,6 +100,7 @@ class PersistenceTest {
             ): AppGivenScope = TODO()
                 """,
         """
+            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
             fun invoke() = myFunction()
                 """
     )
@@ -112,6 +113,7 @@ class PersistenceTest {
             )
                 """,
         """
+            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
             fun invoke() = MyClass()
                 """
     )
@@ -126,6 +128,7 @@ class PersistenceTest {
             }
                 """,
         """
+            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
             fun invoke() = MyClass()
                 """
     )
@@ -162,6 +165,7 @@ class PersistenceTest {
         """
             typealias TestGivenScope1 = GivenScope
             typealias TestGivenScope2 = GivenScope
+            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
             fun invoke() {
                 @Given
                 val childScopeModule =

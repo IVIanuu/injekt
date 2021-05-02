@@ -136,6 +136,7 @@ class QualifierTest {
             @Given
             class MyElement(@Given val foo: Foo)
 
+            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
             fun invoke() {
                 val givenScope = given<AppGivenScope>()
             }

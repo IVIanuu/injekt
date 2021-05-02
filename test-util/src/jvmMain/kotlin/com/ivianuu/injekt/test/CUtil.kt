@@ -31,24 +31,15 @@ import kotlin.reflect.*
 
 var fileIndex = 0
 
-val defaultGivenImports = listOf(
-    "com.ivianuu.injekt.common.*",
-    "com.ivianuu.injekt.scope.*"
-)
-
 fun source(
     @Language("kotlin") source: String,
     name: String = "File${fileIndex++}.kt",
     injektImports: Boolean = true,
-    packageFqName: FqName = FqName("com.ivianuu.injekt.integrationtests"),
-    givenImports: List<String> = defaultGivenImports
+    packageFqName: FqName = FqName("com.ivianuu.injekt.integrationtests")
 ) = SourceFile.kotlin(
     name = name,
     contents = buildString {
         if (injektImports) {
-            appendLine(
-                "@file:GivenImports(${givenImports.joinToString(",\n") { "\"$it\"" }}) "
-            )
             appendLine()
             appendLine("package $packageFqName")
             appendLine()

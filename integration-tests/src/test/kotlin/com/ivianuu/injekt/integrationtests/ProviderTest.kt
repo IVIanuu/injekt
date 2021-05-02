@@ -91,6 +91,7 @@ class ProviderTest {
             ): @InstallElement<GivenScopeB> () -> GivenScopeC = scopeFactory
             """,
         """
+            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
             fun createGivenScopeA() = given<GivenScopeA>()
 
             @InstallElement<GivenScopeC>

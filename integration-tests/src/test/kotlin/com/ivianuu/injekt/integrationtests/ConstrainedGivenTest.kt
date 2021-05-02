@@ -185,6 +185,7 @@ class ConstrainedGivenTest {
                 """,
         """
                 @Given fun foo(): @Scoped<AppGivenScope> Foo = Foo()
+                @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
                 fun invoke() = given<Foo>()
                 """
     ) {
@@ -302,6 +303,7 @@ class ConstrainedGivenTest {
             @Given
             class DepWrapper2(@Given dep: () -> Dep, @Given wrapper: () -> DepWrapper)
 
+            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
             fun invoke() {
                 given<(@Given @InstallElement<AppGivenScope> App) -> AppGivenScope>()
             }
@@ -335,6 +337,7 @@ class ConstrainedGivenTest {
 
             @Given val foo: @Qualifier1 Foo = Foo()
 
+            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
             fun invoke() = given<Foo>()
         """
     ) {
@@ -362,6 +365,7 @@ class ConstrainedGivenTest {
 
             @Given val foo: @Qualifier1 Foo = Foo()
 
+            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
             fun invoke() = given<Set<Foo>>()
         """
     ) {
