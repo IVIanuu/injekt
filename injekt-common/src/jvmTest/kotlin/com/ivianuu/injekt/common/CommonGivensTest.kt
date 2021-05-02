@@ -31,14 +31,20 @@ class CommonGivensTest {
     }
 
     @Test
+    fun testCanUseLazy() {
+        given<Lazy<Foo>>()
+    }
+
+    @Test
     fun testCanUseKClass() {
-        val clazz = given<KClass<Foo>>()
+        given<KClass<Foo>>()
     }
 
     @Test
     fun testCanUseType() {
-        val type = given<TypeKey<Foo>>()
+        given<TypeKey<Foo>>()
     }
 
+    @Given
     private class Foo
 }

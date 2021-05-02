@@ -36,3 +36,9 @@ inline fun <reified T : Any> givenKClass(): KClass<T> = T::class
  */
 @Given
 inline fun <@ForTypeKey T> givenTypeKey(): TypeKey<T> = typeKeyOf()
+
+/**
+ * Allows to use a [Lazy] for [Ŧ]
+ */
+@Given
+inline fun <T> givenLazy(@Given noinline init: () -> T): Lazy<T> = lazy(init)
