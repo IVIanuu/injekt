@@ -88,11 +88,6 @@ interface InjektErrors {
                 .also { MAP.put(it, "interface cannot be @Given") }
 
         @JvmField
-        val GIVEN_TAILREC_FUNCTION =
-            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also { MAP.put(it, "@Given function cannot be tail recursive") }
-
-        @JvmField
         val NON_FOR_TYPE_KEY_TYPE_PARAMETER_AS_FOR_TYPE_KEY =
             DiagnosticFactory1.create<PsiElement, TypeParameterDescriptor>(Severity.ERROR)
                 .also {
@@ -125,16 +120,6 @@ interface InjektErrors {
                     MAP.put(
                         it,
                         "a @Given type constraint is only supported on @Given functions and @Given classes"
-                    )
-                }
-
-        @JvmField
-        val GIVEN_WITH_UNRESOLVABLE_TYPE_PARAMETER =
-            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-                .also {
-                    MAP.put(
-                        it,
-                        "type parameter of a given must be used in the return type or in a upper bound of another type parameter or must be itself marked with @Given"
                     )
                 }
 

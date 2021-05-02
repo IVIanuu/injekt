@@ -28,7 +28,6 @@ import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.checkers.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.multiplatform.*
-import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class GivenChecker(private val context: InjektContext) : DeclarationChecker {
@@ -52,23 +51,8 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         trace: BindingTrace
     ) {
         if (descriptor.isGiven(this.context, trace)) {
-            checkUnresolvableGivenTypeParameters(declaration,
-                descriptor.typeParameters, descriptor.returnType!!, trace)
-
             descriptor.valueParameters
                 .checkGivenCallableHasOnlyGivenParameters(declaration, trace)
-
-            if (descriptor.isTailrec) {
-                trace.report(
-                    InjektErrors.GIVEN_TAILREC_FUNCTION
-                        .on(
-                            declaration.modifierList
-                                ?.getModifier(KtTokens.TAILREC_KEYWORD)
-                                ?: declaration
-                        )
-                )
-            }
-
             checkConstrainedGiven(declaration, descriptor, descriptor.typeParameters, trace)
             checkGivenTypeParametersMismatch(descriptor, declaration, trace)
         } else {
@@ -190,8 +174,6 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     ) {
         checkGivenConstraintsOnNonGivenDeclaration(descriptor.typeParameters, trace)
         if (descriptor.isGiven(this.context, trace)) {
-            checkUnresolvableGivenTypeParameters(declaration,
-                descriptor.typeParameters, descriptor.returnType!!, trace)
             checkGivenTypeParametersMismatch(descriptor, declaration, trace)
         } else {
             checkOverrides(declaration, descriptor, trace)
@@ -266,46 +248,6 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
                     .on(declaration.cast(), descriptor, emptyMap())
             )
         }
-    }
-
-    private fun checkUnresolvableGivenTypeParameters(
-        declaration: KtDeclaration,
-        typeParameters: List<TypeParameterDescriptor>,
-        returnType: KotlinType,
-        trace: BindingTrace
-    ) {
-        if (typeParameters.isEmpty()) return
-        val allTypeParameterRefs = typeParameters
-            .map { it.toClassifierRef(context, trace) }
-        val nonConstraintTypeParameterRefs = allTypeParameterRefs
-            .filterNot { it.isGivenConstraint }
-        if (nonConstraintTypeParameterRefs.isEmpty()) return
-        val usedNonConstraintTypeParameterRefs = mutableSetOf<ClassifierRef>()
-        returnType.toTypeRef(context, trace)
-            .forEachType {
-                if (it.classifier in nonConstraintTypeParameterRefs)
-                    usedNonConstraintTypeParameterRefs += it.classifier
-            }
-        allTypeParameterRefs
-            .forEach { typeParameterRef ->
-                typeParameterRef.superTypes
-                    .forEach { typeParameterSuperType ->
-                        typeParameterSuperType.forEachType {
-                            if (it.classifier in nonConstraintTypeParameterRefs)
-                                usedNonConstraintTypeParameterRefs += it.classifier
-                        }
-                    }
-            }
-        nonConstraintTypeParameterRefs
-            .asSequence()
-            .filter { it !in usedNonConstraintTypeParameterRefs }
-            .map { it.descriptor!! }
-            .forEach {
-                trace.report(
-                    InjektErrors.GIVEN_WITH_UNRESOLVABLE_TYPE_PARAMETER
-                        .on(it.findPsi() ?: declaration)
-                )
-            }
     }
 
     private fun checkGivenTypeParametersMismatch(

@@ -40,18 +40,6 @@ class GivenDeclarationCheckTest {
     }
 
     @Test
-    fun testGivenTailrecFunction() = codegen(
-        """
-            @Given tailrec fun factorial(n : Long, a : Long = 1) : Long {
-                return if (n == 1L) a
-                else factorial(n - 1, n * a)
-            }
-        """
-    ) {
-        compilationShouldHaveFailed("@Given function cannot be tail recursive")
-    }
-
-    @Test
     fun testGivenEnumClass() = codegen(
         """
             @Given enum class MyEnum
@@ -163,35 +151,6 @@ class GivenDeclarationCheckTest {
     ) {
         shouldContainMessage("Parameter 'foo' is never used")
     }
-
-    @Test
-    fun testGivenWithUnresolvableTypeParameter() = codegen(
-        """
-            @Given
-            fun <S> func(): String = ""
-        """
-    ) {
-        compilationShouldHaveFailed("type parameter of a given must be used in the return type or in a upper bound of another type parameter or must be itself marked with @Given")
-    }
-
-    @Test
-    fun testGivenWithResolvableTypeParameter() = codegen(
-        """
-            @Given
-            fun <@Given T : S, S : Int> lol() {
-            }
-        """
-    )
-
-    @Test
-    fun testGivenWithResolvableTypeParameterInQualifier() = codegen(
-        """
-            @Qualifier annotation class MyQualifier<T>
-            @Given
-            fun <@Given T : @MyQualifier<U> S, S, U> lol() {
-            }
-        """
-    )
 
     @Test
     fun testGivenFunctionOverrideWithGivenAnnotation() = codegen(
