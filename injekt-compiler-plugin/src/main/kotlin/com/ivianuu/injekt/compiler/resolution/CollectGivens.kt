@@ -240,7 +240,8 @@ fun List<GivenImport>.collectImportGivens(context: InjektContext, trace: Binding
 
 private fun ResolutionScope.canSee(callable: CallableRef): Boolean =
     callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
-            callable.callable.visibility == DescriptorVisibilities.INTERNAL ||
+            (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
+                    !callable.callable.isExternalDeclaration(context)) ||
             callable.callable.visibility == DescriptorVisibilities.LOCAL ||
             (callable.callable is ClassConstructorDescriptor &&
                     callable.type.classifier.isObject) ||

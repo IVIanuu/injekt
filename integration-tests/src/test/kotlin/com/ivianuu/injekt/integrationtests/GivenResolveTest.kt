@@ -224,19 +224,6 @@ class GivenResolveTest {
     }
 
     @Test
-    fun testCanResolveInternalGivenIfRequestedFromTheSameModule() = multiCodegen(
-        """
-            
-            @Given
-            internal val foo = Foo()
-            @Given fun bar(@Given foo: Foo) = Bar(foo)
-        """,
-        """
-            fun invoke() = given<Bar>()
-        """
-    )
-
-    @Test
     fun testFunctionInvocationWithGivens() = codegen(
         """
                 @Given val foo = Foo()
@@ -423,25 +410,28 @@ class GivenResolveTest {
     )
 
     @Test
-    fun testCanResolveProtectedGivenFromSubClass() = codegen(
+    fun testCanResolveProtectedGivenFromSubClass() = singleAndMultiCodegen(
         """
                 abstract class AbstractFooHolder {
                     @Given protected val foo = Foo()
                 }
-                class FooHolderImpl : AbstractFooHolder() {
-                    fun invoke() = given<Foo>()
-                }
-                """
+                """,
+        """
+            class FooHolderImpl : AbstractFooHolder() {
+                fun invoke() = given<Foo>()
+            } 
+        """
     )
 
     @Test
-    fun testCannotResolvePropertyWithTheSameNameAsAnGivenPrimaryConstructorParameter() = codegen(
+    fun testCannotResolvePropertyWithTheSameNameAsAnGivenPrimaryConstructorParameter() = singleAndMultiCodegen(
         """
             @Given class MyClass(@Given foo: Foo) {
                 val foo = foo
             }
-
-            fun invoke() = given<Foo>()
+        """,
+        """
+           fun invoke() = given<Foo>() 
         """
     ) {
         compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.given")

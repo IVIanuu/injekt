@@ -175,16 +175,6 @@ class ResolutionScope(
         if (request.type.frameworkKey == null &&
             request.type.classifier == context.setClassifier) return null
         return givensForType(RequestKey(request.type, typeContext))
-            ?.filter { given ->
-                given !is CallableGivenNode ||
-                        given.callable.callable.visibility != DescriptorVisibilities.INTERNAL ||
-                        !given.callable.callable.isExternalDeclaration(context) ||
-                        DescriptorVisibilities.INTERNAL.isVisible(
-                            null,
-                            given.callable.callable,
-                            request.requestDescriptor!!
-                        )
-            }?.takeIf { it.isNotEmpty() }
     }
 
     private fun givensForType(key: RequestKey): List<GivenNode>? {
@@ -251,8 +241,7 @@ class ResolutionScope(
                             callableFqName = FqName("com.ivianuu.injekt.givenSetOf<${request.type.arguments[0].render()}>"),
                             parameterName = "element$index".asNameId(),
                             isInline = false,
-                            isLazy = false,
-                            requestDescriptor = ownerDescriptor.cast()
+                            isLazy = false
                         )
                     }
                 return SetGivenNode(

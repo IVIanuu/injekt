@@ -26,7 +26,6 @@ import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.inline.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
 
 sealed class GivenNode {
     abstract val type: TypeRef
@@ -97,8 +96,7 @@ class ProviderGivenNode(
             callableFqName = callableFqName,
             parameterName = "instance".asNameId(),
             isInline = false,
-            isLazy = true,
-            requestDescriptor = ownerScope.ownerDescriptor.cast()
+            isLazy = true
         )
     )
 
@@ -176,8 +174,7 @@ fun CallableRef.getGivenRequests(
             callableFqName = callableFqNameProvider(parameter),
             parameterName = name.asNameId(),
             isInline = InlineUtil.isInlineParameter(parameter),
-            isLazy = false,
-            requestDescriptor = callable
+            isLazy = false
         )
     }
     .toList()
@@ -188,9 +185,8 @@ data class GivenRequest(
     val callableFqName: FqName,
     val parameterName: Name,
     val isInline: Boolean,
-    val isLazy: Boolean,
-    val requestDescriptor: DeclarationDescriptorWithVisibility
-) {
+    val isLazy: Boolean
+    ) {
     enum class DefaultStrategy {
         NONE, DEFAULT_IF_NOT_GIVEN, DEFAULT_ON_ALL_ERRORS
     }

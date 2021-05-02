@@ -26,7 +26,6 @@ import org.jetbrains.kotlin.resolve.calls.checkers.*
 import org.jetbrains.kotlin.resolve.calls.model.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.inline.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class GivenCallChecker(private val context: InjektContext) : CallChecker {
     override fun check(
@@ -69,8 +68,7 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
                     callableFqName = resultingDescriptor.fqNameSafe,
                     parameterName = parameter.injektName().asNameId(),
                     isInline = InlineUtil.isInlineParameter(parameter),
-                    isLazy = false,
-                    requestDescriptor = context.scope.ownerDescriptor.cast()
+                    isLazy = false
                 )
             }
             .toList()
