@@ -137,6 +137,12 @@ class SubtypingTest {
     }
 
     @Test
+    fun testSameQualifiersInDifferentOrderIsAssignable() = withTypeCheckerContext {
+        stringType.qualified(qualifier1, qualifier2) shouldBeAssignableTo
+                stringType.qualified(qualifier2, qualifier1)
+    }
+
+    @Test
     fun testQualifiedIsSubTypeOfUnqualified() = withTypeCheckerContext {
         stringType.qualified(qualifier1) shouldBeSubTypeOf stringType
     }
