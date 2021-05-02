@@ -530,16 +530,17 @@ fun TypeRef.isAssignableTo(
 ): Boolean {
     if (superType.isStarProjection) return true
     if (classifier.fqName == InjektFqNames.Nothing) return true
-    if (superType.classifier.isTypeParameter)
-        return isSubTypeOfTypeParameter(context, superType)
+
     if (classifier.isTypeParameter)
-        return superType.isSubTypeOfTypeParameter(context, this)
+        return superType.isAssignableToTypeParameter(context, this)
+
     if (!qualifiers.areQualifiersAssignable(context, superType.qualifiers))
         return false
+
     return isSubTypeOf(context, superType)
 }
 
-private fun TypeRef.isSubTypeOfTypeParameter(
+private fun TypeRef.isAssignableToTypeParameter(
     context: InjektContext,
     typeParameter: TypeRef
 ): Boolean {
