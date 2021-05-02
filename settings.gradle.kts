@@ -27,8 +27,8 @@ include(
     ":injekt-ktor",
     ":injekt-scope",
     ":integration-tests",
-    ":samples:type-class",
     ":test-util",
     "samples:android-app",
-    "samples:coffee-maker"
+    "samples:coffee-maker",
+    ":samples:type-classes"
 )

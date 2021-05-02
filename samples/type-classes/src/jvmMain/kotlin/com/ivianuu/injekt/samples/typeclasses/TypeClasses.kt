@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.samples.typeclass
+package com.ivianuu.injekt.samples.typeclasses
 
 import com.ivianuu.injekt.*
 
