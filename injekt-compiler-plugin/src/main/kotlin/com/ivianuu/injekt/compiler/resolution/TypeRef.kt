@@ -582,8 +582,10 @@ fun TypeRef.isSubTypeOf(
     if (superType.classifier.fqName == InjektFqNames.Any)
         return superType.qualifiers.isEmpty() ||
                 (qualifiers.isNotEmpty() && qualifiers.areSubQualifiersOf(context, superType.qualifiers))
-    if (classifier == superType.classifier)
-        return isSubTypeOfSameClassifier(context, superType)
+
+    val subTypeView = subtypeView(superType.classifier)
+    if (subTypeView != null)
+        return subTypeView.isSubTypeOfSameClassifier(context, superType)
 
     if (superType.classifier.isTypeParameter) {
         if (superType.qualifiers.isNotEmpty() &&
@@ -591,10 +593,6 @@ fun TypeRef.isSubTypeOf(
         ) return false
         return superType.superTypes.all { isSubTypeOf(context, it) }
     }
-
-    val subTypeView = subtypeView(superType.classifier)
-    if (subTypeView != null)
-        return subTypeView.isSubTypeOfSameClassifier(context, superType)
 
     return false
 }
