@@ -259,6 +259,7 @@ class TypeKeyTest {
     @Test
     fun testTypeKeyWithStar2() = codegen(
         """
+            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
             val scope = given<(@Given @InstallElement<AppGivenScope> List<*>) -> AppGivenScope>()
                 .invoke(emptyList<Any?>())
             fun invoke() = scope.element<List<*>>()
