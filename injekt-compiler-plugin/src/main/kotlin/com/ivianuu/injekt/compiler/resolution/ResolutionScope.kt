@@ -184,10 +184,18 @@ class ResolutionScope(
             val thisGivens = givens
                 .asSequence()
                 .filter {
-                    it.value.type.frameworkKey == key.type.frameworkKey
-                            && it.value.type.isAssignableTo(key.context, key.type)
+                    it.value.type.frameworkKey == key.type.frameworkKey &&
+                            it.value.type.isAssignableTo(key.context, key.type)
                 }
-                .map { it.value.toGivenNode(key.type, key.context, this) }
+                .map {
+                    val finalCallable = it.value.substitute(getSubstitutionMap(key.context, it.value.type, key.type))
+                    CallableGivenNode(
+                        key.type,
+                        finalCallable.getGivenRequests(context, trace),
+                        this,
+                        finalCallable
+                    )
+                }
                 .toList()
                 .takeIf { it.isNotEmpty() }
             val parentGivens = parent?.givensForType(key)

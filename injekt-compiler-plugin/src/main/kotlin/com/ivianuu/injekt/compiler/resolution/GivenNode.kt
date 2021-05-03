@@ -134,20 +134,6 @@ class ProviderGivenNode(
         get() = true
 }
 
-fun CallableRef.toGivenNode(
-    type: TypeRef,
-    typeContext: TypeContext,
-    ownerScope: ResolutionScope
-): GivenNode {
-    val finalCallable = substitute(getSubstitutionMap(typeContext, type, this.type))
-    return CallableGivenNode(
-        type,
-        finalCallable.getGivenRequests(ownerScope.context, ownerScope.trace),
-        ownerScope,
-        finalCallable
-    )
-}
-
 fun CallableRef.getGivenRequests(
     context: InjektContext,
     trace: BindingTrace?,
