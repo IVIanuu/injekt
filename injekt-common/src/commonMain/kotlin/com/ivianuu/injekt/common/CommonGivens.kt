@@ -23,7 +23,7 @@ import kotlin.reflect.*
  * Allows to use a Map<K, V> for each Set<Pair<K, V>>
  */
 @Given
-inline fun <K, V> setOfPairsToMap(@Given pairs: Set<Pair<K, V>>): Map<K, V> = pairs.toMap()
+inline fun <@Given T : Map<K, V>, K, V> givenMap(@Given pairs: T): Map<K, V> = pairs.toMap()
 
 /**
  * Allows to use a [KClass] for [T]
