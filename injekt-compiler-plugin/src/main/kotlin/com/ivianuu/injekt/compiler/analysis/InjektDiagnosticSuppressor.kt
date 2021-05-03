@@ -80,9 +80,10 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
                         return true
         }
 
-        if (diagnostic.factory == Errors.UNUSED_PARAMETER) {
+        if (diagnostic.factory == Errors.UNUSED_PARAMETER ||
+                diagnostic.factory == Errors.UNUSED_VARIABLE) {
             val descriptor =
-                (diagnostic.psiElement as KtDeclaration).descriptor<ParameterDescriptor>(
+                (diagnostic.psiElement as KtDeclaration).descriptor<DeclarationDescriptor>(
                     bindingContext)
                     ?: return false
             try {

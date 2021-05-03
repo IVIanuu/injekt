@@ -121,4 +121,56 @@ class SuppressionTest {
             } 
         """
     )
+
+    @Test
+    fun testUsedGivenParameterIsNotMarkedAsUnused() = codegen(
+        """
+            fun func1(@Given foo: Foo) {
+                func2()                
+            }
+
+            fun func2(@Given foo: Foo) {
+                foo
+            }
+        """
+    ) {
+        shouldNotContainMessage("Parameter 'foo' is never used")
+    }
+
+    @Test
+    fun testUnusedGivenParameterIsMarkedAsUnused() = codegen(
+        """
+            fun func1(@Given foo: Foo) {
+            }
+
+            fun func2(@Given foo: Foo) {
+                foo
+            } 
+        """
+    ) {
+        shouldContainMessage("Parameter 'foo' is never used")
+    }
+
+    @Test
+    fun testUsedGivenVariableIsNotMarkedAsUnused() = codegen(
+        """
+            fun invoke() {
+                @Given val foo = Foo()
+                given<Foo>()
+            }
+        """
+    ) {
+        shouldNotContainMessage("Variable 'foo' is never used")
+    }
+
+    @Test
+    fun testUnusedGivenVariableIsMarkedAsUnused() = codegen(
+        """
+            fun invoke() {
+                @Given val foo = Foo()
+            }
+        """
+    ) {
+        shouldContainMessage("Variable 'foo' is never used")
+    }
 }

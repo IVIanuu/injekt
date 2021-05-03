@@ -123,35 +123,6 @@ class GivenDeclarationCheckTest {
         compilationShouldHaveFailed("receiver cannot be marked as @Given because it is implicitly @Given")
     }
 
-    // todo @Test
-    fun testUsedGivenParameterIsNotMarkedAsUnused() = codegen(
-        """
-            fun func1(@Given foo: Foo) {
-                func2()                
-            }
-
-            fun func2(@Given foo: Foo) {
-                foo
-            }
-        """
-    ) {
-        shouldNotContainMessage("Parameter 'foo' is never used")
-    }
-
-    @Test
-    fun testUnusedGivenParameterIsMarkedAsUnused() = codegen(
-        """
-            fun func1(@Given foo: Foo) {
-            }
-
-            fun func2(@Given foo: Foo) {
-                foo
-            } 
-        """
-    ) {
-        shouldContainMessage("Parameter 'foo' is never used")
-    }
-
     @Test
     fun testGivenFunctionOverrideWithGivenAnnotation() = singleAndMultiCodegen(
         """
