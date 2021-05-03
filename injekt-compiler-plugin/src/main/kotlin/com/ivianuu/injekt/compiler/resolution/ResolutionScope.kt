@@ -412,9 +412,10 @@ fun HierarchicalResolutionScope(
     scope: HierarchicalScope,
     trace: BindingTrace
 ): ResolutionScope {
-    trace[InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, scope]?.let { return it }
+    val finalScope = scope.takeSnapshot()
+    trace[InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, finalScope]?.let { return it }
 
-    val allScopes = scope.parentsWithSelf.toList()
+    val allScopes = finalScope.parentsWithSelf.toList()
 
     val file = allScopes
         .filterIsInstance<LexicalScope>()
@@ -593,7 +594,7 @@ fun HierarchicalResolutionScope(
                 }
             }
         }
-        .also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, scope, it) }
+        .also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, finalScope, it) }
 }
 
 private fun List<GivenImport>.toImportResolutionScope(

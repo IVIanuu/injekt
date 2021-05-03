@@ -18,6 +18,7 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.*
 import io.kotest.matchers.*
+import io.kotest.matchers.nulls.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
@@ -367,6 +368,23 @@ class GivenDeclarationTest {
         val result = invokeSingleFile<Pair<Foo, Foo>>(a, b)
         a shouldBeSameInstanceAs result.first
         b shouldBeSameInstanceAs result.second
+    }
+
+    @Test
+    fun testGivenInTheMiddleOfABlock() = codegen(
+        """
+            fun invoke(provided: Foo): Pair<Foo?, Foo?> {
+                val a = givenOrNull<Foo>()
+                @Given val given = provided
+                val b = givenOrNull<Foo>()
+                return a to b
+            }
+        """
+    ) {
+        val foo = Foo()
+        val result = invokeSingleFile<Pair<Foo?, Foo?>>(foo)
+        result.first.shouldBeNull()
+        result.second shouldBeSameInstanceAs foo
     }
 
     @Test
