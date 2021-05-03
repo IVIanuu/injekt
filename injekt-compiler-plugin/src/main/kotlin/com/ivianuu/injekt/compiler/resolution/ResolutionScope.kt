@@ -62,6 +62,7 @@ class ResolutionScope(
      * If there are duplicates we choose the best version
      */
     private fun addGivenIfAbsentOrBetter(callable: CallableRef) {
+        if (!callable.isApplicable()) return
         val key = callable.givenKey
         val existing = givens[key]
         if (compareCallable(callable, existing) < 0)
@@ -184,8 +185,7 @@ class ResolutionScope(
                 .asSequence()
                 .filter {
                     it.value.type.frameworkKey == key.type.frameworkKey
-                            && it.value.type.isAssignableTo(key.context, key.type) &&
-                            it.value.isApplicable()
+                            && it.value.type.isAssignableTo(key.context, key.type)
                 }
                 .map { it.value.toGivenNode(key.type, key.context, this) }
                 .toList()
@@ -272,8 +272,7 @@ class ResolutionScope(
                     ((candidate.type.frameworkKey == singleElementType.frameworkKey &&
                             candidate.type.isAssignableTo(key.context, singleElementType)) ||
                             (candidate.type.frameworkKey == collectionElementType.frameworkKey) &&
-                            candidate.type.isAssignableTo(key.context, collectionElementType)) &&
-                            candidate.isApplicable()
+                            candidate.type.isAssignableTo(key.context, collectionElementType))
                 }
                 .map { (_, candidate) ->
                     candidate.substitute(
