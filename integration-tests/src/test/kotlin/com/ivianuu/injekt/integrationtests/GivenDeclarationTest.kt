@@ -346,6 +346,20 @@ class GivenDeclarationTest {
     }
 
     @Test
+    fun testLocalObject() = codegen(
+        """
+            interface A
+            interface B
+            fun invoke() {
+                @Given val instance = object : A, B  {
+                }
+                given<A>()
+                given<B>()
+            }
+        """
+    )
+
+    @Test
     fun testGivenSuspendFunction() = singleAndMultiCodegen(
         """
             @Given suspend fun foo() = Foo()
