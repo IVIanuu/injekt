@@ -18,6 +18,7 @@ package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.*
 import io.kotest.matchers.*
+import io.kotest.matchers.nulls.*
 import org.junit.*
 import kotlin.reflect.*
 
@@ -25,24 +26,25 @@ class CommonGivensTest {
     @Test
     fun testCanUseMapForSetOfPairs() {
         @Given val elements = setOf("key" to "value")
-        val map = given<Map<String, String>>()
+        val map = givenOrNull<Map<String, String>>()
+        map.shouldNotBeNull()
         map.size shouldBe 1
         map["key"] shouldBe "value"
     }
 
     @Test
     fun testCanUseLazy() {
-        given<Lazy<Foo>>()
+        givenOrNull<Lazy<Foo>>().shouldNotBeNull()
     }
 
     @Test
     fun testCanUseKClass() {
-        given<KClass<Foo>>()
+        givenOrNull<KClass<Foo>>().shouldNotBeNull()
     }
 
     @Test
     fun testCanUseType() {
-        given<TypeKey<Foo>>()
+        givenOrNull<TypeKey<Foo>>().shouldNotBeNull()
     }
 
     @Given
