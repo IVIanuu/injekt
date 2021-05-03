@@ -139,7 +139,7 @@ fun CallableRef.toGivenNode(
     typeContext: TypeContext,
     ownerScope: ResolutionScope
 ): GivenNode {
-    val finalCallable = substitute(getSubstitutionMap(typeContext, listOf(type to this.type)))
+    val finalCallable = substitute(getSubstitutionMap(typeContext, type, this.type))
     return CallableGivenNode(
         type,
         finalCallable.getGivenRequests(ownerScope.context, ownerScope.trace),

@@ -278,10 +278,10 @@ class ResolutionScope(
                     candidate.substitute(
                         when {
                             candidate.type.isAssignableTo(key.context, singleElementType) ->
-                                getSubstitutionMap(key.context, listOf(singleElementType to candidate.type))
+                                getSubstitutionMap(key.context, singleElementType, candidate.type)
                             candidate.type.isAssignableTo(key.context, collectionElementType) ->
                                 getSubstitutionMap(key.context,
-                                    listOf(collectionElementType to candidate.type.subtypeView(context.collectionClassifier)!!))
+                                    collectionElementType, candidate.type.subtypeView(context.collectionClassifier)!!)
                             else -> throw AssertionError()
                         }
                     )
@@ -317,7 +317,8 @@ class ResolutionScope(
 
         val inputsSubstitutionMap = getSubstitutionMap(
             typeContext,
-            listOf(candidate.type to constrainedGiven.constraintType)
+            candidate.type,
+            constrainedGiven.constraintType
         )
         // if we could not get all type arguments it must be an incompatible type
         if (constrainedGiven.callable.typeParameters.any {
@@ -326,7 +327,8 @@ class ResolutionScope(
         }) return
         val outputsSubstitutionMap = getSubstitutionMap(
             typeContext,
-            listOf(candidate.rawType to constrainedGiven.constraintType)
+            candidate.rawType,
+            constrainedGiven.constraintType
         )
         if (constrainedGiven.callable.typeParameters.any {
                 constrainedGiven.callable.typeArguments[it] == it.defaultType &&

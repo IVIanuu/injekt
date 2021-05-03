@@ -451,10 +451,10 @@ fun KotlinType.uniqueTypeName(depth: Int = 0): String {
 
 fun getSubstitutionMap(
     context: TypeContext,
-    pairs: List<Pair<TypeRef, TypeRef>>
+    thisType: TypeRef,
+    baseType: TypeRef
 ): Map<ClassifierRef, TypeRef> {
-    if (pairs.isEmpty()) return emptyMap()
-    if (pairs.all { it.first == it.second }) return emptyMap()
+    if (thisType == baseType) return emptyMap()
     val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
 
     fun visitType(
@@ -515,7 +515,7 @@ fun getSubstitutionMap(
         baseType.superTypes.forEach { visitType(thisType, it, false) }
     }
 
-    pairs.forEach { visitType(it.first, it.second, true) }
+    visitType(thisType, baseType, true)
 
     return substitutionMap
 }
