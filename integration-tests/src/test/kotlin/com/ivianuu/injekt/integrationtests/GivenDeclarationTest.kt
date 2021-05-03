@@ -181,6 +181,7 @@ class GivenDeclarationTest {
         invokeSingleFile(Foo())
             .shouldBeTypeOf<Bar>()
     }
+
     @Test
     fun testGivenValueParameter() = codegen(
         """
@@ -198,6 +199,57 @@ class GivenDeclarationTest {
                 @Given val givenFoo = foo
                 return given()
             }
+        """
+    ) {
+        val foo = Foo()
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    }
+
+    @Test
+    fun testGivenConstructorParameterInFieldInitializer() = singleAndMultiCodegen(
+        """
+            class MyClass(@Given foo: Foo) {
+                val foo = given<Foo>()
+            }
+        """,
+        """
+           fun invoke(@Given foo: Foo) = MyClass().foo 
+        """
+    ) {
+        val foo = Foo()
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    }
+
+    @Test
+    fun testGivenConstructorParameterInClassInitializer() = singleAndMultiCodegen(
+        """
+            class MyClass(@Given foo: Foo) {
+                val foo: Foo
+                init {
+                    this.foo = given()
+                }
+            }
+        """,
+        """
+           fun invoke(@Given foo: Foo) = MyClass().foo 
+        """
+    ) {
+        val foo = Foo()
+        foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    }
+
+    @Test
+    fun testGivenConstructorParameterInConstructorBody() = singleAndMultiCodegen(
+        """
+            class MyClass {
+                val foo: Foo
+                constructor(@Given foo: Foo) {
+                    this.foo = given()   
+                }
+            }
+        """,
+        """
+           fun invoke(@Given foo: Foo) = MyClass().foo 
         """
     ) {
         val foo = Foo()
