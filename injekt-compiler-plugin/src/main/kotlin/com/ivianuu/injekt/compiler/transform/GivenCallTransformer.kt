@@ -457,7 +457,7 @@ class GivenCallTransformer(
             given,
             given.callable.callable
         )
-        is ReceiverParameterDescriptor -> if (given.type.classifier.isObject) objectExpression(given.type)
+        is ReceiverParameterDescriptor -> if (given.callable.type.classifier.isObject) objectExpression(given.type)
         else parameterExpression(given.callable.callable)
         is ValueParameterDescriptor -> parameterExpression(given.callable.callable)
         is VariableDescriptor -> variableExpression(given.callable.callable)
