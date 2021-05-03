@@ -24,7 +24,7 @@ import io.ktor.util.*
 
 val Application.appGivenScope: AppGivenScope
     get() = attributes.getOrNull(AppGivenScopeKey)
-        ?: error("No app given scope found. Did you forget to call Application.initializeAppGivenScope?")
+        ?: error("No app given scope found. Did you forget to call initializeAppGivenScope()?")
 
 val Routing.appGivenScope: AppGivenScope
     get() = application.appGivenScope
