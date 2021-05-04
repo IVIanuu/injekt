@@ -334,9 +334,8 @@ class ConstrainedGivenTest {
             
             @Given
             inline fun <@Given T : @ClassSingleton U, reified U : Any> classSingleton(
-                @Given factory: () -> T,
-                @Given scope: AppGivenScope
-            ): U = scope.getOrCreateScopedValue(U::class, factory)
+                @Given factory: () -> T
+            ): U = factory()
 
             class MyModule<T : S, S> {
                 @Given fun value(@Given v: T): S = v
@@ -348,7 +347,6 @@ class ConstrainedGivenTest {
             @Given val foo: @Qualifier1 Foo = Foo()
         """,
         """
-            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
             fun invoke() = given<Foo>() 
         """
     ) {
