@@ -24,10 +24,17 @@ import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.calls.inference.*
+import org.jetbrains.kotlin.resolve.calls.inference.constraintPosition.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.checker.*
 import org.jetbrains.kotlin.types.model.*
+import org.jetbrains.kotlin.types.typesApproximation.*
+import org.jetbrains.kotlin.utils.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
+import java.util.*
+import java.util.stream.*
 
 data class ClassifierRef(
     val key: String,
@@ -112,7 +119,7 @@ fun ClassifierDescriptor.toClassifierRef(
             ?.filter { it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true }
             ?.map { it.name }
             ?.toList()
-            ?: emptyList(),
+        ?: emptyList(),
         variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
     ).also {
         trace?.record(InjektWritableSlices.CLASSIFIER_REF_FOR_CLASSIFIER, this, it)
@@ -224,9 +231,6 @@ sealed class TypeRef {
     }
 }
 
-fun TypeRef.anyType(action: (TypeRef) -> Boolean): Boolean =
-    action(this) || arguments.any { it.anyType(action) } || qualifiers.any { it.anyType(action) }
-
 class KotlinTypeRef(
     private val kotlinType: KotlinType,
     override val isStarProjection: Boolean = false,
@@ -333,9 +337,9 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
         val newGiven = isGiven || substitution.isGiven
         val newVariance = variance
         return if (newQualifiers != substitution.qualifiers ||
-                newNullability != substitution.isMarkedNullable ||
-                newGiven != substitution.isGiven ||
-                newVariance != substitution.variance) {
+            newNullability != substitution.isMarkedNullable ||
+            newGiven != substitution.isGiven ||
+            newVariance != substitution.variance) {
             substitution.copy(
                 // we copy nullability to support T : Any? -> String
                 isMarkedNullable = newNullability,
@@ -377,6 +381,21 @@ val STAR_PROJECTION_TYPE = SimpleTypeRef(
     classifier = ClassifierRef("*", StandardNames.FqNames.any.toSafe()),
     isStarProjection = true
 )
+
+fun TypeRef.anyType(action: (TypeRef) -> Boolean): Boolean =
+    action(this) || arguments.any { it.anyType(action) } || qualifiers.any { it.anyType(action) }
+
+fun TypeRef.visitRecursive(
+    seen: MutableSet<TypeRef> = mutableSetOf(),
+    action: (TypeRef) -> Unit
+) {
+    if (this in seen) return
+    seen += this
+    action(this)
+    arguments.forEach { it.visitRecursive(seen, action) }
+    qualifiers.forEach { it.visitRecursive(seen, action) }
+    superTypes.forEach { it.visitRecursive(seen, action) }
+}
 
 fun TypeRef.render(depth: Int = 0): String {
     if (depth > 15) return ""
@@ -449,157 +468,74 @@ fun KotlinType.uniqueTypeName(depth: Int = 0): String {
     }
 }
 
-fun getSubstitutionMap(
-    context: TypeContext,
-    thisType: TypeRef,
-    baseType: TypeRef
-): Map<ClassifierRef, TypeRef> {
-    if (thisType == baseType) return emptyMap()
-    val substitutionMap = mutableMapOf<ClassifierRef, TypeRef>()
-
-    fun visitType(
-        thisType: TypeRef,
-        baseType: TypeRef,
-        fromInput: Boolean
-    ) {
-        if (thisType == baseType) return
-
-        if (baseType.classifier.isTypeParameter &&
-            (baseType.classifier !in substitutionMap || fromInput)) {
-            val finalSubstitutionType = if (((thisType.qualifiers.isEmpty() &&
-                        baseType.qualifiers.isEmpty()) ||
-                        (baseType.qualifiers.isEmpty() && thisType.qualifiers.isNotEmpty())) &&
-                    baseType.isMarkedNullable == thisType.isMarkedNullable) thisType
-            else thisType.copy(
-                isMarkedNullable = baseType.isMarkedNullable || thisType.isMarkedNullable,
-                qualifiers = thisType.qualifiers
-                    .filter { thisQualifier ->
-                        baseType.qualifiers.none {
-                            it.classifier == thisQualifier.classifier
-                        }
-                    }
-            )
-            substitutionMap[baseType.classifier] = finalSubstitutionType
-        }
-
-        if (thisType.classifier == baseType.classifier) {
-            thisType.arguments.forEachWith(baseType.arguments) { a, b -> visitType(a, b, fromInput) }
-        } else if (!baseType.classifier.isTypeParameter) {
-            val subType = thisType.subtypeView(baseType.classifier)
-            if (subType != null) {
-                subType.arguments.forEachWith(baseType.arguments) { a, b -> visitType(a, b, false) }
-                if (subType.qualifiers.isNotEmpty() &&
-                    baseType.qualifiers.isNotEmpty() &&
-                    subType.qualifiers.areSubQualifiersOf(context, baseType.qualifiers)) {
-                    for (baseQualifier in baseType.qualifiers) {
-                        val subTypeQualifier = subType.qualifiers.first {
-                            it.classifier == baseQualifier.classifier
-                        }
-                        visitType(subTypeQualifier, baseQualifier, false)
-                    }
-                }
-            }
-        }
-
-        if (thisType.qualifiers.isNotEmpty() &&
-            baseType.qualifiers.isNotEmpty() &&
-            thisType.qualifiers.areSubQualifiersOf(context, baseType.qualifiers)) {
-            for (baseQualifier in baseType.qualifiers) {
-                val thisTypeQualifier = thisType.qualifiers.first {
-                    it.classifier == baseQualifier.classifier
-                }
-                visitType(thisTypeQualifier, baseQualifier, false)
-            }
-        }
-
-        baseType.superTypes.forEach { visitType(thisType, it, false) }
-    }
-
-    visitType(thisType, baseType, true)
-
-    return substitutionMap
-}
-
-fun TypeRef.isAssignableTo(
-    context: TypeContext,
+fun TypeRef.buildContext(
+    staticTypeParameters: List<ClassifierRef>,
     superType: TypeRef
-): Boolean {
-    if (superType.isStarProjection) return true
-    if (classifier.fqName == InjektFqNames.Nothing) return true
-
-    if (classifier.isTypeParameter &&
-        classifier !in context.staticTypeParameters)
-        return superType.isAssignableToTypeParameter(context, this)
-
-    if (superType.classifier.isTypeParameter &&
-        superType.classifier !in context.staticTypeParameters)
-            return isAssignableToTypeParameter(context, superType)
-
-    if (!qualifiers.areQualifiersAssignable(context, superType.qualifiers))
-        return false
-
-    return isSubTypeOf(context, superType)
-}
-
-private fun TypeRef.isAssignableToTypeParameter(
-    context: TypeContext,
-    typeParameter: TypeRef
-): Boolean {
-    if (typeParameter.qualifiers.isNotEmpty() &&
-        (qualifiers.isEmpty() || !qualifiers.areQualifiersAssignable(context, typeParameter.qualifiers))
-    ) return false
-    return typeParameter.superTypes.all { upperBound ->
-        isSubTypeOf(context, upperBound)
+): TypeContext {
+    val context = TypeContext()
+    staticTypeParameters.forEach { context.addStaticTypeParameter(it) }
+    visitRecursive {
+        if (it.classifier.isTypeParameter) context.addTypeParameter(it.classifier)
     }
+    superType.visitRecursive {
+        if (it.classifier.isTypeParameter) context.addTypeParameter(it.classifier)
+    }
+    context.addConstraint(this, superType, Bound.Kind.UPPER)
+    return context
 }
 
-private fun TypeRef.isSubTypeOfSameClassifier(
-    context: TypeContext,
-    superType: TypeRef
-): Boolean {
+fun TypeContext.getSubstitutionMap(): Map<ClassifierRef, TypeRef> {
+    check(isOk)
+    return typeParameters.mapNotNull { typeParameter ->
+        val values = getValues(typeParameter)
+        values.singleOrNull()
+            ?.let { typeParameter to it }
+    }.toMap()
+}
+
+fun TypeRef.isEqualTo(superType: TypeRef): Boolean {
     if (this == superType) return true
-    if (!qualifiers.areSubQualifiersOf(context, superType.qualifiers))
-        return false
-    if (isMarkedComposable != superType.isMarkedComposable) return false
-    for (i in arguments.indices) {
-        val argument = arguments[i]
-        val parameter = superType.arguments[i]
-        val originalParameter = superType.classifier.defaultType.arguments[i]
-        val argumentOk = if (effectiveVariance(parameter.variance,
-                argument.variance, originalParameter.variance) == TypeVariance.IN)
-                    parameter.isAssignableTo(context, argument)
-        else argument.isAssignableTo(context, parameter)
-        if (!argumentOk) return false
-    }
-    return true
+    if (isNullableType != superType.isNullableType) return false
+    if (isComposableType != superType.isComposableType) return false
+    if (qualifiers != superType.qualifiers) return false
+    return isSubTypeOf(superType) && superType.isSubTypeOf(this)
 }
 
-fun TypeRef.isSubTypeOf(
-    context: TypeContext,
-    superType: TypeRef
-): Boolean {
+fun TypeRef.isSubTypeOf(superType: TypeRef): Boolean {
     if (superType.isStarProjection) return true
     if (classifier.fqName == InjektFqNames.Nothing) return true
     if (isNullableType && !superType.isNullableType) return false
     if (superType.classifier.fqName == InjektFqNames.Any)
         return superType.qualifiers.isEmpty() ||
                 (qualifiers.isNotEmpty() &&
-                        qualifiers.areSubQualifiersOf(context, superType.qualifiers))
+                        qualifiers.areSubQualifiersOf(superType.qualifiers))
 
     val subTypeView = subtypeView(superType.classifier)
     if (subTypeView != null)
-        return subTypeView.isSubTypeOfSameClassifier(context, superType)
-
-    if (superType.classifier.isTypeParameter &&
-            superType.classifier !in context.staticTypeParameters) {
-        if (superType.qualifiers.isNotEmpty() &&
-            (qualifiers.isEmpty() ||
-                    !qualifiers.areSubQualifiersOf(context, superType.qualifiers))
-        ) return false
-        return superType.superTypes.all { isSubTypeOf(context, it) }
-    }
+        return subTypeView.isSubTypeOfSameClassifier(superType)
 
     return false
+}
+
+private fun TypeRef.isSubTypeOfSameClassifier(superType: TypeRef): Boolean {
+    if (this == superType) return true
+    if (!qualifiers.areSubQualifiersOf(superType.qualifiers))
+        return false
+    if (isMarkedComposable != superType.isMarkedComposable) return false
+    for (i in arguments.indices) {
+        val argument = arguments[i]
+        val parameter = superType.arguments[i]
+        val originalParameter = superType.classifier.defaultType.arguments[i]
+        val variance = effectiveVariance(parameter.variance, argument.variance, originalParameter.variance)
+        val argumentOk = when (variance) {
+            TypeVariance.IN -> parameter.isSubTypeOf(argument)
+            TypeVariance.OUT -> argument.isSubTypeOf(parameter)
+            TypeVariance.INV -> argument.isEqualTo(parameter)
+        }
+
+        if (!argumentOk) return false
+    }
+    return true
 }
 
 fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
@@ -609,25 +545,11 @@ fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
         ?.let { return it }
 }
 
-fun List<TypeRef>.areQualifiersAssignable(
-    context: TypeContext,
-    superQualifiers: List<TypeRef>
-): Boolean {
+fun List<TypeRef>.areSubQualifiersOf(superQualifiers: List<TypeRef>): Boolean {
     if (size != superQualifiers.size) return false
-    forEachWith(superQualifiers) { thisQualifier, superQualifier ->
-        if (!thisQualifier.isSubTypeOf(context, superQualifier))
-            return false
-    }
-    return true
-}
-
-fun List<TypeRef>.areSubQualifiersOf(
-    context: TypeContext,
-    superQualifiers: List<TypeRef>
-): Boolean {
     for (superQualifier in superQualifiers) {
         val thisQualifier = firstOrNull { it.classifier == superQualifier.classifier }
-        if (thisQualifier?.isSubTypeOf(context, superQualifier) != true)
+        if (thisQualifier?.isSubTypeOf(superQualifier) != true)
             return false
     }
     return true
@@ -667,20 +589,407 @@ fun effectiveVariance(
     return originalDeclared
 }
 
-class TypeContext(
-    val injektContext: InjektContext,
-    val staticTypeParameters: List<ClassifierRef>
+class TypeContext {
+    private val staticTypeParameters = mutableSetOf<ClassifierRef>()
+    val typeParameters = mutableSetOf<ClassifierRef>()
+    private val bounds = mutableMapOf<ClassifierRef, MutableList<Bound>>()
+    private val usedInBounds = mutableMapOf<ClassifierRef, MutableList<Bound>>()
+
+    val isOk: Boolean get() = errors.isEmpty() && typeParameters
+        .none { getValues(it).size > 1 }
+
+    val errors = mutableSetOf<ConstraintError>()
+
+    fun addStaticTypeParameter(typeParameter: ClassifierRef) {
+        staticTypeParameters += typeParameter
+    }
+
+    fun addTypeParameter(typeParameter: ClassifierRef) {
+        if (typeParameter in staticTypeParameters) return
+        typeParameters += typeParameter
+        for (upperBound in typeParameter.superTypes)
+            addBound(typeParameter, upperBound, Bound.Kind.UPPER)
+    }
+
+    private fun generateTypeParameterBound(
+        parameterType: TypeRef,
+        constrainingType: TypeRef,
+        kind: Bound.Kind
+    ) {
+        if (!parameterType.isMarkedNullable || !constrainingType.isNullableType) {
+            addBound(parameterType.classifier, constrainingType, kind)
+            return
+        }
+
+        val notNullConstrainingType = constrainingType.copy(isMarkedNullable = false)
+
+        if (kind == Bound.Kind.EQUAL || kind == Bound.Kind.LOWER)
+            addBound(parameterType.classifier, notNullConstrainingType, Bound.Kind.LOWER)
+
+        if (kind == Bound.Kind.EQUAL || kind == Bound.Kind.UPPER)
+            addBound(parameterType.classifier, constrainingType, Bound.Kind.UPPER)
+    }
+
+    private fun addBound(
+        typeParameter: ClassifierRef,
+        constrainingType: TypeRef,
+        kind: Bound.Kind
+    ) {
+        val newBound = Bound(typeParameter, constrainingType, kind, !constrainingType.anyType {
+            it.classifier.isTypeParameter && it.classifier in typeParameters
+        })
+        val boundForTypeParameter = bounds.getOrPut(typeParameter) { mutableListOf() }
+        if (newBound in boundForTypeParameter) return
+        boundForTypeParameter += newBound
+
+        if (!newBound.isProper) {
+            for (dependentTypeParameter in getNestedTypeParameters(constrainingType)) {
+                val dependentBounds = usedInBounds.getOrPut(dependentTypeParameter) { arrayListOf() }
+                dependentBounds += newBound
+            }
+        }
+
+        val boundsUsedIn = usedInBounds[typeParameter] ?: emptyList()
+        for (index in boundsUsedIn.indices) {
+            val boundUsedIn = boundsUsedIn[index]
+            generateNewBound(boundUsedIn, newBound)
+        }
+
+        for (oldBoundsIndex in boundForTypeParameter.indices)
+            addConstraintFromBounds(boundForTypeParameter[oldBoundsIndex], newBound)
+
+        if (constrainingType.classifier in typeParameters) {
+            addBound(constrainingType.classifier, typeParameter.defaultType, newBound.kind.reverse())
+            return
+        }
+
+        getNestedTypeParameters(constrainingType).forEach { nestedTypeParameter ->
+            val boundsForNestedTypeParameter = bounds[nestedTypeParameter]
+                ?: return@forEach
+            for (index in boundsForNestedTypeParameter.indices)
+                generateNewBound(newBound, boundsForNestedTypeParameter[index])
+        }
+    }
+
+    private fun addConstraintFromBounds(oldBound: Bound, newBound: Bound) {
+        if (newBound == oldBound) return
+        val oldType = oldBound.type
+        val newType = newBound.type
+
+        when {
+            oldBound.kind.ordinal < newBound.kind.ordinal ->
+                addConstraint(oldType, newType, Bound.Kind.UPPER)
+            oldBound.kind.ordinal > newBound.kind.ordinal ->
+                addConstraint(newType, oldType, Bound.Kind.UPPER)
+            oldBound.kind == newBound.kind && oldBound.kind == Bound.Kind.EQUAL ->
+                addConstraint(oldType, newType, Bound.Kind.EQUAL)
+        }
+    }
+
+    fun addConstraint(
+        subType: TypeRef,
+        superType: TypeRef,
+        kind: Bound.Kind
+    ) {
+        val checker = TypeChecker(object : TypeChecker.Callbacks {
+                override fun assertEqualTypes(a: TypeRef, b: TypeRef): Boolean {
+                    addConstraint(a, b, Bound.Kind.EQUAL)
+                    return true
+                }
+
+                override fun assertSubType(subType: TypeRef, superType: TypeRef): Boolean {
+                    addConstraint(subType, superType, Bound.Kind.UPPER)
+                    return true
+                }
+
+                override fun noCorrespondingSuperType(
+                    subType: TypeRef,
+                    superType: TypeRef
+                ): Boolean {
+                    errors += ConstraintError(subType, superType, Bound.Kind.UPPER)
+                    return false
+                }
+            }
+        )
+        when {
+            subType.classifier in typeParameters -> {
+                if (subType.qualifiers.isEmpty()) {
+                    generateTypeParameterBound(subType, superType, kind)
+                } else {
+                    val subTypeWithoutQualifiers = subType.copy(qualifiers = emptyList())
+                    val superTypeWithoutQualifiers = superType.copy(qualifiers = superType
+                        .qualifiers
+                        .filterNot { superQ ->
+                            subType.qualifiers.any {
+                                it.classifier == superQ.classifier
+                            }
+                        })
+
+                    if (subType.qualifiers.size == superType.qualifiers.size) {
+                        subType.qualifiers.forEachWith(superType.qualifiers) { subQ, superQ ->
+                            addConstraint(subQ, superQ, Bound.Kind.UPPER)
+                        }
+                    } else {
+                        errors += ConstraintError(subType, superType, kind)
+                    }
+
+                    generateTypeParameterBound(subTypeWithoutQualifiers,
+                        superTypeWithoutQualifiers, kind)
+                }
+            }
+            superType.classifier in typeParameters -> {
+                if (superType.qualifiers.isEmpty()) {
+                    generateTypeParameterBound(superType, subType, kind.reverse())
+                } else {
+                    val superTypeWithoutQualifiers = superType.copy(qualifiers = emptyList())
+                    val subTypeWithoutQualifiers = subType.copy(qualifiers = subType
+                        .qualifiers
+                        .filterNot { subQ ->
+                            superType.qualifiers.any {
+                                it.classifier == subQ.classifier
+                            }
+                        })
+
+                    if (superType.qualifiers.size == subType.qualifiers.size) {
+                        superType.qualifiers.forEachWith(subType.qualifiers) { superQ, subQ ->
+                            addConstraint(subQ, superQ, Bound.Kind.UPPER)
+                        }
+                    } else {
+                        errors += ConstraintError(subType, superType, kind)
+                    }
+
+                    generateTypeParameterBound(superTypeWithoutQualifiers,
+                        subTypeWithoutQualifiers, kind.reverse())
+                }
+            }
+            else -> {
+                val result = when (kind) {
+                    Bound.Kind.UPPER -> checker.isSubTypeOf(subType, superType)
+                    Bound.Kind.EQUAL -> checker.areEqualTypes(subType, superType)
+                    else -> throw AssertionError()
+                }
+                if (!result)
+                    errors += ConstraintError(subType, superType, kind)
+            }
+        }
+    }
+
+    fun getValues(typeParameter: ClassifierRef): Set<TypeRef> {
+        val bounds = bounds[typeParameter] ?: return emptySet()
+        if (bounds.isEmpty()) return emptySet()
+
+        val values = mutableSetOf<TypeRef>()
+
+        val exactBounds = bounds
+            .filter { it.kind == Bound.Kind.EQUAL }
+            .map { it.type }
+        if (exactBounds.isNotEmpty()) {
+            exactBounds
+                .firstOrNull { candidate ->
+                    exactBounds.all {
+                        candidate.isSubTypeOf(it)
+                    }
+                }
+                ?.let { return setOf(it) }
+        }
+        values += exactBounds
+
+        val lowerBounds = bounds
+            .filter { it.kind == Bound.Kind.LOWER }
+            .map { it.type }
+        if (lowerBounds.isNotEmpty()) {
+            lowerBounds
+                .firstOrNull { candidate ->
+                    lowerBounds.all {
+                        candidate.isSubTypeOf(it)
+                    }
+                }
+                ?.let { return setOf(it) }
+        }
+        values += lowerBounds
+
+        val upperBounds = bounds
+            .filter { it.kind == Bound.Kind.UPPER }
+            .map { it.type }
+        if (upperBounds.isNotEmpty()) {
+            upperBounds
+                .firstOrNull { candidate ->
+                    upperBounds.all {
+                        candidate.isSubTypeOf(it)
+                    }
+                }
+                ?.let { return setOf(it) }
+        }
+        values += upperBounds
+
+        return values
+    }
+
+    private fun generateNewBound(bound: Bound, substitution: Bound) {
+        if (bound === substitution) return
+        // Let's have a bound 'T <=> My<R>', and a substitution 'R <=> Type'.
+        // Here <=> means lower_bound, upper_bound or exact_bound constraint.
+        // Then a new bound 'T <=> My<_/in/out Type>' can be generated.
+
+        val substitutedType = when (substitution.kind) {
+            Bound.Kind.EQUAL -> substitution.type
+            Bound.Kind.UPPER -> substitution.type.copy(variance = TypeVariance.OUT)
+            Bound.Kind.LOWER -> substitution.type.copy(variance = TypeVariance.IN)
+        }
+
+        val type = bound.type.substitute(mapOf(substitution.typeParameter to substitutedType))
+
+        fun addNewBound(newConstrainingType: TypeRef, newBoundKind: Bound.Kind) {
+            // We don't generate new recursive constraints
+            if (bound.typeParameter in getNestedTypeParameters(newConstrainingType)) return
+            addBound(bound.typeParameter, newConstrainingType, newBoundKind)
+        }
+
+        if (substitution.kind == Bound.Kind.EQUAL) {
+            addNewBound(type, bound.kind)
+            return
+        }
+        val upper = type
+        val lower = type
+        // todo
+        // if we allow non-trivial type projections, we bump into errors like
+        // "Empty intersection for types [MutableCollection<in ('Int'..'Int?')>, MutableCollection<out Any?>, MutableCollection<in Int>]"
+        fun TypeRef.containsConstrainingTypeWithoutProjection() = anyType {
+            it.classifier == substitution.type.classifier && it.variance == TypeVariance.INV
+        }
+        if (upper.containsConstrainingTypeWithoutProjection() && bound.kind != Bound.Kind.LOWER) {
+            addNewBound(upper, Bound.Kind.UPPER)
+        }
+        if (lower.containsConstrainingTypeWithoutProjection() && bound.kind != Bound.Kind.UPPER) {
+            addNewBound(lower, Bound.Kind.LOWER)
+        }
+    }
+
+    private fun getNestedTypeParameters(type: TypeRef): List<ClassifierRef> {
+        val nestedTypeVariables = mutableListOf<ClassifierRef>()
+        type.visitRecursive {
+            if (it.classifier.isTypeParameter &&
+                    it.classifier in typeParameters)
+                        nestedTypeVariables += it.classifier
+        }
+        return nestedTypeVariables
+    }
+}
+
+data class ConstraintError(
+    val subType: TypeRef,
+    val superType: TypeRef,
+    val kind: Bound.Kind
+)
+
+data class Bound(
+    val typeParameter: ClassifierRef,
+    val type: TypeRef,
+    val kind: Kind,
+    val isProper: Boolean
 ) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+    enum class Kind {
+        LOWER, EQUAL, UPPER
+    }
+}
 
-        other as TypeContext
+fun Bound.Kind.reverse() = when (this) {
+    Bound.Kind.UPPER -> Bound.Kind.LOWER
+    Bound.Kind.LOWER -> Bound.Kind.UPPER
+    Bound.Kind.EQUAL -> Bound.Kind.EQUAL
+}
 
-        if (staticTypeParameters != other.staticTypeParameters) return false
+private class TypeChecker(private val callbacks: Callbacks) {
+    fun areEqualTypes(a: TypeRef, b: TypeRef): Boolean {
+        if (a == b) return true
+        if (a.classifier != b.classifier) return false
+
+        if (a.isMarkedNullable != b.isMarkedNullable) return false
+        if (a.isMarkedComposable != b.isMarkedComposable) return false
+        if (areEqualQualifiers(a.qualifiers, b.qualifiers)) return false
+
+        for (i in a.arguments.indices) {
+            val parameter1 = a.arguments[i]
+            val parameter2 = b.arguments[i]
+            if (parameter1.isStarProjection &&
+                    parameter2.isStarProjection) continue
+            if (effectiveVariance(parameter1.variance, parameter2.variance, TypeVariance.INV) !=
+                    effectiveVariance(parameter2.variance, parameter1.variance, TypeVariance.INV))
+                        return false
+            if (!callbacks.assertEqualTypes(parameter1, parameter2))
+                return false
+        }
 
         return true
     }
 
-    override fun hashCode(): Int = staticTypeParameters.hashCode()
+    fun isSubTypeOf(subType: TypeRef, superType: TypeRef): Boolean {
+        if (superType.isStarProjection) return true
+        if (subType.classifier.fqName == InjektFqNames.Nothing) return true
+        if (subType.isNullableType && !superType.isNullableType) return false
+        if (superType.classifier.fqName == InjektFqNames.Any)
+            return superType.qualifiers.isEmpty() ||
+                    (subType.qualifiers.isNotEmpty() &&
+                            areSubQualifiersOf(subType.qualifiers, superType.qualifiers))
+
+        val subTypeView = subType.subtypeView(superType.classifier)
+        if (subTypeView != null)
+            return isSubTypeOfSameClassifier(subTypeView, superType)
+        else callbacks.noCorrespondingSuperType(subType, superType)
+
+        return false
+    }
+
+    private fun isSubTypeOfSameClassifier(subType: TypeRef, superType: TypeRef): Boolean {
+        if (subType == superType) return true
+        if (!areSubQualifiersOf(subType.qualifiers, superType.qualifiers))
+            return false
+        if (subType.isMarkedComposable != superType.isMarkedComposable) return false
+        for (i in subType.arguments.indices) {
+            val argument = subType.arguments[i]
+            val parameter = superType.arguments[i]
+            val originalParameter = superType.classifier.defaultType.arguments[i]
+            val variance = effectiveVariance(parameter.variance, argument.variance, originalParameter.variance)
+            val argumentOk = when (variance) {
+                TypeVariance.IN -> callbacks.assertSubType(parameter, argument)
+                TypeVariance.OUT -> callbacks.assertSubType(argument, parameter)
+                TypeVariance.INV -> callbacks.assertEqualTypes(argument, parameter)
+            }
+
+            if (!argumentOk) return false
+        }
+        return true
+    }
+
+    private fun areEqualQualifiers(
+        subQualifiers: List<TypeRef>,
+        superQualifiers: List<TypeRef>
+    ): Boolean {
+        for (superQualifier in superQualifiers) {
+            val thisQualifier = subQualifiers.firstOrNull { it.classifier == superQualifier.classifier }
+            if (thisQualifier == null || !callbacks.assertEqualTypes(thisQualifier, superQualifier))
+                return false
+        }
+        return true
+    }
+
+    private fun areSubQualifiersOf(
+        subQualifiers: List<TypeRef>,
+        superQualifiers: List<TypeRef>
+    ): Boolean {
+        if (subQualifiers.size != superQualifiers.size) return false
+
+        for (superQualifier in superQualifiers) {
+            val subQualifier = subQualifiers.firstOrNull { it.classifier == superQualifier.classifier }
+            if (subQualifier == null || !callbacks.assertSubType(subQualifier, superQualifier))
+                return false
+        }
+        return true
+    }
+
+    interface Callbacks {
+        fun assertSubType(subType: TypeRef, superType: TypeRef): Boolean
+        fun assertEqualTypes(a: TypeRef, b: TypeRef): Boolean
+        fun noCorrespondingSuperType(subType: TypeRef, superType: TypeRef): Boolean
+    }
 }

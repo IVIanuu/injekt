@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.resolution.*
+import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.types.model.*
 import org.junit.*
 
@@ -43,7 +44,44 @@ class SubtypingTest {
 
     @Test
     fun testMatchingGenericTypeIsAssignable() = withTypeCheckerContext {
-        listType.typeWith(listOf(stringType)) shouldBeAssignableTo listType
+        listType.typeWith(listOf(stringType)) shouldBeAssignableTo
+                listType.typeWith(typeParameter())
+    }
+
+    @Test
+    fun testMatchingGenericTypeIsAssignable2() = withTypeCheckerContext {
+        val tpB = typeParameter(fqName = FqName("B"))
+        val tpA = typeParameter(tpB, fqName = FqName("A"))
+        val type = classType(typeParameters = listOf(tpA.classifier, tpB.classifier))
+        type.typeWith(listOf(stringType, charSequenceType)) shouldBeAssignableTo type
+    }
+
+    @Test
+    fun testMatchingGenericTypeIsAssignable3() = withTypeCheckerContext {
+        val tpB = typeParameter(charSequenceType.qualified(qualifier1), fqName = FqName("B"))
+        val tpA = typeParameter(tpB, fqName = FqName("A"))
+        stringType.qualified(qualifier1) shouldBeAssignableTo tpA
+    }
+
+    @Test
+    fun testMatchingGenericTypeIsAssignable4() = withTypeCheckerContext {
+        val tpB = typeParameter(stringType, fqName = FqName("B"))
+        val tpA = typeParameter(tpB.qualified(qualifier1), fqName = FqName("A"))
+        stringType shouldNotBeAssignableTo tpA
+    }
+
+    @Test
+    fun testMatchingGenericTypeIsAssignable5() = withTypeCheckerContext {
+        val tpB = typeParameter(stringType, fqName = FqName("B"))
+        val tpA = typeParameter(listType.typeWith(tpB), fqName = FqName("A"))
+        listType.typeWith(intType) shouldNotBeAssignableTo tpA
+    }
+
+    @Test
+    fun testMatchingGenericTypeIsAssignable6() = withTypeCheckerContext {
+        val givenScopeS = typeParameter(stringType)
+        val other = mapType
+        givenScopeS shouldNotBeAssignableTo other
     }
 
     @Test
@@ -166,25 +204,20 @@ class SubtypingTest {
     @Test
     fun testIsNotSubTypeOfTypeParameterInScope() = withTypeCheckerContext {
         val typeParameter = typeParameter()
-        if (stringType.isSubTypeOf(
-                TypeContext(injektContext, listOf(typeParameter.classifier)),
-                typeParameter
-            )) {
-            throw AssertionError("'$stringType' is sub type of '$typeParameter'")
-        }
+        stringType.shouldNotBeAssignableTo(
+            typeParameter,
+            listOf(typeParameter.classifier)
+        )
     }
 
     @Test
     fun testIsSubTypeOfTypeParameterInScope() = withTypeCheckerContext {
         val superTypeParameter = typeParameter()
         val subTypeParameter = typeParameter(superTypeParameter)
-        if (!subTypeParameter.isSubTypeOf(
-                TypeContext(injektContext, listOf(superTypeParameter.classifier,
-                    subTypeParameter.classifier)),
-                superTypeParameter
-            )) {
-            throw AssertionError("'$subTypeParameter' is not sub type of '$superTypeParameter'")
-        }
+        subTypeParameter.shouldBeAssignableTo(
+            superTypeParameter,
+            listOf(superTypeParameter.classifier, subTypeParameter.classifier)
+        )
     }
 
     @Test
@@ -209,12 +242,12 @@ class SubtypingTest {
 
     @Test
     fun testSubTypeOfTypeParameterWithUpperBound() = withTypeCheckerContext {
-        subType(stringType) shouldBeSubTypeOf typeParameter(stringType)
+        subType(stringType) shouldBeAssignableTo typeParameter(stringType)
     }
 
     @Test
     fun testSubTypeOfTypeParameterWithNullableUpperBound() = withTypeCheckerContext {
-        subType(stringType) shouldBeSubTypeOf typeParameter(stringType.nullable())
+        subType(stringType) shouldBeAssignableTo typeParameter(stringType.nullable())
     }
 
     @Test
@@ -254,7 +287,7 @@ class SubtypingTest {
         val sTypeParameter = typeParameter(listType.typeWith(stringType))
         val tTypeParameter = typeParameter(sTypeParameter.qualified(qualifier1))
         listType.typeWith(stringType)
-            .qualified(qualifier1) shouldBeSubTypeOf tTypeParameter
+            .qualified(qualifier1) shouldBeAssignableTo tTypeParameter
     }
 
     @Test
@@ -263,7 +296,7 @@ class SubtypingTest {
             function(0)
                 .copy(isMarkedComposable = true)
                 .qualified(qualifier1)
-        ) shouldBeSubTypeOf typeParameter(
+        ) shouldBeAssignableTo typeParameter(
             function(0)
                 .copy(isMarkedComposable = true)
                 .qualified(qualifier1)
@@ -271,12 +304,12 @@ class SubtypingTest {
     }
 
     @Test
-    fun testQualifiedTypeAliasIsNotSubTypeOfTypeParameterWithOtherQualifiers() = withTypeCheckerContext {
+    fun testQualifiedTypeAliasIsNotAssignableToTypeParameterWithOtherQualifiers() = withTypeCheckerContext {
         typeAlias(
             function(0)
                 .copy(isMarkedComposable = true)
                 .qualified(qualifier1)
-        ) shouldNotBeSubTypeOf typeParameter(
+        ) shouldNotBeAssignableTo typeParameter(
                 function(0)
                     .copy(isMarkedComposable = true)
                     .qualified(qualifier2)
@@ -299,12 +332,12 @@ class SubtypingTest {
     }
 
     @Test
-    fun testTypeAliasIsSubTypeOfTypeParameterWithTypeAliasUpperBound() = withTypeCheckerContext {
+    fun testTypeAliasIsAssignableToTypeParameterWithTypeAliasUpperBound() = withTypeCheckerContext {
         val superTypeAlias = typeAlias(function(0))
         val typeParameterS = typeParameter(superTypeAlias)
         val typeParameterT = typeParameter(typeParameterS.qualified(qualifier1))
         val subTypeAlias = typeAlias(superTypeAlias)
-        subTypeAlias.qualified(qualifier1) shouldBeSubTypeOf typeParameterT
+        subTypeAlias.qualified(qualifier1) shouldBeAssignableTo typeParameterT
     }
 
     @Test

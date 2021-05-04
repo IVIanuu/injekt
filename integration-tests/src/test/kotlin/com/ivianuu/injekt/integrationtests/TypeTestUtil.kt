@@ -66,7 +66,6 @@ fun withTypeCheckerContext(
 
 class TypeCheckerContext(val module: ModuleDescriptor) {
     val injektContext = InjektContext(module)
-    val typeContext = TypeContext(injektContext, emptyList())
     val comparable = typeFor(StandardNames.FqNames.comparable)
     val anyType = typeFor(StandardNames.FqNames.any.toSafe())
     val anyNType = anyType.copy(isMarkedNullable = true)
@@ -76,6 +75,7 @@ class TypeCheckerContext(val module: ModuleDescriptor) {
     val charSequenceType = typeFor(StandardNames.FqNames.charSequence.toSafe())
     val listType = typeFor(StandardNames.FqNames.list)
     val mutableListType = typeFor(StandardNames.FqNames.mutableList)
+    val mapType = typeFor(StandardNames.FqNames.map)
     val starProjectedType = STAR_PROJECTION_TYPE
     val nothingType = typeFor(StandardNames.FqNames.nothing.toSafe())
 
@@ -149,25 +149,41 @@ class TypeCheckerContext(val module: ModuleDescriptor) {
     )!!.defaultType.toTypeRef(injektContext, null)
 
     infix fun TypeRef.shouldBeAssignableTo(other: TypeRef) {
-        if (!isAssignableTo(typeContext, other)) {
+        shouldBeAssignableTo(other, emptyList())
+    }
+
+    fun TypeRef.shouldBeAssignableTo(
+        other: TypeRef,
+        staticTypeParameters: List<ClassifierRef> = emptyList()
+    ) {
+        val context = buildContext(staticTypeParameters, other)
+        if (!context.isOk) {
             throw AssertionError("'$this' is not assignable to '$other'")
         }
     }
 
     infix fun TypeRef.shouldNotBeAssignableTo(other: TypeRef) {
-        if (isAssignableTo(typeContext, other)) {
+        shouldNotBeAssignableTo(other, emptyList())
+    }
+
+    fun TypeRef.shouldNotBeAssignableTo(
+        other: TypeRef,
+        staticTypeParameters: List<ClassifierRef> = emptyList()
+    ) {
+        val context = buildContext(staticTypeParameters, other)
+        if (context.isOk) {
             throw AssertionError("'$this' is assignable to '$other'")
         }
     }
 
     infix fun TypeRef.shouldBeSubTypeOf(other: TypeRef) {
-        if (!isSubTypeOf(typeContext, other)) {
+        if (!isSubTypeOf(other)) {
             throw AssertionError("'$this' is not sub type of '$other'")
         }
     }
 
     infix fun TypeRef.shouldNotBeSubTypeOf(other: TypeRef) {
-        if (isSubTypeOf(typeContext, other)) {
+        if (isSubTypeOf(other)) {
             throw AssertionError("'$this' is sub type of '$other'")
         }
     }
