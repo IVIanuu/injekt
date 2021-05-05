@@ -200,6 +200,8 @@ fun CallableRef.collectGivens(
     else this
     addGiven(nextCallable)
 
+    if (doNotIncludeChildren) return
+
     nextCallable
         .type
         .collectGivens(context, trace)
@@ -219,14 +221,25 @@ fun List<GivenImport>.collectImportGivens(context: InjektContext, trace: Binding
     flatMap { import ->
         (if (import.importPath!!.endsWith("*")) {
             val packageFqName = FqName(import.importPath.removeSuffix(".*"))
-            context.memberScopeForFqName(packageFqName)
+            (context.memberScopeForFqName(packageFqName)
                 ?.collectGivens(context, trace)
-                ?.map { it.copy(import = import) }
+                ?.map { it.copy(import = import) } ?: emptyList()) + listOfNotNull(
+                context.classifierDescriptorForFqName(packageFqName)
+                    ?.safeAs<ClassDescriptor>()
+                    ?.takeIf { it.kind == ClassKind.OBJECT }
+                    ?.thisAsReceiverParameter
+                    ?.toCallableRef(context, trace)
+                    ?.copy(
+                        isGiven = true,
+                        doNotIncludeChildren = true,
+                        import = import
+                    )
+            )
         } else {
             val fqName = FqName(import.importPath)
             val parentFqName = fqName.parent()
             val name = fqName.shortName()
-            context.memberScopeForFqName(parentFqName)
+            (context.memberScopeForFqName(parentFqName)
                 ?.collectGivens(context, trace)
                 ?.filter {
                     it.callable.name == name ||
@@ -234,7 +247,18 @@ fun List<GivenImport>.collectImportGivens(context: InjektContext, trace: Binding
                                 ?.constructedClass
                                 ?.name == name
                 }
-                ?.map { it.copy(import = import) }
+                ?.map { it.copy(import = import) } ?: emptyList()) + listOfNotNull(
+                    context.classifierDescriptorForFqName(parentFqName)
+                        ?.safeAs<ClassDescriptor>()
+                        ?.takeIf { it.kind == ClassKind.OBJECT }
+                        ?.thisAsReceiverParameter
+                        ?.toCallableRef(context, trace)
+                        ?.copy(
+                            isGiven = true,
+                            doNotIncludeChildren = true,
+                            import = import
+                        )
+                )
         }) ?: emptyList()
     }
 

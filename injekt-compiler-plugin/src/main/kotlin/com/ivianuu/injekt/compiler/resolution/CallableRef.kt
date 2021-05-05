@@ -37,6 +37,7 @@ data class CallableRef(
     val callContext: CallContext,
     val owner: ClassifierRef?,
     val overriddenDepth: Int,
+    val doNotIncludeChildren: Boolean,
     val import: GivenImport?
 )
 
@@ -112,6 +113,7 @@ fun CallableDescriptor.toCallableRef(
         callContext = callContext(trace.bindingContext),
         owner = null,
         overriddenDepth = 0,
+        doNotIncludeChildren = false,
         import = null
     ).also {
         trace.record(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this, it)

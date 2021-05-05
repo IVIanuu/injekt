@@ -258,6 +258,38 @@ class GivenDeclarationTest {
     }
 
     @Test
+    fun testImportedGivenFunctionInObject() = singleAndMultiCodegen(
+        """
+            object FooGivens {
+                @Given fun foo() = Foo()
+            }
+        """,
+        """
+            @GivenImports("com.ivianuu.injekt.integrationtests.FooGivens.foo")
+            fun invoke() = given<Foo>() 
+        """
+    ) {
+        invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
+    }
+
+    @Test
+    fun testImportedGivenFunctionInObjectWithStar() = singleAndMultiCodegen(
+        """
+            object FooGivens {
+                @Given fun foo() = Foo()
+            }
+        """,
+        """
+            @GivenImports("com.ivianuu.injekt.integrationtests.FooGivens.*")
+            fun invoke() = given<Foo>() 
+        """
+    ) {
+        invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
+    }
+
+    @Test
     fun testGivenLambdaReceiverParameter() = singleAndMultiCodegen(
         """
             inline fun <T, R> diyWithGiven(value: T, block: @Given T.() -> R) = block(value)
