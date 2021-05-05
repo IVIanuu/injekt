@@ -385,6 +385,9 @@ val STAR_PROJECTION_TYPE = SimpleTypeRef(
 fun TypeRef.anyType(action: (TypeRef) -> Boolean): Boolean =
     action(this) || arguments.any { it.anyType(action) } || qualifiers.any { it.anyType(action) }
 
+fun TypeRef.anySuperType(action: (TypeRef) -> Boolean): Boolean =
+    action(this) || superTypes.any { it.anySuperType(action) }
+
 fun TypeRef.visitRecursive(
     seen: MutableSet<TypeRef> = mutableSetOf(),
     action: (TypeRef) -> Unit

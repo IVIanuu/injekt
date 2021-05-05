@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.common.*
+import com.ivianuu.injekt.scope.*
 import com.ivianuu.injekt.test.*
 import org.junit.*
 
@@ -44,9 +46,11 @@ class TypeInferenceTest {
 
             @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
             fun invoke(@Given appGivenScope: AppGivenScope) = 
-                given<@ChildScopeFactory (Foo) -> MyGivenScope>()
+                given<@ChildScopeFactory (Foo) -> MyGivenScope>()(Foo()).element<Foo>()
                 """
-    )
+    ) {
+        invokeSingleFile(GivenScope<AppGivenScope>(typeKey = TypeKey("AppGivenScope")))
+    }
 
     @Test
     fun testPropertyExpressionInference() = multiCodegen(
@@ -72,7 +76,9 @@ class TypeInferenceTest {
 
             @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
             fun invoke(@Given appGivenScope: AppGivenScope) = 
-                given<@ChildScopeFactory (Foo) -> MyGivenScope>()
+                given<@ChildScopeFactory (Foo) -> MyGivenScope>()(Foo()).element<Foo>()
                 """
-    )
+    ) {
+        invokeSingleFile(GivenScope<AppGivenScope>(typeKey = TypeKey("AppGivenScope")))
+    }
 }
