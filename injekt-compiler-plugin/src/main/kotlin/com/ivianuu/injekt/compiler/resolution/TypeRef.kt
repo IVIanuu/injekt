@@ -474,7 +474,8 @@ fun KotlinType.uniqueTypeName(depth: Int = 0): String {
 fun TypeRef.buildContext(
     injektContext: InjektContext,
     staticTypeParameters: List<ClassifierRef>,
-    superType: TypeRef
+    superType: TypeRef,
+    equalQualifiers: Boolean
 ): TypeContext {
     val context = TypeContext(injektContext)
     staticTypeParameters.forEach { context.addStaticTypeParameter(it) }
@@ -484,7 +485,7 @@ fun TypeRef.buildContext(
     superType.visitRecursive {
         if (it.classifier.isTypeParameter) context.addTypeParameter(it.classifier)
     }
-    context.addConstraint(this, superType, Bound.Kind.UPPER)
+    context.addConstraint(this, superType, Bound.Kind.UPPER, equalQualifiers)
     return context
 }
 
@@ -605,12 +606,12 @@ class TypeContext(val injektContext: InjektContext) {
 
     private val checker = TypeChecker(object : TypeChecker.Callbacks {
         override fun assertEqualTypes(a: TypeRef, b: TypeRef): Boolean {
-            addConstraint(a, b, Bound.Kind.EQUAL)
+            addConstraint(a, b, Bound.Kind.EQUAL, false)
             return true
         }
 
         override fun assertSubType(subType: TypeRef, superType: TypeRef): Boolean {
-            addConstraint(subType, superType, Bound.Kind.UPPER)
+            addConstraint(subType, superType, Bound.Kind.UPPER, false)
             return true
         }
 
@@ -701,18 +702,19 @@ class TypeContext(val injektContext: InjektContext) {
 
         when {
             oldBound.kind.ordinal < newBound.kind.ordinal ->
-                addConstraint(oldType, newType, Bound.Kind.UPPER)
+                addConstraint(oldType, newType, Bound.Kind.UPPER, false)
             oldBound.kind.ordinal > newBound.kind.ordinal ->
-                addConstraint(newType, oldType, Bound.Kind.UPPER)
+                addConstraint(newType, oldType, Bound.Kind.UPPER, false)
             oldBound.kind == newBound.kind && oldBound.kind == Bound.Kind.EQUAL ->
-                addConstraint(oldType, newType, Bound.Kind.EQUAL)
+                addConstraint(oldType, newType, Bound.Kind.EQUAL, false)
         }
     }
 
     fun addConstraint(
         subType: TypeRef,
         superType: TypeRef,
-        kind: Bound.Kind
+        kind: Bound.Kind,
+        equalQualifiers: Boolean
     ) {
         when {
             subType.classifier in typeParameters -> {
@@ -728,21 +730,31 @@ class TypeContext(val injektContext: InjektContext) {
                             }
                         })
 
-                    val anyWithSubQualifiers = injektContext.anyClassifier
-                        .defaultType.copy(qualifiers = subType
-                        .qualifiers
-                        .filter { subQ ->
-                            superType.qualifiers.any {
-                                it.classifier == subQ.classifier
+                    if (equalQualifiers) {
+                        if (subType.qualifiers.size == superType.qualifiers.size) {
+                            subType.qualifiers.forEachWith(superType.qualifiers) { subQ, superQ ->
+                                addConstraint(subQ, superQ, Bound.Kind.UPPER, false)
                             }
-                        })
-
-                    if (superType.qualifiers.size == anyWithSubQualifiers.qualifiers.size) {
-                        val anyWithSuperQualifiers = injektContext.anyClassifier
-                            .defaultType.copy(qualifiers = superType.qualifiers)
-                        addConstraint(anyWithSubQualifiers, anyWithSuperQualifiers, kind)
+                        } else {
+                            errors += ConstraintError(subType, superType, kind)
+                        }
                     } else {
-                        errors += ConstraintError(subType, superType, kind)
+                        val anyWithSubQualifiers = injektContext.anyClassifier
+                            .defaultType.copy(qualifiers = subType
+                                .qualifiers
+                                .filter { subQ ->
+                                    superType.qualifiers.any {
+                                        it.classifier == subQ.classifier
+                                    }
+                                })
+
+                        if (superType.qualifiers.size == anyWithSubQualifiers.qualifiers.size) {
+                            val anyWithSuperQualifiers = injektContext.anyClassifier
+                                .defaultType.copy(qualifiers = superType.qualifiers)
+                            addConstraint(anyWithSubQualifiers, anyWithSuperQualifiers, kind, false)
+                        } else {
+                            errors += ConstraintError(subType, superType, kind)
+                        }
                     }
 
                     generateTypeParameterBound(subTypeWithoutQualifiers,
@@ -762,21 +774,31 @@ class TypeContext(val injektContext: InjektContext) {
                             }
                         })
 
-                    val anyWithSubQualifiers = injektContext.anyClassifier
-                        .defaultType.copy(qualifiers = subType
-                            .qualifiers
-                            .filter { subQ ->
-                                superType.qualifiers.any {
-                                    it.classifier == subQ.classifier
-                                }
-                            })
-
-                    if (superType.qualifiers.size == anyWithSubQualifiers.qualifiers.size) {
-                        val anyWithSuperQualifiers = injektContext.anyClassifier
-                            .defaultType.copy(qualifiers = superType.qualifiers)
-                        addConstraint(anyWithSubQualifiers, anyWithSuperQualifiers, kind)
+                    if (equalQualifiers) {
+                        if (superType.qualifiers.size == subType.qualifiers.size) {
+                            superType.qualifiers.forEachWith(subType.qualifiers) { superQ, subQ ->
+                                addConstraint(subQ, superQ, Bound.Kind.UPPER, false)
+                            }
+                        } else {
+                            errors += ConstraintError(subType, superType, kind)
+                        }
                     } else {
-                        errors += ConstraintError(subType, superType, kind)
+                        val anyWithSubQualifiers = injektContext.anyClassifier
+                            .defaultType.copy(qualifiers = subType
+                                .qualifiers
+                                .filter { subQ ->
+                                    superType.qualifiers.any {
+                                        it.classifier == subQ.classifier
+                                    }
+                                })
+
+                        if (superType.qualifiers.size == anyWithSubQualifiers.qualifiers.size) {
+                            val anyWithSuperQualifiers = injektContext.anyClassifier
+                                .defaultType.copy(qualifiers = superType.qualifiers)
+                            addConstraint(anyWithSubQualifiers, anyWithSuperQualifiers, kind, false)
+                        } else {
+                            errors += ConstraintError(subType, superType, kind)
+                        }
                     }
 
                     generateTypeParameterBound(superTypeWithoutQualifiers,
@@ -785,7 +807,7 @@ class TypeContext(val injektContext: InjektContext) {
             }
             else -> {
                 val result = when (kind) {
-                    Bound.Kind.UPPER -> checker.isSubTypeOf(subType, superType)
+                    Bound.Kind.UPPER -> checker.isSubTypeOf(subType, superType, equalQualifiers)
                     Bound.Kind.EQUAL -> checker.areEqualTypes(subType, superType)
                     else -> throw AssertionError()
                 }
@@ -967,26 +989,30 @@ private class TypeChecker(private val callbacks: Callbacks) {
         return true
     }
 
-    fun isSubTypeOf(subType: TypeRef, superType: TypeRef): Boolean {
+    fun isSubTypeOf(subType: TypeRef, superType: TypeRef, equalQualifiers: Boolean): Boolean {
         if (superType.isStarProjection) return true
         if (subType.classifier.fqName == InjektFqNames.Nothing) return true
         if (subType.isNullableType && !superType.isNullableType) return false
         if (superType.classifier.fqName == InjektFqNames.Any)
             return superType.qualifiers.isEmpty() ||
                     (subType.qualifiers.isNotEmpty() &&
-                            areSubQualifiersOf(subType.qualifiers, superType.qualifiers))
+                            areSubQualifiersOf(subType.qualifiers, superType.qualifiers, equalQualifiers))
 
         val subTypeView = subType.subtypeView(superType.classifier)
         if (subTypeView != null)
-            return isSubTypeOfSameClassifier(subTypeView, superType)
+            return isSubTypeOfSameClassifier(subTypeView, superType, equalQualifiers)
         else callbacks.noCorrespondingSuperType(subType, superType)
 
         return false
     }
 
-    private fun isSubTypeOfSameClassifier(subType: TypeRef, superType: TypeRef): Boolean {
+    private fun isSubTypeOfSameClassifier(
+        subType: TypeRef,
+        superType: TypeRef,
+        equalQualifiers: Boolean
+    ): Boolean {
         if (subType == superType) return true
-        if (!areSubQualifiersOf(subType.qualifiers, superType.qualifiers))
+        if (!areSubQualifiersOf(subType.qualifiers, superType.qualifiers, equalQualifiers))
             return false
         if (subType.isMarkedComposable != superType.isMarkedComposable) return false
         for (i in subType.arguments.indices) {
@@ -1021,8 +1047,11 @@ private class TypeChecker(private val callbacks: Callbacks) {
 
     private fun areSubQualifiersOf(
         subQualifiers: List<TypeRef>,
-        superQualifiers: List<TypeRef>
+        superQualifiers: List<TypeRef>,
+        equalQualifiers: Boolean
     ): Boolean {
+        if (equalQualifiers && subQualifiers.size != superQualifiers.size) return false
+
         for (superQualifier in superQualifiers) {
             val subQualifier = subQualifiers.firstOrNull { it.classifier == superQualifier.classifier }
             if (subQualifier == null || !callbacks.assertSubType(subQualifier, superQualifier))

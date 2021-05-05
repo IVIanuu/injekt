@@ -154,9 +154,10 @@ class TypeCheckerContext(val module: ModuleDescriptor) {
 
     fun TypeRef.shouldBeAssignableTo(
         other: TypeRef,
-        staticTypeParameters: List<ClassifierRef> = emptyList()
+        staticTypeParameters: List<ClassifierRef> = emptyList(),
+        equalQualifiers: Boolean = true
     ) {
-        val context = buildContext(injektContext, staticTypeParameters, other)
+        val context = buildContext(injektContext, staticTypeParameters, other, equalQualifiers)
         if (!context.isOk) {
             throw AssertionError("'$this' is not assignable to '$other'")
         }
@@ -168,9 +169,10 @@ class TypeCheckerContext(val module: ModuleDescriptor) {
 
     fun TypeRef.shouldNotBeAssignableTo(
         other: TypeRef,
-        staticTypeParameters: List<ClassifierRef> = emptyList()
+        staticTypeParameters: List<ClassifierRef> = emptyList(),
+        equalQualifiers: Boolean = true
     ) {
-        val context = buildContext(injektContext, staticTypeParameters, other)
+        val context = buildContext(injektContext, staticTypeParameters, other, equalQualifiers)
         if (context.isOk) {
             throw AssertionError("'$this' is assignable to '$other'")
         }

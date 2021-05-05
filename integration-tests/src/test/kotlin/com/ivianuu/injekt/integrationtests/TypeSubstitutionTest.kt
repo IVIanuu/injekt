@@ -132,7 +132,7 @@ class TypeSubstitutionTest {
         a: TypeRef,
         b: TypeRef
     ): Map<ClassifierRef, TypeRef> {
-        val context = a.buildContext(injektContext, emptyList(), b)
+        val context = a.buildContext(injektContext, emptyList(), b, false)
         return context.getSubstitutionMap()
     }
 }
