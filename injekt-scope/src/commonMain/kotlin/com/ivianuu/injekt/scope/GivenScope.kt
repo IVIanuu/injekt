@@ -143,7 +143,6 @@ inline fun <S : GivenScope> GivenScope(
     @Given elements: (@Given S, @Given @Parent GivenScope?) -> Set<GivenScopeElement<S>> = { _, _ -> emptySet() },
     @Given initializers: (@Given S, @Given @Parent GivenScope?) -> Set<GivenScopeInitializer<S>> = { _, _ -> emptySet() }
 ): S {
-    println("create scope $typeKey p -> ${parent?.typeKey}")
     val scope = GivenScopeImpl(typeKey, parent)
     scope as S
     val parentDisposable = parent?.invokeOnDispose { scope.dispose() }
