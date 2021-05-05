@@ -136,6 +136,7 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
                     .any {
                         !it.isLetter() &&
                                 it != '.' &&
+                                it != '_' &&
                                 it != '*'
                     }
             ) {

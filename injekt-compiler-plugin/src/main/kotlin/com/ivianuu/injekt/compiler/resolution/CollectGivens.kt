@@ -219,7 +219,7 @@ fun CallableRef.collectGivens(
 
 fun List<GivenImport>.collectImportGivens(context: InjektContext, trace: BindingTrace): List<CallableRef> =
     flatMap { import ->
-        (if (import.importPath!!.endsWith("*")) {
+        if (import.importPath!!.endsWith("*")) {
             val packageFqName = FqName(import.importPath.removeSuffix(".*"))
             (context.memberScopeForFqName(packageFqName)
                 ?.collectGivens(context, trace)
@@ -245,6 +245,14 @@ fun List<GivenImport>.collectImportGivens(context: InjektContext, trace: Binding
                     it.callable.name == name ||
                             it.callable.safeAs<ClassConstructorDescriptor>()
                                 ?.constructedClass
+                                ?.name == name ||
+                            it.callable.safeAs<ReceiverParameterDescriptor>()
+                                ?.value
+                                ?.type
+                                ?.constructor
+                                ?.declarationDescriptor
+                                ?.safeAs<ClassDescriptor>()
+                                ?.containingDeclaration
                                 ?.name == name
                 }
                 ?.map { it.copy(import = import) } ?: emptyList()) + listOfNotNull(
@@ -259,7 +267,7 @@ fun List<GivenImport>.collectImportGivens(context: InjektContext, trace: Binding
                             import = import
                         )
                 )
-        }) ?: emptyList()
+        }
     }
 
 private fun ResolutionScope.canSee(callable: CallableRef): Boolean =

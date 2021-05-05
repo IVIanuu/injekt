@@ -20,6 +20,7 @@ import com.ivianuu.injekt.test.*
 import io.kotest.matchers.*
 import io.kotest.matchers.nulls.*
 import io.kotest.matchers.types.*
+import org.jetbrains.kotlin.name.*
 import org.junit.*
 
 class GivenDeclarationTest {
@@ -284,6 +285,35 @@ class GivenDeclarationTest {
             @GivenImports("com.ivianuu.injekt.integrationtests.FooGivens.*")
             fun invoke() = given<Foo>() 
         """
+    ) {
+        invokeSingleFile()
+            .shouldBeTypeOf<Foo>()
+    }
+
+    @Test
+    fun testImportedGivenFunctionInCompanionObject() = singleAndMultiCodegen(
+        listOf(
+            listOf(
+                source(
+                    """
+                        class FooGivens {
+                            companion object {
+                                @Given fun foo() = Foo()
+                            }
+                        }
+                    """,
+                    packageFqName = FqName("givens")
+                )
+            ),
+            listOf(
+                invokableSource(
+                    """
+                        @GivenImports("givens.FooGivens")
+                        fun invoke() = given<Foo>()
+                    """
+                )
+            )
+        )
     ) {
         invokeSingleFile()
             .shouldBeTypeOf<Foo>()
