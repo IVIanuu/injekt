@@ -34,6 +34,10 @@ class InjektContext(val module: ModuleDescriptor) {
         module.builtIns.collection.toClassifierRef(this, null)
     }
 
+    val anyClassifier by unsafeLazy {
+        module.builtIns.any.toClassifierRef(this, null)
+    }
+
     fun callableInfoFor(
         callable: CallableDescriptor,
         trace: BindingTrace?

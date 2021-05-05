@@ -193,11 +193,11 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
             request.type.qualifiers.isEmpty() &&
             request.type.isFunctionTypeWithOnlyGivenParameters
     if (!isInlineProviderCandidateType) resultsByType[request.type]?.let { return it }
-    val userCandidates = givensForRequest(request, typeContext)
+    val userCandidates = givensForRequest(request, this)
     val result = if (userCandidates != null) {
         resolveCandidates(request, userCandidates)
     } else {
-        val frameworkCandidate = frameworkGivenForRequest(request, typeContext)
+        val frameworkCandidate = frameworkGivenForRequest(request)
         when {
             frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate)
             request.defaultStrategy == GivenRequest.DefaultStrategy.NONE -> ResolutionResult.Failure.NoCandidates
@@ -383,7 +383,7 @@ private fun ResolutionScope.compareResult(a: ResolutionResult?, b: ResolutionRes
     }
 }
 
-private inline fun <T> ResolutionScope.compareCandidate(
+private inline fun <T> compareCandidate(
     a: T?,
     b: T?,
     type: (T) -> TypeRef,
@@ -413,7 +413,7 @@ private inline fun <T> ResolutionScope.compareCandidate(
         if (bSubClassNesting < aSubClassNesting) return 1
     }
 
-    val diff = compareType(type(a), type(b), typeContext)
+    val diff = compareType(type(a), type(b))
     if (diff < 0) return -1
     if (diff > 0) return 1
 
@@ -451,7 +451,7 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     diff = 0
     for (aDependency in aDependencies) {
         for (bDependency in bDependencies) {
-            diff += compareType(aDependency, bDependency, typeContext)
+            diff += compareType(aDependency, bDependency)
         }
     }
     if (diff < 0) return -1
@@ -460,7 +460,7 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     return 0
 }
 
-fun compareType(a: TypeRef, b: TypeRef, context: TypeContext): Int {
+fun compareType(a: TypeRef, b: TypeRef): Int {
     if (a === b) return 0
     if (!a.isStarProjection && b.isStarProjection) return -1
     if (a.isStarProjection && !b.isStarProjection) return 1
@@ -475,14 +475,14 @@ fun compareType(a: TypeRef, b: TypeRef, context: TypeContext): Int {
     if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
 
     if (a.classifier != b.classifier) {
-        val aSubTypeOfB = a.isSubTypeOf(context, b)
-        val bSubTypeOfA = b.isSubTypeOf(context, a)
+        val aSubTypeOfB = a.isSubTypeOf(b)
+        val bSubTypeOfA = b.isSubTypeOf(a)
         if (aSubTypeOfB && !bSubTypeOfA) return -1
         if (bSubTypeOfA && !aSubTypeOfB) return 1
     } else {
         var diff = 0
         a.arguments.forEachWith(b.arguments) { aTypeArgument, bTypeArgument ->
-            diff += compareType(aTypeArgument, bTypeArgument, context)
+            diff += compareType(aTypeArgument, bTypeArgument)
         }
         if (diff < 0) return -1
         if (diff > 0) return 1

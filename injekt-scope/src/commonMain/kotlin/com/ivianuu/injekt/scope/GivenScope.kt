@@ -134,23 +134,25 @@ private class InvokeOnDisposeKey
 
 private val NoOpScopeDisposable = GivenScopeDisposable {  }
 
+@Qualifier private annotation class Parent
+
 @Given
 inline fun <S : GivenScope> GivenScope(
-    @Given parent: GivenScope? = null,
+    @Given parent: @Parent GivenScope? = null,
     @Given typeKey: TypeKey<S>,
-    @Given elements: (@Given S) -> Set<GivenScopeElement<S>> = { emptySet() },
-    @Given initializers: (@Given S) -> Set<GivenScopeInitializer<S>> = { emptySet() }
+    @Given elements: (@Given S, @Given @Parent GivenScope?) -> Set<GivenScopeElement<S>> = { _, _ -> emptySet() },
+    @Given initializers: (@Given S, @Given @Parent GivenScope?) -> Set<GivenScopeInitializer<S>> = { _, _ -> emptySet() }
 ): S {
     val scope = GivenScopeImpl(typeKey, parent)
     scope as S
     val parentDisposable = parent?.invokeOnDispose { scope.dispose() }
     scope.invokeOnDispose { parentDisposable?.dispose() }
-    val finalElements = elements(scope)
+    val finalElements = elements(scope, scope)
     scope.elements = if (finalElements.isEmpty()) emptyMap()
     else HashMap<String, () -> Any>(finalElements.size).apply {
         finalElements.forEach { this[it.key.value] = it.factory }
     }
-    initializers(scope).forEach { it() }
+    initializers(scope, scope).forEach { it() }
     return scope
 }
 

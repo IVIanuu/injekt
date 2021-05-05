@@ -43,10 +43,14 @@ class TypeInferenceTest {
             @Given fun bar(@Given foo: Foo) = Bar(foo)
 
             @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-            fun invoke(@Given appGivenScope: AppGivenScope) = 
-                given<@ChildScopeFactory (Foo) -> MyGivenScope>()
+            fun invoke() = given<AppGivenScope>()
+                .element<@ChildScopeFactory (Foo) -> MyGivenScope>()
+                .invoke(Foo())
+                .element<Foo>()
                 """
-    )
+    ) {
+        invokeSingleFile()
+    }
 
     @Test
     fun testPropertyExpressionInference() = multiCodegen(
@@ -71,8 +75,12 @@ class TypeInferenceTest {
             @Given fun bar(@Given foo: Foo) = Bar(foo)
 
             @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-            fun invoke(@Given appGivenScope: AppGivenScope) = 
-                given<@ChildScopeFactory (Foo) -> MyGivenScope>()
+            fun invoke() = given<AppGivenScope>()
+                .element<@ChildScopeFactory (Foo) -> MyGivenScope>()
+                .invoke(Foo())
+                .element<Foo>()
                 """
-    )
+    ) {
+        invokeSingleFile()
+    }
 }

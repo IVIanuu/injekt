@@ -44,7 +44,18 @@ class InfoTransformer(
         val classifierRef = declaration.descriptor.toClassifierRef(context, trace)
         if (declaration.hasAnnotation(InjektFqNames.Given) ||
             classifierRef.typeParameters.any { it.isForTypeKey || it.isGivenConstraint } ||
-            declaration.declarations.any { it.descriptor.isGiven(context, trace) }) {
+            declaration.declarations.any { it.descriptor.isGiven(context, trace) } ||
+            declaration.descriptor.defaultType.toTypeRef(context, trace)
+                .anySuperType {
+                    it.qualifiers.isNotEmpty() ||
+                            (it.classifier.isTypeAlias &&
+                                    it.fullyExpandedType.isSuspendFunctionType)
+                } || declaration.descriptor.defaultType.toTypeRef(context, trace)
+                .anyType {
+                    it.qualifiers.isNotEmpty() ||
+                            (it.classifier.isTypeAlias &&
+                                    it.fullyExpandedType.isSuspendFunctionType)
+                }) {
             declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
                 .run {
                     val info = declaration.descriptor.toClassifierRef(this@InfoTransformer.context,
@@ -93,8 +104,10 @@ class InfoTransformer(
         }
         val callableRef = descriptor.toCallableRef(context, trace)
         if (!needsInfo) {
-            callableRef.type.anyType {
-                it.qualifiers.isNotEmpty()
+            needsInfo = callableRef.type.anyType {
+                it.qualifiers.isNotEmpty() ||
+                        (it.classifier.isTypeAlias &&
+                                it.fullyExpandedType.isSuspendFunctionType)
             } || callableRef.parameterTypes.any { (_, parameterType) ->
                 parameterType.anyType {
                     it.qualifiers.isNotEmpty() ||
