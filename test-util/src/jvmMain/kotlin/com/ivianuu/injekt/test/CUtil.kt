@@ -47,6 +47,7 @@ fun source(
             appendLine("import androidx.compose.runtime.*")
             appendLine("import com.ivianuu.injekt.*")
             appendLine("import com.ivianuu.injekt.common.*")
+            appendLine("import com.ivianuu.injekt.coroutines.*")
             appendLine("import com.ivianuu.injekt.internal.*")
             appendLine("import com.ivianuu.injekt.scope.*")
             appendLine("import com.ivianuu.injekt.test.*")
