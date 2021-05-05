@@ -475,8 +475,8 @@ fun compareType(a: TypeRef, b: TypeRef): Int {
     if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
 
     if (a.classifier != b.classifier) {
-        val aSubTypeOfB = a.isSubTypeOf(b)
-        val bSubTypeOfA = b.isSubTypeOf(a)
+        val aSubTypeOfB = a.isSubTypeOf(TypeCheckerContext, b, false)
+        val bSubTypeOfA = b.isSubTypeOf(TypeCheckerContext, a, false)
         if (aSubTypeOfB && !bSubTypeOfA) return -1
         if (bSubTypeOfA && !aSubTypeOfB) return 1
     } else {

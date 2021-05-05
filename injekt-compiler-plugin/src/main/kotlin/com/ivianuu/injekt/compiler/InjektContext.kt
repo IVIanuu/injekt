@@ -34,8 +34,12 @@ class InjektContext(val module: ModuleDescriptor) {
         module.builtIns.collection.toClassifierRef(this, null)
     }
 
-    val anyClassifier by unsafeLazy {
-        module.builtIns.any.toClassifierRef(this, null)
+    val nothingType by unsafeLazy {
+        module.builtIns.nothingType.toTypeRef(this, null)
+    }
+
+    val nullableAnyType by unsafeLazy {
+        module.builtIns.anyType.toTypeRef(this, null)
     }
 
     fun callableInfoFor(

@@ -18,6 +18,7 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.injekt.compiler.resolution.TypeCheckerContext
 import com.ivianuu.injekt.test.*
 import org.jetbrains.kotlin.analyzer.*
 import org.jetbrains.kotlin.builtins.*
@@ -144,9 +145,8 @@ class TypeCheckerContext(val module: ModuleDescriptor) {
         variance = variance
     ).defaultType
 
-    fun typeFor(fqName: FqName) = module.findClassifierAcrossModuleDependencies(
-        ClassId.topLevel(fqName)
-    )!!.defaultType.toTypeRef(injektContext, null)
+    fun typeFor(fqName: FqName) = injektContext.classifierDescriptorForFqName(fqName)
+        ?.defaultType?.toTypeRef(injektContext, null) ?: error("Wtf $fqName")
 
     infix fun TypeRef.shouldBeAssignableTo(other: TypeRef) {
         shouldBeAssignableTo(other, emptyList())
@@ -179,13 +179,13 @@ class TypeCheckerContext(val module: ModuleDescriptor) {
     }
 
     infix fun TypeRef.shouldBeSubTypeOf(other: TypeRef) {
-        if (!isSubTypeOf(other)) {
+        if (!isSubTypeOf(TypeCheckerContext, other, false)) {
             throw AssertionError("'$this' is not sub type of '$other'")
         }
     }
 
     infix fun TypeRef.shouldNotBeSubTypeOf(other: TypeRef) {
-        if (isSubTypeOf(other)) {
+        if (isSubTypeOf(TypeCheckerContext, other, false)) {
             throw AssertionError("'$this' is sub type of '$other'")
         }
     }
