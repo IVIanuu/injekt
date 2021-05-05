@@ -23,7 +23,7 @@ import org.junit.*
 
 class TypeInferenceTest {
     @Test
-    fun testFunctionExpressionInference() = multiCodegen(
+    fun testFunctionExpressionInference() = singleAndMultiCodegen(
         """
             class ChildGivenScopeModule<P : GivenScope, T, S : T> {
                 @Given
@@ -45,15 +45,17 @@ class TypeInferenceTest {
             @Given fun bar(@Given foo: Foo) = Bar(foo)
 
             @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-            fun invoke(@Given appGivenScope: AppGivenScope) = 
-                given<@ChildScopeFactory (Foo) -> MyGivenScope>()(Foo()).element<Foo>()
+            fun invoke() = given<AppGivenScope>()
+                .element<@ChildScopeFactory (Foo) -> MyGivenScope>()
+                .invoke(Foo())
+                .element<Foo>()
                 """
     ) {
-        invokeSingleFile(GivenScope<AppGivenScope>(typeKey = TypeKey("AppGivenScope")))
+        invokeSingleFile()
     }
 
     @Test
-    fun testPropertyExpressionInference() = multiCodegen(
+    fun testPropertyExpressionInference() = singleAndMultiCodegen(
         """
             class ChildGivenScopeModule<P : GivenScope, T, S : T> {
                 @Given
@@ -75,8 +77,10 @@ class TypeInferenceTest {
             @Given fun bar(@Given foo: Foo) = Bar(foo)
 
             @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-            fun invoke(@Given appGivenScope: AppGivenScope) = 
-                given<@ChildScopeFactory (Foo) -> MyGivenScope>()(Foo()).element<Foo>()
+            fun invoke() = given<AppGivenScope>()
+                .element<@ChildScopeFactory (Foo) -> MyGivenScope>()
+                .invoke(Foo())
+                .element<Foo>()
                 """
     ) {
         invokeSingleFile(GivenScope<AppGivenScope>(typeKey = TypeKey("AppGivenScope")))
