@@ -23,7 +23,7 @@ import org.junit.*
 
 class TypeInferenceTest {
     @Test
-    fun testFunctionExpressionInference() = singleAndMultiCodegen(
+    fun testFunctionExpressionInference() = multiCodegen(
         """
             class ChildGivenScopeModule<P : GivenScope, T, S : T> {
                 @Given
@@ -55,7 +55,7 @@ class TypeInferenceTest {
     }
 
     @Test
-    fun testPropertyExpressionInference() = singleAndMultiCodegen(
+    fun testPropertyExpressionInference() = multiCodegen(
         """
             class ChildGivenScopeModule<P : GivenScope, T, S : T> {
                 @Given
