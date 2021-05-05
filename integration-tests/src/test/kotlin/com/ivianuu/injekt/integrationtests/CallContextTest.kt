@@ -21,20 +21,6 @@ import org.junit.*
 
 class CallContextTest {
     @Test
-    fun lolo() = codegen(
-        """
-            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-            fun invoke() {
-                @Given
-                val childScopeModule = ChildGivenScopeModule1<TestGivenScope1, String, TestGivenScope2>()
-                val parentScope = given<TestGivenScope1>()
-                val childScope = parentScope.element<@ChildScopeFactory (String) -> TestGivenScope2>()("42")
-                childScope.element<String>() shouldBe "42"
-            }
-        """
-    )
-
-    @Test
     fun testSuspendCannotBeRequestedFromNonSuspend() = singleAndMultiCodegen(
         """
             @Given suspend fun foo() = Foo()
