@@ -29,7 +29,7 @@ kotlin {
     sourceSets {
         named("jvmMain") {
             dependencies {
-                api(project(":injekt-core"))
+                api(project(":injekt-common"))
                 configurations.getByName("kotlinCompilerPluginClasspath")
                     .dependencies.add(project(":injekt-compiler-plugin"))
             }

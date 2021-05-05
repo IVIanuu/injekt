@@ -191,7 +191,7 @@ class ResolutionScope(
                 .mapNotNull { (_, candidate) ->
                     if (candidate.type.frameworkKey != key.type.frameworkKey)
                         return@mapNotNull null
-                    val context = candidate.type.buildContext(key.staticTypeParameters, key.type)
+                    val context = candidate.type.buildContext(context, key.staticTypeParameters, key.type)
                     if (!context.isOk) return@mapNotNull null
                     val substitutionMap = context.getSubstitutionMap()
                     val finalCandidate = candidate.substitute(substitutionMap)
@@ -285,9 +285,9 @@ class ResolutionScope(
                 .mapNotNull { (_, candidate) ->
                     if (candidate.type.frameworkKey != key.type.frameworkKey)
                         return@mapNotNull null
-                    var context = candidate.type.buildContext(key.staticTypeParameters, singleElementType)
+                    var context = candidate.type.buildContext(context, key.staticTypeParameters, singleElementType)
                     if (!context.isOk) {
-                        context = candidate.type.buildContext(key.staticTypeParameters, collectionElementType)
+                        context = candidate.type.buildContext(this.context, key.staticTypeParameters, collectionElementType)
                     }
                     if (!context.isOk) return@mapNotNull null
                     val substitutionMap = context.getSubstitutionMap()
@@ -320,12 +320,12 @@ class ResolutionScope(
         if (candidate.type.frameworkKey in constrainedGiven.resultingFrameworkKeys) return
         if (candidate.type in constrainedGiven.processedCandidateTypes) return
         constrainedGiven.processedCandidateTypes += candidate.type
-        val outputsContext = candidate.rawType.buildContext(allStaticTypeParameters,
+        val outputsContext = candidate.rawType.buildContext(context, allStaticTypeParameters,
             constrainedGiven.constraintType)
         if (!outputsContext.isOk)
             return
 
-        val inputsContext = candidate.type.buildContext(allStaticTypeParameters,
+        val inputsContext = candidate.type.buildContext(context, allStaticTypeParameters,
             constrainedGiven.constraintType)
 
         val inputsSubstitutionMap = inputsContext.getSubstitutionMap()

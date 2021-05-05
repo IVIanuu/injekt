@@ -469,10 +469,11 @@ fun KotlinType.uniqueTypeName(depth: Int = 0): String {
 }
 
 fun TypeRef.buildContext(
+    injektContext: InjektContext,
     staticTypeParameters: List<ClassifierRef>,
     superType: TypeRef
 ): TypeContext {
-    val context = TypeContext()
+    val context = TypeContext(injektContext)
     staticTypeParameters.forEach { context.addStaticTypeParameter(it) }
     visitRecursive {
         if (it.classifier.isTypeParameter) context.addTypeParameter(it.classifier)
@@ -546,7 +547,6 @@ fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
 }
 
 fun List<TypeRef>.areSubQualifiersOf(superQualifiers: List<TypeRef>): Boolean {
-    if (size != superQualifiers.size) return false
     for (superQualifier in superQualifiers) {
         val thisQualifier = firstOrNull { it.classifier == superQualifier.classifier }
         if (thisQualifier?.isSubTypeOf(superQualifier) != true)
@@ -589,7 +589,7 @@ fun effectiveVariance(
     return originalDeclared
 }
 
-class TypeContext {
+class TypeContext(val injektContext: InjektContext) {
     private val staticTypeParameters = mutableSetOf<ClassifierRef>()
     val typeParameters = mutableSetOf<ClassifierRef>()
     private val bounds = mutableMapOf<ClassifierRef, MutableList<Bound>>()
@@ -599,6 +599,26 @@ class TypeContext {
         .none { getValues(it).size > 1 }
 
     val errors = mutableSetOf<ConstraintError>()
+
+    private val checker = TypeChecker(object : TypeChecker.Callbacks {
+        override fun assertEqualTypes(a: TypeRef, b: TypeRef): Boolean {
+            addConstraint(a, b, Bound.Kind.EQUAL)
+            return true
+        }
+
+        override fun assertSubType(subType: TypeRef, superType: TypeRef): Boolean {
+            addConstraint(subType, superType, Bound.Kind.UPPER)
+            return true
+        }
+
+        override fun noCorrespondingSuperType(
+            subType: TypeRef,
+            superType: TypeRef
+        ): Boolean {
+            errors += ConstraintError(subType, superType, Bound.Kind.UPPER)
+            return false
+        }
+    })
 
     fun addStaticTypeParameter(typeParameter: ClassifierRef) {
         staticTypeParameters += typeParameter
@@ -638,9 +658,9 @@ class TypeContext {
         val newBound = Bound(typeParameter, constrainingType, kind, !constrainingType.anyType {
             it.classifier.isTypeParameter && it.classifier in typeParameters
         })
-        val boundForTypeParameter = bounds.getOrPut(typeParameter) { mutableListOf() }
-        if (newBound in boundForTypeParameter) return
-        boundForTypeParameter += newBound
+        val boundsForTypeParameter = bounds.getOrPut(typeParameter) { mutableListOf() }
+        if (newBound in boundsForTypeParameter) return
+        boundsForTypeParameter += newBound
 
         if (!newBound.isProper) {
             for (dependentTypeParameter in getNestedTypeParameters(constrainingType)) {
@@ -655,8 +675,8 @@ class TypeContext {
             generateNewBound(boundUsedIn, newBound)
         }
 
-        for (oldBoundsIndex in boundForTypeParameter.indices)
-            addConstraintFromBounds(boundForTypeParameter[oldBoundsIndex], newBound)
+        for (oldBoundsIndex in boundsForTypeParameter.indices)
+            addConstraintFromBounds(boundsForTypeParameter[oldBoundsIndex], newBound)
 
         if (constrainingType.classifier in typeParameters) {
             addBound(constrainingType.classifier, typeParameter.defaultType, newBound.kind.reverse())
@@ -691,26 +711,6 @@ class TypeContext {
         superType: TypeRef,
         kind: Bound.Kind
     ) {
-        val checker = TypeChecker(object : TypeChecker.Callbacks {
-                override fun assertEqualTypes(a: TypeRef, b: TypeRef): Boolean {
-                    addConstraint(a, b, Bound.Kind.EQUAL)
-                    return true
-                }
-
-                override fun assertSubType(subType: TypeRef, superType: TypeRef): Boolean {
-                    addConstraint(subType, superType, Bound.Kind.UPPER)
-                    return true
-                }
-
-                override fun noCorrespondingSuperType(
-                    subType: TypeRef,
-                    superType: TypeRef
-                ): Boolean {
-                    errors += ConstraintError(subType, superType, Bound.Kind.UPPER)
-                    return false
-                }
-            }
-        )
         when {
             subType.classifier in typeParameters -> {
                 if (subType.qualifiers.isEmpty()) {
@@ -725,10 +725,19 @@ class TypeContext {
                             }
                         })
 
-                    if (subType.qualifiers.size == superType.qualifiers.size) {
-                        subType.qualifiers.forEachWith(superType.qualifiers) { subQ, superQ ->
-                            addConstraint(subQ, superQ, Bound.Kind.UPPER)
-                        }
+                    val anyWithSubQualifiers = injektContext.anyClassifier
+                        .defaultType.copy(qualifiers = subType
+                        .qualifiers
+                        .filter { subQ ->
+                            superType.qualifiers.any {
+                                it.classifier == subQ.classifier
+                            }
+                        })
+
+                    if (superType.qualifiers.size == anyWithSubQualifiers.qualifiers.size) {
+                        val anyWithSuperQualifiers = injektContext.anyClassifier
+                            .defaultType.copy(qualifiers = superType.qualifiers)
+                        addConstraint(anyWithSubQualifiers, anyWithSuperQualifiers, kind)
                     } else {
                         errors += ConstraintError(subType, superType, kind)
                     }
@@ -750,10 +759,19 @@ class TypeContext {
                             }
                         })
 
-                    if (superType.qualifiers.size == subType.qualifiers.size) {
-                        superType.qualifiers.forEachWith(subType.qualifiers) { superQ, subQ ->
-                            addConstraint(subQ, superQ, Bound.Kind.UPPER)
-                        }
+                    val anyWithSubQualifiers = injektContext.anyClassifier
+                        .defaultType.copy(qualifiers = subType
+                            .qualifiers
+                            .filter { subQ ->
+                                superType.qualifiers.any {
+                                    it.classifier == subQ.classifier
+                                }
+                            })
+
+                    if (superType.qualifiers.size == anyWithSubQualifiers.qualifiers.size) {
+                        val anyWithSuperQualifiers = injektContext.anyClassifier
+                            .defaultType.copy(qualifiers = superType.qualifiers)
+                        addConstraint(anyWithSubQualifiers, anyWithSuperQualifiers, kind)
                     } else {
                         errors += ConstraintError(subType, superType, kind)
                     }
@@ -787,7 +805,10 @@ class TypeContext {
             exactBounds
                 .firstOrNull { candidate ->
                     exactBounds.all {
-                        candidate.isSubTypeOf(it)
+                        candidate == it ||
+                            candidate.isSubTypeOf(it) || (it.classifier.isTypeParameter &&
+                            it.classifier in typeParameters &&
+                            isSubTypeOfTypeParameterRecursive(candidate, it.classifier))
                     }
                 }
                 ?.let { return setOf(it) }
@@ -801,7 +822,10 @@ class TypeContext {
             lowerBounds
                 .firstOrNull { candidate ->
                     lowerBounds.all {
-                        candidate.isSubTypeOf(it)
+                        candidate == it ||
+                            candidate.isSubTypeOf(it) || (it.classifier.isTypeParameter &&
+                            it.classifier in typeParameters &&
+                            isSubTypeOfTypeParameterRecursive(candidate, it.classifier))
                     }
                 }
                 ?.let { return setOf(it) }
@@ -815,7 +839,10 @@ class TypeContext {
             upperBounds
                 .firstOrNull { candidate ->
                     upperBounds.all {
-                        candidate.isSubTypeOf(it)
+                        candidate == it ||
+                            candidate.isSubTypeOf(it) || (it.classifier.isTypeParameter &&
+                            it.classifier in typeParameters &&
+                            isSubTypeOfTypeParameterRecursive(candidate, it.classifier))
                     }
                 }
                 ?.let { return setOf(it) }
@@ -823,6 +850,20 @@ class TypeContext {
         values += upperBounds
 
         return values
+    }
+
+    private fun isSubTypeOfTypeParameterRecursive(
+        type: TypeRef,
+        typeParameter: ClassifierRef,
+        tried: MutableSet<TypeRef> = mutableSetOf()
+    ): Boolean = bounds.getValue(typeParameter).all {
+        type == it.type ||
+                type.isSubTypeOf(it.type) ||
+                (it.type.classifier.isTypeParameter && it.type.classifier in typeParameters &&
+                (type in tried || run {
+                    tried += type
+                    isSubTypeOfTypeParameterRecursive(type, it.type.classifier, tried)
+                }))
     }
 
     private fun generateNewBound(bound: Bound, substitution: Bound) {
