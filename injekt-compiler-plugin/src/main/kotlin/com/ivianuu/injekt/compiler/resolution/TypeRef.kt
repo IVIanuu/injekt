@@ -1006,6 +1006,8 @@ private class TypeChecker(private val callbacks: Callbacks) {
         subQualifiers: List<TypeRef>,
         superQualifiers: List<TypeRef>
     ): Boolean {
+        if (subQualifiers.size != superQualifiers.size) return false
+
         for (superQualifier in superQualifiers) {
             val thisQualifier = subQualifiers.firstOrNull { it.classifier == superQualifier.classifier }
             if (thisQualifier == null || !callbacks.assertEqualTypes(thisQualifier, superQualifier))
@@ -1018,8 +1020,6 @@ private class TypeChecker(private val callbacks: Callbacks) {
         subQualifiers: List<TypeRef>,
         superQualifiers: List<TypeRef>
     ): Boolean {
-        if (subQualifiers.size != superQualifiers.size) return false
-
         for (superQualifier in superQualifiers) {
             val subQualifier = subQualifiers.firstOrNull { it.classifier == superQualifier.classifier }
             if (subQualifier == null || !callbacks.assertSubType(subQualifier, superQualifier))

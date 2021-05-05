@@ -16,19 +16,18 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.compiler.resolution.*
+import io.kotest.matchers.*
+import io.kotest.matchers.maps.*
+import org.jetbrains.kotlin.name.*
+import org.junit.*
+
 class TypeSubstitutionTest {
-    /*@Test
+    @Test
     fun testGetSubstitutionMap() = withTypeCheckerContext {
         val superType = typeParameter()
         val map = getSubstitutionMap(stringType, superType)
         map[superType.classifier] shouldBe stringType
-    }
-
-    @Test
-    fun testGetSubstitutionMapWithNullableTypes() = withTypeCheckerContext {
-        val superType = typeParameter()
-        val map = getSubstitutionMap(stringType, superType.nullable())
-        map[superType.classifier] shouldBe stringType.nullable()
     }
 
     @Test
@@ -127,5 +126,13 @@ class TypeSubstitutionTest {
         val map = getSubstitutionMap(substitutionType, typeParameterT)
         map[typeParameterT.classifier] shouldBe substitutionType
         map[typeParameterS.classifier] shouldBe stringType.qualified(qualifier2)
-    }*/
+    }
+
+    private fun TypeCheckerContext.getSubstitutionMap(
+        a: TypeRef,
+        b: TypeRef
+    ): Map<ClassifierRef, TypeRef> {
+        val context = a.buildContext(injektContext, emptyList(), b)
+        return context.getSubstitutionMap()
+    }
 }
