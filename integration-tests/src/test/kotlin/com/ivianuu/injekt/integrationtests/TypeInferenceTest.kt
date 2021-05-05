@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.common.*
-import com.ivianuu.injekt.scope.*
 import com.ivianuu.injekt.test.*
 import org.junit.*
 
@@ -83,6 +81,6 @@ class TypeInferenceTest {
                 .element<Foo>()
                 """
     ) {
-        invokeSingleFile(GivenScope<AppGivenScope>(typeKey = TypeKey("AppGivenScope")))
+        invokeSingleFile()
     }
 }
