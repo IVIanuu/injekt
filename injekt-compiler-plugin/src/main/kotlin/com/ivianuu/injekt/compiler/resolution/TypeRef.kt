@@ -199,6 +199,10 @@ sealed class TypeRef {
         classifiers
     }
 
+    val typeDepth: Int by unsafeLazy {
+        (arguments.maxOfOrNull { it.typeDepth } ?: 0) + 1
+    }
+
     val isNullableType: Boolean by unsafeLazy {
         if (isMarkedNullable) return@unsafeLazy true
         for (superType in superTypes)

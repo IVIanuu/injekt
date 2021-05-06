@@ -383,7 +383,7 @@ private fun ResolutionScope.compareResult(a: ResolutionResult?, b: ResolutionRes
     }
 }
 
-private inline fun <T> compareCandidate(
+private inline fun <T> ResolutionScope.compareCandidate(
     a: T?,
     b: T?,
     type: (T) -> TypeRef,
@@ -460,7 +460,7 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     return 0
 }
 
-fun compareType(a: TypeRef, b: TypeRef): Int {
+fun ResolutionScope.compareType(a: TypeRef, b: TypeRef): Int {
     if (a === b) return 0
     if (!a.isStarProjection && b.isStarProjection) return -1
     if (a.isStarProjection && !b.isStarProjection) return 1
@@ -475,8 +475,8 @@ fun compareType(a: TypeRef, b: TypeRef): Int {
     if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
 
     if (a.classifier != b.classifier) {
-        val aSubTypeOfB = a.isSubTypeOf(TypeCheckerContext, b, false)
-        val bSubTypeOfA = b.isSubTypeOf(TypeCheckerContext, a, false)
+        val aSubTypeOfB = a.isSubTypeOf(context, b, false)
+        val bSubTypeOfA = b.isSubTypeOf(context, a, false)
         if (aSubTypeOfB && !bSubTypeOfA) return -1
         if (bSubTypeOfA && !aSubTypeOfB) return 1
     } else {

@@ -18,7 +18,6 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
-import com.ivianuu.injekt.compiler.resolution.TypeCheckerContext
 import com.ivianuu.injekt.test.*
 import org.jetbrains.kotlin.analyzer.*
 import org.jetbrains.kotlin.builtins.*
@@ -34,7 +33,7 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.*
 import org.jetbrains.kotlin.types.model.*
 
 fun withTypeCheckerContext(
-    block: TypeCheckerContext.() -> Unit,
+    block: TypeCheckerTestContext.() -> Unit,
 ) {
     codegen(
         """
@@ -54,7 +53,7 @@ fun withTypeCheckerContext(
                                 bindingTrace: BindingTrace,
                                 files: Collection<KtFile>,
                             ): AnalysisResult? {
-                                block(TypeCheckerContext(module))
+                                block(TypeCheckerTestContext(module))
                                 return null
                             }
                         }
@@ -65,7 +64,7 @@ fun withTypeCheckerContext(
     )
 }
 
-class TypeCheckerContext(val module: ModuleDescriptor) {
+class TypeCheckerTestContext(val module: ModuleDescriptor) {
     val injektContext = InjektContext(module)
     val comparable = typeFor(StandardNames.FqNames.comparable)
     val anyType = typeFor(StandardNames.FqNames.any.toSafe())
@@ -179,13 +178,13 @@ class TypeCheckerContext(val module: ModuleDescriptor) {
     }
 
     infix fun TypeRef.shouldBeSubTypeOf(other: TypeRef) {
-        if (!isSubTypeOf(TypeCheckerContext, other, false)) {
+        if (!isSubTypeOf(injektContext, other, false)) {
             throw AssertionError("'$this' is not sub type of '$other'")
         }
     }
 
     infix fun TypeRef.shouldNotBeSubTypeOf(other: TypeRef) {
-        if (isSubTypeOf(TypeCheckerContext, other, false)) {
+        if (isSubTypeOf(injektContext, other, false)) {
             throw AssertionError("'$this' is sub type of '$other'")
         }
     }

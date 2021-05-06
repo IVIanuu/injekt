@@ -128,7 +128,7 @@ class TypeSubstitutionTest {
         map[typeParameterS.classifier] shouldBe stringType.qualified(qualifier2)
     }
 
-    private fun TypeCheckerContext.getSubstitutionMap(
+    private fun TypeCheckerTestContext.getSubstitutionMap(
         a: TypeRef,
         b: TypeRef
     ): Map<ClassifierRef, TypeRef> {

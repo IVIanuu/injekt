@@ -44,8 +44,14 @@ class SubtypingTest {
 
     @Test
     fun testMatchingGenericTypeIsAssignable() = withTypeCheckerContext {
-        listType.typeWith(listOf(stringType)) shouldBeAssignableTo
-                listType.typeWith(typeParameter())
+        listType.typeWith(typeParameter()) shouldBeAssignableTo
+                listType.typeWith(listOf(stringType))
+    }
+
+    @Test
+    fun testMatchingGenericTypeIsAssignable8() = withTypeCheckerContext {
+        listType.typeWith(typeParameter().qualified(qualifier1)) shouldBeAssignableTo
+                listType.typeWith(listOf(stringType.qualified(qualifier1)))
     }
 
     @Test
@@ -310,10 +316,10 @@ class SubtypingTest {
                 .copy(isMarkedComposable = true)
                 .qualified(qualifier1)
         ) shouldNotBeAssignableTo typeParameter(
-                function(0)
-                    .copy(isMarkedComposable = true)
-                    .qualified(qualifier2)
-            )
+            function(0)
+                .copy(isMarkedComposable = true)
+                .qualified(qualifier2)
+        )
     }
 
     @Test
