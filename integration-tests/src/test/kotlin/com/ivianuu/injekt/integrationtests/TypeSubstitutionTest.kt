@@ -52,9 +52,9 @@ class TypeSubstitutionTest {
 
     @Test
     fun testGetSubstitutionMapWithExtraTypeParameter() = withTypeCheckerContext {
-        val typeParameterU = typeParameter()
-        val typeParameterS = typeParameter(listType.typeWith(typeParameterU))
-        val typeParameterT = typeParameter(typeParameterS)
+        val typeParameterU = typeParameter(fqName = FqName("U"))
+        val typeParameterS = typeParameter(listType.typeWith(typeParameterU), fqName = FqName("S"))
+        val typeParameterT = typeParameter(typeParameterS, fqName = FqName("T"))
         val substitutionType = listType.typeWith(stringType)
         val map = getSubstitutionMap(substitutionType, typeParameterT)
         map[typeParameterT.classifier] shouldBe substitutionType
@@ -92,7 +92,9 @@ class TypeSubstitutionTest {
                 )
             )
         )
+        // @MyQualifier<TP2> TP1
         val superType = typeParameter1.qualified(qualifier.defaultType.typeWith(typeParameter2))
+        // @MyQualifier<Int> String
         val substitutionType = stringType.qualified(qualifier.defaultType.typeWith(intType))
         val map = getSubstitutionMap(substitutionType, superType)
         map[typeParameter1.classifier] shouldBe stringType
