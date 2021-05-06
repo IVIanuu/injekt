@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.resolve.calls.inference.components.*
 import org.jetbrains.kotlin.resolve.calls.inference.model.*
 import org.jetbrains.kotlin.resolve.constants.*
@@ -76,27 +77,29 @@ fun TypeRef.isSubTypeOf(
 
     if (isNullableType && !superType.isNullableType) return false
 
+    val thisQualifiers = (subtypeView(context.injektContext.anyType.classifier) ?: this).qualifiers
+    val superQualifiers = (superType.subtypeView(context.injektContext.anyType.classifier) ?: superType).qualifiers
+
+    if (!thisQualifiers.areMatchingQualifiers(context, superQualifiers, exactQualifiers) &&
+        classifier.fqName != InjektFqNames.Nothing)
+            return false
+
     if (classifier.fqName == InjektFqNames.Nothing)
-        return qualifiers.isEmpty() ||
-                qualifiers.areMatchingQualifiers(context, superType.qualifiers, exactQualifiers)
+        return true
 
     if (superType.classifier.fqName == InjektFqNames.Any)
-        return superType.qualifiers.isEmpty() ||
-                qualifiers.areMatchingQualifiers(context, superType.qualifiers, exactQualifiers)
+        return true
 
     subtypeView(superType.classifier)
-        ?.let { return it.isSubTypeOfSameClassifier(context, superType, exactQualifiers) }
+        ?.let { return it.isSubTypeOfSameClassifier(context, superType) }
 
     return false
 }
 
 private fun TypeRef.isSubTypeOfSameClassifier(
     context: TypeCheckerContext,
-    superType: TypeRef,
-    exactQualifiers: Boolean
+    superType: TypeRef
 ): Boolean {
-    if (!qualifiers.areMatchingQualifiers(context, superType.qualifiers, exactQualifiers))
-        return false
     if (isMarkedComposable != superType.isMarkedComposable) return false
 
     for (i in arguments.indices) {
@@ -151,16 +154,69 @@ sealed class TypeContextError {
 
 class VariableWithConstraints(val typeVariable: ClassifierRef) {
     val constraints = mutableListOf<Constraint>()
+
+    fun addConstraint(constraint: Constraint): Boolean {
+        if (constraint in constraints) return false
+
+        for (previousConstraint in constraints) {
+            if (previousConstraint.type == constraint.type) {
+                if (newConstraintIsUseless(previousConstraint, constraint)) {
+                    return false
+                }
+
+                val isMatchingForSimplification = when (previousConstraint.kind) {
+                    Constraint.Kind.LOWER -> constraint.kind == Constraint.Kind.UPPER
+                    Constraint.Kind.UPPER -> constraint.kind == Constraint.Kind.LOWER
+                    Constraint.Kind.EQUAL -> true
+                }
+                if (isMatchingForSimplification) {
+                    val actualConstraint = if (constraint.kind != Constraint.Kind.EQUAL) {
+                        Constraint(
+                            typeVariable,
+                            constraint.type,
+                            Constraint.Kind.EQUAL,
+                            constraint.position
+                        )
+                    } else constraint
+                    constraints += actualConstraint
+                    return true
+                }
+            }
+        }
+
+        constraints += constraint
+
+        return true
+    }
+
+    private fun newConstraintIsUseless(old: Constraint, new: Constraint): Boolean =
+        when (old.kind) {
+            Constraint.Kind.EQUAL -> true
+            Constraint.Kind.LOWER -> new.kind == Constraint.Kind.LOWER
+            Constraint.Kind.UPPER -> new.kind == Constraint.Kind.UPPER
+        }
 }
 
 data class Constraint(
     val typeVariable: ClassifierRef,
     val type: TypeRef,
-    val kind: Kind
+    val kind: Kind,
+    val position: ConstraintPosition
 ) {
+    val initTrace: String = try {
+        error("")
+    } catch (e: Throwable) {
+        e.stackTraceToString()
+    }
     enum class Kind {
         LOWER, UPPER, EQUAL
     }
+}
+
+sealed class ConstraintPosition {
+    object FixVariable : ConstraintPosition()
+    object DeclaredUpperBound : ConstraintPosition()
+    object Unknown : ConstraintPosition()
 }
 
 fun Constraint.Kind.opposite() = when (this) {
@@ -201,6 +257,13 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
 
     val isOk: Boolean get() = errors.isEmpty()
 
+    private var possibleNewConstraints: MutableList<Constraint>? = null
+
+    private fun addPossibleNewConstraint(constraint: Constraint) {
+        (possibleNewConstraints ?: mutableListOf<Constraint>()
+            .also { possibleNewConstraints = it }) += constraint
+    }
+
     fun addStaticTypeParameter(typeParameter: ClassifierRef) {
         staticTypeParameters += typeParameter
     }
@@ -210,12 +273,65 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         val variableWithConstraints = VariableWithConstraints(typeParameter)
         typeVariables[typeParameter] = variableWithConstraints
         typeParameter.superTypes.forEach {
-            addConstraint(typeParameter.defaultType, it, Constraint.Kind.UPPER)
+            addInitialSubTypeConstraint(typeParameter.defaultType, it, false)
         }
     }
 
     fun addInitialSubTypeConstraint(subType: TypeRef, superType: TypeRef, exactQualifiers: Boolean) {
-        checkConstraint(subType, superType, exactQualifiers)
+        runIsSubTypeOf(subType, superType, exactQualifiers)
+        processConstraints()
+    }
+
+    fun addInitialEqualityConstraint(a: TypeRef, b: TypeRef) {
+        val (typeVariable, equalType) = when {
+            a.classifier.isTypeParameter -> a to b
+            b.classifier.isTypeParameter -> b to a
+            else -> return
+        }
+
+        addPossibleNewConstraint(Constraint(
+            typeVariable.classifier, equalType, Constraint.Kind.EQUAL, ConstraintPosition.FixVariable))
+        processConstraints()
+    }
+
+    private fun processConstraints() {
+        while (possibleNewConstraints != null) {
+            val constraintsToProcess = possibleNewConstraints!!
+                .also { possibleNewConstraints = null }
+            var anyAdded = false
+            for (constraint in constraintsToProcess) {
+                if (shouldWeSkipConstraint(constraint)) continue
+                val variableWithConstraints = typeVariables[constraint.typeVariable]!!
+                val wasAdded = variableWithConstraints.addConstraint(constraint)
+                anyAdded = anyAdded || wasAdded
+                if (wasAdded) {
+                    directWithVariable(constraint.typeVariable, constraint)
+                    insideOtherConstraint(constraint.typeVariable, constraint)
+                }
+            }
+            if (!anyAdded) break
+        }
+    }
+
+    private fun shouldWeSkipConstraint(constraint: Constraint): Boolean {
+        if (constraint.kind == Constraint.Kind.EQUAL)
+            return false
+
+        val constraintType = constraint.type
+
+        if (constraintType.classifier == constraint.typeVariable) {
+            if (constraintType.isMarkedNullable && constraint.kind == Constraint.Kind.LOWER)
+                return false
+            return true
+        }
+        if (constraint.position is ConstraintPosition.DeclaredUpperBound &&
+            constraint.kind == Constraint.Kind.UPPER &&
+            constraintType.classifier.fqName == InjektFqNames.Any &&
+            constraintType.isMarkedNullable
+        )
+            return true
+
+        return false
     }
 
     fun complete() {
@@ -223,20 +339,19 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         while (true) {
             val unfixedTypeVariables = typeVariables
                 .filterKeys { it !in fixedTypeVariables }
-            if (unfixedTypeVariables.isEmpty()) break
-            val typeVariableToFix = unfixedTypeVariables
                 .values
+            if (unfixedTypeVariables.isEmpty()) break
+            var typeVariableToFix = unfixedTypeVariables
                 .firstOrNull { typeVariable ->
                     typeVariable.getNestedTypeVariables()
                         .all { it.classifier in fixedTypeVariables }
                 }
             if (typeVariableToFix == null) {
+                typeVariableToFix = unfixedTypeVariables.first()
+            }
+            if (!fixVariable(typeVariableToFix)) {
                 addError(TypeContextError.NotEnoughInformation)
-            } else {
-                if (!fixVariable(typeVariableToFix)) {
-                    addError(TypeContextError.NotEnoughInformation)
-                    break
-                }
+                break
             }
         }
     }
@@ -245,7 +360,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         val type = getFixedType(variableWithConstraints)
             ?: return false
 
-        addConstraint(variableWithConstraints.typeVariable.defaultType, type, Constraint.Kind.EQUAL)
+        addInitialEqualityConstraint(variableWithConstraints.typeVariable.defaultType, type)
 
         typeVariables
             .filterNot { it.key == variableWithConstraints.typeVariable || it.key in fixedTypeVariables }
@@ -297,7 +412,6 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         }
         /*if (!trivialConstraintTypeInferenceOracle.isSuitableResultedType(resultType)) {
             if (resultType.isNullableType() && checkSingleLowerNullabilityConstraint(filteredConstraints)) return false
-            if (isReified(variableWithConstraints.typeVariable)) return false
         }*/
 
         return true
@@ -368,7 +482,8 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
     }
 
     private fun addUpperConstraint(typeVariable: TypeRef, superType: TypeRef): Boolean {
-        addConstraint(typeVariable, superType, Constraint.Kind.UPPER)
+        addPossibleNewConstraint(Constraint(
+            typeVariable.classifier, superType, Constraint.Kind.UPPER, ConstraintPosition.Unknown))
 
         var result = true
 
@@ -392,30 +507,17 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
     private fun addLowerConstraint(typeVariable: TypeRef, subType: TypeRef): Boolean {
         var lowerConstraint = subType
 
-        addConstraint(typeVariable, lowerConstraint, Constraint.Kind.LOWER)
+        addPossibleNewConstraint(Constraint(typeVariable.classifier,
+            lowerConstraint, Constraint.Kind.LOWER, ConstraintPosition.Unknown))
 
         return true
-    }
-
-    private fun addConstraint(
-        typeVariable: TypeRef,
-        type: TypeRef,
-        kind: Constraint.Kind
-    ) {
-        check(typeVariable.classifier.isTypeParameter)
-        val constraints = typeVariables[typeVariable.classifier]!!.constraints
-        val constraint = Constraint(typeVariable.classifier, type, kind)
-        if (constraint in constraints) return
-        constraints += constraint
-        directWithVariable(typeVariable.classifier, constraint)
-        insideOtherConstraint(typeVariable.classifier, constraint)
     }
 
     private fun directWithVariable(typeVariable: ClassifierRef, constraint: Constraint) {
         if (constraint.kind != Constraint.Kind.LOWER) {
             typeVariables[typeVariable]!!.constraints.toList().forEach {
                 if (it.kind != Constraint.Kind.UPPER) {
-                    addNewIncorporatedConstraint(it.type, constraint.type)
+                    runIsSubTypeOf(it.type, constraint.type, false)
                 }
             }
         }
@@ -423,7 +525,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         if (constraint.kind != Constraint.Kind.UPPER) {
             typeVariables[typeVariable]!!.constraints.toList().forEach {
                 if (it.kind != Constraint.Kind.LOWER) {
-                    addNewIncorporatedConstraint(constraint.type, it.type)
+                    runIsSubTypeOf(constraint.type, it.type, false)
                 }
             }
         }
@@ -440,11 +542,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         }
     }
 
-    private fun addNewIncorporatedConstraint(subType: TypeRef, superType: TypeRef) {
-        checkConstraint(subType, superType, false)
-    }
-
-    private fun checkConstraint(subType: TypeRef, superType: TypeRef, exactQualifiers: Boolean) {
+    private fun runIsSubTypeOf(subType: TypeRef, superType: TypeRef, exactQualifiers: Boolean) {
         if (!subType.isSubTypeOf(this, superType, exactQualifiers)) {
             addError(TypeContextError.ConstraintError(subType, superType, Constraint.Kind.UPPER))
         }
@@ -487,11 +585,55 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         }
 
         if (baseConstraint.kind != Constraint.Kind.LOWER) {
-            addConstraint(targetVariable.defaultType, type, Constraint.Kind.UPPER)
+            if (!isGeneratedConstraintTrivial(
+                    baseConstraint,
+                    otherConstraint,
+                    type,
+                    Constraint.Kind.UPPER
+            )) {
+                addPossibleNewConstraint(Constraint(targetVariable, type,
+                    Constraint.Kind.UPPER, ConstraintPosition.Unknown))
+            }
         }
         if (baseConstraint.kind != Constraint.Kind.UPPER) {
-            addConstraint(targetVariable.defaultType, type, Constraint.Kind.LOWER)
+            if (!isGeneratedConstraintTrivial(
+                    baseConstraint,
+                    otherConstraint,
+                    type,
+                    Constraint.Kind.LOWER
+                )) {
+                addPossibleNewConstraint(Constraint(targetVariable, type,
+                    Constraint.Kind.LOWER, ConstraintPosition.Unknown))
+            }
         }
+    }
+
+    private fun isGeneratedConstraintTrivial(
+        baseConstraint: Constraint,
+        otherConstraint: Constraint,
+        generatedConstraintType: TypeRef,
+        kind: Constraint.Kind
+    ): Boolean {
+        if (kind == Constraint.Kind.UPPER && generatedConstraintType.classifier ==
+            injektContext.nothingType.classifier) return true
+        if (kind == Constraint.Kind.LOWER && generatedConstraintType == injektContext.nullableAnyType)
+            return true
+
+        // If types from constraints that will be used to generate new constraint already contains `Nothing(?)`,
+        // then we can't decide that resulting constraint will be useless
+        if (baseConstraint.type.anyType {
+                it == injektContext.nothingType ||
+                        it == injektContext.nullableNothingType
+        }) return false
+        if (otherConstraint.type.anyType {
+                it == injektContext.nothingType ||
+                        it == injektContext.nullableNothingType
+        }) return false
+
+        // It's important to preserve constraints with nullable Nothing: `Nothing? <: T` (see implicitNothingConstraintFromReturn.kt test)
+        //if (generatedConstraintType.containsOnlyNonNullableNothing()) return true
+
+        return false
     }
 
     private fun addError(error: TypeContextError) {
