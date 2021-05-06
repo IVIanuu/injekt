@@ -130,6 +130,32 @@ class TypeSubstitutionTest {
         map[typeParameterS.classifier] shouldBe stringType.qualified(qualifier2)
     }
 
+    @Test
+    fun testGetSubstitutionMapWithQualifiedNullableAny() = withTypeCheckerContext {
+        val qualifier = ClassifierRef(
+            "Trigger",
+            FqName("Trigger"),
+            typeParameters = listOf(
+                ClassifierRef(
+                    key = "Trigger.S",
+                    fqName = FqName("Trigger.S")
+                )
+            )
+        ).defaultType
+
+        val triggerImplS = typeParameter(fqName = FqName("triggerImpl.S"))
+        val triggerImplT = typeParameter(
+            anyNType.qualified(qualifier.typeWith(triggerImplS)),
+            fqName = FqName("triggerImpl.T")
+        )
+
+        val candidate = stringType.qualified(qualifier.typeWith(intType))
+
+        val map = getSubstitutionMap(candidate, triggerImplT)
+        map[triggerImplS.classifier] shouldBe intType
+        map[triggerImplT.classifier] shouldBe candidate
+    }
+
     private fun TypeCheckerTestContext.getSubstitutionMap(
         a: TypeRef,
         b: TypeRef

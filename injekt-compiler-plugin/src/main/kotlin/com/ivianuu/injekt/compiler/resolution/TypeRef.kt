@@ -362,7 +362,8 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
         val newNullability = if (isStarProjection) substitution.isMarkedNullable
         else isMarkedNullable || substitution.isMarkedNullable
         val newGiven = isGiven || substitution.isGiven
-        val newVariance = variance
+        val newVariance = if (substitution.variance != TypeVariance.INV) substitution.variance
+        else variance
         return if (newQualifiers != substitution.qualifiers ||
             newNullability != substitution.isMarkedNullable ||
             newGiven != substitution.isGiven ||

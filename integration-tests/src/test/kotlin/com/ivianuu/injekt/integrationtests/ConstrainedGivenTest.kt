@@ -101,9 +101,8 @@ class ConstrainedGivenTest {
             @Qualifier annotation class Trigger<S>
             @Given fun <@Given @ForTypeKey T : @Trigger<S> Any?, @ForTypeKey S> triggerImpl() = 
                 typeKeyOf<S>()
-        """,
-        """
-           @Given fun foo(): @Trigger<Bar> Foo = Foo() 
+
+            @Given fun foo(): @Trigger<Bar> Foo = Foo() 
         """,
         """
            fun invoke() = given<TypeKey<Bar>>().value 

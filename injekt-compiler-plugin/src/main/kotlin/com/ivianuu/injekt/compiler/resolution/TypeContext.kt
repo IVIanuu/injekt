@@ -568,30 +568,22 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         val isBaseGenericType = baseConstraint.type.arguments.isNotEmpty()
         val finalOtherType = when (otherConstraint.kind) {
             ConstraintKind.EQUAL -> otherConstraint.type
-                .copy(
-                    isMarkedNullable = baseConstraint.type.isMarkedNullable,
-                    qualifiers = baseConstraint.type.qualifiers
-                )
             ConstraintKind.UPPER -> {
                 if (baseConstraint.kind == ConstraintKind.LOWER && !isBaseGenericType) {
                     injektContext.nothingType
-                }  else {
+                } else if (baseConstraint.kind == ConstraintKind.UPPER && !isBaseGenericType) {
                     otherConstraint.type
-                        .copy(
-                            isMarkedNullable = baseConstraint.type.isMarkedNullable,
-                            qualifiers = baseConstraint.type.qualifiers
-                        )
+                }  else {
+                    otherConstraint.type.copy(variance = TypeVariance.OUT)
                 }
             }
             ConstraintKind.LOWER -> {
                 if (baseConstraint.kind == ConstraintKind.UPPER && !isBaseGenericType) {
                     injektContext.nullableAnyType
-                } else {
+                } else if (baseConstraint.kind == ConstraintKind.LOWER && !isBaseGenericType) {
                     otherConstraint.type
-                        .copy(
-                            isMarkedNullable = baseConstraint.type.isMarkedNullable,
-                            qualifiers = baseConstraint.type.qualifiers
-                        )
+                } else {
+                    otherConstraint.type.copy(variance = TypeVariance.IN)
                 }
             }
         }
@@ -706,13 +698,13 @@ private fun filterSupertypes(
     val supertypes = list.toMutableList()
     val iterator = supertypes.iterator()
     while (iterator.hasNext()) {
-        val potentialSubtype = iterator.next()
-        val isSubtype = supertypes.any { supertype ->
-            supertype !== potentialSubtype &&
-                    potentialSubtype.isSubTypeOf(context, supertype, false)
+        val potentialSubType = iterator.next()
+        val isSubType = supertypes.any { supertype ->
+            supertype !== potentialSubType &&
+                    potentialSubType.isSubTypeOf(context, supertype, false)
         }
 
-        if (isSubtype) iterator.remove()
+        if (isSubType) iterator.remove()
     }
 
     return supertypes
