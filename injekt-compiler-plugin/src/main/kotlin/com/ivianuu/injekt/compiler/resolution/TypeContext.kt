@@ -576,14 +576,12 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         newConstraint: TypeRef,
         kind: ConstraintKind
     ) {
-        if (targetVariable in getNestedTypeVariables(newConstraint))
-            return
+        //if (targetVariable in getNestedTypeVariables(newConstraint)) return
 
         val derivedFrom = baseConstraint.derivedFrom.toMutableSet().also {
             it.addAll(otherConstraint.derivedFrom)
         }
-        if (otherVariable in derivedFrom)
-            return
+        //if (otherVariable in derivedFrom) return
 
         derivedFrom.add(otherVariable)
 

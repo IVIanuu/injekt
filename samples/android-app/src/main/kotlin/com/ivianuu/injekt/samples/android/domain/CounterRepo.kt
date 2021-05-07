@@ -21,6 +21,22 @@ import com.ivianuu.injekt.samples.android.data.*
 import com.ivianuu.injekt.scope.*
 import kotlinx.coroutines.flow.*
 
+@Target(AnnotationTarget.TYPE)
+@Qualifier
+annotation class Qualifier1
+
+@Target(AnnotationTarget.TYPE)
+@Qualifier
+annotation class Qualifier2
+
+// Qualifier1<String>
+@Given
+val lolo: @Qualifier1 String = ""
+
+// Qualifier1<Qualifier2<String>>
+@Given
+val rosso: @Qualifier1 @Qualifier2 String = ""
+
 @Given
 @Scoped<AppGivenScope>
 class CounterRepo(@Given private val storage: CounterStorage) {
