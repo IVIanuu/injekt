@@ -154,18 +154,15 @@ class VariableWithConstraints(val typeVariable: ClassifierRef) {
     val constraints = mutableListOf<Constraint>()
 
     fun addConstraint(constraint: Constraint): Boolean {
-        if (constraint in constraints) return false
-
-        for (previousConstraint in constraints) {
+        for (previousConstraint in constraints.toList()) {
             if (previousConstraint.type == constraint.type) {
-                if (newConstraintIsUseless(previousConstraint, constraint)) {
+                if (newConstraintIsUseless(previousConstraint, constraint))
                     return false
-                }
 
                 val isMatchingForSimplification = when (previousConstraint.kind) {
+                    ConstraintKind.EQUAL -> true
                     ConstraintKind.LOWER -> constraint.kind == ConstraintKind.UPPER
                     ConstraintKind.UPPER -> constraint.kind == ConstraintKind.LOWER
-                    ConstraintKind.EQUAL -> true
                 }
                 if (isMatchingForSimplification) {
                     val actualConstraint = if (constraint.kind != ConstraintKind.EQUAL) {
@@ -176,6 +173,7 @@ class VariableWithConstraints(val typeVariable: ClassifierRef) {
                             constraint.position
                         )
                     } else constraint
+                    constraints.removeAll { it.type == actualConstraint.type }
                     constraints += actualConstraint
                     return true
                 }
@@ -188,7 +186,7 @@ class VariableWithConstraints(val typeVariable: ClassifierRef) {
     }
 
     private fun newConstraintIsUseless(old: Constraint, new: Constraint): Boolean =
-        when (old.kind) {
+        old.kind == new.kind || when (old.kind) {
             ConstraintKind.EQUAL -> true
             ConstraintKind.LOWER -> new.kind == ConstraintKind.LOWER
             ConstraintKind.UPPER -> new.kind == ConstraintKind.UPPER
@@ -319,8 +317,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         }
         if (constraint.position is ConstraintPosition.DeclaredUpperBound &&
             constraint.kind == ConstraintKind.UPPER &&
-            constraintType.classifier.fqName == InjektFqNames.Any &&
-            constraintType.isMarkedNullable
+            constraintType == injektContext.nullableAnyType
         ) return true
 
         return false
@@ -401,9 +398,11 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
     }
 
     private fun isSuitableType(resultType: TypeRef, variableWithConstraints: VariableWithConstraints): Boolean {
+        if (resultType.classifier.fqName == InjektFqNames.Nothing) return false
         val filteredConstraints = variableWithConstraints.constraints//.filter { isProperTypeForFixation(it.type) }
         for (constraint in filteredConstraints) {
-            if (!checkConstraint(constraint.type, constraint.kind, resultType)) return false
+            if (!checkConstraint(constraint.type, constraint.kind, resultType))
+                return false
         }
         /*if (!trivialConstraintTypeInferenceOracle.isSuitableResultedType(resultType)) {
             if (resultType.isNullableType() && checkSingleLowerNullabilityConstraint(filteredConstraints)) return false
@@ -423,9 +422,9 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
     }
 
     private fun findSuperType(variableWithConstraints: VariableWithConstraints): TypeRef? {
-        val upperConstraints = variableWithConstraints.constraints.filter {
-            it.kind == ConstraintKind.UPPER
-        }
+        val upperConstraints = variableWithConstraints
+            .constraints
+            .filter { it.kind == ConstraintKind.UPPER }
         return if (upperConstraints.isNotEmpty()) {
             intersectTypes(this, upperConstraints.map { it.type })
         } else null
@@ -451,9 +450,11 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
 
     private fun VariableWithConstraints.getNestedTypeVariables(): List<TypeRef> {
         val nestedTypeVariables = mutableListOf<TypeRef>()
-        constraints.forEach {
-            if (it.type.classifier in typeVariables)
-                nestedTypeVariables += it.type
+        constraints.forEach { constraint ->
+            constraint.type.visitRecursive {
+                if (it.classifier in typeVariables)
+                    nestedTypeVariables += it
+            }
         }
         return nestedTypeVariables
     }
@@ -616,8 +617,8 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         generatedConstraintType: TypeRef,
         kind: ConstraintKind
     ): Boolean {
-        if (kind == ConstraintKind.UPPER && generatedConstraintType.classifier ==
-            injektContext.nothingType.classifier) return true
+        if (kind == ConstraintKind.UPPER && generatedConstraintType == injektContext.nothingType)
+            return true
         if (kind == ConstraintKind.LOWER && generatedConstraintType == injektContext.nullableAnyType)
             return true
 
@@ -640,28 +641,6 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
 
     private fun addError(error: TypeContextError) {
         errors += error
-    }
-
-    private fun containsConstrainingTypeWithoutProjection(
-        newConstraint: TypeRef,
-        otherConstraint: Constraint
-    ): Boolean = newConstraint.anyType {
-        it.classifier == otherConstraint.type.classifier && it.variance == TypeVariance.INV
-    }
-
-    private fun isPotentialUsefulNullabilityConstraint(
-        newConstraint: TypeRef,
-        otherConstraint: TypeRef,
-        kind: ConstraintKind
-    ): Boolean {
-        if (newConstraint.classifier != injektContext.nothingType.classifier) return false
-
-        val otherConstraintCanAddNullabilityToNewOne =
-            !newConstraint.isNullableType && otherConstraint.isNullableType && kind == ConstraintKind.LOWER
-        val newConstraintCanAddNullabilityToOtherOne =
-            newConstraint.isNullableType && !otherConstraint.isNullableType && kind == ConstraintKind.UPPER
-
-        return otherConstraintCanAddNullabilityToNewOne || newConstraintCanAddNullabilityToOtherOne
     }
 
     private fun getNestedTypeVariables(type: TypeRef): List<ClassifierRef> {

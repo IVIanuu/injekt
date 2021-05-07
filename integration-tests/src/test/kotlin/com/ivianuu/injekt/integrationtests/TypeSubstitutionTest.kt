@@ -143,8 +143,7 @@ class TypeSubstitutionTest {
 
         val candidate = stringType.qualified(qualifier.typeWith(intType))
 
-        val map = getSubstitutionMap(candidate, triggerImplT, 
-            allowFixingToDeclaredUpperBound = false)
+        val map = getSubstitutionMap(candidate, triggerImplT)
         map[triggerImplS.classifier] shouldBe intType
         map[triggerImplT.classifier] shouldBe candidate
     }
@@ -183,8 +182,7 @@ class TypeSubstitutionTest {
             .single().classifier
         val map = getSubstitutionMap(
             givenCoroutineScopeElementReturnType,
-            installElementModuleT.defaultType,
-            allowFixingToDeclaredUpperBound = false
+            installElementModuleT.defaultType
         )
         map[installElementModuleT] shouldBe givenCoroutineScopeElementReturnType
         map[installElementModuleU] shouldBe
@@ -195,11 +193,9 @@ class TypeSubstitutionTest {
     private fun TypeCheckerTestContext.getSubstitutionMap(
         a: TypeRef,
         b: TypeRef,
-        staticTypeParameters: List<ClassifierRef> = emptyList(),
-        allowFixingToDeclaredUpperBound: Boolean = true
+        staticTypeParameters: List<ClassifierRef> = emptyList()
     ): Map<ClassifierRef, TypeRef> {
-        val context = a.buildContext(injektContext, staticTypeParameters,
-            b, allowFixingToDeclaredUpperBound)
+        val context = a.buildContext(injektContext, staticTypeParameters, b)
         return context.getSubstitutionMap()
     }
 }
