@@ -199,8 +199,7 @@ data class Constraint(
     val typeVariable: ClassifierRef,
     val type: TypeRef,
     val kind: ConstraintKind,
-    val position: ConstraintPosition,
-    val isNullabilityConstraint: Boolean = false
+    val position: ConstraintPosition
 )
 
 enum class ConstraintKind {
@@ -604,29 +603,11 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
     ) {
         if (targetVariable in getNestedTypeVariables(newConstraint)) return
 
-        val isUsefulForNullabilityConstraint =
-            isPotentialUsefulNullabilityConstraint(newConstraint, otherConstraint.type, otherConstraint.kind)
-        val isFromVariableFixation = baseConstraint.position is ConstraintPosition.FixVariable
-                || otherConstraint.position is ConstraintPosition.FixVariable
-
-        if (otherConstraint.kind != ConstraintKind.EQUAL &&
-            !isUsefulForNullabilityConstraint &&
-            !isFromVariableFixation &&
-            !containsConstrainingTypeWithoutProjection(newConstraint, otherConstraint)
-        ) return
-
         if (isGeneratedConstraintTrivial(baseConstraint, otherConstraint,
                 newConstraint, kind)) return
 
-        val isNewConstraintUsefulForNullability = isUsefulForNullabilityConstraint &&
-                newConstraint == injektContext.nullableNothingType
-        val isOtherConstraintUsefulForNullability = otherConstraint.isNullabilityConstraint &&
-                otherConstraint.type == injektContext.nullableNothingType
-        val isNullabilityConstraint = isNewConstraintUsefulForNullability ||
-                isOtherConstraintUsefulForNullability
-
         addPossibleNewConstraint(Constraint(targetVariable, newConstraint,
-            kind, ConstraintPosition.Unknown, isNullabilityConstraint))
+            kind, ConstraintPosition.Unknown))
     }
 
     private fun isGeneratedConstraintTrivial(
