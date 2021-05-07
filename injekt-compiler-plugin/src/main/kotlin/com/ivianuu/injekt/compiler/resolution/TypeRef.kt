@@ -334,8 +334,9 @@ val STAR_PROJECTION_TYPE = SimpleTypeRef(
     isStarProjection = true
 )
 
-fun TypeRef.anyType(action: (TypeRef) -> Boolean): Boolean =
-    action(this) || arguments.any { it.anyType(action) } || qualifiers.any { it.anyType(action) }
+fun TypeRef.anyType(withQualifiers: Boolean = true, action: (TypeRef) -> Boolean): Boolean =
+    action(this) || arguments.any { it.anyType(withQualifiers, action) } ||
+            (withQualifiers && qualifiers.any { it.anyType(withQualifiers, action) })
 
 fun TypeRef.anySuperType(action: (TypeRef) -> Boolean): Boolean =
     action(this) || superTypes.any { it.anySuperType(action) }

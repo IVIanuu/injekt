@@ -67,8 +67,8 @@ fun withTypeCheckerContext(
 class TypeCheckerTestContext(val module: ModuleDescriptor) {
     val injektContext = InjektContext(module)
     val comparable = typeFor(StandardNames.FqNames.comparable)
-    val anyType = typeFor(StandardNames.FqNames.any.toSafe())
-    val anyNType = anyType.copy(isMarkedNullable = true)
+    val any = typeFor(StandardNames.FqNames.any.toSafe())
+    val nullableAny = any.nullable()
     val floatType = typeFor(StandardNames.FqNames._float.toSafe())
     val intType = typeFor(StandardNames.FqNames._int.toSafe())
     val stringType = typeFor(StandardNames.FqNames.string.toSafe())
@@ -77,7 +77,8 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     val mutableListType = typeFor(StandardNames.FqNames.mutableList)
     val mapType = typeFor(StandardNames.FqNames.map)
     val starProjectedType = STAR_PROJECTION_TYPE
-    val nothingType = typeFor(StandardNames.FqNames.nothing.toSafe())
+    val nothing = typeFor(StandardNames.FqNames.nothing.toSafe())
+    val nullableNothing = nothing.nullable()
 
     fun composableFunction(parameterCount: Int) = typeFor(
         FqName("kotlin.Function$parameterCount")
@@ -99,7 +100,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     ) = ClassifierRef(
         key = fqName.asString(),
         fqName = fqName,
-        superTypes = if (superTypes.isNotEmpty()) superTypes.toList() else listOf(anyType),
+        superTypes = if (superTypes.isNotEmpty()) superTypes.toList() else listOf(any),
     ).defaultType
 
     fun typeAlias(
@@ -119,7 +120,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     ) = ClassifierRef(
         key = fqName.asString(),
         fqName = fqName,
-        superTypes = if (superTypes.isNotEmpty()) superTypes.toList() else listOf(anyType),
+        superTypes = if (superTypes.isNotEmpty()) superTypes.toList() else listOf(any),
         typeParameters = typeParameters
     ).defaultType
 
@@ -139,7 +140,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
         key = fqName.asString(),
         fqName = fqName,
         superTypes = if (upperBounds.isNotEmpty()) upperBounds.toList() else
-            listOf(anyType.copy(isMarkedNullable = nullable)),
+            listOf(any.copy(isMarkedNullable = nullable)),
         isTypeParameter = true,
         variance = variance
     ).defaultType
@@ -153,10 +154,9 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
 
     fun TypeRef.shouldBeAssignableTo(
         other: TypeRef,
-        staticTypeParameters: List<ClassifierRef> = emptyList(),
-        equalQualifiers: Boolean = true
+        staticTypeParameters: List<ClassifierRef> = emptyList()
     ) {
-        val context = buildContext(injektContext, staticTypeParameters, other, equalQualifiers)
+        val context = buildContext(injektContext, staticTypeParameters, other)
         if (!context.isOk) {
             throw AssertionError("'$this' is not assignable to '$other'")
         }
@@ -168,23 +168,22 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
 
     fun TypeRef.shouldNotBeAssignableTo(
         other: TypeRef,
-        staticTypeParameters: List<ClassifierRef> = emptyList(),
-        equalQualifiers: Boolean = true
+        staticTypeParameters: List<ClassifierRef> = emptyList()
     ) {
-        val context = buildContext(injektContext, staticTypeParameters, other, equalQualifiers)
+        val context = buildContext(injektContext, staticTypeParameters, other)
         if (context.isOk) {
             throw AssertionError("'$this' is assignable to '$other'")
         }
     }
 
     infix fun TypeRef.shouldBeSubTypeOf(other: TypeRef) {
-        if (!isSubTypeOf(injektContext, other, false)) {
+        if (!isSubTypeOf(injektContext, other)) {
             throw AssertionError("'$this' is not sub type of '$other'")
         }
     }
 
     infix fun TypeRef.shouldNotBeSubTypeOf(other: TypeRef) {
-        if (isSubTypeOf(injektContext, other, false)) {
+        if (isSubTypeOf(injektContext, other)) {
             throw AssertionError("'$this' is sub type of '$other'")
         }
     }

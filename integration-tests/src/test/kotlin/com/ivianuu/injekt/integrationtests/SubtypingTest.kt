@@ -23,6 +23,86 @@ import org.junit.*
 
 class SubtypingTest {
     @Test
+    fun testNullableAnyIsSuperTypeOfEveryOtherType() = withTypeCheckerContext {
+        stringType shouldBeSubTypeOf nullableAny
+        stringType.nullable() shouldBeSubTypeOf nullableAny
+        stringType.qualified(qualifier1) shouldBeSubTypeOf nullableAny
+        stringType.nullable().qualified(qualifier1) shouldBeSubTypeOf nullableAny
+        stringType.copy(isMarkedComposable = true) shouldBeSubTypeOf nullableAny
+        stringType.nullable().copy(isMarkedComposable = true) shouldBeSubTypeOf nullableAny
+    }
+
+    @Test
+    fun testNonNullAnyIsSuperTypeOfEveryOtherNonNullType() = withTypeCheckerContext {
+        stringType shouldBeSubTypeOf any
+        stringType.nullable() shouldNotBeSubTypeOf any
+        stringType.qualified(qualifier1) shouldBeSubTypeOf any
+        stringType.nullable().qualified(qualifier1) shouldNotBeSubTypeOf any
+        stringType.copy(isMarkedComposable = true) shouldBeSubTypeOf any
+        stringType.nullable().copy(isMarkedComposable = true) shouldNotBeSubTypeOf any
+    }
+
+    @Test
+    fun testQualifiedNullableAnyIsSuperTypeOfEveryOtherTypeWithTheSameQualifiers() = withTypeCheckerContext {
+        stringType shouldNotBeSubTypeOf nullableAny.qualified(qualifier1)
+        stringType.nullable() shouldNotBeSubTypeOf nullableAny.qualified(qualifier1)
+        stringType.qualified(qualifier1) shouldBeSubTypeOf nullableAny.qualified(qualifier1)
+        stringType.nullable().qualified(qualifier1) shouldBeSubTypeOf nullableAny.qualified(qualifier1)
+        stringType.copy(isMarkedComposable = true) shouldNotBeSubTypeOf nullableAny.qualified(qualifier1)
+        stringType.qualified(qualifier1).copy(isMarkedComposable = true) shouldBeSubTypeOf nullableAny.qualified(qualifier1)
+    }
+
+    @Test
+    fun testQualifiedNonNullAnyIsSuperTypeOfEveryOtherNonNullTypeWithTheSameQualifiers() = withTypeCheckerContext {
+        stringType shouldNotBeSubTypeOf any.qualified(qualifier1)
+        stringType.nullable() shouldNotBeSubTypeOf any.qualified(qualifier1)
+        stringType.qualified(qualifier1) shouldBeSubTypeOf any.qualified(qualifier1)
+        stringType.nullable().qualified(qualifier1) shouldNotBeSubTypeOf any.qualified(qualifier1)
+        stringType.copy(isMarkedComposable = true) shouldNotBeSubTypeOf any.qualified(qualifier1)
+        stringType.qualified(qualifier1).copy(isMarkedComposable = true) shouldBeSubTypeOf any.qualified(qualifier1)
+    }
+
+    @Test
+    fun testNonNullNothingIsSubTypeOfEveryOtherNonNullType() = withTypeCheckerContext {
+        nothing shouldBeSubTypeOf stringType
+        nothing shouldBeSubTypeOf stringType.nullable()
+        nothing shouldBeSubTypeOf stringType.qualified(qualifier1)
+        nothing shouldBeSubTypeOf stringType.nullable().qualified(qualifier1)
+        nothing shouldBeSubTypeOf stringType.copy(isMarkedComposable = true)
+        nothing shouldBeSubTypeOf stringType.nullable().copy(isMarkedComposable = true)
+    }
+
+    @Test
+    fun testNullableNothingIsSubTypeOfEveryOtherNullableType() = withTypeCheckerContext {
+        nullableNothing shouldNotBeSubTypeOf stringType
+        nullableNothing shouldBeSubTypeOf stringType.nullable()
+        nullableNothing shouldNotBeSubTypeOf stringType.qualified(qualifier1)
+        nullableNothing shouldBeSubTypeOf stringType.nullable().qualified(qualifier1)
+        nullableNothing shouldNotBeSubTypeOf stringType.copy(isMarkedComposable = true)
+        nullableNothing shouldBeSubTypeOf stringType.nullable().copy(isMarkedComposable = true)
+    }
+
+    @Test
+    fun testQualifiedNullableNothingIsSubTypeOfEveryOtherNullableTypeWithTheSameQualifiers() = withTypeCheckerContext {
+        nullableNothing.qualified(qualifier1) shouldNotBeSubTypeOf stringType
+        nullableNothing.qualified(qualifier1) shouldNotBeSubTypeOf stringType.nullable()
+        nullableNothing.qualified(qualifier1) shouldNotBeSubTypeOf stringType.qualified(qualifier1)
+        nullableNothing.qualified(qualifier1) shouldBeSubTypeOf stringType.nullable().qualified(qualifier1)
+        nullableNothing.qualified(qualifier1) shouldNotBeSubTypeOf stringType.copy(isMarkedComposable = true)
+        nullableNothing.qualified(qualifier1) shouldBeSubTypeOf stringType.qualified(qualifier1).nullable().copy(isMarkedComposable = true)
+    }
+
+    @Test
+    fun testQualifiedNonNullNothingIsSubTypeOfEveryOtherNonNullTypeWithTheSameQualifiers() = withTypeCheckerContext {
+        nothing.qualified(qualifier1) shouldNotBeSubTypeOf stringType
+        nothing.qualified(qualifier1) shouldNotBeSubTypeOf stringType.nullable()
+        nothing.qualified(qualifier1) shouldBeSubTypeOf stringType.qualified(qualifier1)
+        nothing.qualified(qualifier1) shouldBeSubTypeOf stringType.nullable().qualified(qualifier1)
+        nothing.qualified(qualifier1) shouldNotBeSubTypeOf stringType.copy(isMarkedComposable = true)
+        nothing.qualified(qualifier1) shouldBeSubTypeOf stringType.qualified(qualifier1).copy(isMarkedComposable = true)
+    }
+
+    @Test
     fun testSimpleTypeWithSameClassifierIsAssignable() = withTypeCheckerContext {
         stringType shouldBeAssignableTo stringType
     }
@@ -96,11 +176,6 @@ class SubtypingTest {
     }
 
     @Test
-    fun testNothingIsAssignableToAnyType() = withTypeCheckerContext {
-        nothingType shouldBeAssignableTo stringType
-    }
-
-    @Test
     fun testInvariant() = withTypeCheckerContext {
         val typeClass = classType(
             typeParameters = listOf(typeParameter(variance = TypeVariance.IN).classifier)
@@ -108,16 +183,6 @@ class SubtypingTest {
         val charSequenceTypeClass = classType(typeClass.typeWith(charSequenceType))
         val stringTypeClass = typeClass.typeWith(stringType)
         charSequenceTypeClass shouldBeAssignableTo stringTypeClass
-    }
-
-    @Test
-    fun testNothingIsAssignableToNullableType() = withTypeCheckerContext {
-        nothingType shouldBeAssignableTo stringType.nullable()
-    }
-
-    @Test
-    fun testNothingIsAssignableToQualifiedType() = withTypeCheckerContext {
-        nothingType shouldBeAssignableTo stringType.qualified(qualifier1)
     }
 
     @Test
@@ -167,13 +232,18 @@ class SubtypingTest {
     }
 
     @Test
-    fun testQualifiedIsSubTypeOfUnqualified() = withTypeCheckerContext {
-        stringType.qualified(qualifier1) shouldBeSubTypeOf stringType
+    fun testQualifiedIsNotSubTypeOfUnqualified() = withTypeCheckerContext {
+        stringType.qualified(qualifier1) shouldNotBeSubTypeOf stringType
     }
 
     @Test
     fun testQualifiedIsNotAssignableToUnqualified() = withTypeCheckerContext {
         stringType.qualified(qualifier1) shouldNotBeAssignableTo stringType
+    }
+
+    @Test
+    fun testUnqualifiedTypeParameterIsNotAssignableToQualifiedType() = withTypeCheckerContext {
+        typeParameter(stringType) shouldNotBeAssignableTo stringType.qualified(qualifier1)
     }
 
     @Test
@@ -251,21 +321,21 @@ class SubtypingTest {
     @Test
     fun testUnqualifiedSubTypeOfTypeParameterWithQualifiedUpperBound() = withTypeCheckerContext {
         stringType shouldNotBeAssignableTo
-                typeParameter(anyNType.qualified(qualifier1))
+                typeParameter(nullableAny.qualified(qualifier1))
     }
 
     @Test
     fun testNestedUnqualifiedSubTypeOfNestedTypeParameterWithQualifiedUpperBound() =
         withTypeCheckerContext {
             listType.typeWith(stringType) shouldNotBeAssignableTo
-                    listType.typeWith(typeParameter(anyNType.qualified(qualifier1)))
+                    listType.typeWith(typeParameter(nullableAny.qualified(qualifier1)))
         }
 
     @Test
     fun testNestedQualifiedSubTypeOfNestedTypeParameterWithQualifiedUpperBound() =
         withTypeCheckerContext {
             listType.typeWith(stringType.qualified(qualifier1)) shouldBeAssignableTo
-                    listType.typeWith(typeParameter(anyNType.qualified(qualifier1)))
+                    listType.typeWith(typeParameter(nullableAny.qualified(qualifier1)))
         }
 
     @Test

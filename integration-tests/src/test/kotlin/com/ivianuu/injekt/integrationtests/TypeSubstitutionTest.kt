@@ -16,9 +16,11 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import io.kotest.matchers.*
 import io.kotest.matchers.maps.*
+import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
 import org.junit.*
 
@@ -42,9 +44,9 @@ class TypeSubstitutionTest {
                 )
             )
         ).defaultType
-        val classType = classType(anyType.qualified(qualifier.typeWith(stringType)))
+        val classType = classType(any.qualified(qualifier.typeWith(stringType)))
         val typeParameter = typeParameter()
-        val superType = typeParameter(anyNType.qualified(qualifier.typeWith(typeParameter)))
+        val superType = typeParameter(nullableAny.qualified(qualifier.typeWith(typeParameter)))
         val map = getSubstitutionMap(classType, superType)
         map[superType.classifier] shouldBe classType
         map[typeParameter.classifier] shouldBe stringType
@@ -145,7 +147,7 @@ class TypeSubstitutionTest {
 
         val triggerImplS = typeParameter(fqName = FqName("triggerImpl.S"))
         val triggerImplT = typeParameter(
-            anyNType.qualified(qualifier.typeWith(triggerImplS)),
+            nullableAny.qualified(qualifier.typeWith(triggerImplS)),
             fqName = FqName("triggerImpl.T")
         )
 
@@ -156,11 +158,29 @@ class TypeSubstitutionTest {
         map[triggerImplT.classifier] shouldBe candidate
     }
 
+    @Test
+    fun testGetSubstitutionMapWithQualifiedAny() = withTypeCheckerContext {
+        val scopedAnnotation = typeFor(FqName("com.ivianuu.injekt.scope.Scoped"))
+        val (scopedImplT, scopedImplU, scopedImplS) = injektContext.memberScopeForFqName(FqName("com.ivianuu.injekt.scope.Scoped.Companion"))!!
+            .getContributedFunctions("scopedValue".asNameId(), NoLookupLocation.FROM_BACKEND)
+            .single()
+            .typeParameters
+            .map { it.toClassifierRef(injektContext, null) }
+        val appGivenScope = typeFor(FqName("com.ivianuu.injekt.scope.AppGivenScope"))
+        val map = getSubstitutionMap(
+            stringType.qualified(scopedAnnotation.typeWith(appGivenScope)),
+            scopedImplT.defaultType
+        )
+        map[scopedImplT] shouldBe stringType.qualified(scopedAnnotation.typeWith(appGivenScope))
+        map[scopedImplU] shouldBe stringType
+        map[scopedImplS] shouldBe appGivenScope
+    }
+
     private fun TypeCheckerTestContext.getSubstitutionMap(
         a: TypeRef,
         b: TypeRef
     ): Map<ClassifierRef, TypeRef> {
-        val context = a.buildContext(injektContext, emptyList(), b, false)
+        val context = a.buildContext(injektContext, emptyList(), b)
         return context.getSubstitutionMap()
     }
 }

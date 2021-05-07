@@ -23,11 +23,10 @@ class TypeInferenceTest {
     @Test
     fun testFunctionExpressionInference() = multiCodegen(
         """
-            class ChildGivenScopeModule<P : GivenScope, T, S : T> {
+            class ChildGivenScopeModule<P : GivenScope, T : Any, S : T> {
                 @Given
-                fun factory(
-                    @Given scopeFactory: S
-                ): @InstallElement<P> @ChildScopeFactory T = scopeFactory
+                inline fun installElementModule() =
+                    InstallElement.Companion.Module<S, @ChildScopeFactory T, P>()
             }
             fun <P : GivenScope, P1, C : GivenScope> ChildGivenScopeModule1() = 
                 ChildGivenScopeModule<P, 
@@ -55,11 +54,10 @@ class TypeInferenceTest {
     @Test
     fun testPropertyExpressionInference() = multiCodegen(
         """
-            class ChildGivenScopeModule<P : GivenScope, T, S : T> {
+            class ChildGivenScopeModule<P : GivenScope, T : Any, S : T> {
                 @Given
-                fun factory(
-                    @Given scopeFactory: S
-                ): @InstallElement<P> @ChildScopeFactory T = scopeFactory
+                inline fun installElementModule() =
+                    InstallElement.Companion.Module<S, @ChildScopeFactory T, P>()
             }
             fun <P : GivenScope, P1, C : GivenScope> ChildGivenScopeModule1() = 
                 ChildGivenScopeModule<P, 

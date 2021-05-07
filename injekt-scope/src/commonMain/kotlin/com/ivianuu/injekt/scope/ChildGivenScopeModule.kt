@@ -23,10 +23,10 @@ import com.ivianuu.injekt.*
 @Qualifier
 annotation class ChildScopeFactory
 
-class ChildGivenScopeModule<P : GivenScope, T, S : T> {
+class ChildGivenScopeModule<P : GivenScope, T : Any, S : T> {
     @Given
-    inline fun factory(@Given scopeFactory: S):
-            @InstallElement<P> @ChildScopeFactory T = scopeFactory
+    inline fun installElementModule() =
+        InstallElement.Companion.Module<S, @ChildScopeFactory T, P>()
 }
 
 inline fun <P : GivenScope, C : GivenScope> ChildGivenScopeModule0() =

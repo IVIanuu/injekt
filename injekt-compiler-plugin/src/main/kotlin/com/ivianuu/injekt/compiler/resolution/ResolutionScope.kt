@@ -191,7 +191,7 @@ class ResolutionScope(
                 .mapNotNull { (_, candidate) ->
                     if (candidate.type.frameworkKey != key.type.frameworkKey)
                         return@mapNotNull null
-                    val context = candidate.type.buildContext(context, key.staticTypeParameters, key.type, true)
+                    val context = candidate.type.buildContext(context, key.staticTypeParameters, key.type)
                     if (!context.isOk) return@mapNotNull null
                     val substitutionMap = context.getSubstitutionMap()
                     val finalCandidate = candidate.substitute(substitutionMap)
@@ -285,9 +285,9 @@ class ResolutionScope(
                 .mapNotNull { (_, candidate) ->
                     if (candidate.type.frameworkKey != key.type.frameworkKey)
                         return@mapNotNull null
-                    var context = candidate.type.buildContext(context, key.staticTypeParameters, singleElementType, true)
+                    var context = candidate.type.buildContext(context, key.staticTypeParameters, singleElementType)
                     if (!context.isOk) {
-                        context = candidate.type.buildContext(this.context, key.staticTypeParameters, collectionElementType, true)
+                        context = candidate.type.buildContext(this.context, key.staticTypeParameters, collectionElementType)
                     }
                     if (!context.isOk) return@mapNotNull null
                     val substitutionMap = context.getSubstitutionMap()
@@ -321,12 +321,12 @@ class ResolutionScope(
         if (candidate.type in constrainedGiven.processedCandidateTypes) return
         constrainedGiven.processedCandidateTypes += candidate.type
         val outputsContext = candidate.rawType.buildContext(context, allStaticTypeParameters,
-            constrainedGiven.constraintType, false)
+            constrainedGiven.constraintType)
         if (!outputsContext.isOk)
             return
 
         val inputsContext = candidate.type.buildContext(context, allStaticTypeParameters,
-            constrainedGiven.constraintType, false)
+            constrainedGiven.constraintType)
 
         val inputsSubstitutionMap = inputsContext.getSubstitutionMap()
         // if we could not get all type arguments it must be an incompatible type

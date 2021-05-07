@@ -151,11 +151,10 @@ class PersistenceTest {
     @Test
     fun testNonGivenClassWithGivenMembers2() = singleAndMultiCodegen(
         """ 
-            abstract class MyAbstractChildGivenScopeModule<P : GivenScope, T, S : T> {
+            abstract class MyAbstractChildGivenScopeModule<P : GivenScope, T : Any, S : T> {
                 @Given
-                fun factory(
-                    @Given scopeFactory: S
-                ): @InstallElement<P> @ChildScopeFactory T = scopeFactory
+                inline fun installElementModule() =
+                    InstallElement.Companion.Module<S, @ChildScopeFactory T, P>()
             }
             
             class MyChildGivenScopeModule1<P : GivenScope, P1, C : GivenScope> : MyAbstractChildGivenScopeModule<P,
