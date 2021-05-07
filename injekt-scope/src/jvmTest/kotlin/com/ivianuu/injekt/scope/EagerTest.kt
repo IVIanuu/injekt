@@ -23,7 +23,7 @@ import org.junit.*
 @GivenImports("com.ivianuu.injekt.common.*")
 class EagerTest {
     @Qualifier
-    annotation class Element
+    private annotation class Element
     @Test
     fun testEager() {
         var callCount = 0
@@ -34,9 +34,7 @@ class EagerTest {
             return Foo()
         }
         @Given
-        fun fooElement(
-            @Given foo: Foo
-        ): @InstallElement<TestGivenScope1> @Element Foo = foo
+        fun fooElementModule() = InstallElement.Companion.Module<Foo, @Element Foo, TestGivenScope1>()
         val scope = given<TestGivenScope1>()
         callCount shouldBe 1
         scope.element<@Element Foo>()
