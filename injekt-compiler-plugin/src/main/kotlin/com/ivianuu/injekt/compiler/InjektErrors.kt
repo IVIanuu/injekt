@@ -139,7 +139,7 @@ interface InjektErrors {
                 .also {
                     MAP.put(
                         it,
-                        "only types and classes can be annotated with a qualifier"
+                        "only types, classes and class constructors can be annotated with a qualifier"
                     )
                 }
 

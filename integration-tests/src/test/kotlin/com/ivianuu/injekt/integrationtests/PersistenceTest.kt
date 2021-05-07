@@ -88,8 +88,8 @@ class PersistenceTest {
             } 
                 """
     ) {
-        shouldNotContainMessage("no given argument found of type @com.ivianuu.injekt.integrationtests.MyOtherQualifier com.ivianuu.injekt.integrationtests.FuncA for parameter value of function com.ivianuu.injekt.given")
-        shouldContainMessage("no given argument found of type @com.ivianuu.injekt.integrationtests.MyOtherQualifier com.ivianuu.injekt.integrationtests.FuncB for parameter value of function com.ivianuu.injekt.given")
+        shouldNotContainMessage("no given argument found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncA> for parameter value of function com.ivianuu.injekt.given")
+        shouldContainMessage("no given argument found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncB> for parameter value of function com.ivianuu.injekt.given")
     }
 
     @Test
@@ -153,8 +153,9 @@ class PersistenceTest {
         """ 
             abstract class MyAbstractChildGivenScopeModule<P : GivenScope, T : Any, S : T> {
                 @Given
-                inline fun installElementModule() =
-                    InstallElement.Companion.Module<S, @ChildScopeFactory T, P>()
+                fun factory(
+                    @Given scopeFactory: S
+                ): @InstallElement<P> @ChildScopeFactory T = scopeFactory
             }
             
             class MyChildGivenScopeModule1<P : GivenScope, P1, C : GivenScope> : MyAbstractChildGivenScopeModule<P,

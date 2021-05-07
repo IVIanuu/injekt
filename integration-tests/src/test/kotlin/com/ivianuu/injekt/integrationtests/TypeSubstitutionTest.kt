@@ -33,26 +33,6 @@ class TypeSubstitutionTest {
     }
 
     @Test
-    fun testGetSubstitutionMapWithQualifierInSuperType() = withTypeCheckerContext {
-        val qualifier = ClassifierRef(
-            "MyQualifier",
-            FqName("MyQualifier"),
-            typeParameters = listOf(
-                ClassifierRef(
-                    key = "MyQualifier.T",
-                    fqName = FqName("MyQualifier.T")
-                )
-            )
-        ).defaultType
-        val classType = classType(any.qualified(qualifier.typeWith(stringType)))
-        val typeParameter = typeParameter()
-        val superType = typeParameter(nullableAny.qualified(qualifier.typeWith(typeParameter)))
-        val map = getSubstitutionMap(classType, superType)
-        map[superType.classifier] shouldBe classType
-        map[typeParameter.classifier] shouldBe stringType
-    }
-
-    @Test
     fun testGetSubstitutionMapWithExtraTypeParameter() = withTypeCheckerContext {
         val typeParameterU = typeParameter(fqName = FqName("U"))
         val typeParameterS = typeParameter(listType.typeWith(typeParameterU), fqName = FqName("S"))
@@ -74,33 +54,10 @@ class TypeSubstitutionTest {
     @Test
     fun testGetSubstitutionMapWithQualifiers() = withTypeCheckerContext {
         val unqualifiedSuperType = typeParameter()
-        val qualifiedSuperType = unqualifiedSuperType.qualified(qualifier1)
-        val substitutionType = stringType.qualified(qualifier1)
+        val qualifiedSuperType = qualifier1.wrap(unqualifiedSuperType)
+        val substitutionType = qualifier1.wrap(stringType)
         val map = getSubstitutionMap(substitutionType, qualifiedSuperType)
         map[unqualifiedSuperType.classifier] shouldBe stringType
-    }
-
-    @Test
-    fun testGetSubstitutionMapWithGenericQualifierArguments() = withTypeCheckerContext {
-        val typeParameter1 = typeParameter()
-        val typeParameter2 = typeParameter()
-        val qualifier = ClassifierRef(
-            "MyQualifier",
-            FqName("MyQualifier"),
-            typeParameters = listOf(
-                ClassifierRef(
-                    key = "MyQualifier.T",
-                    fqName = FqName("MyQualifier.T")
-                )
-            )
-        )
-        // @MyQualifier<TP2> TP1
-        val superType = typeParameter1.qualified(qualifier.defaultType.typeWith(typeParameter2))
-        // @MyQualifier<Int> String
-        val substitutionType = stringType.qualified(qualifier.defaultType.typeWith(intType))
-        val map = getSubstitutionMap(substitutionType, superType)
-        map[typeParameter1.classifier] shouldBe stringType
-        map[typeParameter2.classifier] shouldBe intType
     }
 
     @Test
@@ -115,55 +72,31 @@ class TypeSubstitutionTest {
     @Test
     fun testGetSubstitutionMapWithSameQualifiers() = withTypeCheckerContext {
         val typeParameterS = typeParameter()
-        val typeParameterT = typeParameter(typeParameterS.qualified(qualifier1))
-        val substitutionType = stringType.qualified(qualifier1)
+        val typeParameterT = typeParameter(qualifier1.wrap(typeParameterS))
+        val substitutionType = qualifier1.wrap(stringType)
         val map = getSubstitutionMap(substitutionType, typeParameterT)
         map[typeParameterT.classifier] shouldBe substitutionType
         map[typeParameterS.classifier] shouldBe stringType
     }
 
     @Test
-    fun testGetSubstitutionMapWithQualifiedNullableAny() = withTypeCheckerContext {
-        val qualifier = ClassifierRef(
-            "Trigger",
-            FqName("Trigger"),
-            typeParameters = listOf(
-                ClassifierRef(
-                    key = "Trigger.S",
-                    fqName = FqName("Trigger.S")
-                )
-            )
-        ).defaultType
-
-        val triggerImplS = typeParameter(fqName = FqName("triggerImpl.S"))
-        val triggerImplT = typeParameter(
-            nullableAny.qualified(qualifier.typeWith(triggerImplS)),
-            fqName = FqName("triggerImpl.T")
-        )
-
-        val candidate = stringType.qualified(qualifier.typeWith(intType))
-
-        val map = getSubstitutionMap(candidate, triggerImplT)
-        map[triggerImplS.classifier] shouldBe intType
-        map[triggerImplT.classifier] shouldBe candidate
-    }
-
-    @Test
-    fun testGetSubstitutionMapWithQualifiedAny() = withTypeCheckerContext {
-        val scopedAnnotation = typeFor(FqName("com.ivianuu.injekt.scope.Scoped"))
-        val (scopedImplT, scopedImplU, scopedImplS) = injektContext.memberScopeForFqName(FqName("com.ivianuu.injekt.scope.Scoped.Companion"))!!
+    fun testGetSubstitutionMapInScopedLikeScenario() = withTypeCheckerContext {
+        val scoped = typeFor(FqName("com.ivianuu.injekt.scope.Scoped"))
+        val (scopedT, scopedU, scopedS) = injektContext.memberScopeForFqName(FqName("com.ivianuu.injekt.scope.Scoped.Companion"))!!
             .getContributedFunctions("scopedValue".asNameId(), NoLookupLocation.FROM_BACKEND)
             .single()
+            .let { injektContext.callableInfoFor(it, null) }!!
             .typeParameters
             .map { it.toClassifierRef(injektContext, null) }
         val appGivenScope = typeFor(FqName("com.ivianuu.injekt.scope.AppGivenScope"))
-        val map = getSubstitutionMap(
-            stringType.qualified(scopedAnnotation.typeWith(appGivenScope)),
-            scopedImplT.defaultType
-        )
-        map[scopedImplT] shouldBe stringType.qualified(scopedAnnotation.typeWith(appGivenScope))
-        map[scopedImplU] shouldBe stringType
-        map[scopedImplS] shouldBe appGivenScope
+        val substitutionType = scoped.wrap(stringType)
+            .let {
+                it.typeWith(listOf(appGivenScope) + it.arguments.drop(1))
+            }
+        val map = getSubstitutionMap(substitutionType, scopedT.defaultType)
+        map[scopedT] shouldBe substitutionType
+        map[scopedU] shouldBe stringType
+        map[scopedS] shouldBe appGivenScope
     }
 
     @Test
@@ -179,7 +112,7 @@ class TypeSubstitutionTest {
             .type
             .toTypeRef(injektContext, null)
         val givenCoroutineScopeElementS = givenCoroutineScopeElementReturnType.arguments
-            .single().classifier
+            .first().classifier
         val map = getSubstitutionMap(
             givenCoroutineScopeElementReturnType,
             installElementModuleT.defaultType

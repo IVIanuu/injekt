@@ -39,20 +39,6 @@ class DivergenceTest {
     }
 
     @Test
-    fun testUnresolvableDivergenceWithQualifiers() = singleAndMultiCodegen(
-        """
-            @Given fun <T> unwrapped(@Given qualified: @Qualifier1 T): T = qualified
-        """,
-        """
-            fun invoke() {
-                given<Foo>()
-            } 
-        """
-    ) {
-        compilationShouldHaveFailed("diverging")
-    }
-
-    @Test
     fun testResolvableDivergence() = singleAndMultiCodegen(
         """
             interface Wrapper<T> {
@@ -62,20 +48,6 @@ class DivergenceTest {
             @Given fun <T> unwrapped(@Given wrapped: Wrapper<T>): T = wrapped.value
 
             @Given fun fooWrapper(): Wrapper<Wrapper<Foo>> = error("")
-        """,
-        """
-            fun invoke() {
-                given<Foo>()
-            } 
-        """
-    )
-
-    @Test
-    fun testResolvableDivergenceWithQualifiers() = singleAndMultiCodegen(
-        """
-            @Given fun <T> unwrapped(@Given qualified: @Qualifier1 T): T = qualified
-
-            @Given fun qualifiedFoo(): @Qualifier1 Foo = error("")
         """,
         """
             fun invoke() {

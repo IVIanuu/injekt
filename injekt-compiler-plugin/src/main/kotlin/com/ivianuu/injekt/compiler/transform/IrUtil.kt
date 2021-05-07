@@ -41,6 +41,7 @@ import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 fun TypeRef.toIrType(
     pluginContext: IrPluginContext,
@@ -48,8 +49,8 @@ fun TypeRef.toIrType(
     context: InjektContext
 ): IrTypeArgument {
     if (isStarProjection) return IrStarProjectionImpl
-    return if (classifier.isTypeAlias) {
-        superTypes.single()
+    return when {
+        classifier.isTypeAlias -> superTypes.single()
             .toIrType(pluginContext, localClasses, context)
             .let {
                 it as IrSimpleType
@@ -61,48 +62,65 @@ fun TypeRef.toIrType(
                     toIrAbbreviation(pluginContext, localClasses, context)
                 )
             }
-    } else {
-        val key = classifier.descriptor!!.uniqueKey(context)
-        val fqName = FqName(key.split(":")[1])
-        val irClassifier = localClasses.singleOrNull { it.descriptor.fqNameSafe == fqName }
-            ?.symbol
-            ?: pluginContext.referenceClass(fqName)
-            ?: pluginContext.referenceFunctions(fqName.parent())
-                .flatMap { it.owner.typeParameters }
-                .singleOrNull { it.descriptor.uniqueKey(context) == key }
+        classifier.isQualifier -> arguments.last().toIrType(pluginContext, localClasses, context)
+            .typeOrNull!!
+            .cast<IrSimpleType>()
+            .let { type ->
+                val qualifierConstructor = pluginContext.referenceClass(classifier.fqName)!!
+                    .constructors.single()
+                IrSimpleTypeImpl(
+                    type.originalKotlinType,
+                    type.classifier,
+                    type.hasQuestionMark,
+                    type.arguments,
+                    listOf(
+                        DeclarationIrBuilder(pluginContext, qualifierConstructor)
+                            .irCall(qualifierConstructor).apply {
+                                arguments.dropLast(1)
+                                    .forEachIndexed { index, type ->
+                                        putTypeArgument(index,
+                                            type.toIrType(pluginContext, localClasses, context).typeOrNull!!)
+                                    }
+                            }
+                    ) + type.annotations,
+                    type.abbreviation
+                )
+            }
+        else -> {
+            val key = classifier.descriptor!!.uniqueKey(context)
+            val fqName = FqName(key.split(":")[1])
+            val irClassifier = localClasses.singleOrNull { it.descriptor.fqNameSafe == fqName }
                 ?.symbol
-            ?: pluginContext.referenceProperties(fqName.parent())
-                .flatMap { it.owner.getter!!.typeParameters }
-                .singleOrNull { it.descriptor.uniqueKey(context) == key }
-                ?.symbol
-            ?: (pluginContext.referenceClass(fqName.parent())
-                ?: pluginContext.referenceTypeAlias(fqName.parent()))
-                ?.owner
-                ?.typeParameters
-                ?.singleOrNull { it.descriptor.uniqueKey(context) == key }
-                ?.symbol
-            ?: error("Could not get for $fqName $key")
-        IrSimpleTypeImpl(
-            irClassifier,
-            isMarkedNullable,
-            arguments.map { it.toIrType(pluginContext, localClasses, context) },
-            buildList<IrConstructorCall> {
-                this += qualifiers
-                    .map { it.toIrType(pluginContext, localClasses, context) }
-                    .map {
-                        DeclarationIrBuilder(pluginContext, it.typeOrNull!!.classifierOrFail)
-                            .irCall(it.typeOrNull!!.classOrNull!!.owner.constructors.single().symbol,
-                                it.typeOrNull!!, it.typeOrNull!!.classOrNull!!.owner)
-                    }
+                ?: pluginContext.referenceClass(fqName)
+                ?: pluginContext.referenceFunctions(fqName.parent())
+                    .flatMap { it.owner.typeParameters }
+                    .singleOrNull { it.descriptor.uniqueKey(context) == key }
+                    ?.symbol
+                ?: pluginContext.referenceProperties(fqName.parent())
+                    .flatMap { it.owner.getter!!.typeParameters }
+                    .singleOrNull { it.descriptor.uniqueKey(context) == key }
+                    ?.symbol
+                ?: (pluginContext.referenceClass(fqName.parent())
+                    ?: pluginContext.referenceTypeAlias(fqName.parent()))
+                    ?.owner
+                    ?.typeParameters
+                    ?.singleOrNull { it.descriptor.uniqueKey(context) == key }
+                    ?.symbol
+                ?: error("Could not get for $fqName $key")
+            IrSimpleTypeImpl(
+                irClassifier,
+                isMarkedNullable,
+                arguments.map { it.toIrType(pluginContext, localClasses, context) },
                 if (isMarkedComposable) {
                     val composableConstructor = pluginContext.referenceConstructors(InjektFqNames.Composable)
                         .single()
-                    this += DeclarationIrBuilder(pluginContext, composableConstructor)
-                        .irCall(composableConstructor)
-                }
-            },
-            null
-        )
+                    listOf(
+                        DeclarationIrBuilder(pluginContext, composableConstructor)
+                            .irCall(composableConstructor)
+                    )
+                } else emptyList()
+            )
+        }
     }
 }
 
@@ -116,23 +134,18 @@ private fun TypeRef.toIrAbbreviation(
         typeAlias,
         isMarkedNullable,
         arguments.map { it.toIrType(pluginContext, localClasses, context) },
-        qualifiers
-            .map { it.toIrType(pluginContext, localClasses, context) }
-            .map {
-                DeclarationIrBuilder(pluginContext, it.typeOrNull!!.classifierOrFail)
-                    .irCall(it.typeOrNull!!.classOrNull!!.owner.constructors.single().symbol,
-                        it.typeOrNull!!, it.typeOrNull!!.classOrNull!!.owner)
-            }
+        emptyList()
     )
 }
 
 fun TypeRef.toKotlinType(context: InjektContext): SimpleType {
     if (isStarProjection) return context.module.builtIns.anyType
-    return if (classifier.isTypeAlias) {
-        superTypes.single().toKotlinType(context)
+    return when {
+        classifier.isTypeAlias -> superTypes.single().toKotlinType(context)
             .withAbbreviation(toAbbreviation(context))
-    } else {
-        classifier.descriptor!!.original.defaultType
+        // todo add this qualifier to type
+        classifier.isQualifier -> arguments.last().toKotlinType(context)
+        else -> classifier.descriptor!!.original.defaultType
             .replace(
                 newArguments = arguments.map {
                     TypeProjectionImpl(

@@ -211,8 +211,7 @@ class ResolutionScope(
     }
 
     fun frameworkGivenForRequest(request: GivenRequest): GivenNode? {
-        if (request.type.frameworkKey != null ||
-                request.type.qualifiers.isNotEmpty()) return null
+        if (request.type.frameworkKey != null) return null
         if (request.type.isFunctionTypeWithOnlyGivenParameters) {
             return ProviderGivenNode(
                 type = request.type,
@@ -229,7 +228,6 @@ class ResolutionScope(
                 RequestKey(request.type, allStaticTypeParameters)
             )
             if (elements == null &&
-                singleElementType.qualifiers.isEmpty() &&
                 singleElementType.isFunctionTypeWithOnlyGivenParameters) {
                 val providerReturnType = singleElementType.arguments.last()
                 elements = setElementsForType(providerReturnType, context.collectionClassifier

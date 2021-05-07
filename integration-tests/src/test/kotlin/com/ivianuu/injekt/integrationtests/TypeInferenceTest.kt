@@ -25,8 +25,9 @@ class TypeInferenceTest {
         """
             class ChildGivenScopeModule<P : GivenScope, T : Any, S : T> {
                 @Given
-                inline fun installElementModule() =
-                    InstallElement.Companion.Module<S, @ChildScopeFactory T, P>()
+                fun factory(
+                    @Given scopeFactory: S
+                ): @InstallElement<P> @ChildScopeFactory T = scopeFactory
             }
             fun <P : GivenScope, P1, C : GivenScope> ChildGivenScopeModule1() = 
                 ChildGivenScopeModule<P, 
@@ -56,8 +57,9 @@ class TypeInferenceTest {
         """
             class ChildGivenScopeModule<P : GivenScope, T : Any, S : T> {
                 @Given
-                inline fun installElementModule() =
-                    InstallElement.Companion.Module<S, @ChildScopeFactory T, P>()
+                fun factory(
+                    @Given scopeFactory: S
+                ): @InstallElement<P> @ChildScopeFactory T = scopeFactory
             }
             fun <P : GivenScope, P1, C : GivenScope> ChildGivenScopeModule1() = 
                 ChildGivenScopeModule<P, 

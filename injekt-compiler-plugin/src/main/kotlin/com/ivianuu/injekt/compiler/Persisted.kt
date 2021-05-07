@@ -86,7 +86,6 @@ fun ClassifierRef.toPersistedClassifierInfo(
 data class PersistedTypeRef(
     @SerialName("0") val classifierKey: String,
     @SerialName("1") val arguments: List<PersistedTypeRef> = emptyList(),
-    @SerialName("2") val qualifiers: List<PersistedTypeRef> = emptyList(),
     @SerialName("3") val isStarProjection: Boolean,
     @SerialName("4") val isMarkedNullable: Boolean,
     @SerialName("5") val isMarkedComposable: Boolean,
@@ -98,7 +97,6 @@ data class PersistedTypeRef(
 fun TypeRef.toPersistedTypeRef(context: InjektContext): PersistedTypeRef = PersistedTypeRef(
     classifierKey = classifier.descriptor?.uniqueKey(context) ?: "",
     arguments = arguments.map { it.toPersistedTypeRef(context) },
-    qualifiers = qualifiers.map { it.toPersistedTypeRef(context) },
     isStarProjection = isStarProjection,
     isMarkedNullable = isMarkedNullable,
     isMarkedComposable = isMarkedComposable,
@@ -111,10 +109,18 @@ fun PersistedTypeRef.toTypeRef(context: InjektContext, trace: BindingTrace?): Ty
     if (isStarProjection) return STAR_PROJECTION_TYPE
     val classifier = context.classifierDescriptorForKey(classifierKey, trace)
         .toClassifierRef(context, trace)
-    return classifier.defaultType
+    val arguments = if (classifier.isQualifier) {
+        arguments
+            .map { it.toTypeRef(context, trace) } +
+                listOfNotNull(
+                    if (arguments.size < classifier.typeParameters.size)
+                        context.nullableAnyType
+                    else null
+                )
+    } else arguments.map { it.toTypeRef(context, trace) }
+    return classifier.unqualifiedType
         .copy(
-            qualifiers = qualifiers.map { it.toTypeRef(context, trace) },
-            arguments = arguments.map { it.toTypeRef(context, trace) },
+            arguments = arguments,
             isMarkedNullable = isMarkedNullable,
             isMarkedComposable = isMarkedComposable,
             isGiven = isGiven,

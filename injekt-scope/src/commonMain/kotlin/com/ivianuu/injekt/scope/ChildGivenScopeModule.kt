@@ -25,8 +25,9 @@ annotation class ChildScopeFactory
 
 class ChildGivenScopeModule<P : GivenScope, T : Any, S : T> {
     @Given
-    inline fun installElementModule() =
-        InstallElement.Companion.Module<S, @ChildScopeFactory T, P>()
+    fun factory(
+        @Given scopeFactory: S
+    ): @InstallElement<P> @ChildScopeFactory T = scopeFactory
 }
 
 inline fun <P : GivenScope, C : GivenScope> ChildGivenScopeModule0() =
