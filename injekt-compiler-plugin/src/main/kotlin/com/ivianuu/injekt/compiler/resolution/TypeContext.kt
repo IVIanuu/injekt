@@ -73,13 +73,11 @@ fun TypeRef.isSubTypeOf(
     val thisQualifiers = (subtypeView(context.injektContext.anyType.classifier) ?: this).qualifiers
     val superQualifiers = (superType.subtypeView(context.injektContext.anyType.classifier) ?: superType).qualifiers
 
-    // Nothing is sub type of any type
     if (classifier.fqName == InjektFqNames.Nothing &&
         (!isMarkedNullable || superType.isNullableType) &&
         (qualifiers.isEmpty() || thisQualifiers.areMatchingQualifiers(context, superQualifiers)))
             return true
 
-    // Any? is super type of every other type
     if (superType.classifier.fqName == InjektFqNames.Any &&
         (superType.isMarkedNullable || !isNullableType) &&
         (superType.qualifiers.isEmpty() || thisQualifiers.areMatchingQualifiers(context, superQualifiers)))
@@ -170,7 +168,8 @@ class VariableWithConstraints(val typeVariable: ClassifierRef) {
                             typeVariable,
                             constraint.type,
                             ConstraintKind.EQUAL,
-                            constraint.position
+                            constraint.position,
+                            constraint.derivedFrom
                         )
                     } else constraint
                     constraints.removeAll { it.type == actualConstraint.type }
@@ -197,7 +196,8 @@ data class Constraint(
     val typeVariable: ClassifierRef,
     val type: TypeRef,
     val kind: ConstraintKind,
-    val position: ConstraintPosition
+    val position: ConstraintPosition,
+    val derivedFrom: Set<ClassifierRef>
 )
 
 enum class ConstraintKind {
@@ -232,7 +232,7 @@ fun TypeRef.buildContext(
             context.addTypeVariable(it.classifier)
     }
     context.addInitialSubTypeConstraint(this, superType)
-    context.complete()
+    context.fixTypeVariables()
     return context
 }
 
@@ -281,7 +281,8 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         }
 
         addPossibleNewConstraint(Constraint(
-            typeVariable.classifier, equalType, ConstraintKind.EQUAL, ConstraintPosition.FixVariable))
+            typeVariable.classifier, equalType, ConstraintKind.EQUAL,
+            ConstraintPosition.FixVariable, emptySet()))
         processConstraints()
     }
 
@@ -323,7 +324,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         return false
     }
 
-    fun complete() {
+    fun fixTypeVariables() {
         if (!isOk) return
         while (true) {
             val unfixedTypeVariables = typeVariables
@@ -404,9 +405,6 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
             if (!checkConstraint(constraint.type, constraint.kind, resultType))
                 return false
         }
-        /*if (!trivialConstraintTypeInferenceOracle.isSuitableResultedType(resultType)) {
-            if (resultType.isNullableType() && checkSingleLowerNullabilityConstraint(filteredConstraints)) return false
-        }*/
 
         return true
     }
@@ -475,7 +473,8 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
 
     private fun addUpperConstraint(typeVariable: TypeRef, superType: TypeRef): Boolean {
         addPossibleNewConstraint(Constraint(
-            typeVariable.classifier, superType, ConstraintKind.UPPER, ConstraintPosition.Unknown))
+            typeVariable.classifier, superType, ConstraintKind.UPPER,
+            ConstraintPosition.Unknown, emptySet()))
 
         var result = true
 
@@ -485,11 +484,9 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         }
 
         if (typeVariable.qualifiers.isNotEmpty()) {
-            result = result && superType.classifier in typeVariables ||
-                    superType.isSubTypeOf(
+            result = result && (superType.isSubTypeOf(
                         this,
-                        injektContext.nullableAnyType.copy(qualifiers = typeVariable.qualifiers)
-                    )
+                        injektContext.nullableAnyType.copy(qualifiers = typeVariable.qualifiers)) || superType.classifier in typeVariables)
         }
 
         return result
@@ -514,7 +511,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         } else subType
 
         addPossibleNewConstraint(Constraint(typeVariable.classifier,
-            lowerConstraint, ConstraintKind.LOWER, ConstraintPosition.Unknown))
+            lowerConstraint, ConstraintKind.LOWER, ConstraintPosition.Unknown, emptySet()))
 
         return true
     }
@@ -560,30 +557,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         otherVariable: ClassifierRef,
         otherConstraint: Constraint
     ) {
-        val isBaseGenericType = baseConstraint.type.arguments.isNotEmpty()
-        val finalOtherType = when (otherConstraint.kind) {
-            ConstraintKind.EQUAL -> otherConstraint.type
-            ConstraintKind.UPPER -> {
-                if (baseConstraint.kind == ConstraintKind.LOWER && !isBaseGenericType) {
-                    injektContext.nothingType
-                } else if (baseConstraint.kind == ConstraintKind.UPPER && !isBaseGenericType) {
-                    otherConstraint.type
-                }  else {
-                    otherConstraint.type.copy(variance = TypeVariance.OUT)
-                }
-            }
-            ConstraintKind.LOWER -> {
-                if (baseConstraint.kind == ConstraintKind.UPPER && !isBaseGenericType) {
-                    injektContext.nullableAnyType
-                } else if (baseConstraint.kind == ConstraintKind.LOWER && !isBaseGenericType) {
-                    otherConstraint.type
-                } else {
-                    otherConstraint.type.copy(variance = TypeVariance.IN)
-                }
-            }
-        }
-        val substitutedType = baseConstraint.type.substitute(mapOf(otherVariable to finalOtherType))
-
+        val substitutedType = baseConstraint.type.substitute(mapOf(otherVariable to otherConstraint.type))
         if (baseConstraint.kind != ConstraintKind.LOWER) {
             addNewConstraint(targetVariable, baseConstraint,
                 otherVariable, otherConstraint, substitutedType, ConstraintKind.UPPER)
@@ -602,41 +576,19 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         newConstraint: TypeRef,
         kind: ConstraintKind
     ) {
-        if (targetVariable in getNestedTypeVariables(newConstraint)) return
+        if (targetVariable in getNestedTypeVariables(newConstraint))
+            return
 
-        if (isGeneratedConstraintTrivial(baseConstraint, otherConstraint,
-                newConstraint, kind)) return
+        val derivedFrom = baseConstraint.derivedFrom.toMutableSet().also {
+            it.addAll(otherConstraint.derivedFrom)
+        }
+        if (otherVariable in derivedFrom)
+            return
+
+        derivedFrom.add(otherVariable)
 
         addPossibleNewConstraint(Constraint(targetVariable, newConstraint,
-            kind, ConstraintPosition.Unknown))
-    }
-
-    private fun isGeneratedConstraintTrivial(
-        baseConstraint: Constraint,
-        otherConstraint: Constraint,
-        generatedConstraintType: TypeRef,
-        kind: ConstraintKind
-    ): Boolean {
-        if (kind == ConstraintKind.UPPER && generatedConstraintType == injektContext.nothingType)
-            return true
-        if (kind == ConstraintKind.LOWER && generatedConstraintType == injektContext.nullableAnyType)
-            return true
-
-        // If types from constraints that will be used to generate new constraint already contains `Nothing(?)`,
-        // then we can't decide that resulting constraint will be useless
-        if (baseConstraint.type.anyType {
-                it == injektContext.nothingType ||
-                        it == injektContext.nullableNothingType
-        }) return false
-        if (otherConstraint.type.anyType {
-                it == injektContext.nothingType ||
-                        it == injektContext.nullableNothingType
-        }) return false
-
-        // It's important to preserve constraints with nullable Nothing: `Nothing? <: T` (see implicitNothingConstraintFromReturn.kt test)
-        //if (generatedConstraintType.containsOnlyNonNullableNothing()) return true
-
-        return false
+            kind, ConstraintPosition.Unknown, derivedFrom))
     }
 
     private fun addError(error: TypeContextError) {

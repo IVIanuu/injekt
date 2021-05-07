@@ -191,11 +191,11 @@ class TypeSubstitutionTest {
     }
 
     private fun TypeCheckerTestContext.getSubstitutionMap(
-        a: TypeRef,
-        b: TypeRef,
+        subType: TypeRef,
+        superType: TypeRef,
         staticTypeParameters: List<ClassifierRef> = emptyList()
     ): Map<ClassifierRef, TypeRef> {
-        val context = a.buildContext(injektContext, staticTypeParameters, b)
+        val context = subType.buildContext(injektContext, staticTypeParameters, superType)
         return context.getSubstitutionMap()
     }
 }
