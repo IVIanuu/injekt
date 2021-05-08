@@ -60,7 +60,8 @@ class QualifierChecker(private val context: InjektContext) : DeclarationChecker,
             }
         } else {
             val qualifiers = descriptor.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-            if (qualifiers.isNotEmpty() && descriptor !is ClassDescriptor) {
+            if (qualifiers.isNotEmpty() && descriptor !is ClassDescriptor &&
+                    descriptor !is ConstructorDescriptor) {
                 context.trace.report(
                     InjektErrors.QUALIFIER_ON_NON_CLASS_AND_NON_TYPE
                         .on(declaration.findAnnotation(qualifiers.first().fqName!!)

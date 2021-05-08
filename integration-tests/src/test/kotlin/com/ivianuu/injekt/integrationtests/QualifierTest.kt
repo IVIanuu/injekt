@@ -60,12 +60,34 @@ class QualifierTest {
     )
 
     @Test
+    fun testQualifiedPrimaryConstructor() = singleAndMultiCodegen(
+        """ 
+                class Dep @Given @Qualifier1 constructor()
+            """,
+        """
+            fun invoke() = given<@Qualifier1 Dep>()
+        """
+    )
+
+    @Test
+    fun testQualifiedSecondaryConstructor() = singleAndMultiCodegen(
+        """ 
+                class Dep {
+                    @Given @Qualifier1 constructor()
+                }
+            """,
+        """
+            fun invoke() = given<@Qualifier1 Dep>()
+        """
+    )
+
+    @Test
     fun testQualifiedFunction() = codegen(
         """ 
             @Given @Qualifier1 fun foo() = Foo()
         """
     ) {
-        compilationShouldHaveFailed("only types and classes can be annotated with a qualifier")
+        compilationShouldHaveFailed("only types, classes and class constructors can be annotated with a qualifier")
     }
 
     @Test

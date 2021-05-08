@@ -22,7 +22,7 @@ import com.ivianuu.injekt.*
  * Creates a scoped instance as soon as scope [S] gets initialized
  */
 @Qualifier
-annotation class Eager<S : GivenScope> {
+annotation class Eager<out S : GivenScope> {
     companion object {
         @Given
         class Module<@Given T : @Eager<S> U, U : Any, S : GivenScope> {

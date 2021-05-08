@@ -21,7 +21,7 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.scope.*
 
 /**
- * Returns the [ActivityGivenScope] of this [ComponentActivity]
+ * Returns the [ActivityRetainedGivenScope] of this [ComponentActivity]
  * whose lifecycle is bound the retained lifecycle of the activity
  */
 val ComponentActivity.activityRetainedGivenScope: ActivityRetainedGivenScope

@@ -191,9 +191,9 @@ class ResolutionScope(
                 .mapNotNull { (_, candidate) ->
                     if (candidate.type.frameworkKey != key.type.frameworkKey)
                         return@mapNotNull null
-                    val context = candidate.type.buildContext(context, key.staticTypeParameters, key.type, true)
+                    val context = candidate.type.buildContext(context, key.staticTypeParameters, key.type)
                     if (!context.isOk) return@mapNotNull null
-                    val substitutionMap = context.getSubstitutionMap()
+                    val substitutionMap = context.fixedTypeVariables
                     val finalCandidate = candidate.substitute(substitutionMap)
                     CallableGivenNode(
                         key.type,
@@ -211,8 +211,7 @@ class ResolutionScope(
     }
 
     fun frameworkGivenForRequest(request: GivenRequest): GivenNode? {
-        if (request.type.frameworkKey != null ||
-                request.type.qualifiers.isNotEmpty()) return null
+        if (request.type.frameworkKey != null) return null
         if (request.type.isFunctionTypeWithOnlyGivenParameters) {
             return ProviderGivenNode(
                 type = request.type,
@@ -229,7 +228,6 @@ class ResolutionScope(
                 RequestKey(request.type, allStaticTypeParameters)
             )
             if (elements == null &&
-                singleElementType.qualifiers.isEmpty() &&
                 singleElementType.isFunctionTypeWithOnlyGivenParameters) {
                 val providerReturnType = singleElementType.arguments.last()
                 elements = setElementsForType(providerReturnType, context.collectionClassifier
@@ -285,12 +283,12 @@ class ResolutionScope(
                 .mapNotNull { (_, candidate) ->
                     if (candidate.type.frameworkKey != key.type.frameworkKey)
                         return@mapNotNull null
-                    var context = candidate.type.buildContext(context, key.staticTypeParameters, singleElementType, true)
+                    var context = candidate.type.buildContext(context, key.staticTypeParameters, singleElementType)
                     if (!context.isOk) {
-                        context = candidate.type.buildContext(this.context, key.staticTypeParameters, collectionElementType, true)
+                        context = candidate.type.buildContext(this.context, key.staticTypeParameters, collectionElementType)
                     }
                     if (!context.isOk) return@mapNotNull null
-                    val substitutionMap = context.getSubstitutionMap()
+                    val substitutionMap = context.fixedTypeVariables
                     candidate.substitute(substitutionMap)
                 }
                 .map { callable ->
@@ -320,25 +318,23 @@ class ResolutionScope(
         if (candidate.type.frameworkKey in constrainedGiven.resultingFrameworkKeys) return
         if (candidate.type in constrainedGiven.processedCandidateTypes) return
         constrainedGiven.processedCandidateTypes += candidate.type
-        val outputsContext = candidate.rawType.buildContext(context, allStaticTypeParameters,
-            constrainedGiven.constraintType, false)
-        if (!outputsContext.isOk)
-            return
+        val (outputsContext, outputsSubstitutionMap) = buildContextForConstrainedGiven(
+            context,
+            constrainedGiven.constraintType,
+            candidate.rawType,
+            allStaticTypeParameters
+        )
+        if (!outputsContext.isOk) return
 
-        val inputsContext = candidate.type.buildContext(context, allStaticTypeParameters,
-            constrainedGiven.constraintType, false)
+        // todo avoid recomputing the whole thing here
+        val (inputsContext, inputsSubstitutionMap) = buildContextForConstrainedGiven(
+            context,
+            constrainedGiven.constraintType,
+            candidate.type,
+            allStaticTypeParameters
+        )
+        check(inputsContext.isOk)
 
-        val inputsSubstitutionMap = inputsContext.getSubstitutionMap()
-        // if we could not get all type arguments it must be an incompatible type
-        if (constrainedGiven.callable.typeParameters.any {
-                constrainedGiven.callable.typeArguments[it] == it.defaultType &&
-                        it !in inputsSubstitutionMap
-        }) return
-        val outputsSubstitutionMap = outputsContext.getSubstitutionMap()
-        if (constrainedGiven.callable.typeParameters.any {
-                constrainedGiven.callable.typeArguments[it] == it.defaultType &&
-                        it !in outputsSubstitutionMap
-        }) return
         val newGivenType = constrainedGiven.callable.type.substitute(outputsSubstitutionMap)
         val newGiven = constrainedGiven.callable.substituteInputs(inputsSubstitutionMap)
             .copy(

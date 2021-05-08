@@ -34,4 +34,4 @@ class CommandB : Command
 
 @Qualifier annotation class Qualifier2
 
-@Qualifier annotation class TypedQualifier<T>
+@Qualifier annotation class TypedQualifier<out T>

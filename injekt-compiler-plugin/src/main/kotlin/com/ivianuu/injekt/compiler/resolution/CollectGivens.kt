@@ -164,8 +164,7 @@ fun ClassDescriptor.getGivenConstructors(
         }
         .map { constructor ->
             val callable = constructor.toCallableRef(context, trace)
-            val qualifiedType = callable.type
-                .copy(qualifiers = callable.type.classifier.qualifiers)
+            val qualifiedType = callable.type.classifier.qualifiers.wrap(callable.type)
             callable.copy(
                 isGiven = true,
                 type = qualifiedType,

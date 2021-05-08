@@ -47,12 +47,12 @@ class InfoTransformer(
             declaration.declarations.any { it.descriptor.isGiven(context, trace) } ||
             declaration.descriptor.defaultType.toTypeRef(context, trace)
                 .anySuperType {
-                    it.qualifiers.isNotEmpty() ||
-                            (it.classifier.isTypeAlias &&
+                    it.classifier.isQualifier ||
+                    (it.classifier.isTypeAlias &&
                                     it.fullyExpandedType.isSuspendFunctionType)
                 } || declaration.descriptor.defaultType.toTypeRef(context, trace)
                 .anyType {
-                    it.qualifiers.isNotEmpty() ||
+                    it.classifier.isQualifier ||
                             (it.classifier.isTypeAlias &&
                                     it.fullyExpandedType.isSuspendFunctionType)
                 }) {
@@ -105,12 +105,12 @@ class InfoTransformer(
         val callableRef = descriptor.toCallableRef(context, trace)
         if (!needsInfo) {
             needsInfo = callableRef.type.anyType {
-                it.qualifiers.isNotEmpty() ||
+                it.classifier.isQualifier ||
                         (it.classifier.isTypeAlias &&
                                 it.fullyExpandedType.isSuspendFunctionType)
             } || callableRef.parameterTypes.any { (_, parameterType) ->
                 parameterType.anyType {
-                    it.qualifiers.isNotEmpty() ||
+                    it.classifier.isQualifier ||
                             (it.classifier.isTypeAlias &&
                                     it.fullyExpandedType.isSuspendFunctionType)
                 }

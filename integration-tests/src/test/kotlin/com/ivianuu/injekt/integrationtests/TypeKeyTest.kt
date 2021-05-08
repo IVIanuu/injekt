@@ -196,11 +196,11 @@ class TypeKeyTest {
             @Given fun <@ForTypeKey T> listKey(): TypeKey<List<T>> = typeKeyOf<List<T>>()
         """,
         """
-           fun invoke() = given<TypeKey<List<@Qualifier1 Foo>>>() 
+           fun invoke() = given<TypeKey<List<@Qualifier1 @Qualifier2 Foo>>>() 
         """
     ) {
         invokeSingleFile() shouldBe
-                "kotlin.collections.List<[@com.ivianuu.injekt.test.Qualifier1]com.ivianuu.injekt.test.Foo>"
+                "kotlin.collections.List<[@com.ivianuu.injekt.test.Qualifier1, @com.ivianuu.injekt.test.Qualifier2]com.ivianuu.injekt.test.Foo>"
     }
 
     @Test

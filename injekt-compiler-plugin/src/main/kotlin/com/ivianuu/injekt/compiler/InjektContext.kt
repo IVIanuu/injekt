@@ -26,7 +26,12 @@ import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 @Suppress("NewApi")
-class InjektContext(val module: ModuleDescriptor) {
+class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
+    override val injektContext: InjektContext
+        get() = this
+
+    override fun isDenotable(type: TypeRef): Boolean = true
+
     val setClassifier by unsafeLazy {
         module.builtIns.set.toClassifierRef(this, null)
     }
@@ -34,8 +39,20 @@ class InjektContext(val module: ModuleDescriptor) {
         module.builtIns.collection.toClassifierRef(this, null)
     }
 
-    val anyClassifier by unsafeLazy {
-        module.builtIns.any.toClassifierRef(this, null)
+    val nothingType by unsafeLazy {
+        module.builtIns.nothingType.toTypeRef(this, null)
+    }
+
+    val nullableNothingType by unsafeLazy {
+        nothingType.copy(isMarkedNullable = true)
+    }
+
+    val anyType by unsafeLazy {
+        module.builtIns.anyType.toTypeRef(this, null)
+    }
+
+    val nullableAnyType by unsafeLazy {
+        anyType.copy(isMarkedNullable = true)
     }
 
     fun callableInfoFor(

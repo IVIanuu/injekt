@@ -190,7 +190,6 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
     // which can lead to unexpected results
     val isInlineProviderCandidateType = request.isInline &&
             request.type.frameworkKey == null &&
-            request.type.qualifiers.isEmpty() &&
             request.type.isFunctionTypeWithOnlyGivenParameters
     if (!isInlineProviderCandidateType) resultsByType[request.type]?.let { return it }
     val userCandidates = givensForRequest(request, this)
@@ -383,7 +382,7 @@ private fun ResolutionScope.compareResult(a: ResolutionResult?, b: ResolutionRes
     }
 }
 
-private inline fun <T> compareCandidate(
+private inline fun <T> ResolutionScope.compareCandidate(
     a: T?,
     b: T?,
     type: (T) -> TypeRef,
@@ -460,7 +459,7 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     return 0
 }
 
-fun compareType(a: TypeRef, b: TypeRef): Int {
+fun ResolutionScope.compareType(a: TypeRef, b: TypeRef): Int {
     if (a === b) return 0
     if (!a.isStarProjection && b.isStarProjection) return -1
     if (a.isStarProjection && !b.isStarProjection) return 1
@@ -468,15 +467,12 @@ fun compareType(a: TypeRef, b: TypeRef): Int {
     if (!a.isMarkedNullable && b.isMarkedNullable) return -1
     if (!b.isMarkedNullable && a.isMarkedNullable) return 1
 
-    if (a.qualifiers.size < b.qualifiers.size) return -1
-    if (b.qualifiers.size < a.qualifiers.size) return 1
-
     if (!a.classifier.isTypeParameter && b.classifier.isTypeParameter) return -1
     if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
 
     if (a.classifier != b.classifier) {
-        val aSubTypeOfB = a.isSubTypeOf(b)
-        val bSubTypeOfA = b.isSubTypeOf(a)
+        val aSubTypeOfB = a.isSubTypeOf(context, b)
+        val bSubTypeOfA = b.isSubTypeOf(context, a)
         if (aSubTypeOfB && !bSubTypeOfA) return -1
         if (bSubTypeOfA && !aSubTypeOfB) return 1
     } else {

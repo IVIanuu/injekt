@@ -88,8 +88,8 @@ class PersistenceTest {
             } 
                 """
     ) {
-        shouldNotContainMessage("no given argument found of type @com.ivianuu.injekt.integrationtests.MyOtherQualifier com.ivianuu.injekt.integrationtests.FuncA for parameter value of function com.ivianuu.injekt.given")
-        shouldContainMessage("no given argument found of type @com.ivianuu.injekt.integrationtests.MyOtherQualifier com.ivianuu.injekt.integrationtests.FuncB for parameter value of function com.ivianuu.injekt.given")
+        shouldNotContainMessage("no given argument found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncA> for parameter value of function com.ivianuu.injekt.given")
+        shouldContainMessage("no given argument found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncB> for parameter value of function com.ivianuu.injekt.given")
     }
 
     @Test
@@ -151,7 +151,7 @@ class PersistenceTest {
     @Test
     fun testNonGivenClassWithGivenMembers2() = singleAndMultiCodegen(
         """ 
-            abstract class MyAbstractChildGivenScopeModule<P : GivenScope, T, S : T> {
+            abstract class MyAbstractChildGivenScopeModule<P : GivenScope, T : Any, S : T> {
                 @Given
                 fun factory(
                     @Given scopeFactory: S

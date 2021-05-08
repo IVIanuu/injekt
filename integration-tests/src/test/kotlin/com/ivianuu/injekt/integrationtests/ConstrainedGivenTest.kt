@@ -96,44 +96,6 @@ class ConstrainedGivenTest {
     }
 
     @Test
-    fun testGivenConstraintWithQualifierWithTypeParameter() = singleAndMultiCodegen(
-        """
-            @Qualifier annotation class Trigger<S>
-            @Given fun <@Given @ForTypeKey T : @Trigger<S> Any?, @ForTypeKey S> triggerImpl() = 
-                typeKeyOf<S>()
-        """,
-        """
-           @Given fun foo(): @Trigger<Bar> Foo = Foo() 
-        """,
-        """
-           fun invoke() = given<TypeKey<Bar>>().value 
-        """
-    ) {
-        invokeSingleFile() shouldBe "com.ivianuu.injekt.test.Bar"
-    }
-
-    @Test
-    fun testGivenConstraintWithQualifierWithTypeParameter2() = singleAndMultiCodegen(
-        """
-            @Qualifier annotation class Trigger<S>
-            @Given fun <@Given @ForTypeKey T : @Trigger<S> Any?, @ForTypeKey S> triggerImpl() = 
-                typeKeyOf<S>()
-        """,
-        """
-            @Given
-            object FooModule {
-                @Given fun fooModule(): @Trigger<Bar> Foo = Foo()
-            }
-        """,
-        """
-            fun <T> givenKeyOf(@Given value: () -> TypeKey<T>) = value()
-            fun invoke() = givenKeyOf<Bar>().value
-        """
-    ) {
-        "com.ivianuu.injekt.test.Bar" shouldBe invokeSingleFile()
-    }
-
-    @Test
     fun testGivenConstraintTriggeredByClass() = singleAndMultiCodegen(
         """
             @Qualifier annotation class Trigger

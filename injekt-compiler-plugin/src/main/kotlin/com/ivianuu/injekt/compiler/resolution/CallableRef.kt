@@ -71,7 +71,7 @@ fun CallableDescriptor.toCallableRef(
     val info = if (isDeserializedDeclaration()) context.callableInfoFor(this, trace)
     else null
     val type = info?.type?.toTypeRef(context, trace)
-        ?: kotlin.run {
+        ?: run {
             val psi = findPsi()
             if (psi is KtProperty && psi.initializer != null) {
                 trace.get(InjektWritableSlices.EXPECTED_TYPE, psi.initializer)
@@ -79,7 +79,13 @@ fun CallableDescriptor.toCallableRef(
                 trace.get(InjektWritableSlices.EXPECTED_TYPE, psi.bodyExpression)
             } else null
         }
-        ?: returnType!!.toTypeRef(context, trace)
+        ?: run {
+            val qualifiers = if (this is ConstructorDescriptor)
+                getAnnotatedAnnotations(InjektFqNames.Qualifier)
+                    .map { it.type.toTypeRef(context, trace) }
+            else emptyList()
+            qualifiers.wrap(returnType!!.toTypeRef(context, trace))
+        }
     val typeParameters = info
         ?.typeParameters
         ?.map { it.toClassifierRef(context, trace) } ?: typeParameters
