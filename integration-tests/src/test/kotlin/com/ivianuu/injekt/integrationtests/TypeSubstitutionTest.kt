@@ -119,6 +119,8 @@ class TypeSubstitutionTest {
             .let { injektContext.callableInfoFor(it, null) }!!
             .type
             .toTypeRef(injektContext, null)
+            .arguments
+            .last()
 
         val (_, map) = buildContextForConstrainedGiven(
             injektContext,
@@ -127,7 +129,8 @@ class TypeSubstitutionTest {
             emptyList()
         )
         val givenCoroutineScopeElementS = givenCoroutineScopeElementReturnType.arguments
-            .first().classifier
+            .first()
+            .classifier
 
         map[installElementModuleT] shouldBe givenCoroutineScopeElementReturnType
             .substitute(mapOf(
