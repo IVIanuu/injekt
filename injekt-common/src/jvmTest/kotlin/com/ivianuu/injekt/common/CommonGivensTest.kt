@@ -25,11 +25,13 @@ import kotlin.reflect.*
 class CommonGivensTest {
     @Test
     fun testCanUseMapForSetOfPairs() {
-        @Given val elements = setOf("key" to "value")
+        @Given val elementsA = setOf("a" to "a")
+        @Given val elementB = setOf("b" to "b")
         val map = givenOrNull<Map<String, String>>()
         map.shouldNotBeNull()
-        map.size shouldBe 1
-        map["key"] shouldBe "value"
+        map.size shouldBe 2
+        map["a"] shouldBe "a"
+        map["b"] shouldBe "b"
     }
 
     @Test
