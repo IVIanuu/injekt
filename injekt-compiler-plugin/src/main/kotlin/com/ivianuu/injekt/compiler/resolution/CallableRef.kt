@@ -52,15 +52,6 @@ fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
     )
 }
 
-fun CallableRef.substituteInputs(map: Map<ClassifierRef, TypeRef>): CallableRef {
-    if (map.isEmpty()) return this
-    return copy(
-        parameterTypes = parameterTypes.mapValues { it.value.substitute(map) },
-        typeArguments = typeArguments
-            .mapValues { it.value.substitute(map) }
-    )
-}
-
 fun CallableRef.makeGiven(): CallableRef = if (isGiven) this else copy(isGiven = true)
 
 fun CallableDescriptor.toCallableRef(

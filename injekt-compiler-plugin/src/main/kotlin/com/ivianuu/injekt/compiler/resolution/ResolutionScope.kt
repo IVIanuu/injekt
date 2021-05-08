@@ -318,36 +318,31 @@ class ResolutionScope(
         if (candidate.type.frameworkKey in constrainedGiven.resultingFrameworkKeys) return
         if (candidate.type in constrainedGiven.processedCandidateTypes) return
         constrainedGiven.processedCandidateTypes += candidate.type
-        val (outputsContext, outputsSubstitutionMap) = buildContextForConstrainedGiven(
-            context,
-            constrainedGiven.constraintType,
-            candidate.rawType,
-            allStaticTypeParameters
-        )
-        if (!outputsContext.isOk) return
-
-        // todo avoid recomputing the whole thing here
-        val (inputsContext, inputsSubstitutionMap) = buildContextForConstrainedGiven(
+        val (context, substitutionMap) = buildContextForConstrainedGiven(
             context,
             constrainedGiven.constraintType,
             candidate.type,
             allStaticTypeParameters
         )
-        check(inputsContext.isOk)
+        if (!context.isOk) return
 
-        val newGivenType = constrainedGiven.callable.type.substitute(outputsSubstitutionMap)
-        val newGiven = constrainedGiven.callable.substituteInputs(inputsSubstitutionMap)
+        val newGivenType = constrainedGiven.callable.type
+            .substitute(substitutionMap)
+            .copy(frameworkKey = null)
+        val newGiven = constrainedGiven.callable
             .copy(
-                source = candidate.source,
+                type = newGivenType,
+                originalType = newGivenType,
+                parameterTypes = constrainedGiven.callable.parameterTypes
+                    .mapValues { it.value.substitute(substitutionMap) },
                 typeArguments = constrainedGiven.callable
                     .typeArguments
-                    .mapValues { it.value.substitute(inputsSubstitutionMap) },
-                type = newGivenType,
-                originalType = newGivenType
+                    .mapValues { it.value.substitute(substitutionMap) },
+                source = candidate.source
             )
 
         newGiven.collectGivens(
-            context = context,
+            context = this.context,
             scope = this,
             trace = trace,
             addGiven = { newInnerGiven ->

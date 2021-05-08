@@ -370,7 +370,7 @@ class ConstrainedGivenTest {
             typealias KeyIntentFactory<K> = (K) -> Any
     
             @Given 
-            fun <@Given T : KeyIntentFactory<K>, K : IntentKey> impl(): Unit = Unit
+            fun <@Given T : KeyIntentFactory<K>, K : IntentKey> impl() = Foo()
 
             class IntentKeyImpl : IntentKey
 
@@ -378,9 +378,9 @@ class ConstrainedGivenTest {
             val keyIntentFactoryImpl: KeyIntentFactory<IntentKeyImpl> = { Any() }
         """,
         """
-           fun invoke() = given<Unit>() 
+           fun invoke() = given<Foo>() 
         """
     ) {
-        invokeSingleFile().shouldBeTypeOf<Unit>()
+        invokeSingleFile().shouldBeTypeOf<Foo>()
     }
 }
