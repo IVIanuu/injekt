@@ -86,6 +86,9 @@ fun List<TypeRef>.wrap(type: TypeRef): TypeRef = foldRight(type) { nextQualifier
     nextQualifier.wrap(acc)
 }
 
+fun TypeRef.unwrapQualifiers(): TypeRef = if (!classifier.isQualifier) this
+else arguments.last().unwrapQualifiers()
+
 fun TypeRef.wrap(type: TypeRef): TypeRef {
     val newArguments = if (arguments.size < classifier.typeParameters.size)
         arguments + type

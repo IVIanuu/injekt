@@ -93,9 +93,7 @@ fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
             is ClassDescriptor -> declaration
                 .getGivenConstructors(context, trace) + listOfNotNull(
                 declaration.companionObjectDescriptor
-                    ?.thisAsReceiverParameter
-                    ?.toCallableRef(context, trace)
-                    ?.makeGiven()
+                    ?.getGivenReceiver(context, trace)
             )
             is CallableMemberDescriptor -> if (declaration.isGiven(context, trace)) {
                 listOf(
@@ -175,6 +173,12 @@ fun ClassDescriptor.getGivenConstructors(
     return givenConstructors
 }
 
+fun ClassDescriptor.getGivenReceiver(context: InjektContext, trace: BindingTrace): CallableRef {
+    val callable = thisAsReceiverParameter.toCallableRef(context, trace)
+    val qualifiedType = callable.type.classifier.qualifiers.wrap(callable.type)
+    return callable.copy(isGiven = true, type = qualifiedType, originalType = qualifiedType)
+}
+
 fun CallableRef.collectGivens(
     context: InjektContext,
     scope: ResolutionScope,
@@ -226,13 +230,8 @@ fun List<GivenImport>.collectImportGivens(context: InjektContext, trace: Binding
                 context.classifierDescriptorForFqName(packageFqName)
                     ?.safeAs<ClassDescriptor>()
                     ?.takeIf { it.kind == ClassKind.OBJECT }
-                    ?.thisAsReceiverParameter
-                    ?.toCallableRef(context, trace)
-                    ?.copy(
-                        isGiven = true,
-                        doNotIncludeChildren = true,
-                        import = import
-                    )
+                    ?.getGivenReceiver(context, trace)
+                    ?.copy(doNotIncludeChildren = true, import = import)
             )
         } else {
             val fqName = FqName(import.importPath)
@@ -258,13 +257,8 @@ fun List<GivenImport>.collectImportGivens(context: InjektContext, trace: Binding
                     context.classifierDescriptorForFqName(parentFqName)
                         ?.safeAs<ClassDescriptor>()
                         ?.takeIf { it.kind == ClassKind.OBJECT }
-                        ?.thisAsReceiverParameter
-                        ?.toCallableRef(context, trace)
-                        ?.copy(
-                            isGiven = true,
-                            doNotIncludeChildren = true,
-                            import = import
-                        )
+                        ?.getGivenReceiver(context, trace)
+                        ?.copy(doNotIncludeChildren = true, import = import)
                 )
         }
     }
@@ -275,11 +269,14 @@ private fun ResolutionScope.canSee(callable: CallableRef): Boolean =
                     !callable.callable.isExternalDeclaration(context)) ||
             callable.callable.visibility == DescriptorVisibilities.LOCAL ||
             (callable.callable is ClassConstructorDescriptor &&
-                    callable.type.classifier.isObject) ||
+                    callable.type.unwrapQualifiers().classifier.isObject) ||
             callable.callable.parents.any { callableParent ->
                 allScopes.any {
                     it.ownerDescriptor == callableParent ||
                             (it.ownerDescriptor is ClassDescriptor &&
-                                    it.ownerDescriptor.toClassifierRef(context, trace) == callable.owner)
+                                    it.ownerDescriptor.toClassifierRef(
+                                        context,
+                                        trace
+                                    ) == callable.owner)
                 }
             }

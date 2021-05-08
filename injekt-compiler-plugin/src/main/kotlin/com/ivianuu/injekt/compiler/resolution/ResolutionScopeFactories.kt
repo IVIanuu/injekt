@@ -99,9 +99,7 @@ fun HierarchicalResolutionScope(
                                         trace = trace,
                                         initialGivens = listOf(
                                             companionDescriptor
-                                                .thisAsReceiverParameter
-                                                .toCallableRef(context, trace)
-                                                .makeGiven()
+                                                .getGivenReceiver(context, trace)
                                         ),
                                         imports = emptyList(),
                                         typeParameters = emptyList()
@@ -124,10 +122,7 @@ fun HierarchicalResolutionScope(
                             parent = finalParent,
                             ownerDescriptor = clazz,
                             trace = trace,
-                            initialGivens = listOf(
-                                clazz.thisAsReceiverParameter.toCallableRef(context, trace)
-                                    .makeGiven()
-                            ),
+                            initialGivens = listOf(clazz.getGivenReceiver(context, trace)),
                             imports = emptyList(),
                             typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(context, trace) }
                         ).also { trace.record(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, clazz, it) }

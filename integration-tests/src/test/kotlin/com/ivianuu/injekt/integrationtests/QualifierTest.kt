@@ -82,6 +82,16 @@ class QualifierTest {
     )
 
     @Test
+    fun testQualifiedObject() = singleAndMultiCodegen(
+        """ 
+            @Given @Qualifier1 object Dep
+            """,
+        """
+            fun invoke() = given<@Qualifier1 Dep>()
+        """
+    )
+
+    @Test
     fun testQualifiedFunction() = codegen(
         """ 
             @Given @Qualifier1 fun foo() = Foo()
