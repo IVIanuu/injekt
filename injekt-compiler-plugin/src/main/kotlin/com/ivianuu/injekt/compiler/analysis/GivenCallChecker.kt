@@ -36,6 +36,14 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
         val resultingDescriptor = resolvedCall.resultingDescriptor
         if (resultingDescriptor !is FunctionDescriptor) return
 
+        val callExpression = resolvedCall.call.callElement
+
+        val file = try {
+            callExpression.containingKtFile
+        } catch (e: Throwable) {
+            return
+        }
+
         if (resultingDescriptor.valueParameters.none {
                 it.isGiven(this.context, context.trace)
         }) return
@@ -75,8 +83,6 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
 
         if (requests.isEmpty()) return
 
-        val callExpression = resolvedCall.call.callElement
-
         val scope = HierarchicalResolutionScope(this.context, context.scope, context.trace)
         scope.recordLookup(KotlinLookupLocation(callExpression))
 
@@ -90,7 +96,7 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
                 result.candidate.callable.import?.element?.let {
                     context.trace.record(
                         InjektWritableSlices.USED_IMPORT,
-                        SourcePosition(it.containingKtFile.virtualFilePath, it.startOffset, it.endOffset),
+                        SourcePosition(file.virtualFilePath, it.startOffset, it.endOffset),
                         Unit
                     )
                 }
@@ -99,13 +105,13 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
             is GivenGraph.Success -> {
                 context.trace.record(
                     InjektWritableSlices.FILE_HAS_GIVEN_CALLS,
-                    callExpression.containingKtFile.virtualFilePath,
+                    file.virtualFilePath,
                     Unit
                 )
                 context.trace.record(
                     InjektWritableSlices.GIVEN_GRAPH,
                     SourcePosition(
-                        callExpression.containingKtFile.virtualFilePath,
+                        file.virtualFilePath,
                         callExpression.startOffset,
                         callExpression.endOffset
                     ),
