@@ -402,5 +402,4 @@ class ResolutionScope(
     }
 
     override fun toString(): String = "ResolutionScope($name)"
-
 }

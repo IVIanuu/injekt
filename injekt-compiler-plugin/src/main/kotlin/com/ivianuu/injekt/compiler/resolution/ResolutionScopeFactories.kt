@@ -54,175 +54,54 @@ fun HierarchicalResolutionScope(
 
     val importsResolutionScope = trace.get(InjektWritableSlices.IMPORT_RESOLUTION_SCOPE, fileImports)
         ?: run {
-            fileImports
-                .toImportResolutionScope("FILE", null, context, trace)
-                .also { trace.record(InjektWritableSlices.IMPORT_RESOLUTION_SCOPE, fileImports, it) }
+            ImportResolutionScope(
+                fileImports,
+                "FILE",
+                null,
+                context,
+                trace
+            ).also { trace.record(InjektWritableSlices.IMPORT_RESOLUTION_SCOPE, fileImports, it) }
         }
 
     return allScopes
         .filter { it !is ImportingScope }
         .reversed()
         .asSequence()
-        .filter {
-            it is LexicalScope && (
-                    (it.ownerDescriptor is ClassDescriptor &&
-                            it.kind == LexicalScopeKind.CLASS_MEMBER_SCOPE) ||
-                            (it.ownerDescriptor is FunctionDescriptor &&
-                                    it.kind == LexicalScopeKind.FUNCTION_INNER_SCOPE) ||
-                            (it.ownerDescriptor is PropertyDescriptor &&
-                                    it.kind == LexicalScopeKind.PROPERTY_INITIALIZER_OR_DELEGATE) ||
-                            it.kind == LexicalScopeKind.CODE_BLOCK ||
-                            it.kind == LexicalScopeKind.CLASS_INITIALIZER
-                    )
-        }
+        .filter { it.isApplicableScope() }
         .fold(importsResolutionScope) { parent, next ->
             when {
-                next is LexicalScope && next.ownerDescriptor is ClassDescriptor -> {
-                    val clazz = next.ownerDescriptor as ClassDescriptor
-                    val companionScope = clazz.companionObjectDescriptor
-                        ?.let { companionDescriptor ->
-                            trace.get(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, companionDescriptor)
-                                ?: run {
-                                    val finalParent = companionDescriptor
-                                        .findPsi()
-                                        .safeAs<KtClassOrObject>()
-                                        ?.getGivenImports()
-                                        ?.takeIf { it.isNotEmpty() }
-                                        ?.toImportResolutionScope("CLASS COMPANION ${clazz.fqNameSafe}", parent, context, trace)
-                                        ?: parent
-                                    ResolutionScope(
-                                        name = "CLASS COMPANION ${clazz.fqNameSafe}",
-                                        context = context,
-                                        callContext = next.callContext(trace.bindingContext),
-                                        parent = finalParent,
-                                        ownerDescriptor = companionDescriptor,
-                                        trace = trace,
-                                        initialGivens = listOf(
-                                            companionDescriptor
-                                                .getGivenReceiver(context, trace)
-                                        ),
-                                        imports = emptyList(),
-                                        typeParameters = emptyList()
-                                    ).also { trace.record(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, companionDescriptor, it) }
-                                }
-                        }
-                    val finalParent = clazz
-                        .findPsi()
-                        .safeAs<KtClassOrObject>()
-                        ?.getGivenImports()
-                        ?.takeIf { it.isNotEmpty() }
-                        ?.toImportResolutionScope("CLASS ${clazz.fqNameSafe}",
-                            companionScope ?: parent, context, trace)
-                        ?: companionScope ?: parent
-                    trace.get(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, clazz)
-                        ?: ResolutionScope(
-                            name = "CLASS ${clazz.fqNameSafe}",
-                            context = context,
-                            callContext = next.callContext(trace.bindingContext),
-                            parent = finalParent,
-                            ownerDescriptor = clazz,
-                            trace = trace,
-                            initialGivens = listOf(clazz.getGivenReceiver(context, trace)),
-                            imports = emptyList(),
-                            typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(context, trace) }
-                        ).also { trace.record(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, clazz, it) }
-                }
+                next is LexicalScope && next.ownerDescriptor is ClassDescriptor ->
+                    ClassResolutionScope(next.ownerDescriptor.cast(), context, trace, parent)
                 next is LexicalScope && next.ownerDescriptor is FunctionDescriptor &&
-                        next.kind == LexicalScopeKind.FUNCTION_INNER_SCOPE -> {
-                    val function = next.ownerDescriptor as FunctionDescriptor
-                    trace.get(InjektWritableSlices.FUNCTION_RESOLUTION_SCOPE, function)
-                        ?: run {
-                            val finalParent = function
-                                .findPsi()
-                                .safeAs<KtFunction>()
-                                ?.getGivenImports()
-                                ?.takeIf { it.isNotEmpty() }
-                                ?.toImportResolutionScope("FUNCTION ${function.fqNameSafe}", parent, context, trace)
-                                ?: parent
-                            ResolutionScope(
-                                name = "FUNCTION ${function.fqNameSafe}",
-                                context = context,
-                                callContext = function.callContext(trace.bindingContext),
-                                parent = finalParent,
-                                ownerDescriptor = function,
-                                trace = trace,
-                                initialGivens = function.allParameters
-                                    .asSequence()
-                                    .filter { it.isGiven(context, trace) || it === function.extensionReceiverParameter }
-                                    .map { it.toCallableRef(context, trace).makeGiven() }
-                                    .toList(),
-                                imports = emptyList(),
-                                typeParameters = function.typeParameters.map { it.toClassifierRef(context, trace) }
-                            ).also { trace.record(InjektWritableSlices.FUNCTION_RESOLUTION_SCOPE, function, it) }
-                        }
-                }
-                next is LexicalScope && next.ownerDescriptor is PropertyDescriptor -> {
-                    val property = next.ownerDescriptor as PropertyDescriptor
-                    trace.get(InjektWritableSlices.PROPERTY_RESOLUTION_SCOPE, property)
-                        ?: run {
-                            val finalParent = property
-                                .findPsi()
-                                .safeAs<KtProperty>()
-                                ?.getGivenImports()
-                                ?.takeIf { it.isNotEmpty() }
-                                ?.toImportResolutionScope("PROPERTY ${property.fqNameSafe}", parent, context, trace)
-                                ?: parent
-                            ResolutionScope(
-                                name = "Hierarchical $next",
-                                context = context,
-                                callContext = next.callContext(trace.bindingContext),
-                                parent = finalParent,
-                                ownerDescriptor = property,
-                                trace = trace,
-                                initialGivens = next.collectGivens(context, trace),
-                                imports = emptyList(),
-                                typeParameters = property.typeParameters.map { it.toClassifierRef(context, trace) }
-                            ).also { trace.record(InjektWritableSlices.PROPERTY_RESOLUTION_SCOPE, property, it) }
-                        }
-                }
-                else -> {
-                    val ownerDescriptor = next.parentsWithSelf
-                        .firstIsInstance<LexicalScope>()
-                        .ownerDescriptor
-                    val finalParent = ownerDescriptor
-                        .safeAs<AnonymousFunctionDescriptor>()
-                        ?.findPsi()
-                        ?.getParentOfType<KtCallExpression>(false)
-                        ?.getResolvedCall(trace.bindingContext)
-                        ?.valueArguments
-                        ?.values
-                        ?.firstOrNull()
-                        ?.safeAs<VarargValueArgument>()
-                        ?.arguments
-                        ?.map { it.toGivenImport() }
-                        ?.takeIf { it.isNotEmpty() }
-                        ?.toImportResolutionScope("BLOCK", parent, context, trace)
-                        ?: parent
-                    trace.get(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, next)
-                        ?: ResolutionScope(
-                            name = "Hierarchical $next",
-                            context = context,
-                            callContext = next.callContext(trace.bindingContext),
-                            parent = finalParent,
-                            ownerDescriptor = ownerDescriptor,
-                            trace = trace,
-                            initialGivens = next.collectGivens(context, trace),
-                            imports = emptyList(),
-                            typeParameters = emptyList()
-                        )//.also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, next, it) }
-                }
+                        next.kind == LexicalScopeKind.FUNCTION_INNER_SCOPE ->
+                    FunctionResolutionScope(next.ownerDescriptor.cast(), context, trace, parent)
+                next is LexicalScope && next.ownerDescriptor is PropertyDescriptor ->
+                    PropertyResolutionScope(next.ownerDescriptor.cast(), context, trace, parent)
+                else -> CodeBlockResolutionScope(next, context, trace, parent)
             }
         }
         .also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, finalScope, it) }
 }
 
-private fun List<GivenImport>.toImportResolutionScope(
+private fun HierarchicalScope.isApplicableScope() = this is LexicalScope && (
+        (ownerDescriptor is ClassDescriptor &&
+                kind == LexicalScopeKind.CLASS_MEMBER_SCOPE) ||
+                (ownerDescriptor is FunctionDescriptor &&
+                        kind == LexicalScopeKind.FUNCTION_INNER_SCOPE) ||
+                (ownerDescriptor is PropertyDescriptor &&
+                        kind == LexicalScopeKind.PROPERTY_INITIALIZER_OR_DELEGATE) ||
+                kind == LexicalScopeKind.CODE_BLOCK ||
+                kind == LexicalScopeKind.CLASS_INITIALIZER
+        )
+
+private fun ImportResolutionScope(
+    imports: List<GivenImport>,
     namePrefix: String,
     parent: ResolutionScope?,
     context: InjektContext,
     trace: BindingTrace
 ): ResolutionScope {
-    val (externalImportedGivens, internalImportedGivens) = this
+    val (externalImportedGivens, internalImportedGivens) = imports
         .collectImportGivens(context, trace)
         .partition { it.callable.isExternalDeclaration(context) }
     return ResolutionScope(
@@ -243,7 +122,148 @@ private fun List<GivenImport>.toImportResolutionScope(
         ownerDescriptor = null,
         trace = trace,
         initialGivens = internalImportedGivens,
-        imports = this,
+        imports = imports,
+        typeParameters = emptyList()
+    )
+}
+
+private fun ClassResolutionScope(
+    clazz: ClassDescriptor,
+    context: InjektContext,
+    trace: BindingTrace,
+    parent: ResolutionScope?
+): ResolutionScope {
+    trace.get(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, clazz)
+        ?.let { return it }
+    val companionObjectScope = clazz.companionObjectDescriptor
+        ?.let { ClassResolutionScope(it, context, trace, parent) }
+    val name = if (clazz.isCompanionObject)
+        "COMPANION ${clazz.containingDeclaration.fqNameSafe}"
+    else "CLASS ${clazz.fqNameSafe}"
+    val finalParent = clazz
+        .findPsi()
+        .safeAs<KtClassOrObject>()
+        ?.getGivenImports()
+        ?.takeIf { it.isNotEmpty() }
+        ?.let {
+            ImportResolutionScope(
+                it,
+                name,
+                parent,
+                context,
+                trace
+            )
+        } ?: companionObjectScope ?: parent
+
+    return ResolutionScope(
+        name = name,
+        context = context,
+        callContext = CallContext.DEFAULT,
+        parent = finalParent,
+        ownerDescriptor = clazz,
+        trace = trace,
+        initialGivens = listOf(clazz.getGivenReceiver(context, trace)),
+        imports = emptyList(),
+        typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(context, trace) }
+    ).also { trace.record(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, clazz, it) }
+}
+
+private fun FunctionResolutionScope(
+    function: FunctionDescriptor,
+    context: InjektContext,
+    trace: BindingTrace,
+    parent: ResolutionScope?
+): ResolutionScope {
+    trace.get(InjektWritableSlices.FUNCTION_RESOLUTION_SCOPE, function)
+        ?.let { return it }
+    val finalParent = function
+        .findPsi()
+        .safeAs<KtFunction>()
+        ?.getGivenImports()
+        ?.takeIf { it.isNotEmpty() }
+        ?.let { ImportResolutionScope(it, "FUNCTION ${function.fqNameSafe}", parent, context, trace) }
+        ?: parent
+    return ResolutionScope(
+        name = "FUNCTION ${function.fqNameSafe}",
+        context = context,
+        callContext = function.callContext(trace.bindingContext),
+        parent = finalParent,
+        ownerDescriptor = function,
+        trace = trace,
+        initialGivens = function.allParameters
+            .asSequence()
+            .filter { it.isGiven(context, trace) || it === function.extensionReceiverParameter }
+            .map { it.toCallableRef(context, trace).makeGiven() }
+            .toList(),
+        imports = emptyList(),
+        typeParameters = function.typeParameters.map { it.toClassifierRef(context, trace) }
+    ).also { trace.record(InjektWritableSlices.FUNCTION_RESOLUTION_SCOPE, function, it) }
+}
+
+private fun PropertyResolutionScope(
+    property: PropertyDescriptor,
+    context: InjektContext,
+    trace: BindingTrace,
+    parent: ResolutionScope?
+): ResolutionScope {
+    trace.get(InjektWritableSlices.PROPERTY_RESOLUTION_SCOPE, property)
+        ?.let { return it }
+    val finalParent = property
+        .findPsi()
+        .safeAs<KtProperty>()
+        ?.getGivenImports()
+        ?.takeIf { it.isNotEmpty() }
+        ?.let { ImportResolutionScope(it, "PROPERTY ${property.fqNameSafe}", parent, context, trace) }
+        ?: parent
+    return ResolutionScope(
+        name = "PROPERTY ${property.fqNameSafe}",
+        context = context,
+        callContext = property.callContext(trace.bindingContext),
+        parent = finalParent,
+        ownerDescriptor = property,
+        trace = trace,
+        initialGivens = listOfNotNull(
+            property.extensionReceiverParameter
+                ?.toCallableRef(context, trace)
+                ?.makeGiven()
+        ),
+        imports = emptyList(),
+        typeParameters = property.typeParameters.map { it.toClassifierRef(context, trace) }
+    ).also { trace.record(InjektWritableSlices.PROPERTY_RESOLUTION_SCOPE, property, it) }
+}
+
+private fun CodeBlockResolutionScope(
+    scope: HierarchicalScope,
+    context: InjektContext,
+    trace: BindingTrace,
+    parent: ResolutionScope?
+): ResolutionScope {
+    val ownerDescriptor = scope.parentsWithSelf
+        .firstIsInstance<LexicalScope>()
+        .ownerDescriptor
+    val finalParent = ownerDescriptor
+        .safeAs<AnonymousFunctionDescriptor>()
+        ?.findPsi()
+        ?.getParentOfType<KtCallExpression>(false)
+        ?.getResolvedCall(trace.bindingContext)
+        ?.valueArguments
+        ?.values
+        ?.firstOrNull()
+        ?.safeAs<VarargValueArgument>()
+        ?.arguments
+        ?.map { it.toGivenImport() }
+        ?.takeIf { it.isNotEmpty() }
+        ?.let { ImportResolutionScope(it, "BLOCK", parent, context, trace) }
+        ?: parent
+    return ResolutionScope(
+        name = "Hierarchical $scope",
+        context = context,
+        callContext = scope.callContext(trace.bindingContext),
+        parent = finalParent,
+        ownerDescriptor = ownerDescriptor,
+        trace = trace,
+        initialGivens = scope.collectGivens(context, trace),
+        imports = emptyList(),
         typeParameters = emptyList()
     )
 }
