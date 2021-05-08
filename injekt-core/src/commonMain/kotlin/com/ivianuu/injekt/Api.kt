@@ -120,6 +120,30 @@ inline fun <T> givenOrNull(@Given @DefaultOnAllErrors value: T? = null): T? = va
 annotation class Qualifier
 
 /**
+ * Allows to specify a custom error message if no given value of the annotated type was found
+ */
+@Target(
+    AnnotationTarget.CLASS,
+    AnnotationTarget.TYPEALIAS,
+    AnnotationTarget.ANNOTATION_CLASS,
+    AnnotationTarget.VALUE_PARAMETER
+)
+annotation class GivenNotFound(val message: String)
+
+/**
+ * Allows to specify a custom error message if ambiguous given values were found
+ */
+@Target(
+    AnnotationTarget.CLASS,
+    AnnotationTarget.CONSTRUCTOR,
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.PROPERTY,
+    AnnotationTarget.LOCAL_VARIABLE,
+    AnnotationTarget.VALUE_PARAMETER
+)
+annotation class GivenAmbiguous(val message: String)
+
+/**
  * Falls back to the default value if a given exists but has an error.
  * Normally the default value will only be used if no given was found but not if it has errors
  */

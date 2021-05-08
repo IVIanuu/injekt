@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 data class CallableRef(
     val callable: CallableDescriptor,
@@ -35,6 +36,7 @@ data class CallableRef(
     val isGiven: Boolean,
     val source: CallableRef?,
     val callContext: CallContext,
+    val customErrorMessages: CustomErrorMessages?,
     val owner: ClassifierRef?,
     val overriddenDepth: Int,
     val doNotIncludeChildren: Boolean,
@@ -94,25 +96,42 @@ fun CallableDescriptor.toCallableRef(
         .asSequence()
         .filter { it.annotations.hasAnnotation(InjektFqNames.DefaultOnAllErrors) }
         .mapTo(mutableSetOf()) { it.injektName() }
+    val isGiven = isGiven(context, trace)
+
+    val customErrorMessages = if (!isGiven) null else listOfNotNull(
+        annotations,
+        if (this is ConstructorDescriptor) constructedClass.annotations
+        else null
+    ).customErrorMessages(
+        typeParameters
+            .takeIf { it.isNotEmpty() }
+            ?: containingDeclaration
+                .safeAs<FunctionDescriptor>()
+                ?.typeParameters
+                ?.map { it.toClassifierRef(context, trace) }
+            ?: emptyList()
+    )
+
     return CallableRef(
-        callable = this,
-        type = type,
-        originalType = type,
-        typeParameters = typeParameters,
-        parameterTypes = parameterTypes,
-        givenParameters = givenParameters,
-        defaultOnAllErrorParameters = defaultOnAllErrorsParameters,
-        typeArguments = typeParameters
-            .map { it to it.defaultType }
-            .toMap(),
-        isGiven = isGiven(context, trace),
-        source = null,
-        callContext = callContext(trace.bindingContext),
-        owner = null,
-        overriddenDepth = 0,
-        doNotIncludeChildren = false,
-        import = null
-    ).also {
-        trace.record(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this, it)
-    }
+            callable = this,
+            type = type,
+            originalType = type,
+            typeParameters = typeParameters,
+            parameterTypes = parameterTypes,
+            givenParameters = givenParameters,
+            defaultOnAllErrorParameters = defaultOnAllErrorsParameters,
+            typeArguments = typeParameters
+                .map { it to it.defaultType }
+                .toMap(),
+            isGiven = isGiven,
+            source = null,
+            callContext = callContext(trace.bindingContext),
+            owner = null,
+            overriddenDepth = 0,
+            doNotIncludeChildren = false,
+            import = null,
+            customErrorMessages = customErrorMessages
+        ).also {
+            trace.record(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this, it)
+        }
 }

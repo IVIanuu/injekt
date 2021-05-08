@@ -50,7 +50,8 @@ data class ClassifierRef(
     val isGivenConstraint: Boolean = false,
     val isForTypeKey: Boolean = false,
     val primaryConstructorPropertyParameters: List<Name> = emptyList(),
-    val variance: TypeVariance = TypeVariance.INV
+    val variance: TypeVariance = TypeVariance.INV,
+    val customErrorMessages: CustomErrorMessages? = null
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && key == other.key
     override fun hashCode(): Int = key.hashCode()
@@ -157,7 +158,8 @@ fun ClassifierDescriptor.toClassifierRef(
             ?.map { it.name }
             ?.toList()
         ?: emptyList(),
-        variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
+        variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV,
+        customErrorMessages = listOf(annotations).customErrorMessages(typeParameters)
     ).also {
         trace?.record(InjektWritableSlices.CLASSIFIER_REF_FOR_CLASSIFIER, this, it)
     }

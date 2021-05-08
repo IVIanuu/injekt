@@ -76,7 +76,10 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
                     callableFqName = resultingDescriptor.fqNameSafe,
                     parameterName = parameter.injektName().asNameId(),
                     isInline = InlineUtil.isInlineParameter(parameter),
-                    isLazy = false
+                    isLazy = false,
+                    customErrorMessages = parameter.toCallableRef(this.context, context.trace)
+                        .customErrorMessages,
+                    typeArguments = substitutionMap
                 )
             }
             .toList()

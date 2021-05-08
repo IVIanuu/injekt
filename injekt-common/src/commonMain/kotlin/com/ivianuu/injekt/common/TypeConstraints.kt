@@ -21,6 +21,7 @@ import com.ivianuu.injekt.*
 /**
  * Type class witnessing that every [A] is a sub type of [B]
  */
+@GivenNotFound("Cannot proof that [A] is sub type of [B]")
 sealed class IsSubType<A, B> : (A) -> B {
     companion object {
         private object Singleton : IsSubType<Any?, Any?>() {
@@ -35,6 +36,7 @@ sealed class IsSubType<A, B> : (A) -> B {
 /**
  * Type class witnessing that every [A] is not a sub type of [B]
  */
+@GivenNotFound("Cannot proof that [A] is not sub type of [B]")
 sealed class IsNotSubType<A, B> {
     companion object {
         private object Singleton : IsNotSubType<Any?, Any?>()
@@ -56,6 +58,7 @@ sealed class IsNotSubType<A, B> {
 /**
  * Type class witnessing that every [A] is equal to [B]
  */
+@GivenNotFound("Cannot proof that [A] is equal to [B]")
 sealed class IsEqual<A, B> : (A) -> B {
     companion object {
         private object Singleton : IsEqual<Any?, Any?>() {
@@ -70,6 +73,7 @@ sealed class IsEqual<A, B> : (A) -> B {
 /**
  * Type class witnessing that every [A] is not equal to [B]
  */
+@GivenNotFound("Cannot proof that [A] is not equal to [B]")
 sealed class IsNotEqual<A, B> {
     companion object {
         private object Singleton : IsNotEqual<Any?, Any?>()

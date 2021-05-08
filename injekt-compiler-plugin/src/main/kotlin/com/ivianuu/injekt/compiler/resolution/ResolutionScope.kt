@@ -197,7 +197,8 @@ class ResolutionScope(
                     val finalCandidate = candidate.substitute(substitutionMap)
                     CallableGivenNode(
                         key.type,
-                        finalCandidate.getGivenRequests(this.context, trace),
+                        finalCandidate.getGivenRequests(this.context, trace,
+                            typeArguments = substitutionMap),
                         this,
                         finalCandidate
                     )
@@ -253,7 +254,9 @@ class ResolutionScope(
                             callableFqName = FqName("com.ivianuu.injekt.givenSetOf<${request.type.arguments[0].render()}>"),
                             parameterName = "element$index".asNameId(),
                             isInline = false,
-                            isLazy = false
+                            isLazy = false,
+                            customErrorMessages = null,
+                            typeArguments = emptyMap()
                         )
                     }
                 return SetGivenNode(

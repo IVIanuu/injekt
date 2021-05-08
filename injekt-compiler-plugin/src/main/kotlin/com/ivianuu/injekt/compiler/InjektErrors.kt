@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.diagnostics.rendering.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 interface InjektErrors {
     companion object {
@@ -258,128 +259,158 @@ private fun GivenGraph.Error.render(): String = buildString {
             }
         }
         is ResolutionResult.Failure.CandidateAmbiguity -> {
-            if (failure == unwrappedFailure) {
-                appendLine("ambiguous given arguments:\n${unwrappedFailure.candidateResults.joinToString("\n") {
-                    it.candidate.callableFqName.asString()
-                }}\ndo all match type ${unwrappedFailureRequest.type.render()} for parameter " +
-                        "${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}")
+            val errorMessage = unwrappedFailure.candidateResults
+                .firstNotNullResult { result ->
+                    result.candidate
+                        .safeAs<CallableGivenNode>()
+                        ?.callable
+                        ?.let { callable ->
+                            callable
+                                .customErrorMessages
+                                ?.ambiguousMessage
+                                ?.formatErrorMessage(callable.type, callable.typeArguments)
+                        }
+                }
+                ?: if (failure == unwrappedFailure) {
+                    "ambiguous given arguments:\n${unwrappedFailure.candidateResults.joinToString("\n") {
+                        it.candidate.callableFqName.asString()
+                    }}\ndo all match type ${unwrappedFailureRequest.type.render()} for parameter " +
+                            "${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}"
             } else {
-                appendLine("ambiguous given arguments of type ${unwrappedFailureRequest.type.render()} " +
-                        "for parameter ${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}")
+                    "ambiguous given arguments of type ${unwrappedFailureRequest.type.render()} " +
+                            "for parameter ${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}"
             }
+            appendLine(errorMessage)
         }
         is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
         is ResolutionResult.Failure.NoCandidates,
         is ResolutionResult.Failure.DivergentGiven-> {
-            appendLine("no given argument found of type " +
-                    "${unwrappedFailureRequest.type.render()} for parameter " +
-                    "${unwrappedFailureRequest.parameterName} of function " +
-                    "${unwrappedFailureRequest.callableFqName}")
+            val errorMessage = (unwrappedFailureRequest.customErrorMessages
+                ?.notFoundMessage
+                ?: unwrappedFailureRequest.type.classifier.customErrorMessages?.notFoundMessage)
+                ?.formatErrorMessage(unwrappedFailureRequest.type, unwrappedFailureRequest.typeArguments)
+                ?: "no given argument found of type " +
+                "${unwrappedFailureRequest.type.render()} for parameter " +
+                "${unwrappedFailureRequest.parameterName} of function " +
+                "${unwrappedFailureRequest.callableFqName}"
+            appendLine(errorMessage)
         }
     }.let {  }
 
-    if (failure is ResolutionResult.Failure.DependencyFailure) {
-        appendLine("I found:")
-        appendLine()
+    if (failure !is ResolutionResult.Failure.DependencyFailure) return@buildString
 
-        fun printCall(
-            request: GivenRequest,
-            failure: ResolutionResult.Failure,
-            callContext: CallContext
-        ) {
-            val isProvider = request.callableFqName.asString()
-                .startsWith("com.ivianuu.injekt.") && request.callableFqName.asString()
-                .endsWith("roviderOf")
-            append("${request.callableFqName}")
-            if (isProvider) {
-                appendLine(" {")
-            } else {
-                appendLine("(")
-            }
-            withIndent {
-                if (isProvider && unwrappedFailure is ResolutionResult.Failure.CallContextMismatch) {
-                    appendLine("${indent()}/* ${callContext.name.toLowerCase()} call context */")
-                }
-                append(indent())
-                if (!isProvider) {
-                    append("${request.parameterName} = ")
-                }
-                if (failure is ResolutionResult.Failure.DependencyFailure) {
-                    printCall(failure.dependencyRequest, failure.dependencyFailure,
-                    if (isProvider) request.type.callContext else callContext)
-                } else {
-                    append("/* ")
-                    when (failure) {
-                        is ResolutionResult.Failure.CallContextMismatch -> {
-                            append("${failure.candidate.callContext.name.toLowerCase()} call:")
-                        }
-                        is ResolutionResult.Failure.TypeArgumentKindMismatch -> {
-                            append("${failure.parameter.fqName.shortName()} is marked with ${failure.kind.readableName()}: ")
-                        }
-                        is ResolutionResult.Failure.CandidateAmbiguity -> {
-                            append("ambiguous: ${failure.candidateResults.joinToString(", ") {
-                                it.candidate.callableFqName.asString() 
-                            }} do match type ${request.type.render()}")
-                        }
-                        is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
-                        is ResolutionResult.Failure.NoCandidates,
-                        is ResolutionResult.Failure.DivergentGiven -> append("missing:")
-                    }.let { }
-                    append(" */ ")
-                    if (failure is ResolutionResult.Failure.CallContextMismatch) {
-                        appendLine("${failure.candidate.callableFqName}()")
-                    } else {
-                        appendLine("given<${request.type.render()}>()")
-                    }
-                }
-            }
-            append(indent())
-            if (isProvider) {
-                appendLine("}")
-            } else {
-                appendLine(")")
-            }
+    appendLine("I found:")
+    appendLine()
+
+    fun printCall(
+        request: GivenRequest,
+        failure: ResolutionResult.Failure,
+        callContext: CallContext
+    ) {
+        val isProvider = request.callableFqName.asString()
+            .startsWith("com.ivianuu.injekt.") && request.callableFqName.asString()
+            .endsWith("roviderOf")
+        append("${request.callableFqName}")
+        if (isProvider) {
+            appendLine(" {")
+        } else {
+            appendLine("(")
         }
-
         withIndent {
-            if (unwrappedFailure is ResolutionResult.Failure.CallContextMismatch) {
-                appendLine("${indent()}/* ${scope.callContext.name.toLowerCase()} call context */")
+            if (isProvider && unwrappedFailure is ResolutionResult.Failure.CallContextMismatch) {
+                appendLine("${indent()}/* ${callContext.name.toLowerCase()} call context */")
             }
             append(indent())
-            printCall(
-                failureRequest,
-                failure,
-                if (failureRequest.type.isFunctionType) failureRequest.type.callContext
-                else scope.callContext
-            )
+            if (!isProvider) {
+                append("${request.parameterName} = ")
+            }
+            if (failure is ResolutionResult.Failure.DependencyFailure) {
+                printCall(failure.dependencyRequest, failure.dependencyFailure,
+                if (isProvider) request.type.callContext else callContext)
+            } else {
+                append("/* ")
+                when (failure) {
+                    is ResolutionResult.Failure.CallContextMismatch -> {
+                        append("${failure.candidate.callContext.name.toLowerCase()} call:")
+                    }
+                    is ResolutionResult.Failure.TypeArgumentKindMismatch -> {
+                        append("${failure.parameter.fqName.shortName()} is marked with ${failure.kind.readableName()}: ")
+                    }
+                    is ResolutionResult.Failure.CandidateAmbiguity -> {
+                        append("ambiguous: ${failure.candidateResults.joinToString(", ") {
+                            it.candidate.callableFqName.asString() 
+                        }} do match type ${request.type.render()}")
+                    }
+                    is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
+                    is ResolutionResult.Failure.NoCandidates,
+                    is ResolutionResult.Failure.DivergentGiven -> append("missing:")
+                }.let { }
+                append(" */ ")
+                if (failure is ResolutionResult.Failure.CallContextMismatch) {
+                    appendLine("${failure.candidate.callableFqName}()")
+                } else {
+                    appendLine("given<${request.type.render()}>()")
+                }
+            }
         }
-        appendLine()
-
-        when (unwrappedFailure) {
-            is ResolutionResult.Failure.CallContextMismatch -> {
-                appendLine("but call context was ${unwrappedFailure.actualCallContext.name.toLowerCase()}")
-            }
-            is ResolutionResult.Failure.TypeArgumentKindMismatch -> {
-                appendLine("but type argument ${unwrappedFailure.argument.fqName} is not marked with ${unwrappedFailure.kind.readableName()}")
-            }
-            is ResolutionResult.Failure.CandidateAmbiguity -> {
-                appendLine("but ${unwrappedFailure.candidateResults.joinToString("\n") {
-                    it.candidate.callableFqName.asString()
-                }}\ndo all match type ${unwrappedFailureRequest.type.render()}")
-            }
-            is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
-            is ResolutionResult.Failure.DivergentGiven -> {
-                appendLine("but given ${unwrappedFailure.candidate.callableFqName} " +
-                        "produces a diverging search when trying to match type ${unwrappedFailureRequest.type.render()}")
-            }
-            is ResolutionResult.Failure.NoCandidates -> {
-                appendLine("but no givens were found that match type ${unwrappedFailureRequest.type.render()}")
-            }
-        }.let {  }
+        append(indent())
+        if (isProvider) {
+            appendLine("}")
+        } else {
+            appendLine(")")
+        }
     }
+
+    withIndent {
+        if (unwrappedFailure is ResolutionResult.Failure.CallContextMismatch) {
+            appendLine("${indent()}/* ${scope.callContext.name.toLowerCase()} call context */")
+        }
+        append(indent())
+        printCall(
+            failureRequest,
+            failure,
+            if (failureRequest.type.isFunctionType) failureRequest.type.callContext
+            else scope.callContext
+        )
+    }
+    appendLine()
+
+    when (unwrappedFailure) {
+        is ResolutionResult.Failure.CallContextMismatch -> {
+            appendLine("but call context was ${unwrappedFailure.actualCallContext.name.toLowerCase()}")
+        }
+        is ResolutionResult.Failure.TypeArgumentKindMismatch -> {
+            appendLine("but type argument ${unwrappedFailure.argument.fqName} is not marked with ${unwrappedFailure.kind.readableName()}")
+        }
+        is ResolutionResult.Failure.CandidateAmbiguity -> {
+            appendLine("but ${unwrappedFailure.candidateResults.joinToString("\n") {
+                it.candidate.callableFqName.asString()
+            }}\ndo all match type ${unwrappedFailureRequest.type.render()}")
+        }
+        is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
+        is ResolutionResult.Failure.DivergentGiven -> {
+            appendLine("but given ${unwrappedFailure.candidate.callableFqName} " +
+                    "produces a diverging search when trying to match type ${unwrappedFailureRequest.type.render()}")
+        }
+        is ResolutionResult.Failure.NoCandidates -> {
+            appendLine("but no givens were found that match type ${unwrappedFailureRequest.type.render()}")
+        }
+    }.let {  }
 }
 
 private fun ResolutionResult.Failure.TypeArgumentKindMismatch.TypeArgumentKind.readableName() = when (this) {
     ResolutionResult.Failure.TypeArgumentKindMismatch.TypeArgumentKind.REIFIED -> "reified"
     ResolutionResult.Failure.TypeArgumentKindMismatch.TypeArgumentKind.FOR_TYPE_KEY -> "@ForTypeKey"
+}
+
+private fun String.formatErrorMessage(
+    type: TypeRef,
+    typeArguments: Map<ClassifierRef, TypeRef>
+): String {
+    val arguments = (typeArguments + type.classifier.typeParameters
+        .toMap(type.arguments))
+        .map { "[${it.key.fqName}]" to it.value.render() }
+    return arguments.fold(this) { acc, nextReplacement ->
+        acc.replace(nextReplacement.first, nextReplacement.second)
+    }
 }

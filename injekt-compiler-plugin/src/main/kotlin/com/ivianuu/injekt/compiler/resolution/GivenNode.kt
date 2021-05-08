@@ -96,7 +96,9 @@ class ProviderGivenNode(
             callableFqName = callableFqName,
             parameterName = "instance".asNameId(),
             isInline = false,
-            isLazy = true
+            isLazy = true,
+            customErrorMessages = null,
+            typeArguments = emptyMap()
         )
     )
 
@@ -136,8 +138,8 @@ class ProviderGivenNode(
 
 fun CallableRef.getGivenRequests(
     context: InjektContext,
-    trace: BindingTrace?,
-    callableFqNameProvider: (CallableDescriptor) -> FqName = { it.containingDeclaration.fqNameSafe }
+    trace: BindingTrace,
+    typeArguments: Map<ClassifierRef, TypeRef>
 ): List<GivenRequest> = callable.allParameters
     .asSequence()
     .filter {
@@ -157,10 +159,14 @@ fun CallableRef.getGivenRequests(
                 if (name in defaultOnAllErrorParameters) GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
                 else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
             } else GivenRequest.DefaultStrategy.NONE,
-            callableFqName = callableFqNameProvider(parameter),
+            callableFqName = parameter.containingDeclaration.fqNameSafe,
             parameterName = name.asNameId(),
             isInline = InlineUtil.isInlineParameter(parameter),
-            isLazy = false
+            isLazy = false,
+            customErrorMessages = parameter
+                .toCallableRef(context, trace)
+                .customErrorMessages,
+            typeArguments = typeArguments
         )
     }
     .toList()
@@ -171,8 +177,10 @@ data class GivenRequest(
     val callableFqName: FqName,
     val parameterName: Name,
     val isInline: Boolean,
-    val isLazy: Boolean
-    ) {
+    val isLazy: Boolean,
+    val customErrorMessages: CustomErrorMessages?,
+    val typeArguments: Map<ClassifierRef, TypeRef>
+) {
     enum class DefaultStrategy {
         NONE, DEFAULT_IF_NOT_GIVEN, DEFAULT_ON_ALL_ERRORS
     }
