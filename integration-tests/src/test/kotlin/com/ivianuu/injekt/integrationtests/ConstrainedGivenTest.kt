@@ -361,4 +361,26 @@ class ConstrainedGivenTest {
     ) {
         compilationShouldHaveFailed("no given argument found of type kotlin.Unit for parameter value of function com.ivianuu.injekt.given")
     }
+
+    @Test
+    fun testConstrainedGivenWithInvariantTypeParameter() = singleAndMultiCodegen(
+        """
+            interface IntentKey
+
+            typealias KeyIntentFactory<K> = (K) -> Any
+    
+            @Given 
+            fun <@Given T : KeyIntentFactory<K>, K : IntentKey> impl(): Unit = Unit
+
+            class IntentKeyImpl : IntentKey
+
+            @Given
+            val keyIntentFactoryImpl: KeyIntentFactory<IntentKeyImpl> = { Any() }
+        """,
+        """
+           fun invoke() = given<Unit>() 
+        """
+    ) {
+        invokeSingleFile().shouldBeTypeOf<Unit>()
+    }
 }

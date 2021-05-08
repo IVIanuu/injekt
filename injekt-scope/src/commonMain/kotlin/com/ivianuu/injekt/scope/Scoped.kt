@@ -36,7 +36,7 @@ import com.ivianuu.injekt.common.*
  * ```
  */
 @Qualifier
-annotation class Scoped<out S : GivenScope> {
+annotation class Scoped<S : GivenScope> {
     companion object {
         @Given
         inline fun <@Given T : @Scoped<S> U, U : Any, S : GivenScope> scopedValue(

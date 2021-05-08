@@ -535,7 +535,12 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         otherVariable: ClassifierRef,
         otherConstraint: Constraint
     ) {
-        val substitutedType = baseConstraint.type.substitute(mapOf(otherVariable to otherConstraint.type))
+        val newConstraint = when (otherConstraint.kind) {
+            ConstraintKind.EQUAL -> otherConstraint.type
+            ConstraintKind.UPPER -> otherConstraint.type.copy(variance = TypeVariance.OUT)
+            ConstraintKind.LOWER -> otherConstraint.type.copy(variance = TypeVariance.IN)
+        }
+        val substitutedType = baseConstraint.type.substitute(mapOf(otherVariable to newConstraint))
         if (baseConstraint.kind != ConstraintKind.LOWER) {
             addNewConstraint(targetVariable, baseConstraint,
                 otherVariable, otherConstraint, substitutedType, ConstraintKind.UPPER)

@@ -173,7 +173,7 @@ class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: () -> 
  * ```
  */
 @Qualifier
-annotation class InstallElement<out S : GivenScope> {
+annotation class InstallElement<S : GivenScope> {
     companion object {
         @Given
         class Module<@Given T : @InstallElement<S> U, U : Any, S : GivenScope> {
