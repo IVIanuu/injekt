@@ -66,7 +66,7 @@ fun invokableSource(
 ) = source(source, "File.kt", injektImports)
 
 fun codegen(
-    source1: String,
+    @Language("kotlin") source1: String,
     config: KotlinCompilation.() -> Unit = {},
     assertions: KotlinCompilationAssertionScope.() -> Unit = { compilationShouldBeOk() },
 ) = codegen(
