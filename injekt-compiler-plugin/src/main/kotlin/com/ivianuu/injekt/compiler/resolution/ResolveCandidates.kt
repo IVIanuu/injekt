@@ -460,7 +460,7 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
 }
 
 fun ResolutionScope.compareType(a: TypeRef, b: TypeRef): Int {
-    if (a === b) return 0
+    if (a == b) return 0
     if (!a.isStarProjection && b.isStarProjection) return -1
     if (a.isStarProjection && !b.isStarProjection) return 1
 
