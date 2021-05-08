@@ -41,8 +41,8 @@ class AppTest {
 }
 
 @Given
-@InstallElement<AppGivenScope>
 @Scoped<AppGivenScope>
+@InstallElement<AppGivenScope>
 class ScopeDisposeListener : GivenScopeDisposable {
     var disposed = false
     override fun dispose() {
