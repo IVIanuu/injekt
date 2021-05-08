@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.*
 import com.ivianuu.injekt.scope.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
@@ -35,15 +34,11 @@ typealias GivenCoroutineScope<S> = CoroutineScope
  */
 @Given
 fun <S : GivenScope> givenCoroutineScopeElement(
-    @Given scope: S,
-    @Given context: GivenCoroutineContext<S>,
-    @Given typeKey: TypeKey<GivenCoroutineScope<S>>
-): @InstallElement<S> GivenCoroutineScope<S> = scope.getOrCreateScopedValue(typeKey) {
-    object : CoroutineScope, GivenScopeDisposable {
-        override val coroutineContext: CoroutineContext = context + SupervisorJob()
-        override fun dispose() {
-            coroutineContext.cancel()
-        }
+    @Given context: GivenCoroutineContext<S>
+): @Scoped<S> @InstallElement<S> GivenCoroutineScope<S> = object : CoroutineScope, GivenScopeDisposable {
+    override val coroutineContext: CoroutineContext = context + SupervisorJob()
+    override fun dispose() {
+        coroutineContext.cancel()
     }
 }
 
