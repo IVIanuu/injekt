@@ -46,6 +46,17 @@ class GivenImportsTest {
     }
 
     @Test
+    fun testImportsJustAPackage() = codegen(
+        """
+            @GivenImports("kotlin.collections")
+            fun invoke() {
+            }
+        """
+    ) {
+        compilationShouldHaveFailed("Unresolved given import")
+    }
+
+    @Test
     fun testMalformedImport() = codegen(
         """
             @GivenImports("-_;-")

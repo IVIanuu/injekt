@@ -172,28 +172,21 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
                     )
                     return@forEach
                 }
-                if (context.memberScopeForFqName(parentFqName) == null) {
+                val shortName = fqName.shortName()
+                val importedDeclarations = context.memberScopeForFqName(parentFqName)
+                    ?.getContributedDescriptors()
+                    ?.filter {
+                        it !is PackageViewDescriptor &&
+                                (it.name == shortName ||
+                                        (it is ClassConstructorDescriptor &&
+                                                it.constructedClass.name == shortName))
+                    }
+                if (importedDeclarations == null || importedDeclarations.isEmpty()) {
                     trace.report(
                         InjektErrors.UNRESOLVED_GIVEN_IMPORT
                             .on(element!!)
                     )
                     return@forEach
-                } else {
-                    val shortName = fqName.shortName()
-                    val importedDeclarations = context.memberScopeForFqName(parentFqName)
-                        ?.getContributedDescriptors()
-                        ?.filter {
-                            it.name == shortName ||
-                                    (it is ClassConstructorDescriptor &&
-                                            it.constructedClass.name == shortName)
-                        }
-                    if (importedDeclarations == null || importedDeclarations.isEmpty()) {
-                        trace.report(
-                            InjektErrors.UNRESOLVED_GIVEN_IMPORT
-                                .on(element!!)
-                        )
-                        return@forEach
-                    }
                 }
             }
 
