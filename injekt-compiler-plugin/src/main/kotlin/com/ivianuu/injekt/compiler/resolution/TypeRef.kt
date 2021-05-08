@@ -82,7 +82,7 @@ val ClassifierRef.forTypeKeyTypeParameters: List<Name>
         .map { it.fqName.shortName() }
         .toList()
 
-fun List<TypeRef>.wrap(type: TypeRef): TypeRef = fold(type) { acc, nextQualifier ->
+fun List<TypeRef>.wrap(type: TypeRef): TypeRef = foldRight(type) { nextQualifier, acc ->
     nextQualifier.wrap(acc)
 }
 

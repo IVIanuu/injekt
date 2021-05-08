@@ -20,8 +20,11 @@ import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import io.kotest.matchers.*
 import io.kotest.matchers.maps.*
+import org.jetbrains.kotlin.cli.jvm.compiler.*
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 import org.junit.*
 
 class TypeSubstitutionTest {
@@ -93,34 +96,49 @@ class TypeSubstitutionTest {
             .let {
                 it.typeWith(listOf(appGivenScope) + it.arguments.drop(1))
             }
-        val map = getSubstitutionMap(substitutionType, scopedT.defaultType)
+        val (_, map) = buildContextForConstrainedGiven(injektContext, scopedT.defaultType, substitutionType, emptyList())
         map[scopedT] shouldBe substitutionType
         map[scopedU] shouldBe stringType
         map[scopedS] shouldBe appGivenScope
     }
 
     @Test
-    fun testGetSubstitutionMapInInstallElementLikeScenario() = withTypeCheckerContext {
+    fun testGetSubstitutionMapInInstallElementAndGivenCoroutineScopeLikeScenario() = withTypeCheckerContext {
         val (installElementModuleT, installElementModuleU, installElementModuleS) =
-            typeFor(FqName("com.ivianuu.injekt.scope.InstallElement.Companion.Module"))
-                .classifier
+            injektContext.classifierDescriptorForFqName(
+                FqName("com.ivianuu.injekt.scope.InstallElement.Companion.Module")
+            )!!
+                .cast<ClassDescriptor>()
+                .unsubstitutedPrimaryConstructor!!
+                .toCallableRef(injektContext, CliBindingTrace())
                 .typeParameters
+
         val givenCoroutineScopeElementReturnType = injektContext.memberScopeForFqName(FqName("com.ivianuu.injekt.coroutines"))!!
             .getContributedFunctions("givenCoroutineScopeElement".asNameId(), NoLookupLocation.FROM_BACKEND)
             .single()
             .let { injektContext.callableInfoFor(it, null) }!!
             .type
             .toTypeRef(injektContext, null)
+
+        val (_, map) = buildContextForConstrainedGiven(
+            injektContext,
+            installElementModuleT.defaultType,
+            givenCoroutineScopeElementReturnType,
+            emptyList()
+        )
         val givenCoroutineScopeElementS = givenCoroutineScopeElementReturnType.arguments
             .first().classifier
-        val map = getSubstitutionMap(
-            givenCoroutineScopeElementReturnType,
-            installElementModuleT.defaultType
-        )
+
         map[installElementModuleT] shouldBe givenCoroutineScopeElementReturnType
+            .substitute(mapOf(
+                givenCoroutineScopeElementS to installElementModuleS.defaultType
+            ))
         map[installElementModuleU] shouldBe
-                givenCoroutineScopeElementReturnType.typeWith(installElementModuleS.defaultType)
-        map[installElementModuleS] shouldBe givenCoroutineScopeElementS
+                givenCoroutineScopeElementReturnType.arguments.last()
+                    .substitute(mapOf(
+                        givenCoroutineScopeElementS to installElementModuleS.defaultType
+                    ))
+        map[installElementModuleS] shouldBe installElementModuleS.defaultType
     }
 
     private fun TypeCheckerTestContext.getSubstitutionMap(
@@ -129,6 +147,6 @@ class TypeSubstitutionTest {
         staticTypeParameters: List<ClassifierRef> = emptyList()
     ): Map<ClassifierRef, TypeRef> {
         val context = subType.buildContext(injektContext, staticTypeParameters, superType)
-        return context.getSubstitutionMap()
+        return context.fixedTypeVariables
     }
 }

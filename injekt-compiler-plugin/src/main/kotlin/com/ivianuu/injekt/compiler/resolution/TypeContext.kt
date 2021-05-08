@@ -189,6 +189,37 @@ fun ConstraintKind.opposite() = when (this) {
     ConstraintKind.EQUAL -> ConstraintKind.EQUAL
 }
 
+fun buildContextForConstrainedGiven(
+    injektContext: InjektContext,
+    constraintType: TypeRef,
+    candidateType: TypeRef,
+    staticTypeParameters: List<ClassifierRef>
+): Pair<TypeContext, Map<ClassifierRef, TypeRef>> {
+    val candidateTypeParameters = mutableListOf<ClassifierRef>()
+    candidateType.visitRecursive {
+        if (it.classifier.isTypeParameter)
+            candidateTypeParameters += it.classifier
+    }
+    val context = candidateType.buildContext(
+        injektContext,
+        candidateTypeParameters + staticTypeParameters,
+        constraintType
+    )
+    val map = if (context.isOk) {
+        val swapMap = mutableMapOf<ClassifierRef, TypeRef>()
+        val rawMap = context.fixedTypeVariables
+        rawMap.forEach { (key, value) ->
+            if (value.classifier in candidateTypeParameters) {
+                swapMap[value.classifier] = key.defaultType
+            }
+        }
+        rawMap
+            .filterKeys { it !in candidateTypeParameters }
+            .mapValues { it.value.substitute(swapMap) }
+    } else emptyMap()
+    return context to map
+}
+
 fun TypeRef.buildContext(
     injektContext: InjektContext,
     staticTypeParameters: List<ClassifierRef>,
@@ -208,8 +239,6 @@ fun TypeRef.buildContext(
     context.fixTypeVariables()
     return context
 }
-
-fun TypeContext.getSubstitutionMap(): Map<ClassifierRef, TypeRef> = fixedTypeVariables
 
 class TypeContext(override val injektContext: InjektContext) : TypeCheckerContext {
     private val staticTypeParameters = mutableListOf<ClassifierRef>()

@@ -34,7 +34,7 @@ class ScopedTest {
             return Foo()
         }
         @Given
-        fun fooElementModule() = InstallElement.Companion.Module<Foo, @Element Foo, TestGivenScope1>()
+        fun fooElement(@Given foo: Foo): @InstallElement<TestGivenScope1> @Element Foo = foo
         val scope = given<TestGivenScope1>()
         callCount shouldBe 0
         scope.element<@Element Foo>()
