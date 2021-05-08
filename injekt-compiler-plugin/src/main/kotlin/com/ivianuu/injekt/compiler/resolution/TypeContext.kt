@@ -289,7 +289,10 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
     }
 
     private fun processConstraints() {
+        var rounds = 0
         while (possibleNewConstraints != null) {
+            check(rounds <= 100)
+            rounds++
             val constraintsToProcess = possibleNewConstraints!!
                 .also { possibleNewConstraints = null }
             var anyAdded = false
@@ -328,7 +331,10 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
 
     fun fixTypeVariables() {
         if (!isOk) return
+        var rounds = 0
         while (true) {
+            check(rounds <= 100)
+            rounds++
             val unfixedTypeVariables = typeVariables
                 .filterKeys { it !in fixedTypeVariables }
                 .values
