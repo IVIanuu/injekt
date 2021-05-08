@@ -75,13 +75,18 @@ fun TypeRef.toIrType(
                     type.arguments,
                     listOf(
                         DeclarationIrBuilder(pluginContext, qualifierConstructor)
-                            .irCall(qualifierConstructor).apply {
-                                arguments.dropLast(1)
-                                    .forEachIndexed { index, type ->
-                                        putTypeArgument(index,
-                                            type.toIrType(pluginContext, localClasses, context).typeOrNull!!)
-                                    }
-                            }
+                            .irCall(
+                                qualifierConstructor,
+                                qualifierConstructor.owner.returnType
+                                    .classifierOrFail
+                                    .typeWith(
+                                        arguments.dropLast(1)
+                                            .map {
+                                                it.toIrType(pluginContext, localClasses, context)
+                                                    .typeOrNull!!
+                                            }
+                                    )
+                            )
                     ) + type.annotations,
                     type.abbreviation
                 )
