@@ -45,11 +45,11 @@ sealed class IsNotSubType<A, B> {
 
         @Suppress("UNCHECKED_CAST")
         @Given
-        fun <A : B, B> amb1(): IsNotSubType<A, B> = Singleton as IsNotSubType<A, B>
+        fun <A : B, B> amb1(): IsNotSubType<A, B> = throw AssertionError()
 
         @Suppress("UNCHECKED_CAST")
         @Given
-        fun <A : B, B> amb2(): IsNotSubType<A, B> = Singleton as IsNotSubType<A, B>
+        fun <A : B, B> amb2(): IsNotSubType<A, B> = throw AssertionError()
     }
 }
 
@@ -78,12 +78,10 @@ sealed class IsNotEqual<A, B> {
         @Given
         fun <A, B> instance(): IsNotEqual<A, B> = Singleton as IsNotEqual<A, B>
 
-        @Suppress("UNCHECKED_CAST")
         @Given
-        fun <A> amb1(): IsNotEqual<A, A> = Singleton as IsNotEqual<A, A>
+        fun <A> amb1(): IsNotEqual<A, A> = throw AssertionError()
 
-        @Suppress("UNCHECKED_CAST")
         @Given
-        fun <A> amb2(): IsNotEqual<A, A> = Singleton as IsNotEqual<A, A>
+        fun <A> amb2(): IsNotEqual<A, A> = throw AssertionError()
     }
 }
