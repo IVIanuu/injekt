@@ -29,14 +29,8 @@ object InjektWritableSlices {
     val USED_GIVEN = BasicWritableSlice<DeclarationDescriptor, Unit>(RewritePolicy.DO_NOTHING)
     val USED_IMPORT = BasicWritableSlice<SourcePosition, Unit>(RewritePolicy.DO_NOTHING)
     val FILE_HAS_GIVEN_CALLS = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
-    val IMPORT_RESOLUTION_SCOPE = BasicWritableSlice<List<GivenImport>, ResolutionScope>(
-        RewritePolicy.DO_NOTHING)
-    val CLASS_RESOLUTION_SCOPE = BasicWritableSlice<ClassDescriptor, ResolutionScope>(RewritePolicy.DO_NOTHING)
-    val FUNCTION_RESOLUTION_SCOPE = BasicWritableSlice<FunctionDescriptor, ResolutionScope>(
-        RewritePolicy.DO_NOTHING)
-    val PROPERTY_RESOLUTION_SCOPE = BasicWritableSlice<PropertyDescriptor, ResolutionScope>(
-        RewritePolicy.DO_NOTHING)
-    val RESOLUTION_SCOPE_FOR_SCOPE = BasicWritableSlice<HierarchicalScope, ResolutionScope>(RewritePolicy.DO_NOTHING)
+    val DECLARATION_RESOLUTION_SCOPE = BasicWritableSlice<DeclarationDescriptor, ResolutionScope>(RewritePolicy.DO_NOTHING)
+    val HIERARCHICAL_RESOLUTION_SCOPE = BasicWritableSlice<HierarchicalScope, ResolutionScope>(RewritePolicy.DO_NOTHING)
     val CALLABLE_REF_FOR_DESCRIPTOR = BasicWritableSlice<CallableDescriptor, CallableRef>(
         RewritePolicy.DO_NOTHING)
     val TYPE_REF_FOR_TYPE = BasicWritableSlice<Int, TypeRef>(RewritePolicy.DO_NOTHING)

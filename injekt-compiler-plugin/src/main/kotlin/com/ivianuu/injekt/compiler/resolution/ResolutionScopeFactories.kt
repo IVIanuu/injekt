@@ -37,7 +37,7 @@ fun HierarchicalResolutionScope(
     trace: BindingTrace
 ): ResolutionScope {
     val finalScope = scope.takeSnapshot()
-    trace[InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, finalScope]?.let { return it }
+    trace[InjektWritableSlices.HIERARCHICAL_RESOLUTION_SCOPE, finalScope]?.let { return it }
 
     val allScopes = finalScope.parentsWithSelf.toList()
 
@@ -52,16 +52,13 @@ fun HierarchicalResolutionScope(
     val fileImports = (file.getGivenImports() + GivenImport(null, "${file.packageFqName}.*"))
         .sortedBy { it.importPath }
 
-    val importsResolutionScope = trace.get(InjektWritableSlices.IMPORT_RESOLUTION_SCOPE, fileImports)
-        ?: run {
-            ImportResolutionScope(
-                fileImports,
-                "FILE",
-                null,
-                context,
-                trace
-            ).also { trace.record(InjektWritableSlices.IMPORT_RESOLUTION_SCOPE, fileImports, it) }
-        }
+    val importsResolutionScope = ImportResolutionScope(
+        fileImports,
+        "FILE ${file.virtualFilePath}",
+        null,
+        context,
+        trace
+    )
 
     return allScopes
         .filter { it !is ImportingScope }
@@ -80,7 +77,7 @@ fun HierarchicalResolutionScope(
                 else -> CodeBlockResolutionScope(next, context, trace, parent)
             }
         }
-        .also { trace.record(InjektWritableSlices.RESOLUTION_SCOPE_FOR_SCOPE, finalScope, it) }
+        .also { trace.record(InjektWritableSlices.HIERARCHICAL_RESOLUTION_SCOPE, finalScope, it) }
 }
 
 private fun HierarchicalScope.isApplicableScope() = this is LexicalScope && (
@@ -133,7 +130,7 @@ private fun ClassResolutionScope(
     trace: BindingTrace,
     parent: ResolutionScope?
 ): ResolutionScope {
-    trace.get(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, clazz)
+    trace.get(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, clazz)
         ?.let { return it }
     val companionObjectScope = clazz.companionObjectDescriptor
         ?.let { ClassResolutionScope(it, context, trace, parent) }
@@ -165,7 +162,7 @@ private fun ClassResolutionScope(
         initialGivens = listOf(clazz.getGivenReceiver(context, trace)),
         imports = emptyList(),
         typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(context, trace) }
-    ).also { trace.record(InjektWritableSlices.CLASS_RESOLUTION_SCOPE, clazz, it) }
+    ).also { trace.record(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, clazz, it) }
 }
 
 private fun FunctionResolutionScope(
@@ -174,7 +171,7 @@ private fun FunctionResolutionScope(
     trace: BindingTrace,
     parent: ResolutionScope?
 ): ResolutionScope {
-    trace.get(InjektWritableSlices.FUNCTION_RESOLUTION_SCOPE, function)
+    trace.get(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, function)
         ?.let { return it }
     val finalParent = function
         .findPsi()
@@ -197,7 +194,7 @@ private fun FunctionResolutionScope(
             .toList(),
         imports = emptyList(),
         typeParameters = function.typeParameters.map { it.toClassifierRef(context, trace) }
-    ).also { trace.record(InjektWritableSlices.FUNCTION_RESOLUTION_SCOPE, function, it) }
+    ).also { trace.record(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, function, it) }
 }
 
 private fun PropertyResolutionScope(
@@ -206,7 +203,7 @@ private fun PropertyResolutionScope(
     trace: BindingTrace,
     parent: ResolutionScope?
 ): ResolutionScope {
-    trace.get(InjektWritableSlices.PROPERTY_RESOLUTION_SCOPE, property)
+    trace.get(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, property)
         ?.let { return it }
     val finalParent = property
         .findPsi()
@@ -229,7 +226,7 @@ private fun PropertyResolutionScope(
         ),
         imports = emptyList(),
         typeParameters = property.typeParameters.map { it.toClassifierRef(context, trace) }
-    ).also { trace.record(InjektWritableSlices.PROPERTY_RESOLUTION_SCOPE, property, it) }
+    ).also { trace.record(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, property, it) }
 }
 
 private fun CodeBlockResolutionScope(
