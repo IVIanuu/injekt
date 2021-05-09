@@ -366,6 +366,19 @@ class GivenResolutionTest {
     }
 
     @Test
+    fun testPrefersMoreSpecificType3() = singleAndMultiCodegen(
+        """
+            interface Ord<in T>
+            @Given object IntOrd : Ord<Int>
+            @Given object NumberOrd : Ord<Number>
+            fun <T> useOrd(@Given ord: Ord<T>) = ord
+        """,
+        """
+           fun invoke() = useOrd<Int>()
+        """
+    )
+
+    @Test
     fun testPrefersNonNullType() = singleAndMultiCodegen(
         """
             @Given val nonNull = "nonnull"

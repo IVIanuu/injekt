@@ -385,6 +385,7 @@ private fun ResolutionScope.compareResult(a: ResolutionResult?, b: ResolutionRes
 private inline fun <T> ResolutionScope.compareCandidate(
     a: T?,
     b: T?,
+    requestedType: TypeRef?,
     type: (T) -> TypeRef,
     scopeNesting: (T) -> Int,
     owner: (T) -> ClassifierRef?,
@@ -412,7 +413,7 @@ private inline fun <T> ResolutionScope.compareCandidate(
         if (bSubClassNesting < aSubClassNesting) return 1
     }
 
-    val diff = compareType(type(a), type(b))
+    val diff = compareType(type(a), type(b), requestedType)
     if (diff < 0) return -1
     if (diff > 0) return 1
 
@@ -422,16 +423,60 @@ private inline fun <T> ResolutionScope.compareCandidate(
 private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int = compareCandidate(
     a = a,
     b = b,
+    requestedType = a?.type ?: b?.type,
     type = { it.originalType },
     scopeNesting = { it.ownerScope.allParents.size },
     owner = { (it as? CallableGivenNode)?.callable?.owner },
     subClassNesting = { (it as? CallableGivenNode)?.callable?.overriddenDepth ?: 0 }
 )
 
+fun ResolutionScope.compareType(a: TypeRef, b: TypeRef, requestedType: TypeRef?): Int {
+    if (a == b) return 0
+    if (!a.isStarProjection && b.isStarProjection) return -1
+    if (a.isStarProjection && !b.isStarProjection) return 1
+
+    if (!a.isMarkedNullable && b.isMarkedNullable) return -1
+    if (!b.isMarkedNullable && a.isMarkedNullable) return 1
+
+    if (!a.classifier.isTypeParameter && b.classifier.isTypeParameter) return -1
+    if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
+
+    fun compareSameClassifier(a: TypeRef, b: TypeRef): Int {
+        var diff = 0
+        a.arguments.forEachWith(b.arguments) { aTypeArgument, bTypeArgument ->
+            diff += compareType(aTypeArgument, bTypeArgument, null)
+        }
+        if (diff < 0) return -1
+        if (diff > 0) return 1
+        return 0
+    }
+
+    if (a.classifier != b.classifier) {
+        val aSubTypeOfB = a.isSubTypeOf(context, b)
+        val bSubTypeOfA = b.isSubTypeOf(context, a)
+        if (aSubTypeOfB && !bSubTypeOfA) return -1
+        if (bSubTypeOfA && !aSubTypeOfB) return 1
+        if (requestedType != null) {
+            val aSubTypeView = a.subtypeView(requestedType.classifier)!!
+            val bSubTypeView = b.subtypeView(requestedType.classifier)!!
+            val diff = compareSameClassifier(aSubTypeView, bSubTypeView)
+            if (diff < 0) return -1
+            if (diff > 0) return 1
+        }
+    } else {
+        val diff = compareSameClassifier(a, b)
+        if (diff < 0) return -1
+        if (diff > 0) return 1
+    }
+
+    return 0
+}
+
 fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     var diff = compareCandidate(
         a = a,
         b = b,
+        requestedType = null,
         type = { it.originalType },
         scopeNesting = { -1 },
         owner = { it.owner },
@@ -450,39 +495,11 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     diff = 0
     for (aDependency in aDependencies) {
         for (bDependency in bDependencies) {
-            diff += compareType(aDependency, bDependency)
+            diff += compareType(aDependency, bDependency, null)
         }
     }
     if (diff < 0) return -1
     if (diff > 0) return 1
-
-    return 0
-}
-
-fun ResolutionScope.compareType(a: TypeRef, b: TypeRef): Int {
-    if (a == b) return 0
-    if (!a.isStarProjection && b.isStarProjection) return -1
-    if (a.isStarProjection && !b.isStarProjection) return 1
-
-    if (!a.isMarkedNullable && b.isMarkedNullable) return -1
-    if (!b.isMarkedNullable && a.isMarkedNullable) return 1
-
-    if (!a.classifier.isTypeParameter && b.classifier.isTypeParameter) return -1
-    if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
-
-    if (a.classifier != b.classifier) {
-        val aSubTypeOfB = a.isSubTypeOf(context, b)
-        val bSubTypeOfA = b.isSubTypeOf(context, a)
-        if (aSubTypeOfB && !bSubTypeOfA) return -1
-        if (bSubTypeOfA && !aSubTypeOfB) return 1
-    } else {
-        var diff = 0
-        a.arguments.forEachWith(b.arguments) { aTypeArgument, bTypeArgument ->
-            diff += compareType(aTypeArgument, bTypeArgument)
-        }
-        if (diff < 0) return -1
-        if (diff > 0) return 1
-    }
 
     return 0
 }
