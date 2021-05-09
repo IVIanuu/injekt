@@ -32,11 +32,6 @@ object IntOrd : Ord<Int> {
     override fun compareTo(a: Int, b: Int): Int = a.compareTo(b)
 }
 
-@Given
-object NumOrd : Ord<Number> {
-    override fun compareTo(a: Number, b: Number): Int = a.compareTo(b)
-}
-
 fun main() {
     val items = listOf(5, 3, 4, 1, 2).ordered()
 }
