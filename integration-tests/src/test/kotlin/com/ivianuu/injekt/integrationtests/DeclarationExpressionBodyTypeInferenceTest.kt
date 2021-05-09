@@ -19,9 +19,9 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.test.*
 import org.junit.*
 
-class TypeInferenceTest {
+class DeclarationExpressionBodyTypeInferenceTest {
     @Test
-    fun testFunctionExpressionInference() = multiCodegen(
+    fun testFunctionExpressionBodyTypeInference() = multiCodegen(
         """
             class ChildGivenScopeModule<P : GivenScope, T : Any, S : T> {
                 @Given
@@ -53,7 +53,7 @@ class TypeInferenceTest {
     }
 
     @Test
-    fun testPropertyExpressionInference() = multiCodegen(
+    fun testPropertyExpressionBodyTypeInference() = multiCodegen(
         """
             class ChildGivenScopeModule<P : GivenScope, T : Any, S : T> {
                 @Given
