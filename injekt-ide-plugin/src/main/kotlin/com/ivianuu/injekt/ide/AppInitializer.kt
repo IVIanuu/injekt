@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.extensions.*
 import org.jetbrains.kotlin.extensions.internal.*
 import org.jetbrains.kotlin.resolve.diagnostics.*
+import org.jetbrains.kotlin.resolve.extensions.*
 
 @Suppress("UnstableApiUsage")
 class AppInitializer : ApplicationInitializedListener {
@@ -47,6 +48,14 @@ class AppInitializer : ApplicationInitializedListener {
                             project,
                             InjektTypeResolutionInterceptorExtension()
                         )
+                        SyntheticResolveExtension.registerExtension(
+                            project,
+                            TypeClassSyntheticResolveExtension()
+                        )
+                        /*PackageFragmentProviderExtension.registerExtension(
+                            project,
+                            TypeClassPackageFragmentProviderExtension()
+                        )*/
 
                         @Suppress("DEPRECATION")
                         Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)

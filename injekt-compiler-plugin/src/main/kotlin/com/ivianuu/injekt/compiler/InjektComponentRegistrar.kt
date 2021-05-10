@@ -53,6 +53,14 @@ class InjektComponentRegistrar : ComponentRegistrar {
             LoadingOrder.FIRST,
             InjektIrGenerationExtension()
         )
+        /*SyntheticResolveExtension.registerExtension(
+            project,
+            TypeClassSyntheticResolveExtension()
+        )*/
+        /*PackageFragmentProviderExtension.registerExtension(
+            project,
+            TypeClassPackageFragmentProviderExtension()
+        )*/
         IrGenerationExtension.registerExtensionWithLoadingOrder(
             project,
             LoadingOrder.LAST,
