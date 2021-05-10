@@ -94,7 +94,7 @@ class TypeSubstitutionTest {
         val appGivenScope = typeFor(FqName("com.ivianuu.injekt.scope.AppGivenScope"))
         val substitutionType = scoped.wrap(stringType)
             .let {
-                it.typeWith(listOf(appGivenScope) + it.arguments.drop(1))
+                it.withArguments(listOf(appGivenScope) + it.arguments.drop(1))
             }
         val (_, map) = buildContextForConstrainedGiven(injektContext, scopedT.defaultType, substitutionType, emptyList())
         map[scopedT] shouldBe substitutionType

@@ -78,13 +78,13 @@ class SubtypingTest {
     @Test
     fun testMatchingGenericTypeIsAssignable() = withTypeCheckerContext {
         listType.typeWith(typeParameter()) shouldBeAssignableTo
-                listType.typeWith(listOf(stringType))
+                listType.withArguments(listOf(stringType))
     }
 
     @Test
     fun testMatchingGenericTypeIsAssignable8() = withTypeCheckerContext {
         listType.typeWith(qualifier1.wrap(typeParameter())) shouldBeAssignableTo
-                listType.typeWith(listOf(qualifier1.wrap(stringType)))
+                listType.withArguments(listOf(qualifier1.wrap(stringType)))
     }
 
     @Test
@@ -92,7 +92,7 @@ class SubtypingTest {
         val tpB = typeParameter(fqName = FqName("B"))
         val tpA = typeParameter(tpB, fqName = FqName("A"))
         val type = classType(typeParameters = listOf(tpA.classifier, tpB.classifier))
-        type.typeWith(listOf(stringType, charSequenceType)) shouldBeAssignableTo type
+        type.withArguments(listOf(stringType, charSequenceType)) shouldBeAssignableTo type
     }
 
     @Test

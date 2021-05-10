@@ -543,8 +543,8 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
     ) {
         val newConstraint = when (otherConstraint.kind) {
             ConstraintKind.EQUAL -> otherConstraint.type
-            ConstraintKind.UPPER -> otherConstraint.type.copy(variance = TypeVariance.OUT)
-            ConstraintKind.LOWER -> otherConstraint.type.copy(variance = TypeVariance.IN)
+            ConstraintKind.UPPER -> otherConstraint.type.withVariance(TypeVariance.OUT)
+            ConstraintKind.LOWER -> otherConstraint.type.withVariance(TypeVariance.IN)
         }
         val substitutedType = baseConstraint.type.substitute(mapOf(otherVariable to newConstraint))
         if (baseConstraint.kind != ConstraintKind.LOWER) {
@@ -582,12 +582,12 @@ private fun commonSuperType(
     types.singleOrNull()?.let { return it }
     val notAllNotNull =
         types.any { it.isNullableType }
-    val notNullTypes = if (notAllNotNull) types.map { it.copy(isMarkedNullable = false) } else types
+    val notNullTypes = if (notAllNotNull) types.map { it.withNullability(false) } else types
 
     val commonSuperType = commonSuperTypeForNotNullTypes(context, notNullTypes, depth)
     return if (notAllNotNull)
         refineNullabilityForUndefinedNullability(context, types, commonSuperType)
-            ?: commonSuperType.copy(isMarkedNullable = true)
+            ?: commonSuperType.withNullability(true)
     else
         commonSuperType
 }
@@ -731,7 +731,7 @@ private fun superTypeWithGivenClassifier(
 
         arguments.add(argument)
     }
-    return classifier.defaultType.typeWith(arguments)
+    return classifier.defaultType.withArguments(arguments)
 }
 
 private fun calculateArgument(
@@ -776,14 +776,14 @@ private fun calculateArgument(
         }
 
         return if (equalToEachOtherType == null) {
-            commonSuperType(context, arguments, depth + 1).copy(variance = TypeVariance.OUT)
+            commonSuperType(context, arguments, depth + 1).withVariance(TypeVariance.OUT)
         } else {
             val thereIsNotInv = arguments.any { it.variance != TypeVariance.INV }
-            equalToEachOtherType.copy(variance = if (thereIsNotInv) TypeVariance.OUT else TypeVariance.INV)
+            equalToEachOtherType.withVariance(if (thereIsNotInv) TypeVariance.OUT else TypeVariance.INV)
         }
     } else {
         val type = intersectTypes(context, arguments)
-        return if (parameter.variance != TypeVariance.INV) type else type.copy(variance = TypeVariance.IN)
+        return if (parameter.variance != TypeVariance.INV) type else type.withVariance(TypeVariance.IN)
     }
 }
 
@@ -794,7 +794,7 @@ internal fun intersectTypes(context: TypeCheckerContext, types: List<TypeRef>): 
 
     val correctNullability = types.mapTo(mutableSetOf()) {
         if (resultNullability == ResultNullability.NOT_NULL) {
-            it.copy(isMarkedNullable = false)
+            it.withNullability(false)
         } else it
     }
 

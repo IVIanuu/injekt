@@ -70,6 +70,8 @@ fun HierarchicalResolutionScope(
                 next is LexicalScope && next.ownerDescriptor is ClassDescriptor ->
                     ClassResolutionScope(next.ownerDescriptor.cast(), context, trace, parent)
                 next is LexicalScope && next.ownerDescriptor is FunctionDescriptor &&
+                        // important to check this here to avoid bugs
+                        // related to local givens
                         next.kind == LexicalScopeKind.FUNCTION_INNER_SCOPE ->
                     FunctionResolutionScope(next.ownerDescriptor.cast(), context, trace, parent)
                 next is LexicalScope && next.ownerDescriptor is PropertyDescriptor ->

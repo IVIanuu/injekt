@@ -110,6 +110,7 @@ class ResolutionScope(
     )
 
     init {
+        println("initialize scope $name")
         initialGivens
             .forEach { given ->
                 given.collectGivens(
@@ -222,7 +223,7 @@ class ResolutionScope(
         } else if (request.type.classifier == context.setClassifier) {
             val singleElementType = request.type.arguments[0]
             val collectionElementType = context.collectionClassifier.defaultType
-                .typeWith(listOf(singleElementType))
+                .withArguments(listOf(singleElementType))
 
             var elements = setElementsForType(singleElementType, collectionElementType,
                 RequestKey(request.type, allStaticTypeParameters)
@@ -231,7 +232,7 @@ class ResolutionScope(
                 singleElementType.isFunctionTypeWithOnlyGivenParameters) {
                 val providerReturnType = singleElementType.arguments.last()
                 elements = setElementsForType(providerReturnType, context.collectionClassifier
-                    .defaultType.typeWith(listOf(providerReturnType)),
+                    .defaultType.withArguments(listOf(providerReturnType)),
                     RequestKey(providerReturnType, allStaticTypeParameters)
                 )
                     ?.map { elementType ->

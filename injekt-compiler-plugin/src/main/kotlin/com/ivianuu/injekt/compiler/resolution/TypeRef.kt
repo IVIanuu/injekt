@@ -93,7 +93,7 @@ fun TypeRef.wrap(type: TypeRef): TypeRef {
     val newArguments = if (arguments.size < classifier.typeParameters.size)
         arguments + type
     else arguments.dropLast(1) + type
-    return typeWith(newArguments)
+    return withArguments(newArguments)
 }
 
 fun ClassifierDescriptor.toClassifierRef(
@@ -341,7 +341,17 @@ class SimpleTypeRef(
     }
 }
 
-fun TypeRef.typeWith(arguments: List<TypeRef>): TypeRef = copy(arguments = arguments)
+fun TypeRef.withArguments(arguments: List<TypeRef>): TypeRef =
+    if (this.arguments == arguments) this
+    else copy(arguments = arguments)
+
+fun TypeRef.withNullability(isMarkedNullable: Boolean) =
+    if (this.isMarkedNullable == isMarkedNullable) this
+    else copy(isMarkedNullable = isMarkedNullable)
+
+fun TypeRef.withVariance(variance: TypeVariance) =
+    if (this.variance == variance) this
+    else copy(variance = variance)
 
 fun TypeRef.copy(
     classifier: ClassifierRef = this.classifier,
@@ -411,11 +421,11 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
         } else substitution
     }
 
-    if (arguments.isEmpty() && !classifier.isTypeParameter) return this
-
-    val substituted = copy(arguments = arguments.map { it.substitute(map) })
-
-    if (classifier.isTypeParameter && substituted == this) {
+    if (arguments.isNotEmpty()) {
+        val newArguments = arguments.map { it.substitute(map) }
+        if (arguments != newArguments)
+            return copy(arguments = newArguments)
+    } else if (classifier.isTypeParameter) {
         classifier
             .superTypes
             .firstNotNullResult {
@@ -426,7 +436,7 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
             ?.let { return it }
     }
 
-    return substituted
+    return this
 }
 
 fun TypeRef.render(depth: Int = 0): String {
