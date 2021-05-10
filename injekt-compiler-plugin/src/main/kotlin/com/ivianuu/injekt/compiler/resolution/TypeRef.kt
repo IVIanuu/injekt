@@ -421,20 +421,11 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
         } else substitution
     }
 
-    if (arguments.isNotEmpty()) {
-        val newArguments = arguments.map { it.substitute(map) }
-        if (arguments != newArguments)
-            return copy(arguments = newArguments)
-    } else if (classifier.isTypeParameter) {
-        classifier
-            .superTypes
-            .firstNotNullResult {
-                val substitutedSuperType = it.substitute(map)
-                if (substitutedSuperType != it) substitutedSuperType
-                else null
-            }
-            ?.let { return it }
-    }
+    if (arguments.isEmpty()) return this
+
+    val newArguments = arguments.map { it.substitute(map) }
+    if (arguments != newArguments)
+        return copy(arguments = newArguments)
 
     return this
 }
