@@ -498,6 +498,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
     private fun directWithVariable(typeVariable: ClassifierRef, constraint: Constraint) {
         if (constraint.kind != ConstraintKind.LOWER) {
             typeVariables[typeVariable]!!.constraints.toList().forEach {
+                if (!isOk) return@forEach
                 if (it.kind != ConstraintKind.UPPER) {
                     runIsSubTypeOf(it.type, constraint.type)
                 }
@@ -506,6 +507,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
 
         if (constraint.kind != ConstraintKind.UPPER) {
             typeVariables[typeVariable]!!.constraints.toList().forEach {
+                if (!isOk) return@forEach
                 if (it.kind != ConstraintKind.LOWER) {
                     runIsSubTypeOf(constraint.type, it.type)
                 }
@@ -515,10 +517,12 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
 
     private fun insideOtherConstraint(typeVariable: ClassifierRef, constraint: Constraint) {
         for (typeVariableWithConstraint in typeVariables.values) {
+            if (!isOk) break
             val constraintsWhichConstraintMyVariable = typeVariableWithConstraint.constraints.filter {
                 it.type.anyType { it.classifier == typeVariable }
             }
             constraintsWhichConstraintMyVariable.forEach {
+                if (!isOk) return@forEach
                 generateNewConstraint(typeVariableWithConstraint.typeVariable, it, typeVariable, constraint)
             }
         }
