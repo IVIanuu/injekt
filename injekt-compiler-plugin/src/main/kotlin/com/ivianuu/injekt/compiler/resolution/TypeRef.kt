@@ -24,17 +24,10 @@ import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
-import org.jetbrains.kotlin.resolve.calls.inference.*
-import org.jetbrains.kotlin.resolve.calls.inference.constraintPosition.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.types.*
-import org.jetbrains.kotlin.types.checker.*
 import org.jetbrains.kotlin.types.model.*
-import org.jetbrains.kotlin.types.typesApproximation.*
-import org.jetbrains.kotlin.utils.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
-import java.util.*
-import java.util.stream.*
 
 data class ClassifierRef(
     val key: String,
@@ -52,20 +45,16 @@ data class ClassifierRef(
     val primaryConstructorPropertyParameters: List<Name> = emptyList(),
     val variance: TypeVariance = TypeVariance.INV
 ) {
+    val unqualifiedType: TypeRef get() = SimpleTypeRef(
+        this,
+        arguments = typeParameters.map { it.defaultType },
+        variance = variance
+    )
+
+    val defaultType: TypeRef get() = qualifiers.wrap(unqualifiedType)
+
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && key == other.key
     override fun hashCode(): Int = key.hashCode()
-
-    val unqualifiedType: TypeRef by unsafeLazy {
-        SimpleTypeRef(
-            this,
-            arguments = typeParameters.map { it.defaultType },
-            variance = variance
-        )
-    }
-
-    val defaultType: TypeRef by unsafeLazy {
-        qualifiers.wrap(unqualifiedType)
-    }
 }
 
 val ClassifierRef.givenConstraintTypeParameters: List<Name>
@@ -213,14 +202,14 @@ sealed class TypeRef {
     abstract val ignoreElementsWithErrors: Boolean
     abstract val variance: TypeVariance
 
-    private val typeName by unsafeLazy { uniqueTypeName() }
-
-    override fun toString(): String = typeName
+    override fun toString(): String = uniqueTypeName()
 
     override fun equals(other: Any?) =
-        other is TypeRef && other.typeName == typeName
+        other is TypeRef && other.hashCode() == hashCode()
 
-    private val _hashCode by unsafeLazy {
+    private var _hashCode: Int? = null
+
+    override fun hashCode(): Int = _hashCode ?: run {
         var result = classifier.hashCode()
         result = 31 * result + isMarkedNullable.hashCode()
         result = 31 * result + arguments.hashCode()
@@ -228,60 +217,7 @@ sealed class TypeRef {
         result = 31 * result + isStarProjection.hashCode()
         result = 31 * result + frameworkKey.hashCode()
         result
-    }
-
-    override fun hashCode(): Int = _hashCode
-
-    val typeSize: Int by unsafeLazy {
-        var typeSize = 0
-        val seen = mutableSetOf<TypeRef>()
-        fun visit(type: TypeRef) {
-            typeSize++
-            if (type in seen) return
-            seen += type
-            type.arguments.forEach { visit(it) }
-        }
-        visit(this)
-        typeSize
-    }
-
-    val coveringSet: Set<ClassifierRef> by unsafeLazy {
-        val classifiers = mutableSetOf<ClassifierRef>()
-        val seen = mutableSetOf<TypeRef>()
-        fun visit(type: TypeRef) {
-            if (type in seen) return
-            seen += type
-            classifiers += type.classifier
-            type.arguments.forEach { visit(it) }
-        }
-        visit(this)
-        classifiers
-    }
-
-    val typeDepth: Int by unsafeLazy {
-        (arguments.maxOfOrNull { it.typeDepth } ?: 0) + 1
-    }
-
-    val isNullableType: Boolean by unsafeLazy {
-        if (isMarkedNullable) return@unsafeLazy true
-        for (superType in superTypes)
-            if (superType.isNullableType) return@unsafeLazy true
-        return@unsafeLazy false
-    }
-
-    val isComposableType: Boolean by unsafeLazy {
-        if (isMarkedComposable) return@unsafeLazy true
-        for (superType in superTypes)
-            if (superType.isComposableType) return@unsafeLazy true
-        return@unsafeLazy false
-    }
-
-    val superTypes: List<TypeRef> by unsafeLazy {
-        val substitutionMap = classifier.typeParameters
-            .toMap(arguments)
-        classifier.superTypes
-            .map { it.substitute(substitutionMap) }
-    }
+    }.also { _hashCode = it }
 }
 
 class KotlinTypeRef(
@@ -291,27 +227,24 @@ class KotlinTypeRef(
     val context: InjektContext,
     val trace: BindingTrace?
 ) : TypeRef() {
-    override val classifier: ClassifierRef by unsafeLazy {
+    override val classifier: ClassifierRef get() =
         (kotlinType.getAbbreviation() ?: kotlinType)
             .constructor.declarationDescriptor!!.toClassifierRef(context, trace)
-    }
-    override val isMarkedComposable: Boolean by unsafeLazy {
+    override val isMarkedComposable: Boolean get() =
         (kotlinType.getAbbreviation() ?: kotlinType)
             .hasAnnotation(InjektFqNames.Composable)
-    }
     override val isGiven: Boolean
         get() = kotlinType.isGiven(context, trace)
     override val isMarkedNullable: Boolean
         get() = kotlinType.isMarkedNullable
-    override val arguments: List<TypeRef> by unsafeLazy {
+    override val arguments: List<TypeRef> get() =
         (kotlinType.getAbbreviation() ?: kotlinType).arguments
+            .asSequence()
             // we use the take here because an inner class also contains the type parameters
             // of it's parent class which is irrelevant for us
-            .asSequence()
             .take(classifier.typeParameters.size)
             .map { it.type.toTypeRef(context, trace, it.isStarProjection, it.projectionKind.convertVariance()) }
             .toList()
-    }
     override val frameworkKey: Int?
         get() = null
     override val defaultOnAllErrors: Boolean
@@ -496,6 +429,58 @@ fun KotlinType.uniqueTypeName(depth: Int = 0): String {
         if (isMarkedNullable) append("_nullable")
     }
 }
+
+val TypeRef.typeSize: Int get() {
+    var typeSize = 0
+    val seen = mutableSetOf<TypeRef>()
+    fun visit(type: TypeRef) {
+        typeSize++
+        if (type in seen) return
+        seen += type
+        type.arguments.forEach { visit(it) }
+    }
+    visit(this)
+    return typeSize
+}
+
+val TypeRef.coveringSet: Set<ClassifierRef> get() {
+    val classifiers = mutableSetOf<ClassifierRef>()
+    val seen = mutableSetOf<TypeRef>()
+    fun visit(type: TypeRef) {
+        if (type in seen) return
+        seen += type
+        classifiers += type.classifier
+        type.arguments.forEach { visit(it) }
+    }
+    visit(this)
+    return classifiers
+}
+
+val TypeRef.typeDepth: Int get() = (arguments.maxOfOrNull { it.typeDepth } ?: 0) + 1
+
+val TypeRef.isNullableType: Boolean get() {
+    if (isMarkedNullable) return true
+    for (superType in superTypes)
+        if (superType.isNullableType) return true
+    return false
+}
+
+val TypeRef.isComposableType: Boolean
+    get() {
+        if (isMarkedComposable) return true
+        for (superType in superTypes)
+            if (superType.isComposableType) return true
+        return false
+    }
+
+val TypeRef.superTypes: List<TypeRef>
+    get() {
+        val substitutionMap = classifier.typeParameters
+            .toMap(arguments)
+        return if (substitutionMap.isEmpty()) classifier.superTypes
+        else classifier.superTypes
+            .map { it.substitute(substitutionMap) }
+    }
 
 val TypeRef.isFunctionType: Boolean get() =
     classifier.fqName.asString().startsWith("kotlin.Function") ||

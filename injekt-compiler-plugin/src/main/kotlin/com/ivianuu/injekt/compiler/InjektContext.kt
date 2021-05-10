@@ -38,19 +38,15 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
     val collectionClassifier by unsafeLazy {
         module.builtIns.collection.toClassifierRef(this, null)
     }
-
     val nothingType by unsafeLazy {
         module.builtIns.nothingType.toTypeRef(this, null)
     }
-
     val nullableNothingType by unsafeLazy {
         nothingType.copy(isMarkedNullable = true)
     }
-
     val anyType by unsafeLazy {
         module.builtIns.anyType.toTypeRef(this, null)
     }
-
     val nullableAnyType by unsafeLazy {
         anyType.copy(isMarkedNullable = true)
     }

@@ -110,7 +110,6 @@ class ResolutionScope(
     )
 
     init {
-        println("initialize scope $name")
         initialGivens
             .forEach { given ->
                 given.collectGivens(
