@@ -44,6 +44,12 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
             return
         }
 
+        val filePath: String? = try {
+            file.virtualFilePath
+        } catch (e: Throwable) {
+            null
+        }
+
         if (resultingDescriptor.valueParameters.none {
                 it.isGiven(this.context, context.trace)
         }) return
@@ -93,30 +99,34 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
                     result.candidate.callable.callable,
                     Unit
                 )
-                result.candidate.callable.import?.element?.let {
-                    context.trace.record(
-                        InjektWritableSlices.USED_IMPORT,
-                        SourcePosition(file.virtualFilePath, it.startOffset, it.endOffset),
-                        Unit
-                    )
+                if (filePath != null) {
+                    result.candidate.callable.import?.element?.let {
+                        context.trace.record(
+                            InjektWritableSlices.USED_IMPORT,
+                            SourcePosition(filePath, it.startOffset, it.endOffset),
+                            Unit
+                        )
+                    }
                 }
             }
         }) {
             is GivenGraph.Success -> {
-                context.trace.record(
-                    InjektWritableSlices.FILE_HAS_GIVEN_CALLS,
-                    file.virtualFilePath,
-                    Unit
-                )
-                context.trace.record(
-                    InjektWritableSlices.GIVEN_GRAPH,
-                    SourcePosition(
-                        file.virtualFilePath,
-                        callExpression.startOffset,
-                        callExpression.endOffset
-                    ),
-                    graph
-                )
+                if (filePath != null) {
+                    context.trace.record(
+                        InjektWritableSlices.FILE_HAS_GIVEN_CALLS,
+                        filePath,
+                        Unit
+                    )
+                    context.trace.record(
+                        InjektWritableSlices.GIVEN_GRAPH,
+                        SourcePosition(
+                            filePath,
+                            callExpression.startOffset,
+                            callExpression.endOffset
+                        ),
+                        graph
+                    )
+                }
             }
             is GivenGraph.Error -> context.trace.report(
                 InjektErrors.UNRESOLVED_GIVEN

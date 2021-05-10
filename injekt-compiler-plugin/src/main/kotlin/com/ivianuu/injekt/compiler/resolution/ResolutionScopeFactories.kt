@@ -54,7 +54,7 @@ fun HierarchicalResolutionScope(
 
     val importsResolutionScope = ImportResolutionScope(
         fileImports,
-        "FILE ${file.virtualFilePath}",
+        "FILE ${file.name}",
         null,
         context,
         trace
