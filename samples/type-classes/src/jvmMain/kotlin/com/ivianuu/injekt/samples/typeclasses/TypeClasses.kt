@@ -19,17 +19,17 @@ package com.ivianuu.injekt.samples.typeclasses
 import com.ivianuu.injekt.*
 
 interface Ord<in T> {
-    fun compareTo(a: T, b: T): Int
+    fun compareWith(a: T, b: T): Int
 }
 
-infix fun <T> T.compareTo(other: T, @Given ord: Ord<T>): Int = ord.compareTo(this, other)
+infix fun <T> T.compareWith(other: T, @Given ord: Ord<T>): Int = ord.compareWith(this, other)
 
 fun <T> List<T>.ordered(@Given ord: Ord<T>): List<T> =
-    sortedWith { a, b -> a compareTo b }
+    sortedWith { a, b -> a compareWith b }
 
 @Given
 object IntOrd : Ord<Int> {
-    override fun compareTo(a: Int, b: Int): Int = a.compareTo(b)
+    override fun compareWith(a: Int, b: Int): Int = a.compareTo(b)
 }
 
 fun main() {
