@@ -169,10 +169,12 @@ fun KotlinType.toTypeRef(
     isStarProjection: Boolean = false,
     variance: TypeVariance = TypeVariance.INV
 ): TypeRef = if (isStarProjection) STAR_PROJECTION_TYPE else {
-    val key = System.identityHashCode(this)
+    val kotlinType = if (constructor.isDenotable) this else CommonSupertypes
+        .commonSupertype(constructor.supertypes)
+    val key = System.identityHashCode(kotlinType)
     trace?.get(InjektWritableSlices.TYPE_REF_FOR_TYPE, key)?.let { return it }
 
-    val rawType = KotlinTypeRef(this, isStarProjection, variance, context, trace)
+    val rawType = KotlinTypeRef(kotlinType, isStarProjection, variance, context, trace)
 
     val qualifierAnnotations = getAnnotatedAnnotations(InjektFqNames.Qualifier)
     val finalType = if (qualifierAnnotations.isNotEmpty()) {
