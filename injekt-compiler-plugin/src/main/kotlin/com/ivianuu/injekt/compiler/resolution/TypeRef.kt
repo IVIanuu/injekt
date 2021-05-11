@@ -379,7 +379,6 @@ fun TypeRef.render(depth: Int = 0): String {
                 }
             }
             when {
-                classifier.isTypeParameter -> append(classifier.fqName.shortName())
                 isStarProjection -> append("*")
                 else -> append(classifier.fqName)
             }
