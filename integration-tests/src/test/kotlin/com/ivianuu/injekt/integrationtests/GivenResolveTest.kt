@@ -521,7 +521,7 @@ class GivenResolveTest {
         """
     ) {
         compilationShouldHaveFailed(
-            "type parameter T of given argument com.ivianuu.injekt.integrationtests.list() of type kotlin.collections.List<T> for parameter value of function com.ivianuu.injekt.given is marked with reified but type argument com.ivianuu.injekt.integrationtests.invoke.T is not marked with reified"
+            "type parameter T of given argument com.ivianuu.injekt.integrationtests.list() of type kotlin.collections.List<com.ivianuu.injekt.integrationtests.invoke.T> for parameter value of function com.ivianuu.injekt.given is marked with reified but type argument com.ivianuu.injekt.integrationtests.invoke.T is not marked with reified"
         )
     }
 
@@ -540,7 +540,7 @@ class GivenResolveTest {
         """
     ) {
         compilationShouldHaveFailed(
-            "type parameter T of given argument com.ivianuu.injekt.integrationtests.list() of type kotlin.collections.List<T> for parameter value of function com.ivianuu.injekt.given is marked with @ForTypeKey but type argument com.ivianuu.injekt.integrationtests.invoke.T is not marked with @ForTypeKey"
+            "type parameter T of given argument com.ivianuu.injekt.integrationtests.list() of type kotlin.collections.List<com.ivianuu.injekt.integrationtests.invoke.T> for parameter value of function com.ivianuu.injekt.given is marked with @ForTypeKey but type argument com.ivianuu.injekt.integrationtests.invoke.T is not marked with @ForTypeKey"
         )
     }
 
