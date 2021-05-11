@@ -65,7 +65,7 @@ fun withTypeCheckerContext(
 }
 
 class TypeCheckerTestContext(val module: ModuleDescriptor) {
-    val injektContext = InjektContext(module)
+    val injektContext = module.injektContext
     val comparable = typeFor(StandardNames.FqNames.comparable)
     val any = typeFor(StandardNames.FqNames.any.toSafe())
     val nullableAny = any.nullable()
@@ -76,7 +76,6 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     val listType = typeFor(StandardNames.FqNames.list)
     val mutableListType = typeFor(StandardNames.FqNames.mutableList)
     val mapType = typeFor(StandardNames.FqNames.map)
-    val starProjectedType = STAR_PROJECTION_TYPE
     val nothing = typeFor(StandardNames.FqNames.nothing.toSafe())
     val nullableNothing = nothing.nullable()
 
