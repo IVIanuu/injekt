@@ -114,7 +114,7 @@ fun DeclarationDescriptor.uniqueKey(context: InjektContext): String {
                 .joinToString(",") {
                     it.type
                         .fullyAbbreviatedType
-                        .uniqueTypeName()
+                        .uniqueTypeKey()
                 }
         }"
         is ClassDescriptor -> "class:$fqNameSafe"
@@ -131,7 +131,7 @@ fun DeclarationDescriptor.uniqueKey(context: InjektContext): String {
                         append(
                             parameter.type
                                 .fullyAbbreviatedType
-                                .uniqueTypeName()
+                                .uniqueTypeKey()
                         )
                     }
                 }
@@ -142,7 +142,7 @@ fun DeclarationDescriptor.uniqueKey(context: InjektContext): String {
                 .joinToString(",") {
                     it.type
                         .fullyAbbreviatedType
-                        .uniqueTypeName()
+                        .uniqueTypeKey()
                 }
         }"
         is TypeAliasDescriptor -> "typealias:$fqNameSafe"
@@ -152,6 +152,21 @@ fun DeclarationDescriptor.uniqueKey(context: InjektContext): String {
         is ValueParameterDescriptor -> "value_parameter:$fqNameSafe"
         is VariableDescriptor -> "variable:${fqNameSafe}"
         else -> error("Unexpected declaration $this")
+    }
+}
+
+
+private fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
+    if (depth > 15) return ""
+    return buildString {
+        append(constructor.declarationDescriptor!!.fqNameSafe)
+        arguments.forEachIndexed { index, typeArgument ->
+            if (index == 0) append("<")
+            append(typeArgument.type.uniqueTypeKey(depth + 1))
+            if (index != arguments.lastIndex) append(", ")
+            else append(">")
+        }
+        if (isMarkedNullable) append("?")
     }
 }
 

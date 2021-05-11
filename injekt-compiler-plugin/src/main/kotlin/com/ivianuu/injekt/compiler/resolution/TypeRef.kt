@@ -404,20 +404,6 @@ fun TypeRef.render(depth: Int = 0): String {
     }
 }
 
-fun KotlinType.uniqueTypeName(depth: Int = 0): String {
-    if (depth > 15) return ""
-    return buildString {
-        append(constructor.declarationDescriptor!!.fqNameSafe)
-        arguments.forEachIndexed { index, typeArgument ->
-            if (index == 0) append("<")
-            append(typeArgument.type.uniqueTypeName(depth + 1))
-            if (index != arguments.lastIndex) append(", ")
-            else append(">")
-        }
-        if (isMarkedNullable) append("?")
-    }
-}
-
 val TypeRef.typeSize: Int get() {
     var typeSize = 0
     val seen = mutableSetOf<TypeRef>()
