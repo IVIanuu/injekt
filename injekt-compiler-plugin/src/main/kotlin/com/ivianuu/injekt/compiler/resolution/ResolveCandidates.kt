@@ -188,26 +188,23 @@ fun ResolutionScope.resolveRequests(
     println("resolving requests $requests in $name took ${it.first} ms")
 }.second
 
-private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult =
-    measureTimeMillisWithResult {
-        checkCancelled()
-        resultsByType[request.type]?.let { return@measureTimeMillisWithResult it }
-        val userCandidates = givensForRequest(request, this)
-        val result = if (userCandidates != null) {
-            resolveCandidates(request, userCandidates)
-        } else {
-            val frameworkCandidate = frameworkGivenForRequest(request)
-            when {
-                frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate)
-                request.defaultStrategy == GivenRequest.DefaultStrategy.NONE -> ResolutionResult.Failure.NoCandidates
-                else -> ResolutionResult.Success.DefaultValue
-            }
+private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult {
+    checkCancelled()
+    resultsByType[request.type]?.let { return it }
+    val userCandidates = givensForRequest(request, this)
+    val result = if (userCandidates != null) {
+        resolveCandidates(request, userCandidates)
+    } else {
+        val frameworkCandidate = frameworkGivenForRequest(request)
+        when {
+            frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate)
+            request.defaultStrategy == GivenRequest.DefaultStrategy.NONE -> ResolutionResult.Failure.NoCandidates
+            else -> ResolutionResult.Success.DefaultValue
         }
-        resultsByType[request.type] = result
-        return@measureTimeMillisWithResult result
-    }.also {
-        println("resolving request $request in $name took ${it.first} ms")
-    }.second
+    }
+    resultsByType[request.type] = result
+    return result
+}
 
 private fun ResolutionScope.computeForCandidate(
     request: GivenRequest,
