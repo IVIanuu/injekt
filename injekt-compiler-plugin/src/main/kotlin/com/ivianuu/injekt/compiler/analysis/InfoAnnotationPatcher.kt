@@ -19,7 +19,11 @@ class InfoAnnotationPatcher(private val context: InjektContext) : DeclarationChe
         context: DeclarationCheckerContext
     ) {
         when (descriptor) {
-            is ClassDescriptor -> patchClassIfNeeded(descriptor, context.trace)
+            is ClassDescriptor -> {
+                patchClassIfNeeded(descriptor, context.trace)
+                descriptor.constructors
+                    .forEach { patchCallableIfNeeded(it, context.trace) }
+            }
             is CallableDescriptor -> patchCallableIfNeeded(descriptor, context.trace)
         }
     }
