@@ -241,7 +241,7 @@ fun ClassifierDescriptor.isSingletonGiven(
     }
     val isSingletonGiven = if (isDeserializedDeclaration()) {
         context.classifierInfoFor(this, trace)
-            ?.isOptimizableGiven == true
+            ?.isSingletonGiven == true
     } else {
         kind == ClassKind.CLASS &&
                 getGivenConstructors(context, trace)
