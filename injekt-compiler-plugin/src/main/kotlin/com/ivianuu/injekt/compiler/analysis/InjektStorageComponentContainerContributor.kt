@@ -28,7 +28,7 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
         platform: TargetPlatform,
         moduleDescriptor: ModuleDescriptor,
     ) {
-        val context = InjektContext(moduleDescriptor)
+        val context = moduleDescriptor.injektContext
         container.useInstance(GivenChecker(context))
         container.useInstance(TypeKeyChecker(context))
         container.useInstance(QualifierChecker(context))

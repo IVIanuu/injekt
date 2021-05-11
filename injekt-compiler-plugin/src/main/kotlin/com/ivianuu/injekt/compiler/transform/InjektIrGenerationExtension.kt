@@ -24,7 +24,7 @@ import org.jetbrains.kotlin.resolve.*
 
 class InjektIrGenerationExtension : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val context = InjektContext(pluginContext.moduleDescriptor)
+        val context = pluginContext.moduleDescriptor.injektContext
         val trace = DelegatingBindingTrace(
             pluginContext.bindingContext, "injekt trace"
         )

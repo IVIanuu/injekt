@@ -13,7 +13,6 @@ import org.jetbrains.kotlin.resolve.checkers.*
 import org.jetbrains.kotlin.resolve.constants.*
 import org.jetbrains.kotlin.resolve.lazy.descriptors.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
-import java.lang.reflect.*
 
 class InfoAnnotationPatcher(private val context: InjektContext) : DeclarationChecker {
     override fun check(
@@ -103,32 +102,20 @@ class InfoAnnotationPatcher(private val context: InjektContext) : DeclarationChe
 
     private fun Annotated.addAnnotation(annotation: AnnotationDescriptor) {
         when (this) {
-            is AnnotatedImpl -> {
-                val field = AnnotatedImpl::class.java.declaredFields
-                    .single { it.name == "annotations" }
-                field.isAccessible = true
-                val modifiersField: Field = Field::class.java.getDeclaredField("modifiers")
-                modifiersField.isAccessible = true
-                modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
-                field.set(
-                    this,
-                    Annotations.create(
-                        annotations.toList() + annotation
-                    )
+            is AnnotatedImpl -> updatePrivateFinalField<Annotations>(
+                AnnotatedImpl::class,
+                "annotations"
+            ) {
+                Annotations.create(
+                    annotations.toList() + annotation
                 )
             }
-            is LazyClassDescriptor -> {
-                val field = LazyClassDescriptor::class.java.declaredFields
-                    .single { it.name == "annotations" }
-                field.isAccessible = true
-                val modifiersField: Field = Field::class.java.getDeclaredField("modifiers")
-                modifiersField.isAccessible = true
-                modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
-                field.set(
-                    this,
-                    Annotations.create(
-                        annotations.toList() + annotation
-                    )
+            is LazyClassDescriptor -> updatePrivateFinalField<Annotations>(
+                LazyClassDescriptor::class,
+                "annotations"
+            ) {
+                Annotations.create(
+                    annotations.toList() + annotation
                 )
             }
             else -> throw AssertionError("Cannot add annotation to $this")

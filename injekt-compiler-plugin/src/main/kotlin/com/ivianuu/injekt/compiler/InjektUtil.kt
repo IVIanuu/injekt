@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
+import org.jetbrains.kotlin.com.intellij.openapi.progress.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.ir.declarations.*
@@ -32,7 +33,10 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
+import java.lang.reflect.*
+import java.util.concurrent.*
 import kotlin.collections.set
+import kotlin.reflect.*
 
 fun KtAnnotated.hasAnnotation(fqName: FqName): Boolean = findAnnotation(fqName) != null
 
@@ -157,6 +161,15 @@ private val KotlinType.fullyAbbreviatedType: KotlinType
         return if (abbreviatedType != null && abbreviatedType != this) abbreviatedType.fullyAbbreviatedType else this
     }
 
+fun checkCancelled() {
+    try {
+        ProgressManager.checkCanceled()
+    } catch (e: CancellationException) {
+        e.printStackTrace()
+        throw e
+    }
+}
+
 fun ParameterDescriptor.injektName(): String {
     val callable = containingDeclaration as? CallableDescriptor
     return when {
@@ -261,4 +274,17 @@ fun ClassifierDescriptor.isSingletonGiven(
 
     trace.record(InjektWritableSlices.IS_SINGLETON_GIVEN, this, isSingletonGiven)
     return isSingletonGiven
+}
+
+fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transform: T.() -> T): T {
+    val field = clazz.java.declaredFields
+        .single { it.name == fieldName }
+    field.isAccessible = true
+    val modifiersField: Field = Field::class.java.getDeclaredField("modifiers")
+    modifiersField.isAccessible = true
+    modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
+    val currentValue = field.get(this)
+    val newValue = transform(currentValue as T)
+    field.set(this, newValue)
+    return newValue
 }

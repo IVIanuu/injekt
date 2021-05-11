@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.com.intellij.openapi.progress.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
@@ -163,7 +164,7 @@ data class UsageKey(val type: TypeRef, val outerMostScope: ResolutionScope)
 fun ResolutionScope.resolveRequests(
     requests: List<GivenRequest>,
     onEachResult: (ResolutionResult.Success.WithCandidate.Value) -> Unit
-): GivenGraph {
+): GivenGraph = measureTimeMillisWithResult {
     val successes = mutableMapOf<GivenRequest, ResolutionResult.Success>()
     var failureRequest: GivenRequest? = null
     var failure: ResolutionResult.Failure? = null
@@ -180,38 +181,45 @@ fun ResolutionScope.resolveRequests(
         }
     }
     val usages = mutableMapOf<UsageKey, MutableList<GivenRequest>>()
-    return if (failure == null) GivenGraph.Success(this, successes, usages)
+    return@measureTimeMillisWithResult if (failure == null) GivenGraph.Success(this, successes, usages)
         .also { it.postProcess(onEachResult, usages) }
     else GivenGraph.Error(this, failureRequest!!, failure)
-}
+}.also {
+    println("resolving requests $requests in $name took ${it.first} ms")
+}.second
 
-private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult {
-    // do not cache inlined providers because the call context can be different
-    // which can lead to unexpected results
-    val isInlineProviderCandidateType = request.isInline &&
-            request.type.frameworkKey == null &&
-            request.type.isFunctionTypeWithOnlyGivenParameters
-    if (!isInlineProviderCandidateType) resultsByType[request.type]?.let { return it }
-    val userCandidates = givensForRequest(request, this)
-    val result = if (userCandidates != null) {
-        resolveCandidates(request, userCandidates)
-    } else {
-        val frameworkCandidate = frameworkGivenForRequest(request)
-        when {
-            frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate)
-            request.defaultStrategy == GivenRequest.DefaultStrategy.NONE -> ResolutionResult.Failure.NoCandidates
-            else -> ResolutionResult.Success.DefaultValue
+private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult =
+    measureTimeMillisWithResult {
+        checkCancelled()
+        // do not cache inlined providers because the call context can be different
+        // which can lead to unexpected results
+        val isInlineProviderCandidateType = request.isInline &&
+                request.type.frameworkKey == null &&
+                request.type.isFunctionTypeWithOnlyGivenParameters
+        if (!isInlineProviderCandidateType) resultsByType[request.type]?.let { return@measureTimeMillisWithResult it }
+        val userCandidates = givensForRequest(request, this)
+        val result = if (userCandidates != null) {
+            resolveCandidates(request, userCandidates)
+        } else {
+            val frameworkCandidate = frameworkGivenForRequest(request)
+            when {
+                frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate)
+                request.defaultStrategy == GivenRequest.DefaultStrategy.NONE -> ResolutionResult.Failure.NoCandidates
+                else -> ResolutionResult.Success.DefaultValue
+            }
         }
-    }
-    if (!isInlineProviderCandidateType) resultsByType[request.type] = result
-    return result
-}
+        if (!isInlineProviderCandidateType) resultsByType[request.type] = result
+        return@measureTimeMillisWithResult result
+    }.also {
+        println("resolving request $request in $name took ${it.first} ms")
+    }.second
 
 private fun ResolutionScope.computeForCandidate(
     request: GivenRequest,
     candidate: GivenNode,
     compute: () -> ResolutionResult,
 ): ResolutionResult {
+    checkCancelled()
     resultsByCandidate[candidate]?.let { return it }
     if (candidate.dependencies.isEmpty())
         return compute().also { resultsByCandidate[candidate] = it }

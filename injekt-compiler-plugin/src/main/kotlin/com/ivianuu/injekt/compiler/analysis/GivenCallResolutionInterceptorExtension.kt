@@ -32,7 +32,6 @@ import org.jetbrains.kotlin.resolve.scopes.receivers.*
 @Suppress("INVISIBLE_REFERENCE", "EXPERIMENTAL_IS_NOT_ENABLED")
 @OptIn(org.jetbrains.kotlin.extensions.internal.InternalNonStableExtensionPoints::class)
 class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtension {
-    private var context: InjektContext? = null
     override fun interceptFunctionCandidates(
         candidates: Collection<FunctionDescriptor>,
         scopeTower: ImplicitScopeTower,
@@ -45,16 +44,16 @@ class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtensi
         extensionReceiver: ReceiverValueWithSmartCastInfo?,
     ): Collection<FunctionDescriptor> {
         return if (candidates.isEmpty()) emptyList()
-        else candidates
-            .map { candidate ->
-                if (context?.module != candidate.module) {
-                    context = InjektContext(candidate.module)
+        else {
+            val context = resolutionContext.scope.ownerDescriptor.module.injektContext
+            candidates
+                .map { candidate ->
+                    if (candidate.allParameters.any { it.isGiven(context, resolutionContext.trace) }) {
+                        candidate.toGivenFunctionDescriptor(context, resolutionContext.trace)
+                    } else {
+                        candidate
+                    }
                 }
-                if (candidate.allParameters.any { it.isGiven(context!!, resolutionContext.trace) }) {
-                    candidate.toGivenFunctionDescriptor(context!!, resolutionContext.trace)
-                } else {
-                    candidate
-                }
-            }
+        }
     }
 }

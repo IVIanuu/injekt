@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.*
@@ -29,6 +30,10 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
     override val injektContext: InjektContext
         get() = this
+
+    init {
+        println("init injekt context for $module")
+    }
 
     override fun isDenotable(type: TypeRef): Boolean = true
 
@@ -154,3 +159,18 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
         return classDescriptor.unsubstitutedMemberScope
     }
 }
+
+val InjektContextModuleCapability = ModuleCapability<InjektContext>("InjektContext")
+
+val ModuleDescriptor.injektContext
+    get() = getCapability(InjektContextModuleCapability)
+        ?: InjektContext(this)
+            .also { newContext ->
+                updatePrivateFinalField<Map<ModuleCapability<*>, Any?>>(
+                    ModuleDescriptorImpl::class,
+                    "capabilities"
+                ) {
+                    toMutableMap()
+                        .also { it[InjektContextModuleCapability] = newContext }
+                }
+            }

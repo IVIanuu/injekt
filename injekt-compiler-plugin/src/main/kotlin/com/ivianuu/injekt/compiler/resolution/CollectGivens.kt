@@ -53,6 +53,7 @@ fun TypeRef.collectGivens(
     val callables = mutableListOf<CallableRef>()
     val seen = mutableSetOf<TypeRef>()
     fun collectInner(type: TypeRef, overriddenDepth: Int) {
+        checkCancelled()
         if (type in seen) return
         seen += type
         val substitutionMap = type.classifier.typeParameters.toMap(type.arguments)
@@ -89,6 +90,7 @@ fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
     trace: BindingTrace
 ): List<CallableRef> = getContributedDescriptors()
     .flatMap { declaration ->
+        checkCancelled()
         when (declaration) {
             is ClassDescriptor -> declaration
                 .getGivenConstructors(context, trace) + listOfNotNull(
@@ -187,6 +189,7 @@ fun CallableRef.collectGivens(
     addConstrainedGiven: (CallableRef) -> Unit,
     seen: MutableSet<CallableRef> = mutableSetOf()
 ) {
+    checkCancelled()
     if (this in seen) return
     seen += this
     if (!scope.canSee(this)) return
@@ -222,6 +225,7 @@ fun CallableRef.collectGivens(
 
 fun List<GivenImport>.collectImportGivens(context: InjektContext, trace: BindingTrace): List<CallableRef> =
     flatMap { import ->
+        checkCancelled()
         if (import.importPath!!.endsWith("*")) {
             val packageFqName = FqName(import.importPath.removeSuffix(".*"))
             (context.memberScopeForFqName(packageFqName)

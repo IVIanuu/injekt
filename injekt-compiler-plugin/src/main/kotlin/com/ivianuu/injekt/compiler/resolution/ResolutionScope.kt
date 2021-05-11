@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
+import org.jetbrains.kotlin.com.intellij.openapi.progress.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.incremental.*
@@ -40,7 +41,7 @@ class ResolutionScope(
     val callContext: CallContext,
     val ownerDescriptor: DeclarationDescriptor?,
     val trace: BindingTrace,
-    initialGivens: List<CallableRef>,
+    initialGivens: () -> List<CallableRef>,
     val imports: List<GivenImport>,
     val typeParameters: List<ClassifierRef>
 ) {
@@ -109,45 +110,53 @@ class ResolutionScope(
         val staticTypeParameters: List<ClassifierRef>
     )
 
+    val initialGivens: List<CallableRef> = measureTimeMillisWithResult(initialGivens).also {
+        println("${context} computing initial givens for $name took ${it.first} ms")
+    }.second
+
     init {
-        initialGivens
-            .forEach { given ->
-                given.collectGivens(
-                    context = context,
-                    scope = this,
-                    trace = trace,
-                    addGiven = { callable ->
-                        addGivenIfAbsentOrBetter(callable.copy(source = given))
-                        val typeWithFrameworkKey = callable.type
-                            .copy(frameworkKey = generateFrameworkKey())
-                        addGivenIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey, source = given))
-                        constrainedGivenCandidates += ConstrainedGivenCandidate(
-                            type = typeWithFrameworkKey,
-                            rawType = callable.type,
-                            typeParameters = callable.typeParameters,
-                            source = given
-                        )
-                    },
-                    addConstrainedGiven = { constrainedGivens += ConstrainedGivenNode(it) }
+        measureTimeMillisWithResult {
+            this.initialGivens
+                .forEach { given ->
+                    given.collectGivens(
+                        context = context,
+                        scope = this,
+                        trace = trace,
+                        addGiven = { callable ->
+                            addGivenIfAbsentOrBetter(callable.copy(source = given))
+                            val typeWithFrameworkKey = callable.type
+                                .copy(frameworkKey = generateFrameworkKey())
+                            addGivenIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey, source = given))
+                            constrainedGivenCandidates += ConstrainedGivenCandidate(
+                                type = typeWithFrameworkKey,
+                                rawType = callable.type,
+                                typeParameters = callable.typeParameters,
+                                source = given
+                            )
+                        },
+                        addConstrainedGiven = { constrainedGivens += ConstrainedGivenNode(it) }
+                    )
+                }
+
+            val hasConstrainedGivens = constrainedGivens.isNotEmpty()
+            val hasConstrainedGivensCandidates = constrainedGivenCandidates.isNotEmpty()
+            if (parent != null) {
+                constrainedGivens.addAll(
+                    0,
+                    parent.constrainedGivens
+                        .map { if (hasConstrainedGivensCandidates) it.copy() else it }
                 )
+                constrainedGivenCandidates.addAll(0, parent.constrainedGivenCandidates)
             }
 
-        val hasConstrainedGivens = constrainedGivens.isNotEmpty()
-        val hasConstrainedGivensCandidates = constrainedGivenCandidates.isNotEmpty()
-        if (parent != null) {
-            constrainedGivens.addAll(
-                0,
-                parent.constrainedGivens
-                    .map { if (hasConstrainedGivensCandidates) it.copy() else it }
-            )
-            constrainedGivenCandidates.addAll(0, parent.constrainedGivenCandidates)
-        }
-
-        if ((hasConstrainedGivens && constrainedGivenCandidates.isNotEmpty()) ||
-            (hasConstrainedGivensCandidates && constrainedGivens.isNotEmpty())) {
-            constrainedGivenCandidates
-                .toList()
-                .forEach { collectConstrainedGivens(it) }
+            if ((hasConstrainedGivens && constrainedGivenCandidates.isNotEmpty()) ||
+                (hasConstrainedGivensCandidates && constrainedGivens.isNotEmpty())) {
+                constrainedGivenCandidates
+                    .toList()
+                    .forEach { collectConstrainedGivens(it) }
+            }
+        }.let {
+            println("initializing scope $name took ${it.first} ms")
         }
     }
 
@@ -307,8 +316,10 @@ class ResolutionScope(
     }
 
     private fun collectConstrainedGivens(candidate: ConstrainedGivenCandidate) {
-        for (constrainedGiven in constrainedGivens.toList())
+        for (constrainedGiven in constrainedGivens.toList()) {
+            checkCancelled()
             collectConstrainedGivens(constrainedGiven, candidate)
+        }
     }
 
     private fun collectConstrainedGivens(

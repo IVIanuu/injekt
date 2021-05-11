@@ -66,6 +66,7 @@ fun HierarchicalResolutionScope(
         .asSequence()
         .filter { it.isApplicableScope() }
         .fold(importsResolutionScope) { parent, next ->
+            checkCancelled()
             when {
                 next is LexicalScope && next.ownerDescriptor is ClassDescriptor ->
                     ClassResolutionScope(next.ownerDescriptor.cast(), context, trace, parent)
@@ -100,9 +101,10 @@ private fun ImportResolutionScope(
     context: InjektContext,
     trace: BindingTrace
 ): ResolutionScope {
-    val (externalImportedGivens, internalImportedGivens) = imports
-        .collectImportGivens(context, trace)
-        .partition { it.callable.isExternalDeclaration(context) }
+    val resolvedImports by unsafeLazy {
+        imports
+            .collectImportGivens(context, trace)
+    }
     return ResolutionScope(
         name = "$namePrefix INTERNAL IMPORTS",
         context = context,
@@ -114,13 +116,19 @@ private fun ImportResolutionScope(
             parent = parent,
             ownerDescriptor = null,
             trace = trace,
-            initialGivens = externalImportedGivens,
+            initialGivens = {
+                resolvedImports
+                    .filter { it.callable.isExternalDeclaration(context) }
+            },
             imports = emptyList(),
             typeParameters = emptyList()
         ),
         ownerDescriptor = null,
         trace = trace,
-        initialGivens = internalImportedGivens,
+        initialGivens = {
+            resolvedImports
+                .filterNot { it.callable.isExternalDeclaration(context) }
+        },
         imports = imports,
         typeParameters = emptyList()
     )
@@ -161,7 +169,7 @@ private fun ClassResolutionScope(
         parent = finalParent,
         ownerDescriptor = clazz,
         trace = trace,
-        initialGivens = listOf(clazz.getGivenReceiver(context, trace)),
+        initialGivens = { listOf(clazz.getGivenReceiver(context, trace)) },
         imports = emptyList(),
         typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(context, trace) }
     ).also { trace.record(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, clazz, it) }
@@ -189,11 +197,13 @@ private fun FunctionResolutionScope(
         parent = finalParent,
         ownerDescriptor = function,
         trace = trace,
-        initialGivens = function.allParameters
-            .asSequence()
-            .filter { it.isGiven(context, trace) || it === function.extensionReceiverParameter }
-            .map { it.toCallableRef(context, trace).makeGiven() }
-            .toList(),
+        initialGivens = {
+            function.allParameters
+                .asSequence()
+                .filter { it.isGiven(context, trace) || it === function.extensionReceiverParameter }
+                .map { it.toCallableRef(context, trace).makeGiven() }
+                .toList()
+        },
         imports = emptyList(),
         typeParameters = function.typeParameters.map { it.toClassifierRef(context, trace) }
     ).also { trace.record(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, function, it) }
@@ -221,11 +231,13 @@ private fun PropertyResolutionScope(
         parent = finalParent,
         ownerDescriptor = property,
         trace = trace,
-        initialGivens = listOfNotNull(
-            property.extensionReceiverParameter
-                ?.toCallableRef(context, trace)
-                ?.makeGiven()
-        ),
+        initialGivens = {
+            listOfNotNull(
+                property.extensionReceiverParameter
+                    ?.toCallableRef(context, trace)
+                    ?.makeGiven()
+            )
+        },
         imports = emptyList(),
         typeParameters = property.typeParameters.map { it.toClassifierRef(context, trace) }
     ).also { trace.record(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, property, it) }
@@ -261,7 +273,7 @@ private fun CodeBlockResolutionScope(
         parent = finalParent,
         ownerDescriptor = ownerDescriptor,
         trace = trace,
-        initialGivens = scope.collectGivens(context, trace),
+        initialGivens = { scope.collectGivens(context, trace) },
         imports = emptyList(),
         typeParameters = emptyList()
     )
