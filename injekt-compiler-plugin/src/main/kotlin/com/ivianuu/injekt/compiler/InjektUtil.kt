@@ -239,7 +239,7 @@ fun ClassifierDescriptor.isSingletonGiven(
     trace.get(InjektWritableSlices.IS_SINGLETON_GIVEN, this)?.let {
         return it
     }
-    var isSingletonGiven = if (isDeserializedDeclaration()) {
+    val isSingletonGiven = if (isDeserializedDeclaration()) {
         context.classifierInfoFor(this, trace)
             ?.isOptimizableGiven == true
     } else {

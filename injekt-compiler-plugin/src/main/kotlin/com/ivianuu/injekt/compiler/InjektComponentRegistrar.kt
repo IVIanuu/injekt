@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.extensions.*
 import org.jetbrains.kotlin.extensions.internal.*
 import org.jetbrains.kotlin.resolve.diagnostics.*
-import org.jetbrains.kotlin.serialization.*
 import java.io.*
 
 @AutoService(ComponentRegistrar::class)
@@ -70,10 +69,6 @@ class InjektComponentRegistrar : ComponentRegistrar {
         @Suppress("DEPRECATION")
         Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
             .registerExtension(InjektDiagnosticSuppressor())
-        DescriptorSerializerPlugin.registerExtension(
-            project,
-            InfoDescriptorSerializationPlugin()
-        )
     }
 }
 

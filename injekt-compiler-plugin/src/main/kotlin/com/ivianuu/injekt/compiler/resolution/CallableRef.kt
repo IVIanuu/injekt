@@ -59,8 +59,7 @@ fun CallableDescriptor.toCallableRef(
     trace: BindingTrace
 ): CallableRef {
     trace.get(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this)?.let { return it }
-    val info = if (isDeserializedDeclaration()) context.callableInfoFor(this, trace)
-    else null
+    val info = context.callableInfoFor(this, trace)
     val type = info?.type?.toTypeRef(context, trace)
         ?: run {
             val psi = findPsi()

@@ -34,5 +34,6 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
         container.useInstance(QualifierChecker(context))
         container.useInstance(GivenImportsChecker(context))
         container.useInstance(GivenCallChecker(context))
+        container.useInstance(InfoAnnotationPatcher(context))
     }
 }

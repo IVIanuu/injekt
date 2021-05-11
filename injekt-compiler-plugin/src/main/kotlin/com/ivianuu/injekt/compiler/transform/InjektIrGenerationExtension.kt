@@ -29,7 +29,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             pluginContext.bindingContext, "injekt trace"
         )
         moduleFragment.transform(GivenCallTransformer(context, pluginContext), null)
-        moduleFragment.transform(InfoTransformer(context, pluginContext, trace), null)
         moduleFragment.transform(TypeKeyTransformer(context, trace, pluginContext), null)
         moduleFragment.transform(SingletonGivenTransformer(context, trace, pluginContext), null)
         moduleFragment.transform(WithGivenImportsTransformer(), null)
