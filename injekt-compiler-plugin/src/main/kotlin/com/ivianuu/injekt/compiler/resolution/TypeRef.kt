@@ -183,8 +183,6 @@ fun KotlinType.toTypeRef(
 ): TypeRef {
     return if (isStarProjection) STAR_PROJECTION_TYPE else {
         val unwrapped = getAbbreviation() ?: this
-        //val key = Triple(unwrapped, this, unwrapped)
-        //val cached = trace?.get(InjektWritableSlices.TYPE_REF_FOR_TYPE, key)
         val kotlinType = when {
             unwrapped.constructor.isDenotable -> unwrapped
             unwrapped.constructor.supertypes.isNotEmpty() -> CommonSupertypes
@@ -220,7 +218,7 @@ fun KotlinType.toTypeRef(
         )
 
         val qualifierAnnotations = unwrapped.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-        val finalType = if (qualifierAnnotations.isNotEmpty()) {
+        if (qualifierAnnotations.isNotEmpty()) {
             qualifierAnnotations
                 .map { it.type.toTypeRef(context, trace) }
                 .map {
@@ -235,10 +233,6 @@ fun KotlinType.toTypeRef(
                 }
                 .wrap(rawType)
         } else rawType
-
-        //trace?.record(InjektWritableSlices.TYPE_REF_FOR_TYPE, key, finalType)
-
-        finalType
     }
 }
 
@@ -275,8 +269,12 @@ class TypeRef(
             result = 31 * result + isMarkedNullable.hashCode()
             result = 31 * result + arguments.hashCode()
             result = 31 * result + isMarkedComposable.hashCode()
+            result = 31 * result + isGiven.hashCode()
             result = 31 * result + isStarProjection.hashCode()
             result = 31 * result + frameworkKey.hashCode()
+            result = 31 * result + defaultOnAllErrors.hashCode()
+            result = 31 * result + ignoreElementsWithErrors.hashCode()
+            result = 31 * result + variance.hashCode()
             _hashCode = result
         }
         return _hashCode
@@ -306,7 +304,7 @@ fun TypeRef.copy(
     defaultOnAllErrors: Boolean = this.defaultOnAllErrors,
     ignoreElementsWithErrors: Boolean = this.ignoreElementsWithErrors,
     variance: TypeVariance = this.variance
-): TypeRef = TypeRef(
+) = TypeRef(
     classifier,
     isMarkedNullable,
     arguments,
