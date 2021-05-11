@@ -100,6 +100,7 @@ class IncrementalFixTransformer(
                 )
 
                 finalHash
+                    .replace("/", "")
                     .chunked(100)
                     .forEachIndexed { index, value ->
                         addValueParameter(
