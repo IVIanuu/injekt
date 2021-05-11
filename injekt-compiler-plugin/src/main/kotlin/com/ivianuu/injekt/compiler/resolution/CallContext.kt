@@ -42,33 +42,36 @@ fun CallableDescriptor.callContext(
     if (this is ConstructorDescriptor) return CallContext.DEFAULT
     var node: PsiElement? = findPsi()
     if (node == null) return callContextOfThis
-    loop@while (node != null) {
-        when (node) {
-            is KtFunctionLiteral -> {
-                // keep going, as this is a "KtFunction", but we actually want the
-                // KtLambdaExpression
+    try {
+        loop@while (node != null) {
+            when (node) {
+                is KtFunctionLiteral -> {
+                    // keep going, as this is a "KtFunction", but we actually want the
+                    // KtLambdaExpression
+                }
+                is KtLambdaExpression -> {
+                    val descriptor = bindingContext[BindingContext.FUNCTION, node.functionLiteral]
+                        ?: return callContextOfThis
+                    val arg = getArgumentDescriptor(node.functionLiteral, bindingContext)
+                    val inlined = arg != null &&
+                            canBeInlineArgument(node.functionLiteral) &&
+                            isInline(arg.containingDeclaration) &&
+                            isInlineParameter(arg)
+                    if (!inlined)
+                        return descriptor.callContextOfThis
+                }
+                is KtFunction -> {
+                    val descriptor = bindingContext[BindingContext.FUNCTION, node]
+                    return descriptor?.callContextOfThis ?: CallContext.DEFAULT
+                }
+                is KtProperty -> {
+                    val descriptor = bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, node] as? CallableDescriptor
+                    return descriptor?.callContextOfThis ?: CallContext.DEFAULT
+                }
             }
-            is KtLambdaExpression -> {
-                val descriptor = bindingContext[BindingContext.FUNCTION, node.functionLiteral]
-                    ?: return callContextOfThis
-                val arg = getArgumentDescriptor(node.functionLiteral, bindingContext)
-                val inlined = arg != null &&
-                        canBeInlineArgument(node.functionLiteral) &&
-                        isInline(arg.containingDeclaration) &&
-                        isInlineParameter(arg)
-                if (!inlined)
-                    return descriptor.callContextOfThis
-            }
-            is KtFunction -> {
-                val descriptor = bindingContext[BindingContext.FUNCTION, node]
-                return descriptor?.callContextOfThis ?: CallContext.DEFAULT
-            }
-            is KtProperty -> {
-                val descriptor = bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, node] as? CallableDescriptor
-                return descriptor?.callContextOfThis ?: CallContext.DEFAULT
-            }
+            node = node.parent as? KtElement
         }
-        node = node.parent as? KtElement
+    } catch (e: Throwable) {
     }
 
     return callContextOfThis
