@@ -31,10 +31,6 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
     override val injektContext: InjektContext
         get() = this
 
-    init {
-        println("init injekt context for $module")
-    }
-
     override fun isDenotable(type: TypeRef): Boolean = true
 
     val setClassifier by unsafeLazy {
