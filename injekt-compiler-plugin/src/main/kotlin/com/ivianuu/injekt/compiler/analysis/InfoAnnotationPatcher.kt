@@ -4,8 +4,6 @@ import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
-import org.jetbrains.kotlin.ir.declarations.*
-import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.*
@@ -22,8 +20,7 @@ class InfoAnnotationPatcher(private val context: InjektContext) : DeclarationChe
     ) {
         when (descriptor) {
             is ClassDescriptor -> patchClassIfNeeded(descriptor, context.trace)
-            is SimpleFunctionDescriptor -> patchCallableIfNeeded(descriptor, context.trace)
-            is PropertyDescriptor -> patchCallableIfNeeded(descriptor, context.trace)
+            is CallableDescriptor -> patchCallableIfNeeded(descriptor, context.trace)
         }
     }
 
@@ -63,13 +60,13 @@ class InfoAnnotationPatcher(private val context: InjektContext) : DeclarationChe
 
     private fun patchCallableIfNeeded(descriptor: CallableDescriptor, trace: BindingTrace) {
         var needsInfo = descriptor.hasAnnotation(InjektFqNames.Given) ||
-                (descriptor is IrConstructor &&
+                (descriptor is ConstructorDescriptor &&
                         descriptor.constructedClass.hasAnnotation(InjektFqNames.Given))
         if (!needsInfo) {
             needsInfo = descriptor
-                .safeAs<IrFunction>()
+                .safeAs<FunctionDescriptor>()
                 ?.valueParameters
-                ?.any { it.descriptor.isGiven(context, trace) } == true
+                ?.any { it.isGiven(context, trace) } == true
         }
         val callableRef = descriptor.toCallableRef(context, trace)
         if (!needsInfo) {
