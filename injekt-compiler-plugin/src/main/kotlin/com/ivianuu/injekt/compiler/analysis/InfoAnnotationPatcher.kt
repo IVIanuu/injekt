@@ -31,6 +31,8 @@ class InfoAnnotationPatcher(private val context: InjektContext) : DeclarationChe
     private fun patchClassIfNeeded(descriptor: ClassDescriptor, trace: BindingTrace) {
         if (!descriptor.visibility.shouldGenerateInfo())
             return
+        if (descriptor.hasAnnotation(InjektFqNames.ClassifierInfo))
+            return
         val classifierRef = descriptor.toClassifierRef(context, trace)
         val defaultType = classifierRef.defaultType
         if (descriptor.hasAnnotation(InjektFqNames.Given) ||
@@ -69,6 +71,8 @@ class InfoAnnotationPatcher(private val context: InjektContext) : DeclarationChe
                     !descriptor.visibility.shouldGenerateInfo()) ||
             (descriptor is ConstructorDescriptor &&
                     !descriptor.constructedClass.visibility.shouldGenerateInfo()))
+            return
+        if (descriptor.hasAnnotation(InjektFqNames.CallableInfo))
             return
         var needsInfo = descriptor.hasAnnotation(InjektFqNames.Given) ||
                 (descriptor is ConstructorDescriptor &&
