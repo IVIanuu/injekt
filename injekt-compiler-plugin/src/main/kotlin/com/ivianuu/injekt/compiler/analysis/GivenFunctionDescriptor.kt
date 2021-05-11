@@ -54,7 +54,7 @@ val ValueParameterDescriptor.hasDefaultValueIgnoringGiven: Boolean
         ?: hasDefaultValue()
 
 abstract class AbstractGivenFunctionDescriptor(
-    override val invokeDescriptor: FunctionDescriptor,
+    final override val invokeDescriptor: FunctionDescriptor,
     val context: InjektContext,
     trace: BindingTrace
 ) : GivenFunctionDescriptor {

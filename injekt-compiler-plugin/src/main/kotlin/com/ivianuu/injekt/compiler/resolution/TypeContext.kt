@@ -351,7 +351,6 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
 
     private fun fixVariable(variableWithConstraints: VariableWithConstraints): Boolean {
         val type = getFixedType(variableWithConstraints)
-            ?: return false
 
         addInitialEqualityConstraint(variableWithConstraints.typeVariable.defaultType, type)
 
@@ -370,7 +369,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
         return true
     }
 
-    private fun getFixedType(variableWithConstraints: VariableWithConstraints): TypeRef? {
+    private fun getFixedType(variableWithConstraints: VariableWithConstraints): TypeRef {
         variableWithConstraints.constraints
             .filter { it.kind == ConstraintKind.EQUAL }
             .map { it.type }
@@ -746,9 +745,8 @@ private fun calculateArgument(
         if (arguments.all { it == first }) return first
     }
 
-    val asOut: Boolean
-    if (parameter.variance != TypeVariance.INV) {
-        asOut = parameter.variance == TypeVariance.OUT
+    val asOut = if (parameter.variance != TypeVariance.INV) {
+        parameter.variance == TypeVariance.OUT
     } else {
         val thereIsOut = arguments.any { it.variance == TypeVariance.OUT }
         val thereIsIn = arguments.any { it.variance == TypeVariance.IN }
@@ -756,10 +754,10 @@ private fun calculateArgument(
             if (thereIsIn) {
                 return STAR_PROJECTION_TYPE
             } else {
-                asOut = true
+                true
             }
         } else {
-            asOut = !thereIsIn
+            !thereIsIn
         }
     }
 

@@ -241,7 +241,7 @@ class GivenCallTransformer(
             }.apply {
                 parent = irScope.getLocalDeclarationParent()
                 if (result.candidate.callContext == CallContext.COMPOSABLE) {
-                    annotations += DeclarationIrBuilder(pluginContext, symbol)
+                    annotations = annotations + DeclarationIrBuilder(pluginContext, symbol)
                         .irCallConstructor(
                             pluginContext.referenceConstructors(InjektFqNames.Composable)
                                 .single(),

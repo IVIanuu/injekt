@@ -404,35 +404,17 @@ fun TypeRef.render(depth: Int = 0): String {
     }
 }
 
-fun TypeRef.uniqueTypeName(depth: Int = 0): String {
-    if (depth > 15) return ""
-    return buildString {
-        if (isMarkedComposable) append("composable_")
-        if (isStarProjection) append("star")
-        else append(classifier.fqName.pathSegments().joinToString("_") { it.asString() })
-        if (frameworkKey != null) {
-            append("_")
-            append(frameworkKey)
-        }
-        arguments.forEachIndexed { index, typeArgument ->
-            if (index == 0) append("_")
-            append(typeArgument.uniqueTypeName(depth + 1))
-            if (index != arguments.lastIndex) append("___")
-        }
-        if (isMarkedNullable && !isStarProjection) append("_nullable")
-    }
-}
-
 fun KotlinType.uniqueTypeName(depth: Int = 0): String {
     if (depth > 15) return ""
     return buildString {
-        append(constructor.declarationDescriptor!!.fqNameSafe.pathSegments().joinToString("_") { it.asString() })
+        append(constructor.declarationDescriptor!!.fqNameSafe)
         arguments.forEachIndexed { index, typeArgument ->
-            if (index == 0) append("_")
+            if (index == 0) append("<")
             append(typeArgument.type.uniqueTypeName(depth + 1))
-            if (index != arguments.lastIndex) append("___")
+            if (index != arguments.lastIndex) append(", ")
+            else append(">")
         }
-        if (isMarkedNullable) append("_nullable")
+        if (isMarkedNullable) append("?")
     }
 }
 
