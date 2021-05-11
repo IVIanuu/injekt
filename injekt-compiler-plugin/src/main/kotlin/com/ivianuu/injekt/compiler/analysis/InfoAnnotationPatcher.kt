@@ -29,6 +29,8 @@ class InfoAnnotationPatcher(private val context: InjektContext) : DeclarationChe
     }
 
     private fun patchClassIfNeeded(descriptor: ClassDescriptor, trace: BindingTrace) {
+        if (!descriptor.visibility.shouldGenerateInfo())
+            return
         val classifierRef = descriptor.toClassifierRef(context, trace)
         val defaultType = classifierRef.defaultType
         if (descriptor.hasAnnotation(InjektFqNames.Given) ||
@@ -63,6 +65,11 @@ class InfoAnnotationPatcher(private val context: InjektContext) : DeclarationChe
     }
 
     private fun patchCallableIfNeeded(descriptor: CallableDescriptor, trace: BindingTrace) {
+        if ((descriptor !is ConstructorDescriptor &&
+                    !descriptor.visibility.shouldGenerateInfo()) ||
+            (descriptor is ConstructorDescriptor &&
+                    !descriptor.constructedClass.visibility.shouldGenerateInfo()))
+            return
         var needsInfo = descriptor.hasAnnotation(InjektFqNames.Given) ||
                 (descriptor is ConstructorDescriptor &&
                         descriptor.constructedClass.hasAnnotation(InjektFqNames.Given))
@@ -122,4 +129,9 @@ class InfoAnnotationPatcher(private val context: InjektContext) : DeclarationChe
             else -> throw AssertionError("Cannot add annotation to $this")
         }
     }
+
+    private fun DescriptorVisibility.shouldGenerateInfo() = this ==
+            DescriptorVisibilities.PUBLIC ||
+            this == DescriptorVisibilities.INTERNAL ||
+            this == DescriptorVisibilities.PROTECTED
 }
