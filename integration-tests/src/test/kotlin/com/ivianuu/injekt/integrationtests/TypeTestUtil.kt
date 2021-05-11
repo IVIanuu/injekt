@@ -99,7 +99,9 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     ) = ClassifierRef(
         key = fqName.asString(),
         fqName = fqName,
-        superTypes = if (superTypes.isNotEmpty()) superTypes.toList() else listOf(any),
+        lazySuperTypes = unsafeLazy {
+            if (superTypes.isNotEmpty()) superTypes.toList() else listOf(any)
+        },
     ).defaultType
 
     fun typeAlias(
@@ -108,7 +110,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     ) = ClassifierRef(
         key = fqName.asString(),
         fqName = fqName,
-        superTypes = listOf(expandedType),
+        lazySuperTypes = unsafeLazy { listOf(expandedType) },
         isTypeAlias = true
     ).defaultType
 
@@ -119,7 +121,9 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     ) = ClassifierRef(
         key = fqName.asString(),
         fqName = fqName,
-        superTypes = if (superTypes.isNotEmpty()) superTypes.toList() else listOf(any),
+        lazySuperTypes = unsafeLazy {
+            if (superTypes.isNotEmpty()) superTypes.toList() else listOf(any)
+        },
         typeParameters = typeParameters
     ).defaultType
 
@@ -138,8 +142,10 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     ) = ClassifierRef(
         key = fqName.asString(),
         fqName = fqName,
-        superTypes = if (upperBounds.isNotEmpty()) upperBounds.toList() else
-            listOf(any.copy(isMarkedNullable = nullable)),
+        lazySuperTypes = unsafeLazy {
+            if (upperBounds.isNotEmpty()) upperBounds.toList() else
+                listOf(any.copy(isMarkedNullable = nullable))
+        },
         isTypeParameter = true,
         variance = variance
     ).defaultType

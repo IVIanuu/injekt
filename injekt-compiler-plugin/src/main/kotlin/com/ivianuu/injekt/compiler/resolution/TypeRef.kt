@@ -29,11 +29,11 @@ import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.model.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-data class ClassifierRef(
+class ClassifierRef(
     val key: String,
     val fqName: FqName,
     val typeParameters: List<ClassifierRef> = emptyList(),
-    val superTypes: List<TypeRef> = emptyList(),
+    val lazySuperTypes: Lazy<List<TypeRef>> = lazyOf(emptyList()),
     val isTypeParameter: Boolean = false,
     val isObject: Boolean = false,
     val isTypeAlias: Boolean = false,
@@ -45,10 +45,32 @@ data class ClassifierRef(
     val primaryConstructorPropertyParameters: List<Name> = emptyList(),
     val variance: TypeVariance = TypeVariance.INV
 ) {
-    val unqualifiedType: TypeRef get() = SimpleTypeRef(
+    val superTypes by lazySuperTypes
+    val unqualifiedType: TypeRef get() = TypeRef(
         this,
         arguments = typeParameters.map { it.defaultType },
         variance = variance
+    )
+
+    fun copy(
+        key: String = this.key,
+        fqName: FqName = this.fqName,
+        typeParameters: List<ClassifierRef> = this.typeParameters,
+        lazySuperTypes: Lazy<List<TypeRef>> = this.lazySuperTypes,
+        isTypeParameter: Boolean = this.isTypeParameter,
+        isObject: Boolean = this.isObject,
+        isTypeAlias: Boolean = this.isTypeAlias,
+        isQualifier: Boolean = this.isQualifier,
+        descriptor: ClassifierDescriptor? = this.descriptor,
+        qualifiers: List<TypeRef> = this.qualifiers,
+        isGivenConstraint: Boolean = this.isGivenConstraint,
+        isForTypeKey: Boolean = this.isForTypeKey,
+        primaryConstructorPropertyParameters: List<Name> = this.primaryConstructorPropertyParameters,
+        variance: TypeVariance = this.variance
+    ) = ClassifierRef(
+        key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject,
+        isTypeAlias, isQualifier, descriptor, qualifiers, isGivenConstraint, isForTypeKey,
+        primaryConstructorPropertyParameters, variance
     )
 
     val defaultType: TypeRef get() = qualifiers.wrap(unqualifiedType)
@@ -111,7 +133,7 @@ fun ClassifierDescriptor.toClassifierRef(
             key = "${uniqueKey(context)}.\$QT",
             fqName = fqNameSafe.child("\$QT".asNameId()),
             isTypeParameter = true,
-            superTypes = listOf(context.nullableAnyType),
+            lazySuperTypes = unsafeLazy { listOf(context.nullableAnyType) },
             variance = TypeVariance.OUT
         )
     }
@@ -120,11 +142,13 @@ fun ClassifierDescriptor.toClassifierRef(
         key = original.uniqueKey(context),
         fqName = original.fqNameSafe,
         typeParameters = typeParameters,
-        superTypes = when {
-            expandedType != null -> listOf(expandedType)
-            isQualifier -> listOf(context.anyType)
-            info != null -> info.superTypes.map { it.toTypeRef(context, trace) }
-            else -> typeConstructor.supertypes.map { it.toTypeRef(context, trace) }
+        lazySuperTypes = unsafeLazy {
+            when {
+                expandedType != null -> listOf(expandedType)
+                isQualifier -> listOf(context.anyType)
+                info != null -> info.superTypes.map { it.toTypeRef(context, trace) }
+                else -> typeConstructor.supertypes.map { it.toTypeRef(context, trace) }
+            }
         },
         isTypeParameter = this is TypeParameterDescriptor,
         isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
@@ -156,120 +180,106 @@ fun KotlinType.toTypeRef(
     trace: BindingTrace?,
     isStarProjection: Boolean = false,
     variance: TypeVariance = TypeVariance.INV
-): TypeRef = if (isStarProjection) STAR_PROJECTION_TYPE else {
-    val kotlinType = when {
-        constructor.isDenotable -> this
-        constructor.supertypes.isNotEmpty() -> CommonSupertypes
-            .commonSupertype(constructor.supertypes)
-        else -> context.module.builtIns.nullableAnyType
+): TypeRef {
+    return if (isStarProjection) STAR_PROJECTION_TYPE else {
+        val unwrapped = getAbbreviation() ?: this
+        //val key = Triple(unwrapped, this, unwrapped)
+        //val cached = trace?.get(InjektWritableSlices.TYPE_REF_FOR_TYPE, key)
+        val kotlinType = when {
+            unwrapped.constructor.isDenotable -> unwrapped
+            unwrapped.constructor.supertypes.isNotEmpty() -> CommonSupertypes
+                .commonSupertype(unwrapped.constructor.supertypes)
+            else -> null
+        } ?: return context.nullableAnyType
+
+        val classifier = kotlinType
+            .constructor.declarationDescriptor!!.toClassifierRef(context, trace)
+
+        val rawType = TypeRef(
+            classifier = classifier,
+            isMarkedNullable = kotlinType.isMarkedNullable,
+            arguments = kotlinType.arguments
+                .asSequence()
+                // we use the take here because an inner class also contains the type parameters
+                // of it's parent class which is irrelevant for us
+                .take(classifier.typeParameters.size)
+                .map { it.type.toTypeRef(context, trace, it.isStarProjection, it.projectionKind.convertVariance()) }
+                .toMutableList()
+                .also {
+                    if (classifier.isQualifier &&
+                            it.size != classifier.typeParameters.size)
+                                it += context.nullableAnyType
+                },
+            isMarkedComposable = kotlinType.hasAnnotation(InjektFqNames.Composable),
+            isGiven = kotlinType.isGiven(context, trace),
+            isStarProjection = false,
+            frameworkKey = null,
+            defaultOnAllErrors = kotlinType.hasAnnotation(InjektFqNames.DefaultOnAllErrors),
+            ignoreElementsWithErrors = kotlinType.hasAnnotation(InjektFqNames.IgnoreElementsWithErrors),
+            variance = variance
+        )
+
+        val qualifierAnnotations = unwrapped.getAnnotatedAnnotations(InjektFqNames.Qualifier)
+        val finalType = if (qualifierAnnotations.isNotEmpty()) {
+            qualifierAnnotations
+                .map { it.type.toTypeRef(context, trace) }
+                .map {
+                    it.copy(
+                        arguments = it.arguments,
+                        isMarkedNullable = rawType.isMarkedNullable,
+                        isGiven = rawType.isGiven,
+                        defaultOnAllErrors = rawType.defaultOnAllErrors,
+                        ignoreElementsWithErrors = rawType.ignoreElementsWithErrors,
+                        variance = rawType.variance
+                    )
+                }
+                .wrap(rawType)
+        } else rawType
+
+        //trace?.record(InjektWritableSlices.TYPE_REF_FOR_TYPE, key, finalType)
+
+        finalType
     }
-    val key = System.identityHashCode(kotlinType)
-    trace?.get(InjektWritableSlices.TYPE_REF_FOR_TYPE, key)?.let { return it }
-
-    val rawType = KotlinTypeRef(kotlinType, isStarProjection, variance, context, trace)
-
-    val qualifierAnnotations = getAnnotatedAnnotations(InjektFqNames.Qualifier)
-    val finalType = if (qualifierAnnotations.isNotEmpty()) {
-        qualifierAnnotations
-            .map { it.type.toTypeRef(context, trace) }
-            .map {
-                it.copy(
-                    arguments = it.arguments + context.nullableAnyType,
-                    isMarkedNullable = rawType.isMarkedNullable,
-                    isGiven = rawType.isGiven,
-                    defaultOnAllErrors = rawType.defaultOnAllErrors,
-                    ignoreElementsWithErrors = rawType.ignoreElementsWithErrors,
-                    variance = rawType.variance
-                )
-            }
-            .wrap(rawType)
-    } else rawType
-
-    finalType
-        .also { trace?.record(InjektWritableSlices.TYPE_REF_FOR_TYPE, key, it) }
 }
 
-sealed class TypeRef {
-    abstract val classifier: ClassifierRef
-    abstract val isMarkedNullable: Boolean
-    abstract val arguments: List<TypeRef>
-    abstract val isMarkedComposable: Boolean
-    abstract val isGiven: Boolean
-    abstract val isStarProjection: Boolean
-    abstract val frameworkKey: Int?
-    abstract val defaultOnAllErrors: Boolean
-    abstract val ignoreElementsWithErrors: Boolean
-    abstract val variance: TypeVariance
-
-    override fun toString(): String = uniqueTypeName()
+class TypeRef(
+    val classifier: ClassifierRef,
+    val isMarkedNullable: Boolean = false,
+    val arguments: List<TypeRef> = emptyList(),
+    val isMarkedComposable: Boolean = false,
+    val isGiven: Boolean = false,
+    val isStarProjection: Boolean = false,
+    val frameworkKey: Int? = null,
+    val defaultOnAllErrors: Boolean = false,
+    val ignoreElementsWithErrors: Boolean = false,
+    val variance: TypeVariance = TypeVariance.INV
+) {
+    override fun toString(): String = render()
 
     override fun equals(other: Any?) =
         other is TypeRef && other.hashCode() == hashCode()
 
-    private var _hashCode: Int? = null
+    private var _hashCode: Int = 0
 
-    override fun hashCode(): Int = _hashCode ?: run {
-        var result = classifier.hashCode()
-        result = 31 * result + isMarkedNullable.hashCode()
-        result = 31 * result + arguments.hashCode()
-        result = 31 * result + isMarkedComposable.hashCode()
-        result = 31 * result + isStarProjection.hashCode()
-        result = 31 * result + frameworkKey.hashCode()
-        result
-    }.also { _hashCode = it }
-}
-
-class KotlinTypeRef(
-    private val kotlinType: KotlinType,
-    override val isStarProjection: Boolean = false,
-    override val variance: TypeVariance,
-    val context: InjektContext,
-    val trace: BindingTrace?
-) : TypeRef() {
-    override val classifier: ClassifierRef get() =
-        (kotlinType.getAbbreviation() ?: kotlinType)
-            .constructor.declarationDescriptor!!.toClassifierRef(context, trace)
-    override val isMarkedComposable: Boolean get() =
-        (kotlinType.getAbbreviation() ?: kotlinType)
-            .hasAnnotation(InjektFqNames.Composable)
-    override val isGiven: Boolean
-        get() = kotlinType.isGiven(context, trace)
-    override val isMarkedNullable: Boolean
-        get() = kotlinType.isMarkedNullable
-    override val arguments: List<TypeRef> get() =
-        (kotlinType.getAbbreviation() ?: kotlinType).arguments
-            .asSequence()
-            // we use the take here because an inner class also contains the type parameters
-            // of it's parent class which is irrelevant for us
-            .take(classifier.typeParameters.size)
-            .map { it.type.toTypeRef(context, trace, it.isStarProjection, it.projectionKind.convertVariance()) }
-            .toList()
-    override val frameworkKey: Int?
-        get() = null
-    override val defaultOnAllErrors: Boolean
-        get() = kotlinType.hasAnnotation(InjektFqNames.DefaultOnAllErrors)
-    override val ignoreElementsWithErrors: Boolean
-        get() = kotlinType.hasAnnotation(InjektFqNames.IgnoreElementsWithErrors)
-}
-
-class SimpleTypeRef(
-    override val classifier: ClassifierRef,
-    override val isMarkedNullable: Boolean = false,
-    override val arguments: List<TypeRef> = emptyList(),
-    override val isMarkedComposable: Boolean = false,
-    override val isGiven: Boolean = false,
-    override val isStarProjection: Boolean = false,
-    override val frameworkKey: Int? = null,
-    override val defaultOnAllErrors: Boolean = false,
-    override val ignoreElementsWithErrors: Boolean = false,
-    override val variance: TypeVariance = TypeVariance.INV
-) : TypeRef() {
     init {
         check(arguments.size == classifier.typeParameters.size) {
             "Argument size mismatch ${classifier.fqName} " +
                     "params: ${classifier.typeParameters.map { it.fqName }} " +
                     "args: ${arguments.map { it.render() }}"
         }
+    }
+
+    override fun hashCode(): Int {
+        if (_hashCode == 0) {
+            var result = classifier.hashCode()
+            result = 31 * result + isMarkedNullable.hashCode()
+            result = 31 * result + arguments.hashCode()
+            result = 31 * result + isMarkedComposable.hashCode()
+            result = 31 * result + isStarProjection.hashCode()
+            result = 31 * result + frameworkKey.hashCode()
+            _hashCode = result
+        }
+        return _hashCode
     }
 }
 
@@ -296,7 +306,7 @@ fun TypeRef.copy(
     defaultOnAllErrors: Boolean = this.defaultOnAllErrors,
     ignoreElementsWithErrors: Boolean = this.ignoreElementsWithErrors,
     variance: TypeVariance = this.variance
-): SimpleTypeRef = SimpleTypeRef(
+): TypeRef = TypeRef(
     classifier,
     isMarkedNullable,
     arguments,
@@ -309,7 +319,7 @@ fun TypeRef.copy(
     variance
 )
 
-val STAR_PROJECTION_TYPE = SimpleTypeRef(
+val STAR_PROJECTION_TYPE = TypeRef(
     classifier = ClassifierRef("*", StandardNames.FqNames.any.toSafe()),
     isStarProjection = true
 )

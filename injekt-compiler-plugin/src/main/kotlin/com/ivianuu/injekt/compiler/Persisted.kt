@@ -139,7 +139,7 @@ fun PersistedClassifierInfo.toClassifierRef(
             if (superTypes.isNotEmpty() || qualifiers.isNotEmpty() ||
                 primaryConstructorPropertyParameters.isNotEmpty())
                 raw.copy(
-                    superTypes = superTypes.map { it.toTypeRef(context, trace) },
+                    lazySuperTypes = unsafeLazy { superTypes.map { it.toTypeRef(context, trace) } },
                     qualifiers = qualifiers.map { it.toTypeRef(context, trace) },
                     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
                         .map { it.asNameId() }
