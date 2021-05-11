@@ -102,16 +102,21 @@ class ResolutionScope(
 
     val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
 
-    private val givensByType = mutableMapOf<RequestKey, List<GivenNode>?>()
-    private val setElementsByType = mutableMapOf<RequestKey, List<TypeRef>?>()
-
-    data class RequestKey(
+    data class CallableRequestKey(
         val type: TypeRef,
         val staticTypeParameters: List<ClassifierRef>
     )
 
+    private val givensByRequest = mutableMapOf<CallableRequestKey, List<GivenNode>?>()
+
+    private val setElementsByType = mutableMapOf<CallableRequestKey, List<TypeRef>?>()
+
+    private data class ProviderRequestKey(val type: TypeRef, val callContext: CallContext)
+    private val providerGivensByRequest = mutableMapOf<ProviderRequestKey, ProviderGivenNode>()
+    private val setGivensByType = mutableMapOf<TypeRef, SetGivenNode?>()
+
     val initialGivens: List<CallableRef> = measureTimeMillisWithResult(initialGivens).also {
-        println("${context} computing initial givens for $name took ${it.first} ms")
+        println("$context computing initial givens for $name took ${it.first} ms")
     }.second
 
     init {
@@ -189,12 +194,12 @@ class ResolutionScope(
         // we return merged collections
         if (request.type.frameworkKey == null &&
             request.type.classifier == context.setClassifier) return null
-        return givensForType(RequestKey(request.type, requestingScope.allStaticTypeParameters))
+        return givensForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
     }
 
-    private fun givensForType(key: RequestKey): List<GivenNode>? {
+    private fun givensForType(key: CallableRequestKey): List<GivenNode>? {
         if (givens.isEmpty()) return parent?.givensForType(key)
-        return givensByType.getOrPut(key) {
+        return givensByRequest.getOrPut(key) {
             val thisGivens = givens
                 .asSequence()
                 .mapNotNull { (_, candidate) ->
@@ -222,56 +227,63 @@ class ResolutionScope(
     fun frameworkGivenForRequest(request: GivenRequest): GivenNode? {
         if (request.type.frameworkKey != null) return null
         if (request.type.isFunctionTypeWithOnlyGivenParameters) {
-            return ProviderGivenNode(
-                type = request.type,
-                ownerScope = this,
-                dependencyCallContext = if (request.isInline) callContext
-                else request.type.callContext
-            )
-        } else if (request.type.classifier == context.setClassifier) {
-            val singleElementType = request.type.arguments[0]
-            val collectionElementType = context.collectionClassifier.defaultType
-                .withArguments(listOf(singleElementType))
-
-            var elements = setElementsForType(singleElementType, collectionElementType,
-                RequestKey(request.type, allStaticTypeParameters)
-            )
-            if (elements == null &&
-                singleElementType.isFunctionTypeWithOnlyGivenParameters) {
-                val providerReturnType = singleElementType.arguments.last()
-                elements = setElementsForType(providerReturnType, context.collectionClassifier
-                    .defaultType.withArguments(listOf(providerReturnType)),
-                    RequestKey(providerReturnType, allStaticTypeParameters)
-                )
-                    ?.map { elementType ->
-                        singleElementType.copy(
-                            arguments = singleElementType.arguments
-                                .dropLast(1) + elementType
-                        )
-                    }
-            }
-
-            if (elements != null) {
-                val elementRequests = elements
-                    .mapIndexed { index, element ->
-                        GivenRequest(
-                            type = element,
-                            defaultStrategy = if (request.type.ignoreElementsWithErrors)
-                                GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
-                            else GivenRequest.DefaultStrategy.NONE,
-                            callableFqName = FqName("com.ivianuu.injekt.givenSetOf<${request.type.arguments[0].render()}>"),
-                            parameterName = "element$index".asNameId(),
-                            isInline = false,
-                            isLazy = false
-                        )
-                    }
-                return SetGivenNode(
+            val finalCallContext = if (request.isInline) callContext
+            else request.type.callContext
+            return providerGivensByRequest.getOrPut(
+                ProviderRequestKey(request.type, finalCallContext)
+            ) {
+                ProviderGivenNode(
                     type = request.type,
                     ownerScope = this,
-                    dependencies = elementRequests,
-                    singleElementType = singleElementType,
-                    collectionElementType = collectionElementType
+                    dependencyCallContext = finalCallContext
                 )
+            }
+        } else if (request.type.classifier == context.setClassifier) {
+            return setGivensByType.getOrPut(request.type) {
+                val singleElementType = request.type.arguments[0]
+                val collectionElementType = context.collectionClassifier.defaultType
+                    .withArguments(listOf(singleElementType))
+
+                var elements = setElementsForType(singleElementType, collectionElementType,
+                    CallableRequestKey(request.type, allStaticTypeParameters)
+                )
+                if (elements == null &&
+                    singleElementType.isFunctionTypeWithOnlyGivenParameters) {
+                    val providerReturnType = singleElementType.arguments.last()
+                    elements = setElementsForType(providerReturnType, context.collectionClassifier
+                        .defaultType.withArguments(listOf(providerReturnType)),
+                        CallableRequestKey(providerReturnType, allStaticTypeParameters)
+                    )
+                        ?.map { elementType ->
+                            singleElementType.copy(
+                                arguments = singleElementType.arguments
+                                    .dropLast(1) + elementType
+                            )
+                        }
+                }
+
+                if (elements != null) {
+                    val elementRequests = elements
+                        .mapIndexed { index, element ->
+                            GivenRequest(
+                                type = element,
+                                defaultStrategy = if (request.type.ignoreElementsWithErrors)
+                                    GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
+                                else GivenRequest.DefaultStrategy.NONE,
+                                callableFqName = FqName("com.ivianuu.injekt.givenSetOf<${request.type.arguments[0].render()}>"),
+                                parameterName = "element$index".asNameId(),
+                                isInline = false,
+                                isLazy = false
+                            )
+                        }
+                    SetGivenNode(
+                        type = request.type,
+                        ownerScope = this,
+                        dependencies = elementRequests,
+                        singleElementType = singleElementType,
+                        collectionElementType = collectionElementType
+                    )
+                } else null
             }
         }
 
@@ -281,7 +293,7 @@ class ResolutionScope(
     private fun setElementsForType(
         singleElementType: TypeRef,
         collectionElementType: TypeRef,
-        key: RequestKey
+        key: CallableRequestKey
     ): List<TypeRef>? {
         if (givens.isEmpty())
             return parent?.setElementsForType(singleElementType, collectionElementType, key)

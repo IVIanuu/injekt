@@ -191,12 +191,7 @@ fun ResolutionScope.resolveRequests(
 private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult =
     measureTimeMillisWithResult {
         checkCancelled()
-        // do not cache inlined providers because the call context can be different
-        // which can lead to unexpected results
-        val isInlineProviderCandidateType = request.isInline &&
-                request.type.frameworkKey == null &&
-                request.type.isFunctionTypeWithOnlyGivenParameters
-        if (!isInlineProviderCandidateType) resultsByType[request.type]?.let { return@measureTimeMillisWithResult it }
+        resultsByType[request.type]?.let { return@measureTimeMillisWithResult it }
         val userCandidates = givensForRequest(request, this)
         val result = if (userCandidates != null) {
             resolveCandidates(request, userCandidates)
@@ -208,7 +203,7 @@ private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionRes
                 else -> ResolutionResult.Success.DefaultValue
             }
         }
-        if (!isInlineProviderCandidateType) resultsByType[request.type] = result
+        resultsByType[request.type] = result
         return@measureTimeMillisWithResult result
     }.also {
         println("resolving request $request in $name took ${it.first} ms")
