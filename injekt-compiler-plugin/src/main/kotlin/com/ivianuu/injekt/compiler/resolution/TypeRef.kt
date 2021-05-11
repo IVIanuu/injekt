@@ -211,7 +211,7 @@ fun KotlinType.toTypeRef(
             isMarkedComposable = kotlinType.hasAnnotation(InjektFqNames.Composable),
             isGiven = kotlinType.isGiven(context, trace),
             isStarProjection = false,
-            frameworkKey = null,
+            frameworkKey = 0,
             defaultOnAllErrors = kotlinType.hasAnnotation(InjektFqNames.DefaultOnAllErrors),
             ignoreElementsWithErrors = kotlinType.hasAnnotation(InjektFqNames.IgnoreElementsWithErrors),
             variance = variance
@@ -243,7 +243,7 @@ class TypeRef(
     val isMarkedComposable: Boolean = false,
     val isGiven: Boolean = false,
     val isStarProjection: Boolean = false,
-    val frameworkKey: Int? = null,
+    val frameworkKey: Int = 0,
     val defaultOnAllErrors: Boolean = false,
     val ignoreElementsWithErrors: Boolean = false,
     val variance: TypeVariance = TypeVariance.INV
@@ -300,7 +300,7 @@ fun TypeRef.copy(
     isMarkedComposable: Boolean = this.isMarkedComposable,
     isGiven: Boolean = this.isGiven,
     isStarProjection: Boolean = this.isStarProjection,
-    frameworkKey: Int? = this.frameworkKey,
+    frameworkKey: Int = this.frameworkKey,
     defaultOnAllErrors: Boolean = this.defaultOnAllErrors,
     ignoreElementsWithErrors: Boolean = this.ignoreElementsWithErrors,
     variance: TypeVariance = this.variance
@@ -398,7 +398,7 @@ fun TypeRef.render(depth: Int = 0): String {
                 append(">")
             }
             if (isMarkedNullable && !isStarProjection) append("?")
-            frameworkKey?.let { append("[$it]") }
+            if (frameworkKey != 0) append("[$frameworkKey]")
         }
         inner()
     }

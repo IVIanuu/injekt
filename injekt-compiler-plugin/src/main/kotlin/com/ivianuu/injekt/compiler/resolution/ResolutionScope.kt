@@ -192,7 +192,7 @@ class ResolutionScope(
 
     fun givensForRequest(request: GivenRequest, requestingScope: ResolutionScope): List<GivenNode>? {
         // we return merged collections
-        if (request.type.frameworkKey == null &&
+        if (request.type.frameworkKey == 0 &&
             request.type.classifier == context.setClassifier) return null
         return givensForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
     }
@@ -225,7 +225,7 @@ class ResolutionScope(
     }
 
     fun frameworkGivenForRequest(request: GivenRequest): GivenNode? {
-        if (request.type.frameworkKey != null) return null
+        if (request.type.frameworkKey != 0) return null
         if (request.type.isFunctionTypeWithOnlyGivenParameters) {
             val finalCallContext = if (request.isInline) callContext
             else request.type.callContext
@@ -351,7 +351,7 @@ class ResolutionScope(
 
         val newGivenType = constrainedGiven.callable.type
             .substitute(substitutionMap)
-            .copy(frameworkKey = null)
+            .copy(frameworkKey = 0)
         val newGiven = constrainedGiven.callable
             .copy(
                 type = newGivenType,
