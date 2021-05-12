@@ -339,6 +339,31 @@ fun TypeRef.visitRecursive(
     superTypes.forEach { it.visitRecursive(seen, action) }
 }
 
+fun ClassifierRef.substitute(map: Map<ClassifierRef, TypeRef>): ClassifierRef {
+    if (map.isEmpty()) return this
+    return copy(
+        lazySuperTypes = unsafeLazy { superTypes.map { it.substitute(map) } },
+        typeParameters = typeParameters.substitute(map),
+        qualifiers = qualifiers.map { it.substitute(map) }
+    )
+}
+
+fun List<ClassifierRef>.substitute(map: Map<ClassifierRef, TypeRef>): List<ClassifierRef> {
+    val allNewSuperTypes = map { mutableListOf<TypeRef>() }
+    val newClassifiers = mapIndexed { index, classifier ->
+        classifier.copy(lazySuperTypes = unsafeLazy { allNewSuperTypes[index] })
+    }
+    val combinedMap = map + toMap(newClassifiers.map { it.defaultType })
+    for (i in indices) {
+        val newSuperTypes = allNewSuperTypes[i]
+        val oldClassifier = this[i]
+        for (oldSuperType in oldClassifier.superTypes) {
+            newSuperTypes += oldSuperType.substitute(combinedMap)
+        }
+    }
+    return newClassifiers
+}
+
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
     if (map.isEmpty()) return this
     map[classifier]?.let { substitution ->

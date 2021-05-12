@@ -43,12 +43,25 @@ data class CallableRef(
 
 fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
     if (map.isEmpty()) return this
+    val substitutedTypeParameters = typeParameters.substitute(map)
+    val typeParameterSubstitutionMap = substitutedTypeParameters.associateWith {
+        it.defaultType
+    }
     return copy(
-        type = type.substitute(map),
+        type = type.substitute(map).substitute(typeParameterSubstitutionMap),
         parameterTypes = parameterTypes
-            .mapValues { it.value.substitute(map) },
+            .mapValues {
+                it.value
+                    .substitute(map)
+                    .substitute(typeParameterSubstitutionMap)
+        },
+        typeParameters = substitutedTypeParameters,
         typeArguments = typeArguments
-            .mapValues { it.value.substitute(map) }
+            .mapValues {
+                it.value
+                    .substitute(map)
+                    .substitute(typeParameterSubstitutionMap)
+            }
     )
 }
 
