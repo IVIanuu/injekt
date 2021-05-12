@@ -359,7 +359,7 @@ class ResolutionScope(
                 typeArguments = constrainedGiven.callable
                     .typeArguments
                     .mapValues { it.value.substitute(substitutionMap) },
-       Avoid boxing of framework keys         source = candidate.source
+                source = candidate.source
             )
 
         newGiven.collectGivens(
