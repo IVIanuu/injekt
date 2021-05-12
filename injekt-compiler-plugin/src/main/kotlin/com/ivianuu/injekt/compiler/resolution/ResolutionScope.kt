@@ -93,7 +93,6 @@ class ResolutionScope(
     private data class ConstrainedGivenCandidate(
         val type: TypeRef,
         val rawType: TypeRef,
-        val typeParameters: List<ClassifierRef>,
         val source: CallableRef?
     )
 
@@ -135,7 +134,6 @@ class ResolutionScope(
                             constrainedGivenCandidates += ConstrainedGivenCandidate(
                                 type = typeWithFrameworkKey,
                                 rawType = callable.type,
-                                typeParameters = callable.typeParameters,
                                 source = given
                             )
                         },
@@ -361,7 +359,7 @@ class ResolutionScope(
                 typeArguments = constrainedGiven.callable
                     .typeArguments
                     .mapValues { it.value.substitute(substitutionMap) },
-                source = candidate.source
+       Avoid boxing of framework keys         source = candidate.source
             )
 
         newGiven.collectGivens(
@@ -385,7 +383,6 @@ class ResolutionScope(
                 val newCandidate = ConstrainedGivenCandidate(
                     type = newInnerGivenWithFrameworkKey.type,
                     rawType = finalNewInnerGiven.type,
-                    typeParameters = finalNewInnerGiven.typeParameters,
                     source = candidate.source
                 )
                 constrainedGivenCandidates += newCandidate
