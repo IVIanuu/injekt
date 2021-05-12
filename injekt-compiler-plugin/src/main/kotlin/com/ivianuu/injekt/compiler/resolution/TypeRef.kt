@@ -347,16 +347,23 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
         val newGiven = isGiven || substitution.isGiven
         val newVariance = if (substitution.variance != TypeVariance.INV) substitution.variance
         else variance
+        val newDefaultOnAllErrors = substitution.defaultOnAllErrors || defaultOnAllErrors
+        val newIgnoreElementsWithErrors = substitution.ignoreElementsWithErrors ||
+                ignoreElementsWithErrors
         return if (newNullability != substitution.isMarkedNullable ||
             newGiven != substitution.isGiven ||
-            newVariance != substitution.variance) {
+            newVariance != substitution.variance ||
+            newDefaultOnAllErrors != substitution.defaultOnAllErrors ||
+            newIgnoreElementsWithErrors != substitution.ignoreElementsWithErrors) {
             substitution.copy(
                 // we copy nullability to support T : Any? -> String
                 isMarkedNullable = newNullability,
                 // we copy given kind to support @Given C -> @Given String
                 // fallback to substitution given
                 isGiven = newGiven,
-                variance = newVariance
+                variance = newVariance,
+                defaultOnAllErrors = newDefaultOnAllErrors,
+                ignoreElementsWithErrors = newIgnoreElementsWithErrors
             )
         } else substitution
     }
