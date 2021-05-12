@@ -52,10 +52,6 @@ class AppInitializer : ApplicationInitializedListener {
                             project,
                             TypeClassSyntheticResolveExtension()
                         )
-                        /*PackageFragmentProviderExtension.registerExtension(
-                            project,
-                            TypeClassPackageFragmentProviderExtension()
-                        )*/
 
                         @Suppress("DEPRECATION")
                         Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)

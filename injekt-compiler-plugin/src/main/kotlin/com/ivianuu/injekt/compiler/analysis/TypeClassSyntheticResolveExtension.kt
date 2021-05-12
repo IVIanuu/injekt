@@ -51,7 +51,7 @@ class TypeClassSyntheticResolveExtension : SyntheticResolveExtension {
     }
 }
 
-fun ClassDescriptor.getTypeClassFunctions(): List<SimpleFunctionDescriptor> =
+private fun ClassDescriptor.getTypeClassFunctions(): List<SimpleFunctionDescriptor> =
     unsubstitutedMemberScope
         .getContributedDescriptors()
         .filterIsInstance<SimpleFunctionDescriptor>()
@@ -60,7 +60,7 @@ fun ClassDescriptor.getTypeClassFunctions(): List<SimpleFunctionDescriptor> =
 class TypeClassFunctionDescriptor(
     context: InjektContext,
     function: SimpleFunctionDescriptor,
-    containing: DeclarationDescriptor
+    containing: ClassDescriptor
 ) : SimpleFunctionDescriptorImpl(
     containing,
     null,
@@ -118,7 +118,7 @@ class TypeClassFunctionDescriptor(
                 },
             ReceiverParameterDescriptorImpl(
                 this,
-                ImplicitClassReceiver(containing.cast()),
+                ImplicitClassReceiver(containing),
                 Annotations.EMPTY
             ),
             typeParametersMap.values.toList(),
