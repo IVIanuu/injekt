@@ -18,6 +18,7 @@ package com.ivianuu.injekt.samples.typeclasses
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.*
+import com.ivianuu.injekt.samples.typeclasses.Ord.Companion.compareWith
 
 @Extension
 fun interface Ord<in T> {
