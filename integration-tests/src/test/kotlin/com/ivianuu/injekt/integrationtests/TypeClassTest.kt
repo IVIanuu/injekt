@@ -25,7 +25,26 @@ class TypeClassTest {
     }
 
     @Test
-    fun testExtensionWithAdditionalTypeParameter() = codegen(
+    fun testExtensionWithAdditionalClassTypeParameter() = codegen(
+        """
+            import com.ivianuu.injekt.integrationtests.MyExtension.Companion.answer            
+
+            @Extension interface MyExtension<T, R> {
+                fun T.answer(): Int
+            }
+
+            @Given fun <T, R> myExtension() = object : MyExtension<T, R> {
+                override fun T.answer() = 42
+            } 
+
+            fun invoke() = "".answer<String, Long>()
+        """
+    ) {
+        invokeSingleFile() shouldBe 42
+    }
+
+    @Test
+    fun testExtensionWithAdditionalFunctionTypeParameter() = codegen(
         """
             import com.ivianuu.injekt.integrationtests.MyExtension.Companion.answer            
 
