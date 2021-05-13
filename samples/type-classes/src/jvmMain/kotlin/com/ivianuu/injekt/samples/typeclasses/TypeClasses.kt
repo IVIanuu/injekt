@@ -25,8 +25,7 @@ fun interface Ord<in T> {
     infix fun T.compareWith(other: T): Int
 }
 
-fun <T> List<T>.sorted(@Given ord: Ord<T>): List<T> =
-    sortedWith { a, b -> a compareWith b }
+fun <T> List<T>.sorted(@Given ord: Ord<T>): List<T> = sortedWith { a, b -> a compareWith b }
 
 @Given
 val IntOrd = Ord<Int> { compareTo(it) }
