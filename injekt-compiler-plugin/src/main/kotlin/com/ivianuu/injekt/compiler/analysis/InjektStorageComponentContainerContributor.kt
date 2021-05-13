@@ -28,7 +28,6 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
         platform: TargetPlatform,
         moduleDescriptor: ModuleDescriptor,
     ) {
-        if (!moduleDescriptor.isInjektEnabled) return
         val context = moduleDescriptor.injektContext
         container.useInstance(GivenChecker(context))
         container.useInstance(TypeKeyChecker(context))

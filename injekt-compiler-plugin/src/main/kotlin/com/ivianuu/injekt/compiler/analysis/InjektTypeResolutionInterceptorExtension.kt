@@ -21,7 +21,6 @@ import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.extensions.internal.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.expressions.*
 import org.jetbrains.kotlin.types.typeUtil.*
@@ -35,8 +34,6 @@ class InjektTypeResolutionInterceptorExtension : TypeResolutionInterceptorExtens
         context: ExpressionTypingContext,
         resultType: KotlinType,
     ): KotlinType {
-        if (!context.scope.ownerDescriptor.module.isInjektEnabled)
-            return resultType
         if (resultType === TypeUtils.NO_EXPECTED_TYPE) return resultType
         if (element !is KtLambdaExpression) return resultType
         if (!resultType.hasAnnotation(InjektFqNames.Given)) return resultType
