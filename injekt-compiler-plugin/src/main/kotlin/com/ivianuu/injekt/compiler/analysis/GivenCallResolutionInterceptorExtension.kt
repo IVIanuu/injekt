@@ -43,6 +43,8 @@ class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtensi
         dispatchReceiver: ReceiverValueWithSmartCastInfo?,
         extensionReceiver: ReceiverValueWithSmartCastInfo?,
     ): Collection<FunctionDescriptor> {
+        if (!resolutionContext.scope.ownerDescriptor.module.isInjektEnabled)
+            return candidates
         return if (candidates.isEmpty()) emptyList()
         else {
             val context = resolutionContext.scope.ownerDescriptor.module.injektContext

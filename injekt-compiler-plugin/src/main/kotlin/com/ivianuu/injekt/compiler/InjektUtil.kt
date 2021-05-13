@@ -35,6 +35,10 @@ import java.util.concurrent.*
 import kotlin.collections.set
 import kotlin.reflect.*
 
+val ModuleDescriptor.isInjektEnabled: Boolean
+    get() = findClassifierAcrossModuleDependencies(
+        ClassId.topLevel(InjektFqNames.Given)) != null
+
 fun KtAnnotated.hasAnnotation(fqName: FqName): Boolean = findAnnotation(fqName) != null
 
 fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {

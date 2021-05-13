@@ -26,6 +26,7 @@ var dumpAllFiles = false
 
 class InjektIrDumper(private val dumpDir: File) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+        if (!pluginContext.moduleDescriptor.isInjektEnabled) return
         moduleFragment.files
             .asSequence()
             .filter {
