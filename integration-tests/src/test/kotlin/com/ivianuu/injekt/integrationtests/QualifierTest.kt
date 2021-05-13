@@ -163,7 +163,7 @@ class QualifierTest {
             typealias ChildGivenScope = GivenScope
 
             @Given
-            val childGivenScopeModule = ChildGivenScopeModule0<AppGivenScope, ChildGivenScope>()
+            val childGivenScopeModule = ChildScopeModule0<AppGivenScope, ChildGivenScope>()
 
             @InstallElement<ChildGivenScope>
             @Given

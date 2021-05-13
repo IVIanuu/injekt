@@ -147,7 +147,7 @@ class ConstrainedGivenTest {
     """
             typealias ActivityGivenScope = GivenScope
             @Given val activityGivenScopeModule = 
-                ChildGivenScopeModule0<AppGivenScope, ActivityGivenScope>()
+                ChildScopeModule0<AppGivenScope, ActivityGivenScope>()
             """,
     """
             @Given fun foo(): @Scoped<AppGivenScope> Foo = Foo()
