@@ -17,35 +17,11 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.resolve.calls.callUtil.*
-import org.jetbrains.kotlin.resolve.calls.checkers.*
-import org.jetbrains.kotlin.resolve.calls.context.*
 import org.jetbrains.kotlin.resolve.checkers.*
-import org.jetbrains.kotlin.types.*
 
-class QualifierChecker(private val context: InjektContext) : DeclarationChecker, AdditionalTypeChecker {
-    override fun checkType(
-        expression: KtExpression,
-        expressionType: KotlinType,
-        expressionTypeWithSmartCast: KotlinType,
-        c: ResolutionContext<*>
-    ) {
-        val resolvedCall = expression.getResolvedCall(c.trace.bindingContext) ?: return
-        val callee = resolvedCall.resultingDescriptor
-        if (!callee.isDeserializedDeclaration()) return
-        val info = callee.callableInfo(context, c.trace) ?: return
-        val expressionTypeRef = expressionType.toTypeRef(context, c.trace)
-        val actualExpressionType = info.type
-            .substitute(resolvedCall.typeArguments.mapKeys {
-                it.key.toClassifierRef(context, c.trace)
-            }.mapValues { it.value.toTypeRef(context, c.trace) })
-        if (expressionTypeRef != actualExpressionType) {
-            c.trace.record(InjektWritableSlices.EXPECTED_TYPE, expression, actualExpressionType)
-        }
-    }
+class QualifierChecker : DeclarationChecker {
     override fun check(
         declaration: KtDeclaration,
         descriptor: DeclarationDescriptor,

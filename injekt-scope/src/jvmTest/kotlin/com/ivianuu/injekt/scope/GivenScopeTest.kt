@@ -52,7 +52,7 @@ class GivenScopeTest {
     @Test
     fun testChildGivenScopeModule() {
         @Given
-        val childScopeModule = ChildGivenScopeModule1<TestGivenScope1, String, TestGivenScope2>()
+        val childScopeModule = ChildScopeModule1<TestGivenScope1, String, TestGivenScope2>()
         val parentScope = given<TestGivenScope1>()
         val childScope = parentScope.element<@ChildScopeFactory (String) -> TestGivenScope2>()("42")
         childScope.element<String>() shouldBe "42"
@@ -156,9 +156,9 @@ class GivenScopeTest {
     @Test
     fun testParentScope() {
         @Given
-        val childScopeModule = ChildGivenScopeModule0<TestGivenScope1, TestGivenScope2>()
+        val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
         @Given
-        val childScope2Module = ChildGivenScopeModule0<TestGivenScope2, TestGivenScope3>()
+        val childScope2Module = ChildScopeModule0<TestGivenScope2, TestGivenScope3>()
         val parentScope = given<TestGivenScope1>()
         val childScope1 = parentScope.element<@ChildScopeFactory () -> TestGivenScope2>()
             .invoke()
@@ -172,7 +172,7 @@ class GivenScopeTest {
     fun testChildReturnsParentElement() {
         @Given val parentElement: @InstallElement<TestGivenScope1> String = "value"
         @Given
-        val childScopeModule = ChildGivenScopeModule0<TestGivenScope1, TestGivenScope2>()
+        val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
         val parentScope = given<TestGivenScope1>()
         val childScope = parentScope.element<@ChildScopeFactory () -> TestGivenScope2>()
             .invoke()
@@ -182,7 +182,7 @@ class GivenScopeTest {
     @Test
     fun testDisposingParentDisposesChild() {
         @Given
-        val childScopeModule = ChildGivenScopeModule0<TestGivenScope1, TestGivenScope2>()
+        val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
         val parentScope = given<TestGivenScope1>()
         val childScope = parentScope.element<@ChildScopeFactory () -> TestGivenScope2>()
             .invoke()

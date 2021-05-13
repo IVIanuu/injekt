@@ -39,7 +39,7 @@ typealias ActivityGivenScope = GivenScope
 
 @Given
 val activityGivenScopeModule =
-    ChildGivenScopeModule1<ActivityRetainedGivenScope, ComponentActivity, ActivityGivenScope>()
+    ChildScopeModule1<ActivityRetainedGivenScope, ComponentActivity, ActivityGivenScope>()
 
 typealias ActivityContext = Context
 

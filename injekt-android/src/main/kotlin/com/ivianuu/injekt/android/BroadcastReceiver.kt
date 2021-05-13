@@ -36,7 +36,7 @@ typealias ReceiverGivenScope = GivenScope
 
 @Given
 val receiverGivenScopeModule =
-    ChildGivenScopeModule3<AppGivenScope, BroadcastReceiver, ReceiverContext, ReceiverIntent, ReceiverGivenScope>()
+    ChildScopeModule3<AppGivenScope, BroadcastReceiver, ReceiverContext, ReceiverIntent, ReceiverGivenScope>()
 
 typealias ReceiverContext = Context
 

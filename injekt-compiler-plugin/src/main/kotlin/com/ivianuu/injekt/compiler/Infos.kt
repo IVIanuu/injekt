@@ -51,13 +51,6 @@ fun CallableDescriptor.callableInfo(
         }
 
     val type = run {
-        val psi = findPsi()
-        if (psi is KtProperty && psi.initializer != null) {
-            trace.get(InjektWritableSlices.EXPECTED_TYPE, psi.initializer)
-        } else if (psi is KtFunction && psi.bodyExpression != null) {
-            trace.get(InjektWritableSlices.EXPECTED_TYPE, psi.bodyExpression)
-        } else null
-    } ?: run {
         val qualifiers = if (this is ConstructorDescriptor)
             getAnnotatedAnnotations(InjektFqNames.Qualifier)
                 .map { it.type.toTypeRef(context, trace) }

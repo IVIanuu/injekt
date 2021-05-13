@@ -34,7 +34,7 @@ typealias ServiceGivenScope = GivenScope
 
 @Given
 val serviceGivenScopeModule =
-    ChildGivenScopeModule1<AppGivenScope, Service, ServiceGivenScope>()
+    ChildScopeModule1<AppGivenScope, Service, ServiceGivenScope>()
 
 typealias ServiceContext = Context
 
