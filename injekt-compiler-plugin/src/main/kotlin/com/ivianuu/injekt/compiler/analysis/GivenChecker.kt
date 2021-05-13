@@ -203,7 +203,8 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         trace: BindingTrace
     ) {
         val givenConstraints = typeParameters.filter {
-            it.isGivenConstraint(context, trace)
+            it.classifierInfo(context, trace)
+                .isGivenConstraint
         }
         if (givenConstraints.size > 1) {
             givenConstraints
@@ -284,7 +285,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         if (typeParameters.isEmpty()) return
         typeParameters
             .asSequence()
-            .filter { it.isGivenConstraint(context, trace) }
+            .filter { it.classifierInfo(context, trace).isGivenConstraint }
             .forEach { typeParameter ->
                 trace.report(
                     InjektErrors.GIVEN_CONSTRAINT_ON_NON_GIVEN_DECLARATION

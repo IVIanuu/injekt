@@ -116,10 +116,10 @@ fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
     }
     .distinctBy { it.callable.uniqueKey(context) }
 
-fun Annotated.isGiven(context: InjektContext, trace: BindingTrace?): Boolean {
+fun Annotated.isGiven(context: InjektContext, trace: BindingTrace): Boolean {
     @Suppress("IMPLICIT_CAST_TO_ANY")
     val key = if (this is KotlinType) System.identityHashCode(this) else this
-    trace?.get(InjektWritableSlices.IS_GIVEN, key)?.let { return it }
+    trace.get(InjektWritableSlices.IS_GIVEN, key)?.let { return it }
     var isGiven = hasAnnotation(InjektFqNames.Given)
     if (!isGiven && this is PropertyDescriptor) {
         isGiven = overriddenTreeUniqueAsSequence(false)
@@ -142,13 +142,13 @@ fun Annotated.isGiven(context: InjektContext, trace: BindingTrace?): Boolean {
         isGiven = type.isGiven(context, trace) ||
                 containingDeclaration.safeAs<FunctionDescriptor>()
                     ?.takeIf { it.isDeserializedDeclaration() }
-                    ?.let { context.callableInfoFor(it, trace) }
+                    ?.callableInfo(context, trace)
                     ?.let { name.asString() in it.givenParameters } == true
     }
     if (!isGiven && this is ClassConstructorDescriptor && isPrimary) {
         isGiven = constructedClass.isGiven(context, trace)
     }
-    trace?.record(InjektWritableSlices.IS_GIVEN, key, isGiven)
+    trace.record(InjektWritableSlices.IS_GIVEN, key, isGiven)
     return isGiven
 }
 

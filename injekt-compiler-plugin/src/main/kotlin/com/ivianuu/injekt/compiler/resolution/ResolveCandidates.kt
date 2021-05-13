@@ -312,8 +312,8 @@ private fun ResolutionScope.resolveCandidate(
                     candidate
                 )
             }
-            if (parameterDescriptor.isForTypeKey(context, trace) &&
-                    !argumentDescriptor.isForTypeKey(context, trace)) {
+            if (parameterDescriptor.classifierInfo(context, trace).isForTypeKey &&
+                    !argumentDescriptor.classifierInfo(context, trace).isForTypeKey) {
                 return@computeForCandidate ResolutionResult.Failure.TypeArgumentKindMismatch(
                     ResolutionResult.Failure.TypeArgumentKindMismatch.TypeArgumentKind.FOR_TYPE_KEY,
                     typeParameter,

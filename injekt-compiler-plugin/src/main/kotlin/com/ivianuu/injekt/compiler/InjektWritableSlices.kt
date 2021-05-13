@@ -31,25 +31,13 @@ object InjektWritableSlices {
     val FILE_HAS_GIVEN_CALLS = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
     val DECLARATION_RESOLUTION_SCOPE = BasicWritableSlice<DeclarationDescriptor, ResolutionScope>(RewritePolicy.DO_NOTHING)
     val HIERARCHICAL_RESOLUTION_SCOPE = BasicWritableSlice<HierarchicalScope, ResolutionScope>(RewritePolicy.DO_NOTHING)
-    val CALLABLE_REF_FOR_DESCRIPTOR = BasicWritableSlice<CallableDescriptor, CallableRef>(
-        RewritePolicy.DO_NOTHING)
-    val CLASSIFIER_REF_FOR_CLASSIFIER = BasicWritableSlice<ClassifierDescriptor, ClassifierRef>(
-        RewritePolicy.DO_NOTHING)
+    val CALLABLE_REF_FOR_DESCRIPTOR = BasicWritableSlice<CallableDescriptor, CallableRef>(RewritePolicy.DO_NOTHING)
+    val CLASSIFIER_REF_FOR_CLASSIFIER = BasicWritableSlice<ClassifierDescriptor, ClassifierRef>(RewritePolicy.DO_NOTHING)
     val IS_GIVEN = BasicWritableSlice<Any, Boolean>(RewritePolicy.DO_NOTHING)
     val GIVEN_CONSTRUCTORS = BasicWritableSlice<ClassDescriptor, List<CallableRef>>(RewritePolicy.DO_NOTHING)
-    val CALLABLE_INFO = BasicWritableSlice<CallableDescriptor, Tuple1<PersistedCallableInfo?>>(
-        RewritePolicy.DO_NOTHING)
-    val CLASSIFIER_INFO = BasicWritableSlice<ClassifierDescriptor, Tuple1<PersistedClassifierInfo?>>(
-        RewritePolicy.DO_NOTHING
-    )
-    val IS_GIVEN_CONSTRAINT = BasicWritableSlice<TypeParameterDescriptor, Boolean>(
-        RewritePolicy.DO_NOTHING
-    )
-    val IS_FOR_TYPE_KEY = BasicWritableSlice<TypeParameterDescriptor, Boolean>(
-        RewritePolicy.DO_NOTHING
-    )
+    val CALLABLE_INFO = BasicWritableSlice<CallableDescriptor, CallableInfo>(RewritePolicy.DO_NOTHING)
+    val CLASSIFIER_INFO = BasicWritableSlice<ClassifierDescriptor, ClassifierInfo>(RewritePolicy.DO_NOTHING)
     val CLASSIFIER_FOR_KEY = BasicWritableSlice<String, ClassifierDescriptor>(RewritePolicy.DO_NOTHING)
-    val IS_SINGLETON_GIVEN = BasicWritableSlice<ClassDescriptor, Boolean>(RewritePolicy.DO_NOTHING)
     val EXPECTED_TYPE = BasicWritableSlice<KtExpression, TypeRef>(RewritePolicy.DO_NOTHING)
 }
 

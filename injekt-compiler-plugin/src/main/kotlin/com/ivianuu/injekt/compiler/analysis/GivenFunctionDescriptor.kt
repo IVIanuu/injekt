@@ -26,7 +26,7 @@ import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 interface GivenFunctionDescriptor : FunctionDescriptor {
-    val invokeDescriptor: FunctionDescriptor
+    val underlyingDescriptor: FunctionDescriptor
 }
 
 class GivenValueParameterDescriptor(
@@ -54,11 +54,11 @@ val ValueParameterDescriptor.hasDefaultValueIgnoringGiven: Boolean
         ?: hasDefaultValue()
 
 abstract class AbstractGivenFunctionDescriptor(
-    final override val invokeDescriptor: FunctionDescriptor,
+    final override val underlyingDescriptor: FunctionDescriptor,
     val context: InjektContext,
     trace: BindingTrace
 ) : GivenFunctionDescriptor {
-    private val valueParameters = invokeDescriptor
+    private val valueParameters = underlyingDescriptor
         .valueParameters
         .mapTo(mutableListOf()) { valueParameter ->
             GivenValueParameterDescriptor(this, valueParameter, context, trace)
@@ -85,7 +85,7 @@ class GivenConstructorDescriptorImpl(
 ) : AbstractGivenFunctionDescriptor(underlyingDescriptor, context, trace),
     ClassConstructorDescriptor by underlyingDescriptor {
     override fun substitute(substitutor: TypeSubstitutor): ClassConstructorDescriptor =
-        GivenConstructorDescriptorImpl(invokeDescriptor
+        GivenConstructorDescriptorImpl(underlyingDescriptor
             .substitute(substitutor) as ClassConstructorDescriptor, context, trace)
 
     override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
@@ -100,7 +100,7 @@ class GivenFunctionDescriptorImpl(
     FunctionDescriptor by underlyingDescriptor {
     override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =
         GivenFunctionDescriptorImpl(
-            invokeDescriptor.substitute(substitutor) as FunctionDescriptor, context, trace)
+            underlyingDescriptor.substitute(substitutor) as FunctionDescriptor, context, trace)
 
     override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
         super.getValueParameters()
@@ -113,7 +113,7 @@ class GivenSimpleFunctionDescriptorImpl(
 ) : AbstractGivenFunctionDescriptor(underlyingDescriptor, context, trace),
     SimpleFunctionDescriptor by underlyingDescriptor {
     override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =
-        GivenSimpleFunctionDescriptorImpl(invokeDescriptor
+        GivenSimpleFunctionDescriptorImpl(underlyingDescriptor
             .substitute(substitutor) as SimpleFunctionDescriptor, context, trace)
 
     override fun getValueParameters(): MutableList<ValueParameterDescriptor> =

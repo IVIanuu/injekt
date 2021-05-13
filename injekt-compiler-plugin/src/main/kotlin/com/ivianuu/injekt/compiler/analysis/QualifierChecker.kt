@@ -36,9 +36,9 @@ class QualifierChecker(private val context: InjektContext) : DeclarationChecker,
         val resolvedCall = expression.getResolvedCall(c.trace.bindingContext) ?: return
         val callee = resolvedCall.resultingDescriptor
         if (!callee.isDeserializedDeclaration()) return
-        val info = context.callableInfoFor(callee, c.trace) ?: return
+        val info = callee.callableInfo(context, c.trace) ?: return
         val expressionTypeRef = expressionType.toTypeRef(context, c.trace)
-        val actualExpressionType = info.type.toTypeRef(context, c.trace)
+        val actualExpressionType = info.type
             .substitute(resolvedCall.typeArguments.mapKeys {
                 it.key.toClassifierRef(context, c.trace)
             }.mapValues { it.value.toTypeRef(context, c.trace) })
