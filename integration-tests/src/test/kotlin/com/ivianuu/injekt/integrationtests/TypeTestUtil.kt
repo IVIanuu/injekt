@@ -151,7 +151,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     ).defaultType
 
     fun typeFor(fqName: FqName) = injektContext.classifierDescriptorForFqName(fqName)
-        ?.defaultType?.toTypeRef(injektContext, null) ?: error("Wtf $fqName")
+        ?.defaultType?.toTypeRef(injektContext, injektContext.trace) ?: error("Wtf $fqName")
 
     infix fun TypeRef.shouldBeAssignableTo(other: TypeRef) {
         shouldBeAssignableTo(other, emptyList())

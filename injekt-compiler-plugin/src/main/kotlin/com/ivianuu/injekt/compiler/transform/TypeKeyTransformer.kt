@@ -63,11 +63,11 @@ class TypeKeyTransformer(
         if (clazz in transformedClasses) return clazz
         transformedClasses += clazz
 
-        if (clazz.typeParameters.none { it.descriptor.isForTypeKey(context, trace) })
+        if (clazz.typeParameters.none { it.descriptor.classifierInfo(context, trace).isForTypeKey })
             return clazz
 
         val typeKeyFields = clazz.typeParameters
-            .filter { it.descriptor.isForTypeKey(context, trace) }
+            .filter { it.descriptor.classifierInfo(context, trace).isForTypeKey }
             .associateWith {
                 val field = clazz.addField(
                     "_${it.name}TypeKey",
@@ -144,7 +144,7 @@ class TypeKeyTransformer(
             val typeKeyParameters = function.constructedClass
                 .descriptor
                 .declaredTypeParameters
-                .filter { it.isForTypeKey(context, trace) }
+                .filter { it.classifierInfo(context, trace).isForTypeKey }
             typeKeyParameters.forEach {
                 function.addValueParameter(
                     "_${it.name}TypeKey",
@@ -158,7 +158,7 @@ class TypeKeyTransformer(
         if (function.descriptor.isDeserializedDeclaration()) {
             val typeKeyParameters = function
                 .typeParameters
-                .filter { it.descriptor.isForTypeKey(context, trace) }
+                .filter { it.descriptor.classifierInfo(context, trace).isForTypeKey }
             typeKeyParameters.forEach {
                 function.addValueParameter(
                     "_${it.name}TypeKey",
@@ -169,13 +169,13 @@ class TypeKeyTransformer(
             return function
         }
 
-        if (function.typeParameters.none { it.descriptor.isForTypeKey(context, trace) })
+        if (function.typeParameters.none { it.descriptor.classifierInfo(context, trace).isForTypeKey })
             return function
 
         val transformedFunction = function.copyWithTypeKeyParams()
         transformedFunctions[function] = transformedFunction
         val typeKeyParams = transformedFunction.typeParameters
-            .filter { it.descriptor.isForTypeKey(context, trace) }
+            .filter { it.descriptor.classifierInfo(context, trace).isForTypeKey }
             .associateWith {
                 transformedFunction.addValueParameter(
                     "_${it.name}TypeKey",
@@ -229,11 +229,11 @@ class TypeKeyTransformer(
         val callee = expression.symbol.owner
         if (callee is IrConstructor) {
             if (callee.constructedClass.typeParameters.none {
-                    it.descriptor.isForTypeKey(context, trace)
+                    it.descriptor.classifierInfo(context, trace).isForTypeKey
                 }) return expression
         } else {
             if (callee.typeParameters.none {
-                    it.descriptor.isForTypeKey(context, trace)
+                    it.descriptor.classifierInfo(context, trace).isForTypeKey
                 }) return expression
         }
 
@@ -257,7 +257,7 @@ class TypeKeyTransformer(
                     (0 until typeArgumentsCount)
                         .asSequence()
                         .map { transformedCallee.typeParameters[it] to getTypeArgument(it)!! }
-                        .filter { it.first.descriptor.isForTypeKey(context, trace) }
+                        .filter { it.first.descriptor.classifierInfo(context, trace).isForTypeKey }
                         .forEach { (_, typeArgument) ->
                             putValueArgument(
                                 currentIndex++,
@@ -289,7 +289,7 @@ class TypeKeyTransformer(
                             transformedCallee as IrConstructor
                             transformedCallee.constructedClass.typeParameters[it] to getTypeArgument(it)!!
                         }
-                        .filter { it.first.descriptor.isForTypeKey(context, trace) }
+                        .filter { it.first.descriptor.classifierInfo(context, trace).isForTypeKey }
                         .forEach { (_, typeArgument) ->
                             putValueArgument(
                                 currentIndex++,
@@ -323,7 +323,7 @@ class TypeKeyTransformer(
                             transformedCallee as IrConstructor
                             transformedCallee.constructedClass.typeParameters[it] to getTypeArgument(it)!!
                         }
-                        .filter { it.first.descriptor.isForTypeKey(context, trace) }
+                        .filter { it.first.descriptor.classifierInfo(context, trace).isForTypeKey }
                         .forEach { (_, typeArgument) ->
                             putValueArgument(
                                 currentIndex++,

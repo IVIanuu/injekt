@@ -17,12 +17,12 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.*
+import org.jetbrains.kotlin.cli.jvm.compiler.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
@@ -33,64 +33,25 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
 
     override fun isDenotable(type: TypeRef): Boolean = true
 
+    val trace = CliBindingTrace()
+
     val setClassifier by unsafeLazy {
-        module.builtIns.set.toClassifierRef(this, null)
+        module.builtIns.set.toClassifierRef(this, trace)
     }
     val collectionClassifier by unsafeLazy {
-        module.builtIns.collection.toClassifierRef(this, null)
+        module.builtIns.collection.toClassifierRef(this, trace)
     }
     val nothingType by unsafeLazy {
-        module.builtIns.nothingType.toTypeRef(this, null)
+        module.builtIns.nothingType.toTypeRef(this, trace)
     }
     val nullableNothingType by unsafeLazy {
         nothingType.copy(isMarkedNullable = true)
     }
     val anyType by unsafeLazy {
-        module.builtIns.anyType.toTypeRef(this, null)
+        module.builtIns.anyType.toTypeRef(this, trace)
     }
     val nullableAnyType by unsafeLazy {
         anyType.copy(isMarkedNullable = true)
-    }
-
-    fun callableInfoFor(
-        callable: CallableDescriptor,
-        trace: BindingTrace?
-    ): PersistedCallableInfo? {
-        trace?.get(InjektWritableSlices.CALLABLE_INFO, callable)?.let { return it.value }
-        return callable.annotations
-            .findAnnotation(InjektFqNames.CallableInfo)
-            ?.allValueArguments
-            ?.get("value".asNameId())
-            ?.value
-            ?.cast<String>()
-            ?.decode<PersistedCallableInfo>()
-            .also { trace?.record(InjektWritableSlices.CALLABLE_INFO, callable, Tuple1(it)) }
-    }
-
-    fun classifierInfoFor(
-        descriptor: ClassifierDescriptor,
-        trace: BindingTrace?
-    ): PersistedClassifierInfo? {
-        trace?.get(InjektWritableSlices.CLASSIFIER_INFO, descriptor)?.let { return it.value }
-        val classifierInfo = descriptor
-            .annotations
-            .findAnnotation(InjektFqNames.ClassifierInfo)
-            ?.allValueArguments
-            ?.get("value".asNameId())
-            ?.value
-            ?.cast<String>()
-            ?.decode()
-            ?: descriptor
-                .containingDeclaration
-                .safeAs<CallableDescriptor>()
-                ?.let { callableInfoFor(it, trace) }
-                ?.typeParameters
-                ?.singleOrNull {
-                    val fqName = FqName(it.key.split(":")[1])
-                    fqName == descriptor.fqNameSafe
-                }
-        trace?.record(InjektWritableSlices.CLASSIFIER_INFO, descriptor, Tuple1(classifierInfo))
-        return classifierInfo
     }
 
     fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor? {

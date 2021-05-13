@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.*
-import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.openapi.progress.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
@@ -25,14 +24,12 @@ import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.interpreter.*
 import org.jetbrains.kotlin.ir.types.*
-import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.types.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.lang.reflect.*
 import java.util.concurrent.*
 import kotlin.collections.set
@@ -85,7 +82,7 @@ fun DeclarationDescriptor.isExternalDeclaration(context: InjektContext): Boolean
 
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
         (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
-        (this is GivenFunctionDescriptor && invokeDescriptor.isDeserializedDeclaration()) ||
+        (this is GivenFunctionDescriptor && underlyingDescriptor.isDeserializedDeclaration()) ||
         this is DeserializedTypeParameterDescriptor
 
 fun String.asNameId() = Name.identifier(this)
@@ -217,79 +214,6 @@ fun <K, V> List<K>.toMap(values: List<V>): Map<K, V> {
 
 private var currentFrameworkKey = 0
 fun generateFrameworkKey() = ++currentFrameworkKey
-
-data class Tuple1<T>(val value: T)
-
-fun TypeParameterDescriptor.isGivenConstraint(
-    context: InjektContext,
-    trace: BindingTrace?
-): Boolean {
-    trace?.get(InjektWritableSlices.IS_GIVEN_CONSTRAINT, this)?.let { return it }
-
-    val isGivenConstraint = if (isDeserializedDeclaration() && containingDeclaration is ClassDescriptor) {
-        name.asString() in context.classifierInfoFor(containingDeclaration.cast(), trace)
-            ?.givenConstraintTypeParameters ?: emptyList()
-    } else {
-        hasAnnotation(InjektFqNames.Given) ||
-                findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.Given) == true
-    }
-
-    trace?.record(InjektWritableSlices.IS_GIVEN_CONSTRAINT, this, isGivenConstraint)
-    return isGivenConstraint
-}
-
-fun TypeParameterDescriptor.isForTypeKey(
-    context: InjektContext,
-    trace: BindingTrace?
-): Boolean {
-    trace?.get(InjektWritableSlices.IS_FOR_TYPE_KEY, this)?.let {
-        return it
-    }
-
-    val isForTypeKey = if (isDeserializedDeclaration() &&
-        containingDeclaration is ClassDescriptor) {
-        name.asString() in context.classifierInfoFor(containingDeclaration.cast(), trace)
-            ?.forTypeKeyTypeParameters ?: emptyList()
-    } else {
-        hasAnnotation(InjektFqNames.ForTypeKey) ||
-                findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.ForTypeKey) == true
-    }
-
-    trace?.record(InjektWritableSlices.IS_FOR_TYPE_KEY, this, isForTypeKey)
-    return isForTypeKey
-}
-
-fun ClassifierDescriptor.isSingletonGiven(
-    context: InjektContext,
-    trace: BindingTrace
-): Boolean {
-    if (this !is ClassDescriptor) return false
-    trace.get(InjektWritableSlices.IS_SINGLETON_GIVEN, this)?.let {
-        return it
-    }
-    val isSingletonGiven = if (isDeserializedDeclaration()) {
-        context.classifierInfoFor(this, trace)
-            ?.isSingletonGiven == true
-    } else {
-        kind == ClassKind.CLASS &&
-                getGivenConstructors(context, trace)
-                    .let { givenConstructors ->
-                        givenConstructors.isNotEmpty() &&
-                                givenConstructors.all { it.callable.valueParameters.isEmpty() }
-                    } &&
-                declaredTypeParameters.none { it.isForTypeKey(context, trace) } &&
-                unsubstitutedMemberScope.getContributedDescriptors()
-                    .none {
-                        (it is ClassDescriptor &&
-                                it.isInner) ||
-                                (it is PropertyDescriptor &&
-                                        it.hasBackingField(trace.bindingContext))
-                    }
-    }
-
-    trace.record(InjektWritableSlices.IS_SINGLETON_GIVEN, this, isSingletonGiven)
-    return isSingletonGiven
-}
 
 fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transform: T.() -> T): T {
     val field = clazz.java.declaredFields

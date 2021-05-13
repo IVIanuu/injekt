@@ -89,10 +89,26 @@ class IncrementalFixTransformer(
                 repeat(index) {
                     addValueParameter("index$it", pluginContext.irBuiltIns.byteType)
                 }
-                val callableInfo = callable.toPersistedCallableInfo(context, trace).encode()
+                val callableInfo = callable.callable
+                    .annotations
+                    .findAnnotation(InjektFqNames.CallableInfo)!!
+                    .allValueArguments
+                    .values
+                    .single()
+                    .value
+                    .cast<String>()
                 val classifierInfo = callable
                     .takeIf { it.callable is ClassConstructorDescriptor }
-                    ?.type?.classifier?.toPersistedClassifierInfo(context, trace)?.encode()
+                    ?.type
+                    ?.classifier
+                    ?.descriptor
+                    ?.annotations
+                    ?.findAnnotation(InjektFqNames.ClassifierInfo)
+                    ?.allValueArguments
+                    ?.values
+                    ?.single()
+                    ?.value
+                    ?.cast<String>()
 
                 val finalHash = String(
                     Base64.getEncoder()
@@ -126,6 +142,8 @@ class IncrementalFixTransformer(
             (declaration.visibility == DescriptorVisibilities.PUBLIC ||
                     declaration.visibility == DescriptorVisibilities.INTERNAL ||
                     declaration.visibility == DescriptorVisibilities.PROTECTED) &&
+            (declaration !is IrConstructor ||
+                    declaration.constructedClass.visibility != DescriptorVisibilities.LOCAL) &&
                 declaration.descriptor.isGiven(context, trace)) {
             givensByFile.getOrPut(declaration.file) { mutableSetOf() } += when (declaration) {
                 is IrClass -> declaration.descriptor.getGivenConstructors(context, trace)

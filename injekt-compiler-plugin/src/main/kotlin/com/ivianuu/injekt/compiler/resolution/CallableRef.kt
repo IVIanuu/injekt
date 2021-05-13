@@ -17,10 +17,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.js.resolve.diagnostics.*
-import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.*
 
 data class CallableRef(
@@ -72,48 +69,16 @@ fun CallableDescriptor.toCallableRef(
     trace: BindingTrace
 ): CallableRef {
     trace.get(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this)?.let { return it }
-    val info = context.callableInfoFor(this, trace)
-    val type = info?.type?.toTypeRef(context, trace)
-        ?: run {
-            val psi = findPsi()
-            if (psi is KtProperty && psi.initializer != null) {
-                trace.get(InjektWritableSlices.EXPECTED_TYPE, psi.initializer)
-            } else if (psi is KtFunction && psi.bodyExpression != null) {
-                trace.get(InjektWritableSlices.EXPECTED_TYPE, psi.bodyExpression)
-            } else null
-        }
-        ?: run {
-            val qualifiers = if (this is ConstructorDescriptor)
-                getAnnotatedAnnotations(InjektFqNames.Qualifier)
-                    .map { it.type.toTypeRef(context, trace) }
-            else emptyList()
-            qualifiers.wrap(returnType!!.toTypeRef(context, trace))
-        }
-    val typeParameters = info
-        ?.typeParameters
-        ?.map { it.toClassifierRef(context, trace) } ?: typeParameters
-        .map { it.toClassifierRef(context, trace) }
-    val parameterTypes = info
-        ?.parameterTypes
-        ?.mapValues { it.value.toTypeRef(context, trace) }
-        ?: (if (this is ConstructorDescriptor) valueParameters else allParameters)
-            .map { it.injektName() to it.type.toTypeRef(context, trace) }
-            .toMap()
-    val givenParameters = info?.givenParameters ?: (if (this is ConstructorDescriptor) valueParameters else allParameters)
-        .filter { it.isGiven(context, trace) }
-        .mapTo(mutableSetOf()) { it.injektName() }
-    val defaultOnAllErrorsParameters = info?.useDefaultOnAllErrorsParameters ?: valueParameters
-        .asSequence()
-        .filter { it.annotations.hasAnnotation(InjektFqNames.DefaultOnAllErrors) }
-        .mapTo(mutableSetOf()) { it.injektName() }
+    val info = callableInfo(context, trace)
+    val typeParameters = typeParameters.map { it.toClassifierRef(context, trace) }
     return CallableRef(
         callable = this,
-        type = type,
-        originalType = type,
+        type = info.type,
+        originalType = info.type,
         typeParameters = typeParameters,
-        parameterTypes = parameterTypes,
-        givenParameters = givenParameters,
-        defaultOnAllErrorParameters = defaultOnAllErrorsParameters,
+        parameterTypes = info.parameterTypes,
+        givenParameters = info.givenParameters,
+        defaultOnAllErrorParameters = info.defaultOnAllErrorsParameters,
         typeArguments = typeParameters
             .map { it to it.defaultType }
             .toMap(),

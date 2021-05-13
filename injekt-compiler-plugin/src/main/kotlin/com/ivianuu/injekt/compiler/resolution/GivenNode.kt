@@ -138,7 +138,7 @@ class ProviderGivenNode(
 
 fun CallableRef.getGivenRequests(
     context: InjektContext,
-    trace: BindingTrace?,
+    trace: BindingTrace,
     callableFqNameProvider: (CallableDescriptor) -> FqName = { it.containingDeclaration.fqNameSafe }
 ): List<GivenRequest> = callable.allParameters
     .asSequence()

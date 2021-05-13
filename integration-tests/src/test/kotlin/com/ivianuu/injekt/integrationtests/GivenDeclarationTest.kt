@@ -373,7 +373,7 @@ class GivenDeclarationTest {
         """
             fun invoke(@Given foo: Foo): Foo {
                 return lambda()
-            } 
+            }
         """
     ) {
         val foo = Foo()

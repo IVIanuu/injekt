@@ -35,4 +35,4 @@ typealias ActivityRetainedGivenScope = GivenScope
 
 @Given
 val activityRetainedGivenScopeModule =
-    ChildGivenScopeModule0<AppGivenScope, ActivityRetainedGivenScope>()
+    ChildScopeModule0<AppGivenScope, ActivityRetainedGivenScope>()

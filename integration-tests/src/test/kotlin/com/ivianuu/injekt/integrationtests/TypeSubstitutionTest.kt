@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import io.kotest.matchers.*
 import io.kotest.matchers.maps.*
-import org.jetbrains.kotlin.cli.jvm.compiler.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
@@ -88,9 +87,8 @@ class TypeSubstitutionTest {
         val (scopedT, scopedU, scopedS) = injektContext.memberScopeForFqName(FqName("com.ivianuu.injekt.scope.Scoped.Companion"))!!
             .getContributedFunctions("scopedValue".asNameId(), NoLookupLocation.FROM_BACKEND)
             .single()
-            .let { injektContext.callableInfoFor(it, null) }!!
             .typeParameters
-            .map { it.toClassifierRef(injektContext, null) }
+            .map { it.toClassifierRef(injektContext, injektContext.trace) }
         val appGivenScope = typeFor(FqName("com.ivianuu.injekt.scope.AppGivenScope"))
         val substitutionType = scoped.wrap(stringType)
             .let {
@@ -110,15 +108,14 @@ class TypeSubstitutionTest {
             )!!
                 .cast<ClassDescriptor>()
                 .unsubstitutedPrimaryConstructor!!
-                .toCallableRef(injektContext, CliBindingTrace())
+                .toCallableRef(injektContext, injektContext.trace)
                 .typeParameters
 
         val givenCoroutineScopeElementReturnType = injektContext.memberScopeForFqName(FqName("com.ivianuu.injekt.coroutines"))!!
             .getContributedFunctions("givenCoroutineScopeElement".asNameId(), NoLookupLocation.FROM_BACKEND)
             .single()
-            .let { injektContext.callableInfoFor(it, null) }!!
+            .callableInfo(injektContext, injektContext.trace)
             .type
-            .toTypeRef(injektContext, null)
             .arguments
             .last()
 
