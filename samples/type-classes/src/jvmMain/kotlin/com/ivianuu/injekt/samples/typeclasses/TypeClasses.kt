@@ -25,12 +25,12 @@ fun interface Ord<in T> {
     infix fun T.compareWith(other: T): Int
 }
 
-fun <T> List<T>.ordered(@Given ord: Ord<T>): List<T> =
+fun <T> List<T>.sorted(@Given ord: Ord<T>): List<T> =
     sortedWith { a, b -> a compareWith b }
 
 @Given
 val IntOrd = Ord<Int> { compareTo(it) }
 
 fun main() {
-    val items = listOf(5, 3, 4, 1, 2).ordered()
+    val items = listOf(5, 3, 4, 1, 2).sorted()
 }
