@@ -18,16 +18,15 @@ package com.ivianuu.injekt.samples.typeclasses
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.*
+import com.ivianuu.injekt.samples.typeclasses.Ord.Companion.compareWith
 
+@Extension
 fun interface Ord<in T> {
     infix fun T.compareWith(other: T): Int
 }
 
-infix fun <T> T.compareWith(other: T, @Given ord: Ord<T>): Int = with(ord) {
-    this@compareWith compareWith other
-}
-
-fun <T> List<T>.sorted(@Given _: Ord<T>): List<T> = sortedWith { a, b -> a compareWith b }
+fun <T> List<T>.sorted(@Given ord: Ord<T>): List<T> =
+    sortedWith { a, b -> a compareWith b }
 
 @Given
 val IntOrd = Ord<Int> { compareTo(it) }
