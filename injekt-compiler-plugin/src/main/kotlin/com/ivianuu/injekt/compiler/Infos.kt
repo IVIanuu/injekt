@@ -124,21 +124,13 @@ private fun CallableDescriptor.persistInfoIfNeeded(
                                 }
                                 ?: emptyList()
                         }
-                        .any())
+                        .any()) ||
             safeAs<FunctionDescriptor>()
                 ?.valueParameters
                 ?.any { it.hasAnnotation(InjektFqNames.Given) } == true ||
-            info.type.anyType {
-                it.classifier.isQualifier ||
-                        (it.classifier.isTypeAlias &&
-                                it.fullyExpandedType.isSuspendFunctionType)
-            } ||
+            info.type.shouldBePersisted() ||
             info.parameterTypes.any { (_, parameterType) ->
-                parameterType.anyType {
-                    it.classifier.isQualifier ||
-                            (it.classifier.isTypeAlias &&
-                                    it.fullyExpandedType.isSuspendFunctionType)
-                }
+                parameterType.shouldBePersisted()
             }
 
     if (!shouldPersistInfo) return
@@ -265,7 +257,8 @@ fun ClassifierDescriptor.classifierInfo(
     val isForTypeKey = hasAnnotation(InjektFqNames.ForTypeKey) ||
             findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.ForTypeKey) == true
 
-    val isSingletonGiven = this is ClassDescriptor &&
+    val isSingletonGiven = !isDeserializedDeclaration() &&
+            this is ClassDescriptor &&
             kind == ClassKind.CLASS &&
             constructors
                 .filter {
@@ -340,6 +333,11 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, conte
     if (this is TypeParameterDescriptor) {
         val container = containingDeclaration
         if (container is TypeAliasDescriptor) return
+
+        if (!info.isGivenConstraint &&
+                !info.isForTypeKey &&
+                info.superTypes.none { it.shouldBePersisted() }) return
+
         val typeParameterInfos = (container.annotations
             .findAnnotation(InjektFqNames.TypeParameterInfos)
             ?.allValueArguments
@@ -378,6 +376,14 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, conte
         if (!visibility.shouldPersistInfo()) return
         if (hasAnnotation(InjektFqNames.ClassifierInfo)) return
 
+        if (!info.isSingletonGiven &&
+                info.qualifiers.isEmpty() &&
+            info.primaryConstructorPropertyParameters.isEmpty() &&
+            !hasAnnotation(InjektFqNames.Given) &&
+            (this !is ClassDescriptor ||
+                    constructors.none { it.hasAnnotation(InjektFqNames.Given) }) &&
+            info.superTypes.none { it.shouldBePersisted() }) return
+
         val serializedInfo = info.toPersistedClassifierInfo(context).encode()
 
         updateAnnotation(
@@ -391,6 +397,12 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, conte
             )
         )
     }
+}
+
+private fun TypeRef.shouldBePersisted() = anyType {
+    (it.classifier.isQualifier &&
+            it.classifier.typeParameters.size > 1) ||
+            (it.classifier.isTypeAlias && it.isSuspendFunctionType)
 }
 
 private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
@@ -407,10 +419,8 @@ private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
             LazyClassDescriptor::class,
             "annotations"
         ) { newAnnotations }
-        is GivenFunctionDescriptor -> underlyingDescriptor.updatePrivateFinalField<Annotations>(
-            AnnotatedImpl::class,
-            "annotations"
-        ) { newAnnotations }
+        is GivenFunctionDescriptor -> underlyingDescriptor.updateAnnotation(annotation)
+        is FunctionImportedFromObject -> callableFromObject.updateAnnotation(annotation)
         else -> {
             //throw AssertionError("Cannot add annotation to $this $javaClass")
         }
