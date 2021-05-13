@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.extensions.*
 import org.jetbrains.kotlin.extensions.internal.*
 import org.jetbrains.kotlin.resolve.diagnostics.*
+import org.jetbrains.kotlin.resolve.extensions.*
 import java.io.*
 
 @AutoService(ComponentRegistrar::class)
@@ -53,14 +54,10 @@ class InjektComponentRegistrar : ComponentRegistrar {
             LoadingOrder.FIRST,
             InjektIrGenerationExtension()
         )
-        /*SyntheticResolveExtension.registerExtension(
+        SyntheticResolveExtension.registerExtension(
             project,
             TypeClassSyntheticResolveExtension()
-        )*/
-        /*PackageFragmentProviderExtension.registerExtension(
-            project,
-            TypeClassPackageFragmentProviderExtension()
-        )*/
+        )
         IrGenerationExtension.registerExtensionWithLoadingOrder(
             project,
             LoadingOrder.LAST,
