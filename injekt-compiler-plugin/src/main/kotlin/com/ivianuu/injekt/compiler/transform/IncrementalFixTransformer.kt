@@ -91,7 +91,10 @@ class IncrementalFixTransformer(
                 }
                 val callableInfo = callable.callable
                     .annotations
-                    .findAnnotation(InjektFqNames.CallableInfo)!!
+                    .let {
+                        it.findAnnotation(InjektFqNames.CallableInfo)
+                            ?: error("Wtf $callable")
+                    }
                     .allValueArguments
                     .values
                     .single()
@@ -143,7 +146,9 @@ class IncrementalFixTransformer(
                     declaration.visibility == DescriptorVisibilities.INTERNAL ||
                     declaration.visibility == DescriptorVisibilities.PROTECTED) &&
             (declaration !is IrConstructor ||
-                    declaration.constructedClass.visibility != DescriptorVisibilities.LOCAL) &&
+                    (declaration.constructedClass.visibility == DescriptorVisibilities.PUBLIC ||
+                            declaration.constructedClass.visibility == DescriptorVisibilities.INTERNAL ||
+                            declaration.constructedClass.visibility == DescriptorVisibilities.PROTECTED)) &&
                 declaration.descriptor.isGiven(context, trace)) {
             givensByFile.getOrPut(declaration.file) { mutableSetOf() } += when (declaration) {
                 is IrClass -> declaration.descriptor.getGivenConstructors(context, trace)
