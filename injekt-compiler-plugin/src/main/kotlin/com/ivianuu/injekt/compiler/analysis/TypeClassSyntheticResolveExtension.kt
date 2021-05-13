@@ -69,9 +69,7 @@ class TypeClassFunctionDescriptor(
             function.module.findClassAcrossModuleDependencies(
                 ClassId.topLevel(InjektFqNames.SyntheticExtensionCallable)
             )!!.defaultType,
-            mapOf("value".asNameId() to StringValue(
-                function.uniqueKey(context))
-            ),
+            mapOf("value".asNameId() to StringValue(function.uniqueKey(context))),
             SourceElement.NO_SOURCE
         )
     ),
@@ -82,18 +80,20 @@ class TypeClassFunctionDescriptor(
     init {
         val typeClass = function.containingDeclaration.cast<ClassDescriptor>()
         val typeParametersMap = (typeClass.declaredTypeParameters + function.typeParameters)
-            .associateWith {
+            .withIndex()
+            .associateWith { (index, typeParameter) ->
                 TypeParameterDescriptorImpl.createForFurtherModification(
                     this,
-                    it.annotations,
-                    it.isReified,
-                    it.variance,
-                    it.name,
-                    it.index,
-                    it.source,
+                    typeParameter.annotations,
+                    typeParameter.isReified,
+                    Variance.INVARIANT,
+                    typeParameter.name,
+                    index,
+                    typeParameter.source,
                     LockBasedStorageManager.NO_LOCKS
                 )
             }
+            .mapKeys { it.key.value }
         val substitutor = TypeSubstitutor.create(
             typeParametersMap
                 .map { it.key.typeConstructor to it.value.defaultType.asTypeProjection() }
