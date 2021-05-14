@@ -16,8 +16,6 @@ import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.constants.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.lazy.descriptors.*
-import org.jetbrains.kotlin.types.*
-import org.jetbrains.kotlin.types.typeUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 /**
@@ -99,9 +97,9 @@ private fun CallableDescriptor.persistInfoIfNeeded(
   if (isExternalDeclaration(context) || isDeserializedDeclaration()) return
 
   if ((this !is ConstructorDescriptor &&
-        ! visibility.shouldPersistInfo()) ||
+        !visibility.shouldPersistInfo()) ||
     (this is ConstructorDescriptor &&
-        ! constructedClass.visibility.shouldPersistInfo())
+        !constructedClass.visibility.shouldPersistInfo())
   ) return
 
   if (hasAnnotation(InjektFqNames.CallableInfo))
@@ -134,7 +132,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(
         parameterType.shouldBePersisted()
       }
 
-  if (! shouldPersistInfo) return
+  if (!shouldPersistInfo) return
 
   val serializedInfo = info.toPersistedCallableInfo(context).encode()
 
@@ -204,13 +202,11 @@ fun ClassifierDescriptor.classifierInfo(
       .annotations
       .findAnnotation(InjektFqNames.TypeParameterInfos)
       ?.allValueArguments
-      ?.values
-      ?.single()
-      ?.cast<ArrayValue>()
-      ?.value
-      ?.get(cast<TypeParameterDescriptor>().index)
+      ?.get("value".asNameId())
       ?.value
       ?.cast<String>()
+      ?.split("=:=")
+      ?.get(cast<TypeParameterDescriptor>().index)
       ?.takeIf { it.isNotEmpty() }
       ?.decode<PersistedClassifierInfo>()
       ?.toClassifierInfo(context, trace)
@@ -256,7 +252,7 @@ fun ClassifierDescriptor.classifierInfo(
   val isForTypeKey = hasAnnotation(InjektFqNames.ForTypeKey) ||
       findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.ForTypeKey) == true
 
-  val isSingletonGiven = ! isDeserializedDeclaration() &&
+  val isSingletonGiven = !isDeserializedDeclaration() &&
       this is ClassDescriptor &&
       kind == ClassKind.CLASS &&
       constructors
@@ -333,54 +329,46 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, conte
     val container = containingDeclaration
     if (container is TypeAliasDescriptor) return
 
-    if (! info.isGivenConstraint &&
-      ! info.isForTypeKey &&
+    if (!info.isGivenConstraint &&
+      !info.isForTypeKey &&
       info.superTypes.none { it.shouldBePersisted() }
     ) return
 
     val typeParameterInfos = (container.annotations
       .findAnnotation(InjektFqNames.TypeParameterInfos)
       ?.allValueArguments
-      ?.values
-      ?.single()
-      ?.cast<ArrayValue>()
+      ?.get("value".asNameId())
       ?.value
+      ?.cast<String>()
+      ?.split("=:=")
       ?: run {
         when (container) {
           is CallableDescriptor -> container.typeParameters
           is ClassifierDescriptorWithTypeParameters -> container.declaredTypeParameters
           else -> return
-        }.map {
-          StringValue("")
-        }
+        }.map { "" }
       }).toMutableList()
-    if (typeParameterInfos[index].value.cast<String>().isEmpty()) {
+    if (typeParameterInfos[index].isEmpty()) {
       val serializedInfo = info.toPersistedClassifierInfo(context).encode()
-      typeParameterInfos[index] = StringValue(serializedInfo)
+      typeParameterInfos[index] = serializedInfo
       container.updateAnnotation(
         AnnotationDescriptorImpl(
           context.module.findClassAcrossModuleDependencies(
-            ClassId.topLevel(
-              InjektFqNames.TypeParameterInfos
-            )
+            ClassId.topLevel(InjektFqNames.TypeParameterInfos)
           )?.defaultType ?: return,
-          mapOf("values".asNameId() to ArrayValue(typeParameterInfos) {
-            it.builtIns.array.defaultType.replace(
-              newArguments = listOf(it.builtIns.stringType.asTypeProjection())
-            )
-          }),
+          mapOf("value".asNameId() to StringValue(typeParameterInfos.joinToString("=:="))),
           SourceElement.NO_SOURCE
         )
       )
     }
   } else if (this is DeclarationDescriptorWithVisibility) {
-    if (! visibility.shouldPersistInfo()) return
+    if (!visibility.shouldPersistInfo()) return
     if (hasAnnotation(InjektFqNames.ClassifierInfo)) return
 
-    if (! info.isSingletonGiven &&
+    if (!info.isSingletonGiven &&
       info.qualifiers.isEmpty() &&
       info.primaryConstructorPropertyParameters.isEmpty() &&
-      ! hasAnnotation(InjektFqNames.Given) &&
+      !hasAnnotation(InjektFqNames.Given) &&
       (this !is ClassDescriptor ||
           constructors.none { it.hasAnnotation(InjektFqNames.Given) }) &&
       info.superTypes.none { it.shouldBePersisted() }
@@ -403,8 +391,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, conte
 }
 
 private fun TypeRef.shouldBePersisted() = anyType {
-  (it.classifier.isQualifier &&
-      it.classifier.typeParameters.size > 1) ||
+  (it.classifier.isQualifier && it.classifier.typeParameters.size > 1) ||
       (it.classifier.isTypeAlias && it.isSuspendFunctionType)
 }
 

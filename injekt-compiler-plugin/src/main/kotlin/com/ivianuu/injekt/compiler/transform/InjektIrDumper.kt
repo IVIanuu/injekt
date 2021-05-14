@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.util.*
@@ -28,10 +27,10 @@ class InjektIrDumper(private val dumpDir: File) : IrGenerationExtension {
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
     moduleFragment.files
       .asSequence()
-      .filter {
+      /*.filter {
         dumpAllFiles || pluginContext.bindingContext[InjektWritableSlices.FILE_HAS_GIVEN_CALLS,
             it.fileEntry.name] != null
-      }
+      }*/
       .forEach { irFile ->
         val file = File(irFile.fileEntry.name)
         val content = try {
