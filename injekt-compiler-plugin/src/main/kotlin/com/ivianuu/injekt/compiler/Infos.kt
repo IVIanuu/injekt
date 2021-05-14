@@ -210,9 +210,6 @@ fun ClassifierDescriptor.classifierInfo(
             ?.value
             ?.cast<String>()
             ?.takeIf { it.isNotEmpty() }
-            ?.also {
-                println()
-            }
             ?.decode<PersistedClassifierInfo>()
             ?.toClassifierInfo(context, trace)
     } else {
