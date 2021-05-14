@@ -142,7 +142,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(
             context.module.findClassAcrossModuleDependencies(
                 ClassId.topLevel(
                     InjektFqNames.CallableInfo
-                ))!!.defaultType,
+                ))?.defaultType ?: return,
             mapOf("value".asNameId() to StringValue(serializedInfo)),
             SourceElement.NO_SOURCE
         )
@@ -359,7 +359,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, conte
                     context.module.findClassAcrossModuleDependencies(
                         ClassId.topLevel(
                             InjektFqNames.TypeParameterInfos
-                        ))!!.defaultType,
+                        ))?.defaultType ?: return,
                     mapOf("values".asNameId() to ArrayValue(typeParameterInfos) {
                         it.builtIns.array.defaultType.replace(
                             newArguments = listOf(it.builtIns.stringType.asTypeProjection())
@@ -388,7 +388,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, conte
                 context.module.findClassAcrossModuleDependencies(
                     ClassId.topLevel(
                         InjektFqNames.ClassifierInfo
-                    ))!!.defaultType,
+                    ))?.defaultType ?: return,
                 mapOf("value".asNameId() to StringValue(serializedInfo)),
                 SourceElement.NO_SOURCE
             )
