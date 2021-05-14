@@ -28,15 +28,14 @@ import org.robolectric.annotation.*
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)
 class ActivityRetainedTest {
-    @Test
-    fun testActivityRetainedGivenScopeLifecycle() {
-        val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
-        lateinit var disposable: TestGivenScopeDisposable<ActivityRetainedGivenScope>
-        scenario.onActivity { disposable = it.activityRetainedGivenScope.element() }
-        disposable.disposed.shouldBeFalse()
-        scenario.recreate()
-        disposable.disposed.shouldBeFalse()
-        scenario.moveToState(Lifecycle.State.DESTROYED)
-        disposable.disposed.shouldBeTrue()
-    }
+  @Test fun testActivityRetainedGivenScopeLifecycle() {
+    val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
+    lateinit var disposable: TestGivenScopeDisposable<ActivityRetainedGivenScope>
+    scenario.onActivity { disposable = it.activityRetainedGivenScope.element() }
+    disposable.disposed.shouldBeFalse()
+    scenario.recreate()
+    disposable.disposed.shouldBeFalse()
+    scenario.moveToState(Lifecycle.State.DESTROYED)
+    disposable.disposed.shouldBeTrue()
+  }
 }

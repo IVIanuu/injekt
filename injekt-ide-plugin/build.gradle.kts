@@ -17,30 +17,30 @@
 import org.jetbrains.intellij.tasks.*
 
 plugins {
-    kotlin("jvm")
-    id("org.jetbrains.intellij") version "0.7.2"
+  kotlin("jvm")
+  id("org.jetbrains.intellij") version "0.7.2"
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
 
 intellij {
-    version = "2020.3.1"
-    pluginName = "Injekt ide plugin"
-    updateSinceUntilBuild = false
-    setPlugins("org.jetbrains.kotlin:202-1.4.31-release-AS8194.7", "gradle", "gradle-java", "java")
-    localPath = "/home/manu/android-studio"
+  version = "2020.3.1"
+  pluginName = "Injekt ide plugin"
+  updateSinceUntilBuild = false
+  setPlugins("org.jetbrains.kotlin:202-1.4.31-release-AS8194.7", "gradle", "gradle-java", "java")
+  localPath = "/home/manu/android-studio"
 }
 
 tasks.withType<RunIdeTask> {
-    jvmArgs("-Xmx3072m")
+  jvmArgs("-Xmx3072m")
 }
 
 tasks.withType<PublishTask> {
-    //token(project.property("ideaToken") as String)
+  //token(project.property("ideaToken") as String)
 }
 
 dependencies {
-    compile(project(":injekt-compiler-plugin", "shadow"))
-    compile(Deps.KotlinSerialization.json)
+  compile(project(":injekt-compiler-plugin", "shadow"))
+  compile(Deps.KotlinSerialization.json)
 }

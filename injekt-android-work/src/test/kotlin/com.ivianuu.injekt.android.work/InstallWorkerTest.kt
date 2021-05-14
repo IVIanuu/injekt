@@ -30,19 +30,16 @@ import org.robolectric.annotation.*
 @RunWith(RobolectricTestRunner::class)
 @GivenImports("com.ivianuu.injekt.common.*")
 class InstallWorkerTest {
-    @Test
-    fun testWorkerBinding() {
-        val workerFactory = given<(@Given Context) -> WorkerFactory>()(mockk())
-        workerFactory.createWorker(mockk(), TestWorker::class.java.name, mockk())
-            .shouldNotBeNull()
-    }
+  @Test fun testWorkerBinding() {
+    val workerFactory = given<(@Given Context) -> WorkerFactory>()(mockk())
+    workerFactory.createWorker(mockk(), TestWorker::class.java.name, mockk())
+      .shouldNotBeNull()
+  }
 }
 
-@InstallWorker
-@Given
-class TestWorker(
-    @Given appContext: Context,
-    @Given workerParams: WorkerParameters
+@InstallWorker @Given class TestWorker(
+  @Given appContext: Context,
+  @Given workerParams: WorkerParameters
 ) : Worker(appContext, workerParams) {
-    override fun doWork(): Result = Result.success()
+  override fun doWork(): Result = Result.success()
 }

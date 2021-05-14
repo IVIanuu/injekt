@@ -22,12 +22,11 @@ import io.kotest.matchers.types.*
 import org.junit.*
 
 class GivenResolutionTest {
-    @Test
-    fun testPrefersInternalGivenOverExternal() = multiCodegen(
-        """
+  @Test fun testPrefersInternalGivenOverExternal() = multiCodegen(
+    """
             @Given lateinit var externalFoo: Foo
             """,
-        """
+    """
             @Given lateinit var internalFoo: Foo
 
             fun invoke(internal: Foo, external: Foo): Foo {
@@ -36,16 +35,15 @@ class GivenResolutionTest {
                 return given<Foo>()
             }
             """
-    ) {
-        val internal = Foo()
-        val external = Foo()
-        val result = invokeSingleFile(internal, external)
-        result shouldBeSameInstanceAs internal
-    }
+  ) {
+    val internal = Foo()
+    val external = Foo()
+    val result = invokeSingleFile(internal, external)
+    result shouldBeSameInstanceAs internal
+  }
 
-    @Test
-    fun testPrefersObjectGivenOverInternalGiven() = codegen(
-        """
+  @Test fun testPrefersObjectGivenOverInternalGiven() = codegen(
+    """
             @Given lateinit var internalFoo: Foo
             object MyObject {
                 @Given lateinit var objectFoo: Foo
@@ -58,16 +56,15 @@ class GivenResolutionTest {
                 return MyObject.resolve()
             }
         """
-    ) {
-        val internal = Foo()
-        val objectFoo = Foo()
-        val result = invokeSingleFile(internal, objectFoo)
-        objectFoo shouldBeSameInstanceAs result
-    }
+  ) {
+    val internal = Foo()
+    val objectFoo = Foo()
+    val result = invokeSingleFile(internal, objectFoo)
+    objectFoo shouldBeSameInstanceAs result
+  }
 
-    @Test
-    fun testPrefersClassCompanionGivenOverInternalGiven() = codegen(
-        """
+  @Test fun testPrefersClassCompanionGivenOverInternalGiven() = codegen(
+    """
             @Given lateinit var internalFoo: Foo
             class MyClass {
                 fun resolve() = given<Foo>()
@@ -82,16 +79,15 @@ class GivenResolutionTest {
                 return MyClass().resolve()
             }
         """
-    ) {
-        val internal = Foo()
-        val companionFoo = Foo()
-        val result = invokeSingleFile(internal, companionFoo)
-        companionFoo shouldBeSameInstanceAs result
-    }
+  ) {
+    val internal = Foo()
+    val companionFoo = Foo()
+    val result = invokeSingleFile(internal, companionFoo)
+    companionFoo shouldBeSameInstanceAs result
+  }
 
-    @Test
-    fun testPrefersClassGivenOverInternalGiven() = codegen(
-        """
+  @Test fun testPrefersClassGivenOverInternalGiven() = codegen(
+    """
             @Given lateinit var internalFoo: Foo
             class MyClass(@Given val classFoo: Foo) {
                 fun resolve() = given<Foo>()
@@ -102,16 +98,15 @@ class GivenResolutionTest {
                 return MyClass(classFoo).resolve()
             }
         """
-    ) {
-        val internal = Foo()
-        val classFoo = Foo()
-        val result = invokeSingleFile(internal, classFoo)
-        classFoo shouldBeSameInstanceAs result
-    }
+  ) {
+    val internal = Foo()
+    val classFoo = Foo()
+    val result = invokeSingleFile(internal, classFoo)
+    classFoo shouldBeSameInstanceAs result
+  }
 
-    @Test
-    fun testPrefersClassGivenOverClassCompanionGiven() = codegen(
-        """
+  @Test fun testPrefersClassGivenOverClassCompanionGiven() = codegen(
+    """
             class MyClass(@Given val classFoo: Foo) {
                 fun resolve() = given<Foo>()
                 companion object {
@@ -124,16 +119,15 @@ class GivenResolutionTest {
                 return MyClass(classFoo).resolve()
             }
         """
-    ) {
-        val classFoo = Foo()
-        val companionFoo = Foo()
-        val result = invokeSingleFile(classFoo, companionFoo)
-        classFoo shouldBeSameInstanceAs result
-    }
+  ) {
+    val classFoo = Foo()
+    val companionFoo = Foo()
+    val result = invokeSingleFile(classFoo, companionFoo)
+    classFoo shouldBeSameInstanceAs result
+  }
 
-    @Test
-    fun testPrefersConstructorParameterGivenOverClassBodyGiven() = codegen(
-        """
+  @Test fun testPrefersConstructorParameterGivenOverClassBodyGiven() = codegen(
+    """
             lateinit var classBodyFoo: Foo
             class MyClass(@Given constructorFoo: Foo) {
                 val finalFoo = given<Foo>()
@@ -145,52 +139,49 @@ class GivenResolutionTest {
                 return MyClass(constructorFoo).finalFoo
             }
         """
-    ) {
-        val constructorFoo = Foo()
-        val classBodyFoo = Foo()
-        val result = invokeSingleFile(constructorFoo, classBodyFoo)
-        result shouldBeSameInstanceAs constructorFoo
-    }
+  ) {
+    val constructorFoo = Foo()
+    val classBodyFoo = Foo()
+    val result = invokeSingleFile(constructorFoo, classBodyFoo)
+    result shouldBeSameInstanceAs constructorFoo
+  }
 
-    @Test
-    fun testPrefersSubClassGivenOverSuperClassGiven() = singleAndMultiCodegen(
-        """
+  @Test fun testPrefersSubClassGivenOverSuperClassGiven() = singleAndMultiCodegen(
+    """
             abstract class MySuperClass(@Given val superClassFoo: Foo)
             class MySubClass(@Given val subClassFoo: Foo, superClassFoo: Foo) : MySuperClass(superClassFoo) {
                 fun finalFoo(): Foo = given()
             }
         """,
-        """
+    """
             fun invoke(subClassFoo: Foo, superClassFoo: Foo): Foo {
                 return MySubClass(subClassFoo, superClassFoo).finalFoo()
             } 
         """
-    ) {
-        val subClassFoo = Foo()
-        val superClassFoo = Foo()
-        val result = invokeSingleFile(subClassFoo, superClassFoo)
-        result shouldBeSameInstanceAs subClassFoo
-    }
+  ) {
+    val subClassFoo = Foo()
+    val superClassFoo = Foo()
+    val result = invokeSingleFile(subClassFoo, superClassFoo)
+    result shouldBeSameInstanceAs subClassFoo
+  }
 
-    @Test
-    fun testPrefersFunctionParameterGivenOverInternalGiven() = codegen(
-        """
+  @Test fun testPrefersFunctionParameterGivenOverInternalGiven() = codegen(
+    """
             @Given lateinit var internalFoo: Foo
             fun invoke(internal: Foo, @Given functionFoo: Foo): Foo {
                 internalFoo = internal
                 return given()
             }
         """
-    ) {
-        val internal = Foo()
-        val functionFoo = Foo()
-        val result = invokeSingleFile(internal, functionFoo)
-        functionFoo shouldBeSameInstanceAs result
-    }
+  ) {
+    val internal = Foo()
+    val functionFoo = Foo()
+    val result = invokeSingleFile(internal, functionFoo)
+    functionFoo shouldBeSameInstanceAs result
+  }
 
-    @Test
-    fun testPrefersFunctionParameterGivenOverClassGiven() = codegen(
-        """
+  @Test fun testPrefersFunctionParameterGivenOverClassGiven() = codegen(
+    """
             class MyClass(@Given val classFoo: Foo) {
                 fun resolve(@Given functionFoo: Foo) = given<Foo>()
             }
@@ -199,32 +190,30 @@ class GivenResolutionTest {
                 return MyClass(classFoo).resolve(functionFoo)
             }
         """
-    ) {
-        val classFoo = Foo()
-        val functionFoo = Foo()
-        val result = invokeSingleFile(classFoo, functionFoo)
-        functionFoo shouldBeSameInstanceAs result
-    }
+  ) {
+    val classFoo = Foo()
+    val functionFoo = Foo()
+    val result = invokeSingleFile(classFoo, functionFoo)
+    functionFoo shouldBeSameInstanceAs result
+  }
 
-    @Test
-    fun testPrefersFunctionReceiverGivenOverInternalGiven() = codegen(
-        """
+  @Test fun testPrefersFunctionReceiverGivenOverInternalGiven() = codegen(
+    """
             @Given lateinit var internalFoo: Foo
             fun Foo.invoke(internal: Foo): Foo {
                 internalFoo = internal
                 return given()
             }
         """
-    ) {
-        val internal = Foo()
-        val functionFoo = Foo()
-        val result = invokeSingleFile(functionFoo, internal)
-        functionFoo shouldBeSameInstanceAs result
-    }
+  ) {
+    val internal = Foo()
+    val functionFoo = Foo()
+    val result = invokeSingleFile(functionFoo, internal)
+    functionFoo shouldBeSameInstanceAs result
+  }
 
-    @Test
-    fun testPrefersFunctionReceiverGivenOverClassGiven() = codegen(
-        """
+  @Test fun testPrefersFunctionReceiverGivenOverClassGiven() = codegen(
+    """
             class MyClass(@Given val classFoo: Foo) {
                 fun Foo.resolve() = given<Foo>()
             }
@@ -235,38 +224,35 @@ class GivenResolutionTest {
                 }
             }
         """
-    ) {
-        val classFoo = Foo()
-        val functionFoo = Foo()
-        val result = invokeSingleFile(classFoo, functionFoo)
-        functionFoo shouldBeSameInstanceAs result
-    }
+  ) {
+    val classFoo = Foo()
+    val functionFoo = Foo()
+    val result = invokeSingleFile(classFoo, functionFoo)
+    functionFoo shouldBeSameInstanceAs result
+  }
 
-    @Test
-    fun testPrefersProviderArgument() = codegen(
-        """
+  @Test fun testPrefersProviderArgument() = codegen(
+    """
             @Given fun foo() = Foo()
             fun invoke(foo: Foo) = given<(@Given Foo) -> Foo>()(foo)
         """
-    ) {
-        val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
 
-    @Test
-    fun testPrefersInnerProviderArgumentOverOuterProviderArgument() = codegen(
-        """
+  @Test fun testPrefersInnerProviderArgumentOverOuterProviderArgument() = codegen(
+    """
             @Given fun foo() = Foo()
             fun invoke(foo: Foo) = given<(@Given Foo) -> (@Given Foo) -> Foo>()(Foo())(foo)
         """
-    ) {
-        val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
 
-    @Test
-    fun testPrefsInnerBlockGiven() = codegen(
-        """
+  @Test fun testPrefsInnerBlockGiven() = codegen(
+    """
             fun invoke(): Pair<String, String> {
                 @Given val givenA = "a"
                 return given<String>() to run {
@@ -275,26 +261,24 @@ class GivenResolutionTest {
                 }
             }
         """
-    ) {
-        invokeSingleFile() shouldBe ("a" to "b")
-    }
+  ) {
+    invokeSingleFile() shouldBe ("a" to "b")
+  }
 
-    @Test
-    fun testPrefersResolvableGiven() = singleAndMultiCodegen(
-        """
+  @Test fun testPrefersResolvableGiven() = singleAndMultiCodegen(
+    """
             @Given fun a() = "a"
             @Given fun b(@Given long: Long) = "b"
         """,
-        """
+    """
            fun invoke() = given<String>() 
         """
-    ) {
-        "a" shouldBe invokeSingleFile()
-    }
+  ) {
+    "a" shouldBe invokeSingleFile()
+  }
 
-    @Test
-    fun testPrefersNearerGivenOverBetterType() = codegen(
-        """
+  @Test fun testPrefersNearerGivenOverBetterType() = codegen(
+    """
             fun invoke(): CharSequence {
                 @Given val a: String = "a"
                 run {
@@ -303,121 +287,116 @@ class GivenResolutionTest {
                 }
             }
         """
-    ) {
-        "b" shouldBe invokeSingleFile()
-    }
+  ) {
+    "b" shouldBe invokeSingleFile()
+  }
 
-    @Test
-    fun testAmbiguousGivens() = codegen(
-        """
+  @Test fun testAmbiguousGivens() = codegen(
+    """
             @Given val a = "a"
             @Given val b = "b"
         """,
-        """
+    """
            fun invoke() = given<String>() 
         """
-    ) {
-        compilationShouldHaveFailed("ambiguous given arguments:\n" +
-                "com.ivianuu.injekt.integrationtests.a\n" +
-                "com.ivianuu.injekt.integrationtests.b\n" +
-                "do all match type kotlin.String for parameter value of function com.ivianuu.injekt.given")
-    }
+  ) {
+    compilationShouldHaveFailed(
+      "ambiguous given arguments:\n" +
+          "com.ivianuu.injekt.integrationtests.a\n" +
+          "com.ivianuu.injekt.integrationtests.b\n" +
+          "do all match type kotlin.String for parameter value of function com.ivianuu.injekt.given"
+    )
+  }
 
-    @Test
-    fun testCannotDeclareMultipleGivensOfTheSameTypeInTheSameCodeBlock() = codegen(
-        """
+  @Test fun testCannotDeclareMultipleGivensOfTheSameTypeInTheSameCodeBlock() = codegen(
+    """
             fun invoke() {
                 @Given val givenA = "a"
                 @Given val givenB = "b"
                 given<String>()
             }
         """
-    ) {
-        compilationShouldHaveFailed("ambiguous given arguments:\n" +
-                "com.ivianuu.injekt.integrationtests.invoke.givenA\n" +
-                "com.ivianuu.injekt.integrationtests.invoke.givenB\n" +
-                "do all match type kotlin.String for parameter value of function com.ivianuu.injekt.given")
-    }
+  ) {
+    compilationShouldHaveFailed(
+      "ambiguous given arguments:\n" +
+          "com.ivianuu.injekt.integrationtests.invoke.givenA\n" +
+          "com.ivianuu.injekt.integrationtests.invoke.givenB\n" +
+          "do all match type kotlin.String for parameter value of function com.ivianuu.injekt.given"
+    )
+  }
 
-    @Test
-    fun testPrefersMoreSpecificType() = singleAndMultiCodegen(
-        """
+  @Test fun testPrefersMoreSpecificType() = singleAndMultiCodegen(
+    """
             @Given fun stringList(): List<String> = listOf("a", "b", "c")
             @Given fun <T> anyList(): List<T> = emptyList()
         """,
-        """
+    """
            fun invoke() = given<List<String>>() 
         """
-    ) {
-        listOf("a", "b", "c") shouldBe invokeSingleFile()
-    }
+  ) {
+    listOf("a", "b", "c") shouldBe invokeSingleFile()
+  }
 
-    @Test
-    fun testPrefersMoreSpecificType2() = singleAndMultiCodegen(
-        """
+  @Test fun testPrefersMoreSpecificType2() = singleAndMultiCodegen(
+    """
             @Given fun <T> list(): List<T> = emptyList()
             @Given fun <T> listList(): List<List<T>> = listOf(listOf("a", "b", "c")) as List<List<T>>
         """,
-        """
+    """
            fun invoke() = given<List<List<String>>>() 
         """
-    ) {
-        invokeSingleFile() shouldBe listOf(listOf("a", "b", "c"))
-    }
+  ) {
+    invokeSingleFile() shouldBe listOf(listOf("a", "b", "c"))
+  }
 
-    @Test
-    fun testPrefersMoreSpecificType3() = singleAndMultiCodegen(
-        """
+  @Test fun testPrefersMoreSpecificType3() = singleAndMultiCodegen(
+    """
             interface Ord<in T>
             @Given object IntOrd : Ord<Int>
             @Given object NumberOrd : Ord<Number>
             fun <T> useOrd(@Given ord: Ord<T>) = ord
         """,
-        """
+    """
            fun invoke() = useOrd<Int>()
         """
-    )
+  )
 
-    @Test
-    fun testPrefersNonNullType() = singleAndMultiCodegen(
-        """
+  @Test fun testPrefersNonNullType() = singleAndMultiCodegen(
+    """
             @Given val nonNull = "nonnull"
             @Given val nullable: String? = "nullable"
         """,
-        """
+    """
            fun invoke() = given<String?>() 
         """
-    ) {
-        invokeSingleFile() shouldBe "nonnull"
-    }
+  ) {
+    invokeSingleFile() shouldBe "nonnull"
+  }
 
-    @Test
-    fun testDoesNotUseFrameworkGivensIfThereAreUserGivens() = singleAndMultiCodegen(
-        """
+  @Test fun testDoesNotUseFrameworkGivensIfThereAreUserGivens() = singleAndMultiCodegen(
+    """
             @Given fun <T> diyProvider(@Given unit: Unit): () -> T = { TODO() } 
         """,
-        """
+    """
            fun invoke() = given<() -> Foo>() 
         """
-    ) {
-        compilationShouldHaveFailed("no given argument found of type kotlin.Unit for parameter unit of function com.ivianuu.injekt.integrationtests.diyProvider")
-    }
+  ) {
+    compilationShouldHaveFailed("no given argument found of type kotlin.Unit for parameter unit of function com.ivianuu.injekt.integrationtests.diyProvider")
+  }
 
-    @Test
-    fun testUsesDefaultValueIfNoCandidateExists() = codegen(
+  @Test fun testUsesDefaultValueIfNoCandidateExists() = codegen(
     """
             fun invoke(_foo: Foo): Foo {
                 fun inner(@Given foo: Foo = _foo) = foo
                 return inner()
             }
         """
-    ) {
-        val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
 
-    @Test
-    fun testDoesNotUseDefaultValueIfCandidateHasFailures() = codegen(
+  @Test fun testDoesNotUseDefaultValueIfCandidateHasFailures() = codegen(
     """
             @Given fun bar(@Given foo: Foo) = Bar(foo)
             fun invoke() {
@@ -425,12 +404,11 @@ class GivenResolutionTest {
                 return inner()
             }
         """
-    ) {
-        compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
-    }
+  ) {
+    compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
+  }
 
-    @Test
-    fun testDoesUseDefaultValueIfCandidateHasFailuresButHasUseDefaultValueOnAllError() = codegen(
+  @Test fun testDoesUseDefaultValueIfCandidateHasFailuresButHasUseDefaultValueOnAllError() = codegen(
     """
             @Given fun bar(@Given foo: Foo) = Bar(foo)
             fun invoke(foo: Foo): Foo {
@@ -438,52 +416,42 @@ class GivenResolutionTest {
                 return inner().foo
             }
         """
-    ) {
-        val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
 
-    @Test
-    fun testConstrainedGivenWithTheSameOrigin() = singleAndMultiCodegen(
-        """
-            @MyQualifier
-            @Given 
-            class FooModule {
-                @Given
-                val foo = Foo()
+  @Test fun testConstrainedGivenWithTheSameOrigin() = singleAndMultiCodegen(
+    """
+            @Given @MyQualifier class FooModule {
+                @Given val foo = Foo()
             }
 
-            @Qualifier
-            annotation class MyQualifier
+            @Qualifier annotation class MyQualifier
 
-            @Given
-            fun <@Given T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
+            @Given fun <@Given T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
         """,
-        """
+    """
            fun invoke() = given<Foo>() 
         """
-    )
+  )
 
-    @Test
-    fun testConstrainedGivenWithTheSameOrigin2() = singleAndMultiCodegen(
-        """
+  @Test fun testConstrainedGivenWithTheSameOrigin2() = singleAndMultiCodegen(
+    """
             abstract class FooModule {
-                @Given
-                val foo = Foo()
+                @Given val foo = Foo()
                 companion object {
                     @Given fun create(): @MyQualifier FooModule = object : FooModule() {
                     }
                 }
             }
 
-            @Qualifier
-            annotation class MyQualifier
+            @Qualifier annotation class MyQualifier
 
-            @Given
-            fun <@Given T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
+            @Given fun <@Given T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
         """,
-        """
+    """
            fun invoke() = given<Foo>() 
         """
-    )
+  )
 }

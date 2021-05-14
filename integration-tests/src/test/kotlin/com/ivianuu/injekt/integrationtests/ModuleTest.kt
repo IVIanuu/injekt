@@ -20,35 +20,32 @@ import com.ivianuu.injekt.test.*
 import org.junit.*
 
 class ModuleTest {
-    @Test
-    fun testClassModule() = singleAndMultiCodegen(
-        """
+  @Test fun testClassModule() = singleAndMultiCodegen(
+    """
             @Given val foo = Foo()
             @Given class BarModule(@Given private val foo: Foo) {
                 @Given val bar get() = Bar(foo)
             }
         """,
-        """
+    """
            fun invoke() = given<Bar>() 
         """
-    )
+  )
 
-    @Test
-    fun testObjectModule() = singleAndMultiCodegen(
-        """
+  @Test fun testObjectModule() = singleAndMultiCodegen(
+    """
             @Given val foo = Foo()
             @Given object BarModule {
                 @Given fun bar(@Given foo: Foo) = Bar(foo)
             }
         """,
-        """
+    """
            fun invoke() = given<Bar>() 
         """
-    )
+  )
 
-    @Test
-    fun testModuleLambdaParameter() = singleAndMultiCodegen(
-        """
+  @Test fun testModuleLambdaParameter() = singleAndMultiCodegen(
+    """
             class MyModule {
                 @Given val foo = Foo()
             }
@@ -60,30 +57,28 @@ class ModuleTest {
                 block: (@Given MyModule) -> R
             ): R = block(MyModule())
         """,
-        """
+    """
             fun invoke() = withModule { 
                 given<Bar>()
             } 
         """
-    )
+  )
 
-    @Test
-    fun testGenericModule() = singleAndMultiCodegen(
-        """
+  @Test fun testGenericModule() = singleAndMultiCodegen(
+    """
             class MyModule<T>(private val instance: T) {
                 @Given fun provide() = instance to instance
             }
             @Given val fooModule = MyModule(Foo())
             @Given val stringModule = MyModule("__")
         """,
-        """
+    """
            fun invoke() = given<Pair<Foo, Foo>>() 
         """
-    )
+  )
 
-    @Test
-    fun testGenericModuleQualified() = singleAndMultiCodegen(
-        """
+  @Test fun testGenericModuleQualified() = singleAndMultiCodegen(
+    """
             @Qualifier annotation class MyQualifier<T>
             class MyModule<T>(private val instance: T) {
                 @Given fun provide(): @MyQualifier<Int> Pair<T, T> = instance to instance
@@ -92,33 +87,30 @@ class ModuleTest {
             @Given val fooModule = MyModule(Foo())
             @Given val stringModule = MyModule("__")
                 """,
-        """
+    """
             fun invoke() = given<@MyQualifier<Int> Pair<Foo, Foo>>() 
                 """
-    )
+  )
 
-    @Test
-    fun testGenericModuleClass() = singleAndMultiCodegen(
-        """
-            @Given
-            class MyModule<T> {
+  @Test fun testGenericModuleClass() = singleAndMultiCodegen(
+    """
+            @Given class MyModule<T> {
                 @Given fun provide(@Given instance: T) = instance to instance
             }
 
             @Given val foo = Foo()
             @Given fun bar(@Given foo: Foo) = Bar(foo)
         """,
-        """
+    """
             fun invoke() {
                 given<Pair<Foo, Foo>>()
                 given<Pair<Bar, Bar>>()
             } 
         """
-    )
+  )
 
-    @Test
-    fun testGenericModuleFunction() = singleAndMultiCodegen(
-        """
+  @Test fun testGenericModuleFunction() = singleAndMultiCodegen(
+    """
             class MyModule<T> {
                 @Given fun provide(@Given instance: T) = instance to instance
             }
@@ -128,25 +120,24 @@ class ModuleTest {
             @Given val foo = Foo()
             @Given fun bar(@Given foo: Foo) = Bar(foo)
         """,
-        """
+    """
             fun invoke() {
                 given<Pair<Foo, Foo>>()
                 given<Pair<Bar, Bar>>()
             } 
         """
-    )
+  )
 
-    @Test
-    fun testSubClassModule() = singleAndMultiCodegen(
-        """
+  @Test fun testSubClassModule() = singleAndMultiCodegen(
+    """
             @Given val foo = Foo()
             abstract class BaseBarModule(@Given private val foo: Foo) {
                 @Given val bar get() = Bar(foo)
             }
             @Given class BarModule(@Given private val foo: Foo) : BaseBarModule(foo)
         """,
-        """
+    """
            fun invoke() = given<Bar>() 
         """
-    )
+  )
 }

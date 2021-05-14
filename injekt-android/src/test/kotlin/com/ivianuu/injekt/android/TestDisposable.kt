@@ -20,13 +20,12 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.scope.*
 
 class TestGivenScopeDisposable<S : GivenScope> : GivenScopeDisposable {
-    var disposed = false
-    override fun dispose() {
-        disposed = true
-    }
+  var disposed = false
+  override fun dispose() {
+    disposed = true
+  }
 }
 
-@Given
-inline fun <S : GivenScope> testGivenScopeDisposable():
-        @Scoped<S> @InstallElement<S> TestGivenScopeDisposable<S> =
-    TestGivenScopeDisposable()
+@Given inline fun <S : GivenScope> testGivenScopeDisposable():
+    @Scoped<S> @InstallElement<S> TestGivenScopeDisposable<S> =
+  TestGivenScopeDisposable()

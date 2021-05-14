@@ -23,17 +23,17 @@ import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.resolve.*
 
 class InjektIrGenerationExtension : IrGenerationExtension {
-    override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val context = pluginContext.moduleDescriptor.injektContext
-        val trace = DelegatingBindingTrace(
-            pluginContext.bindingContext, "injekt trace"
-        )
-        moduleFragment.transform(GivenCallTransformer(context, pluginContext), null)
-        moduleFragment.transform(TypeKeyTransformer(context, trace, pluginContext), null)
-        moduleFragment.transform(SingletonGivenTransformer(context, trace, pluginContext), null)
-        moduleFragment.transform(WithGivenImportsTransformer(), null)
-        moduleFragment.transform(TypeClassCallableTransformer(context, pluginContext), null)
-        moduleFragment.transform(IncrementalFixTransformer(context, trace, pluginContext), null)
-        moduleFragment.patchDeclarationParents()
-    }
+  override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+    val context = pluginContext.moduleDescriptor.injektContext
+    val trace = DelegatingBindingTrace(
+      pluginContext.bindingContext, "injekt trace"
+    )
+    moduleFragment.transform(GivenCallTransformer(context, pluginContext), null)
+    moduleFragment.transform(TypeKeyTransformer(context, trace, pluginContext), null)
+    moduleFragment.transform(SingletonGivenTransformer(context, trace, pluginContext), null)
+    moduleFragment.transform(WithGivenImportsTransformer(), null)
+    moduleFragment.transform(TypeClassCallableTransformer(context, pluginContext), null)
+    moduleFragment.transform(IncrementalFixTransformer(context, trace, pluginContext), null)
+    moduleFragment.patchDeclarationParents()
+  }
 }

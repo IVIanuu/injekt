@@ -15,39 +15,39 @@
  */
 
 plugins {
-    id("java-gradle-plugin")
-    kotlin("jvm")
-    kotlin("kapt")
-    id("de.fuerstenau.buildconfig")
+  id("java-gradle-plugin")
+  kotlin("jvm")
+  kotlin("kapt")
+  id("de.fuerstenau.buildconfig")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
 
 gradlePlugin {
-    plugins {
-        create("injektPlugin") {
-            id = "com.ivianuu.injekt"
-            implementationClass = "com.ivianuu.injekt.gradle.InjektPlugin"
-        }
+  plugins {
+    create("injektPlugin") {
+      id = "com.ivianuu.injekt"
+      implementationClass = "com.ivianuu.injekt.gradle.InjektPlugin"
     }
+  }
 }
 
 buildConfig {
-    clsName = "BuildConfig"
-    packageName = "com.ivianuu.injekt.gradle"
+  clsName = "BuildConfig"
+  packageName = "com.ivianuu.injekt.gradle"
 
-    version = property("VERSION_NAME").toString()
-    buildConfigField("String", "GROUP_ID", property("GROUP").toString())
-    buildConfigField("String", "ARTIFACT_ID", "injekt-compiler-plugin")
+  version = property("VERSION_NAME").toString()
+  buildConfigField("String", "GROUP_ID", property("GROUP").toString())
+  buildConfigField("String", "ARTIFACT_ID", "injekt-compiler-plugin")
 }
 
 dependencies {
-    implementation(Deps.autoService)
-    kapt(Deps.autoService)
-    implementation(Deps.androidGradlePlugin)
-    implementation(Deps.Kotlin.gradlePlugin)
-    implementation(Deps.Kotlin.gradlePluginApi)
+  implementation(Deps.autoService)
+  kapt(Deps.autoService)
+  implementation(Deps.androidGradlePlugin)
+  implementation(Deps.Kotlin.gradlePlugin)
+  implementation(Deps.Kotlin.gradlePluginApi)
 }
 
 plugins.apply("com.vanniktech.maven.publish")

@@ -20,29 +20,29 @@ import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.name.*
 
 object InjektFqNames {
-    val InjektPackage = FqName("com.ivianuu.injekt")
+  val InjektPackage = FqName("com.ivianuu.injekt")
 
-    val DefaultOnAllErrors = InjektPackage.child("DefaultOnAllErrors".asNameId())
-    val Given = InjektPackage.child("Given".asNameId())
-    val GivenImports = InjektPackage.child("GivenImports".asNameId())
-    val IgnoreElementsWithErrors = InjektPackage.child("IgnoreElementsWithErrors".asNameId())
-    val Qualifier = InjektPackage.child("Qualifier".asNameId())
-    val withGivenImports = InjektPackage.child("withGivenImports".asNameId())
+  val DefaultOnAllErrors = InjektPackage.child("DefaultOnAllErrors".asNameId())
+  val Given = InjektPackage.child("Given".asNameId())
+  val GivenImports = InjektPackage.child("GivenImports".asNameId())
+  val IgnoreElementsWithErrors = InjektPackage.child("IgnoreElementsWithErrors".asNameId())
+  val Qualifier = InjektPackage.child("Qualifier".asNameId())
+  val withGivenImports = InjektPackage.child("withGivenImports".asNameId())
 
-    val InternalPackage = InjektPackage.child("internal".asNameId())
-    val CallableInfo = InternalPackage.child("CallableInfo".asNameId())
-    val ClassifierInfo = InternalPackage.child("ClassifierInfo".asNameId())
-    val TypeParameterInfos = InternalPackage.child("TypeParameterInfos".asNameId())
+  val InternalPackage = InjektPackage.child("internal".asNameId())
+  val CallableInfo = InternalPackage.child("CallableInfo".asNameId())
+  val ClassifierInfo = InternalPackage.child("ClassifierInfo".asNameId())
+  val TypeParameterInfos = InternalPackage.child("TypeParameterInfos".asNameId())
 
-    val CommonPackage = InjektPackage.child("common".asNameId())
-    val Extension = CommonPackage.child("Extension".asNameId())
-    val ForTypeKey = CommonPackage.child("ForTypeKey".asNameId())
-    val SyntheticExtensionCallable = CommonPackage.child("SyntheticExtensionCallable".asNameId())
-    val TypeKey = CommonPackage.child("TypeKey".asNameId())
-    val typeKeyOf = CommonPackage.child("typeKeyOf".asNameId())
+  val CommonPackage = InjektPackage.child("common".asNameId())
+  val Extension = CommonPackage.child("Extension".asNameId())
+  val ForTypeKey = CommonPackage.child("ForTypeKey".asNameId())
+  val SyntheticExtensionCallable = CommonPackage.child("SyntheticExtensionCallable".asNameId())
+  val TypeKey = CommonPackage.child("TypeKey".asNameId())
+  val typeKeyOf = CommonPackage.child("typeKeyOf".asNameId())
 
-    val Composable = FqName("androidx.compose.runtime.Composable")
+  val Composable = FqName("androidx.compose.runtime.Composable")
 
-    val Any = StandardNames.FqNames.any.toSafe()
-    val Nothing = StandardNames.FqNames.nothing.toSafe()
+  val Any = StandardNames.FqNames.any.toSafe()
+  val Nothing = StandardNames.FqNames.nothing.toSafe()
 }

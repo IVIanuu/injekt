@@ -29,60 +29,61 @@ import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class TypeKeyChecker(private val context: InjektContext) : CallChecker, DeclarationChecker {
-    override fun check(
-        declaration: KtDeclaration,
-        descriptor: DeclarationDescriptor,
-        context: DeclarationCheckerContext
-    ) {
-        if (descriptor !is CallableDescriptor) return
+  override fun check(
+    declaration: KtDeclaration,
+    descriptor: DeclarationDescriptor,
+    context: DeclarationCheckerContext
+  ) {
+    if (descriptor !is CallableDescriptor) return
 
-        if (descriptor.typeParameters.isEmpty()) return
+    if (descriptor.typeParameters.isEmpty()) return
 
-        descriptor.overriddenDescriptors
-            .filter { overriddenDescriptor ->
-                var hasDifferentTypeParameters = false
-                descriptor.typeParameters.forEachWith(overriddenDescriptor.typeParameters) { a, b ->
-                    hasDifferentTypeParameters = hasDifferentTypeParameters ||
-                            a.classifierInfo(this.context, context.trace).isForTypeKey !=
-                            b.classifierInfo(this.context, context.trace).isForTypeKey
-                }
-                hasDifferentTypeParameters
-            }
-            .toList()
-            .takeIf { it.isNotEmpty() }
-            ?.let {
-                context.trace.report(
-                    Errors.CONFLICTING_OVERLOADS
-                        .on(declaration, it)
-                )
-            }
-    }
-
-    override fun check(
-        resolvedCall: ResolvedCall<*>,
-        reportOn: PsiElement,
-        context: CallCheckerContext
-    ) {
-        resolvedCall
-            .typeArguments
-            .filterKeys {
-                it.classifierInfo(this.context, context.trace)
-                    .isForTypeKey
-            }
-            .forEach { it.value.checkAllForTypeKey(reportOn, context.trace) }
-    }
-
-    private fun KotlinType.checkAllForTypeKey(reportOn: PsiElement, trace: BindingTrace) {
-        if (constructor.declarationDescriptor is TypeParameterDescriptor &&
-            !constructor.declarationDescriptor.cast<TypeParameterDescriptor>()
-                .classifierInfo(context, trace)
-                .isForTypeKey) {
-            trace.report(
-                InjektErrors.NON_FOR_TYPE_KEY_TYPE_PARAMETER_AS_FOR_TYPE_KEY
-                    .on(reportOn, constructor.declarationDescriptor as TypeParameterDescriptor)
-            )
+    descriptor.overriddenDescriptors
+      .filter { overriddenDescriptor ->
+        var hasDifferentTypeParameters = false
+        descriptor.typeParameters.forEachWith(overriddenDescriptor.typeParameters) { a, b ->
+          hasDifferentTypeParameters = hasDifferentTypeParameters ||
+              a.classifierInfo(this.context, context.trace).isForTypeKey !=
+              b.classifierInfo(this.context, context.trace).isForTypeKey
         }
+        hasDifferentTypeParameters
+      }
+      .toList()
+      .takeIf { it.isNotEmpty() }
+      ?.let {
+        context.trace.report(
+          Errors.CONFLICTING_OVERLOADS
+            .on(declaration, it)
+        )
+      }
+  }
 
-        arguments.forEach { it.type.checkAllForTypeKey(reportOn, trace) }
+  override fun check(
+    resolvedCall: ResolvedCall<*>,
+    reportOn: PsiElement,
+    context: CallCheckerContext
+  ) {
+    resolvedCall
+      .typeArguments
+      .filterKeys {
+        it.classifierInfo(this.context, context.trace)
+          .isForTypeKey
+      }
+      .forEach { it.value.checkAllForTypeKey(reportOn, context.trace) }
+  }
+
+  private fun KotlinType.checkAllForTypeKey(reportOn: PsiElement, trace: BindingTrace) {
+    if (constructor.declarationDescriptor is TypeParameterDescriptor &&
+      ! constructor.declarationDescriptor.cast<TypeParameterDescriptor>()
+        .classifierInfo(context, trace)
+        .isForTypeKey
+    ) {
+      trace.report(
+        InjektErrors.NON_FOR_TYPE_KEY_TYPE_PARAMETER_AS_FOR_TYPE_KEY
+          .on(reportOn, constructor.declarationDescriptor as TypeParameterDescriptor)
+      )
     }
+
+    arguments.forEach { it.type.checkAllForTypeKey(reportOn, trace) }
+  }
 }

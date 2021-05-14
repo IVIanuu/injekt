@@ -23,17 +23,17 @@ import org.jetbrains.kotlin.extensions.*
 import org.jetbrains.kotlin.platform.*
 
 class InjektStorageComponentContainerContributor : StorageComponentContainerContributor {
-    override fun registerModuleComponents(
-        container: StorageComponentContainer,
-        platform: TargetPlatform,
-        moduleDescriptor: ModuleDescriptor,
-    ) {
-        val context = moduleDescriptor.injektContext
-        container.useInstance(GivenChecker(context))
-        container.useInstance(TypeKeyChecker(context))
-        container.useInstance(QualifierChecker())
-        container.useInstance(GivenImportsChecker(context))
-        container.useInstance(GivenCallChecker(context))
-        container.useInstance(InfoAnnotationPatcher(context))
-    }
+  override fun registerModuleComponents(
+    container: StorageComponentContainer,
+    platform: TargetPlatform,
+    moduleDescriptor: ModuleDescriptor,
+  ) {
+    val context = moduleDescriptor.injektContext
+    container.useInstance(GivenChecker(context))
+    container.useInstance(TypeKeyChecker(context))
+    container.useInstance(QualifierChecker())
+    container.useInstance(GivenImportsChecker(context))
+    container.useInstance(GivenCallChecker(context))
+    container.useInstance(InfoAnnotationPatcher(context))
+  }
 }

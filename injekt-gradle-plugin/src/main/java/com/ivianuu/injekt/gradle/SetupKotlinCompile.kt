@@ -20,22 +20,22 @@ import org.gradle.api.provider.*
 import org.jetbrains.kotlin.gradle.plugin.*
 
 fun KotlinCompilation<*>.setupForInjekt(): Provider<List<SubpluginOption>> {
-    (compileKotlinTask as? org.jetbrains.kotlin.gradle.tasks.KotlinCompile)
-        ?.usePreciseJavaTracking = false
+  (compileKotlinTask as? org.jetbrains.kotlin.gradle.tasks.KotlinCompile)
+    ?.usePreciseJavaTracking = false
 
-    val sourceSetName = name
+  val sourceSetName = name
 
-    val project = compileKotlinTask.project
+  val project = compileKotlinTask.project
 
-    val dumpDir = project.buildDir.resolve("injekt/dump/$sourceSetName")
-        .also { it.mkdirs() }
+  val dumpDir = project.buildDir.resolve("injekt/dump/$sourceSetName")
+    .also { it.mkdirs() }
 
-    return project.provider {
-        listOf(
-            SubpluginOption(
-                key = "dumpDir",
-                value = dumpDir.absolutePath
-            )
-        )
-    }
+  return project.provider {
+    listOf(
+      SubpluginOption(
+        key = "dumpDir",
+        value = dumpDir.absolutePath
+      )
+    )
+  }
 }

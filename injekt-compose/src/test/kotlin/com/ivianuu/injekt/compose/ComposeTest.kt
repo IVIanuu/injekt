@@ -27,76 +27,72 @@ import org.junit.runner.*
 
 @RunWith(AndroidJUnit4::class)
 @GivenImports(
-    "com.ivianuu.injekt.common.*",
-    "com.ivianuu.injekt.scope.*"
+  "com.ivianuu.injekt.common.*",
+  "com.ivianuu.injekt.scope.*"
 )
 class ComposeTest {
-    @get:Rule
-    val composeRule = createComposeRule()
+  @get:Rule
+  val composeRule = createComposeRule()
 
-    @Test
-    fun testRememberElement() {
-        @Given val element: @InstallElement<TestGivenScope1> String = "value"
-        val scope = given<TestGivenScope1>()
-        composeRule.setContent {
-            CompositionLocalProvider(LocalGivenScope provides scope) {
-                rememberElement<String>() shouldBe "value"
-            }
-        }
+  @Test fun testRememberElement() {
+    @Given val element: @InstallElement<TestGivenScope1> String = "value"
+    val scope = given<TestGivenScope1>()
+    composeRule.setContent {
+      CompositionLocalProvider(LocalGivenScope provides scope) {
+        rememberElement<String>() shouldBe "value"
+      }
     }
+  }
 
-    @Test
-    fun testInitialRememberScopedValue() {
-        val scope = given<TestGivenScope1>()
-        composeRule.setContent {
-            CompositionLocalProvider(LocalGivenScope provides scope) {
-                val value = rememberScopedValue(key = "key") { "a" }
-                value shouldBe "a"
-                DisposableEffect(Unit) {
-                    scope.getScopedValueOrNull<String>("key")
-                        .shouldBe("a")
-                    onDispose {  }
-                }
-            }
+  @Test fun testInitialRememberScopedValue() {
+    val scope = given<TestGivenScope1>()
+    composeRule.setContent {
+      CompositionLocalProvider(LocalGivenScope provides scope) {
+        val value = rememberScopedValue(key = "key") { "a" }
+        value shouldBe "a"
+        DisposableEffect(Unit) {
+          scope.getScopedValueOrNull<String>("key")
+            .shouldBe("a")
+          onDispose { }
         }
+      }
     }
+  }
 
-    @Test
-    fun testExistingInitialRememberScopedValue() {
-        val scope = given<TestGivenScope1>()
-        scope.setScopedValue("key", "b")
-        composeRule.setContent {
-            CompositionLocalProvider(LocalGivenScope provides scope) {
-                val value = rememberScopedValue(key = "key") { "a" }
-                value shouldBe "b"
-                DisposableEffect(Unit) {
-                    scope.getScopedValueOrNull<String>("key")
-                        .shouldBe("b")
-                    onDispose {  }
-                }
-            }
+  @Test fun testExistingInitialRememberScopedValue() {
+    val scope = given<TestGivenScope1>()
+    scope.setScopedValue("key", "b")
+    composeRule.setContent {
+      CompositionLocalProvider(LocalGivenScope provides scope) {
+        val value = rememberScopedValue(key = "key") { "a" }
+        value shouldBe "b"
+        DisposableEffect(Unit) {
+          scope.getScopedValueOrNull<String>("key")
+            .shouldBe("b")
+          onDispose { }
         }
+      }
     }
+  }
 
-    /*@Test
-    fun testRememberScopedValueAcrossRecompositions() {
-        val scope = given<TestGivenScope1>()
-        val composed = MutableStateFlow(0)
-        composeRule.setContent {
-            CompositionLocalProvider(LocalGivenScope provides scope) {
-                var firstComposition by remember { mutableStateOf(true) }
-                val value = rememberScoped(key = "key") { if (firstComposition) "a" else "b" }
-                composed.value++
-                value shouldBe "a"
-                DisposableEffect(firstComposition) {
-                    if (firstComposition) firstComposition = false
-                    onDispose {
-                    }
-                }
-            }
-        }
-        runBlocking { composed.first { it == 2 } }
-    }     */
+  /*@Test fun testRememberScopedValueAcrossRecompositions() {
+      val scope = given<TestGivenScope1>()
+      val composed = MutableStateFlow(0)
+      composeRule.setContent {
+          CompositionLocalProvider(LocalGivenScope provides scope) {
+              var firstComposition by remember { mutableStateOf(true) }
+              val value = rememberScoped(key = "key") { if (firstComposition) "a" else "b" }
+              composed.value++
+              value shouldBe "a"
+              DisposableEffect(firstComposition) {
+                  if (firstComposition) firstComposition = false
+                  onDispose {
+                  }
+              }
+          }
+      }
+      runBlocking { composed.first { it == 2 } }
+  }     */
 }
 
 typealias TestGivenScope1 = GivenScope

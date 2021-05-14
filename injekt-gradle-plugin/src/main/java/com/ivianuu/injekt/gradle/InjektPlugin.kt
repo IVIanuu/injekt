@@ -23,20 +23,20 @@ import org.jetbrains.kotlin.gradle.plugin.*
 
 @AutoService(KotlinCompilerPluginSupportPlugin::class)
 open class InjektPlugin : KotlinCompilerPluginSupportPlugin {
-    override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean =
-        kotlinCompilation.target.project.plugins.hasPlugin(InjektPlugin::class.java)
+  override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean =
+    kotlinCompilation.target.project.plugins.hasPlugin(InjektPlugin::class.java)
 
-    override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> =
-        kotlinCompilation.setupForInjekt()
+  override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> =
+    kotlinCompilation.setupForInjekt()
 
-    override fun apply(target: Project) {
-    }
+  override fun apply(target: Project) {
+  }
 
-    override fun getCompilerPluginId(): String = "com.ivianuu.injekt"
+  override fun getCompilerPluginId(): String = "com.ivianuu.injekt"
 
-    override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
-        groupId = BuildConfig.GROUP_ID,
-        artifactId = BuildConfig.ARTIFACT_ID,
-        version = BuildConfig.VERSION
-    )
+  override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
+    groupId = BuildConfig.GROUP_ID,
+    artifactId = BuildConfig.ARTIFACT_ID,
+    version = BuildConfig.VERSION
+  )
 }

@@ -32,28 +32,28 @@ import org.jetbrains.kotlin.resolve.scopes.receivers.*
 @Suppress("INVISIBLE_REFERENCE", "EXPERIMENTAL_IS_NOT_ENABLED")
 @OptIn(org.jetbrains.kotlin.extensions.internal.InternalNonStableExtensionPoints::class)
 class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtension {
-    override fun interceptFunctionCandidates(
-        candidates: Collection<FunctionDescriptor>,
-        scopeTower: ImplicitScopeTower,
-        resolutionContext: BasicCallResolutionContext,
-        resolutionScope: ResolutionScope,
-        callResolver: PSICallResolver,
-        name: Name,
-        location: LookupLocation,
-        dispatchReceiver: ReceiverValueWithSmartCastInfo?,
-        extensionReceiver: ReceiverValueWithSmartCastInfo?,
-    ): Collection<FunctionDescriptor> {
-        return if (candidates.isEmpty()) emptyList()
-        else {
-            val context = resolutionContext.scope.ownerDescriptor.module.injektContext
-            candidates
-                .map { candidate ->
-                    if (candidate.allParameters.any { it.isGiven(context, resolutionContext.trace) }) {
-                        candidate.toGivenFunctionDescriptor(context, resolutionContext.trace)
-                    } else {
-                        candidate
-                    }
-                }
+  override fun interceptFunctionCandidates(
+    candidates: Collection<FunctionDescriptor>,
+    scopeTower: ImplicitScopeTower,
+    resolutionContext: BasicCallResolutionContext,
+    resolutionScope: ResolutionScope,
+    callResolver: PSICallResolver,
+    name: Name,
+    location: LookupLocation,
+    dispatchReceiver: ReceiverValueWithSmartCastInfo?,
+    extensionReceiver: ReceiverValueWithSmartCastInfo?,
+  ): Collection<FunctionDescriptor> {
+    return if (candidates.isEmpty()) emptyList()
+    else {
+      val context = resolutionContext.scope.ownerDescriptor.module.injektContext
+      candidates
+        .map { candidate ->
+          if (candidate.allParameters.any { it.isGiven(context, resolutionContext.trace) }) {
+            candidate.toGivenFunctionDescriptor(context, resolutionContext.trace)
+          } else {
+            candidate
+          }
         }
     }
+  }
 }

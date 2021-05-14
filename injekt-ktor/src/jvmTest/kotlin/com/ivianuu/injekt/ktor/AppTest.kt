@@ -23,29 +23,28 @@ import io.ktor.server.testing.*
 import org.junit.*
 
 @GivenImports(
-    "com.ivianuu.injekt.common.*",
-    "com.ivianuu.injekt.scope.*"
+  "com.ivianuu.injekt.common.*",
+  "com.ivianuu.injekt.scope.*"
 )
 class AppTest {
-    @Test
-    fun testServerLifecycle() {
-        lateinit var listener: ScopeDisposeListener
-        withTestApplication({
-            initializeAppGivenScope()
-            listener = appGivenScope.element()
-            listener.disposed.shouldBeFalse()
-        }) {
-        }
-        listener.disposed.shouldBeTrue()
+  @Test fun testServerLifecycle() {
+    lateinit var listener: ScopeDisposeListener
+    withTestApplication({
+      initializeAppGivenScope()
+      listener = appGivenScope.element()
+      listener.disposed.shouldBeFalse()
+    }) {
     }
+    listener.disposed.shouldBeTrue()
+  }
 }
 
 @Given
 @Scoped<AppGivenScope>
 @InstallElement<AppGivenScope>
 class ScopeDisposeListener : GivenScopeDisposable {
-    var disposed = false
-    override fun dispose() {
-        disposed = true
-    }
+  var disposed = false
+  override fun dispose() {
+    disposed = true
+  }
 }

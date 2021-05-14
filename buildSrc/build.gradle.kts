@@ -15,9 +15,9 @@
  */
 
 repositories {
-    jcenter()
+  jcenter()
 }
 
 plugins {
-    `kotlin-dsl`
+  `kotlin-dsl`
 }

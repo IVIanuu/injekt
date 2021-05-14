@@ -19,45 +19,43 @@ package com.ivianuu.injekt.samples.coffeemaker
 import com.ivianuu.injekt.*
 
 fun main() {
-    val heater = given<Heater>()
-    heater.on()
-    given<Pump>().pump()
-    println(" [_]P coffee! [_]P ")
-    heater.off()
+  val heater = given<Heater>()
+  heater.on()
+  given<Pump>().pump()
+  println(" [_]P coffee! [_]P ")
+  heater.off()
 }
 
 interface Heater {
-    fun on()
-    fun off()
-    val isHot: Boolean
+  fun on()
+  fun off()
+  val isHot: Boolean
 }
 
-@Given
-object ElectricHeater : Heater {
-    private var heating: Boolean = false
+@Given object ElectricHeater : Heater {
+  private var heating: Boolean = false
 
-    override fun on() {
-        println("~ ~ ~ heating ~ ~ ~")
-        heating = true
-    }
+  override fun on() {
+    println("~ ~ ~ heating ~ ~ ~")
+    heating = true
+  }
 
-    override fun off() {
-        heating = false
-    }
+  override fun off() {
+    heating = false
+  }
 
-    override val isHot: Boolean
-        get() = heating
+  override val isHot: Boolean
+    get() = heating
 }
 
 interface Pump {
-    fun pump()
+  fun pump()
 }
 
-@Given
-class Thermosiphon(@Given private val heater: Heater) : Pump {
-    override fun pump() {
-        if (heater.isHot) {
-            println("=> => pumping => =>")
-        }
+@Given class Thermosiphon(@Given private val heater: Heater) : Pump {
+  override fun pump() {
+    if (heater.isHot) {
+      println("=> => pumping => =>")
     }
+  }
 }

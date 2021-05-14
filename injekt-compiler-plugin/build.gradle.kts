@@ -17,40 +17,40 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.*
 
 plugins {
-    kotlin("jvm")
-    kotlin("kapt")
-    kotlin("plugin.serialization")
-    id("com.github.johnrengelman.shadow")
+  kotlin("jvm")
+  kotlin("kapt")
+  kotlin("plugin.serialization")
+  id("com.github.johnrengelman.shadow")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
 
 val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
-    configurations = listOf(project.configurations.getByName("compileOnly"))
-    relocate("org.jetbrains.kotlin.com.intellij", "com.intellij")
-    dependencies {
-        exclude(dependency("org.jetbrains.kotlin:kotlin-stdlib"))
-        exclude(dependency("org.jetbrains.kotlin:kotlin-stdlib-common"))
-        exclude(dependency("org.jetbrains:annotations"))
+  configurations = listOf(project.configurations.getByName("compileOnly"))
+  relocate("org.jetbrains.kotlin.com.intellij", "com.intellij")
+  dependencies {
+    exclude(dependency("org.jetbrains.kotlin:kotlin-stdlib"))
+    exclude(dependency("org.jetbrains.kotlin:kotlin-stdlib-common"))
+    exclude(dependency("org.jetbrains:annotations"))
 
-        exclude(dependency("com.intellij:openapi"))
-        exclude(dependency("com.intellij:extensions"))
-        exclude(dependency("com.intellij:annotations"))
-    }
+    exclude(dependency("com.intellij:openapi"))
+    exclude(dependency("com.intellij:extensions"))
+    exclude(dependency("com.intellij:annotations"))
+  }
 }
 
 artifacts {
-    archives(shadowJar)
+  archives(shadowJar)
 }
 
 dependencies {
-    implementation(Deps.autoService)
-    kapt(Deps.autoService)
-    api(Deps.Kotlin.compilerEmbeddable)
-    compileOnly(Deps.AndroidX.Compose.compiler)
-    implementation(Deps.Kotlin.stdlibJvm)
-    implementation(Deps.KotlinSerialization.json)
+  implementation(Deps.autoService)
+  kapt(Deps.autoService)
+  api(Deps.Kotlin.compilerEmbeddable)
+  compileOnly(Deps.AndroidX.Compose.compiler)
+  implementation(Deps.Kotlin.stdlibJvm)
+  implementation(Deps.KotlinSerialization.json)
 }
 
 plugins.apply("com.vanniktech.maven.publish")

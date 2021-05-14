@@ -21,163 +21,150 @@ import io.kotest.matchers.types.*
 import org.junit.*
 
 class QualifierTest {
-    @Test
-    fun testDistinctQualifier() = singleAndMultiCodegen(
-        """
+  @Test fun testDistinctQualifier() = singleAndMultiCodegen(
+    """
             @Given val foo = Foo()
             @Given val qualifiedFoo: @Qualifier1 Foo = Foo()
             """,
-        """
+    """
            fun invoke(): Pair<Foo, Foo> {
                 return given<Foo>() to given<@Qualifier1 Foo>()
            } 
         """
-    ) {
-        val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
-        foo1 shouldNotBeSameInstanceAs foo2
-    }
+  ) {
+    val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
+    foo1 shouldNotBeSameInstanceAs foo2
+  }
 
-    @Test
-    fun testTypeParameterWithQualifierUpperBound() = singleAndMultiCodegen(
-        """
+  @Test fun testTypeParameterWithQualifierUpperBound() = singleAndMultiCodegen(
+    """
             @Given class Dep<T>(@Given val value: @Qualifier1 T)
             
             @Given fun qualified(): @Qualifier1 String = ""
             """,
-        """
+    """
            fun invoke() = given<Dep<String>>() 
         """
-    )
+  )
 
-    @Test
-    fun testQualifiedClass() = singleAndMultiCodegen(
-        """ 
+  @Test fun testQualifiedClass() = singleAndMultiCodegen(
+    """ 
             @Given @Qualifier1 class Dep
             """,
-        """
+    """
             fun invoke() = given<@Qualifier1 Dep>()
         """
-    )
+  )
 
-    @Test
-    fun testQualifiedPrimaryConstructor() = singleAndMultiCodegen(
-        """ 
+  @Test fun testQualifiedPrimaryConstructor() = singleAndMultiCodegen(
+    """ 
                 class Dep @Given @Qualifier1 constructor()
             """,
-        """
+    """
             fun invoke() = given<@Qualifier1 Dep>()
         """
-    )
+  )
 
-    @Test
-    fun testQualifiedSecondaryConstructor() = singleAndMultiCodegen(
-        """ 
+  @Test fun testQualifiedSecondaryConstructor() = singleAndMultiCodegen(
+    """ 
                 class Dep {
                     @Given @Qualifier1 constructor()
                 }
             """,
-        """
+    """
             fun invoke() = given<@Qualifier1 Dep>()
         """
-    )
+  )
 
-    @Test
-    fun testQualifiedObject() = singleAndMultiCodegen(
-        """ 
+  @Test fun testQualifiedObject() = singleAndMultiCodegen(
+    """ 
             @Given @Qualifier1 object Dep
             """,
-        """
+    """
             fun invoke() = given<@Qualifier1 Dep>()
         """
-    )
+  )
 
-    @Test
-    fun testQualifiedFunction() = codegen(
-        """ 
+  @Test fun testQualifiedFunction() = codegen(
+    """ 
             @Given @Qualifier1 fun foo() = Foo()
         """
-    ) {
-        compilationShouldHaveFailed("only types, classes and class constructors can be annotated with a qualifier")
-    }
+  ) {
+    compilationShouldHaveFailed("only types, classes and class constructors can be annotated with a qualifier")
+  }
 
-    @Test
-    fun testQualifierWithArguments() = codegen(
-        """ 
+  @Test fun testQualifierWithArguments() = codegen(
+    """ 
             @Qualifier annotation class MyQualifier(val value: String)
             """
-    ) {
-        compilationShouldHaveFailed("qualifier cannot have value parameters")
-    }
+  ) {
+    compilationShouldHaveFailed("qualifier cannot have value parameters")
+  }
 
-    @Test
-    fun testQualifierWithTypeArguments() = singleAndMultiCodegen(
-        """
+  @Test fun testQualifierWithTypeArguments() = singleAndMultiCodegen(
+    """
             @Qualifier annotation class MyQualifier<T>
             @Given val qualifiedFoo: @MyQualifier<String> Foo = Foo()
             """,
-        """
+    """
            fun invoke() = given<@MyQualifier<String> Foo>() 
         """
-    ) {
-        invokeSingleFile()
-            .shouldBeTypeOf<Foo>()
-    }
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
 
-    @Test
-    fun testQualifierWithGenericTypeArguments() = singleAndMultiCodegen(
-        """
+  @Test fun testQualifierWithGenericTypeArguments() = singleAndMultiCodegen(
+    """
             @Qualifier annotation class MyQualifier<T>
             @Given fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
             """,
-        """
+    """
            fun invoke() = given<@MyQualifier<String> Foo>() 
         """
-    ) {
-        invokeSingleFile()
-            .shouldBeTypeOf<Foo>()
-    }
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
 
-    @Test
-    fun testUiState() = singleAndMultiCodegen(
-        """
+  @Test fun testUiState() = singleAndMultiCodegen(
+    """
             @Qualifier annotation class UiState
 
             @Given fun <T> uiState(@Given instance: @UiState T): T = instance
 
             @Given val foo: @UiState Foo = Foo()
             """,
-        """
+    """
             fun invoke() = given<Foo>() 
         """
-    ) {
-        invokeSingleFile()
-            .shouldBeTypeOf<Foo>()
-    }
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
 
-    @Test
-    fun testSubstitutesQualifierTypeParameters() = singleAndMultiCodegen(
-        """
+  @Test fun testSubstitutesQualifierTypeParameters() = singleAndMultiCodegen(
+    """
             @Given 
             fun foo(): @Eager<AppGivenScope> Foo = Foo()
 
             typealias ChildGivenScope = GivenScope
 
-            @Given
-            val childGivenScopeModule = ChildScopeModule0<AppGivenScope, ChildGivenScope>()
+            @Given val childGivenScopeModule = ChildScopeModule0<AppGivenScope, ChildGivenScope>()
 
             @InstallElement<ChildGivenScope>
             @Given
             class MyElement(@Given val foo: Foo)
         """,
-        """
+    """
             @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
             fun invoke() {
                 val givenScope = given<AppGivenScope>()
             } 
         """
-    ) {
-        compilationShouldBeOk()
-        irShouldNotContain("scopedImpl<Foo, Foo, U>(")
-    }
+  ) {
+    compilationShouldBeOk()
+    irShouldNotContain("scopedImpl<Foo, Foo, U>(")
+  }
 }
 

@@ -21,43 +21,35 @@ import io.kotest.matchers.nulls.*
 import org.junit.*
 
 class TypeConstraintsTest {
-    @Test
-    fun testIsEqualWithMatchingType() {
-        givenOrNull<IsEqual<String, String>>().shouldNotBeNull()
-    }
+  @Test fun testIsEqualWithMatchingType() {
+    givenOrNull<IsEqual<String, String>>().shouldNotBeNull()
+  }
 
-    @Test
-    fun testIsEqualWithNotMatchingType() {
-        givenOrNull<IsEqual<CharSequence, String>>().shouldBeNull()
-    }
+  @Test fun testIsEqualWithNotMatchingType() {
+    givenOrNull<IsEqual<CharSequence, String>>().shouldBeNull()
+  }
 
-    @Test
-    fun testIsSubTypeWithMatchingType() {
-        givenOrNull<IsSubType<String, CharSequence>>().shouldNotBeNull()
-    }
+  @Test fun testIsSubTypeWithMatchingType() {
+    givenOrNull<IsSubType<String, CharSequence>>().shouldNotBeNull()
+  }
 
-    @Test
-    fun testIsSubTypeWithNotMatchingType() {
-        givenOrNull<IsSubType<Int, CharSequence>>().shouldBeNull()
-    }
+  @Test fun testIsSubTypeWithNotMatchingType() {
+    givenOrNull<IsSubType<Int, CharSequence>>().shouldBeNull()
+  }
 
-    @Test
-    fun testIsNotSubTypeWithMatchingType() {
-        givenOrNull<IsNotSubType<String, CharSequence>>().shouldBeNull()
-    }
+  @Test fun testIsNotSubTypeWithMatchingType() {
+    givenOrNull<IsNotSubType<String, CharSequence>>().shouldBeNull()
+  }
 
-    @Test
-    fun testIsNotSubTypeWithNotMatchingType() {
-        givenOrNull<IsNotSubType<Int, CharSequence>>().shouldNotBeNull()
-    }
+  @Test fun testIsNotSubTypeWithNotMatchingType() {
+    givenOrNull<IsNotSubType<Int, CharSequence>>().shouldNotBeNull()
+  }
 
-    @Test
-    fun testIsNotEqualWithMatchingType() {
-        givenOrNull<IsNotEqual<String, String>>().shouldBeNull()
-    }
+  @Test fun testIsNotEqualWithMatchingType() {
+    givenOrNull<IsNotEqual<String, String>>().shouldBeNull()
+  }
 
-    @Test
-    fun testIsNotEqualWithNotMatchingType() {
-        givenOrNull<IsNotEqual<CharSequence, String>>().shouldNotBeNull()
-    }
+  @Test fun testIsNotEqualWithNotMatchingType() {
+    givenOrNull<IsNotEqual<CharSequence, String>>().shouldNotBeNull()
+  }
 }

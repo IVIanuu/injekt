@@ -25,18 +25,17 @@ import com.ivianuu.injekt.scope.*
  * Returns a new [ReceiverGivenScope] which must be manually stored and disposed
  */
 fun BroadcastReceiver.createReceiverGivenScope(
-    context: Context,
-    intent: Intent,
+  context: Context,
+  intent: Intent,
 ): ReceiverGivenScope = (context.applicationContext as Application)
-    .appGivenScope
-    .element<@ChildScopeFactory (BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverGivenScope>()
-    .invoke(this, context, intent)
+  .appGivenScope
+  .element<@ChildScopeFactory (BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverGivenScope>()
+  .invoke(this, context, intent)
 
 typealias ReceiverGivenScope = GivenScope
 
-@Given
-val receiverGivenScopeModule =
-    ChildScopeModule3<AppGivenScope, BroadcastReceiver, ReceiverContext, ReceiverIntent, ReceiverGivenScope>()
+@Given val receiverGivenScopeModule =
+  ChildScopeModule3<AppGivenScope, BroadcastReceiver, ReceiverContext, ReceiverIntent, ReceiverGivenScope>()
 
 typealias ReceiverContext = Context
 

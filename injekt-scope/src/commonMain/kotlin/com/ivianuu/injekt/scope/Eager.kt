@@ -21,18 +21,15 @@ import com.ivianuu.injekt.*
 /**
  * Creates a scoped instance as soon as scope [S] gets initialized
  */
-@Qualifier
-annotation class Eager<S : GivenScope> {
-    companion object {
-        @Given
-        class Module<@Given T : @Eager<S> U, U : Any, S : GivenScope> {
-            @Given
-            inline fun scopedValue(@Given value: T): @Scoped<S> U = value
+@Qualifier annotation class Eager<S : GivenScope> {
+  companion object {
+    @Given class Module<@Given T : @Eager<S> U, U : Any, S : GivenScope> {
+      @Given inline fun scopedValue(@Given value: T): @Scoped<S> U = value
 
-            @Given
-            inline fun initializer(@Given crossinline factory: () -> U): GivenScopeInitializer<S> = {
-                factory()
-            }
-        }
+      @Given
+      inline fun initializer(@Given crossinline factory: () -> U): GivenScopeInitializer<S> = {
+        factory()
+      }
     }
+  }
 }

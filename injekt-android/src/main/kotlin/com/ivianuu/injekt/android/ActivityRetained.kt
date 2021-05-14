@@ -25,14 +25,13 @@ import com.ivianuu.injekt.scope.*
  * whose lifecycle is bound the retained lifecycle of the activity
  */
 val ComponentActivity.activityRetainedGivenScope: ActivityRetainedGivenScope
-    get() = viewModelStore.givenScope {
-        application.appGivenScope
-            .element<@ChildScopeFactory () -> ActivityRetainedGivenScope>()
-            .invoke()
-    }
+  get() = viewModelStore.givenScope {
+    application.appGivenScope
+      .element<@ChildScopeFactory () -> ActivityRetainedGivenScope>()
+      .invoke()
+  }
 
 typealias ActivityRetainedGivenScope = GivenScope
 
-@Given
-val activityRetainedGivenScopeModule =
-    ChildScopeModule0<AppGivenScope, ActivityRetainedGivenScope>()
+@Given val activityRetainedGivenScopeModule =
+  ChildScopeModule0<AppGivenScope, ActivityRetainedGivenScope>()

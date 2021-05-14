@@ -22,28 +22,31 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.checkers.*
 
 class QualifierChecker : DeclarationChecker {
-    override fun check(
-        declaration: KtDeclaration,
-        descriptor: DeclarationDescriptor,
-        context: DeclarationCheckerContext
-    ) {
-        if (descriptor.hasAnnotation(InjektFqNames.Qualifier) && descriptor is ClassDescriptor) {
-            if (descriptor.unsubstitutedPrimaryConstructor?.valueParameters?.isNotEmpty() == true) {
-                context.trace.report(
-                    InjektErrors.QUALIFIER_WITH_VALUE_PARAMETERS
-                        .on(declaration)
-                )
-            }
-        } else {
-            val qualifiers = descriptor.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-            if (qualifiers.isNotEmpty() && descriptor !is ClassDescriptor &&
-                    descriptor !is ConstructorDescriptor) {
-                context.trace.report(
-                    InjektErrors.QUALIFIER_ON_NON_CLASS_AND_NON_TYPE
-                        .on(declaration.findAnnotation(qualifiers.first().fqName!!)
-                            ?: declaration)
-                )
-            }
-        }
+  override fun check(
+    declaration: KtDeclaration,
+    descriptor: DeclarationDescriptor,
+    context: DeclarationCheckerContext
+  ) {
+    if (descriptor.hasAnnotation(InjektFqNames.Qualifier) && descriptor is ClassDescriptor) {
+      if (descriptor.unsubstitutedPrimaryConstructor?.valueParameters?.isNotEmpty() == true) {
+        context.trace.report(
+          InjektErrors.QUALIFIER_WITH_VALUE_PARAMETERS
+            .on(declaration)
+        )
+      }
+    } else {
+      val qualifiers = descriptor.getAnnotatedAnnotations(InjektFqNames.Qualifier)
+      if (qualifiers.isNotEmpty() && descriptor !is ClassDescriptor &&
+        descriptor !is ConstructorDescriptor
+      ) {
+        context.trace.report(
+          InjektErrors.QUALIFIER_ON_NON_CLASS_AND_NON_TYPE
+            .on(
+              declaration.findAnnotation(qualifiers.first().fqName !!)
+                ?: declaration
+            )
+        )
+      }
     }
+  }
 }

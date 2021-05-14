@@ -28,154 +28,155 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.inline.*
 
 sealed class GivenNode {
-    abstract val type: TypeRef
-    abstract val originalType: TypeRef
-    abstract val dependencies: List<GivenRequest>
-    abstract val dependencyScope: ResolutionScope?
-    abstract val callableFqName: FqName
-    abstract val callContext: CallContext
-    abstract val ownerScope: ResolutionScope
-    abstract val cacheExpressionResultIfPossible: Boolean
+  abstract val type: TypeRef
+  abstract val originalType: TypeRef
+  abstract val dependencies: List<GivenRequest>
+  abstract val dependencyScope: ResolutionScope?
+  abstract val callableFqName: FqName
+  abstract val callContext: CallContext
+  abstract val ownerScope: ResolutionScope
+  abstract val cacheExpressionResultIfPossible: Boolean
 }
 
 class CallableGivenNode(
-    override val type: TypeRef,
-    override val dependencies: List<GivenRequest>,
-    override val ownerScope: ResolutionScope,
-    val callable: CallableRef,
+  override val type: TypeRef,
+  override val dependencies: List<GivenRequest>,
+  override val ownerScope: ResolutionScope,
+  val callable: CallableRef,
 ) : GivenNode() {
-    override val callableFqName: FqName = if (callable.callable is ClassConstructorDescriptor)
-        callable.callable.constructedClass.fqNameSafe
-    else callable.callable.fqNameSafe
-    override val callContext: CallContext
-        get() = callable.callContext
-    override val dependencyScope: ResolutionScope?
-        get() = null
-    override val originalType: TypeRef
-        get() = callable.originalType
-    override val cacheExpressionResultIfPossible: Boolean
-        get() = false
+  override val callableFqName: FqName = if (callable.callable is ClassConstructorDescriptor)
+    callable.callable.constructedClass.fqNameSafe
+  else callable.callable.fqNameSafe
+  override val callContext: CallContext
+    get() = callable.callContext
+  override val dependencyScope: ResolutionScope?
+    get() = null
+  override val originalType: TypeRef
+    get() = callable.originalType
+  override val cacheExpressionResultIfPossible: Boolean
+    get() = false
 }
 
 class SetGivenNode(
-    override val type: TypeRef,
-    override val ownerScope: ResolutionScope,
-    override val dependencies: List<GivenRequest>,
-    val singleElementType: TypeRef,
-    val collectionElementType: TypeRef
+  override val type: TypeRef,
+  override val ownerScope: ResolutionScope,
+  override val dependencies: List<GivenRequest>,
+  val singleElementType: TypeRef,
+  val collectionElementType: TypeRef
 ) : GivenNode() {
-    override val callableFqName: FqName = FqName("com.ivianuu.injekt.givenSetOf<${type.arguments[0].render()}>")
-    override val callContext: CallContext
-        get() = CallContext.DEFAULT
-    override val dependencyScope: ResolutionScope?
-        get() = null
-    override val originalType: TypeRef
-        get() = type.classifier.defaultType
-    override val cacheExpressionResultIfPossible: Boolean
-        get() = false
+  override val callableFqName: FqName =
+    FqName("com.ivianuu.injekt.givenSetOf<${type.arguments[0].render()}>")
+  override val callContext: CallContext
+    get() = CallContext.DEFAULT
+  override val dependencyScope: ResolutionScope?
+    get() = null
+  override val originalType: TypeRef
+    get() = type.classifier.defaultType
+  override val cacheExpressionResultIfPossible: Boolean
+    get() = false
 }
 
 class ProviderGivenNode(
-    override val type: TypeRef,
-    override val ownerScope: ResolutionScope,
-    dependencyCallContext: CallContext
+  override val type: TypeRef,
+  override val ownerScope: ResolutionScope,
+  dependencyCallContext: CallContext
 ) : GivenNode() {
-    override val callableFqName: FqName = when (type.callContext) {
-        CallContext.DEFAULT -> FqName("com.ivianuu.injekt.providerOf")
-        CallContext.COMPOSABLE -> FqName("com.ivianuu.injekt.composableProviderOf")
-        CallContext.SUSPEND -> FqName("com.ivianuu.injekt.suspendProviderOf")
-    }
-    override val dependencies: List<GivenRequest> = listOf(
-        GivenRequest(
-            type = type.arguments.last(),
-            defaultStrategy = if (type.arguments.last().isNullableType)
-                if (type.defaultOnAllErrors)
-                    GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
-                else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
-            else GivenRequest.DefaultStrategy.NONE,
-            callableFqName = callableFqName,
-            parameterName = "instance".asNameId(),
-            isInline = false,
-            isLazy = true
-        )
+  override val callableFqName: FqName = when (type.callContext) {
+    CallContext.DEFAULT -> FqName("com.ivianuu.injekt.providerOf")
+    CallContext.COMPOSABLE -> FqName("com.ivianuu.injekt.composableProviderOf")
+    CallContext.SUSPEND -> FqName("com.ivianuu.injekt.suspendProviderOf")
+  }
+  override val dependencies: List<GivenRequest> = listOf(
+    GivenRequest(
+      type = type.arguments.last(),
+      defaultStrategy = if (type.arguments.last().isNullableType)
+        if (type.defaultOnAllErrors)
+          GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
+        else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
+      else GivenRequest.DefaultStrategy.NONE,
+      callableFqName = callableFqName,
+      parameterName = "instance".asNameId(),
+      isInline = false,
+      isLazy = true
     )
+  )
 
-    val parameterDescriptors = mutableListOf<ParameterDescriptor>()
+  val parameterDescriptors = mutableListOf<ParameterDescriptor>()
 
-    override val dependencyScope = ResolutionScope(
-        name = "PROVIDER $type",
-        parent = ownerScope,
-        context = ownerScope.context,
-        callContext = dependencyCallContext,
-        ownerDescriptor = ownerScope.ownerDescriptor,
-        trace = ownerScope.trace,
-        initialGivens = {
-            type
-                .toKotlinType(ownerScope.context)
-                .memberScope
-                .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
-                .first()
-                .valueParameters
-                .asSequence()
-                .onEach { parameterDescriptors += it }
-                .mapIndexed { index, parameter ->
-                    parameter
-                        .toCallableRef(ownerScope.context, ownerScope.trace)
-                        .copy(isGiven = true, type = type.arguments[index])
-                }
-                .toList()
-        },
-        imports = emptyList(),
-        typeParameters = emptyList()
-    )
-    override val callContext: CallContext
-        get() = CallContext.DEFAULT
-    override val originalType: TypeRef
-        get() = type.classifier.defaultType
-    override val cacheExpressionResultIfPossible: Boolean
-        get() = true
+  override val dependencyScope = ResolutionScope(
+    name = "PROVIDER $type",
+    parent = ownerScope,
+    context = ownerScope.context,
+    callContext = dependencyCallContext,
+    ownerDescriptor = ownerScope.ownerDescriptor,
+    trace = ownerScope.trace,
+    initialGivens = {
+      type
+        .toKotlinType(ownerScope.context)
+        .memberScope
+        .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
+        .first()
+        .valueParameters
+        .asSequence()
+        .onEach { parameterDescriptors += it }
+        .mapIndexed { index, parameter ->
+          parameter
+            .toCallableRef(ownerScope.context, ownerScope.trace)
+            .copy(isGiven = true, type = type.arguments[index])
+        }
+        .toList()
+    },
+    imports = emptyList(),
+    typeParameters = emptyList()
+  )
+  override val callContext: CallContext
+    get() = CallContext.DEFAULT
+  override val originalType: TypeRef
+    get() = type.classifier.defaultType
+  override val cacheExpressionResultIfPossible: Boolean
+    get() = true
 }
 
 fun CallableRef.getGivenRequests(
-    context: InjektContext,
-    trace: BindingTrace,
-    callableFqNameProvider: (CallableDescriptor) -> FqName = { it.containingDeclaration.fqNameSafe }
+  context: InjektContext,
+  trace: BindingTrace,
+  callableFqNameProvider: (CallableDescriptor) -> FqName = { it.containingDeclaration.fqNameSafe }
 ): List<GivenRequest> = callable.allParameters
-    .asSequence()
-    .filter {
-        callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
-    }
-    .filter {
-        it === callable.dispatchReceiverParameter ||
-                it === callable.extensionReceiverParameter ||
-                it.isGiven(context, trace) ||
-                parameterTypes[it.injektName()]!!.isGiven
-    }
-    .map { parameter ->
-        val name = parameter.injektName()
-        GivenRequest(
-            type = parameterTypes[name]!!,
-            defaultStrategy = if (parameter is ValueParameterDescriptor && parameter.hasDefaultValueIgnoringGiven) {
-                if (name in defaultOnAllErrorParameters) GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
-                else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
-            } else GivenRequest.DefaultStrategy.NONE,
-            callableFqName = callableFqNameProvider(parameter),
-            parameterName = name.asNameId(),
-            isInline = InlineUtil.isInlineParameter(parameter),
-            isLazy = false
-        )
-    }
-    .toList()
+  .asSequence()
+  .filter {
+    callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
+  }
+  .filter {
+    it === callable.dispatchReceiverParameter ||
+        it === callable.extensionReceiverParameter ||
+        it.isGiven(context, trace) ||
+        parameterTypes[it.injektName()] !!.isGiven
+  }
+  .map { parameter ->
+    val name = parameter.injektName()
+    GivenRequest(
+      type = parameterTypes[name] !!,
+      defaultStrategy = if (parameter is ValueParameterDescriptor && parameter.hasDefaultValueIgnoringGiven) {
+        if (name in defaultOnAllErrorParameters) GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
+        else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
+      } else GivenRequest.DefaultStrategy.NONE,
+      callableFqName = callableFqNameProvider(parameter),
+      parameterName = name.asNameId(),
+      isInline = InlineUtil.isInlineParameter(parameter),
+      isLazy = false
+    )
+  }
+  .toList()
 
 data class GivenRequest(
-    val type: TypeRef,
-    val defaultStrategy: DefaultStrategy,
-    val callableFqName: FqName,
-    val parameterName: Name,
-    val isInline: Boolean,
-    val isLazy: Boolean
-    ) {
-    enum class DefaultStrategy {
-        NONE, DEFAULT_IF_NOT_GIVEN, DEFAULT_ON_ALL_ERRORS
-    }
+  val type: TypeRef,
+  val defaultStrategy: DefaultStrategy,
+  val callableFqName: FqName,
+  val parameterName: Name,
+  val isInline: Boolean,
+  val isLazy: Boolean
+) {
+  enum class DefaultStrategy {
+    NONE, DEFAULT_IF_NOT_GIVEN, DEFAULT_ON_ALL_ERRORS
+  }
 }

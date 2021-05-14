@@ -23,32 +23,27 @@ import org.junit.*
 import kotlin.reflect.*
 
 class CommonGivensTest {
-    @Test
-    fun testCanUseMapForSetOfPairs() {
-        @Given val elementsA = setOf("a" to "a")
-        @Given val elementB = setOf("b" to "b")
-        val map = givenOrNull<Map<String, String>>()
-        map.shouldNotBeNull()
-        map.size shouldBe 2
-        map["a"] shouldBe "a"
-        map["b"] shouldBe "b"
-    }
+  @Test fun testCanUseMapForSetOfPairs() {
+    @Given val elementsA = setOf("a" to "a")
+    @Given val elementB = setOf("b" to "b")
+    val map = givenOrNull<Map<String, String>>()
+    map.shouldNotBeNull()
+    map.size shouldBe 2
+    map["a"] shouldBe "a"
+    map["b"] shouldBe "b"
+  }
 
-    @Test
-    fun testCanUseLazy() {
-        givenOrNull<Lazy<Foo>>().shouldNotBeNull()
-    }
+  @Test fun testCanUseLazy() {
+    givenOrNull<Lazy<Foo>>().shouldNotBeNull()
+  }
 
-    @Test
-    fun testCanUseKClass() {
-        givenOrNull<KClass<Foo>>().shouldNotBeNull()
-    }
+  @Test fun testCanUseKClass() {
+    givenOrNull<KClass<Foo>>().shouldNotBeNull()
+  }
 
-    @Test
-    fun testCanUseType() {
-        givenOrNull<TypeKey<Foo>>().shouldNotBeNull()
-    }
+  @Test fun testCanUseType() {
+    givenOrNull<TypeKey<Foo>>().shouldNotBeNull()
+  }
 
-    @Given
-    private class Foo
+  @Given private class Foo
 }

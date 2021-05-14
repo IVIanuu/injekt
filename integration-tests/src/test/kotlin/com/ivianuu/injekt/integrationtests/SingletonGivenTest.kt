@@ -21,122 +21,114 @@ import io.kotest.matchers.types.*
 import org.junit.*
 
 class SingletonGivenTest {
-    @Test
-    fun testSingletonGiven() = singleAndMultiCodegen(
-        """
+  @Test fun testSingletonGiven() = singleAndMultiCodegen(
+    """
             @Given class MyModule {
                 @Given fun foo() = Foo()
             }
         """,
-        """
+    """
            fun invoke() = given<MyModule>()
         """
-    ) {
-        invokeSingleFile()
-            .shouldBeSameInstanceAs(invokeSingleFile())
-    }
+  ) {
+    invokeSingleFile()
+      .shouldBeSameInstanceAs(invokeSingleFile())
+  }
 
-    @Test
-    fun testDoesNotOptimizeNormalClass() = singleAndMultiCodegen(
-        """
+  @Test fun testDoesNotOptimizeNormalClass() = singleAndMultiCodegen(
+    """
             class MyModule
             @Given val foo = Foo()
         """,
-        """
+    """
            fun invoke() = given<Foo>() 
         """
-    ) {
-        irShouldNotContain("INSTANCE")
-        invokeSingleFile()
-    }
+  ) {
+    irShouldNotContain("INSTANCE")
+    invokeSingleFile()
+  }
 
-    @Test
-    fun testDoesNotOptimizeObject() = singleAndMultiCodegen(
-        """
+  @Test fun testDoesNotOptimizeObject() = singleAndMultiCodegen(
+    """
             @Given object MyModule {
                 @Given val foo = Foo()
             }
         """,
-        """
+    """
            fun invoke() = given<Foo>() 
         """
-    ) {
-        irShouldNotContain("INSTANCE")
-        invokeSingleFile()
-    }
+  ) {
+    irShouldNotContain("INSTANCE")
+    invokeSingleFile()
+  }
 
-    @Test
-    fun testDoesNotOptimizeGivenWithConstructorParameters() = singleAndMultiCodegen(
-        """
+  @Test fun testDoesNotOptimizeGivenWithConstructorParameters() = singleAndMultiCodegen(
+    """
             @Given class MyModule(@Given val foo: Foo)
             @Given val foo = Foo()
         """,
-        """
+    """
            fun invoke() = given<Foo>() 
         """
-    ) {
-        irShouldNotContain("INSTANCE")
-        invokeSingleFile()
-    }
+  ) {
+    irShouldNotContain("INSTANCE")
+    invokeSingleFile()
+  }
 
-    @Test
-    fun testDoesNotOptimizeGivenWithForTypeKeyParameters() = singleAndMultiCodegen(
-        """
+  @Test fun testDoesNotOptimizeGivenWithForTypeKeyParameters() = singleAndMultiCodegen(
+    """
             @Given class MyModule<@ForTypeKey T> {
                 @Given val instance = Foo() as T
             }
         """,
-        """
+    """
            fun invoke() = given<Foo>() 
         """
-    ) {
-        irShouldNotContain("INSTANCE")
-        invokeSingleFile()
-    }
+  ) {
+    irShouldNotContain("INSTANCE")
+    invokeSingleFile()
+  }
 
-    @Test
-    fun testDoesNotOptimizeGivenWithFields() = singleAndMultiCodegen(
-        """
+  @Test fun testDoesNotOptimizeGivenWithFields() = singleAndMultiCodegen(
+    """
             @Given class MyModule {
                 @Given val foo = Foo()
             }
         """,
-        """
+    """
            fun invoke() = given<Foo>() 
         """
-    ) {
-        irShouldNotContain("INSTANCE")
-        invokeSingleFile()
-    }
+  ) {
+    irShouldNotContain("INSTANCE")
+    invokeSingleFile()
+  }
 
-    @Test
-    fun testDoesNotOptimizeGivenWithInnerClass() = singleAndMultiCodegen(
-        """
+  @Test fun testDoesNotOptimizeGivenWithInnerClass() = singleAndMultiCodegen(
+    """
             @Given class MyModule {
                 inner class Inner
             }
             @Given val foo = Foo()
         """,
-        """
+    """
            fun invoke() = given<Foo>() 
         """
-    ) {
-        irShouldNotContain("INSTANCE")
-        invokeSingleFile()
-    }
+  ) {
+    irShouldNotContain("INSTANCE")
+    invokeSingleFile()
+  }
 
-    @Test
-    fun testDoesOptimizeGivenWithComputedProperties() = singleAndMultiCodegen(
-        """
+  @Test fun testDoesOptimizeGivenWithComputedProperties() = singleAndMultiCodegen(
+    """
             @Given class MyModule {
                 @Given val foo get() = Foo()
             }
         """,
-        """
+    """
            fun invoke() = given<Foo>() 
         """
-    ) {
-        irShouldContain(if (!it) 2 else 1, "INSTANCE")
-        invokeSingleFile()
-    }
+  ) {
+    irShouldContain(if (! it) 2 else 1, "INSTANCE")
+    invokeSingleFile()
+  }
 }

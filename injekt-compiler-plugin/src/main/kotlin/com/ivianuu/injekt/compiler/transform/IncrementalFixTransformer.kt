@@ -36,127 +36,131 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
 class IncrementalFixTransformer(
-    private val context: InjektContext,
-    private val trace: BindingTrace,
-    private val pluginContext: IrPluginContext
+  private val context: InjektContext,
+  private val trace: BindingTrace,
+  private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
-    private val givensByFile = mutableMapOf<IrFile, MutableSet<CallableRef>>()
-    override fun visitFile(declaration: IrFile): IrFile {
-        super.visitFile(declaration)
-        val givens = givensByFile[declaration] ?: return declaration
+  private val givensByFile = mutableMapOf<IrFile, MutableSet<CallableRef>>()
+  override fun visitFile(declaration: IrFile): IrFile {
+    super.visitFile(declaration)
+    val givens = givensByFile[declaration] ?: return declaration
 
-        val clazz = IrFactoryImpl.buildClass {
-            name = "${pluginContext.moduleDescriptor.name
-                .asString().replace("<", "")
-                .replace("-", "")
-                .replace(">", "")}_${declaration.fileEntry.name.removeSuffix(".kt")
-                .substringAfterLast(".")
-                .substringAfterLast("/")
-                }_GivensMarker".asNameId()
-            visibility = DescriptorVisibilities.PRIVATE
-        }.apply {
-            createImplicitParameterDeclarationWithWrappedDescriptor()
-            parent = declaration
-            declaration.addChild(this)
+    val clazz = IrFactoryImpl.buildClass {
+      name = "${
+        pluginContext.moduleDescriptor.name
+          .asString().replace("<", "")
+          .replace("-", "")
+          .replace(">", "")
+      }_${
+        declaration.fileEntry.name.removeSuffix(".kt")
+          .substringAfterLast(".")
+          .substringAfterLast("/")
+      }_GivensMarker".asNameId()
+      visibility = DescriptorVisibilities.PRIVATE
+    }.apply {
+      createImplicitParameterDeclarationWithWrappedDescriptor()
+      parent = declaration
+      declaration.addChild(this)
+    }
+
+    val functions = givens.mapIndexed { index, callable ->
+      IrFunctionImpl(
+        UNDEFINED_OFFSET,
+        UNDEFINED_OFFSET,
+        IrDeclarationOrigin.DEFINED,
+        IrSimpleFunctionSymbolImpl(
+          object : WrappedSimpleFunctionDescriptor() {
+            override fun hasStableParameterNames(): Boolean = true
+          }
+        ),
+        "givens".asNameId(),
+        DescriptorVisibilities.PUBLIC,
+        Modality.FINAL,
+        pluginContext.irBuiltIns.unitType,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ).apply {
+        descriptor.cast<WrappedSimpleFunctionDescriptor>().bind(this)
+        parent = declaration
+        declaration.addChild(this)
+        addValueParameter("marker", clazz.defaultType)
+        repeat(index) {
+          addValueParameter("index$it", pluginContext.irBuiltIns.byteType)
         }
+        val callableInfo = callable.callable
+          .annotations
+          .let {
+            it.findAnnotation(InjektFqNames.CallableInfo)
+              ?: error("Wtf $callable")
+          }
+          .allValueArguments
+          .values
+          .single()
+          .value
+          .cast<String>()
+        val classifierInfo = callable
+          .takeIf { it.callable is ClassConstructorDescriptor }
+          ?.type
+          ?.classifier
+          ?.descriptor
+          ?.annotations
+          ?.findAnnotation(InjektFqNames.ClassifierInfo)
+          ?.allValueArguments
+          ?.values
+          ?.single()
+          ?.value
+          ?.cast<String>()
 
-        val functions = givens.mapIndexed { index, callable ->
-            IrFunctionImpl(
-                UNDEFINED_OFFSET,
-                UNDEFINED_OFFSET,
-                IrDeclarationOrigin.DEFINED,
-                IrSimpleFunctionSymbolImpl(
-                    object : WrappedSimpleFunctionDescriptor() {
-                        override fun hasStableParameterNames(): Boolean = true
-                    }
-                ),
-                "givens".asNameId(),
-                DescriptorVisibilities.PUBLIC,
-                Modality.FINAL,
-                pluginContext.irBuiltIns.unitType,
-                false,
-                false,
-                false,
-                false,
-                false,
-                false,
-                false
-            ).apply {
-                descriptor.cast<WrappedSimpleFunctionDescriptor>().bind(this)
-                parent = declaration
-                declaration.addChild(this)
-                addValueParameter("marker", clazz.defaultType)
-                repeat(index) {
-                    addValueParameter("index$it", pluginContext.irBuiltIns.byteType)
-                }
-                val callableInfo = callable.callable
-                    .annotations
-                    .let {
-                        it.findAnnotation(InjektFqNames.CallableInfo)
-                            ?: error("Wtf $callable")
-                    }
-                    .allValueArguments
-                    .values
-                    .single()
-                    .value
-                    .cast<String>()
-                val classifierInfo = callable
-                    .takeIf { it.callable is ClassConstructorDescriptor }
-                    ?.type
-                    ?.classifier
-                    ?.descriptor
-                    ?.annotations
-                    ?.findAnnotation(InjektFqNames.ClassifierInfo)
-                    ?.allValueArguments
-                    ?.values
-                    ?.single()
-                    ?.value
-                    ?.cast<String>()
-
-                val finalHash = String(
-                    Base64.getEncoder()
-                        .encode((callableInfo + classifierInfo.orEmpty()).toByteArray())
-                )
-
-                finalHash
-                    .replace("/", "")
-                    .chunked(100)
-                    .forEachIndexed { index, value ->
-                        addValueParameter(
-                            "hash_${index}_$value",
-                            pluginContext.irBuiltIns.intType
-                        )
-                    }
-                body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
-                }
-            }
-        }
-
-        declaration.metadata = DescriptorMetadataSource.File(
-            declaration.metadata.cast<DescriptorMetadataSource.File>()
-                .descriptors + functions.map { it.descriptor }
+        val finalHash = String(
+          Base64.getEncoder()
+            .encode((callableInfo + classifierInfo.orEmpty()).toByteArray())
         )
 
-        return declaration
+        finalHash
+          .replace("/", "")
+          .chunked(100)
+          .forEachIndexed { index, value ->
+            addValueParameter(
+              "hash_${index}_$value",
+              pluginContext.irBuiltIns.intType
+            )
+          }
+        body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
+        }
+      }
     }
 
-    override fun visitDeclaration(declaration: IrDeclarationBase): IrStatement {
-        if (declaration is IrDeclarationWithVisibility &&
-            (declaration.visibility == DescriptorVisibilities.PUBLIC ||
-                    declaration.visibility == DescriptorVisibilities.INTERNAL ||
-                    declaration.visibility == DescriptorVisibilities.PROTECTED) &&
-            (declaration !is IrConstructor ||
-                    (declaration.constructedClass.visibility == DescriptorVisibilities.PUBLIC ||
-                            declaration.constructedClass.visibility == DescriptorVisibilities.INTERNAL ||
-                            declaration.constructedClass.visibility == DescriptorVisibilities.PROTECTED)) &&
-                declaration.descriptor.isGiven(context, trace)) {
-            givensByFile.getOrPut(declaration.file) { mutableSetOf() } += when (declaration) {
-                is IrClass -> declaration.descriptor.getGivenConstructors(context, trace)
-                is IrFunction -> listOf(declaration.descriptor.toCallableRef(context, trace))
-                is IrProperty -> listOf(declaration.descriptor.toCallableRef(context, trace))
-                else -> return super.visitDeclaration(declaration)
-            }
-        }
-        return super.visitDeclaration(declaration)
+    declaration.metadata = DescriptorMetadataSource.File(
+      declaration.metadata.cast<DescriptorMetadataSource.File>()
+        .descriptors + functions.map { it.descriptor }
+    )
+
+    return declaration
+  }
+
+  override fun visitDeclaration(declaration: IrDeclarationBase): IrStatement {
+    if (declaration is IrDeclarationWithVisibility &&
+      (declaration.visibility == DescriptorVisibilities.PUBLIC ||
+          declaration.visibility == DescriptorVisibilities.INTERNAL ||
+          declaration.visibility == DescriptorVisibilities.PROTECTED) &&
+      (declaration !is IrConstructor ||
+          (declaration.constructedClass.visibility == DescriptorVisibilities.PUBLIC ||
+              declaration.constructedClass.visibility == DescriptorVisibilities.INTERNAL ||
+              declaration.constructedClass.visibility == DescriptorVisibilities.PROTECTED)) &&
+      declaration.descriptor.isGiven(context, trace)
+    ) {
+      givensByFile.getOrPut(declaration.file) { mutableSetOf() } += when (declaration) {
+        is IrClass -> declaration.descriptor.getGivenConstructors(context, trace)
+        is IrFunction -> listOf(declaration.descriptor.toCallableRef(context, trace))
+        is IrProperty -> listOf(declaration.descriptor.toCallableRef(context, trace))
+        else -> return super.visitDeclaration(declaration)
+      }
     }
+    return super.visitDeclaration(declaration)
+  }
 }

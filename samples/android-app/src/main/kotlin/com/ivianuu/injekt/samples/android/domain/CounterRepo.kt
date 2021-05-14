@@ -24,14 +24,14 @@ import kotlinx.coroutines.flow.*
 @Given
 @Scoped<AppGivenScope>
 class CounterRepo(@Given private val storage: CounterStorage) {
-    val counterState: Flow<Int>
-        get() = storage.counterState
+  val counterState: Flow<Int>
+    get() = storage.counterState
 
-    suspend fun inc() {
-        storage.updateCounter(counterState.first() + 1)
-    }
+  suspend fun inc() {
+    storage.updateCounter(counterState.first() + 1)
+  }
 
-    suspend fun dec() {
-        storage.updateCounter(counterState.first() - 1)
-    }
+  suspend fun dec() {
+    storage.updateCounter(counterState.first() - 1)
+  }
 }

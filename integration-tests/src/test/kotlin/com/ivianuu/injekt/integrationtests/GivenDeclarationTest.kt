@@ -24,106 +24,98 @@ import org.jetbrains.kotlin.name.*
 import org.junit.*
 
 class GivenDeclarationTest {
-    @Test
-    fun testGivenFunction() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenFunction() = singleAndMultiCodegen(
+    """
             @Given fun foo() = Foo()
         """,
-        """
+    """
            fun invoke() = given<Foo>() 
         """
-    ) {
-        invokeSingleFile()
-            .shouldBeTypeOf<Foo>()
-    }
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
 
-    @Test
-    fun testGivenProperty() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenProperty() = singleAndMultiCodegen(
+    """
             @Given val foo = Foo()
         """,
-        """
+    """
            fun invoke() = given<Foo>() 
         """
-    ) {
-        invokeSingleFile()
-            .shouldBeTypeOf<Foo>()
-    }
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
 
-    @Test
-    fun testGivenClass() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenClass() = singleAndMultiCodegen(
+    """
             @Given val foo = Foo()
             @Given class Dep(@Given val foo: Foo)
         """,
-        """
+    """
             fun invoke() = given<Dep>() 
         """
-    ) {
-        invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
-    }
+  ) {
+    invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
+  }
 
-    @Test
-    fun testGivenClassPrimaryConstructor() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenClassPrimaryConstructor() = singleAndMultiCodegen(
+    """
             @Given val foo = Foo()
             class Dep @Given constructor(@Given val foo: Foo)
         """,
-        """
+    """
            fun invoke() = given<Dep>() 
         """
-    ) {
-        invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
-    }
+  ) {
+    invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
+  }
 
-    @Test
-    fun testGivenClassSecondaryConstructor() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenClassSecondaryConstructor() = singleAndMultiCodegen(
+    """
             @Given val foo = Foo()
             class Dep {
                 @Given constructor(@Given foo: Foo)
             }
         """,
-        """
+    """
            fun invoke() = given<Dep>() 
         """
-    ) {
-        invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
-    }
+  ) {
+    invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
+  }
 
-    @Test
-    fun testGivenClassWithMultipleGivenConstructors() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenClassWithMultipleGivenConstructors() = singleAndMultiCodegen(
+    """
             class Dep {
                 @Given constructor(@Given foo: Foo)
                 @Given constructor(@Given bar: Bar)
             }
             @Given val foo = Foo()
         """,
-        """
+    """
            fun invoke() = given<Dep>() 
         """
-    )
+  )
 
-    @Test
-    fun testNestedGivenClass() = singleAndMultiCodegen(
-        """
+  @Test fun testNestedGivenClass() = singleAndMultiCodegen(
+    """
             @Given val foo = Foo()
             class Outer {
                 @Given class Dep(@Given val foo: Foo)
             }
         """,
-        """
+    """
             @GivenImports("com.ivianuu.injekt.integrationtests.Outer.Dep")
             fun invoke() = given<Outer.Dep>() 
         """
-    ) {
-        invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Outer\$Dep"
-    }
+  ) {
+    invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Outer\$Dep"
+  }
 
-    @Test
-    fun testGivenObject() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenObject() = singleAndMultiCodegen(
+    """
             @Given val foo = Foo()
             @Given object Dep {
                 init {
@@ -131,100 +123,92 @@ class GivenDeclarationTest {
                 }
             }
         """,
-        """
+    """
            fun invoke() = given<Dep>() 
         """
-    ) {
-        invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
-    }
+  ) {
+    invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
+  }
 
-    @Test
-    fun testGivenCompanionObject() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenCompanionObject() = singleAndMultiCodegen(
+    """
             @Given val foo = Foo()
             class Dep {
-                @Given
-                companion object {
+                @Given companion object {
                     init {
                         given<Foo>()
                     }
                 }
             }
         """,
-        """
+    """
            fun invoke() = given<Dep.Companion>() 
         """
-    ) {
-        invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep\$Companion"
-    }
+  ) {
+    invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep\$Companion"
+  }
 
-    @Test
-    fun testGivenExtensionFunction() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenExtensionFunction() = singleAndMultiCodegen(
+    """
             @Given fun Foo.bar() = Bar(this)
         """,
-        """
+    """
            fun invoke(@Given foo: Foo) = given<Bar>() 
         """
-    ) {
-        invokeSingleFile(Foo())
-            .shouldBeTypeOf<Bar>()
-    }
+  ) {
+    invokeSingleFile(Foo())
+      .shouldBeTypeOf<Bar>()
+  }
 
-    @Test
-    fun testGivenExtensionProperty() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenExtensionProperty() = singleAndMultiCodegen(
+    """
             @Given val Foo.bar get() = Bar(this)
         """,
-        """
+    """
            fun invoke(@Given foo: Foo) = given<Bar>() 
         """
-    ) {
-        invokeSingleFile(Foo())
-            .shouldBeTypeOf<Bar>()
-    }
+  ) {
+    invokeSingleFile(Foo())
+      .shouldBeTypeOf<Bar>()
+  }
 
-    @Test
-    fun testGivenValueParameter() = codegen(
-        """
+  @Test fun testGivenValueParameter() = codegen(
+    """
             fun invoke(@Given foo: Foo) = given<Foo>()
         """
-    ) {
-        val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
 
-    @Test
-    fun testGivenLocalVariable() = codegen(
-        """
+  @Test fun testGivenLocalVariable() = codegen(
+    """
             fun invoke(foo: Foo): Foo {
                 @Given val givenFoo = foo
                 return given()
             }
         """
-    ) {
-        val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
 
-    @Test
-    fun testGivenConstructorParameterInFieldInitializer() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenConstructorParameterInFieldInitializer() = singleAndMultiCodegen(
+    """
             class MyClass(@Given foo: Foo) {
                 val foo = given<Foo>()
             }
         """,
-        """
+    """
            fun invoke(@Given foo: Foo) = MyClass().foo 
         """
-    ) {
-        val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
 
-    @Test
-    fun testGivenConstructorParameterInClassInitializer() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenConstructorParameterInClassInitializer() = singleAndMultiCodegen(
+    """
             class MyClass(@Given foo: Foo) {
                 val foo: Foo
                 init {
@@ -232,17 +216,16 @@ class GivenDeclarationTest {
                 }
             }
         """,
-        """
+    """
            fun invoke(@Given foo: Foo) = MyClass().foo 
         """
-    ) {
-        val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
 
-    @Test
-    fun testGivenConstructorParameterInConstructorBody() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenConstructorParameterInConstructorBody() = singleAndMultiCodegen(
+    """
             class MyClass {
                 val foo: Foo
                 constructor(@Given foo: Foo) {
@@ -250,170 +233,160 @@ class GivenDeclarationTest {
                 }
             }
         """,
-        """
+    """
            fun invoke(@Given foo: Foo) = MyClass().foo 
         """
-    ) {
-        val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
 
-    @Test
-    fun testImportedGivenFunctionInObject() = singleAndMultiCodegen(
-        """
+  @Test fun testImportedGivenFunctionInObject() = singleAndMultiCodegen(
+    """
             object FooGivens {
                 @Given fun foo() = Foo()
             }
         """,
-        """
+    """
             @GivenImports("com.ivianuu.injekt.integrationtests.FooGivens.foo")
             fun invoke() = given<Foo>() 
         """
-    ) {
-        invokeSingleFile()
-            .shouldBeTypeOf<Foo>()
-    }
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
 
-    @Test
-    fun testImportedGivenFunctionInObjectWithStar() = singleAndMultiCodegen(
-        """
+  @Test fun testImportedGivenFunctionInObjectWithStar() = singleAndMultiCodegen(
+    """
             object FooGivens {
                 @Given fun foo() = Foo()
             }
         """,
-        """
+    """
             @GivenImports("com.ivianuu.injekt.integrationtests.FooGivens.*")
             fun invoke() = given<Foo>() 
         """
-    ) {
-        invokeSingleFile()
-            .shouldBeTypeOf<Foo>()
-    }
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
 
-    @Test
-    fun testImportedGivenFunctionInCompanionObject() = singleAndMultiCodegen(
-        listOf(
-            listOf(
-                source(
-                    """
+  @Test fun testImportedGivenFunctionInCompanionObject() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
                         class FooGivens {
                             companion object {
                                 @Given fun foo() = Foo()
                             }
                         }
                     """,
-                    packageFqName = FqName("givens")
-                )
-            ),
-            listOf(
-                invokableSource(
-                    """
+          packageFqName = FqName("givens")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
                         @GivenImports("givens.FooGivens")
                         fun invoke() = given<Foo>()
                     """
-                )
-            )
         )
-    ) {
-        invokeSingleFile()
-            .shouldBeTypeOf<Foo>()
-    }
+      )
+    )
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
 
-    @Test
-    fun testGivenLambdaReceiverParameter() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenLambdaReceiverParameter() = singleAndMultiCodegen(
+    """
             inline fun <T, R> diyWithGiven(value: T, block: @Given T.() -> R) = block(value)
         """,
-        """
+    """
             fun invoke(foo: Foo): Foo {
                 return diyWithGiven(foo) { given<Foo>() }
             } 
         """
-    ) {
-        val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
 
-    @Test
-    fun testGivenLambdaParameterDeclarationSite() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenLambdaParameterDeclarationSite() = singleAndMultiCodegen(
+    """
             inline fun <T, R> withGiven(value: T, block: (@Given T) -> R) = block(value)
         """,
-        """
+    """
             fun invoke(foo: Foo): Foo {
                 return withGiven(foo) { given<Foo>() }
             } 
         """
-    ) {
-        val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
 
-    @Test
-    fun testGivenLambdaParameterDeclarationSiteWithTypeAlias() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenLambdaParameterDeclarationSiteWithTypeAlias() = singleAndMultiCodegen(
+    """
             typealias UseContext<T, R> = (@Given T) -> R
             inline fun <T, R> withGiven(value: T, block: UseContext<T, R>) = block(value)
         """,
-        """
+    """
             fun invoke(foo: Foo): Foo {
                 return withGiven(foo) { given<Foo>() }
             } 
         """
-    ) {
-        val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
 
-    @Test
-    fun testCanLeaveOutGivenLambdaParameters() = singleAndMultiCodegen(
-        """
+  @Test fun testCanLeaveOutGivenLambdaParameters() = singleAndMultiCodegen(
+    """
             val lambda: (@Given Foo) -> Foo = { given<Foo>() }
         """,
-        """
+    """
             fun invoke(@Given foo: Foo): Foo {
                 return lambda()
             }
         """
-    ) {
-        val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
 
-    @Test
-    fun testCanLeaveOutGivenLambdaParametersWithTypeAlias() = singleAndMultiCodegen(
-        """
+  @Test fun testCanLeaveOutGivenLambdaParametersWithTypeAlias() = singleAndMultiCodegen(
+    """
             typealias LambdaType = (@Given Foo) -> Foo
             val lambda: LambdaType = { given<Foo>() }
         """,
-        """
+    """
             fun invoke(@Given foo: Foo): Foo {
                 return lambda()
             } 
         """
-    ) {
-        val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
 
-    @Test
-    fun testGivenLambdaParameterUseSite() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenLambdaParameterUseSite() = singleAndMultiCodegen(
+    """
             inline fun <T, R> withGiven(value: T, block: (T) -> R) = block(value)
         """,
-        """
+    """
             fun invoke(foo: Foo): Foo {
                 return withGiven(foo) { foo: @Given Foo -> given<Foo>() }
             } 
         """
-    ) {
-        val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
 
-    @Test
-    fun testGivenInNestedBlock() = codegen(
-        """
+  @Test fun testGivenInNestedBlock() = codegen(
+    """
             fun invoke(a: Foo, b: Foo): Pair<Foo, Foo> {
                 return run {
                     @Given val givenA = a
@@ -424,17 +397,16 @@ class GivenDeclarationTest {
                 }
             }
         """
-    ) {
-        val a = Foo()
-        val b = Foo()
-        val result = invokeSingleFile<Pair<Foo, Foo>>(a, b)
-        a shouldBeSameInstanceAs result.first
-        b shouldBeSameInstanceAs result.second
-    }
+  ) {
+    val a = Foo()
+    val b = Foo()
+    val result = invokeSingleFile<Pair<Foo, Foo>>(a, b)
+    a shouldBeSameInstanceAs result.first
+    b shouldBeSameInstanceAs result.second
+  }
 
-    @Test
-    fun testGivenInTheMiddleOfABlock() = codegen(
-        """
+  @Test fun testGivenInTheMiddleOfABlock() = codegen(
+    """
             fun invoke(provided: Foo): Pair<Foo?, Foo?> {
                 val a = givenOrNull<Foo>()
                 @Given val given = provided
@@ -442,16 +414,15 @@ class GivenDeclarationTest {
                 return a to b
             }
         """
-    ) {
-        val foo = Foo()
-        val result = invokeSingleFile<Pair<Foo?, Foo?>>(foo)
-        result.first.shouldBeNull()
-        result.second shouldBeSameInstanceAs foo
-    }
+  ) {
+    val foo = Foo()
+    val result = invokeSingleFile<Pair<Foo?, Foo?>>(foo)
+    result.first.shouldBeNull()
+    result.second shouldBeSameInstanceAs foo
+  }
 
-    @Test
-    fun testGivenLocalClass() = codegen(
-        """
+  @Test fun testGivenLocalClass() = codegen(
+    """
             fun invoke(_foo: Foo): Foo {
                 @Given class FooProvider(@Given __foo: Foo = _foo) {
                     val foo = __foo
@@ -459,27 +430,25 @@ class GivenDeclarationTest {
                 return given<FooProvider>().foo
             }
         """
-    ) {
-        val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
 
-    @Test
-    fun testGivenLocalFunction() = codegen(
-        """
+  @Test fun testGivenLocalFunction() = codegen(
+    """
             fun invoke(foo: Foo): Foo {
                 @Given fun foo() = foo
                 return given<Foo>()
             }
         """
-    ) {
-        val foo = Foo()
-        foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
 
-    @Test
-    fun testLocalObject() = codegen(
-        """
+  @Test fun testLocalObject() = codegen(
+    """
             interface A
             interface B
             fun invoke() {
@@ -489,39 +458,36 @@ class GivenDeclarationTest {
                 given<B>()
             }
         """
-    )
+  )
 
-    @Test
-    fun testGivenSuspendFunction() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenSuspendFunction() = singleAndMultiCodegen(
+    """
             @Given suspend fun foo() = Foo()
         """,
-        """
+    """
            fun invoke() = runBlocking { given<Foo>() } 
         """
-    ) {
-        invokeSingleFile()
-            .shouldBeTypeOf<Foo>()
-    }
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
 
-    @Test
-    fun testGivenComposableFunction() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenComposableFunction() = singleAndMultiCodegen(
+    """
             @Given @Composable fun foo() = Foo()
         """,
-        """
+    """
            @Composable fun invoke() { given<Foo>() } 
         """
-    )
+  )
 
-    @Test
-    fun testGivenSuperClassPrimaryConstructorParameter() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenSuperClassPrimaryConstructorParameter() = singleAndMultiCodegen(
+    """
             abstract class MySuperClass(@Given val foo: Foo)
         """,
-        """
+    """
             @Given object MySubClass : MySuperClass(Foo())
             fun invoke() = given<Foo>() 
         """
-    )
+  )
 }

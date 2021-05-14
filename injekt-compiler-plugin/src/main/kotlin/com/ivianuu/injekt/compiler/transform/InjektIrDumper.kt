@@ -25,36 +25,36 @@ import java.io.*
 var dumpAllFiles = false
 
 class InjektIrDumper(private val dumpDir: File) : IrGenerationExtension {
-    override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        moduleFragment.files
-            .asSequence()
-            .filter {
-                dumpAllFiles || pluginContext.bindingContext[InjektWritableSlices.FILE_HAS_GIVEN_CALLS,
-                        it.fileEntry.name] != null
-            }
-            .forEach { irFile ->
-                val file = File(irFile.fileEntry.name)
-                val content = try {
-                    irFile.dumpKotlinLike(
-                        KotlinLikeDumpOptions(
-                            useNamedArguments = true,
-                            printFakeOverridesStrategy = FakeOverridesStrategy.NONE
-                        )
-                    )
-                } catch (e: Throwable) {
-                    e.stackTraceToString()
-                }
-                val newFile = dumpDir
-                    .resolve(irFile.fqName.asString().replace(".", "/"))
-                    .also { it.mkdirs() }
-                    .resolve(file.name.removeSuffix(".kt"))
-                try {
-                    newFile.createNewFile()
-                    newFile.writeText(content)
-                    println("Generated $newFile:\n$content")
-                } catch (e: Throwable) {
-                    throw RuntimeException("Failed to create file ${newFile.absolutePath}\n$content")
-                }
-            }
-    }
+  override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+    moduleFragment.files
+      .asSequence()
+      .filter {
+        dumpAllFiles || pluginContext.bindingContext[InjektWritableSlices.FILE_HAS_GIVEN_CALLS,
+            it.fileEntry.name] != null
+      }
+      .forEach { irFile ->
+        val file = File(irFile.fileEntry.name)
+        val content = try {
+          irFile.dumpKotlinLike(
+            KotlinLikeDumpOptions(
+              useNamedArguments = true,
+              printFakeOverridesStrategy = FakeOverridesStrategy.NONE
+            )
+          )
+        } catch (e: Throwable) {
+          e.stackTraceToString()
+        }
+        val newFile = dumpDir
+          .resolve(irFile.fqName.asString().replace(".", "/"))
+          .also { it.mkdirs() }
+          .resolve(file.name.removeSuffix(".kt"))
+        try {
+          newFile.createNewFile()
+          newFile.writeText(content)
+          println("Generated $newFile:\n$content")
+        } catch (e: Throwable) {
+          throw RuntimeException("Failed to create file ${newFile.absolutePath}\n$content")
+        }
+      }
+  }
 }

@@ -20,45 +20,52 @@ package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.*
 
-@Qualifier
-annotation class ChildScopeFactory
+@Qualifier annotation class ChildScopeFactory
 
 abstract class AbstractChildScopeModule<P : GivenScope, T, S : T> {
-    @Given
-    fun factory(
-        @Given scopeFactory: S
-    ): @InstallElement<P> @ChildScopeFactory T = scopeFactory
+  @Given fun factory(@Given scopeFactory: S):
+      @InstallElement<P> @ChildScopeFactory T = scopeFactory
 }
 
 class ChildScopeModule0<P : GivenScope, C : GivenScope> :
-    AbstractChildScopeModule<P, () -> C, () -> C>()
+  AbstractChildScopeModule<P, () -> C, () -> C>()
 
 class ChildScopeModule1<P : GivenScope, P1, C : GivenScope> : AbstractChildScopeModule<P,
-            (P1) -> C,
-            (@Given @InstallElement<C> P1) -> C>()
+      (P1) -> C,
+      (@Given @InstallElement<C> P1) -> C>()
 
 class ChildScopeModule2<P : GivenScope, P1, P2, C : GivenScope> : AbstractChildScopeModule<P,
-            (P1, P2) -> C,
-            (@Given @InstallElement<C> P1,
-             @Given @InstallElement<C> P2) -> C>()
+      (P1, P2) -> C,
+      (
+  @Given @InstallElement<C> P1,
+  @Given @InstallElement<C> P2
+) -> C>()
 
 class ChildScopeModule3<P : GivenScope, P1, P2, P3, C : GivenScope> : AbstractChildScopeModule<P,
-            (P1, P2, P3) -> C,
-            (@Given @InstallElement<C> P1,
-             @Given @InstallElement<C> P2,
-             @Given @InstallElement<C> P3) -> C>()
+      (P1, P2, P3) -> C,
+      (
+  @Given @InstallElement<C> P1,
+  @Given @InstallElement<C> P2,
+  @Given @InstallElement<C> P3
+) -> C>()
 
-class ChildScopeModule4<P : GivenScope, P1, P2, P3, P4, C : GivenScope> : AbstractChildScopeModule<P,
-            (P1, P2, P3, P4) -> C,
-            (@Given @InstallElement<C> P1,
-             @Given @InstallElement<C> P2,
-             @Given @InstallElement<C> P3,
-             @Given @InstallElement<C> P4) -> C>()
+class ChildScopeModule4<P : GivenScope, P1, P2, P3, P4, C : GivenScope> :
+  AbstractChildScopeModule<P,
+        (P1, P2, P3, P4) -> C,
+        (
+    @Given @InstallElement<C> P1,
+    @Given @InstallElement<C> P2,
+    @Given @InstallElement<C> P3,
+    @Given @InstallElement<C> P4
+  ) -> C>()
 
-class ChildScopeModule5<P : GivenScope, P1, P2, P3, P4, P5, C : GivenScope> : AbstractChildScopeModule<P,
-            (P1, P2, P3, P4, P5) -> C,
-            (@Given @InstallElement<C> P1,
-             @Given @InstallElement<C> P2,
-             @Given @InstallElement<C> P3,
-             @Given @InstallElement<C> P4,
-             @Given @InstallElement<C> P5) -> C>()
+class ChildScopeModule5<P : GivenScope, P1, P2, P3, P4, P5, C : GivenScope> :
+  AbstractChildScopeModule<P,
+        (P1, P2, P3, P4, P5) -> C,
+        (
+    @Given @InstallElement<C> P1,
+    @Given @InstallElement<C> P2,
+    @Given @InstallElement<C> P3,
+    @Given @InstallElement<C> P4,
+    @Given @InstallElement<C> P5
+  ) -> C>()

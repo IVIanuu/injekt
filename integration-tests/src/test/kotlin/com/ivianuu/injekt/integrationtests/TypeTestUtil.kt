@@ -33,165 +33,170 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.*
 import org.jetbrains.kotlin.types.model.*
 
 fun withTypeCheckerContext(
-    block: TypeCheckerTestContext.() -> Unit,
+  block: TypeCheckerTestContext.() -> Unit,
 ) {
-    codegen(
-        """
+  codegen(
+    """
         """,
-        config = {
-            compilerPlugins += object : ComponentRegistrar {
-                override fun registerProjectComponents(
-                    project: MockProject,
-                    configuration: CompilerConfiguration,
-                ) {
-                    AnalysisHandlerExtension.registerExtension(
-                        project,
-                        object : AnalysisHandlerExtension {
-                            override fun analysisCompleted(
-                                project: Project,
-                                module: ModuleDescriptor,
-                                bindingTrace: BindingTrace,
-                                files: Collection<KtFile>,
-                            ): AnalysisResult? {
-                                block(TypeCheckerTestContext(module))
-                                return null
-                            }
-                        }
-                    )
-                }
+    config = {
+      compilerPlugins += object : ComponentRegistrar {
+        override fun registerProjectComponents(
+          project: MockProject,
+          configuration: CompilerConfiguration,
+        ) {
+          AnalysisHandlerExtension.registerExtension(
+            project,
+            object : AnalysisHandlerExtension {
+              override fun analysisCompleted(
+                project: Project,
+                module: ModuleDescriptor,
+                bindingTrace: BindingTrace,
+                files: Collection<KtFile>,
+              ): AnalysisResult? {
+                block(TypeCheckerTestContext(module))
+                return null
+              }
             }
+          )
         }
-    )
+      }
+    }
+  )
 }
 
 class TypeCheckerTestContext(val module: ModuleDescriptor) {
-    val injektContext = module.injektContext
-    val comparable = typeFor(StandardNames.FqNames.comparable)
-    val any = typeFor(StandardNames.FqNames.any.toSafe())
-    val nullableAny = any.nullable()
-    val floatType = typeFor(StandardNames.FqNames._float.toSafe())
-    val intType = typeFor(StandardNames.FqNames._int.toSafe())
-    val stringType = typeFor(StandardNames.FqNames.string.toSafe())
-    val charSequenceType = typeFor(StandardNames.FqNames.charSequence.toSafe())
-    val listType = typeFor(StandardNames.FqNames.list)
-    val mutableListType = typeFor(StandardNames.FqNames.mutableList)
-    val mapType = typeFor(StandardNames.FqNames.map)
-    val nothing = typeFor(StandardNames.FqNames.nothing.toSafe())
-    val nullableNothing = nothing.nullable()
+  val injektContext = module.injektContext
+  val comparable = typeFor(StandardNames.FqNames.comparable)
+  val any = typeFor(StandardNames.FqNames.any.toSafe())
+  val nullableAny = any.nullable()
+  val floatType = typeFor(StandardNames.FqNames._float.toSafe())
+  val intType = typeFor(StandardNames.FqNames._int.toSafe())
+  val stringType = typeFor(StandardNames.FqNames.string.toSafe())
+  val charSequenceType = typeFor(StandardNames.FqNames.charSequence.toSafe())
+  val listType = typeFor(StandardNames.FqNames.list)
+  val mutableListType = typeFor(StandardNames.FqNames.mutableList)
+  val mapType = typeFor(StandardNames.FqNames.map)
+  val nothing = typeFor(StandardNames.FqNames.nothing.toSafe())
+  val nullableNothing = nothing.nullable()
 
-    fun composableFunction(parameterCount: Int) = typeFor(
-        FqName("kotlin.Function$parameterCount")
-    ).copy(isMarkedComposable = true)
+  fun composableFunction(parameterCount: Int) = typeFor(
+    FqName("kotlin.Function$parameterCount")
+  ).copy(isMarkedComposable = true)
 
-    fun function(parameterCount: Int) = typeFor(
-        FqName("kotlin.Function$parameterCount")
+  fun function(parameterCount: Int) = typeFor(
+    FqName("kotlin.Function$parameterCount")
+  )
+
+  val qualifier1 = typeFor(FqName("com.ivianuu.injekt.test.Qualifier1"))
+
+  val qualifier2 = typeFor(FqName("com.ivianuu.injekt.test.Qualifier2"))
+
+  private var id = 0
+
+  fun subType(
+    vararg superTypes: TypeRef,
+    fqName: FqName = FqName("SubType${id}"),
+  ) = ClassifierRef(
+    key = fqName.asString(),
+    fqName = fqName,
+    lazySuperTypes = unsafeLazy {
+      if (superTypes.isNotEmpty()) superTypes.toList() else listOf(any)
+    },
+  ).defaultType
+
+  fun typeAlias(
+    expandedType: TypeRef,
+    fqName: FqName = FqName("Alias${id ++}"),
+  ) = ClassifierRef(
+    key = fqName.asString(),
+    fqName = fqName,
+    lazySuperTypes = unsafeLazy { listOf(expandedType) },
+    isTypeAlias = true
+  ).defaultType
+
+  fun classType(
+    vararg superTypes: TypeRef,
+    typeParameters: List<ClassifierRef> = emptyList(),
+    fqName: FqName = FqName("ClassType${id ++}"),
+  ) = ClassifierRef(
+    key = fqName.asString(),
+    fqName = fqName,
+    lazySuperTypes = unsafeLazy {
+      if (superTypes.isNotEmpty()) superTypes.toList() else listOf(any)
+    },
+    typeParameters = typeParameters
+  ).defaultType
+
+  fun typeParameter(
+    fqName: FqName = FqName("TypeParameter${id ++}"),
+    nullable: Boolean = true,
+    variance: TypeVariance = TypeVariance.INV
+  ): TypeRef =
+    typeParameter(
+      upperBounds = *emptyArray(),
+      nullable = nullable,
+      fqName = fqName,
+      variance = variance
     )
 
-    val qualifier1 = typeFor(FqName("com.ivianuu.injekt.test.Qualifier1"))
+  fun typeParameter(
+    vararg upperBounds: TypeRef,
+    nullable: Boolean = true,
+    variance: TypeVariance = TypeVariance.INV,
+    fqName: FqName = FqName("TypeParameter${id ++}"),
+  ) = ClassifierRef(
+    key = fqName.asString(),
+    fqName = fqName,
+    lazySuperTypes = unsafeLazy {
+      if (upperBounds.isNotEmpty()) upperBounds.toList() else
+        listOf(any.copy(isMarkedNullable = nullable))
+    },
+    isTypeParameter = true,
+    variance = variance
+  ).defaultType
 
-    val qualifier2 = typeFor(FqName("com.ivianuu.injekt.test.Qualifier2"))
+  fun typeFor(fqName: FqName) = injektContext.classifierDescriptorForFqName(fqName)
+    ?.defaultType?.toTypeRef(injektContext, injektContext.trace) ?: error("Wtf $fqName")
 
-    private var id = 0
+  infix fun TypeRef.shouldBeAssignableTo(other: TypeRef) {
+    shouldBeAssignableTo(other, emptyList())
+  }
 
-    fun subType(
-        vararg superTypes: TypeRef,
-        fqName: FqName = FqName("SubType${id}"),
-    ) = ClassifierRef(
-        key = fqName.asString(),
-        fqName = fqName,
-        lazySuperTypes = unsafeLazy {
-            if (superTypes.isNotEmpty()) superTypes.toList() else listOf(any)
-        },
-    ).defaultType
-
-    fun typeAlias(
-        expandedType: TypeRef,
-        fqName: FqName = FqName("Alias${id++}"),
-    ) = ClassifierRef(
-        key = fqName.asString(),
-        fqName = fqName,
-        lazySuperTypes = unsafeLazy { listOf(expandedType) },
-        isTypeAlias = true
-    ).defaultType
-
-    fun classType(
-        vararg superTypes: TypeRef,
-        typeParameters: List<ClassifierRef> = emptyList(),
-        fqName: FqName = FqName("ClassType${id++}"),
-    ) = ClassifierRef(
-        key = fqName.asString(),
-        fqName = fqName,
-        lazySuperTypes = unsafeLazy {
-            if (superTypes.isNotEmpty()) superTypes.toList() else listOf(any)
-        },
-        typeParameters = typeParameters
-    ).defaultType
-
-    fun typeParameter(
-        fqName: FqName = FqName("TypeParameter${id++}"),
-        nullable: Boolean = true,
-        variance: TypeVariance = TypeVariance.INV
-    ): TypeRef =
-        typeParameter(upperBounds = *emptyArray(), nullable = nullable, fqName = fqName, variance = variance)
-
-    fun typeParameter(
-        vararg upperBounds: TypeRef,
-        nullable: Boolean = true,
-        variance: TypeVariance = TypeVariance.INV,
-        fqName: FqName = FqName("TypeParameter${id++}"),
-    ) = ClassifierRef(
-        key = fqName.asString(),
-        fqName = fqName,
-        lazySuperTypes = unsafeLazy {
-            if (upperBounds.isNotEmpty()) upperBounds.toList() else
-                listOf(any.copy(isMarkedNullable = nullable))
-        },
-        isTypeParameter = true,
-        variance = variance
-    ).defaultType
-
-    fun typeFor(fqName: FqName) = injektContext.classifierDescriptorForFqName(fqName)
-        ?.defaultType?.toTypeRef(injektContext, injektContext.trace) ?: error("Wtf $fqName")
-
-    infix fun TypeRef.shouldBeAssignableTo(other: TypeRef) {
-        shouldBeAssignableTo(other, emptyList())
+  fun TypeRef.shouldBeAssignableTo(
+    other: TypeRef,
+    staticTypeParameters: List<ClassifierRef> = emptyList()
+  ) {
+    val context = buildContext(injektContext, staticTypeParameters, other)
+    if (! context.isOk) {
+      throw AssertionError("'$this' is not assignable to '$other'")
     }
+  }
 
-    fun TypeRef.shouldBeAssignableTo(
-        other: TypeRef,
-        staticTypeParameters: List<ClassifierRef> = emptyList()
-    ) {
-        val context = buildContext(injektContext, staticTypeParameters, other)
-        if (!context.isOk) {
-            throw AssertionError("'$this' is not assignable to '$other'")
-        }
-    }
+  infix fun TypeRef.shouldNotBeAssignableTo(other: TypeRef) {
+    shouldNotBeAssignableTo(other, emptyList())
+  }
 
-    infix fun TypeRef.shouldNotBeAssignableTo(other: TypeRef) {
-        shouldNotBeAssignableTo(other, emptyList())
+  fun TypeRef.shouldNotBeAssignableTo(
+    other: TypeRef,
+    staticTypeParameters: List<ClassifierRef> = emptyList()
+  ) {
+    val context = buildContext(injektContext, staticTypeParameters, other)
+    if (context.isOk) {
+      throw AssertionError("'$this' is assignable to '$other'")
     }
+  }
 
-    fun TypeRef.shouldNotBeAssignableTo(
-        other: TypeRef,
-        staticTypeParameters: List<ClassifierRef> = emptyList()
-    ) {
-        val context = buildContext(injektContext, staticTypeParameters, other)
-        if (context.isOk) {
-            throw AssertionError("'$this' is assignable to '$other'")
-        }
+  infix fun TypeRef.shouldBeSubTypeOf(other: TypeRef) {
+    if (! isSubTypeOf(injektContext, other)) {
+      throw AssertionError("'$this' is not sub type of '$other'")
     }
+  }
 
-    infix fun TypeRef.shouldBeSubTypeOf(other: TypeRef) {
-        if (!isSubTypeOf(injektContext, other)) {
-            throw AssertionError("'$this' is not sub type of '$other'")
-        }
+  infix fun TypeRef.shouldNotBeSubTypeOf(other: TypeRef) {
+    if (isSubTypeOf(injektContext, other)) {
+      throw AssertionError("'$this' is sub type of '$other'")
     }
-
-    infix fun TypeRef.shouldNotBeSubTypeOf(other: TypeRef) {
-        if (isSubTypeOf(injektContext, other)) {
-            throw AssertionError("'$this' is sub type of '$other'")
-        }
-    }
+  }
 }
 
 fun TypeRef.nullable() = copy(isMarkedNullable = true)
@@ -199,4 +204,4 @@ fun TypeRef.nullable() = copy(isMarkedNullable = true)
 fun TypeRef.nonNull() = copy(isMarkedNullable = false)
 
 fun TypeRef.typeWith(vararg typeArguments: TypeRef) =
-    copy(arguments = typeArguments.toList())
+  copy(arguments = typeArguments.toList())

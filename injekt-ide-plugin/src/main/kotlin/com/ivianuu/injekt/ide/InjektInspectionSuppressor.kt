@@ -28,39 +28,39 @@ import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.typeUtil.*
 
 class InjektInspectionSuppressor : InspectionSuppressor {
-    override fun getSuppressActions(element: PsiElement?, toolId: String): Array<SuppressQuickFix> =
-        emptyArray()
+  override fun getSuppressActions(element: PsiElement?, toolId: String): Array<SuppressQuickFix> =
+    emptyArray()
 
-    override fun isSuppressedFor(element: PsiElement, toolId: String): Boolean {
-        when (toolId) {
-            "RedundantExplicitType" -> {
-                if (element is KtTypeReference)
-                    element.getResolutionFacade().analyze(element, BodyResolveMode.FULL)
-                        .let { element.getAbbreviatedTypeOrType(it) }
-                        .let {
-                            return it?.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-                                ?.isNotEmpty() == true
-                        }
-                else return false
+  override fun isSuppressedFor(element: PsiElement, toolId: String): Boolean {
+    when (toolId) {
+      "RedundantExplicitType" -> {
+        if (element is KtTypeReference)
+          element.getResolutionFacade().analyze(element, BodyResolveMode.FULL)
+            .let { element.getAbbreviatedTypeOrType(it) }
+            .let {
+              return it?.getAnnotatedAnnotations(InjektFqNames.Qualifier)
+                ?.isNotEmpty() == true
             }
-            "RedundantUnitReturnType" -> return element is KtUserType && element.text != "Unit"
-            "RemoveExplicitTypeArguments" -> {
-                if (element !is KtTypeArgumentList) return false
-                val call = element.parent as? KtCallExpression
-                val resolvedCall = call?.resolveToCall(BodyResolveMode.FULL)
-                    ?: return false
-                return resolvedCall.typeArguments
-                    .any { (typeParameter, typeArgument) ->
-                        val abbreviation = typeArgument.getAbbreviation()
-                        abbreviation != null && typeParameter.defaultType.supertypes()
-                            .none { it.getAbbreviation() == typeArgument }
-                    }
-            }
-            "unused" -> {
-                if (element !is LeafPsiElement) return false
-                return element.parent is KtTypeParameter
-            }
-            else -> return false
-        }
+        else return false
+      }
+      "RedundantUnitReturnType" -> return element is KtUserType && element.text != "Unit"
+      "RemoveExplicitTypeArguments" -> {
+        if (element !is KtTypeArgumentList) return false
+        val call = element.parent as? KtCallExpression
+        val resolvedCall = call?.resolveToCall(BodyResolveMode.FULL)
+          ?: return false
+        return resolvedCall.typeArguments
+          .any { (typeParameter, typeArgument) ->
+            val abbreviation = typeArgument.getAbbreviation()
+            abbreviation != null && typeParameter.defaultType.supertypes()
+              .none { it.getAbbreviation() == typeArgument }
+          }
+      }
+      "unused" -> {
+        if (element !is LeafPsiElement) return false
+        return element.parent is KtTypeParameter
+      }
+      else -> return false
     }
+  }
 }

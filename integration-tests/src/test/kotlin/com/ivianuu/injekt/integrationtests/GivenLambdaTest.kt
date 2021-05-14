@@ -21,38 +21,35 @@ import io.kotest.matchers.types.*
 import org.junit.*
 
 class GivenLambdaTest {
-    @Test
-    fun testGivenLambda() = codegen(
-        """
+  @Test fun testGivenLambda() = codegen(
+    """
             fun invoke(foo: Foo) = given<@Given (@Given () -> Foo) -> Foo>()({ foo })
         """
-    ) {
-        val foo = Foo()
-        invokeSingleFile(foo) shouldBeSameInstanceAs foo
-    }
+  ) {
+    val foo = Foo()
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
+  }
 
-    @Test
-    fun testGivenLambdaChain() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenLambdaChain() = singleAndMultiCodegen(
+    """
             @Given val fooModule: @Given () -> @Given () -> Foo = { { Foo() } }
         """,
-        """
+    """
            fun invoke() = given<Foo>() 
         """
-    ) {
-        invokeSingleFile()
-            .shouldBeTypeOf<Foo>()
-    }
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
 
-    @Test
-    fun testCanRequestGivenLambda() = singleAndMultiCodegen(
-        """
+  @Test fun testCanRequestGivenLambda() = singleAndMultiCodegen(
+    """
             typealias MyAlias = @Composable () -> Unit
             @Given fun myAlias(): MyAlias = {}
             @Given class MyComposeView(@Given val content: @Composable () -> Unit)
         """,
-        """
+    """
            fun invoke() = given<(@Given @Composable () -> Unit) -> MyComposeView>() 
         """
-    )
+  )
 }

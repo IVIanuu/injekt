@@ -32,7 +32,8 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <applicationInitializedListener implementation="com.ivianuu.injekt.ide.AppInitializer" />
-        <lang.inspectionSuppressor language="kotlin" implementationClass="com.ivianuu.injekt.ide.InjektInspectionSuppressor"/>
+        <lang.inspectionSuppressor language="kotlin"
+            implementationClass="com.ivianuu.injekt.ide.InjektInspectionSuppressor" />
     </extensions>
 
 </idea-plugin>

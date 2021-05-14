@@ -15,40 +15,40 @@
  */
 
 plugins {
-    kotlin("multiplatform")
+  kotlin("multiplatform")
 }
 
 kotlin {
-    jvm {
-        withJava()
-        compilations.forEach {
-            it.kotlinOptions {
-                jvmTarget = "1.8"
-            }
-        }
+  jvm {
+    withJava()
+    compilations.forEach {
+      it.kotlinOptions {
+        jvmTarget = "1.8"
+      }
     }
-    sourceSets {
-        commonMain {
-            dependencies {
-                api(project(":injekt-coroutines"))
-                api(project(":injekt-scope"))
-                configurations.getByName("kotlinCompilerPluginClasspath")
-                    .dependencies.add(project(":injekt-compiler-plugin"))
-            }
-        }
-        named("jvmMain") {
-            dependencies {
-                api(Deps.Ktor.core)
-            }
-        }
-        named("jvmTest") {
-            dependencies {
-                api(Deps.Ktor.serverTestHost)
-                implementation(Deps.junit)
-                implementation(Deps.kotestAssertions)
-            }
-        }
+  }
+  sourceSets {
+    commonMain {
+      dependencies {
+        api(project(":injekt-coroutines"))
+        api(project(":injekt-scope"))
+        configurations.getByName("kotlinCompilerPluginClasspath")
+          .dependencies.add(project(":injekt-compiler-plugin"))
+      }
     }
+    named("jvmMain") {
+      dependencies {
+        api(Deps.Ktor.core)
+      }
+    }
+    named("jvmTest") {
+      dependencies {
+        api(Deps.Ktor.serverTestHost)
+        implementation(Deps.junit)
+        implementation(Deps.kotestAssertions)
+      }
+    }
+  }
 }
 
 plugins.apply("com.vanniktech.maven.publish")

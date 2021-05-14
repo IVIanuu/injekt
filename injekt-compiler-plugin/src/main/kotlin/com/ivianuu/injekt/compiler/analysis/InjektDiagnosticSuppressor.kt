@@ -26,80 +26,86 @@ import org.jetbrains.kotlin.resolve.diagnostics.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class InjektDiagnosticSuppressor : DiagnosticSuppressor {
-    override fun isSuppressed(diagnostic: Diagnostic): Boolean =
-        isSuppressed(diagnostic, null)
+  override fun isSuppressed(diagnostic: Diagnostic): Boolean =
+    isSuppressed(diagnostic, null)
 
-    override fun isSuppressed(diagnostic: Diagnostic, bindingContext: BindingContext?): Boolean {
-        if (bindingContext == null)
-            return false
+  override fun isSuppressed(diagnostic: Diagnostic, bindingContext: BindingContext?): Boolean {
+    if (bindingContext == null)
+      return false
 
-        if (diagnostic.factory == Errors.INAPPLICABLE_INFIX_MODIFIER ||
-                diagnostic.factory == Errors.INAPPLICABLE_OPERATOR_MODIFIER)
-            return diagnostic.psiElement.parent.parent.safeAs<KtNamedFunction>()
-                ?.valueParameters
-                ?.count { !it.hasAnnotation(InjektFqNames.Given) } == 1
+    if (diagnostic.factory == Errors.INAPPLICABLE_INFIX_MODIFIER ||
+      diagnostic.factory == Errors.INAPPLICABLE_OPERATOR_MODIFIER
+    )
+      return diagnostic.psiElement.parent.parent.safeAs<KtNamedFunction>()
+        ?.valueParameters
+        ?.count { ! it.hasAnnotation(InjektFqNames.Given) } == 1
 
-        if (diagnostic.factory == Errors.UNUSED_TYPEALIAS_PARAMETER)
-            return true
+    if (diagnostic.factory == Errors.UNUSED_TYPEALIAS_PARAMETER)
+      return true
 
-        if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
-            return true
+    if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
+      return true
 
-        if (diagnostic.factory == Errors.UPPER_BOUND_IS_EXTENSION_FUNCTION_TYPE)
-            return true
+    if (diagnostic.factory == Errors.UPPER_BOUND_IS_EXTENSION_FUNCTION_TYPE)
+      return true
 
-        if (diagnostic.factory == Errors.FINAL_UPPER_BOUND)
-            return true
+    if (diagnostic.factory == Errors.FINAL_UPPER_BOUND)
+      return true
 
-        if (diagnostic.factory == Errors.UNDERSCORE_IS_RESERVED) {
-            val parameter = diagnostic.psiElement.getParentOfType<KtParameter>(false)
-            return parameter?.hasAnnotation(InjektFqNames.Given) == true
-        }
-
-        if (diagnostic.factory == Errors.NOTHING_TO_INLINE) {
-            val function = diagnostic.psiElement.getParentOfType<KtNamedFunction>(false)
-            if (function?.hasAnnotation(InjektFqNames.Given) == true)
-                return true
-        }
-
-        if (diagnostic.factory == Errors.UNSUPPORTED) {
-            val typeParameter = diagnostic.psiElement.parent?.parent as? KtTypeParameter
-            if (typeParameter?.hasAnnotation(InjektFqNames.Given) == true ||
-                    typeParameter?.hasAnnotation(InjektFqNames.ForTypeKey) == true) return true
-        }
-
-        if (diagnostic.factory == Errors.FINAL_UPPER_BOUND) {
-            val typeParameter = diagnostic.psiElement.parent as? KtTypeParameter
-            if (typeParameter?.hasAnnotation(InjektFqNames.Given) == true) return true
-        }
-
-        if (diagnostic.factory == Errors.WRONG_ANNOTATION_TARGET) {
-            val annotationDescriptor = bindingContext[BindingContext.ANNOTATION, diagnostic.psiElement.cast()]
-            if (annotationDescriptor?.type?.constructor?.declarationDescriptor
-                    ?.hasAnnotation(InjektFqNames.Qualifier) == true)
-                        return true
-        }
-
-        if (diagnostic.factory == Errors.UNUSED_PARAMETER ||
-                diagnostic.factory == Errors.UNUSED_VARIABLE) {
-            val descriptor =
-                (diagnostic.psiElement as KtDeclaration).descriptor<DeclarationDescriptor>(
-                    bindingContext)
-                    ?: return false
-            try {
-                if (bindingContext[InjektWritableSlices.USED_GIVEN, descriptor] != null) return true
-            } catch (e: Throwable) {
-            }
-        }
-
-        if (diagnostic.factory == InjektErrors.UNUSED_GIVEN_IMPORT)
-            return bindingContext[InjektWritableSlices.USED_IMPORT,
-                    SourcePosition(
-                        diagnostic.psiElement.containingFile.cast<KtFile>().virtualFilePath,
-                        diagnostic.psiElement.startOffset,
-                        diagnostic.psiElement.endOffset
-                    )] != null
-
-        return false
+    if (diagnostic.factory == Errors.UNDERSCORE_IS_RESERVED) {
+      val parameter = diagnostic.psiElement.getParentOfType<KtParameter>(false)
+      return parameter?.hasAnnotation(InjektFqNames.Given) == true
     }
+
+    if (diagnostic.factory == Errors.NOTHING_TO_INLINE) {
+      val function = diagnostic.psiElement.getParentOfType<KtNamedFunction>(false)
+      if (function?.hasAnnotation(InjektFqNames.Given) == true)
+        return true
+    }
+
+    if (diagnostic.factory == Errors.UNSUPPORTED) {
+      val typeParameter = diagnostic.psiElement.parent?.parent as? KtTypeParameter
+      if (typeParameter?.hasAnnotation(InjektFqNames.Given) == true ||
+        typeParameter?.hasAnnotation(InjektFqNames.ForTypeKey) == true
+      ) return true
+    }
+
+    if (diagnostic.factory == Errors.FINAL_UPPER_BOUND) {
+      val typeParameter = diagnostic.psiElement.parent as? KtTypeParameter
+      if (typeParameter?.hasAnnotation(InjektFqNames.Given) == true) return true
+    }
+
+    if (diagnostic.factory == Errors.WRONG_ANNOTATION_TARGET) {
+      val annotationDescriptor =
+        bindingContext[BindingContext.ANNOTATION, diagnostic.psiElement.cast()]
+      if (annotationDescriptor?.type?.constructor?.declarationDescriptor
+          ?.hasAnnotation(InjektFqNames.Qualifier) == true
+      )
+        return true
+    }
+
+    if (diagnostic.factory == Errors.UNUSED_PARAMETER ||
+      diagnostic.factory == Errors.UNUSED_VARIABLE
+    ) {
+      val descriptor =
+        (diagnostic.psiElement as KtDeclaration).descriptor<DeclarationDescriptor>(
+          bindingContext
+        )
+          ?: return false
+      try {
+        if (bindingContext[InjektWritableSlices.USED_GIVEN, descriptor] != null) return true
+      } catch (e: Throwable) {
+      }
+    }
+
+    if (diagnostic.factory == InjektErrors.UNUSED_GIVEN_IMPORT)
+      return bindingContext[InjektWritableSlices.USED_IMPORT,
+          SourcePosition(
+            diagnostic.psiElement.containingFile.cast<KtFile>().virtualFilePath,
+            diagnostic.psiElement.startOffset,
+            diagnostic.psiElement.endOffset
+          )] != null
+
+    return false
+  }
 }

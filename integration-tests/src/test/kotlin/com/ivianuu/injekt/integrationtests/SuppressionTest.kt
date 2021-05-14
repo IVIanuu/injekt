@@ -21,68 +21,62 @@ import io.kotest.matchers.*
 import org.junit.*
 
 class SuppressionTest {
-    @Test
-    fun testDoesNotWarnFinalUpperBound() = codegen(
-        """
+  @Test fun testDoesNotWarnFinalUpperBound() = codegen(
+    """
             fun <T : Int> func() {
             }
         """
-    ) {
-        shouldNotContainMessage("'Int' is a final type, and thus a value of the type parameter is predetermined")
-    }
+  ) {
+    shouldNotContainMessage("'Int' is a final type, and thus a value of the type parameter is predetermined")
+  }
 
-    @Test
-    fun testTypeAliasTypeParameter() = codegen(
-        """
+  @Test fun testTypeAliasTypeParameter() = codegen(
+    """
             typealias Alias<T> = String
         """
-    ) {
-        shouldNotContainMessage("Type alias parameter T is not used in the expanded type String and does not affect type checking")
-    }
+  ) {
+    shouldNotContainMessage("Type alias parameter T is not used in the expanded type String and does not affect type checking")
+  }
 
-    @Test
-    fun testCanUseExtensionFunctionTypeUpperBound() = singleAndMultiCodegen(
-        """
+  @Test fun testCanUseExtensionFunctionTypeUpperBound() = singleAndMultiCodegen(
+    """
             typealias MyBuilder = StringBuilder.() -> Unit
             @Given fun <@Given T : MyBuilder> toString(@Given builder: MyBuilder): String = buildString(builder)
             @Given val myBuilder: MyBuilder = { append("42") }
         """,
-        """
+    """
             fun invoke() = given<String>() 
         """
-    ) {
-        invokeSingleFile() shouldBe "42"
-    }
+  ) {
+    invokeSingleFile() shouldBe "42"
+  }
 
-    @Test
-    fun testDoesNotWarnInlineOnGivenDeclaration() = codegen(
-        """
+  @Test fun testDoesNotWarnInlineOnGivenDeclaration() = codegen(
+    """
             @Given inline fun func() {
             }
         """
-    ) {
-        shouldNotContainMessage("Expected performance impact from inlining is insignificant. Inlining works best for functions with parameters of functional types")
-    }
+  ) {
+    shouldNotContainMessage("Expected performance impact from inlining is insignificant. Inlining works best for functions with parameters of functional types")
+  }
 
-    @Test
-    fun testCanUseUnderscoreForGivenParameter() = singleAndMultiCodegen(
-        """
+  @Test fun testCanUseUnderscoreForGivenParameter() = singleAndMultiCodegen(
+    """
             fun func(@Given _: String, @Given _: Int) {
                 given<String>()
                 given<Int>()
             }
         """,
-        """
+    """
             fun invoke() {
                 @Given val string = ""
                 func(int = 0)
             } 
         """
-    )
+  )
 
-    @Test
-    fun testCanUseInfixWithGiven() = singleAndMultiCodegen(
-        """
+  @Test fun testCanUseInfixWithGiven() = singleAndMultiCodegen(
+    """
             interface Combine<T> {
                 fun plus(a: T, b: T): T
             }
@@ -93,16 +87,15 @@ class SuppressionTest {
                 override fun plus(a: String, b: String) = a + b
             }
         """,
-        """
+    """
             fun invoke() {
                 "a" combine "b"
             } 
         """
-    )
+  )
 
-    @Test
-    fun testCanUseOperatorWithGiven() = singleAndMultiCodegen(
-        """
+  @Test fun testCanUseOperatorWithGiven() = singleAndMultiCodegen(
+    """
             interface Combine<T> {
                 fun plus(a: T, b: T): T
             }
@@ -115,16 +108,15 @@ class SuppressionTest {
                 override fun plus(a: Key, b: Key) = Key(a.value + b.value)
             }
         """,
-        """
+    """
             fun invoke() {
                 Key("a") + Key("b")
             } 
         """
-    )
+  )
 
-    @Test
-    fun testUsedGivenParameterIsNotMarkedAsUnused() = codegen(
-        """
+  @Test fun testUsedGivenParameterIsNotMarkedAsUnused() = codegen(
+    """
             fun func1(@Given foo: Foo) {
                 func2()                
             }
@@ -133,13 +125,12 @@ class SuppressionTest {
                 foo
             }
         """
-    ) {
-        shouldNotContainMessage("Parameter 'foo' is never used")
-    }
+  ) {
+    shouldNotContainMessage("Parameter 'foo' is never used")
+  }
 
-    @Test
-    fun testUnusedGivenParameterIsMarkedAsUnused() = codegen(
-        """
+  @Test fun testUnusedGivenParameterIsMarkedAsUnused() = codegen(
+    """
             fun func1(@Given foo: Foo) {
             }
 
@@ -147,30 +138,28 @@ class SuppressionTest {
                 foo
             } 
         """
-    ) {
-        shouldContainMessage("Parameter 'foo' is never used")
-    }
+  ) {
+    shouldContainMessage("Parameter 'foo' is never used")
+  }
 
-    @Test
-    fun testUsedGivenVariableIsNotMarkedAsUnused() = codegen(
-        """
+  @Test fun testUsedGivenVariableIsNotMarkedAsUnused() = codegen(
+    """
             fun invoke() {
                 @Given val foo = Foo()
                 given<Foo>()
             }
         """
-    ) {
-        shouldNotContainMessage("Variable 'foo' is never used")
-    }
+  ) {
+    shouldNotContainMessage("Variable 'foo' is never used")
+  }
 
-    @Test
-    fun testUnusedGivenVariableIsMarkedAsUnused() = codegen(
-        """
+  @Test fun testUnusedGivenVariableIsMarkedAsUnused() = codegen(
+    """
             fun invoke() {
                 @Given val foo = Foo()
             }
         """
-    ) {
-        shouldContainMessage("Variable 'foo' is never used")
-    }
+  ) {
+    shouldContainMessage("Variable 'foo' is never used")
+  }
 }

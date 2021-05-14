@@ -27,260 +27,262 @@ import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 fun TypeRef.collectGivens(
-    context: InjektContext,
-    trace: BindingTrace
+  context: InjektContext,
+  trace: BindingTrace
 ): List<CallableRef> {
-    // special case to support @Given () -> Foo
-    if (isGiven && isFunctionTypeWithOnlyGivenParameters) {
-        return listOf(
-            classifier.descriptor!!
-                .defaultType
-                .memberScope
-                .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
-                .first()
-                .toCallableRef(context, trace)
-                .let { callable ->
-                    callable.copy(
-                        type = arguments.last(),
-                        isGiven = true,
-                        parameterTypes = callable.parameterTypes.toMutableMap()
-                            .also { it[callable.callable.dispatchReceiverParameter!!.injektName()] = this }
-                    ).substitute(classifier.typeParameters.toMap(arguments))
-                }
-        )
-    }
+  // special case to support @Given () -> Foo
+  if (isGiven && isFunctionTypeWithOnlyGivenParameters) {
+    return listOf(
+      classifier.descriptor !!
+        .defaultType
+        .memberScope
+        .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
+        .first()
+        .toCallableRef(context, trace)
+        .let { callable ->
+          callable.copy(
+            type = arguments.last(),
+            isGiven = true,
+            parameterTypes = callable.parameterTypes.toMutableMap()
+              .also { it[callable.callable.dispatchReceiverParameter !!.injektName()] = this }
+          ).substitute(classifier.typeParameters.toMap(arguments))
+        }
+    )
+  }
 
-    val callables = mutableListOf<CallableRef>()
-    val seen = mutableSetOf<TypeRef>()
-    fun collectInner(type: TypeRef, overriddenDepth: Int) {
-        checkCancelled()
-        if (type in seen) return
-        seen += type
-        val substitutionMap = type.classifier.typeParameters.toMap(type.arguments)
-        callables += type.classifier.descriptor!!
-            .defaultType
-            .memberScope
-            .collectGivens(context, trace)
-            .filter {
-                (it.callable as CallableMemberDescriptor)
-                    .kind != CallableMemberDescriptor.Kind.FAKE_OVERRIDE
-            }
-            .map { it.substitute(substitutionMap) }
-            .map { callable ->
-                callable.copy(
-                    overriddenDepth = overriddenDepth,
-                    owner = this.classifier,
-                    isGiven = true,
-                    parameterTypes = if (callable.callable.dispatchReceiverParameter != null) {
-                        callable.parameterTypes.toMutableMap()
-                            .also {
-                                it[callable.callable.dispatchReceiverParameter!!.injektName()] = this
-                            }
-                    } else callable.parameterTypes
-                )
-            }
-        type.superTypes.forEach { collectInner(it, overriddenDepth + 1) }
-    }
-    collectInner(this, 0)
-    return callables
+  val callables = mutableListOf<CallableRef>()
+  val seen = mutableSetOf<TypeRef>()
+  fun collectInner(type: TypeRef, overriddenDepth: Int) {
+    checkCancelled()
+    if (type in seen) return
+    seen += type
+    val substitutionMap = type.classifier.typeParameters.toMap(type.arguments)
+    callables += type.classifier.descriptor !!
+      .defaultType
+      .memberScope
+      .collectGivens(context, trace)
+      .filter {
+        (it.callable as CallableMemberDescriptor)
+          .kind != CallableMemberDescriptor.Kind.FAKE_OVERRIDE
+      }
+      .map { it.substitute(substitutionMap) }
+      .map { callable ->
+        callable.copy(
+          overriddenDepth = overriddenDepth,
+          owner = this.classifier,
+          isGiven = true,
+          parameterTypes = if (callable.callable.dispatchReceiverParameter != null) {
+            callable.parameterTypes.toMutableMap()
+              .also {
+                it[callable.callable.dispatchReceiverParameter !!.injektName()] = this
+              }
+          } else callable.parameterTypes
+        )
+      }
+    type.superTypes.forEach { collectInner(it, overriddenDepth + 1) }
+  }
+  collectInner(this, 0)
+  return callables
 }
 
 fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
-    context: InjektContext,
-    trace: BindingTrace
+  context: InjektContext,
+  trace: BindingTrace
 ): List<CallableRef> = getContributedDescriptors()
-    .flatMap { declaration ->
-        checkCancelled()
-        when (declaration) {
-            is ClassDescriptor -> declaration
-                .getGivenConstructors(context, trace) + listOfNotNull(
-                declaration.companionObjectDescriptor
-                    ?.getGivenReceiver(context, trace)
-            )
-            is CallableMemberDescriptor -> if (declaration.isGiven(context, trace)) {
-                listOf(
-                    declaration.toCallableRef(context, trace)
-                        .let { callable ->
-                            callable.copy(
-                                isGiven = true,
-                                parameterTypes = callable.parameterTypes.toMutableMap()
-                            )
-                        }
-                )
-            } else emptyList()
-            is VariableDescriptor -> if (declaration.isGiven(context, trace)) {
-                listOf(declaration.toCallableRef(context, trace).makeGiven())
-            } else emptyList()
-            else -> emptyList()
-        }
+  .flatMap { declaration ->
+    checkCancelled()
+    when (declaration) {
+      is ClassDescriptor -> declaration
+        .getGivenConstructors(context, trace) + listOfNotNull(
+        declaration.companionObjectDescriptor
+          ?.getGivenReceiver(context, trace)
+      )
+      is CallableMemberDescriptor -> if (declaration.isGiven(context, trace)) {
+        listOf(
+          declaration.toCallableRef(context, trace)
+            .let { callable ->
+              callable.copy(
+                isGiven = true,
+                parameterTypes = callable.parameterTypes.toMutableMap()
+              )
+            }
+        )
+      } else emptyList()
+      is VariableDescriptor -> if (declaration.isGiven(context, trace)) {
+        listOf(declaration.toCallableRef(context, trace).makeGiven())
+      } else emptyList()
+      else -> emptyList()
     }
-    .distinctBy { it.callable.uniqueKey(context) }
+  }
+  .distinctBy { it.callable.uniqueKey(context) }
 
 fun Annotated.isGiven(context: InjektContext, trace: BindingTrace): Boolean {
-    @Suppress("IMPLICIT_CAST_TO_ANY")
-    val key = if (this is KotlinType) System.identityHashCode(this) else this
-    trace.get(InjektWritableSlices.IS_GIVEN, key)?.let { return it }
-    var isGiven = hasAnnotation(InjektFqNames.Given)
-    if (!isGiven && this is PropertyDescriptor) {
-        isGiven = overriddenTreeUniqueAsSequence(false)
-            .map { it.containingDeclaration }
-            .filterIsInstance<ClassDescriptor>()
-            .flatMap { clazz ->
-                val clazzClassifier = clazz.toClassifierRef(context, trace)
-                clazz.unsubstitutedPrimaryConstructor
-                    ?.valueParameters
-                    ?.filter {
-                        it.name == name &&
-                                it.name in clazzClassifier.primaryConstructorPropertyParameters &&
-                                it.isGiven(context, trace)
-                    }
-                    ?: emptyList()
-            }
-            .any() == true
-    }
-    if (!isGiven && this is ParameterDescriptor) {
-        isGiven = type.isGiven(context, trace) ||
-                containingDeclaration.safeAs<FunctionDescriptor>()
-                    ?.takeIf { it.isDeserializedDeclaration() }
-                    ?.callableInfo(context, trace)
-                    ?.let { name.asString() in it.givenParameters } == true
-    }
-    if (!isGiven && this is ClassConstructorDescriptor && isPrimary) {
-        isGiven = constructedClass.isGiven(context, trace)
-    }
-    trace.record(InjektWritableSlices.IS_GIVEN, key, isGiven)
-    return isGiven
+  @Suppress("IMPLICIT_CAST_TO_ANY")
+  val key = if (this is KotlinType) System.identityHashCode(this) else this
+  trace.get(InjektWritableSlices.IS_GIVEN, key)?.let { return it }
+  var isGiven = hasAnnotation(InjektFqNames.Given)
+  if (! isGiven && this is PropertyDescriptor) {
+    isGiven = overriddenTreeUniqueAsSequence(false)
+      .map { it.containingDeclaration }
+      .filterIsInstance<ClassDescriptor>()
+      .flatMap { clazz ->
+        val clazzClassifier = clazz.toClassifierRef(context, trace)
+        clazz.unsubstitutedPrimaryConstructor
+          ?.valueParameters
+          ?.filter {
+            it.name == name &&
+                it.name in clazzClassifier.primaryConstructorPropertyParameters &&
+                it.isGiven(context, trace)
+          }
+          ?: emptyList()
+      }
+      .any() == true
+  }
+  if (! isGiven && this is ParameterDescriptor) {
+    isGiven = type.isGiven(context, trace) ||
+        containingDeclaration.safeAs<FunctionDescriptor>()
+          ?.takeIf { it.isDeserializedDeclaration() }
+          ?.callableInfo(context, trace)
+          ?.let { name.asString() in it.givenParameters } == true
+  }
+  if (! isGiven && this is ClassConstructorDescriptor && isPrimary) {
+    isGiven = constructedClass.isGiven(context, trace)
+  }
+  trace.record(InjektWritableSlices.IS_GIVEN, key, isGiven)
+  return isGiven
 }
 
 fun ClassDescriptor.getGivenConstructors(
-    context: InjektContext,
-    trace: BindingTrace
+  context: InjektContext,
+  trace: BindingTrace
 ): List<CallableRef> {
-    trace.get(InjektWritableSlices.GIVEN_CONSTRUCTORS, this)?.let { return it }
-    val givenConstructors = constructors
-        .filter { constructor ->
-            constructor.hasAnnotation(InjektFqNames.Given) ||
-                    (constructor.isPrimary && hasAnnotation(InjektFqNames.Given))
-        }
-        .map { constructor ->
-            val callable = constructor.toCallableRef(context, trace)
-            val qualifiedType = callable.type.classifier.qualifiers.wrap(callable.type)
-            callable.copy(
-                isGiven = true,
-                type = qualifiedType,
-                originalType = qualifiedType
-            )
-        }
-    trace.record(InjektWritableSlices.GIVEN_CONSTRUCTORS, this, givenConstructors)
-    return givenConstructors
+  trace.get(InjektWritableSlices.GIVEN_CONSTRUCTORS, this)?.let { return it }
+  val givenConstructors = constructors
+    .filter { constructor ->
+      constructor.hasAnnotation(InjektFqNames.Given) ||
+          (constructor.isPrimary && hasAnnotation(InjektFqNames.Given))
+    }
+    .map { constructor ->
+      val callable = constructor.toCallableRef(context, trace)
+      val qualifiedType = callable.type.classifier.qualifiers.wrap(callable.type)
+      callable.copy(
+        isGiven = true,
+        type = qualifiedType,
+        originalType = qualifiedType
+      )
+    }
+  trace.record(InjektWritableSlices.GIVEN_CONSTRUCTORS, this, givenConstructors)
+  return givenConstructors
 }
 
 fun ClassDescriptor.getGivenReceiver(context: InjektContext, trace: BindingTrace): CallableRef {
-    val callable = thisAsReceiverParameter.toCallableRef(context, trace)
-    val qualifiedType = callable.type.classifier.qualifiers.wrap(callable.type)
-    return callable.copy(isGiven = true, type = qualifiedType, originalType = qualifiedType)
+  val callable = thisAsReceiverParameter.toCallableRef(context, trace)
+  val qualifiedType = callable.type.classifier.qualifiers.wrap(callable.type)
+  return callable.copy(isGiven = true, type = qualifiedType, originalType = qualifiedType)
 }
 
 fun CallableRef.collectGivens(
-    context: InjektContext,
-    scope: ResolutionScope,
-    trace: BindingTrace,
-    addGiven: (CallableRef) -> Unit,
-    addConstrainedGiven: (CallableRef) -> Unit,
-    seen: MutableSet<CallableRef> = mutableSetOf()
+  context: InjektContext,
+  scope: ResolutionScope,
+  trace: BindingTrace,
+  addGiven: (CallableRef) -> Unit,
+  addConstrainedGiven: (CallableRef) -> Unit,
+  seen: MutableSet<CallableRef> = mutableSetOf()
 ) {
-    checkCancelled()
-    if (this in seen) return
-    seen += this
-    if (!scope.canSee(this)) return
+  checkCancelled()
+  if (this in seen) return
+  seen += this
+  if (! scope.canSee(this)) return
 
-    if (source == null && typeParameters.any { it.isGivenConstraint }) {
-        addConstrainedGiven(this)
-        return
+  if (source == null && typeParameters.any { it.isGivenConstraint }) {
+    addConstrainedGiven(this)
+    return
+  }
+
+  val nextCallable = if (type.isGiven && type.isFunctionTypeWithOnlyGivenParameters) {
+    addGiven(this)
+    copy(type = type.copy(frameworkKey = generateFrameworkKey()))
+  } else this
+  addGiven(nextCallable)
+
+  if (doNotIncludeChildren) return
+
+  nextCallable
+    .type
+    .collectGivens(context, trace)
+    .forEach { innerCallable ->
+      innerCallable.collectGivens(
+        context,
+        scope,
+        trace,
+        addGiven,
+        addConstrainedGiven,
+        seen
+      )
     }
-
-    val nextCallable = if (type.isGiven && type.isFunctionTypeWithOnlyGivenParameters) {
-        addGiven(this)
-        copy(type = type.copy(frameworkKey = generateFrameworkKey()))
-    }
-    else this
-    addGiven(nextCallable)
-
-    if (doNotIncludeChildren) return
-
-    nextCallable
-        .type
-        .collectGivens(context, trace)
-        .forEach { innerCallable ->
-            innerCallable.collectGivens(
-                context,
-                scope,
-                trace,
-                addGiven,
-                addConstrainedGiven,
-                seen
-            )
-        }
 }
 
-fun List<GivenImport>.collectImportGivens(context: InjektContext, trace: BindingTrace): List<CallableRef> =
-    flatMap { import ->
-        checkCancelled()
-        if (import.importPath!!.endsWith("*")) {
-            val packageFqName = FqName(import.importPath.removeSuffix(".*"))
-            (context.memberScopeForFqName(packageFqName)
-                ?.collectGivens(context, trace)
-                ?.map { it.copy(import = import) } ?: emptyList()) + listOfNotNull(
-                context.classifierDescriptorForFqName(packageFqName)
-                    ?.safeAs<ClassDescriptor>()
-                    ?.takeIf { it.kind == ClassKind.OBJECT }
-                    ?.getGivenReceiver(context, trace)
-                    ?.copy(doNotIncludeChildren = true, import = import)
-            )
-        } else {
-            val fqName = FqName(import.importPath)
-            val parentFqName = fqName.parent()
-            val name = fqName.shortName()
-            (context.memberScopeForFqName(parentFqName)
-                ?.collectGivens(context, trace)
-                ?.filter {
-                    it.callable.name == name ||
-                            it.callable.safeAs<ClassConstructorDescriptor>()
-                                ?.constructedClass
-                                ?.name == name ||
-                            it.callable.safeAs<ReceiverParameterDescriptor>()
-                                ?.value
-                                ?.type
-                                ?.constructor
-                                ?.declarationDescriptor
-                                ?.safeAs<ClassDescriptor>()
-                                ?.containingDeclaration
-                                ?.name == name
-                }
-                ?.map { it.copy(import = import) } ?: emptyList()) + listOfNotNull(
-                    context.classifierDescriptorForFqName(parentFqName)
-                        ?.safeAs<ClassDescriptor>()
-                        ?.takeIf { it.kind == ClassKind.OBJECT }
-                        ?.getGivenReceiver(context, trace)
-                        ?.copy(doNotIncludeChildren = true, import = import)
-                )
+fun List<GivenImport>.collectImportGivens(
+  context: InjektContext,
+  trace: BindingTrace
+): List<CallableRef> =
+  flatMap { import ->
+    checkCancelled()
+    if (import.importPath !!.endsWith("*")) {
+      val packageFqName = FqName(import.importPath.removeSuffix(".*"))
+      (context.memberScopeForFqName(packageFqName)
+        ?.collectGivens(context, trace)
+        ?.map { it.copy(import = import) } ?: emptyList()) + listOfNotNull(
+        context.classifierDescriptorForFqName(packageFqName)
+          ?.safeAs<ClassDescriptor>()
+          ?.takeIf { it.kind == ClassKind.OBJECT }
+          ?.getGivenReceiver(context, trace)
+          ?.copy(doNotIncludeChildren = true, import = import)
+      )
+    } else {
+      val fqName = FqName(import.importPath)
+      val parentFqName = fqName.parent()
+      val name = fqName.shortName()
+      (context.memberScopeForFqName(parentFqName)
+        ?.collectGivens(context, trace)
+        ?.filter {
+          it.callable.name == name ||
+              it.callable.safeAs<ClassConstructorDescriptor>()
+                ?.constructedClass
+                ?.name == name ||
+              it.callable.safeAs<ReceiverParameterDescriptor>()
+                ?.value
+                ?.type
+                ?.constructor
+                ?.declarationDescriptor
+                ?.safeAs<ClassDescriptor>()
+                ?.containingDeclaration
+                ?.name == name
         }
+        ?.map { it.copy(import = import) } ?: emptyList()) + listOfNotNull(
+        context.classifierDescriptorForFqName(parentFqName)
+          ?.safeAs<ClassDescriptor>()
+          ?.takeIf { it.kind == ClassKind.OBJECT }
+          ?.getGivenReceiver(context, trace)
+          ?.copy(doNotIncludeChildren = true, import = import)
+      )
     }
+  }
 
 private fun ResolutionScope.canSee(callable: CallableRef): Boolean =
-    callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
-            (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
-                    !callable.callable.isExternalDeclaration(context)) ||
-            callable.callable.visibility == DescriptorVisibilities.LOCAL ||
-            (callable.callable is ClassConstructorDescriptor &&
-                    callable.type.unwrapQualifiers().classifier.isObject) ||
-            callable.callable.parents.any { callableParent ->
-                allScopes.any {
-                    it.ownerDescriptor == callableParent ||
-                            (it.ownerDescriptor is ClassDescriptor &&
-                                    it.ownerDescriptor.toClassifierRef(
-                                        context,
-                                        trace
-                                    ) == callable.owner)
-                }
-            }
+  callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
+      (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
+          ! callable.callable.isExternalDeclaration(context)) ||
+      callable.callable.visibility == DescriptorVisibilities.LOCAL ||
+      (callable.callable is ClassConstructorDescriptor &&
+          callable.type.unwrapQualifiers().classifier.isObject) ||
+      callable.callable.parents.any { callableParent ->
+        allScopes.any {
+          it.ownerDescriptor == callableParent ||
+              (it.ownerDescriptor is ClassDescriptor &&
+                  it.ownerDescriptor.toClassifierRef(
+                    context,
+                    trace
+                  ) == callable.owner)
+        }
+      }

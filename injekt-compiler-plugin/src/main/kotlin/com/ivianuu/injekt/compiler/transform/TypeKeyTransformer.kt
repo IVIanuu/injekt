@@ -40,432 +40,439 @@ import kotlin.collections.component2
 import kotlin.collections.set
 
 class TypeKeyTransformer(
-    private val context: InjektContext,
-    private val trace: BindingTrace,
-    private val pluginContext: IrPluginContext
+  private val context: InjektContext,
+  private val trace: BindingTrace,
+  private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
-    private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
-    private val transformedClasses = mutableSetOf<IrClass>()
+  private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
+  private val transformedClasses = mutableSetOf<IrClass>()
 
-    override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        super.visitModuleFragment(declaration)
-        declaration.transformCallsWithForTypeKey(emptyMap())
-        return declaration
-    }
+  override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
+    super.visitModuleFragment(declaration)
+    declaration.transformCallsWithForTypeKey(emptyMap())
+    return declaration
+  }
 
-    override fun visitClass(declaration: IrClass): IrStatement =
-        super.visitClass(transformClassIfNeeded(declaration))
+  override fun visitClass(declaration: IrClass): IrStatement =
+    super.visitClass(transformClassIfNeeded(declaration))
 
-    override fun visitFunction(declaration: IrFunction): IrStatement =
-        super.visitFunction(transformFunctionIfNeeded(declaration))
+  override fun visitFunction(declaration: IrFunction): IrStatement =
+    super.visitFunction(transformFunctionIfNeeded(declaration))
 
-    private fun transformClassIfNeeded(clazz: IrClass): IrClass {
-        if (clazz in transformedClasses) return clazz
-        transformedClasses += clazz
+  private fun transformClassIfNeeded(clazz: IrClass): IrClass {
+    if (clazz in transformedClasses) return clazz
+    transformedClasses += clazz
 
-        if (clazz.typeParameters.none { it.descriptor.classifierInfo(context, trace).isForTypeKey })
-            return clazz
+    if (clazz.typeParameters.none { it.descriptor.classifierInfo(context, trace).isForTypeKey })
+      return clazz
 
-        val typeKeyFields = clazz.typeParameters
-            .filter { it.descriptor.classifierInfo(context, trace).isForTypeKey }
-            .associateWith {
-                val field = clazz.addField(
-                    "_${it.name}TypeKey",
-                    pluginContext.irBuiltIns.stringType
-                )
-                clazz.declarations -= field
-                clazz.declarations.add(0, field)
-                field
-            }
-
-        clazz.constructors.forEach { constructor ->
-            val typeKeyParamsWithFields = typeKeyFields.values.associateWith { field ->
-                constructor.addValueParameter(
-                    field.name.asString(),
-                    field.type
-                )
-            }
-            (constructor.body!! as IrBlockBody).run {
-                typeKeyParamsWithFields
-                    .toList()
-                    .forEachIndexed { index, (field, param) ->
-                        statements.add(
-                            index + 1,
-                            DeclarationIrBuilder(pluginContext, constructor.symbol).run {
-                                irSetField(
-                                    irGet(clazz.thisReceiver!!),
-                                    field,
-                                    irGet(param)
-                                )
-                            }
-                        )
-                    }
-            }
-        }
-
-        clazz.transformCallsWithForTypeKey(
-            typeKeyFields
-                .mapValues { (_, field) ->
-                    { scopes ->
-                        DeclarationIrBuilder(pluginContext, clazz.symbol)
-                            .run {
-                                val constructor = scopes
-                                    .firstOrNull {
-                                        it.irElement in clazz.constructors
-                                    }
-                                    ?.irElement
-                                    ?.cast<IrConstructor>()
-                                if (constructor == null) {
-                                    irGetField(
-                                        irGet(scopes.thisOfClass(clazz)!!),
-                                        field
-                                    )
-                                } else {
-                                    irGet(constructor.valueParameters
-                                        .single { it.name == field.name })
-                                }
-                            }
-                    }
-                }
+    val typeKeyFields = clazz.typeParameters
+      .filter { it.descriptor.classifierInfo(context, trace).isForTypeKey }
+      .associateWith {
+        val field = clazz.addField(
+          "_${it.name}TypeKey",
+          pluginContext.irBuiltIns.stringType
         )
+        clazz.declarations -= field
+        clazz.declarations.add(0, field)
+        field
+      }
 
-        return clazz
-    }
-
-    private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
-        transformedFunctions[function]?.let { return it }
-        if (function in transformedFunctions.values) return function
-
-        if (function is IrConstructor) {
-            if (!function.descriptor.isDeserializedDeclaration()) {
-                transformClassIfNeeded(function.constructedClass)
-                return function
-            }
-            val typeKeyParameters = function.constructedClass
-                .descriptor
-                .declaredTypeParameters
-                .filter { it.classifierInfo(context, trace).isForTypeKey }
-            typeKeyParameters.forEach {
-                function.addValueParameter(
-                    "_${it.name}TypeKey",
-                    pluginContext.irBuiltIns.stringType
-                )
-            }
-            transformedFunctions[function] = function
-            return function
-        }
-
-        if (function.descriptor.isDeserializedDeclaration()) {
-            val typeKeyParameters = function
-                .typeParameters
-                .filter { it.descriptor.classifierInfo(context, trace).isForTypeKey }
-            typeKeyParameters.forEach {
-                function.addValueParameter(
-                    "_${it.name}TypeKey",
-                    pluginContext.irBuiltIns.stringType
-                )
-            }
-            transformedFunctions[function] = function
-            return function
-        }
-
-        if (function.typeParameters.none { it.descriptor.classifierInfo(context, trace).isForTypeKey })
-            return function
-
-        val transformedFunction = function.copyWithTypeKeyParams()
-        transformedFunctions[function] = transformedFunction
-        val typeKeyParams = transformedFunction.typeParameters
-            .filter { it.descriptor.classifierInfo(context, trace).isForTypeKey }
-            .associateWith {
-                transformedFunction.addValueParameter(
-                    "_${it.name}TypeKey",
-                    pluginContext.irBuiltIns.stringType
-                )
-            }
-
-        transformedFunction.transformCallsWithForTypeKey(
-            typeKeyParams
-                .mapValues { (_, param) ->
-                    {
-                        DeclarationIrBuilder(pluginContext, transformedFunction.symbol)
-                            .irGet(param)
-                    }
-                }
+    clazz.constructors.forEach { constructor ->
+      val typeKeyParamsWithFields = typeKeyFields.values.associateWith { field ->
+        constructor.addValueParameter(
+          field.name.asString(),
+          field.type
         )
-
-        return transformedFunction
-    }
-
-    private fun IrElement.transformCallsWithForTypeKey(
-        typeParameterKeyExpressions: Map<IrTypeParameter, (List<ScopeWithIr>) -> IrExpression>
-    ) {
-        transform(object : IrElementTransformerVoidWithContext() {
-            override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression =
-                super.visitFunctionAccess(
-                    transformCallIfNeeded(expression, allScopes, typeParameterKeyExpressions))
-        }, null)
-    }
-
-    private fun transformCallIfNeeded(
-        expression: IrFunctionAccessExpression,
-        scopes: List<ScopeWithIr>,
-        typeParameterKeyExpressions: Map<IrTypeParameter, (List<ScopeWithIr>) -> IrExpression>
-    ): IrFunctionAccessExpression {
-        if (expression.symbol.descriptor.fqNameSafe == InjektFqNames.typeKeyOf) {
-            val typeArgument = expression.getTypeArgument(0)!!
-            return DeclarationIrBuilder(pluginContext, expression.symbol).irCall(
-                pluginContext.referenceClass(InjektFqNames.TypeKey)!!
-                    .constructors
-                    .single()
-            ).apply {
-                putTypeArgument(0, typeArgument)
-                putValueArgument(
-                    0,
-                    typeArgument.typeKeyStringExpression(expression.symbol, scopes,
-                        typeParameterKeyExpressions)
+      }
+      (constructor.body !! as IrBlockBody).run {
+        typeKeyParamsWithFields
+          .toList()
+          .forEachIndexed { index, (field, param) ->
+            statements.add(
+              index + 1,
+              DeclarationIrBuilder(pluginContext, constructor.symbol).run {
+                irSetField(
+                  irGet(clazz.thisReceiver !!),
+                  field,
+                  irGet(param)
                 )
-            }
-        }
-        val callee = expression.symbol.owner
-        if (callee is IrConstructor) {
-            if (callee.constructedClass.typeParameters.none {
-                    it.descriptor.classifierInfo(context, trace).isForTypeKey
-                }) return expression
-        } else {
-            if (callee.typeParameters.none {
-                    it.descriptor.classifierInfo(context, trace).isForTypeKey
-                }) return expression
-        }
-
-        val transformedCallee = transformFunctionIfNeeded(callee)
-        if (expression is IrCall &&
-            expression.valueArgumentsCount == transformedCallee.valueParameters.size) return expression
-        return when (expression) {
-            is IrCall -> {
-                IrCallImpl(
-                    expression.startOffset,
-                    expression.endOffset,
-                    transformedCallee.returnType,
-                    transformedCallee.symbol as IrSimpleFunctionSymbol,
-                    transformedCallee.typeParameters.size,
-                    transformedCallee.valueParameters.size,
-                    expression.origin,
-                    expression.superQualifierSymbol
-                ).apply {
-                    copyTypeAndValueArgumentsFrom(expression)
-                    var currentIndex = expression.valueArgumentsCount
-                    (0 until typeArgumentsCount)
-                        .asSequence()
-                        .map { transformedCallee.typeParameters[it] to getTypeArgument(it)!! }
-                        .filter { it.first.descriptor.classifierInfo(context, trace).isForTypeKey }
-                        .forEach { (_, typeArgument) ->
-                            putValueArgument(
-                                currentIndex++,
-                                typeArgument.typeKeyStringExpression(
-                                    expression.symbol,
-                                    scopes,
-                                    typeParameterKeyExpressions
-                                )
-                            )
-                        }
-                }
-            }
-            is IrDelegatingConstructorCallImpl -> {
-                if (expression.valueArgumentsCount == transformedCallee.valueParameters.size)
-                    return expression
-                IrDelegatingConstructorCallImpl(
-                    expression.startOffset,
-                    expression.endOffset,
-                    expression.type,
-                    expression.symbol,
-                    expression.typeArgumentsCount,
-                    transformedCallee.valueParameters.size
-                ).apply {
-                    copyTypeAndValueArgumentsFrom(expression)
-                    var currentIndex = expression.valueArgumentsCount
-                    (0 until typeArgumentsCount)
-                        .asSequence()
-                        .map {
-                            transformedCallee as IrConstructor
-                            transformedCallee.constructedClass.typeParameters[it] to getTypeArgument(it)!!
-                        }
-                        .filter { it.first.descriptor.classifierInfo(context, trace).isForTypeKey }
-                        .forEach { (_, typeArgument) ->
-                            putValueArgument(
-                                currentIndex++,
-                                typeArgument.typeKeyStringExpression(
-                                    expression.symbol,
-                                    scopes,
-                                    typeParameterKeyExpressions
-                                )
-                            )
-                        }
-                }
-            }
-            is IrConstructorCall -> {
-                if (expression.valueArgumentsCount == transformedCallee.valueParameters.size)
-                    return expression
-                IrConstructorCallImpl(
-                    expression.startOffset,
-                    expression.endOffset,
-                    expression.type,
-                    expression.symbol,
-                    expression.typeArgumentsCount,
-                    expression.constructorTypeArgumentsCount,
-                    transformedCallee.valueParameters.size,
-                    expression.origin
-                ).apply {
-                    copyTypeAndValueArgumentsFrom(expression)
-                    var currentIndex = expression.valueArgumentsCount
-                    (0 until typeArgumentsCount)
-                        .asSequence()
-                        .map {
-                            transformedCallee as IrConstructor
-                            transformedCallee.constructedClass.typeParameters[it] to getTypeArgument(it)!!
-                        }
-                        .filter { it.first.descriptor.classifierInfo(context, trace).isForTypeKey }
-                        .forEach { (_, typeArgument) ->
-                            putValueArgument(
-                                currentIndex++,
-                                typeArgument.typeKeyStringExpression(
-                                    expression.symbol,
-                                    scopes,
-                                    typeParameterKeyExpressions
-                                )
-                            )
-                        }
-                }
-            }
-            else -> expression
-        }
+              }
+            )
+          }
+      }
     }
 
-    private fun IrType.typeKeyStringExpression(
-        symbol: IrSymbol,
-        scopes: List<ScopeWithIr>,
-        typeParameterKeyExpressions: Map<IrTypeParameter, (List<ScopeWithIr>) -> IrExpression>
-    ): IrExpression {
-        val builder = DeclarationIrBuilder(pluginContext, symbol)
-        val expressions = mutableListOf<IrExpression>()
-        var currentString = ""
-        fun commitCurrentString() {
-            if (currentString.isNotEmpty()) {
-                expressions += builder.irString(currentString)
-                currentString = ""
-            }
-        }
-        fun appendToCurrentString(value: String) {
-            currentString += value
-        }
-        fun appendTypeParameterExpression(expression: IrExpression) {
-            commitCurrentString()
-            expressions += expression
-        }
-
-        fun IrType.collectExpressions() {
-            check(this@collectExpressions is IrSimpleType)
-
-            val typeAnnotations = (abbreviation?.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-                ?: getAnnotatedAnnotations(InjektFqNames.Qualifier)
-                .sortedBy { it.type.classifierOrFail.descriptor.fqNameSafe.asString() }) +
-                    listOfNotNull(
-                        (abbreviation ?: this).annotations.firstOrNull {
-                            it.symbol.owner.constructedClass.descriptor.fqNameSafe ==
-                                    InjektFqNames.Composable
-                        }
-                    )
-
-            if (typeAnnotations.isNotEmpty()) {
-                appendToCurrentString("[")
-                typeAnnotations.forEachIndexed { index, annotation ->
-                    appendToCurrentString("@")
-                    annotation.type.collectExpressions()
-                    if (index != typeAnnotations.lastIndex) appendToCurrentString(", ")
+    clazz.transformCallsWithForTypeKey(
+      typeKeyFields
+        .mapValues { (_, field) ->
+          { scopes ->
+            DeclarationIrBuilder(pluginContext, clazz.symbol)
+              .run {
+                val constructor = scopes
+                  .firstOrNull {
+                    it.irElement in clazz.constructors
+                  }
+                  ?.irElement
+                  ?.cast<IrConstructor>()
+                if (constructor == null) {
+                  irGetField(
+                    irGet(scopes.thisOfClass(clazz) !!),
+                    field
+                  )
+                } else {
+                  irGet(constructor.valueParameters
+                    .single { it.name == field.name })
                 }
-                appendToCurrentString("]")
-            }
+              }
+          }
+        }
+    )
 
-            when {
-                abbreviation != null -> appendToCurrentString(abbreviation!!.typeAlias.descriptor.fqNameSafe.asString())
-                classifierOrFail is IrTypeParameterSymbol -> appendTypeParameterExpression(
-                    typeParameterKeyExpressions[classifierOrFail.owner]!!(scopes)
+    return clazz
+  }
+
+  private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
+    transformedFunctions[function]?.let { return it }
+    if (function in transformedFunctions.values) return function
+
+    if (function is IrConstructor) {
+      if (! function.descriptor.isDeserializedDeclaration()) {
+        transformClassIfNeeded(function.constructedClass)
+        return function
+      }
+      val typeKeyParameters = function.constructedClass
+        .descriptor
+        .declaredTypeParameters
+        .filter { it.classifierInfo(context, trace).isForTypeKey }
+      typeKeyParameters.forEach {
+        function.addValueParameter(
+          "_${it.name}TypeKey",
+          pluginContext.irBuiltIns.stringType
+        )
+      }
+      transformedFunctions[function] = function
+      return function
+    }
+
+    if (function.descriptor.isDeserializedDeclaration()) {
+      val typeKeyParameters = function
+        .typeParameters
+        .filter { it.descriptor.classifierInfo(context, trace).isForTypeKey }
+      typeKeyParameters.forEach {
+        function.addValueParameter(
+          "_${it.name}TypeKey",
+          pluginContext.irBuiltIns.stringType
+        )
+      }
+      transformedFunctions[function] = function
+      return function
+    }
+
+    if (function.typeParameters.none { it.descriptor.classifierInfo(context, trace).isForTypeKey })
+      return function
+
+    val transformedFunction = function.copyWithTypeKeyParams()
+    transformedFunctions[function] = transformedFunction
+    val typeKeyParams = transformedFunction.typeParameters
+      .filter { it.descriptor.classifierInfo(context, trace).isForTypeKey }
+      .associateWith {
+        transformedFunction.addValueParameter(
+          "_${it.name}TypeKey",
+          pluginContext.irBuiltIns.stringType
+        )
+      }
+
+    transformedFunction.transformCallsWithForTypeKey(
+      typeKeyParams
+        .mapValues { (_, param) ->
+          {
+            DeclarationIrBuilder(pluginContext, transformedFunction.symbol)
+              .irGet(param)
+          }
+        }
+    )
+
+    return transformedFunction
+  }
+
+  private fun IrElement.transformCallsWithForTypeKey(
+    typeParameterKeyExpressions: Map<IrTypeParameter, (List<ScopeWithIr>) -> IrExpression>
+  ) {
+    transform(object : IrElementTransformerVoidWithContext() {
+      override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression =
+        super.visitFunctionAccess(
+          transformCallIfNeeded(expression, allScopes, typeParameterKeyExpressions)
+        )
+    }, null)
+  }
+
+  private fun transformCallIfNeeded(
+    expression: IrFunctionAccessExpression,
+    scopes: List<ScopeWithIr>,
+    typeParameterKeyExpressions: Map<IrTypeParameter, (List<ScopeWithIr>) -> IrExpression>
+  ): IrFunctionAccessExpression {
+    if (expression.symbol.descriptor.fqNameSafe == InjektFqNames.typeKeyOf) {
+      val typeArgument = expression.getTypeArgument(0) !!
+      return DeclarationIrBuilder(pluginContext, expression.symbol).irCall(
+        pluginContext.referenceClass(InjektFqNames.TypeKey) !!
+          .constructors
+          .single()
+      ).apply {
+        putTypeArgument(0, typeArgument)
+        putValueArgument(
+          0,
+          typeArgument.typeKeyStringExpression(
+            expression.symbol, scopes,
+            typeParameterKeyExpressions
+          )
+        )
+      }
+    }
+    val callee = expression.symbol.owner
+    if (callee is IrConstructor) {
+      if (callee.constructedClass.typeParameters.none {
+          it.descriptor.classifierInfo(context, trace).isForTypeKey
+        }) return expression
+    } else {
+      if (callee.typeParameters.none {
+          it.descriptor.classifierInfo(context, trace).isForTypeKey
+        }) return expression
+    }
+
+    val transformedCallee = transformFunctionIfNeeded(callee)
+    if (expression is IrCall &&
+      expression.valueArgumentsCount == transformedCallee.valueParameters.size
+    ) return expression
+    return when (expression) {
+      is IrCall -> {
+        IrCallImpl(
+          expression.startOffset,
+          expression.endOffset,
+          transformedCallee.returnType,
+          transformedCallee.symbol as IrSimpleFunctionSymbol,
+          transformedCallee.typeParameters.size,
+          transformedCallee.valueParameters.size,
+          expression.origin,
+          expression.superQualifierSymbol
+        ).apply {
+          copyTypeAndValueArgumentsFrom(expression)
+          var currentIndex = expression.valueArgumentsCount
+          (0 until typeArgumentsCount)
+            .asSequence()
+            .map { transformedCallee.typeParameters[it] to getTypeArgument(it) !! }
+            .filter { it.first.descriptor.classifierInfo(context, trace).isForTypeKey }
+            .forEach { (_, typeArgument) ->
+              putValueArgument(
+                currentIndex ++,
+                typeArgument.typeKeyStringExpression(
+                  expression.symbol,
+                  scopes,
+                  typeParameterKeyExpressions
                 )
-                else -> appendToCurrentString(classifierOrFail.descriptor.fqNameSafe.asString())
-            }
-
-            val arguments = abbreviation?.arguments ?: arguments
-
-            if (arguments.isNotEmpty()) {
-                appendToCurrentString("<")
-                arguments.forEachIndexed { index, typeArgument ->
-                    if (typeArgument.typeOrNull != null)
-                        typeArgument.typeOrNull?.collectExpressions()
-                    else appendToCurrentString("*")
-                    if (index != arguments.lastIndex) appendToCurrentString(", ")
-                }
-                appendToCurrentString(">")
-            }
-
-            if ((abbreviation != null && abbreviation!!.hasQuestionMark) ||
-                (abbreviation == null && hasQuestionMark)) appendToCurrentString("?")
-        }
-
-        collectExpressions()
-        commitCurrentString()
-
-        return if (expressions.size == 1) {
-            expressions.single()
-        } else {
-            val stringPlus = pluginContext.irBuiltIns.stringClass
-                .functions
-                .map { it.owner }
-                .first { it.name.asString() == "plus" }
-            expressions.reduce { acc, expression ->
-                builder.irCall(stringPlus).apply {
-                    dispatchReceiver = acc
-                    putValueArgument(0, expression)
-                }
+              )
             }
         }
+      }
+      is IrDelegatingConstructorCallImpl -> {
+        if (expression.valueArgumentsCount == transformedCallee.valueParameters.size)
+          return expression
+        IrDelegatingConstructorCallImpl(
+          expression.startOffset,
+          expression.endOffset,
+          expression.type,
+          expression.symbol,
+          expression.typeArgumentsCount,
+          transformedCallee.valueParameters.size
+        ).apply {
+          copyTypeAndValueArgumentsFrom(expression)
+          var currentIndex = expression.valueArgumentsCount
+          (0 until typeArgumentsCount)
+            .asSequence()
+            .map {
+              transformedCallee as IrConstructor
+              transformedCallee.constructedClass.typeParameters[it] to getTypeArgument(it) !!
+            }
+            .filter { it.first.descriptor.classifierInfo(context, trace).isForTypeKey }
+            .forEach { (_, typeArgument) ->
+              putValueArgument(
+                currentIndex ++,
+                typeArgument.typeKeyStringExpression(
+                  expression.symbol,
+                  scopes,
+                  typeParameterKeyExpressions
+                )
+              )
+            }
+        }
+      }
+      is IrConstructorCall -> {
+        if (expression.valueArgumentsCount == transformedCallee.valueParameters.size)
+          return expression
+        IrConstructorCallImpl(
+          expression.startOffset,
+          expression.endOffset,
+          expression.type,
+          expression.symbol,
+          expression.typeArgumentsCount,
+          expression.constructorTypeArgumentsCount,
+          transformedCallee.valueParameters.size,
+          expression.origin
+        ).apply {
+          copyTypeAndValueArgumentsFrom(expression)
+          var currentIndex = expression.valueArgumentsCount
+          (0 until typeArgumentsCount)
+            .asSequence()
+            .map {
+              transformedCallee as IrConstructor
+              transformedCallee.constructedClass.typeParameters[it] to getTypeArgument(it) !!
+            }
+            .filter { it.first.descriptor.classifierInfo(context, trace).isForTypeKey }
+            .forEach { (_, typeArgument) ->
+              putValueArgument(
+                currentIndex ++,
+                typeArgument.typeKeyStringExpression(
+                  expression.symbol,
+                  scopes,
+                  typeParameterKeyExpressions
+                )
+              )
+            }
+        }
+      }
+      else -> expression
+    }
+  }
+
+  private fun IrType.typeKeyStringExpression(
+    symbol: IrSymbol,
+    scopes: List<ScopeWithIr>,
+    typeParameterKeyExpressions: Map<IrTypeParameter, (List<ScopeWithIr>) -> IrExpression>
+  ): IrExpression {
+    val builder = DeclarationIrBuilder(pluginContext, symbol)
+    val expressions = mutableListOf<IrExpression>()
+    var currentString = ""
+    fun commitCurrentString() {
+      if (currentString.isNotEmpty()) {
+        expressions += builder.irString(currentString)
+        currentString = ""
+      }
     }
 
-    private fun IrFunction.copyWithTypeKeyParams(): IrFunction {
-        return copy(pluginContext).apply {
-            val descriptor = descriptor
-            if (descriptor is PropertyGetterDescriptor &&
-                annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
-            ) {
-                val name = JvmAbi.getterName(descriptor.correspondingProperty.name.identifier)
-                annotations = annotations + DeclarationIrBuilder(pluginContext, symbol)
-                    .jvmNameAnnotation(name, pluginContext)
-                correspondingPropertySymbol?.owner?.getter = this
-            }
-            if (descriptor is PropertySetterDescriptor &&
-                annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
-            ) {
-                val name = JvmAbi.setterName(descriptor.correspondingProperty.name.identifier)
-                annotations = annotations + DeclarationIrBuilder(pluginContext, symbol)
-                    .jvmNameAnnotation(name, pluginContext)
-                correspondingPropertySymbol?.owner?.setter = this
-            }
-
-            if (this@copyWithTypeKeyParams is IrOverridableDeclaration<*>) {
-                overriddenSymbols = this@copyWithTypeKeyParams.overriddenSymbols.map {
-                    transformFunctionIfNeeded(it.owner as IrFunction).symbol as IrSimpleFunctionSymbol
-                }
-            }
-        }
+    fun appendToCurrentString(value: String) {
+      currentString += value
     }
 
-    private fun List<ScopeWithIr>.thisOfClass(declaration: IrClass): IrValueParameter? {
-        for (scope in reversed()) {
-            when (val element = scope.irElement) {
-                is IrFunction ->
-                    element.dispatchReceiverParameter?.let { if (it.type.classOrNull == declaration.symbol) return it }
-                is IrClass -> if (element == declaration) return element.thisReceiver
-            }
-        }
-        return null
+    fun appendTypeParameterExpression(expression: IrExpression) {
+      commitCurrentString()
+      expressions += expression
     }
+
+    fun IrType.collectExpressions() {
+      check(this@collectExpressions is IrSimpleType)
+
+      val typeAnnotations = (abbreviation?.getAnnotatedAnnotations(InjektFqNames.Qualifier)
+        ?: getAnnotatedAnnotations(InjektFqNames.Qualifier)
+          .sortedBy { it.type.classifierOrFail.descriptor.fqNameSafe.asString() }) +
+          listOfNotNull(
+            (abbreviation ?: this).annotations.firstOrNull {
+              it.symbol.owner.constructedClass.descriptor.fqNameSafe ==
+                  InjektFqNames.Composable
+            }
+          )
+
+      if (typeAnnotations.isNotEmpty()) {
+        appendToCurrentString("[")
+        typeAnnotations.forEachIndexed { index, annotation ->
+          appendToCurrentString("@")
+          annotation.type.collectExpressions()
+          if (index != typeAnnotations.lastIndex) appendToCurrentString(", ")
+        }
+        appendToCurrentString("]")
+      }
+
+      when {
+        abbreviation != null -> appendToCurrentString(abbreviation !!.typeAlias.descriptor.fqNameSafe.asString())
+        classifierOrFail is IrTypeParameterSymbol -> appendTypeParameterExpression(
+          typeParameterKeyExpressions[classifierOrFail.owner] !!(scopes)
+        )
+        else -> appendToCurrentString(classifierOrFail.descriptor.fqNameSafe.asString())
+      }
+
+      val arguments = abbreviation?.arguments ?: arguments
+
+      if (arguments.isNotEmpty()) {
+        appendToCurrentString("<")
+        arguments.forEachIndexed { index, typeArgument ->
+          if (typeArgument.typeOrNull != null)
+            typeArgument.typeOrNull?.collectExpressions()
+          else appendToCurrentString("*")
+          if (index != arguments.lastIndex) appendToCurrentString(", ")
+        }
+        appendToCurrentString(">")
+      }
+
+      if ((abbreviation != null && abbreviation !!.hasQuestionMark) ||
+        (abbreviation == null && hasQuestionMark)
+      ) appendToCurrentString("?")
+    }
+
+    collectExpressions()
+    commitCurrentString()
+
+    return if (expressions.size == 1) {
+      expressions.single()
+    } else {
+      val stringPlus = pluginContext.irBuiltIns.stringClass
+        .functions
+        .map { it.owner }
+        .first { it.name.asString() == "plus" }
+      expressions.reduce { acc, expression ->
+        builder.irCall(stringPlus).apply {
+          dispatchReceiver = acc
+          putValueArgument(0, expression)
+        }
+      }
+    }
+  }
+
+  private fun IrFunction.copyWithTypeKeyParams(): IrFunction {
+    return copy(pluginContext).apply {
+      val descriptor = descriptor
+      if (descriptor is PropertyGetterDescriptor &&
+        annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
+      ) {
+        val name = JvmAbi.getterName(descriptor.correspondingProperty.name.identifier)
+        annotations = annotations + DeclarationIrBuilder(pluginContext, symbol)
+          .jvmNameAnnotation(name, pluginContext)
+        correspondingPropertySymbol?.owner?.getter = this
+      }
+      if (descriptor is PropertySetterDescriptor &&
+        annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
+      ) {
+        val name = JvmAbi.setterName(descriptor.correspondingProperty.name.identifier)
+        annotations = annotations + DeclarationIrBuilder(pluginContext, symbol)
+          .jvmNameAnnotation(name, pluginContext)
+        correspondingPropertySymbol?.owner?.setter = this
+      }
+
+      if (this@copyWithTypeKeyParams is IrOverridableDeclaration<*>) {
+        overriddenSymbols = this@copyWithTypeKeyParams.overriddenSymbols.map {
+          transformFunctionIfNeeded(it.owner as IrFunction).symbol as IrSimpleFunctionSymbol
+        }
+      }
+    }
+  }
+
+  private fun List<ScopeWithIr>.thisOfClass(declaration: IrClass): IrValueParameter? {
+    for (scope in reversed()) {
+      when (val element = scope.irElement) {
+        is IrFunction ->
+          element.dispatchReceiverParameter?.let { if (it.type.classOrNull == declaration.symbol) return it }
+        is IrClass -> if (element == declaration) return element.thisReceiver
+      }
+    }
+    return null
+  }
 }
 

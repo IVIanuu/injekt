@@ -15,24 +15,24 @@
  */
 
 plugins {
-    kotlin("multiplatform")
+  kotlin("multiplatform")
 }
 
 kotlin {
-    jvm {
-        compilations.forEach {
-            it.kotlinOptions {
-                jvmTarget = "1.8"
-            }
-        }
+  jvm {
+    compilations.forEach {
+      it.kotlinOptions {
+        jvmTarget = "1.8"
+      }
     }
-    sourceSets {
-        named("jvmMain") {
-            dependencies {
-                api(project(":injekt-common"))
-                configurations.getByName("kotlinCompilerPluginClasspath")
-                    .dependencies.add(project(":injekt-compiler-plugin"))
-            }
-        }
+  }
+  sourceSets {
+    named("jvmMain") {
+      dependencies {
+        api(project(":injekt-common"))
+        configurations.getByName("kotlinCompilerPluginClasspath")
+          .dependencies.add(project(":injekt-compiler-plugin"))
+      }
     }
+  }
 }

@@ -32,57 +32,57 @@ import java.io.*
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
-    override fun registerProjectComponents(
-        project: MockProject,
-        configuration: CompilerConfiguration,
-    ) {
-        val outputDir = configuration[JVMConfigurationKeys.OUTPUT_DIRECTORY]
-        val kaptOutputDirs = listOf(
-            listOf("tmp", "kapt3", "stubs"),
-            listOf("tmp", "kapt3", "incrementalData"),
-            listOf("tmp", "kapt3", "incApCache")
-        ).map { File(it.joinToString(File.separator)) }
-        val isGenerateKaptStubs = kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
-        if (isGenerateKaptStubs) return
+  override fun registerProjectComponents(
+    project: MockProject,
+    configuration: CompilerConfiguration,
+  ) {
+    val outputDir = configuration[JVMConfigurationKeys.OUTPUT_DIRECTORY]
+    val kaptOutputDirs = listOf(
+      listOf("tmp", "kapt3", "stubs"),
+      listOf("tmp", "kapt3", "incrementalData"),
+      listOf("tmp", "kapt3", "incApCache")
+    ).map { File(it.joinToString(File.separator)) }
+    val isGenerateKaptStubs = kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
+    if (isGenerateKaptStubs) return
 
-        StorageComponentContainerContributor.registerExtension(
-            project,
-            InjektStorageComponentContainerContributor()
-        )
-        IrGenerationExtension.registerExtensionWithLoadingOrder(
-            project,
-            LoadingOrder.FIRST,
-            InjektIrGenerationExtension()
-        )
-        SyntheticResolveExtension.registerExtension(
-            project,
-            TypeClassSyntheticResolveExtension()
-        )
-        IrGenerationExtension.registerExtensionWithLoadingOrder(
-            project,
-            LoadingOrder.LAST,
-            InjektIrDumper(dumpDir(configuration))
-        )
-        CandidateInterceptor.registerExtension(
-            project,
-            GivenCallResolutionInterceptorExtension()
-        )
-        TypeResolutionInterceptor.registerExtension(
-            project,
-            InjektTypeResolutionInterceptorExtension()
-        )
-        @Suppress("DEPRECATION")
-        Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
-            .registerExtension(InjektDiagnosticSuppressor())
-    }
+    StorageComponentContainerContributor.registerExtension(
+      project,
+      InjektStorageComponentContainerContributor()
+    )
+    IrGenerationExtension.registerExtensionWithLoadingOrder(
+      project,
+      LoadingOrder.FIRST,
+      InjektIrGenerationExtension()
+    )
+    SyntheticResolveExtension.registerExtension(
+      project,
+      TypeClassSyntheticResolveExtension()
+    )
+    IrGenerationExtension.registerExtensionWithLoadingOrder(
+      project,
+      LoadingOrder.LAST,
+      InjektIrDumper(dumpDir(configuration))
+    )
+    CandidateInterceptor.registerExtension(
+      project,
+      GivenCallResolutionInterceptorExtension()
+    )
+    TypeResolutionInterceptor.registerExtension(
+      project,
+      InjektTypeResolutionInterceptorExtension()
+    )
+    @Suppress("DEPRECATION")
+    Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
+      .registerExtension(InjektDiagnosticSuppressor())
+  }
 }
 
 private fun IrGenerationExtension.Companion.registerExtensionWithLoadingOrder(
-    project: MockProject,
-    loadingOrder: LoadingOrder,
-    extension: IrGenerationExtension,
+  project: MockProject,
+  loadingOrder: LoadingOrder,
+  extension: IrGenerationExtension,
 ) {
-    project.extensionArea
-        .getExtensionPoint(IrGenerationExtension.extensionPointName)
-        .registerExtension(extension, loadingOrder, project)
+  project.extensionArea
+    .getExtensionPoint(IrGenerationExtension.extensionPointName)
+    .registerExtension(extension, loadingOrder, project)
 }

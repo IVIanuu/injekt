@@ -28,106 +28,106 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 
 @Suppress("NewApi")
 class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
-    override val injektContext: InjektContext
-        get() = this
+  override val injektContext: InjektContext
+    get() = this
 
-    override fun isDenotable(type: TypeRef): Boolean = true
+  override fun isDenotable(type: TypeRef): Boolean = true
 
-    val trace = CliBindingTrace()
+  val trace = CliBindingTrace()
 
-    val setClassifier by unsafeLazy {
-        module.builtIns.set.toClassifierRef(this, trace)
-    }
-    val collectionClassifier by unsafeLazy {
-        module.builtIns.collection.toClassifierRef(this, trace)
-    }
-    val nothingType by unsafeLazy {
-        module.builtIns.nothingType.toTypeRef(this, trace)
-    }
-    val nullableNothingType by unsafeLazy {
-        nothingType.copy(isMarkedNullable = true)
-    }
-    val anyType by unsafeLazy {
-        module.builtIns.anyType.toTypeRef(this, trace)
-    }
-    val nullableAnyType by unsafeLazy {
-        anyType.copy(isMarkedNullable = true)
-    }
+  val setClassifier by unsafeLazy {
+    module.builtIns.set.toClassifierRef(this, trace)
+  }
+  val collectionClassifier by unsafeLazy {
+    module.builtIns.collection.toClassifierRef(this, trace)
+  }
+  val nothingType by unsafeLazy {
+    module.builtIns.nothingType.toTypeRef(this, trace)
+  }
+  val nullableNothingType by unsafeLazy {
+    nothingType.copy(isMarkedNullable = true)
+  }
+  val anyType by unsafeLazy {
+    module.builtIns.anyType.toTypeRef(this, trace)
+  }
+  val nullableAnyType by unsafeLazy {
+    anyType.copy(isMarkedNullable = true)
+  }
 
-    fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor? {
-        return memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
-            fqName.shortName(), NoLookupLocation.FROM_BACKEND
-        )
-    }
+  fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor? {
+    return memberScopeForFqName(fqName.parent()) !!.getContributedClassifier(
+      fqName.shortName(), NoLookupLocation.FROM_BACKEND
+    )
+  }
 
-    fun classifierDescriptorForKey(
-        key: String,
-        trace: BindingTrace?
-    ): ClassifierDescriptor {
-        trace?.get(InjektWritableSlices.CLASSIFIER_FOR_KEY, key)?.let { return it }
-        val fqName = FqName(key.split(":")[1])
-        val classifier = memberScopeForFqName(fqName.parent())?.getContributedClassifier(
-            fqName.shortName(), NoLookupLocation.FROM_BACKEND
-        )?.takeIf { it.uniqueKey(this) == key }
-            ?: functionDescriptorsForFqName(fqName.parent())
-                .flatMap { it.typeParameters }
-                .firstOrNull {
-                    it.uniqueKey(this) == key
-                }
-            ?: propertyDescriptorsForFqName(fqName.parent())
-                .flatMap { it.typeParameters }
-                .firstOrNull {
-                    it.uniqueKey(this) == key
-                }
-            ?: classifierDescriptorForFqName(fqName.parent())
-                .safeAs<ClassifierDescriptorWithTypeParameters>()
-                ?.declaredTypeParameters
-                ?.firstOrNull { it.uniqueKey(this) == key }
-            ?: error("Could not get for $fqName $key")
-        trace?.record(InjektWritableSlices.CLASSIFIER_FOR_KEY, key, classifier)
-        return classifier
-    }
+  fun classifierDescriptorForKey(
+    key: String,
+    trace: BindingTrace?
+  ): ClassifierDescriptor {
+    trace?.get(InjektWritableSlices.CLASSIFIER_FOR_KEY, key)?.let { return it }
+    val fqName = FqName(key.split(":")[1])
+    val classifier = memberScopeForFqName(fqName.parent())?.getContributedClassifier(
+      fqName.shortName(), NoLookupLocation.FROM_BACKEND
+    )?.takeIf { it.uniqueKey(this) == key }
+      ?: functionDescriptorsForFqName(fqName.parent())
+        .flatMap { it.typeParameters }
+        .firstOrNull {
+          it.uniqueKey(this) == key
+        }
+      ?: propertyDescriptorsForFqName(fqName.parent())
+        .flatMap { it.typeParameters }
+        .firstOrNull {
+          it.uniqueKey(this) == key
+        }
+      ?: classifierDescriptorForFqName(fqName.parent())
+        .safeAs<ClassifierDescriptorWithTypeParameters>()
+        ?.declaredTypeParameters
+        ?.firstOrNull { it.uniqueKey(this) == key }
+      ?: error("Could not get for $fqName $key")
+    trace?.record(InjektWritableSlices.CLASSIFIER_FOR_KEY, key, classifier)
+    return classifier
+  }
 
-    private fun functionDescriptorsForFqName(fqName: FqName): List<FunctionDescriptor> {
-        return memberScopeForFqName(fqName.parent())?.getContributedFunctions(
-            fqName.shortName(), NoLookupLocation.FROM_BACKEND
-        )?.toList() ?: emptyList()
-    }
+  private fun functionDescriptorsForFqName(fqName: FqName): List<FunctionDescriptor> {
+    return memberScopeForFqName(fqName.parent())?.getContributedFunctions(
+      fqName.shortName(), NoLookupLocation.FROM_BACKEND
+    )?.toList() ?: emptyList()
+  }
 
-    private fun propertyDescriptorsForFqName(fqName: FqName): List<PropertyDescriptor> {
-        return memberScopeForFqName(fqName.parent())?.getContributedVariables(
-            fqName.shortName(), NoLookupLocation.FROM_BACKEND
-        )?.toList() ?: emptyList()
-    }
+  private fun propertyDescriptorsForFqName(fqName: FqName): List<PropertyDescriptor> {
+    return memberScopeForFqName(fqName.parent())?.getContributedVariables(
+      fqName.shortName(), NoLookupLocation.FROM_BACKEND
+    )?.toList() ?: emptyList()
+  }
 
-    fun memberScopeForFqName(fqName: FqName): MemberScope? {
-        val pkg = module.getPackage(fqName)
+  fun memberScopeForFqName(fqName: FqName): MemberScope? {
+    val pkg = module.getPackage(fqName)
 
-        if (fqName.isRoot || pkg.fragments.isNotEmpty()) return pkg.memberScope
+    if (fqName.isRoot || pkg.fragments.isNotEmpty()) return pkg.memberScope
 
-        val parentMemberScope = memberScopeForFqName(fqName.parent()) ?: return null
+    val parentMemberScope = memberScopeForFqName(fqName.parent()) ?: return null
 
-        val classDescriptor =
-            parentMemberScope.getContributedClassifier(
-                fqName.shortName(),
-                NoLookupLocation.FROM_BACKEND
-            ) as? ClassDescriptor ?: return null
+    val classDescriptor =
+      parentMemberScope.getContributedClassifier(
+        fqName.shortName(),
+        NoLookupLocation.FROM_BACKEND
+      ) as? ClassDescriptor ?: return null
 
-        return classDescriptor.unsubstitutedMemberScope
-    }
+    return classDescriptor.unsubstitutedMemberScope
+  }
 }
 
 val InjektContextModuleCapability = ModuleCapability<InjektContext>("InjektContext")
 
 val ModuleDescriptor.injektContext
-    get() = getCapability(InjektContextModuleCapability)
-        ?: InjektContext(this)
-            .also { newContext ->
-                updatePrivateFinalField<Map<ModuleCapability<*>, Any?>>(
-                    ModuleDescriptorImpl::class,
-                    "capabilities"
-                ) {
-                    toMutableMap()
-                        .also { it[InjektContextModuleCapability] = newContext }
-                }
-            }
+  get() = getCapability(InjektContextModuleCapability)
+    ?: InjektContext(this)
+      .also { newContext ->
+        updatePrivateFinalField<Map<ModuleCapability<*>, Any?>>(
+          ModuleDescriptorImpl::class,
+          "capabilities"
+        ) {
+          toMutableMap()
+            .also { it[InjektContextModuleCapability] = newContext }
+        }
+      }

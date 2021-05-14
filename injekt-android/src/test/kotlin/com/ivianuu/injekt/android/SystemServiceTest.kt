@@ -29,14 +29,13 @@ import org.robolectric.annotation.*
 @RunWith(RobolectricTestRunner::class)
 @GivenImports("com.ivianuu.injekt.common.*")
 class SystemServiceTest {
-    @Test
-    fun testCanRequestSystemService() {
-        val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
-        scenario.onActivity {
-            withGivens(it.application as AppContext) {
-                given<@SystemService PowerManager>()
-                    .isPowerSaveMode
-            }
-        }
+  @Test fun testCanRequestSystemService() {
+    val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
+    scenario.onActivity {
+      withGivens(it.application as AppContext) {
+        given<@SystemService PowerManager>()
+          .isPowerSaveMode
+      }
     }
+  }
 }

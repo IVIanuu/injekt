@@ -29,25 +29,26 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 @Suppress("INVISIBLE_REFERENCE", "EXPERIMENTAL_IS_NOT_ENABLED", "IllegalExperimentalApiUsage")
 @OptIn(org.jetbrains.kotlin.extensions.internal.InternalNonStableExtensionPoints::class)
 class InjektTypeResolutionInterceptorExtension : TypeResolutionInterceptorExtension {
-    override fun interceptType(
-        element: KtElement,
-        context: ExpressionTypingContext,
-        resultType: KotlinType,
-    ): KotlinType {
-        if (resultType === TypeUtils.NO_EXPECTED_TYPE) return resultType
-        if (element !is KtLambdaExpression) return resultType
-        if (!resultType.hasAnnotation(InjektFqNames.Given)) return resultType
-        val annotation = element.safeAs<KtAnnotated>()
-            ?.findAnnotation(InjektFqNames.Given)
-            ?: element.parent.safeAs<KtAnnotated>()?.findAnnotation(InjektFqNames.Given)
-            ?: context.expectedType.safeAs<KtAnnotated>()?.findAnnotation(InjektFqNames.Given)
-        if (annotation != null) {
-            val annotationDescriptor = context.trace[BindingContext.ANNOTATION, annotation]
-            if (annotationDescriptor != null) {
-                return resultType.replaceAnnotations(
-                    Annotations.create(resultType.annotations + annotationDescriptor))
-            }
-        }
-        return resultType
+  override fun interceptType(
+    element: KtElement,
+    context: ExpressionTypingContext,
+    resultType: KotlinType,
+  ): KotlinType {
+    if (resultType === TypeUtils.NO_EXPECTED_TYPE) return resultType
+    if (element !is KtLambdaExpression) return resultType
+    if (! resultType.hasAnnotation(InjektFqNames.Given)) return resultType
+    val annotation = element.safeAs<KtAnnotated>()
+      ?.findAnnotation(InjektFqNames.Given)
+      ?: element.parent.safeAs<KtAnnotated>()?.findAnnotation(InjektFqNames.Given)
+      ?: context.expectedType.safeAs<KtAnnotated>()?.findAnnotation(InjektFqNames.Given)
+    if (annotation != null) {
+      val annotationDescriptor = context.trace[BindingContext.ANNOTATION, annotation]
+      if (annotationDescriptor != null) {
+        return resultType.replaceAnnotations(
+          Annotations.create(resultType.annotations + annotationDescriptor)
+        )
+      }
     }
+    return resultType
+  }
 }

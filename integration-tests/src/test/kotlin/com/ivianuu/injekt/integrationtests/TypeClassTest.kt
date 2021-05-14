@@ -5,9 +5,8 @@ import io.kotest.matchers.*
 import org.junit.*
 
 class TypeClassTest {
-    @Test
-    fun testExtensionWithFunction() = codegen(
-        """
+  @Test fun testExtensionWithFunction() = codegen(
+    """
             import com.ivianuu.injekt.integrationtests.MyExtension.Companion.answer            
 
             @Extension interface MyExtension<T> {
@@ -20,13 +19,12 @@ class TypeClassTest {
 
             fun invoke() = "".answer()
         """
-    ) {
-        invokeSingleFile() shouldBe 42
-    }
+  ) {
+    invokeSingleFile() shouldBe 42
+  }
 
-    @Test
-    fun testExtensionWithAdditionalClassTypeParameter() = codegen(
-        """
+  @Test fun testExtensionWithAdditionalClassTypeParameter() = codegen(
+    """
             import com.ivianuu.injekt.integrationtests.MyExtension.Companion.answer            
 
             @Extension interface MyExtension<T, R> {
@@ -39,13 +37,12 @@ class TypeClassTest {
 
             fun invoke() = "".answer<String, Long>()
         """
-    ) {
-        invokeSingleFile() shouldBe 42
-    }
+  ) {
+    invokeSingleFile() shouldBe 42
+  }
 
-    @Test
-    fun testExtensionWithAdditionalFunctionTypeParameter() = codegen(
-        """
+  @Test fun testExtensionWithAdditionalFunctionTypeParameter() = codegen(
+    """
             import com.ivianuu.injekt.integrationtests.MyExtension.Companion.answer            
 
             @Extension interface MyExtension<T> {
@@ -58,13 +55,12 @@ class TypeClassTest {
 
             fun invoke() = "".answer<String, Long>()
         """
-    ) {
-        invokeSingleFile() shouldBe 42
-    }
+  ) {
+    invokeSingleFile() shouldBe 42
+  }
 
-    @Test
-    fun testExtensionWithInfixFunction() = codegen(
-        """
+  @Test fun testExtensionWithInfixFunction() = codegen(
+    """
             import com.ivianuu.injekt.integrationtests.MyExtension.Companion.answer            
 
             @Extension interface MyExtension<T> {
@@ -77,13 +73,12 @@ class TypeClassTest {
 
             fun invoke() = "" answer ""
         """
-    ) {
-        invokeSingleFile() shouldBe 42
-    }
+  ) {
+    invokeSingleFile() shouldBe 42
+  }
 
-    @Test
-    fun testExtensionWithOperatorFunction() = codegen(
-        """
+  @Test fun testExtensionWithOperatorFunction() = codegen(
+    """
             import com.ivianuu.injekt.integrationtests.MyExtension.Companion.plus            
 
             @Extension interface MyExtension<T> {
@@ -96,13 +91,12 @@ class TypeClassTest {
 
             fun invoke() = Unit + Unit
         """
-    ) {
-        invokeSingleFile() shouldBe 42
-    }
+  ) {
+    invokeSingleFile() shouldBe 42
+  }
 
-    @Test
-    fun testExtensionWithSuspendFunction() = codegen(
-        """
+  @Test fun testExtensionWithSuspendFunction() = codegen(
+    """
             import com.ivianuu.injekt.integrationtests.MyExtension.Companion.answer            
 
             @Extension interface MyExtension<T> {
@@ -115,7 +109,7 @@ class TypeClassTest {
 
             fun invoke() = runBlocking { "".answer() }
         """
-    ) {
-        invokeSingleFile() shouldBe 42
-    }
+  ) {
+    invokeSingleFile() shouldBe 42
+  }
 }

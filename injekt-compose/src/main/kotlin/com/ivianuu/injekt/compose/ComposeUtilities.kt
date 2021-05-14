@@ -27,8 +27,8 @@ val LocalGivenScope = staticCompositionLocalOf<GivenScope> { error("No GivenScop
  */
 @Composable
 fun <@ForTypeKey T : Any> rememberElement(): T {
-    val scope = LocalGivenScope.current
-    return remember(scope) { scope.element() }
+  val scope = LocalGivenScope.current
+  return remember(scope) { scope.element() }
 }
 
 /**
@@ -38,18 +38,18 @@ fun <@ForTypeKey T : Any> rememberElement(): T {
  */
 @Composable
 fun <T : Any> rememberScopedValue(
-    vararg inputs: Any?,
-    key: Any? = null,
-    init: () -> T
+  vararg inputs: Any?,
+  key: Any? = null,
+  init: () -> T
 ): T {
-    val finalKey = key ?: currentCompositeKeyHash
+  val finalKey = key ?: currentCompositeKeyHash
 
-    val scope = LocalGivenScope.current
-    val value = remember(*inputs) { scope.getScopedValueOrNull(finalKey) ?: init() }
+  val scope = LocalGivenScope.current
+  val value = remember(*inputs) { scope.getScopedValueOrNull(finalKey) ?: init() }
 
-    DisposableEffect(scope, finalKey, value) {
-        scope.setScopedValue(finalKey, value)
-        onDispose {  }
-    }
-    return value
+  DisposableEffect(scope, finalKey, value) {
+    scope.setScopedValue(finalKey, value)
+    onDispose { }
+  }
+  return value
 }

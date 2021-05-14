@@ -24,11 +24,11 @@ import kotlinx.coroutines.sync.*
 @Given
 @Scoped<AppGivenScope>
 class CounterStorage {
-    private val _counterState = MutableStateFlow(0)
-    val counterState: Flow<Int> by this::_counterState
-    private val counterMutex = Mutex()
+  private val _counterState = MutableStateFlow(0)
+  val counterState: Flow<Int> by this::_counterState
+  private val counterMutex = Mutex()
 
-    suspend fun updateCounter(value: Int) = counterMutex.withLock {
-        _counterState.value = value
-    }
+  suspend fun updateCounter(value: Int) = counterMutex.withLock {
+    _counterState.value = value
+  }
 }

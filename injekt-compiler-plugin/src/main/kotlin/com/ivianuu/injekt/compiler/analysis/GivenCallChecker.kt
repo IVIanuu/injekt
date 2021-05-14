@@ -28,110 +28,111 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.inline.*
 
 class GivenCallChecker(private val context: InjektContext) : CallChecker {
-    override fun check(
-        resolvedCall: ResolvedCall<*>,
-        reportOn: PsiElement,
-        context: CallCheckerContext
-    ) {
-        val resultingDescriptor = resolvedCall.resultingDescriptor
-        if (resultingDescriptor !is FunctionDescriptor) return
+  override fun check(
+    resolvedCall: ResolvedCall<*>,
+    reportOn: PsiElement,
+    context: CallCheckerContext
+  ) {
+    val resultingDescriptor = resolvedCall.resultingDescriptor
+    if (resultingDescriptor !is FunctionDescriptor) return
 
-        val callExpression = resolvedCall.call.callElement
+    val callExpression = resolvedCall.call.callElement
 
-        val file = try {
-            callExpression.containingKtFile
-        } catch (e: Throwable) {
-            return
-        }
-
-        val filePath: String? = try {
-            file.virtualFilePath
-        } catch (e: Throwable) {
-            null
-        }
-
-        if (resultingDescriptor.valueParameters.none {
-                it.isGiven(this.context, context.trace)
-        }) return
-
-        val substitutionMap = resolvedCall.typeArguments
-            .mapKeys { it.key.toClassifierRef(this.context, context.trace) }
-            .mapValues { it.value.toTypeRef(this.context, context.trace) }
-            .filter { it.key != it.value.classifier }
-
-        val callable = resultingDescriptor.toCallableRef(this.context, context.trace)
-            .substitute(substitutionMap)
-
-        val requests = callable.givenParameters
-            .asSequence()
-            .map { parameterName ->
-                callable.callable.valueParameters.single {
-                    it.injektName() == parameterName
-                }
-            }
-            .filter { resolvedCall.valueArguments[it] is DefaultValueArgument }
-            .map { parameter ->
-                GivenRequest(
-                    type = callable.parameterTypes[parameter.injektName()]!!,
-                    defaultStrategy = if (parameter is ValueParameterDescriptor &&
-                        parameter.hasDefaultValueIgnoringGiven) {
-                        if (parameter.injektName() in callable.defaultOnAllErrorParameters)
-                            GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
-                        else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
-                    } else GivenRequest.DefaultStrategy.NONE,
-                    callableFqName = resultingDescriptor.fqNameSafe,
-                    parameterName = parameter.injektName().asNameId(),
-                    isInline = InlineUtil.isInlineParameter(parameter),
-                    isLazy = false
-                )
-            }
-            .toList()
-
-        if (requests.isEmpty()) return
-
-        val scope = HierarchicalResolutionScope(this.context, context.scope, context.trace)
-        scope.recordLookup(KotlinLookupLocation(callExpression))
-
-        when (val graph = scope.resolveRequests(requests) { result ->
-            if (result.candidate is CallableGivenNode) {
-                context.trace.record(
-                    InjektWritableSlices.USED_GIVEN,
-                    result.candidate.callable.callable,
-                    Unit
-                )
-                if (filePath != null) {
-                    result.candidate.callable.import?.element?.let {
-                        context.trace.record(
-                            InjektWritableSlices.USED_IMPORT,
-                            SourcePosition(filePath, it.startOffset, it.endOffset),
-                            Unit
-                        )
-                    }
-                }
-            }
-        }) {
-            is GivenGraph.Success -> {
-                if (filePath != null) {
-                    context.trace.record(
-                        InjektWritableSlices.FILE_HAS_GIVEN_CALLS,
-                        filePath,
-                        Unit
-                    )
-                    context.trace.record(
-                        InjektWritableSlices.GIVEN_GRAPH,
-                        SourcePosition(
-                            filePath,
-                            callExpression.startOffset,
-                            callExpression.endOffset
-                        ),
-                        graph
-                    )
-                }
-            }
-            is GivenGraph.Error -> context.trace.report(
-                InjektErrors.UNRESOLVED_GIVEN
-                    .on(reportOn, graph)
-            )
-        }
+    val file = try {
+      callExpression.containingKtFile
+    } catch (e: Throwable) {
+      return
     }
+
+    val filePath: String? = try {
+      file.virtualFilePath
+    } catch (e: Throwable) {
+      null
+    }
+
+    if (resultingDescriptor.valueParameters.none {
+        it.isGiven(this.context, context.trace)
+      }) return
+
+    val substitutionMap = resolvedCall.typeArguments
+      .mapKeys { it.key.toClassifierRef(this.context, context.trace) }
+      .mapValues { it.value.toTypeRef(this.context, context.trace) }
+      .filter { it.key != it.value.classifier }
+
+    val callable = resultingDescriptor.toCallableRef(this.context, context.trace)
+      .substitute(substitutionMap)
+
+    val requests = callable.givenParameters
+      .asSequence()
+      .map { parameterName ->
+        callable.callable.valueParameters.single {
+          it.injektName() == parameterName
+        }
+      }
+      .filter { resolvedCall.valueArguments[it] is DefaultValueArgument }
+      .map { parameter ->
+        GivenRequest(
+          type = callable.parameterTypes[parameter.injektName()] !!,
+          defaultStrategy = if (parameter is ValueParameterDescriptor &&
+            parameter.hasDefaultValueIgnoringGiven
+          ) {
+            if (parameter.injektName() in callable.defaultOnAllErrorParameters)
+              GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
+            else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
+          } else GivenRequest.DefaultStrategy.NONE,
+          callableFqName = resultingDescriptor.fqNameSafe,
+          parameterName = parameter.injektName().asNameId(),
+          isInline = InlineUtil.isInlineParameter(parameter),
+          isLazy = false
+        )
+      }
+      .toList()
+
+    if (requests.isEmpty()) return
+
+    val scope = HierarchicalResolutionScope(this.context, context.scope, context.trace)
+    scope.recordLookup(KotlinLookupLocation(callExpression))
+
+    when (val graph = scope.resolveRequests(requests) { result ->
+      if (result.candidate is CallableGivenNode) {
+        context.trace.record(
+          InjektWritableSlices.USED_GIVEN,
+          result.candidate.callable.callable,
+          Unit
+        )
+        if (filePath != null) {
+          result.candidate.callable.import?.element?.let {
+            context.trace.record(
+              InjektWritableSlices.USED_IMPORT,
+              SourcePosition(filePath, it.startOffset, it.endOffset),
+              Unit
+            )
+          }
+        }
+      }
+    }) {
+      is GivenGraph.Success -> {
+        if (filePath != null) {
+          context.trace.record(
+            InjektWritableSlices.FILE_HAS_GIVEN_CALLS,
+            filePath,
+            Unit
+          )
+          context.trace.record(
+            InjektWritableSlices.GIVEN_GRAPH,
+            SourcePosition(
+              filePath,
+              callExpression.startOffset,
+              callExpression.endOffset
+            ),
+            graph
+          )
+        }
+      }
+      is GivenGraph.Error -> context.trace.report(
+        InjektErrors.UNRESOLVED_GIVEN
+          .on(reportOn, graph)
+      )
+    }
+  }
 }

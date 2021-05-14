@@ -31,52 +31,51 @@ import kotlinx.coroutines.flow.*
 
 typealias SampleAppUi = @Composable () -> Unit
 
-@Given
-fun sampleUi(@Given viewModel: CounterViewModel): SampleAppUi = {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Injekt sample") },
-                backgroundColor = MaterialTheme.colors.primary
-            )
-        }
-    ) {
-        val state by viewModel.state.collectAsState(0)
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("Count $state", style = MaterialTheme.typography.subtitle1)
-            Spacer(Modifier.height(8.dp))
-            Button(onClick = { viewModel.inc() }) {
-                Text("Inc")
-            }
-            Spacer(Modifier.height(8.dp))
-            Button(onClick = { viewModel.dec() }) {
-                Text("Dec")
-            }
-        }
+@Given fun sampleUi(@Given viewModel: CounterViewModel): SampleAppUi = {
+  Scaffold(
+    topBar = {
+      TopAppBar(
+        title = { Text("Injekt sample") },
+        backgroundColor = MaterialTheme.colors.primary
+      )
     }
+  ) {
+    val state by viewModel.state.collectAsState(0)
+    Column(
+      modifier = Modifier.fillMaxSize(),
+      verticalArrangement = Arrangement.Center,
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      Text("Count $state", style = MaterialTheme.typography.subtitle1)
+      Spacer(Modifier.height(8.dp))
+      Button(onClick = { viewModel.inc() }) {
+        Text("Inc")
+      }
+      Spacer(Modifier.height(8.dp))
+      Button(onClick = { viewModel.dec() }) {
+        Text("Dec")
+      }
+    }
+  }
 }
 
 @Given
 @Scoped<ActivityRetainedGivenScope>
 class CounterViewModel(
-    @Given private val repo: CounterRepo,
-    @Given private val scope: GivenCoroutineScope<ActivityRetainedGivenScope>
+  @Given private val repo: CounterRepo,
+  @Given private val scope: GivenCoroutineScope<ActivityRetainedGivenScope>
 ) {
-    val state: Flow<Int> get() = repo.counterState
+  val state: Flow<Int> get() = repo.counterState
 
-    fun inc() {
-        scope.launch {
-            repo.inc()
-        }
+  fun inc() {
+    scope.launch {
+      repo.inc()
     }
+  }
 
-    fun dec() {
-        scope.launch {
-            repo.dec()
-        }
+  fun dec() {
+    scope.launch {
+      repo.dec()
     }
+  }
 }

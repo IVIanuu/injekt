@@ -27,31 +27,28 @@ import com.ivianuu.injekt.scope.*
  * Returns the [AppGivenScope] which is stored in the [Application]
  */
 val Application.appGivenScope: AppGivenScope
-    get() = (this as? AppGivenScopeOwner)?.appGivenScope
-        ?: error("application does not implement AppGivenScopeOwner")
+  get() = (this as? AppGivenScopeOwner)?.appGivenScope
+    ?: error("application does not implement AppGivenScopeOwner")
 
 interface AppGivenScopeOwner {
-    val appGivenScope: AppGivenScope
+  val appGivenScope: AppGivenScope
 }
 
 inline fun Application.createAppGivenScope(
-    @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Application) -> AppGivenScope
+  @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Application) -> AppGivenScope
 ): AppGivenScope = scopeFactory(this)
 
 typealias AppContext = Context
 
-@Given
-inline val Application.appContext: AppContext
-    get() = this
+@Given inline val Application.appContext: AppContext
+  get() = this
 
 typealias AppResources = Resources
 
-@Given
-inline val AppContext.appResources: AppResources
-    get() = resources
+@Given inline val AppContext.appResources: AppResources
+  get() = resources
 
 typealias AppLifecycleOwner = LifecycleOwner
 
-@Given
-inline val appLifecycleOwner: AppLifecycleOwner
-    get() = ProcessLifecycleOwner.get()
+@Given inline val appLifecycleOwner: AppLifecycleOwner
+  get() = ProcessLifecycleOwner.get()

@@ -21,247 +21,222 @@ import io.kotest.matchers.types.*
 import org.junit.*
 
 class GivenDeclarationCheckTest {
-    @Test
-    fun testGivenAnnotationClass() = codegen(
-        """
+  @Test fun testGivenAnnotationClass() = codegen(
+    """
             @Given annotation class MyAnnotation
         """
-    ) {
-        compilationShouldHaveFailed("annotation class cannot be @Given")
-    }
+  ) {
+    compilationShouldHaveFailed("annotation class cannot be @Given")
+  }
 
-    @Test
-    fun testGivenConstructorOnAnnotationClass() = codegen(
-        """
+  @Test fun testGivenConstructorOnAnnotationClass() = codegen(
+    """
             annotation class MyAnnotation @Given constructor()
         """
-    ) {
-        compilationShouldHaveFailed("annotation class cannot be @Given")
-    }
+  ) {
+    compilationShouldHaveFailed("annotation class cannot be @Given")
+  }
 
-    @Test
-    fun testGivenEnumClass() = codegen(
-        """
+  @Test fun testGivenEnumClass() = codegen(
+    """
             @Given enum class MyEnum
         """
-    ) {
-        compilationShouldHaveFailed("enum class cannot be @Given")
-    }
+  ) {
+    compilationShouldHaveFailed("enum class cannot be @Given")
+  }
 
-    @Test
-    fun testGivenInnerClass() = codegen(
-        """
+  @Test fun testGivenInnerClass() = codegen(
+    """
             class MyOuterClass {
-                @Given
-                inner class MyInnerClass
+                @Given inner class MyInnerClass
             }
         """
-    ) {
-        compilationShouldHaveFailed("@Given class cannot be inner")
-    }
+  ) {
+    compilationShouldHaveFailed("@Given class cannot be inner")
+  }
 
-    @Test
-    fun testGivenAbstractClass() = codegen(
-        """
+  @Test fun testGivenAbstractClass() = codegen(
+    """
             @Given abstract class MyClass
         """
-    ) {
-        compilationShouldHaveFailed("@Given class cannot be abstract")
-    }
+  ) {
+    compilationShouldHaveFailed("@Given class cannot be abstract")
+  }
 
-    @Test
-    fun testGivenConstructorAbstractClass() = codegen(
-        """
+  @Test fun testGivenConstructorAbstractClass() = codegen(
+    """
             abstract class MyClass @Given constructor()
         """
-    ) {
-        compilationShouldHaveFailed("@Given class cannot be abstract")
-    }
+  ) {
+    compilationShouldHaveFailed("@Given class cannot be abstract")
+  }
 
-    @Test
-    fun testGivenInterface() = codegen(
-        """
+  @Test fun testGivenInterface() = codegen(
+    """
             @Given interface MyInterface
         """
-    ) {
-        compilationShouldHaveFailed("interface cannot be @Given")
-    }
+  ) {
+    compilationShouldHaveFailed("interface cannot be @Given")
+  }
 
-    @Test
-    fun testNonGivenValueParameterOnGivenFunction() = codegen(
-        """
+  @Test fun testNonGivenValueParameterOnGivenFunction() = codegen(
+    """
             @Given fun bar(foo: Foo) = Bar(foo)
         """
-    ) {
-        compilationShouldHaveFailed("non @Given parameter")
-    }
+  ) {
+    compilationShouldHaveFailed("non @Given parameter")
+  }
 
-    @Test
-    fun testNonGivenValueParameterOnGivenClass() = codegen(
-        """
+  @Test fun testNonGivenValueParameterOnGivenClass() = codegen(
+    """
             @Given class MyBar(foo: Foo)
         """
-    ) {
-        compilationShouldHaveFailed("non @Given parameter")
-    }
+  ) {
+    compilationShouldHaveFailed("non @Given parameter")
+  }
 
-    @Test
-    fun testGivenReceiverOnFunction() = codegen(
-        """
+  @Test fun testGivenReceiverOnFunction() = codegen(
+    """
             fun @receiver:Given Foo.bar() = Bar(this)
         """
-    ) {
-        compilationShouldHaveFailed("receiver cannot be marked as @Given because it is implicitly @Given")
-    }
+  ) {
+    compilationShouldHaveFailed("receiver cannot be marked as @Given because it is implicitly @Given")
+  }
 
-    @Test
-    fun testGivenReceiverOnNonGivenFunction() = codegen(
-        """
+  @Test fun testGivenReceiverOnNonGivenFunction() = codegen(
+    """
             val @receiver:Given Foo.bar get() = Bar(this)
         """
-    ) {
-        compilationShouldHaveFailed("receiver cannot be marked as @Given because it is implicitly @Given")
-    }
+  ) {
+    compilationShouldHaveFailed("receiver cannot be marked as @Given because it is implicitly @Given")
+  }
 
-    @Test
-    fun testGivenFunctionOverrideWithGivenAnnotation() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenFunctionOverrideWithGivenAnnotation() = singleAndMultiCodegen(
+    """
             abstract class MySuperClass {
                 @Given abstract fun foo(): Foo
             }
         """,
-        """
-            @Given
-            class MySubClass : MySuperClass() {
-                @Given
-                override fun foo() = Foo()
+    """
+            @Given class MySubClass : MySuperClass() {
+                @Given override fun foo() = Foo()
             }
 
             fun invoke() = given<Foo>() 
         """
-    ) {
-        invokeSingleFile()
-            .shouldBeTypeOf<Foo>()
-    }
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
 
-    @Test
-    fun testFunctionOverrideWithGivenAnnotation() = singleAndMultiCodegen(
-        """
+  @Test fun testFunctionOverrideWithGivenAnnotation() = singleAndMultiCodegen(
+    """
             abstract class MySuperClass {
                 abstract fun foo(): Foo
             }
 
-            @Given
-            class MySubClass : MySuperClass() {
-                @Given
-                override fun foo() = Foo()
+            @Given class MySubClass : MySuperClass() {
+                @Given override fun foo() = Foo()
             }
         """,
-        """
+    """
            fun invoke() = given<Foo>() 
         """
-    ) {
-        invokeSingleFile()
-            .shouldBeTypeOf<Foo>()
-    }
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
 
-    @Test
-    fun testGivenFunctionOverrideWithoutGivenAnnotation() = codegen(
-        """
+  @Test fun testGivenFunctionOverrideWithoutGivenAnnotation() = codegen(
+    """
             abstract class MySuperClass {
                 @Given abstract fun foo(): Foo
             }
         """,
-        """
+    """
             class MySubClass : MySuperClass() {
                 override fun foo() = Foo()
             } 
         """
-    ) {
-        compilationShouldHaveFailed("'foo' overrides nothing")
-    }
+  ) {
+    compilationShouldHaveFailed("'foo' overrides nothing")
+  }
 
-    @Test
-    fun testNonGivenTypeParameterOverrideWithGivenOverridden() = singleAndMultiCodegen(
-        """
+  @Test fun testNonGivenTypeParameterOverrideWithGivenOverridden() = singleAndMultiCodegen(
+    """
             abstract class MySuperClass {
                 @Given abstract fun <@Given T : Bar> foo(): Foo
             }
         """,
-        """
+    """
             class MySubClass : MySuperClass() {
                 @Given override fun <T : Bar> foo(): Foo = TODO()
             } 
         """
-    ) {
-        compilationShouldHaveFailed("Conflicting overloads")
-    }
+  ) {
+    compilationShouldHaveFailed("Conflicting overloads")
+  }
 
-    @Test
-    fun testGivenPropertyOverrideWithoutGivenAnnotation() = singleAndMultiCodegen(
-        """
+  @Test fun testGivenPropertyOverrideWithoutGivenAnnotation() = singleAndMultiCodegen(
+    """
             abstract class MySuperClass {
                 @Given abstract val foo: Foo
             }
         """,
-        """
+    """
             class MySubClass : MySuperClass() {
                 override val foo = Foo()
             } 
         """
-    ) {
-        compilationShouldHaveFailed("'foo' overrides nothing")
-    }
+  ) {
+    compilationShouldHaveFailed("'foo' overrides nothing")
+  }
 
-    @Test
-    fun testActualGivenFunctionWithoutGivenAnnotation() = multiPlatformCodegen(
-        """
+  @Test fun testActualGivenFunctionWithoutGivenAnnotation() = multiPlatformCodegen(
+    """
             @Given expect fun foo(): Foo 
                 """,
-        """
+    """
             actual fun foo(): Foo = Foo()
                 """
-    ) {
-        compilationShouldHaveFailed("Actual function 'foo' has no corresponding expected declaration")
-    }
+  ) {
+    compilationShouldHaveFailed("Actual function 'foo' has no corresponding expected declaration")
+  }
 
-    @Test
-    fun testActualGivenPropertyWithoutGivenAnnotation() = multiPlatformCodegen(
-        """
+  @Test fun testActualGivenPropertyWithoutGivenAnnotation() = multiPlatformCodegen(
+    """
             @Given expect val foo: Foo 
                 """,
-        """
+    """
             actual val foo: Foo = Foo()
                 """
-    ) {
-        compilationShouldHaveFailed("Actual property 'foo' has no corresponding expected declaration")
-    }
+  ) {
+    compilationShouldHaveFailed("Actual property 'foo' has no corresponding expected declaration")
+  }
 
-    @Test
-    fun testActualGivenClassWithoutGivenAnnotation() = multiPlatformCodegen(
-        """
+  @Test fun testActualGivenClassWithoutGivenAnnotation() = multiPlatformCodegen(
+    """
             @Given expect class Dep 
                 """,
-        """
+    """
             actual class Dep
                 """
-    ) {
-        compilationShouldHaveFailed("Actual class 'Dep' has no corresponding expected declaration")
-    }
+  ) {
+    compilationShouldHaveFailed("Actual class 'Dep' has no corresponding expected declaration")
+  }
 
-    @Test
-    fun testActualGivenConstructorWithoutGivenAnnotation() = multiPlatformCodegen(
-        """
+  @Test fun testActualGivenConstructorWithoutGivenAnnotation() = multiPlatformCodegen(
+    """
            expect class Dep {
                 @Given constructor()
            } 
         """,
-        """
+    """
             actual class Dep {
                 actual constructor()
             }
                 """
-    ) {
-        compilationShouldHaveFailed("Actual constructor of 'Dep' has no corresponding expected declaration")
-    }
+  ) {
+    compilationShouldHaveFailed("Actual constructor of 'Dep' has no corresponding expected declaration")
+  }
 }

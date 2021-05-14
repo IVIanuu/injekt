@@ -24,39 +24,39 @@ import com.ivianuu.injekt.scope.*
 internal val givenScopesByLifecycle = mutableMapOf<Lifecycle, GivenScope>()
 
 internal inline fun <T : GivenScope> Lifecycle.givenScope(init: () -> T): T {
+  givenScopesByLifecycle[this]?.let { return it as T }
+  return synchronized(givenScopesByLifecycle) {
     givenScopesByLifecycle[this]?.let { return it as T }
-    return synchronized(givenScopesByLifecycle) {
-        givenScopesByLifecycle[this]?.let { return it as T }
-        val value = init()
-        givenScopesByLifecycle[this] = value
-        value
-    }.also {
-        addObserver(object : LifecycleEventObserver {
-            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-                if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
-                    synchronized(givenScopesByLifecycle) {
-                        givenScopesByLifecycle
-                            .remove(this@givenScope)
-                    }!!.dispose()
-                }
-            }
-        })
-    }
+    val value = init()
+    givenScopesByLifecycle[this] = value
+    value
+  }.also {
+    addObserver(object : LifecycleEventObserver {
+      override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+        if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
+          synchronized(givenScopesByLifecycle) {
+            givenScopesByLifecycle
+              .remove(this@givenScope)
+          } !!.dispose()
+        }
+      }
+    })
+  }
 }
 
 internal inline fun <T : GivenScope> ViewModelStore.givenScope(crossinline init: () -> T): T {
-    return ViewModelProvider(
-        this,
-        object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                GivenScopeHolder(init()) as T
-        }
-    )[GivenScopeHolder::class.java].givenScope as T
+  return ViewModelProvider(
+    this,
+    object : ViewModelProvider.Factory {
+      override fun <T : ViewModel> create(modelClass: Class<T>): T =
+        GivenScopeHolder(init()) as T
+    }
+  )[GivenScopeHolder::class.java].givenScope as T
 }
 
 internal class GivenScopeHolder<T : GivenScope>(val givenScope: T) : ViewModel() {
-    override fun onCleared() {
-        super.onCleared()
-        givenScope.dispose()
-    }
+  override fun onCleared() {
+    super.onCleared()
+    givenScope.dispose()
+  }
 }

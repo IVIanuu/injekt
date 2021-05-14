@@ -23,28 +23,28 @@ import java.io.*
 
 @AutoService(CommandLineProcessor::class)
 class InjektCommandLineProcessor : CommandLineProcessor {
-    override val pluginId = "com.ivianuu.injekt"
+  override val pluginId = "com.ivianuu.injekt"
 
-    override val pluginOptions = listOf(DumpDirOption)
+  override val pluginOptions = listOf(DumpDirOption)
 
-    override fun processOption(
-        option: AbstractCliOption,
-        value: String,
-        configuration: CompilerConfiguration,
-    ) {
-        when (option.optionName) {
-            DumpDirOption.optionName -> configuration.put(DumpDirKey, value)
-        }
+  override fun processOption(
+    option: AbstractCliOption,
+    value: String,
+    configuration: CompilerConfiguration,
+  ) {
+    when (option.optionName) {
+      DumpDirOption.optionName -> configuration.put(DumpDirKey, value)
     }
+  }
 }
 
 val DumpDirOption = CliOption(
-    optionName = "dumpDir",
-    valueDescription = "dumpDir",
-    description = "dumpDir"
+  optionName = "dumpDir",
+  valueDescription = "dumpDir",
+  description = "dumpDir"
 )
 
 val DumpDirKey = CompilerConfigurationKey<String>("dumpDir")
 fun dumpDir(configuration: CompilerConfiguration): File =
-    File(configuration.getNotNull(DumpDirKey))
-        .also { it.mkdirs() }
+  File(configuration.getNotNull(DumpDirKey))
+    .also { it.mkdirs() }

@@ -25,23 +25,23 @@ import com.ivianuu.injekt.samples.android.ui.*
 import com.ivianuu.injekt.scope.*
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        // retrieve our dependencies from the activity scope
-        val dependencies = activityGivenScope.element<MainActivityDependencies>()
-        // display ui
-        setContent {
-            dependencies.theme {
-                dependencies.appUi()
-            }
-        }
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    // retrieve our dependencies from the activity scope
+    val dependencies = activityGivenScope.element<MainActivityDependencies>()
+    // display ui
+    setContent {
+      dependencies.theme {
+        dependencies.appUi()
+      }
     }
+  }
 }
 
 // Declare dependencies we want to retrieve from the activity scope
 @Given
 @InstallElement<ActivityGivenScope>
 class MainActivityDependencies(
-    @Given val theme: SampleTheme,
-    @Given val appUi: SampleAppUi
+  @Given val theme: SampleTheme,
+  @Given val appUi: SampleAppUi
 )

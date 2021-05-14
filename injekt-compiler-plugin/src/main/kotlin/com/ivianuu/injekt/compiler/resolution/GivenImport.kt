@@ -22,9 +22,9 @@ import org.jetbrains.kotlin.psi.*
 data class GivenImport(val element: KtElement?, val importPath: String?)
 
 fun KtAnnotated.getGivenImports(): List<GivenImport> = findAnnotation(InjektFqNames.GivenImports)
-    ?.valueArguments
-    ?.map { it.toGivenImport() } ?: emptyList()
+  ?.valueArguments
+  ?.map { it.toGivenImport() } ?: emptyList()
 
 fun ValueArgument.toGivenImport() = GivenImport(
-    getArgumentExpression(), getArgumentExpression()?.text?.removeSurrounding("\"")
+  getArgumentExpression(), getArgumentExpression()?.text?.removeSurrounding("\"")
 )

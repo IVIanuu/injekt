@@ -22,19 +22,19 @@ import com.ivianuu.injekt.android.*
 import com.ivianuu.injekt.scope.*
 
 class App : Application(), AppGivenScopeOwner {
-    override lateinit var appGivenScope: AppGivenScope
-    override fun onCreate() {
-        withGivenImports(
-            "com.ivianuu.injekt.android.*",
-            "com.ivianuu.injekt.common.*",
-            "com.ivianuu.injekt.coroutines.*",
-            "com.ivianuu.injekt.scope.*",
-            "com.ivianuu.injekt.samples.android.data.*",
-            "com.ivianuu.injekt.samples.android.domain.*",
-            "com.ivianuu.injekt.samples.android.ui.*",
-        ) {
-            appGivenScope = createAppGivenScope()
-        }
-        super.onCreate()
+  override lateinit var appGivenScope: AppGivenScope
+  override fun onCreate() {
+    withGivenImports(
+      "com.ivianuu.injekt.android.*",
+      "com.ivianuu.injekt.common.*",
+      "com.ivianuu.injekt.coroutines.*",
+      "com.ivianuu.injekt.scope.*",
+      "com.ivianuu.injekt.samples.android.data.*",
+      "com.ivianuu.injekt.samples.android.domain.*",
+      "com.ivianuu.injekt.samples.android.ui.*",
+    ) {
+      appGivenScope = createAppGivenScope()
     }
+    super.onCreate()
+  }
 }

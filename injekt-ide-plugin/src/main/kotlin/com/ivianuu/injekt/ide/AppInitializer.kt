@@ -28,36 +28,36 @@ import org.jetbrains.kotlin.resolve.extensions.*
 
 @Suppress("UnstableApiUsage")
 class AppInitializer : ApplicationInitializedListener {
-    override fun componentsInitialized() {
-        val app = ApplicationManager.getApplication()
-        app
-            .messageBus.connect(app)
-            .subscribe(
-                ProjectManager.TOPIC,
-                object : ProjectManagerListener {
-                    override fun projectOpened(project: Project) {
-                        StorageComponentContainerContributor.registerExtension(
-                            project,
-                            InjektStorageComponentContainerContributor()
-                        )
-                        CandidateInterceptor.registerExtension(
-                            project,
-                            GivenCallResolutionInterceptorExtension()
-                        )
-                        TypeResolutionInterceptor.registerExtension(
-                            project,
-                            InjektTypeResolutionInterceptorExtension()
-                        )
-                        SyntheticResolveExtension.registerExtension(
-                            project,
-                            TypeClassSyntheticResolveExtension()
-                        )
-
-                        @Suppress("DEPRECATION")
-                        Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
-                            .registerExtension(InjektDiagnosticSuppressor())
-                    }
-                }
+  override fun componentsInitialized() {
+    val app = ApplicationManager.getApplication()
+    app
+      .messageBus.connect(app)
+      .subscribe(
+        ProjectManager.TOPIC,
+        object : ProjectManagerListener {
+          override fun projectOpened(project: Project) {
+            StorageComponentContainerContributor.registerExtension(
+              project,
+              InjektStorageComponentContainerContributor()
             )
-    }
+            CandidateInterceptor.registerExtension(
+              project,
+              GivenCallResolutionInterceptorExtension()
+            )
+            TypeResolutionInterceptor.registerExtension(
+              project,
+              InjektTypeResolutionInterceptorExtension()
+            )
+            SyntheticResolveExtension.registerExtension(
+              project,
+              TypeClassSyntheticResolveExtension()
+            )
+
+            @Suppress("DEPRECATION")
+            Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
+              .registerExtension(InjektDiagnosticSuppressor())
+          }
+        }
+      )
+  }
 }

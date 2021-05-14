@@ -33,30 +33,30 @@ package com.ivianuu.injekt
  * ```
  */
 @Target(
-    // @Given class MyClass
-    AnnotationTarget.CLASS,
+  // @Given class MyClass
+  AnnotationTarget.CLASS,
 
-    // class MyClass @Given constructor()
-    AnnotationTarget.CONSTRUCTOR,
+  // class MyClass @Given constructor()
+  AnnotationTarget.CONSTRUCTOR,
 
-    // @Given myFunction(): Foo = ...
-    AnnotationTarget.FUNCTION,
+  // @Given myFunction(): Foo = ...
+  AnnotationTarget.FUNCTION,
 
-    // @Given val myProperty: Foo get() = ...
-    AnnotationTarget.PROPERTY,
+  // @Given val myProperty: Foo get() = ...
+  AnnotationTarget.PROPERTY,
 
-    // @Given val myVariable: Foo = ...
-    AnnotationTarget.LOCAL_VARIABLE,
+  // @Given val myVariable: Foo = ...
+  AnnotationTarget.LOCAL_VARIABLE,
 
-    // fun func(@Given Foo: Foo)
-    AnnotationTarget.VALUE_PARAMETER,
+  // fun func(@Given Foo: Foo)
+  AnnotationTarget.VALUE_PARAMETER,
 
-    // Providers
-    // val provider = given<(@Given Foo) -> Bar>()
-    AnnotationTarget.TYPE,
+  // Providers
+  // val provider = given<(@Given Foo) -> Bar>()
+  AnnotationTarget.TYPE,
 
-    // @Given fun <@Given T> func()
-    AnnotationTarget.TYPE_PARAMETER
+  // @Given fun <@Given T> func()
+  AnnotationTarget.TYPE_PARAMETER
 )
 annotation class Given
 
@@ -64,11 +64,11 @@ annotation class Given
  * Imports givens from the specified [paths] and use them when resolving given arguments inside the declaration
  */
 @Target(
-    AnnotationTarget.CLASS,
-    AnnotationTarget.PROPERTY,
-    AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.FILE
+  AnnotationTarget.CLASS,
+  AnnotationTarget.PROPERTY,
+  AnnotationTarget.CONSTRUCTOR,
+  AnnotationTarget.FUNCTION,
+  AnnotationTarget.FILE
 )
 annotation class GivenImports(vararg val paths: String)
 
@@ -76,8 +76,8 @@ annotation class GivenImports(vararg val paths: String)
  * Runs the [block] and imports givens from [paths] and use them when resolving given arguments inside [block]
  */
 inline fun <R> withGivenImports(
-    @Suppress("UNUSED_PARAMETER") vararg paths: String,
-    block: () -> R
+  @Suppress("UNUSED_PARAMETER") vararg paths: String,
+  block: () -> R
 ): R = block()
 
 /**
@@ -96,17 +96,13 @@ inline fun <T> givenOrNull(@Given @DefaultOnAllErrors value: T? = null): T? = va
  *
  * For example:
  * ```
- * @Qualifier
- * annotation class UserId
+ * @Qualifier annotation class UserId
  *
- * @Qualifier
- * annotation class Username
+ * @Qualifier annotation class Username
  *
- * @Given
- * val userId: @UserId String = "123"
+ * @Given val userId: @UserId String = "123"
  *
- * @Given
- * val username: @Username String = "Foo"
+ * @Given val username: @Username String = "Foo"
  *
  * fun main() {
  *     val userId = given<@UserId String>()
@@ -124,13 +120,13 @@ annotation class Qualifier
  * Normally the default value will only be used if no given was found but not if it has errors
  */
 @Target(
-    // value parameters
-    // fun func(@Given @DefaultOnAllErrors p: String = "default")
-    AnnotationTarget.VALUE_PARAMETER,
+  // value parameters
+  // fun func(@Given @DefaultOnAllErrors p: String = "default")
+  AnnotationTarget.VALUE_PARAMETER,
 
-    // nullable providers
-    // val elements = given<@DefaultOnAllErrors () -> Bar?>()
-    AnnotationTarget.TYPE
+  // nullable providers
+  // val elements = given<@DefaultOnAllErrors () -> Bar?>()
+  AnnotationTarget.TYPE
 )
 annotation class DefaultOnAllErrors
 

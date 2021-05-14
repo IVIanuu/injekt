@@ -25,169 +25,151 @@ import org.junit.*
 
 @GivenImports("com.ivianuu.injekt.common.*")
 class GivenScopeTest {
-    @Test
-    fun testGetElement() {
-        @Given val element: @InstallElement<TestGivenScope1> String = "value"
-        val scope = given<TestGivenScope1>()
-        scope.element<String>() shouldBe "value"
+  @Test fun testGetElement() {
+    @Given val element: @InstallElement<TestGivenScope1> String = "value"
+    val scope = given<TestGivenScope1>()
+    scope.element<String>() shouldBe "value"
+  }
+
+  @Test fun testGivenScopeInitializer() {
+    var called = false
+
+    @Given
+    fun initializer(@Given givenScope: TestGivenScope1): GivenScopeInitializer<TestGivenScope1> = {
+      called = true
     }
 
-    @Test
-    fun testGivenScopeInitializer() {
-        var called = false
-        @Given
-        fun initializer(@Given givenScope: TestGivenScope1): GivenScopeInitializer<TestGivenScope1> = {
-            called = true
-        }
-        var otherCalled = false
-        @Given
-        fun otherInitializer(): GivenScopeInitializer<TestGivenScope2> = {
-            otherCalled = true
-        }
-        val scope = given<TestGivenScope1>()
-        called shouldBe true
-        otherCalled shouldBe false
+    var otherCalled = false
+
+    @Given fun otherInitializer(): GivenScopeInitializer<TestGivenScope2> = {
+      otherCalled = true
     }
 
-    @Test
-    fun testChildGivenScopeModule() {
-        @Given
-        val childScopeModule = ChildScopeModule1<TestGivenScope1, String, TestGivenScope2>()
-        val parentScope = given<TestGivenScope1>()
-        val childScope = parentScope.element<@ChildScopeFactory (String) -> TestGivenScope2>()("42")
-        childScope.element<String>() shouldBe "42"
-    }
+    val scope = given<TestGivenScope1>()
+    called shouldBe true
+    otherCalled shouldBe false
+  }
 
-    @Test
-    fun testGetSetScopedValue() {
-        val scope = given<TestGivenScope1>()
-        scope.getScopedValueOrNull<String>(0) shouldBe null
-        scope.setScopedValue(0, "value")
-        scope.getScopedValueOrNull<String>(0) shouldBe "value"
-    }
+  @Test fun testChildGivenScopeModule() {
+    @Given val childScopeModule = ChildScopeModule1<TestGivenScope1, String, TestGivenScope2>()
+    val parentScope = given<TestGivenScope1>()
+    val childScope = parentScope.element<@ChildScopeFactory (String) -> TestGivenScope2>()("42")
+    childScope.element<String>() shouldBe "42"
+  }
 
-    @Test
-    fun testRemoveScopedValueDisposesValue() {
-        val scope = given<TestGivenScope1>()
-        var disposed = false
-        scope.setScopedValue(0, GivenScopeDisposable { disposed = true })
+  @Test fun testGetSetScopedValue() {
+    val scope = given<TestGivenScope1>()
+    scope.getScopedValueOrNull<String>(0) shouldBe null
+    scope.setScopedValue(0, "value")
+    scope.getScopedValueOrNull<String>(0) shouldBe "value"
+  }
 
-        disposed.shouldBeFalse()
-        scope.removeScopedValue(0)
-        disposed.shouldBeTrue()
-    }
+  @Test fun testRemoveScopedValueDisposesValue() {
+    val scope = given<TestGivenScope1>()
+    var disposed = false
+    scope.setScopedValue(0, GivenScopeDisposable { disposed = true })
 
-    @Test
-    fun testSetScopedValueDisposesOldValue() {
-        val scope = given<TestGivenScope1>()
-        var disposed = false
-        scope.setScopedValue(0, GivenScopeDisposable { disposed = true })
+    disposed.shouldBeFalse()
+    scope.removeScopedValue(0)
+    disposed.shouldBeTrue()
+  }
 
-        disposed.shouldBeFalse()
-        scope.setScopedValue(0, 0)
-        disposed.shouldBeTrue()
-    }
+  @Test fun testSetScopedValueDisposesOldValue() {
+    val scope = given<TestGivenScope1>()
+    var disposed = false
+    scope.setScopedValue(0, GivenScopeDisposable { disposed = true })
 
-    @Test
-    fun testDisposeDisposesValues() {
-        val scope = given<TestGivenScope1>()
-        var disposed = false
-        scope.setScopedValue(0, GivenScopeDisposable { disposed = true })
+    disposed.shouldBeFalse()
+    scope.setScopedValue(0, 0)
+    disposed.shouldBeTrue()
+  }
 
-        disposed.shouldBeFalse()
-        scope.dispose()
-        disposed.shouldBeTrue()
-    }
+  @Test fun testDisposeDisposesValues() {
+    val scope = given<TestGivenScope1>()
+    var disposed = false
+    scope.setScopedValue(0, GivenScopeDisposable { disposed = true })
 
-    @Test
-    fun testGetOrCreateScopedValue() {
-        val scope = given<TestGivenScope1>()
-        var calls = 0
-        scope.getOrCreateScopedValue(0) { calls++ }
-        scope.getOrCreateScopedValue(0) { calls++ }
-        scope.getOrCreateScopedValue(1) { calls++ }
-        calls shouldBe 2
-    }
+    disposed.shouldBeFalse()
+    scope.dispose()
+    disposed.shouldBeTrue()
+  }
 
-    @Test
-    fun testDispose() {
-        val scope = given<TestGivenScope1>()
-        scope.isDisposed.shouldBeFalse()
-        scope.dispose()
-        scope.isDisposed.shouldBeTrue()
-    }
+  @Test fun testGetOrCreateScopedValue() {
+    val scope = given<TestGivenScope1>()
+    var calls = 0
+    scope.getOrCreateScopedValue(0) { calls ++ }
+    scope.getOrCreateScopedValue(0) { calls ++ }
+    scope.getOrCreateScopedValue(1) { calls ++ }
+    calls shouldBe 2
+  }
 
-    @Test
-    fun testInvokeOnDispose() {
-        val scope = given<TestGivenScope1>()
-        var called = false
-        scope.invokeOnDispose { called = true }
-        called.shouldBeFalse()
-        scope.dispose()
-        called.shouldBeTrue()
-    }
+  @Test fun testDispose() {
+    val scope = given<TestGivenScope1>()
+    scope.isDisposed.shouldBeFalse()
+    scope.dispose()
+    scope.isDisposed.shouldBeTrue()
+  }
 
-    @Test
-    fun testInvokeOnDisposeOnDisposedScope() {
-        val scope = given<TestGivenScope1>()
-        var called = false
-        scope.dispose()
-        scope.invokeOnDispose { called = true }
-        called.shouldBeTrue()
-    }
+  @Test fun testInvokeOnDispose() {
+    val scope = given<TestGivenScope1>()
+    var called = false
+    scope.invokeOnDispose { called = true }
+    called.shouldBeFalse()
+    scope.dispose()
+    called.shouldBeTrue()
+  }
 
-    @Test
-    fun testDoesNotInvokeOnDisposeIfReturnDisposableWasDisposed() {
-        val scope = given<TestGivenScope1>()
-        var called = false
-        val disposable = scope.invokeOnDispose { called = true }
-        disposable.dispose()
-        called.shouldBeFalse()
-        scope.dispose()
-        called.shouldBeFalse()
-    }
+  @Test fun testInvokeOnDisposeOnDisposedScope() {
+    val scope = given<TestGivenScope1>()
+    var called = false
+    scope.dispose()
+    scope.invokeOnDispose { called = true }
+    called.shouldBeTrue()
+  }
 
-    @Test
-    fun testTypeKey() {
-        val scope = given<TestGivenScope1>()
-        scope.typeKey shouldBe typeKeyOf<TestGivenScope1>()
-    }
+  @Test fun testDoesNotInvokeOnDisposeIfReturnDisposableWasDisposed() {
+    val scope = given<TestGivenScope1>()
+    var called = false
+    val disposable = scope.invokeOnDispose { called = true }
+    disposable.dispose()
+    called.shouldBeFalse()
+    scope.dispose()
+    called.shouldBeFalse()
+  }
 
-    @Test
-    fun testParentScope() {
-        @Given
-        val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
-        @Given
-        val childScope2Module = ChildScopeModule0<TestGivenScope2, TestGivenScope3>()
-        val parentScope = given<TestGivenScope1>()
-        val childScope1 = parentScope.element<@ChildScopeFactory () -> TestGivenScope2>()
-            .invoke()
-        val childScope2 = childScope1.element<@ChildScopeFactory () -> TestGivenScope3>()
-            .invoke()
-        childScope1.parent shouldBeSameInstanceAs parentScope
-        childScope2.parent shouldBeSameInstanceAs childScope1
-    }
+  @Test fun testTypeKey() {
+    val scope = given<TestGivenScope1>()
+    scope.typeKey shouldBe typeKeyOf<TestGivenScope1>()
+  }
 
-    @Test
-    fun testChildReturnsParentElement() {
-        @Given val parentElement: @InstallElement<TestGivenScope1> String = "value"
-        @Given
-        val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
-        val parentScope = given<TestGivenScope1>()
-        val childScope = parentScope.element<@ChildScopeFactory () -> TestGivenScope2>()
-            .invoke()
-        childScope.element<String>() shouldBe "value"
-    }
+  @Test fun testParentScope() {
+    @Given val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
+    @Given val childScope2Module = ChildScopeModule0<TestGivenScope2, TestGivenScope3>()
+    val parentScope = given<TestGivenScope1>()
+    val childScope1 = parentScope.element<@ChildScopeFactory () -> TestGivenScope2>()
+      .invoke()
+    val childScope2 = childScope1.element<@ChildScopeFactory () -> TestGivenScope3>()
+      .invoke()
+    childScope1.parent shouldBeSameInstanceAs parentScope
+    childScope2.parent shouldBeSameInstanceAs childScope1
+  }
 
-    @Test
-    fun testDisposingParentDisposesChild() {
-        @Given
-        val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
-        val parentScope = given<TestGivenScope1>()
-        val childScope = parentScope.element<@ChildScopeFactory () -> TestGivenScope2>()
-            .invoke()
-        childScope.isDisposed.shouldBeFalse()
-        parentScope.dispose()
-        childScope.isDisposed.shouldBeTrue()
-    }
+  @Test fun testChildReturnsParentElement() {
+    @Given val parentElement: @InstallElement<TestGivenScope1> String = "value"
+    @Given val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
+    val parentScope = given<TestGivenScope1>()
+    val childScope = parentScope.element<@ChildScopeFactory () -> TestGivenScope2>()
+      .invoke()
+    childScope.element<String>() shouldBe "value"
+  }
+
+  @Test fun testDisposingParentDisposesChild() {
+    @Given val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
+    val parentScope = given<TestGivenScope1>()
+    val childScope = parentScope.element<@ChildScopeFactory () -> TestGivenScope2>()
+      .invoke()
+    childScope.isDisposed.shouldBeFalse()
+    parentScope.dispose()
+    childScope.isDisposed.shouldBeTrue()
+  }
 }

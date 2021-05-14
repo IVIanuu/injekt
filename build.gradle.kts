@@ -20,87 +20,90 @@ import org.jetbrains.kotlin.gradle.plugin.*
 import org.jetbrains.kotlin.gradle.plugin.mpp.*
 
 buildscript {
-    repositories {
-        mavenLocal()
-        google()
-        mavenCentral()
-        jcenter()
-        maven("https://plugins.gradle.org/m2")
-    }
-    dependencies {
-        classpath(Deps.androidGradlePlugin)
-        classpath(Deps.buildConfigGradlePlugin)
-        classpath(Deps.dokkaGradlePlugin)
-        classpath(Deps.Injekt.gradlePlugin)
-        classpath(Deps.Kotlin.gradlePlugin)
-        classpath(Deps.KotlinSerialization.gradlePlugin)
-        classpath(Deps.mavenPublishGradlePlugin)
-        classpath(Deps.shadowGradlePlugin)
-    }
+  repositories {
+    mavenLocal()
+    google()
+    mavenCentral()
+    jcenter()
+    maven("https://plugins.gradle.org/m2")
+  }
+  dependencies {
+    classpath(Deps.androidGradlePlugin)
+    classpath(Deps.buildConfigGradlePlugin)
+    classpath(Deps.dokkaGradlePlugin)
+    classpath(Deps.Injekt.gradlePlugin)
+    classpath(Deps.Kotlin.gradlePlugin)
+    classpath(Deps.KotlinSerialization.gradlePlugin)
+    classpath(Deps.mavenPublishGradlePlugin)
+    classpath(Deps.shadowGradlePlugin)
+  }
 }
 
 allprojects {
-    repositories {
-        mavenLocal()
-        google()
-        mavenCentral()
-        jcenter()
-        maven("https://oss.sonatype.org/content/repositories/snapshots")
-        maven("https://plugins.gradle.org/m2")
-    }
+  repositories {
+    mavenLocal()
+    google()
+    mavenCentral()
+    jcenter()
+    maven("https://oss.sonatype.org/content/repositories/snapshots")
+    maven("https://plugins.gradle.org/m2")
+  }
 
-    afterEvaluate {
-        fun setupCompilation(compilation: KotlinCompilation<*>) {
-            if (compilation is KotlinJvmCompilation) {
-                compilation.kotlinOptions {
-                    useIR = true
-                }
-            }
-            if (project.name != "injekt-compiler-plugin" &&
-                project.name != "injekt-gradle-plugin") {
-                compilation.kotlinOptions {
-                    val pluginOptions = compilation.setupForInjekt().get()
-                    pluginOptions.forEach {
-                        freeCompilerArgs += listOf(
-                            "-P", "plugin:com.ivianuu.injekt:${it.key}=${it.value}"
-                        )
-                    }
-                    if (configurations.findByName("kotlinCompilerPluginClasspath")
-                            ?.dependencies
-                            ?.any { it.group == "androidx.compose.compiler" } == true) {
-                        freeCompilerArgs += listOf(
-                            "-P", "plugin:androidx.compose.compiler.plugins.kotlin:suppressKotlinVersionCompatibilityCheck=true"
-                        )
-                    }
-                }
-            }
+  afterEvaluate {
+    fun setupCompilation(compilation: KotlinCompilation<*>) {
+      if (compilation is KotlinJvmCompilation) {
+        compilation.kotlinOptions {
+          useIR = true
         }
-        if (pluginManager.hasPlugin("org.jetbrains.kotlin.multiplatform")) {
-            extensions.getByType(KotlinMultiplatformExtension::class.java).run {
-                project.afterEvaluate {
-                    targets
-                        .flatMap { it.compilations }
-                        .forEach { setupCompilation(it) }
-                }
-            }
-        } else if (pluginManager.hasPlugin("org.jetbrains.kotlin.android")) {
-            extensions.getByType(KotlinAndroidProjectExtension::class.java).run {
-                project.afterEvaluate {
-                    target.compilations
-                        .forEach {
-                            setupCompilation(it)
-                        }
-                }
-            }
-        } else if (pluginManager.hasPlugin("org.jetbrains.kotlin.jvm")) {
-            extensions.getByType(KotlinJvmProjectExtension::class.java).run {
-                project.afterEvaluate {
-                    target.compilations
-                        .forEach {
-                            setupCompilation(it)
-                        }
-                }
-            }
+      }
+      if (project.name != "injekt-compiler-plugin" &&
+        project.name != "injekt-gradle-plugin"
+      ) {
+        compilation.kotlinOptions {
+          val pluginOptions = compilation.setupForInjekt().get()
+          pluginOptions.forEach {
+            freeCompilerArgs += listOf(
+              "-P", "plugin:com.ivianuu.injekt:${it.key}=${it.value}"
+            )
+          }
+          if (configurations.findByName("kotlinCompilerPluginClasspath")
+              ?.dependencies
+              ?.any { it.group == "androidx.compose.compiler" } == true
+          ) {
+            freeCompilerArgs += listOf(
+              "-P",
+              "plugin:androidx.compose.compiler.plugins.kotlin:suppressKotlinVersionCompatibilityCheck=true"
+            )
+          }
         }
+      }
     }
+    if (pluginManager.hasPlugin("org.jetbrains.kotlin.multiplatform")) {
+      extensions.getByType(KotlinMultiplatformExtension::class.java).run {
+        project.afterEvaluate {
+          targets
+            .flatMap { it.compilations }
+            .forEach { setupCompilation(it) }
+        }
+      }
+    } else if (pluginManager.hasPlugin("org.jetbrains.kotlin.android")) {
+      extensions.getByType(KotlinAndroidProjectExtension::class.java).run {
+        project.afterEvaluate {
+          target.compilations
+            .forEach {
+              setupCompilation(it)
+            }
+        }
+      }
+    } else if (pluginManager.hasPlugin("org.jetbrains.kotlin.jvm")) {
+      extensions.getByType(KotlinJvmProjectExtension::class.java).run {
+        project.afterEvaluate {
+          target.compilations
+            .forEach {
+              setupCompilation(it)
+            }
+        }
+      }
+    }
+  }
 }

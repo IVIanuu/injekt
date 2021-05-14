@@ -23,64 +23,58 @@ import org.jetbrains.kotlin.name.*
 import org.junit.*
 
 class GivenImportsTest {
-    @Test
-    fun testUnresolvedImport() = codegen(
-        """
+  @Test fun testUnresolvedImport() = codegen(
+    """
             @GivenImports("a")
             fun invoke() {
             }
         """
-    ) {
-        compilationShouldHaveFailed("Unresolved given import")
-    }
+  ) {
+    compilationShouldHaveFailed("Unresolved given import")
+  }
 
-    @Test
-    fun testUnresolvedStarImport() = codegen(
-        """
+  @Test fun testUnresolvedStarImport() = codegen(
+    """
             @GivenImports("a.*")
             fun invoke() {
             }
         """
-    ) {
-        compilationShouldHaveFailed("Unresolved given import")
-    }
+  ) {
+    compilationShouldHaveFailed("Unresolved given import")
+  }
 
-    @Test
-    fun testImportsJustAPackage() = codegen(
-        """
+  @Test fun testImportsJustAPackage() = codegen(
+    """
             @GivenImports("kotlin.collections")
             fun invoke() {
             }
         """
-    ) {
-        compilationShouldHaveFailed("Unresolved given import")
-    }
+  ) {
+    compilationShouldHaveFailed("Unresolved given import")
+  }
 
-    @Test
-    fun testMalformedImport() = codegen(
-        """
+  @Test fun testMalformedImport() = codegen(
+    """
             @GivenImports("-_;-")
             fun invoke() {
             }
         """
-    ) {
-        compilationShouldHaveFailed("Cannot read given import")
-    }
+  ) {
+    compilationShouldHaveFailed("Cannot read given import")
+  }
 
-    @Test
-    fun testDuplicatedImports() = codegen(
-        """
+  @Test fun testDuplicatedImports() = codegen(
+    """
             @GivenImports("kotlin.collections.*", "kotlin.collections.*")
             fun invoke() {
             }
         """
-    ) {
-        compilationShouldHaveFailed("Duplicated given import")
-    }
+  ) {
+    compilationShouldHaveFailed("Duplicated given import")
+  }
 
-    @Test
-    fun testNestedDuplicatedImports() = codegen(
-        """
+  @Test fun testNestedDuplicatedImports() = codegen(
+    """
             @GivenImports("kotlin.collections.*")
             fun invoke() {
                 withGivenImports("kotlin.collections.*") {
@@ -88,186 +82,177 @@ class GivenImportsTest {
                 }
             }
         """
-    ) {
-        compilationShouldHaveFailed("Duplicated given import")
-    }
+  ) {
+    compilationShouldHaveFailed("Duplicated given import")
+  }
 
-    @Test
-    fun testUnusedImport() = codegen(
-        """
+  @Test fun testUnusedImport() = codegen(
+    """
             @GivenImports("kotlin.collections.*")
             fun invoke() {
             }
         """
-    ) {
-        shouldContainMessage("Unused given import")
-    }
+  ) {
+    shouldContainMessage("Unused given import")
+  }
 
-    @Test
-    fun testUsedImport() = singleAndMultiCodegen(
-        listOf(
-            listOf(
-                source(
-                    """
+  @Test fun testUsedImport() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
                     @Given val foo = Foo()
                 """,
-                    packageFqName = FqName("givens")
-                )
-            ),
-            listOf(
-                source(
-                    """
+          packageFqName = FqName("givens")
+        )
+      ),
+      listOf(
+        source(
+          """
                     @GivenImports("givens.foo")
                     fun invoke() = given<Foo>()
                     """,
-                    name = "File.kt"
-                )
-            )
+          name = "File.kt"
         )
-    ) {
-        shouldNotContainMessage("Unused given import")
-    }
+      )
+    )
+  ) {
+    shouldNotContainMessage("Unused given import")
+  }
 
-    @Test
-    fun testUsedStarImport() = singleAndMultiCodegen(
-        listOf(
-            listOf(
-                source(
-                    """
+  @Test fun testUsedStarImport() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
                     @Given val foo = Foo()
                 """,
-                    packageFqName = FqName("givens")
-                )
-            ),
-            listOf(
-                source(
-                    """
+          packageFqName = FqName("givens")
+        )
+      ),
+      listOf(
+        source(
+          """
                     @GivenImports("givens.*")
                     fun invoke() = given<Foo>()
                     """,
-                    name = "File.kt"
-                )
-            )
+          name = "File.kt"
         )
-    ) {
-        shouldNotContainMessage("Unused given import")
-    }
+      )
+    )
+  ) {
+    shouldNotContainMessage("Unused given import")
+  }
 
-    @Test
-    fun testStarImportSamePackage() = codegen(
-        """
+  @Test fun testStarImportSamePackage() = codegen(
+    """
             @GivenImports("com.ivianuu.injekt.integrationtests.*")
             fun invoke() {
             }
         """
-    ) {
-        compilationShouldHaveFailed("Givens of the same package are automatically imported")
-    }
+  ) {
+    compilationShouldHaveFailed("Givens of the same package are automatically imported")
+  }
 
-    @Test
-    fun testImportGivenSamePackage() = codegen(
-        """
+  @Test fun testImportGivenSamePackage() = codegen(
+    """
             @Given val foo = Foo()
             @GivenImports("com.ivianuu.injekt.integrationtests.foo")
             fun invoke() {
             }
         """
-    ) {
-        compilationShouldHaveFailed("Givens of the same package are automatically imported")
-    }
+  ) {
+    compilationShouldHaveFailed("Givens of the same package are automatically imported")
+  }
 
-    @Test
-    fun testClassWithGivenImports() = singleAndMultiCodegen(
-        listOf(
-            listOf(
-                source(
-                    """
+  @Test fun testClassWithGivenImports() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
                     @Given val foo = Foo()
                 """,
-                    packageFqName = FqName("givens")
-                )
-            ),
-            listOf(
-                source(
-                    """
+          packageFqName = FqName("givens")
+        )
+      ),
+      listOf(
+        source(
+          """
                     @GivenImports("givens.*")
                     class MyClass {
                         fun invoke() = given<Foo>()
                     }
                     fun invoke() = MyClass().invoke()
                     """,
-                    name = "File.kt"
-                )
-            )
+          name = "File.kt"
         )
-    ) {
-        invokeSingleFile().shouldBeTypeOf<Foo>()
-    }
+      )
+    )
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
 
-    @Test
-    fun testFunctionWithGivenImports() = singleAndMultiCodegen(
-        listOf(
-            listOf(
-                source(
-                    """
+  @Test fun testFunctionWithGivenImports() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
                     @Given val foo = Foo()
                 """,
-                    packageFqName = FqName("givens")
-                )
-            ),
-            listOf(
-                source(
-                    """
+          packageFqName = FqName("givens")
+        )
+      ),
+      listOf(
+        source(
+          """
                     @GivenImports("givens.*")
                     fun invoke() = given<Foo>()
                     """,
-                    name = "File.kt"
-                )
-            )
+          name = "File.kt"
         )
-    ) {
-        invokeSingleFile().shouldBeTypeOf<Foo>()
-    }
+      )
+    )
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
 
-    @Test
-    fun testPropertyWithGivenImports() = singleAndMultiCodegen(
-        listOf(
-            listOf(
-                source(
-                    """
+  @Test fun testPropertyWithGivenImports() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
                     @Given val foo = Foo()
                 """,
-                    packageFqName = FqName("givens")
-                )
-            ),
-            listOf(
-                source(
-                    """
+          packageFqName = FqName("givens")
+        )
+      ),
+      listOf(
+        source(
+          """
                     @GivenImports("givens.*")
                     val givenFoo = given<Foo>()
                     fun invoke() = givenFoo
                     """,
-                    name = "File.kt"
-                )
-            )
+          name = "File.kt"
         )
-    ) {
-        invokeSingleFile().shouldBeTypeOf<Foo>()
-    }
+      )
+    )
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
 
-    @Test
-    fun testWithGivenImports() = codegen(
-        listOf(
-            source(
-                """
+  @Test fun testWithGivenImports() = codegen(
+    listOf(
+      source(
+        """
                     fun invoke() = withGivenImports("com.ivianuu.injekt.common.*") {
                         given<TypeKey<Foo>>().value
                     }
                 """,
-                name = "File.kt"
-            )
-        )
-    ) {
-        invokeSingleFile() shouldBe "com.ivianuu.injekt.test.Foo"
-    }
+        name = "File.kt"
+      )
+    )
+  ) {
+    invokeSingleFile() shouldBe "com.ivianuu.injekt.test.Foo"
+  }
 }

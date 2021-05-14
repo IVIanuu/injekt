@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import com.ivianuu.injekt.gradle.*
-
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -31,50 +29,50 @@ import com.ivianuu.injekt.gradle.*
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- plugins {
-     kotlin("multiplatform")
- }
+plugins {
+  kotlin("multiplatform")
+}
 
 kotlin {
-    jvm {
-        withJava()
-        compilations.forEach {
-            it.kotlinOptions {
-                jvmTarget = "1.8"
-            }
-        }
+  jvm {
+    withJava()
+    compilations.forEach {
+      it.kotlinOptions {
+        jvmTarget = "1.8"
+      }
     }
-    sourceSets {
-        named("jvmMain") {
-            dependencies {
-                api(project(":injekt-scope"))
-                configurations.getByName("kotlinCompilerPluginClasspath")
-                    .dependencies.add(project(":injekt-compiler-plugin"))
-                api(project(":injekt-compiler-plugin"))
+  }
+  sourceSets {
+    named("jvmMain") {
+      dependencies {
+        api(project(":injekt-scope"))
+        configurations.getByName("kotlinCompilerPluginClasspath")
+          .dependencies.add(project(":injekt-compiler-plugin"))
+        api(project(":injekt-compiler-plugin"))
 
-                api(Deps.AndroidX.Compose.compiler)
+        api(Deps.AndroidX.Compose.compiler)
 
-                api(Deps.Coroutines.core)
-                api(Deps.Coroutines.test)
+        api(Deps.Coroutines.core)
+        api(Deps.Coroutines.test)
 
-                api(Deps.Kotlin.compilerEmbeddable)
-                api(Deps.kotlinCompileTesting)
+        api(Deps.Kotlin.compilerEmbeddable)
+        api(Deps.kotlinCompileTesting)
 
-                api(Deps.kotestAssertions)
+        api(Deps.kotestAssertions)
 
-                api(Deps.junit)
-                api(Deps.AndroidX.Test.core)
-                api(Deps.AndroidX.Test.junit)
-                api(Deps.roboelectric)
-            }
-        }
-        named("jvmTest") {
-            dependencies {
-                implementation(Deps.junit)
-                implementation(Deps.kotestAssertions)
-            }
-        }
+        api(Deps.junit)
+        api(Deps.AndroidX.Test.core)
+        api(Deps.AndroidX.Test.junit)
+        api(Deps.roboelectric)
+      }
     }
+    named("jvmTest") {
+      dependencies {
+        implementation(Deps.junit)
+        implementation(Deps.kotestAssertions)
+      }
+    }
+  }
 }
 
 plugins.apply("com.vanniktech.maven.publish")

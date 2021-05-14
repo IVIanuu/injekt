@@ -22,12 +22,12 @@ import org.jetbrains.kotlin.ir.visitors.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 
 class WithGivenImportsTransformer : IrElementTransformerVoid() {
-    override fun visitCall(expression: IrCall): IrExpression {
-        if (expression.symbol.descriptor.fqNameSafe == InjektFqNames.withGivenImports) {
-            // we just remove the import paths parameter to make sure that they don't exist anymore
-            // and then we let the inline lowering handle the rest
-            expression.putValueArgument(0, null)
-        }
-        return super.visitCall(expression)
+  override fun visitCall(expression: IrCall): IrExpression {
+    if (expression.symbol.descriptor.fqNameSafe == InjektFqNames.withGivenImports) {
+      // we just remove the import paths parameter to make sure that they don't exist anymore
+      // and then we let the inline lowering handle the rest
+      expression.putValueArgument(0, null)
     }
+    return super.visitCall(expression)
+  }
 }

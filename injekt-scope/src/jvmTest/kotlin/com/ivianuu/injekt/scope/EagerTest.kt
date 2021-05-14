@@ -22,24 +22,24 @@ import org.junit.*
 
 @GivenImports("com.ivianuu.injekt.common.*")
 class EagerTest {
-    @Qualifier
-    private annotation class Element
-    @Test
-    fun testEager() {
-        var callCount = 0
-        class Foo
-        @Given
-        fun eagerFoo(): @Eager<TestGivenScope1> Foo {
-            callCount++
-            return Foo()
-        }
-        @Given
-        fun fooElement(@Given foo: Foo): @InstallElement<TestGivenScope1> @Element Foo = foo
-        val scope = given<TestGivenScope1>()
-        callCount shouldBe 1
-        scope.element<@Element Foo>()
-        callCount shouldBe 1
-        scope.element<@Element Foo>()
-        callCount shouldBe 1
+  @Qualifier private annotation class Element
+
+  @Test fun testEager() {
+    var callCount = 0
+
+    class Foo
+
+    @Given fun eagerFoo(): @Eager<TestGivenScope1> Foo {
+      callCount ++
+      return Foo()
     }
+
+    @Given fun fooElement(@Given foo: Foo): @InstallElement<TestGivenScope1> @Element Foo = foo
+    val scope = given<TestGivenScope1>()
+    callCount shouldBe 1
+    scope.element<@Element Foo>()
+    callCount shouldBe 1
+    scope.element<@Element Foo>()
+    callCount shouldBe 1
+  }
 }

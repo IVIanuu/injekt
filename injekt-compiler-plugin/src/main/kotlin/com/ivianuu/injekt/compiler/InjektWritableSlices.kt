@@ -23,20 +23,27 @@ import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.util.slicedMap.*
 
 object InjektWritableSlices {
-    val GIVEN_GRAPH =
-        BasicWritableSlice<SourcePosition, GivenGraph.Success>(RewritePolicy.DO_NOTHING)
-    val USED_GIVEN = BasicWritableSlice<DeclarationDescriptor, Unit>(RewritePolicy.DO_NOTHING)
-    val USED_IMPORT = BasicWritableSlice<SourcePosition, Unit>(RewritePolicy.DO_NOTHING)
-    val FILE_HAS_GIVEN_CALLS = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
-    val DECLARATION_RESOLUTION_SCOPE = BasicWritableSlice<DeclarationDescriptor, ResolutionScope>(RewritePolicy.DO_NOTHING)
-    val HIERARCHICAL_RESOLUTION_SCOPE = BasicWritableSlice<HierarchicalScope, ResolutionScope>(RewritePolicy.DO_NOTHING)
-    val CALLABLE_REF_FOR_DESCRIPTOR = BasicWritableSlice<CallableDescriptor, CallableRef>(RewritePolicy.DO_NOTHING)
-    val CLASSIFIER_REF_FOR_CLASSIFIER = BasicWritableSlice<ClassifierDescriptor, ClassifierRef>(RewritePolicy.DO_NOTHING)
-    val IS_GIVEN = BasicWritableSlice<Any, Boolean>(RewritePolicy.DO_NOTHING)
-    val GIVEN_CONSTRUCTORS = BasicWritableSlice<ClassDescriptor, List<CallableRef>>(RewritePolicy.DO_NOTHING)
-    val CALLABLE_INFO = BasicWritableSlice<CallableDescriptor, CallableInfo>(RewritePolicy.DO_NOTHING)
-    val CLASSIFIER_INFO = BasicWritableSlice<ClassifierDescriptor, ClassifierInfo>(RewritePolicy.DO_NOTHING)
-    val CLASSIFIER_FOR_KEY = BasicWritableSlice<String, ClassifierDescriptor>(RewritePolicy.DO_NOTHING)
+  val GIVEN_GRAPH =
+    BasicWritableSlice<SourcePosition, GivenGraph.Success>(RewritePolicy.DO_NOTHING)
+  val USED_GIVEN = BasicWritableSlice<DeclarationDescriptor, Unit>(RewritePolicy.DO_NOTHING)
+  val USED_IMPORT = BasicWritableSlice<SourcePosition, Unit>(RewritePolicy.DO_NOTHING)
+  val FILE_HAS_GIVEN_CALLS = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
+  val DECLARATION_RESOLUTION_SCOPE =
+    BasicWritableSlice<DeclarationDescriptor, ResolutionScope>(RewritePolicy.DO_NOTHING)
+  val HIERARCHICAL_RESOLUTION_SCOPE =
+    BasicWritableSlice<HierarchicalScope, ResolutionScope>(RewritePolicy.DO_NOTHING)
+  val CALLABLE_REF_FOR_DESCRIPTOR =
+    BasicWritableSlice<CallableDescriptor, CallableRef>(RewritePolicy.DO_NOTHING)
+  val CLASSIFIER_REF_FOR_CLASSIFIER =
+    BasicWritableSlice<ClassifierDescriptor, ClassifierRef>(RewritePolicy.DO_NOTHING)
+  val IS_GIVEN = BasicWritableSlice<Any, Boolean>(RewritePolicy.DO_NOTHING)
+  val GIVEN_CONSTRUCTORS =
+    BasicWritableSlice<ClassDescriptor, List<CallableRef>>(RewritePolicy.DO_NOTHING)
+  val CALLABLE_INFO = BasicWritableSlice<CallableDescriptor, CallableInfo>(RewritePolicy.DO_NOTHING)
+  val CLASSIFIER_INFO =
+    BasicWritableSlice<ClassifierDescriptor, ClassifierInfo>(RewritePolicy.DO_NOTHING)
+  val CLASSIFIER_FOR_KEY =
+    BasicWritableSlice<String, ClassifierDescriptor>(RewritePolicy.DO_NOTHING)
 }
 
 data class SourcePosition(val filePath: String, val startOffset: Int, val endOffset: Int)

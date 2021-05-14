@@ -26,96 +26,101 @@ import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 interface GivenFunctionDescriptor : FunctionDescriptor {
-    val underlyingDescriptor: FunctionDescriptor
+  val underlyingDescriptor: FunctionDescriptor
 }
 
 class GivenValueParameterDescriptor(
-    parent: GivenFunctionDescriptor,
-    val underlyingDescriptor: ValueParameterDescriptor,
-    val context: InjektContext,
-    trace: BindingTrace
+  parent: GivenFunctionDescriptor,
+  val underlyingDescriptor: ValueParameterDescriptor,
+  val context: InjektContext,
+  trace: BindingTrace
 ) : ValueParameterDescriptorImpl(
-    parent,
-    underlyingDescriptor,
-    underlyingDescriptor.index,
-    underlyingDescriptor.annotations,
-    underlyingDescriptor.injektName().asNameId(),
-    underlyingDescriptor.type,
-    underlyingDescriptor.isGiven(context, trace) ||
-            underlyingDescriptor.declaresDefaultValue(),
-    underlyingDescriptor.isCrossinline,
-    underlyingDescriptor.isNoinline,
-    underlyingDescriptor.varargElementType,
-    underlyingDescriptor.source
+  parent,
+  underlyingDescriptor,
+  underlyingDescriptor.index,
+  underlyingDescriptor.annotations,
+  underlyingDescriptor.injektName().asNameId(),
+  underlyingDescriptor.type,
+  underlyingDescriptor.isGiven(context, trace) ||
+      underlyingDescriptor.declaresDefaultValue(),
+  underlyingDescriptor.isCrossinline,
+  underlyingDescriptor.isNoinline,
+  underlyingDescriptor.varargElementType,
+  underlyingDescriptor.source
 )
 
 val ValueParameterDescriptor.hasDefaultValueIgnoringGiven: Boolean
-    get() = (this as? GivenValueParameterDescriptor)?.underlyingDescriptor?.hasDefaultValue()
-        ?: hasDefaultValue()
+  get() = (this as? GivenValueParameterDescriptor)?.underlyingDescriptor?.hasDefaultValue()
+    ?: hasDefaultValue()
 
 abstract class AbstractGivenFunctionDescriptor(
-    final override val underlyingDescriptor: FunctionDescriptor,
-    val context: InjektContext,
-    trace: BindingTrace
+  final override val underlyingDescriptor: FunctionDescriptor,
+  val context: InjektContext,
+  trace: BindingTrace
 ) : GivenFunctionDescriptor {
-    private val valueParameters = underlyingDescriptor
-        .valueParameters
-        .mapTo(mutableListOf()) { valueParameter ->
-            GivenValueParameterDescriptor(this, valueParameter, context, trace)
-        }
+  private val valueParameters = underlyingDescriptor
+    .valueParameters
+    .mapTo(mutableListOf()) { valueParameter ->
+      GivenValueParameterDescriptor(this, valueParameter, context, trace)
+    }
 
-    override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
-        valueParameters.cast()
+  override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
+    valueParameters.cast()
 }
 
 fun FunctionDescriptor.toGivenFunctionDescriptor(
-    context: InjektContext,
-    trace: BindingTrace
+  context: InjektContext,
+  trace: BindingTrace
 ) = when (this) {
-    is GivenFunctionDescriptor -> this
-    is ClassConstructorDescriptor -> GivenConstructorDescriptorImpl(this, context, trace)
-    is SimpleFunctionDescriptor -> GivenSimpleFunctionDescriptorImpl(this, context, trace)
-    else -> GivenFunctionDescriptorImpl(this, context, trace)
+  is GivenFunctionDescriptor -> this
+  is ClassConstructorDescriptor -> GivenConstructorDescriptorImpl(this, context, trace)
+  is SimpleFunctionDescriptor -> GivenSimpleFunctionDescriptorImpl(this, context, trace)
+  else -> GivenFunctionDescriptorImpl(this, context, trace)
 }
 
 class GivenConstructorDescriptorImpl(
-    underlyingDescriptor: ClassConstructorDescriptor,
-    context: InjektContext,
-    private val trace: BindingTrace
+  underlyingDescriptor: ClassConstructorDescriptor,
+  context: InjektContext,
+  private val trace: BindingTrace
 ) : AbstractGivenFunctionDescriptor(underlyingDescriptor, context, trace),
-    ClassConstructorDescriptor by underlyingDescriptor {
-    override fun substitute(substitutor: TypeSubstitutor): ClassConstructorDescriptor =
-        GivenConstructorDescriptorImpl(underlyingDescriptor
-            .substitute(substitutor) as ClassConstructorDescriptor, context, trace)
+  ClassConstructorDescriptor by underlyingDescriptor {
+  override fun substitute(substitutor: TypeSubstitutor): ClassConstructorDescriptor =
+    GivenConstructorDescriptorImpl(
+      underlyingDescriptor
+        .substitute(substitutor) as ClassConstructorDescriptor, context, trace
+    )
 
-    override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
-        super.getValueParameters()
+  override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
+    super.getValueParameters()
 }
 
 class GivenFunctionDescriptorImpl(
-    underlyingDescriptor: FunctionDescriptor,
-    context: InjektContext,
-    private val trace: BindingTrace
+  underlyingDescriptor: FunctionDescriptor,
+  context: InjektContext,
+  private val trace: BindingTrace
 ) : AbstractGivenFunctionDescriptor(underlyingDescriptor, context, trace),
-    FunctionDescriptor by underlyingDescriptor {
-    override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =
-        GivenFunctionDescriptorImpl(
-            underlyingDescriptor.substitute(substitutor) as FunctionDescriptor, context, trace)
+  FunctionDescriptor by underlyingDescriptor {
+  override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =
+    GivenFunctionDescriptorImpl(
+      underlyingDescriptor.substitute(substitutor) as FunctionDescriptor, context, trace
+    )
 
-    override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
-        super.getValueParameters()
+  override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
+    super.getValueParameters()
 }
 
 class GivenSimpleFunctionDescriptorImpl(
-    underlyingDescriptor: SimpleFunctionDescriptor,
-    context: InjektContext,
-    private val trace: BindingTrace
+  underlyingDescriptor: SimpleFunctionDescriptor,
+  context: InjektContext,
+  private val trace: BindingTrace
 ) : AbstractGivenFunctionDescriptor(underlyingDescriptor, context, trace),
-    SimpleFunctionDescriptor by underlyingDescriptor {
-    override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =
-        GivenSimpleFunctionDescriptorImpl(underlyingDescriptor
-            .substitute(substitutor) as SimpleFunctionDescriptor, context, trace)
+  SimpleFunctionDescriptor by underlyingDescriptor {
+  override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =
+    GivenSimpleFunctionDescriptorImpl(
+      underlyingDescriptor
+        .substitute(substitutor) as SimpleFunctionDescriptor, context, trace
+    )
 
-    override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
-        super.getValueParameters()
+  override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
+    super.getValueParameters()
 }

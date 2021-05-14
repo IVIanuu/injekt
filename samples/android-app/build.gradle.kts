@@ -15,8 +15,8 @@
  */
 
 plugins {
-    id("com.android.application")
-    kotlin("android")
+  id("com.android.application")
+  kotlin("android")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
@@ -26,15 +26,15 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-source-sets-android.gradle")
 
 dependencies {
-    implementation(Deps.AndroidX.Activity.activity)
-    implementation(Deps.AndroidX.Activity.compose)
-    implementation(project(":injekt-android"))
-    implementation(project(":injekt-android-work"))
-    implementation(project(":injekt-compose"))
-    implementation(project(":injekt-core"))
-    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
+  implementation(Deps.AndroidX.Activity.activity)
+  implementation(Deps.AndroidX.Activity.compose)
+  implementation(project(":injekt-android"))
+  implementation(project(":injekt-android-work"))
+  implementation(project(":injekt-compose"))
+  implementation(project(":injekt-core"))
+  kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
 
-    implementation(Deps.AndroidX.Compose.runtime)
-    kotlinCompilerPluginClasspath(Deps.AndroidX.Compose.compiler)
-    implementation(Deps.AndroidX.Compose.material)
+  implementation(Deps.AndroidX.Compose.runtime)
+  kotlinCompilerPluginClasspath(Deps.AndroidX.Compose.compiler)
+  implementation(Deps.AndroidX.Compose.material)
 }
