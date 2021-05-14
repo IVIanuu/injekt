@@ -74,7 +74,10 @@ fun HierarchicalResolutionScope(
             // important to check this here to avoid bugs
             // related to local givens
             next.kind == LexicalScopeKind.FUNCTION_INNER_SCOPE ->
-          FunctionResolutionScope(next.ownerDescriptor.cast(), context, trace, parent)
+          if (next.ownerDescriptor is PropertyAccessorDescriptor)
+            PropertyResolutionScope(next.ownerDescriptor.cast<PropertyAccessorDescriptor>()
+              .correspondingProperty, context, trace, parent)
+          else FunctionResolutionScope(next.ownerDescriptor.cast(), context, trace, parent)
         next is LexicalScope && next.ownerDescriptor is PropertyDescriptor ->
           PropertyResolutionScope(next.ownerDescriptor.cast(), context, trace, parent)
         else -> CodeBlockResolutionScope(next, context, trace, parent)

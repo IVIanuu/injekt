@@ -157,4 +157,14 @@ class CallContextTest {
      fun invoke() = runBlocking { initialize() } 
     """
   )
+
+  @Test fun testCanRequestComposableDependencyInGetterOfComposableProperty() = singleAndMultiCodegen(
+    """
+      @Given @Composable fun composableFoo() = Foo()
+    """,
+    """
+      val fooGetter: Foo
+        @Composable get() = given()
+    """
+  )
 }
