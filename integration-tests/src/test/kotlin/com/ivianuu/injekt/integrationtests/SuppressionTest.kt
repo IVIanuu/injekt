@@ -25,7 +25,7 @@ class SuppressionTest {
     """
             fun <T : Int> func() {
             }
-        """
+    """
   ) {
     shouldNotContainMessage("'Int' is a final type, and thus a value of the type parameter is predetermined")
   }
@@ -33,7 +33,7 @@ class SuppressionTest {
   @Test fun testTypeAliasTypeParameter() = codegen(
     """
             typealias Alias<T> = String
-        """
+    """
   ) {
     shouldNotContainMessage("Type alias parameter T is not used in the expanded type String and does not affect type checking")
   }
@@ -43,10 +43,10 @@ class SuppressionTest {
             typealias MyBuilder = StringBuilder.() -> Unit
             @Given fun <@Given T : MyBuilder> toString(@Given builder: MyBuilder): String = buildString(builder)
             @Given val myBuilder: MyBuilder = { append("42") }
-        """,
+    """,
     """
-            fun invoke() = given<String>() 
-        """
+         fun invoke() = given<String>() 
+    """
   ) {
     invokeSingleFile() shouldBe "42"
   }
@@ -55,7 +55,7 @@ class SuppressionTest {
     """
             @Given inline fun func() {
             }
-        """
+    """
   ) {
     shouldNotContainMessage("Expected performance impact from inlining is insignificant. Inlining works best for functions with parameters of functional types")
   }
@@ -66,13 +66,13 @@ class SuppressionTest {
                 given<String>()
                 given<Int>()
             }
-        """,
+    """,
     """
-            fun invoke() {
+         fun invoke() {
                 @Given val string = ""
                 func(int = 0)
             } 
-        """
+    """
   )
 
   @Test fun testCanUseInfixWithGiven() = singleAndMultiCodegen(
@@ -86,12 +86,12 @@ class SuppressionTest {
             @Given object StringCombine : Combine<String> {
                 override fun plus(a: String, b: String) = a + b
             }
-        """,
+    """,
     """
-            fun invoke() {
+         fun invoke() {
                 "a" combine "b"
             } 
-        """
+    """
   )
 
   @Test fun testCanUseOperatorWithGiven() = singleAndMultiCodegen(
@@ -107,12 +107,12 @@ class SuppressionTest {
             @Given object KeyCombine : Combine<Key> {
                 override fun plus(a: Key, b: Key) = Key(a.value + b.value)
             }
-        """,
+    """,
     """
-            fun invoke() {
+         fun invoke() {
                 Key("a") + Key("b")
             } 
-        """
+    """
   )
 
   @Test fun testUsedGivenParameterIsNotMarkedAsUnused() = codegen(
@@ -124,7 +124,7 @@ class SuppressionTest {
             fun func2(@Given foo: Foo) {
                 foo
             }
-        """
+    """
   ) {
     shouldNotContainMessage("Parameter 'foo' is never used")
   }
@@ -137,28 +137,28 @@ class SuppressionTest {
             fun func2(@Given foo: Foo) {
                 foo
             } 
-        """
+    """
   ) {
     shouldContainMessage("Parameter 'foo' is never used")
   }
 
   @Test fun testUsedGivenVariableIsNotMarkedAsUnused() = codegen(
     """
-            fun invoke() {
+         fun invoke() {
                 @Given val foo = Foo()
                 given<Foo>()
             }
-        """
+    """
   ) {
     shouldNotContainMessage("Variable 'foo' is never used")
   }
 
   @Test fun testUnusedGivenVariableIsMarkedAsUnused() = codegen(
     """
-            fun invoke() {
+         fun invoke() {
                 @Given val foo = Foo()
             }
-        """
+    """
   ) {
     shouldContainMessage("Variable 'foo' is never used")
   }

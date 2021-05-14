@@ -37,7 +37,7 @@ fun withTypeCheckerContext(
 ) {
   codegen(
     """
-        """,
+    """,
     config = {
       compilerPlugins += object : ComponentRegistrar {
         override fun registerProjectComponents(

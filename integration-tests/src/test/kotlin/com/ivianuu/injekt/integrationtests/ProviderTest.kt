@@ -25,12 +25,12 @@ class ProviderTest {
   @Test fun testProviderGiven() = singleAndMultiCodegen(
     """
             @Given val foo = Foo()
-        """,
+    """,
     """
-            fun invoke(): Foo {
+         fun invoke(): Foo {
                 return given<() -> Foo>()()
             } 
-        """
+    """
   ) {
     invokeSingleFile()
       .shouldBeTypeOf<Foo>()
@@ -38,10 +38,10 @@ class ProviderTest {
 
   @Test fun testCannotRequestProviderForNonExistingGiven() = codegen(
     """ 
-            fun invoke(): Foo {
+         fun invoke(): Foo {
                 return given<() -> Foo>()()
             }
-        """
+    """
   ) {
     compilationShouldHaveFailed("no given argument found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter value of function com.ivianuu.injekt.given")
   }
@@ -49,10 +49,10 @@ class ProviderTest {
   @Test fun testProviderWithGivenArgs() = codegen(
     """
             @Given fun bar(@Given foo: Foo) = Bar(foo)
-        """,
+    """,
     """
-           fun invoke() = given<(@Given Foo) -> Bar>()(Foo()) 
-        """
+        fun invoke() = given<(@Given Foo) -> Bar>()(Foo()) 
+    """
   ) {
     invokeSingleFile()
       .shouldBeTypeOf<Bar>()
@@ -62,10 +62,10 @@ class ProviderTest {
     """
             @Qualifier annotation class MyQualifier
             @Given fun bar(@Given foo: @MyQualifier Foo) = Bar(foo)
-        """,
+    """,
     """
-           fun invoke() = given<(@Given @MyQualifier Foo) -> Bar>()(Foo()) 
-        """
+        fun invoke() = given<(@Given @MyQualifier Foo) -> Bar>()(Foo()) 
+    """
   ) {
     invokeSingleFile()
       .shouldBeTypeOf<Bar>()
@@ -88,7 +88,7 @@ class ProviderTest {
                 @Given parent: GivenScopeB,
                 @Given scopeFactory: () -> GivenScopeC
             ): @InstallElement<GivenScopeB> () -> GivenScopeC = scopeFactory
-            """,
+        """,
     """
             @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
             fun createGivenScopeA() = given<GivenScopeA>()
@@ -100,28 +100,28 @@ class ProviderTest {
                 @Given val b: GivenScopeB,
                 @Given val c: GivenScopeC
             ) 
-        """
+    """
   )
 
   @Test fun testProviderModule() = singleAndMultiCodegen(
     """
             @Given fun bar(@Given foo: Foo) = Bar(foo)
             class FooModule(@Given val foo: Foo)
-        """,
+    """,
     """
-            fun invoke(): Bar {
+         fun invoke(): Bar {
                 return given<(@Given FooModule) -> Bar>()(FooModule(Foo()))
             } 
-        """
+    """
   )
 
   @Test fun testSuspendProviderGiven() = singleAndMultiCodegen(
     """
             @Given suspend fun foo() = Foo()
-        """,
+    """,
     """
-           fun invoke(): Foo = runBlocking { given<suspend () -> Foo>()() } 
-        """
+        fun invoke(): Foo = runBlocking { given<suspend () -> Foo>()() } 
+    """
   ) {
     invokeSingleFile()
       .shouldBeTypeOf<Foo>()
@@ -130,10 +130,10 @@ class ProviderTest {
   @Test fun testComposableProviderGiven() = singleAndMultiCodegen(
     """
             @Given val foo: Foo @Composable get() = Foo()
-        """,
+    """,
     """
-           fun invoke() = given<@Composable () -> Foo>() 
-        """
+        fun invoke() = given<@Composable () -> Foo>() 
+    """
   ) {
     invokeSingleFile()
   }
@@ -146,23 +146,23 @@ class ProviderTest {
             @Given fun fooIntoSet(@Given provider: (@Given MyGivenScope) -> Foo): (MyGivenScope) -> Any = provider as (MyGivenScope) -> Any 
             @Given class Dep(@Given key: String)
             @Given fun depIntoSet(@Given provider: (@Given MyGivenScope) -> Dep): (MyGivenScope) -> Any = provider as (MyGivenScope) -> Any
-        """,
+    """,
     """
-            fun invoke() {
+         fun invoke() {
                 given<Set<(MyGivenScope) -> Any>>()
             } 
-        """
+    """
   )
 
   @Test fun testProviderWhichReturnsItsParameter() = singleAndMultiCodegen(
     """
             @Given val foo = Foo()
-        """,
+    """,
     """
-            fun invoke(): Foo {
+         fun invoke(): Foo {
                 return given<(@Given Foo) -> Foo>()(Foo())
             } 
-        """
+    """
   ) {
     invokeSingleFile()
       .shouldBeTypeOf<Foo>()
@@ -170,18 +170,18 @@ class ProviderTest {
 
   @Test fun testProviderWithoutCandidatesError() = codegen(
     """
-            fun invoke() {
+         fun invoke() {
                 given<() -> Foo>()
             }
-        """
+    """
   ) {
     compilationShouldHaveFailed("no given argument found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter value of function com.ivianuu.injekt.given")
   }
 
   @Test fun testProviderWithNullableReturnTypeUsesNullAsDefault() = codegen(
     """
-            fun invoke() = given<() -> Foo?>()()
-        """
+         fun invoke() = given<() -> Foo?>()()
+    """
   ) {
     invokeSingleFile().shouldBeNull()
   }
@@ -189,8 +189,8 @@ class ProviderTest {
   @Test fun testProviderWithNullableReturnTypeAndDefaultOnAllErrors() = codegen(
     """
             @Given fun bar(@Given foo: Foo) = Bar(foo)
-            fun invoke() = given<@DefaultOnAllErrors () -> Bar?>()()
-        """
+         fun invoke() = given<@DefaultOnAllErrors () -> Bar?>()()
+    """
   ) {
     invokeSingleFile().shouldBeNull()
   }

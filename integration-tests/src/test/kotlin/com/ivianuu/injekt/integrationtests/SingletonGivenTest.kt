@@ -26,10 +26,10 @@ class SingletonGivenTest {
             @Given class MyModule {
                 @Given fun foo() = Foo()
             }
-        """,
+    """,
     """
-           fun invoke() = given<MyModule>()
-        """
+        fun invoke() = given<MyModule>()
+    """
   ) {
     invokeSingleFile()
       .shouldBeSameInstanceAs(invokeSingleFile())
@@ -39,10 +39,10 @@ class SingletonGivenTest {
     """
             class MyModule
             @Given val foo = Foo()
-        """,
+    """,
     """
-           fun invoke() = given<Foo>() 
-        """
+        fun invoke() = given<Foo>() 
+    """
   ) {
     irShouldNotContain("INSTANCE")
     invokeSingleFile()
@@ -53,10 +53,10 @@ class SingletonGivenTest {
             @Given object MyModule {
                 @Given val foo = Foo()
             }
-        """,
+    """,
     """
-           fun invoke() = given<Foo>() 
-        """
+        fun invoke() = given<Foo>() 
+    """
   ) {
     irShouldNotContain("INSTANCE")
     invokeSingleFile()
@@ -66,10 +66,10 @@ class SingletonGivenTest {
     """
             @Given class MyModule(@Given val foo: Foo)
             @Given val foo = Foo()
-        """,
+    """,
     """
-           fun invoke() = given<Foo>() 
-        """
+        fun invoke() = given<Foo>() 
+    """
   ) {
     irShouldNotContain("INSTANCE")
     invokeSingleFile()
@@ -80,10 +80,10 @@ class SingletonGivenTest {
             @Given class MyModule<@ForTypeKey T> {
                 @Given val instance = Foo() as T
             }
-        """,
+    """,
     """
-           fun invoke() = given<Foo>() 
-        """
+        fun invoke() = given<Foo>() 
+    """
   ) {
     irShouldNotContain("INSTANCE")
     invokeSingleFile()
@@ -94,10 +94,10 @@ class SingletonGivenTest {
             @Given class MyModule {
                 @Given val foo = Foo()
             }
-        """,
+    """,
     """
-           fun invoke() = given<Foo>() 
-        """
+        fun invoke() = given<Foo>() 
+    """
   ) {
     irShouldNotContain("INSTANCE")
     invokeSingleFile()
@@ -109,10 +109,10 @@ class SingletonGivenTest {
                 inner class Inner
             }
             @Given val foo = Foo()
-        """,
+    """,
     """
-           fun invoke() = given<Foo>() 
-        """
+        fun invoke() = given<Foo>() 
+    """
   ) {
     irShouldNotContain("INSTANCE")
     invokeSingleFile()
@@ -123,10 +123,10 @@ class SingletonGivenTest {
             @Given class MyModule {
                 @Given val foo get() = Foo()
             }
-        """,
+    """,
     """
-           fun invoke() = given<Foo>() 
-        """
+        fun invoke() = given<Foo>() 
+    """
   ) {
     irShouldContain(if (! it) 2 else 1, "INSTANCE")
     invokeSingleFile()

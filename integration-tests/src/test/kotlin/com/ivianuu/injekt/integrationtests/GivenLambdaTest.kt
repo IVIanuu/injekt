@@ -24,7 +24,7 @@ class GivenLambdaTest {
   @Test fun testGivenLambda() = codegen(
     """
             fun invoke(foo: Foo) = given<@Given (@Given () -> Foo) -> Foo>()({ foo })
-        """
+    """
   ) {
     val foo = Foo()
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
@@ -33,10 +33,10 @@ class GivenLambdaTest {
   @Test fun testGivenLambdaChain() = singleAndMultiCodegen(
     """
             @Given val fooModule: @Given () -> @Given () -> Foo = { { Foo() } }
-        """,
+    """,
     """
-           fun invoke() = given<Foo>() 
-        """
+        fun invoke() = given<Foo>() 
+    """
   ) {
     invokeSingleFile()
       .shouldBeTypeOf<Foo>()
@@ -47,9 +47,9 @@ class GivenLambdaTest {
             typealias MyAlias = @Composable () -> Unit
             @Given fun myAlias(): MyAlias = {}
             @Given class MyComposeView(@Given val content: @Composable () -> Unit)
-        """,
+    """,
     """
-           fun invoke() = given<(@Given @Composable () -> Unit) -> MyComposeView>() 
-        """
+        fun invoke() = given<(@Given @Composable () -> Unit) -> MyComposeView>() 
+    """
   )
 }

@@ -26,10 +26,10 @@ class ModuleTest {
             @Given class BarModule(@Given private val foo: Foo) {
                 @Given val bar get() = Bar(foo)
             }
-        """,
+    """,
     """
-           fun invoke() = given<Bar>() 
-        """
+        fun invoke() = given<Bar>() 
+    """
   )
 
   @Test fun testObjectModule() = singleAndMultiCodegen(
@@ -38,10 +38,10 @@ class ModuleTest {
             @Given object BarModule {
                 @Given fun bar(@Given foo: Foo) = Bar(foo)
             }
-        """,
+    """,
     """
-           fun invoke() = given<Bar>() 
-        """
+        fun invoke() = given<Bar>() 
+    """
   )
 
   @Test fun testModuleLambdaParameter() = singleAndMultiCodegen(
@@ -56,12 +56,12 @@ class ModuleTest {
             inline fun <R> withModule(
                 block: (@Given MyModule) -> R
             ): R = block(MyModule())
-        """,
+    """,
     """
-            fun invoke() = withModule { 
+         fun invoke() = withModule { 
                 given<Bar>()
             } 
-        """
+    """
   )
 
   @Test fun testGenericModule() = singleAndMultiCodegen(
@@ -71,10 +71,10 @@ class ModuleTest {
             }
             @Given val fooModule = MyModule(Foo())
             @Given val stringModule = MyModule("__")
-        """,
+    """,
     """
-           fun invoke() = given<Pair<Foo, Foo>>() 
-        """
+        fun invoke() = given<Pair<Foo, Foo>>() 
+    """
   )
 
   @Test fun testGenericModuleQualified() = singleAndMultiCodegen(
@@ -86,10 +86,10 @@ class ModuleTest {
 
             @Given val fooModule = MyModule(Foo())
             @Given val stringModule = MyModule("__")
-                """,
+            """,
     """
-            fun invoke() = given<@MyQualifier<Int> Pair<Foo, Foo>>() 
-                """
+         fun invoke() = given<@MyQualifier<Int> Pair<Foo, Foo>>() 
+            """
   )
 
   @Test fun testGenericModuleClass() = singleAndMultiCodegen(
@@ -100,13 +100,13 @@ class ModuleTest {
 
             @Given val foo = Foo()
             @Given fun bar(@Given foo: Foo) = Bar(foo)
-        """,
+    """,
     """
-            fun invoke() {
+         fun invoke() {
                 given<Pair<Foo, Foo>>()
                 given<Pair<Bar, Bar>>()
             } 
-        """
+    """
   )
 
   @Test fun testGenericModuleFunction() = singleAndMultiCodegen(
@@ -119,13 +119,13 @@ class ModuleTest {
 
             @Given val foo = Foo()
             @Given fun bar(@Given foo: Foo) = Bar(foo)
-        """,
+    """,
     """
-            fun invoke() {
+         fun invoke() {
                 given<Pair<Foo, Foo>>()
                 given<Pair<Bar, Bar>>()
             } 
-        """
+    """
   )
 
   @Test fun testSubClassModule() = singleAndMultiCodegen(
@@ -135,9 +135,9 @@ class ModuleTest {
                 @Given val bar get() = Bar(foo)
             }
             @Given class BarModule(@Given private val foo: Foo) : BaseBarModule(foo)
-        """,
+    """,
     """
-           fun invoke() = given<Bar>() 
-        """
+        fun invoke() = given<Bar>() 
+    """
   )
 }

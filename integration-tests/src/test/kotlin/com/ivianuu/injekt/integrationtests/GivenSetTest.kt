@@ -27,10 +27,10 @@ class GivenSetTest {
     """
             @Given fun commandA() = CommandA()
             @Given fun commandsB() = setOf(CommandB())
-        """,
+    """,
     """
-           fun invoke() = given<Set<Command>>() 
-        """
+        fun invoke() = given<Set<Command>>() 
+    """
   ) {
     val set = invokeSingleFile<Set<Command>>().toList()
     set.size shouldBe 2
@@ -46,10 +46,10 @@ class GivenSetTest {
                 @Given fun commandsB() = listOf(CommandB())
                 val set = given<Set<Command>>()
             }
-        """,
+    """,
     """
-           fun invoke() = given<Set<Command>>() to InnerObject().set 
-        """
+        fun invoke() = given<Set<Command>>() to InnerObject().set 
+    """
   ) {
     val (parentSet, childSet) = invokeSingleFile<Pair<Set<Command>, Set<Command>>>()
       .let { it.first.toList() to it.second.toList() }
@@ -63,10 +63,10 @@ class GivenSetTest {
   @Test fun testSetWithSingleElement() = singleAndMultiCodegen(
     """
             @Given fun commandA() = CommandA()
-        """,
+    """,
     """
-            fun invoke() = given<Set<Command>>() 
-        """
+         fun invoke() = given<Set<Command>>() 
+    """
   ) {
     irShouldContain(1, "setOf")
   }
@@ -74,10 +74,10 @@ class GivenSetTest {
   @Test fun testSetWithSingleCollectionElement() = singleAndMultiCodegen(
     """
             @Given fun commandA() = listOf(CommandA())
-        """,
+    """,
     """
-           fun invoke() = given<Set<Command>>() 
-        """
+        fun invoke() = given<Set<Command>>() 
+    """
   ) {
     irShouldContain(1, "toSet")
   }
@@ -85,18 +85,18 @@ class GivenSetTest {
   @Test fun testSetWithSingleSetCollectionElement() = singleAndMultiCodegen(
     """
             @Given fun commandA() = setOf(CommandA())
-        """,
+    """,
     """
-           fun invoke() = given<Set<Command>>() 
-        """
+        fun invoke() = given<Set<Command>>() 
+    """
   ) {
     irShouldContain(1, "given<Set<Command>>(value = commandA())")
   }
 
   @Test fun testSetWithoutElements() = codegen(
     """
-            fun invoke() = given<Set<Command>>()
-        """
+         fun invoke() = given<Set<Command>>()
+    """
   ) {
     compilationShouldHaveFailed("no given argument found of type kotlin.collections.Set<com.ivianuu.injekt.test.Command> for parameter value of function com.ivianuu.injekt.given")
   }
@@ -104,10 +104,10 @@ class GivenSetTest {
   @Test fun testImplicitProviderSet() = singleAndMultiCodegen(
     """
             @Given fun bar(@Given foo: Foo) = Bar(foo)
-        """,
+    """,
     """
-           fun invoke() = given<Set<(@Given Foo) -> Bar>>() 
-        """
+        fun invoke() = given<Set<(@Given Foo) -> Bar>>() 
+    """
   ) {
     val set = invokeSingleFile<Set<(Foo) -> Bar>>().toList()
     set.size shouldBe 1
@@ -127,10 +127,10 @@ class GivenSetTest {
                 @Given fun commandB(): Command = CommandB()
                 val set = given<Set<() -> Command>>()
             }
-        """,
+    """,
     """
-           fun invoke() = given<Set<() -> Command>>() to InnerObject().set 
-        """
+        fun invoke() = given<Set<() -> Command>>() to InnerObject().set 
+    """
   ) {
     val (parentSet, childSet) = invokeSingleFile<Pair<Set<() -> Command>, Set<() -> Command>>>()
       .let { it.first.toList() to it.second.toList() }
@@ -143,10 +143,10 @@ class GivenSetTest {
 
   @Test fun testUsesAllProviderArgumentsForGivenRequest() = codegen(
     """
-            fun invoke(): Set<Any> {
+         fun invoke(): Set<Any> {
                 return given<(@Given String, @Given String) -> Set<String>>()("a", "b")
             }
-        """
+    """
   ) {
     val set = invokeSingleFile<Set<Any>>().toList()
     set.shouldHaveSize(2)
@@ -158,10 +158,10 @@ class GivenSetTest {
     """
             @Given val a = "a"
             @Given fun b(@Given foo: Foo) = "b"
-        """,
+    """,
     """
-           fun invoke(): @IgnoreElementsWithErrors Set<String> = given() 
-        """
+        fun invoke(): @IgnoreElementsWithErrors Set<String> = given() 
+    """
   ) {
     val set = invokeSingleFile<Set<Any>>().toList()
     set.shouldHaveSize(1)

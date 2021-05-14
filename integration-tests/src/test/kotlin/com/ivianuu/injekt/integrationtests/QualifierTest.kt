@@ -25,12 +25,12 @@ class QualifierTest {
     """
             @Given val foo = Foo()
             @Given val qualifiedFoo: @Qualifier1 Foo = Foo()
-            """,
+        """,
     """
-           fun invoke(): Pair<Foo, Foo> {
+        fun invoke(): Pair<Foo, Foo> {
                 return given<Foo>() to given<@Qualifier1 Foo>()
            } 
-        """
+    """
   ) {
     val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
     foo1 shouldNotBeSameInstanceAs foo2
@@ -41,28 +41,28 @@ class QualifierTest {
             @Given class Dep<T>(@Given val value: @Qualifier1 T)
             
             @Given fun qualified(): @Qualifier1 String = ""
-            """,
+        """,
     """
-           fun invoke() = given<Dep<String>>() 
-        """
+        fun invoke() = given<Dep<String>>() 
+    """
   )
 
   @Test fun testQualifiedClass() = singleAndMultiCodegen(
     """ 
             @Given @Qualifier1 class Dep
-            """,
+        """,
     """
-            fun invoke() = given<@Qualifier1 Dep>()
-        """
+         fun invoke() = given<@Qualifier1 Dep>()
+    """
   )
 
   @Test fun testQualifiedPrimaryConstructor() = singleAndMultiCodegen(
     """ 
                 class Dep @Given @Qualifier1 constructor()
-            """,
+        """,
     """
-            fun invoke() = given<@Qualifier1 Dep>()
-        """
+         fun invoke() = given<@Qualifier1 Dep>()
+    """
   )
 
   @Test fun testQualifiedSecondaryConstructor() = singleAndMultiCodegen(
@@ -70,25 +70,25 @@ class QualifierTest {
                 class Dep {
                     @Given @Qualifier1 constructor()
                 }
-            """,
+        """,
     """
-            fun invoke() = given<@Qualifier1 Dep>()
-        """
+         fun invoke() = given<@Qualifier1 Dep>()
+    """
   )
 
   @Test fun testQualifiedObject() = singleAndMultiCodegen(
     """ 
             @Given @Qualifier1 object Dep
-            """,
+        """,
     """
-            fun invoke() = given<@Qualifier1 Dep>()
-        """
+         fun invoke() = given<@Qualifier1 Dep>()
+    """
   )
 
   @Test fun testQualifiedFunction() = codegen(
     """ 
             @Given @Qualifier1 fun foo() = Foo()
-        """
+    """
   ) {
     compilationShouldHaveFailed("only types, classes and class constructors can be annotated with a qualifier")
   }
@@ -96,7 +96,7 @@ class QualifierTest {
   @Test fun testQualifierWithArguments() = codegen(
     """ 
             @Qualifier annotation class MyQualifier(val value: String)
-            """
+        """
   ) {
     compilationShouldHaveFailed("qualifier cannot have value parameters")
   }
@@ -105,10 +105,10 @@ class QualifierTest {
     """
             @Qualifier annotation class MyQualifier<T>
             @Given val qualifiedFoo: @MyQualifier<String> Foo = Foo()
-            """,
+        """,
     """
-           fun invoke() = given<@MyQualifier<String> Foo>() 
-        """
+        fun invoke() = given<@MyQualifier<String> Foo>() 
+    """
   ) {
     invokeSingleFile()
       .shouldBeTypeOf<Foo>()
@@ -118,10 +118,10 @@ class QualifierTest {
     """
             @Qualifier annotation class MyQualifier<T>
             @Given fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
-            """,
+        """,
     """
-           fun invoke() = given<@MyQualifier<String> Foo>() 
-        """
+        fun invoke() = given<@MyQualifier<String> Foo>() 
+    """
   ) {
     invokeSingleFile()
       .shouldBeTypeOf<Foo>()
@@ -134,10 +134,10 @@ class QualifierTest {
             @Given fun <T> uiState(@Given instance: @UiState T): T = instance
 
             @Given val foo: @UiState Foo = Foo()
-            """,
+        """,
     """
-            fun invoke() = given<Foo>() 
-        """
+         fun invoke() = given<Foo>() 
+    """
   ) {
     invokeSingleFile()
       .shouldBeTypeOf<Foo>()
@@ -155,13 +155,13 @@ class QualifierTest {
             @InstallElement<ChildGivenScope>
             @Given
             class MyElement(@Given val foo: Foo)
-        """,
+    """,
     """
             @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-            fun invoke() {
+         fun invoke() {
                 val givenScope = given<AppGivenScope>()
             } 
-        """
+    """
   ) {
     compilationShouldBeOk()
     irShouldNotContain("scopedImpl<Foo, Foo, U>(")

@@ -26,10 +26,10 @@ class PersistenceTest {
             @Given class Dep(@Given value: MyAlias)
             typealias MyAlias = String
             @Given val myAlias: MyAlias = ""
-                """,
+            """,
     """
-            fun invoke() = given<Dep>()
-                """
+         fun invoke() = given<Dep>()
+            """
   )
 
   @Test fun testSecondaryConstructorWithTypeAliasDependencyMulti() = singleAndMultiCodegen(
@@ -39,10 +39,10 @@ class PersistenceTest {
             }
             typealias MyAlias = String
             @Given val myAlias: MyAlias = ""
-                """,
+            """,
     """
-            fun invoke() = given<Dep>()
-                """
+         fun invoke() = given<Dep>()
+            """
   )
 
   @Test fun testModuleDispatchReceiverTypeInference() = singleAndMultiCodegen(
@@ -54,10 +54,10 @@ class PersistenceTest {
             @Given val module = MyModule<String, CharSequence>()
 
             @Given val value: CharSequence = "42"
-        """,
+    """,
     """
-           fun invoke() = given<String>() 
-        """
+        fun invoke() = given<String>() 
+    """
   ) {
     "42" shouldBe invokeSingleFile()
   }
@@ -76,13 +76,13 @@ class PersistenceTest {
 
             @Given fun funcA(@Given funcB: FuncB): @MyQualifier FuncA = { }
             @Given fun funcB(): @MyQualifier FuncB = { true }
-                """,
+            """,
     """
-            fun invoke() {
+         fun invoke() {
                 given<@MyOtherQualifier FuncA>()
                 given<@MyOtherQualifier FuncB>()
             } 
-                """
+            """
   ) {
     shouldNotContainMessage("no given argument found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncA> for parameter value of function com.ivianuu.injekt.given")
     shouldContainMessage("no given argument found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncB> for parameter value of function com.ivianuu.injekt.given")
@@ -93,11 +93,11 @@ class PersistenceTest {
             fun myFunction(
                 @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Any) -> AppGivenScope
             ): AppGivenScope = TODO()
-                """,
+            """,
     """
             @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-            fun invoke() = myFunction()
-                """
+         fun invoke() = myFunction()
+            """
   )
 
   @Test fun testNonGivenPrimaryConstructorWithGivenParameters() = singleAndMultiCodegen(
@@ -105,11 +105,11 @@ class PersistenceTest {
             class MyClass(
                 @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Any) -> AppGivenScope
             )
-                """,
+            """,
     """
             @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-            fun invoke() = MyClass()
-                """
+         fun invoke() = MyClass()
+            """
   )
 
   @Test fun testNonGivenSecondaryConstructorWithGivenParameters() = singleAndMultiCodegen(
@@ -119,11 +119,11 @@ class PersistenceTest {
                     @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Any) -> AppGivenScope
                 )
             }
-                """,
+            """,
     """
             @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-            fun invoke() = MyClass()
-                """
+         fun invoke() = MyClass()
+            """
   )
 
   @Test fun testNonGivenClassWithGivenMembers() = singleAndMultiCodegen(
@@ -132,12 +132,12 @@ class PersistenceTest {
                 @Given fun func(@Given t: T): S = t
             }
             class MyModuleImpl<T> : MyModule<@Qualifier1 T, T>()
-            """,
+        """,
     """
             @Given val myFooModule = MyModuleImpl<Foo>()
             @Given val foo: @Qualifier1 Foo = Foo()
-            fun invoke() = given<Foo>()
-            """
+         fun invoke() = given<Foo>()
+        """
   )
 
   @Test fun testNonGivenClassWithGivenMembers2() = singleAndMultiCodegen(
@@ -151,19 +151,19 @@ class PersistenceTest {
             class MyChildGivenScopeModule1<P : GivenScope, P1, C : GivenScope> : MyAbstractChildGivenScopeModule<P,
                         (P1) -> C,
                         (@Given @InstallElement<C> P1) -> C>()
-            """,
+        """,
     """
             typealias TestGivenScope1 = GivenScope
             typealias TestGivenScope2 = GivenScope
             @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-            fun invoke() {
+         fun invoke() {
                 @Given val childScopeModule =
                     MyChildGivenScopeModule1<TestGivenScope1, String, TestGivenScope2>()
                 val parentScope = given<TestGivenScope1>()
                 val childScope = parentScope.element<@ChildScopeFactory (String) -> TestGivenScope2>()("42")
                 childScope.element<String>()
             }
-            """
+        """
   ) {
     invokeSingleFile()
   }

@@ -24,16 +24,16 @@ import org.junit.*
 class TypeKeyTest {
   @Test fun testTypeKeyOf() = codegen(
     """
-           fun invoke() = typeKeyOf<String>() 
-        """
+        fun invoke() = typeKeyOf<String>() 
+    """
   ) {
     invokeSingleFile() shouldBe "kotlin.String"
   }
 
   @Test fun testNullableTypeKeyOf() = codegen(
     """
-           fun invoke() = typeKeyOf<String?>() 
-        """
+        fun invoke() = typeKeyOf<String?>() 
+    """
   ) {
     invokeSingleFile() shouldBe "kotlin.String?"
   }
@@ -41,10 +41,10 @@ class TypeKeyTest {
   @Test fun testForTypeKeyTypeParameter() = singleAndMultiCodegen(
     """
             inline fun <@ForTypeKey T> listTypeKeyOf() = typeKeyOf<List<T>>()
-        """,
+    """,
     """
-           fun invoke() = listTypeKeyOf<String>()  
-        """
+        fun invoke() = listTypeKeyOf<String>()  
+    """
   ) {
     invokeSingleFile() shouldBe "kotlin.collections.List<kotlin.String>"
   }
@@ -52,8 +52,8 @@ class TypeKeyTest {
   @Test fun testTypeKeyOfWithTypeAliasWithNullableExpandedType() = codegen(
     """
             typealias MyAlias = String?
-            fun invoke() = typeKeyOf<MyAlias>() 
-        """
+      fun invoke() = typeKeyOf<MyAlias>() 
+    """
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
   }
@@ -61,8 +61,8 @@ class TypeKeyTest {
   @Test fun testTypeKeyOfWithTypeAlias() = codegen(
     """
             typealias MyAlias = String
-            fun invoke() = typeKeyOf<MyAlias>() 
-        """
+      fun invoke() = typeKeyOf<MyAlias>() 
+    """
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
   }
@@ -70,16 +70,16 @@ class TypeKeyTest {
   @Test fun testTypeKeyOfWithNullableTypeAlias() = codegen(
     """
             typealias MyAlias = String
-            fun invoke() = typeKeyOf<MyAlias?>()
-        """
+      fun invoke() = typeKeyOf<MyAlias?>()
+    """
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias?"
   }
 
   @Test fun testTypeKeyOfWithComposableType() = codegen(
     """
-            fun invoke() = typeKeyOf<@Composable () -> Unit>() 
-        """
+      fun invoke() = typeKeyOf<@Composable () -> Unit>() 
+    """
   ) {
     invokeSingleFile() shouldBe "[@androidx.compose.runtime.Composable]kotlin.Function0<kotlin.Unit>"
   }
@@ -87,16 +87,16 @@ class TypeKeyTest {
   @Test fun testTypeKeyOfWithTypeAliasWithComposableExpandedType() = codegen(
     """
             typealias MyAlias = @Composable () -> Unit
-            fun invoke() = typeKeyOf<MyAlias>() 
-        """
+      fun invoke() = typeKeyOf<MyAlias>() 
+    """
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
   }
 
   @Test fun testTypeKeyOfWithQualifiers() = codegen(
     """
-            fun invoke() = typeKeyOf<@Qualifier2 String>() 
-        """
+      fun invoke() = typeKeyOf<@Qualifier2 String>() 
+    """
   ) {
     invokeSingleFile() shouldBe "[@com.ivianuu.injekt.test.Qualifier2]kotlin.String"
   }
@@ -104,8 +104,8 @@ class TypeKeyTest {
   @Test fun testTypeKeyOfWithTypeAliasWithQualifiedExpandedType() = codegen(
     """
             typealias MyAlias = @Qualifier2 String
-            fun invoke() = typeKeyOf<MyAlias>() 
-        """
+      fun invoke() = typeKeyOf<MyAlias>() 
+    """
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
   }
@@ -114,8 +114,8 @@ class TypeKeyTest {
     """
             @Qualifier 
             annotation class MyQualifier<T>
-            fun invoke() = typeKeyOf<@MyQualifier<String> String>() 
-        """
+      fun invoke() = typeKeyOf<@MyQualifier<String> String>() 
+    """
   ) {
     invokeSingleFile() shouldBe "[@com.ivianuu.injekt.integrationtests.MyQualifier<kotlin.String>]kotlin.String"
   }
@@ -128,10 +128,10 @@ class TypeKeyTest {
                     override fun <@ForTypeKey T> listTypeKeyOf() = typeKeyOf<List<T>>()
                 }
             }
-        """,
+    """,
     """
-           fun invoke() = KeyFactory.listTypeKeyOf<String>()  
-        """
+        fun invoke() = KeyFactory.listTypeKeyOf<String>()  
+    """
   ) {
     invokeSingleFile() shouldBe "kotlin.collections.List<kotlin.String>"
   }
@@ -141,10 +141,10 @@ class TypeKeyTest {
             class MyClass<@ForTypeKey T> {
                 val typeKey = typeKeyOf<T>()
             }
-        """,
+    """,
     """
-           fun invoke() = MyClass<String>().typeKey 
-        """
+        fun invoke() = MyClass<String>().typeKey 
+    """
   ) {
     invokeSingleFile() shouldBe "kotlin.String"
   }
@@ -154,35 +154,35 @@ class TypeKeyTest {
             class MyClass<@ForTypeKey T> {
                 fun typeKey() = typeKeyOf<T>()
             }
-        """,
+    """,
     """
-           fun invoke() = MyClass<String>().typeKey() 
-        """
+      fun invoke() = MyClass<String>().typeKey() 
+    """
   ) {
     invokeSingleFile() shouldBe "kotlin.String"
   }
 
   @Test fun testClassWithForTypeKeyParameterSubClass() = singleAndMultiCodegen(
     """
-            abstract class MySuperClass<@ForTypeKey T> {
-                val typeKey = typeKeyOf<T>()
-            }
-        """,
+      abstract class MySuperClass<@ForTypeKey T> {
+        val typeKey = typeKeyOf<T>()
+      }
+    """,
     """
-            class MyClass<@ForTypeKey T> : MySuperClass<T>()
-            fun invoke() = MyClass<String>().typeKey 
-        """
+      class MyClass<@ForTypeKey T> : MySuperClass<T>()
+      fun invoke() = MyClass<String>().typeKey 
+    """
   ) {
     invokeSingleFile() shouldBe "kotlin.String"
   }
 
   @Test fun testTypeKeyFromGivenCall() = singleAndMultiCodegen(
     """
-            @Given fun <@ForTypeKey T> listKey(): TypeKey<List<T>> = typeKeyOf<List<T>>()
-        """,
+      @Given fun <@ForTypeKey T> listKey(): TypeKey<List<T>> = typeKeyOf<List<T>>()
+    """,
     """
-           fun invoke() = given<TypeKey<List<@Qualifier1 @Qualifier2 Foo>>>() 
-        """
+      fun invoke() = given<TypeKey<List<@Qualifier1 @Qualifier2 Foo>>>() 
+    """
   ) {
     invokeSingleFile() shouldBe
         "kotlin.collections.List<[@com.ivianuu.injekt.test.Qualifier1, @com.ivianuu.injekt.test.Qualifier2]com.ivianuu.injekt.test.Foo>"
@@ -190,59 +190,59 @@ class TypeKeyTest {
 
   @Test fun testNonForTypeKeyTypeParameterOverride() = singleAndMultiCodegen(
     """
-            abstract class MySuperClass {
-                abstract fun <@ForTypeKey T> func()
-            }
-        """,
+      abstract class MySuperClass {
+          abstract fun <@ForTypeKey T> func()
+      }
+    """,
     """
-           class MySubClass : MySuperClass() {
-                override fun <T> func() {
-                }
-            } 
-        """
+      class MySubClass : MySuperClass() {
+          override fun <T> func() {
+          }
+      } 
+    """
   ) {
     compilationShouldHaveFailed("Conflicting overloads")
   }
 
   @Test fun testPropertyWithForTypeKeyParameter() = singleAndMultiCodegen(
     """
-            val <@ForTypeKey T> T.typeKey: TypeKey<T> get() = typeKeyOf<T>()
-        """,
+      val <@ForTypeKey T> T.typeKey: TypeKey<T> get() = typeKeyOf<T>()
+    """,
     """
-           fun invoke() = "".typeKey 
-        """
+     fun invoke() = "".typeKey 
+    """
   ) {
     invokeSingleFile() shouldBe "kotlin.String"
   }
 
   @Test fun testNonTopLevelInlineForTypeKeyFunction() = singleAndMultiCodegen(
     """
-            @Given object MyClass {
-              @Given inline fun <@ForTypeKey T> myKey(): @Qualifier1 TypeKey<T> = typeKeyOf()
-            }
-        """,
+      @Given object MyClass {
+        @Given inline fun <@ForTypeKey T> myKey(): @Qualifier1 TypeKey<T> = typeKeyOf()
+      }
+    """,
     """
-           fun invoke() = given<@Qualifier1 TypeKey<String>>()
-        """
+       fun invoke() = given<@Qualifier1 TypeKey<String>>()
+    """
   ) {
     invokeSingleFile() shouldBe "kotlin.String"
   }
 
   @Test fun testTypeKeyWithStar() = codegen(
     """
-           fun invoke() = typeKeyOf<List<*>>() 
-        """
+      fun invoke() = typeKeyOf<List<*>>() 
+    """
   ) {
     invokeSingleFile() shouldBe "kotlin.collections.List<*>"
   }
 
   @Test fun testTypeKeyWithStar2() = codegen(
     """
-            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-            val scope = given<(@Given @InstallElement<AppGivenScope> Map<*, *>) -> AppGivenScope>()
-                .invoke(emptyMap<Any?, Any?>())
-            fun invoke() = scope.element<Map<*, *>>()
-        """
+      @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      val scope = given<(@Given @InstallElement<AppGivenScope> Map<*, *>) -> AppGivenScope>()
+          .invoke(emptyMap<Any?, Any?>())
+      fun invoke() = scope.element<Map<*, *>>()
+    """
   ) {
     shouldNotThrow<Throwable> { invokeSingleFile() }
   }

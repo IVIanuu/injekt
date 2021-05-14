@@ -39,8 +39,7 @@ inline fun Application.initializeAppGivenScope(
   registerAppGivenScope(scope)
 }
 
-@PublishedApi
-internal fun Application.registerAppGivenScope(scope: AppGivenScope) {
+@PublishedApi internal fun Application.registerAppGivenScope(scope: AppGivenScope) {
   attributes.put(AppGivenScopeKey, scope)
   environment.monitor.subscribe(ApplicationStopped) {
     scope.dispose()

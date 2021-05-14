@@ -17,8 +17,8 @@ class TypeClassTest {
                 override fun T.answer() = 42
             } 
 
-            fun invoke() = "".answer()
-        """
+         fun invoke() = "".answer()
+    """
   ) {
     invokeSingleFile() shouldBe 42
   }
@@ -35,8 +35,8 @@ class TypeClassTest {
                 override fun T.answer() = 42
             } 
 
-            fun invoke() = "".answer<String, Long>()
-        """
+         fun invoke() = "".answer<String, Long>()
+    """
   ) {
     invokeSingleFile() shouldBe 42
   }
@@ -53,8 +53,8 @@ class TypeClassTest {
                 override fun <R> T.answer() = 42
             } 
 
-            fun invoke() = "".answer<String, Long>()
-        """
+         fun invoke() = "".answer<String, Long>()
+    """
   ) {
     invokeSingleFile() shouldBe 42
   }
@@ -71,8 +71,8 @@ class TypeClassTest {
                 override fun T.answer(other: T) = 42
             } 
 
-            fun invoke() = "" answer ""
-        """
+         fun invoke() = "" answer ""
+    """
   ) {
     invokeSingleFile() shouldBe 42
   }
@@ -89,8 +89,8 @@ class TypeClassTest {
                 override fun T.plus(other: T) = 42
             } 
 
-            fun invoke() = Unit + Unit
-        """
+         fun invoke() = Unit + Unit
+    """
   ) {
     invokeSingleFile() shouldBe 42
   }
@@ -107,8 +107,8 @@ class TypeClassTest {
                 override suspend fun T.answer() = 42
             } 
 
-            fun invoke() = runBlocking { "".answer() }
-        """
+         fun invoke() = runBlocking { "".answer() }
+    """
   ) {
     invokeSingleFile() shouldBe 42
   }

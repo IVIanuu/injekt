@@ -26,9 +26,9 @@ class GivenImportsTest {
   @Test fun testUnresolvedImport() = codegen(
     """
             @GivenImports("a")
-            fun invoke() {
+      fun invoke() {
             }
-        """
+    """
   ) {
     compilationShouldHaveFailed("Unresolved given import")
   }
@@ -36,9 +36,9 @@ class GivenImportsTest {
   @Test fun testUnresolvedStarImport() = codegen(
     """
             @GivenImports("a.*")
-            fun invoke() {
+      fun invoke() {
             }
-        """
+    """
   ) {
     compilationShouldHaveFailed("Unresolved given import")
   }
@@ -46,9 +46,9 @@ class GivenImportsTest {
   @Test fun testImportsJustAPackage() = codegen(
     """
             @GivenImports("kotlin.collections")
-            fun invoke() {
+      fun invoke() {
             }
-        """
+    """
   ) {
     compilationShouldHaveFailed("Unresolved given import")
   }
@@ -56,9 +56,9 @@ class GivenImportsTest {
   @Test fun testMalformedImport() = codegen(
     """
             @GivenImports("-_;-")
-            fun invoke() {
+      fun invoke() {
             }
-        """
+    """
   ) {
     compilationShouldHaveFailed("Cannot read given import")
   }
@@ -66,9 +66,9 @@ class GivenImportsTest {
   @Test fun testDuplicatedImports() = codegen(
     """
             @GivenImports("kotlin.collections.*", "kotlin.collections.*")
-            fun invoke() {
+      fun invoke() {
             }
-        """
+    """
   ) {
     compilationShouldHaveFailed("Duplicated given import")
   }
@@ -76,12 +76,12 @@ class GivenImportsTest {
   @Test fun testNestedDuplicatedImports() = codegen(
     """
             @GivenImports("kotlin.collections.*")
-            fun invoke() {
+      fun invoke() {
                 withGivenImports("kotlin.collections.*") {
                     
                 }
             }
-        """
+    """
   ) {
     compilationShouldHaveFailed("Duplicated given import")
   }
@@ -89,9 +89,9 @@ class GivenImportsTest {
   @Test fun testUnusedImport() = codegen(
     """
             @GivenImports("kotlin.collections.*")
-            fun invoke() {
+      fun invoke() {
             }
-        """
+    """
   ) {
     shouldContainMessage("Unused given import")
   }
@@ -100,18 +100,18 @@ class GivenImportsTest {
     listOf(
       listOf(
         source(
-          """
+      """
                     @Given val foo = Foo()
-                """,
+            """,
           packageFqName = FqName("givens")
         )
       ),
       listOf(
         source(
-          """
+      """
                     @GivenImports("givens.foo")
-                    fun invoke() = given<Foo>()
-                    """,
+              fun invoke() = given<Foo>()
+                """,
           name = "File.kt"
         )
       )
@@ -124,18 +124,18 @@ class GivenImportsTest {
     listOf(
       listOf(
         source(
-          """
+      """
                     @Given val foo = Foo()
-                """,
+            """,
           packageFqName = FqName("givens")
         )
       ),
       listOf(
         source(
-          """
+      """
                     @GivenImports("givens.*")
-                    fun invoke() = given<Foo>()
-                    """,
+              fun invoke() = given<Foo>()
+                """,
           name = "File.kt"
         )
       )
@@ -147,9 +147,9 @@ class GivenImportsTest {
   @Test fun testStarImportSamePackage() = codegen(
     """
             @GivenImports("com.ivianuu.injekt.integrationtests.*")
-            fun invoke() {
+      fun invoke() {
             }
-        """
+    """
   ) {
     compilationShouldHaveFailed("Givens of the same package are automatically imported")
   }
@@ -158,9 +158,9 @@ class GivenImportsTest {
     """
             @Given val foo = Foo()
             @GivenImports("com.ivianuu.injekt.integrationtests.foo")
-            fun invoke() {
+      fun invoke() {
             }
-        """
+    """
   ) {
     compilationShouldHaveFailed("Givens of the same package are automatically imported")
   }
@@ -169,21 +169,21 @@ class GivenImportsTest {
     listOf(
       listOf(
         source(
-          """
+      """
                     @Given val foo = Foo()
-                """,
+            """,
           packageFqName = FqName("givens")
         )
       ),
       listOf(
         source(
-          """
+      """
                     @GivenImports("givens.*")
                     class MyClass {
-                        fun invoke() = given<Foo>()
+                  fun invoke() = given<Foo>()
                     }
-                    fun invoke() = MyClass().invoke()
-                    """,
+              fun invoke() = MyClass().invoke()
+                """,
           name = "File.kt"
         )
       )
@@ -196,18 +196,18 @@ class GivenImportsTest {
     listOf(
       listOf(
         source(
-          """
+      """
                     @Given val foo = Foo()
-                """,
+            """,
           packageFqName = FqName("givens")
         )
       ),
       listOf(
         source(
-          """
+      """
                     @GivenImports("givens.*")
-                    fun invoke() = given<Foo>()
-                    """,
+              fun invoke() = given<Foo>()
+                """,
           name = "File.kt"
         )
       )
@@ -220,19 +220,19 @@ class GivenImportsTest {
     listOf(
       listOf(
         source(
-          """
+      """
                     @Given val foo = Foo()
-                """,
+            """,
           packageFqName = FqName("givens")
         )
       ),
       listOf(
         source(
-          """
+      """
                     @GivenImports("givens.*")
                     val givenFoo = given<Foo>()
-                    fun invoke() = givenFoo
-                    """,
+              fun invoke() = givenFoo
+                """,
           name = "File.kt"
         )
       )
@@ -244,11 +244,11 @@ class GivenImportsTest {
   @Test fun testWithGivenImports() = codegen(
     listOf(
       source(
-        """
-                    fun invoke() = withGivenImports("com.ivianuu.injekt.common.*") {
+    """
+              fun invoke() = withGivenImports("com.ivianuu.injekt.common.*") {
                         given<TypeKey<Foo>>().value
                     }
-                """,
+            """,
         name = "File.kt"
       )
     )
