@@ -102,7 +102,8 @@ class TypeSubstitutionTest {
     withTypeCheckerContext {
       val (installElementModuleT, installElementModuleU, installElementModuleS) =
         injektContext.classifierDescriptorForFqName(
-          FqName("com.ivianuu.injekt.scope.InstallElement.Companion.Module")
+          FqName("com.ivianuu.injekt.scope.InstallElement.Companion.Module"),
+          NoLookupLocation.FROM_BACKEND
         )!!
           .cast<ClassDescriptor>()
           .unsubstitutedPrimaryConstructor!!

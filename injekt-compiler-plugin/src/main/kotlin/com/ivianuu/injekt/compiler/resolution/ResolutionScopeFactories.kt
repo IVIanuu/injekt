@@ -20,6 +20,8 @@ import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
+import org.jetbrains.kotlin.incremental.*
+import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
@@ -288,7 +290,8 @@ private fun CodeBlockResolutionScope(
 fun TypeResolutionScope(
   context: InjektContext,
   trace: BindingTrace,
-  type: TypeRef
+  type: TypeRef,
+  lookupLocation: LookupLocation
 ): ResolutionScope {
   val finalType = type.withNullability(false)
   trace[InjektWritableSlices.TYPE_RESOLUTION_SCOPE, finalType]?.let { return it }
@@ -310,7 +313,8 @@ fun TypeResolutionScope(
           currentType.classifier.isTypeAlias -> {
             context.classifierDescriptorForFqName(
               currentType.classifier.fqName.parent()
-                .child("${currentType.classifier.fqName.shortName()}Givens".asNameId())
+                .child("${currentType.classifier.fqName.shortName()}Givens".asNameId()),
+              lookupLocation
             )
               ?.safeAs<ClassDescriptor>()
               ?.takeIf { it.kind == ClassKind.OBJECT }

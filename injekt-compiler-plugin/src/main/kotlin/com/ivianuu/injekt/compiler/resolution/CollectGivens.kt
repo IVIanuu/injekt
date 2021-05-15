@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
+import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.*
@@ -232,7 +233,9 @@ fun List<GivenImport>.collectImportGivens(
       fun importObjectIfExists(
         fqName: FqName,
         doNotIncludeChildren: Boolean
-      ) = context.classifierDescriptorForFqName(fqName)
+      ) = context.classifierDescriptorForFqName(fqName, import.element?.let {
+        KotlinLookupLocation(it)
+      } ?: NoLookupLocation.FROM_BACKEND)
         ?.safeAs<ClassDescriptor>()
         ?.takeIf { it.kind == ClassKind.OBJECT }
         ?.let { clazz ->
@@ -283,7 +286,8 @@ fun List<GivenImport>.collectImportGivens(
         importObjectIfExists(parentFqName, true)
 
         // include givens from the givens object of a type alias with the fq name
-        context.classifierDescriptorForFqName(fqName)
+        context.classifierDescriptorForFqName(fqName, import.element
+          ?.let { KotlinLookupLocation(it) } ?: NoLookupLocation.FROM_BACKEND)
           ?.safeAs<TypeAliasDescriptor>()
           ?.let { typeAlias ->
             importObjectIfExists(

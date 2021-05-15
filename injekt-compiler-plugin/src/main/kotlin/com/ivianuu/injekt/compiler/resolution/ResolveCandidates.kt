@@ -207,7 +207,7 @@ private fun ResolutionScope.resolveRequest(
   checkCancelled()
   resultsByType[request.type]?.let { return it }
   val userCandidates = givensForRequest(request, this)
-    ?: TypeResolutionScope(context, trace, request.type)
+    ?: TypeResolutionScope(context, trace, request.type, lookupLocation)
       .also { it.recordLookup(lookupLocation) }
       .givensForRequest(request, this)
   val result = if (userCandidates != null) {

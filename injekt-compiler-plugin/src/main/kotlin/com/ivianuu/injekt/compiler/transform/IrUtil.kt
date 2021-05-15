@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.backend.common.ir.*
 import org.jetbrains.kotlin.backend.common.lower.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
+import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.ir.*
 import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.*
@@ -162,7 +163,10 @@ fun TypeRef.toKotlinType(context: InjektContext): SimpleType {
           Annotations.create(
             listOf(
               AnnotationDescriptorImpl(
-                context.classifierDescriptorForFqName(InjektFqNames.Composable)!!.defaultType,
+                context.classifierDescriptorForFqName(
+                  InjektFqNames.Composable,
+                  NoLookupLocation.FROM_BACKEND
+                )!!.defaultType,
                 emptyMap(),
                 SourceElement.NO_SOURCE
               )
