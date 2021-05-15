@@ -17,9 +17,39 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.backend.common.serialization.*
+import org.jetbrains.kotlin.incremental.components.*
+import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 
 data class GivenImport(val element: KtElement?, val importPath: String?)
+
+data class ResolvedGivenImport(
+  val element: KtElement?,
+  val importPath: String?,
+  val packageFqName: FqName
+)
+
+fun GivenImport.toResolvedImport(packageFqName: FqName) = ResolvedGivenImport(
+  element, importPath, packageFqName
+)
+
+fun GivenImport.resolve(context: InjektContext): ResolvedGivenImport {
+  val packageFqName: FqName = if (importPath!!.endsWith(".*")) {
+    val packageFqName = FqName(importPath.removeSuffix(".*"))
+    val objectForFqName = context.classifierDescriptorForFqName(
+      packageFqName, NoLookupLocation.FROM_BACKEND)
+    objectForFqName?.findPackage()?.fqName ?: packageFqName
+  } else {
+    val fqName = FqName(importPath)
+    val parentFqName = fqName.parent()
+    val objectForFqName = context.classifierDescriptorForFqName(
+      parentFqName, NoLookupLocation.FROM_BACKEND)
+    objectForFqName?.findPackage()?.fqName ?: parentFqName
+  }
+
+  return toResolvedImport(packageFqName)
+}
 
 fun KtAnnotated.getGivenImports(): List<GivenImport> = findAnnotation(InjektFqNames.GivenImports)
   ?.valueArguments

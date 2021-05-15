@@ -62,35 +62,51 @@ class SuppressionTest {
 
   @Test fun testCanUseUnderscoreForGivenParameter() = singleAndMultiCodegen(
     """
-            fun func(@Given _: String, @Given _: Int) {
-                given<String>()
-                given<Int>()
-            }
+      fun func(@Given _: String, @Given _: Int) {
+        given<String>()
+        given<Int>()
+      }
     """,
     """
-         fun invoke() {
-                @Given val string = ""
-                func(int = 0)
-            } 
+      fun invoke() {
+        @Given val string = ""
+        func(int = 0)
+      } 
+    """
+  )
+
+  @Test fun testCanUseUnderscoreForGivenParameterWithTypeAlias() = singleAndMultiCodegen(
+    """
+      typealias MyAlias = Int
+      fun func(@Given _: String, @Given _: MyAlias) {
+        given<String>()
+        given<MyAlias>()
+      }
+    """,
+    """
+      fun invoke() {
+        @Given val string = ""
+        func(myAlias = 0)
+      } 
     """
   )
 
   @Test fun testCanUseInfixWithGiven() = singleAndMultiCodegen(
     """
-            interface Combine<T> {
-                fun plus(a: T, b: T): T
-            }
+      interface Combine<T> {
+        fun plus(a: T, b: T): T
+      }
 
-            infix fun <T> T.combine(other: T, @Given combine: Combine<T>): T = combine.plus(this, other)
-            
-            @Given object StringCombine : Combine<String> {
-                override fun plus(a: String, b: String) = a + b
-            }
+      infix fun <T> T.combine(other: T, @Given combine: Combine<T>): T = combine.plus(this, other)
+      
+      @Given object StringCombine : Combine<String> {
+        override fun plus(a: String, b: String) = a + b
+      }
     """,
     """
-         fun invoke() {
-                "a" combine "b"
-            } 
+      fun invoke() {
+        "a" combine "b"
+      } 
     """
   )
 

@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.com.intellij.openapi.progress.*
+import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.ir.declarations.*
@@ -34,6 +35,8 @@ import java.lang.reflect.*
 import java.util.concurrent.*
 import kotlin.collections.set
 import kotlin.reflect.*
+
+val isIde: Boolean get() = Project::class.java.name == "com.intellij.openapi.project.Project"
 
 fun KtAnnotated.hasAnnotation(fqName: FqName): Boolean = findAnnotation(fqName) != null
 
@@ -183,14 +186,18 @@ fun checkCancelled() {
   }
 }
 
+const val DISPATCH_RECEIVER_NAME = "\$dispatchReceiver"
+const val EXTENSION_RECEIVER_NAME = "\$extensionReceiver"
+
 fun ParameterDescriptor.injektName(): String {
   val callable = containingDeclaration as? CallableDescriptor
   return when {
     original == callable?.dispatchReceiverParameter?.original ||
-        (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> "_dispatchReceiver"
-    original == callable?.extensionReceiverParameter?.original -> "_extensionReceiver"
+        (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_NAME
+    original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_NAME
     else -> if (name.isSpecial)
-      type.constructor.declarationDescriptor!!.name
+      (type.getAbbreviation() ?: type)
+        .constructor.declarationDescriptor!!.name
         .asString().decapitalize()
     else name.asString()
   }
@@ -228,3 +235,12 @@ fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transfo
   field.set(this, newValue)
   return newValue
 }
+
+fun givensLookupName(fqName: FqName, packageFqName: FqName): Name = fqName.asString()
+  .removePrefix(packageFqName.asString())
+  .replace(".", "_")
+  .removePrefix("_")
+  .takeIf { it.isNotEmpty() }
+  ?.plus("_givens")
+  ?.asNameId()
+  ?: "givens".asNameId()

@@ -110,22 +110,20 @@ class ProviderGivenNode(
     callContext = dependencyCallContext,
     ownerDescriptor = ownerScope.ownerDescriptor,
     trace = ownerScope.trace,
-    initialGivens = {
-      type
-        .toKotlinType(ownerScope.context)
-        .memberScope
-        .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
-        .first()
-        .valueParameters
-        .asSequence()
-        .onEach { parameterDescriptors += it }
-        .mapIndexed { index, parameter ->
-          parameter
-            .toCallableRef(ownerScope.context, ownerScope.trace)
-            .copy(isGiven = true, type = type.arguments[index])
-        }
-        .toList()
-    },
+    initialGivens = type
+      .toKotlinType(ownerScope.context)
+      .memberScope
+      .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
+      .first()
+      .valueParameters
+      .asSequence()
+      .onEach { parameterDescriptors += it }
+      .mapIndexed { index, parameter ->
+        parameter
+          .toCallableRef(ownerScope.context, ownerScope.trace)
+          .copy(isGiven = true, type = type.arguments[index])
+      }
+      .toList(),
     imports = emptyList(),
     typeParameters = emptyList()
   )
@@ -139,8 +137,7 @@ class ProviderGivenNode(
 
 fun CallableRef.getGivenRequests(
   context: InjektContext,
-  trace: BindingTrace,
-  callableFqNameProvider: (CallableDescriptor) -> FqName = { it.containingDeclaration.fqNameSafe }
+  trace: BindingTrace
 ): List<GivenRequest> = callable.allParameters
   .asSequence()
   .filter {
@@ -160,7 +157,7 @@ fun CallableRef.getGivenRequests(
         if (name in defaultOnAllErrorParameters) GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
         else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
       } else GivenRequest.DefaultStrategy.NONE,
-      callableFqName = callableFqNameProvider(parameter),
+      callableFqName = parameter.containingDeclaration.fqNameSafe,
       parameterName = name.asNameId(),
       isInline = InlineUtil.isInlineParameter(parameter),
       isLazy = false

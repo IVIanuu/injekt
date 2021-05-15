@@ -54,11 +54,12 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
     anyType.copy(isMarkedNullable = true)
   }
 
-  fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor? {
-    return memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
-      fqName.shortName(), NoLookupLocation.FROM_BACKEND
-    )
-  }
+  fun classifierDescriptorForFqName(
+    fqName: FqName,
+    lookupLocation: LookupLocation
+  ): ClassifierDescriptor? = memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
+    fqName.shortName(), lookupLocation
+  )
 
   fun classifierDescriptorForKey(
     key: String,
@@ -79,7 +80,7 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
         .firstOrNull {
           it.uniqueKey(this) == key
         }
-      ?: classifierDescriptorForFqName(fqName.parent())
+      ?: classifierDescriptorForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
         .safeAs<ClassifierDescriptorWithTypeParameters>()
         ?.declaredTypeParameters
         ?.firstOrNull { it.uniqueKey(this) == key }

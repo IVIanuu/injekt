@@ -63,7 +63,7 @@ internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
 /**
  * Defines givens to initialize the work manager library
  */
-@Given object WorkerInitializer {
+@Given object WorkerInitializerGivens {
   /**
    * Defines the [GivenScopeInitializer] for work manager initialization in the [AppGivenScope]
    */

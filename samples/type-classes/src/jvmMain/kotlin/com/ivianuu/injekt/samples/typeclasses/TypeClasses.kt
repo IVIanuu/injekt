@@ -22,11 +22,12 @@ import com.ivianuu.injekt.samples.typeclasses.Ord.Companion.compareWith
 
 @Extension fun interface Ord<in T> {
   infix fun T.compareWith(other: T): Int
+  companion object {
+    @Given val IntOrd = Ord<Int> { compareTo(it) }
+  }
 }
 
 fun <T> List<T>.sorted(@Given ord: Ord<T>): List<T> = sortedWith { a, b -> a compareWith b }
-
-@Given val IntOrd = Ord<Int> { compareTo(it) }
 
 fun main() {
   val items = listOf(5, 3, 4, 1, 2).sorted()

@@ -22,45 +22,45 @@ import org.junit.*
 class ModuleTest {
   @Test fun testClassModule() = singleAndMultiCodegen(
     """
-            @Given val foo = Foo()
-            @Given class BarModule(@Given private val foo: Foo) {
-                @Given val bar get() = Bar(foo)
-            }
+      @Given val foo = Foo()
+      @Given class BarModule(@Given private val foo: Foo) {
+          @Given val bar get() = Bar(foo)
+      }
     """,
     """
-        fun invoke() = given<Bar>() 
+      fun invoke() = given<Bar>() 
     """
   )
 
   @Test fun testObjectModule() = singleAndMultiCodegen(
     """
-            @Given val foo = Foo()
-            @Given object BarModule {
-                @Given fun bar(@Given foo: Foo) = Bar(foo)
-            }
+      @Given val foo = Foo()
+      @Given object BarModule {
+          @Given fun bar(@Given foo: Foo) = Bar(foo)
+      }
     """,
     """
-        fun invoke() = given<Bar>() 
+      fun invoke() = given<Bar>() 
     """
   )
 
   @Test fun testModuleLambdaParameter() = singleAndMultiCodegen(
     """
-            class MyModule {
-                @Given val foo = Foo()
-            }
+      class MyModule {
+          @Given val foo = Foo()
+      }
 
-            @Given fun foo() = Foo()
-            @Given fun bar(@Given foo: Foo) = Bar(foo)
+      @Given fun foo() = Foo()
+      @Given fun bar(@Given foo: Foo) = Bar(foo)
 
-            inline fun <R> withModule(
-                block: (@Given MyModule) -> R
-            ): R = block(MyModule())
+      inline fun <R> withModule(
+          block: (@Given MyModule) -> R
+      ): R = block(MyModule())
     """,
     """
-         fun invoke() = withModule { 
-                given<Bar>()
-            } 
+      fun invoke() = withModule { 
+            given<Bar>()
+      } 
     """
   )
 

@@ -16,11 +16,20 @@
 
 package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.*
+
 /**
  * A key for a injekt type which can be used as a map key or similar
  */
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-inline class TypeKey<out T>(val value: String)
+inline class TypeKey<out T>(val value: String) {
+  companion object {
+    /**
+     * Allows to use a [TypeKey] for [T]
+     */
+    @Given inline fun <@ForTypeKey T> givenTypeKey(): TypeKey<T> = typeKeyOf()
+  }
+}
 
 /**
  * Returns a [TypeKey] for [T]

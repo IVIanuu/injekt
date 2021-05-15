@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.compiler.plugin.*
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.*
@@ -155,7 +156,8 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     variance = variance
   ).defaultType
 
-  fun typeFor(fqName: FqName) = injektContext.classifierDescriptorForFqName(fqName)
+  fun typeFor(fqName: FqName) = injektContext.classifierDescriptorForFqName(
+    fqName, NoLookupLocation.FROM_BACKEND)
     ?.defaultType?.toTypeRef(injektContext, injektContext.trace) ?: error("Wtf $fqName")
 
   infix fun TypeRef.shouldBeAssignableTo(other: TypeRef) {

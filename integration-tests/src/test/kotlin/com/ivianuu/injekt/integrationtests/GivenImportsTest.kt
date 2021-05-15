@@ -25,9 +25,9 @@ import org.junit.*
 class GivenImportsTest {
   @Test fun testUnresolvedImport() = codegen(
     """
-            @GivenImports("a")
+      @GivenImports("a")
       fun invoke() {
-            }
+      }
     """
   ) {
     compilationShouldHaveFailed("Unresolved given import")
@@ -156,10 +156,10 @@ class GivenImportsTest {
 
   @Test fun testImportGivenSamePackage() = codegen(
     """
-            @Given val foo = Foo()
-            @GivenImports("com.ivianuu.injekt.integrationtests.foo")
+      @Given val foo = Foo()
+      @GivenImports("com.ivianuu.injekt.integrationtests.foo")
       fun invoke() {
-            }
+      }
     """
   ) {
     compilationShouldHaveFailed("Givens of the same package are automatically imported")

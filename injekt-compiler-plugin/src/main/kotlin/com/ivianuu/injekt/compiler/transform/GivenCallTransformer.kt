@@ -152,8 +152,8 @@ class GivenCallTransformer(
         if (result !is ResolutionResult.Success.WithCandidate) return@forEach
         val expression = context.expressionFor(result)
         when (request.parameterName.asString()) {
-          "_dispatchReceiver" -> dispatchReceiver = expression
-          "_extensionReceiver" -> extensionReceiver = expression
+          DISPATCH_RECEIVER_NAME -> dispatchReceiver = expression
+          EXTENSION_RECEIVER_NAME -> extensionReceiver = expression
           else -> {
             putValueArgument(
               symbol.owner

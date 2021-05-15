@@ -17,8 +17,10 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.backend.common.serialization.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
+import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.*
@@ -185,6 +187,7 @@ fun CallableRef.collectGivens(
   context: InjektContext,
   scope: ResolutionScope,
   trace: BindingTrace,
+  addImport: (FqName, FqName) -> Unit,
   addGiven: (CallableRef) -> Unit,
   addConstrainedGiven: (CallableRef) -> Unit,
   seen: MutableSet<CallableRef> = mutableSetOf()
@@ -209,12 +212,14 @@ fun CallableRef.collectGivens(
 
   nextCallable
     .type
+    .also { addImport(it.classifier.fqName, it.classifier.descriptor!!.findPackage().fqName) }
     .collectGivens(context, trace)
     .forEach { innerCallable ->
       innerCallable.collectGivens(
         context,
         scope,
         trace,
+        addImport,
         addGiven,
         addConstrainedGiven,
         seen
@@ -225,25 +230,43 @@ fun CallableRef.collectGivens(
 fun List<GivenImport>.collectImportGivens(
   context: InjektContext,
   trace: BindingTrace
-): List<CallableRef> =
-  flatMap { import ->
+): List<CallableRef> = flatMap { import ->
+  buildList<CallableRef> {
     checkCancelled()
+    fun importObjectIfExists(
+      fqName: FqName,
+      doNotIncludeChildren: Boolean
+    ) = context.classifierDescriptorForFqName(fqName, import.element?.let {
+      KotlinLookupLocation(it)
+    } ?: NoLookupLocation.FROM_BACKEND)
+      ?.safeAs<ClassDescriptor>()
+      ?.takeIf { it.kind == ClassKind.OBJECT }
+      ?.let { clazz ->
+        this += clazz.getGivenReceiver(context, trace)
+          .copy(
+            doNotIncludeChildren = doNotIncludeChildren,
+            import = import.toResolvedImport(clazz.findPackage().fqName)
+          )
+      }
+
     if (import.importPath!!.endsWith("*")) {
       val packageFqName = FqName(import.importPath.removeSuffix(".*"))
-      (context.memberScopeForFqName(packageFqName)
+
+      // import all givens in the package
+      context.memberScopeForFqName(packageFqName)
         ?.collectGivens(context, trace)
-        ?.map { it.copy(import = import) } ?: emptyList()) + listOfNotNull(
-        context.classifierDescriptorForFqName(packageFqName)
-          ?.safeAs<ClassDescriptor>()
-          ?.takeIf { it.kind == ClassKind.OBJECT }
-          ?.getGivenReceiver(context, trace)
-          ?.copy(doNotIncludeChildren = true, import = import)
-      )
+        ?.map { it.copy(import = import.toResolvedImport(packageFqName)) }
+        ?.let { this += it }
+
+      // additionally add the object if the package is a object
+      importObjectIfExists(packageFqName, true)
     } else {
       val fqName = FqName(import.importPath)
       val parentFqName = fqName.parent()
       val name = fqName.shortName()
-      (context.memberScopeForFqName(parentFqName)
+
+      // import all givens with the specified name
+      context.memberScopeForFqName(parentFqName)
         ?.collectGivens(context, trace)
         ?.filter {
           it.callable.name == name ||
@@ -259,15 +282,26 @@ fun List<GivenImport>.collectImportGivens(
                 ?.containingDeclaration
                 ?.name == name
         }
-        ?.map { it.copy(import = import) } ?: emptyList()) + listOfNotNull(
-        context.classifierDescriptorForFqName(parentFqName)
-          ?.safeAs<ClassDescriptor>()
-          ?.takeIf { it.kind == ClassKind.OBJECT }
-          ?.getGivenReceiver(context, trace)
-          ?.copy(doNotIncludeChildren = true, import = import)
-      )
+        ?.map { it.copy(import = import.toResolvedImport(it.callable.findPackage().fqName)) }
+        ?.let { this += it }
+
+      // additionally add the object if the package is a object
+      importObjectIfExists(parentFqName, true)
+
+      // include givens from the givens object of a type alias with the fq name
+      context.classifierDescriptorForFqName(fqName, import.element
+        ?.let { KotlinLookupLocation(it) } ?: NoLookupLocation.FROM_BACKEND)
+        ?.safeAs<TypeAliasDescriptor>()
+        ?.let { typeAlias ->
+          importObjectIfExists(
+            typeAlias.fqNameSafe.parent()
+              .child("${typeAlias.fqNameSafe.shortName()}Givens".asNameId()),
+            false
+          )
+        }
     }
   }
+}
 
 private fun ResolutionScope.canSee(callable: CallableRef): Boolean =
   callable.callable.visibility == DescriptorVisibilities.PUBLIC ||

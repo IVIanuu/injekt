@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.com.intellij.openapi.progress.*
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 sealed class GivenGraph {
@@ -167,13 +168,15 @@ data class UsageKey(val type: TypeRef, val outerMostScope: ResolutionScope)
 
 fun ResolutionScope.resolveRequests(
   requests: List<GivenRequest>,
+  lookupLocation: KotlinLookupLocation,
   onEachResult: (ResolutionResult.Success.WithCandidate.Value) -> Unit
 ): GivenGraph = measureTimeMillisWithResult {
+  recordLookup(lookupLocation)
   val successes = mutableMapOf<GivenRequest, ResolutionResult.Success>()
   var failureRequest: GivenRequest? = null
   var failure: ResolutionResult.Failure? = null
   for (request in requests) {
-    when (val result = resolveRequest(request)) {
+    when (val result = resolveRequest(request, lookupLocation)) {
       is ResolutionResult.Success -> successes[request] = result
       is ResolutionResult.Failure -> if ((request.defaultStrategy == GivenRequest.DefaultStrategy.NONE ||
             (request.defaultStrategy == GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN &&
@@ -197,16 +200,22 @@ fun ResolutionScope.resolveRequests(
   println("resolving requests $requests in $name took ${it.first} ms")
 }.second
 
-private fun ResolutionScope.resolveRequest(request: GivenRequest): ResolutionResult {
+private fun ResolutionScope.resolveRequest(
+  request: GivenRequest,
+  lookupLocation: KotlinLookupLocation
+): ResolutionResult {
   checkCancelled()
   resultsByType[request.type]?.let { return it }
   val userCandidates = givensForRequest(request, this)
+    ?: TypeResolutionScope(context, trace, request.type, lookupLocation)
+      .also { it.recordLookup(lookupLocation) }
+      .givensForRequest(request, this)
   val result = if (userCandidates != null) {
-    resolveCandidates(request, userCandidates)
+    resolveCandidates(request, userCandidates, lookupLocation)
   } else {
     val frameworkCandidate = frameworkGivenForRequest(request)
     when {
-      frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate)
+      frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate, lookupLocation)
       request.defaultStrategy == GivenRequest.DefaultStrategy.NONE -> ResolutionResult.Failure.NoCandidates
       else -> ResolutionResult.Success.DefaultValue
     }
@@ -256,10 +265,11 @@ private fun ResolutionScope.computeForCandidate(
 private fun ResolutionScope.resolveCandidates(
   request: GivenRequest,
   candidates: List<GivenNode>,
+  lookupLocation: KotlinLookupLocation
 ): ResolutionResult {
   if (candidates.size == 1) {
     val candidate = candidates.single()
-    return resolveCandidate(request, candidate)
+    return resolveCandidate(request, candidate, lookupLocation)
   }
 
   val successes = mutableListOf<ResolutionResult.Success>()
@@ -279,7 +289,7 @@ private fun ResolutionScope.resolveCandidates(
       break
     }
 
-    when (val candidateResult = resolveCandidate(request, candidate)) {
+    when (val candidateResult = resolveCandidate(request, candidate, lookupLocation)) {
       is ResolutionResult.Success -> {
         val firstSuccessResult = successes.firstOrNull()
         when (compareResult(candidateResult, firstSuccessResult)) {
@@ -305,7 +315,8 @@ private fun ResolutionScope.resolveCandidates(
 
 private fun ResolutionScope.resolveCandidate(
   request: GivenRequest,
-  candidate: GivenNode
+  candidate: GivenNode,
+  lookupLocation: KotlinLookupLocation
 ): ResolutionResult = computeForCandidate(request, candidate) {
   if (!callContext.canCall(candidate.callContext)) {
     return@computeForCandidate ResolutionResult.Failure.CallContextMismatch(callContext, candidate)
@@ -347,7 +358,7 @@ private fun ResolutionScope.resolveCandidate(
   val successDependencyResults = mutableMapOf<GivenRequest, ResolutionResult.Success>()
   for (dependency in candidate.dependencies) {
     val dependencyScope = candidate.dependencyScope ?: this
-    when (val dependencyResult = dependencyScope.resolveRequest(dependency)) {
+    when (val dependencyResult = dependencyScope.resolveRequest(dependency, lookupLocation)) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> {
         when {

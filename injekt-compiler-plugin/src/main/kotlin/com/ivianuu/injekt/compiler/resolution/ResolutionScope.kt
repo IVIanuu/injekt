@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.resolve.calls.callUtil.*
 import org.jetbrains.kotlin.resolve.calls.model.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.scopes.*
+import org.jetbrains.kotlin.resolve.scopes.receivers.*
 import org.jetbrains.kotlin.resolve.scopes.utils.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
@@ -41,8 +42,8 @@ class ResolutionScope(
   val callContext: CallContext,
   val ownerDescriptor: DeclarationDescriptor?,
   val trace: BindingTrace,
-  initialGivens: () -> List<CallableRef>,
-  val imports: List<GivenImport>,
+  val initialGivens: List<CallableRef>,
+  imports: List<ResolvedGivenImport>,
   val typeParameters: List<ClassifierRef>
 ) {
   val chain: MutableList<Pair<GivenRequest, GivenNode>> = parent?.chain ?: mutableListOf()
@@ -63,12 +64,14 @@ class ResolutionScope(
    * If there are duplicates we choose the best version
    */
   private fun addGivenIfAbsentOrBetter(callable: CallableRef) {
-    if (!callable.isApplicable()) return
+    if (!callable.isNonRecursiveConstructorGivens()) return
     val key = callable.givenKey
     val existing = givens[key]
     if (compareCallable(callable, existing) < 0)
       givens[key] = callable
   }
+
+  private val imports = imports.toMutableList()
 
   private val givens = mutableMapOf<GivenKey, CallableRef>()
 
@@ -116,18 +119,21 @@ class ResolutionScope(
   private val providerGivensByRequest = mutableMapOf<ProviderRequestKey, ProviderGivenNode>()
   private val setGivensByType = mutableMapOf<TypeRef, SetGivenNode?>()
 
-  val initialGivens: List<CallableRef> = measureTimeMillisWithResult(initialGivens).also {
-    println("$context computing initial givens for $name took ${it.first} ms")
-  }.second
-
   init {
     measureTimeMillisWithResult {
-      this.initialGivens
+      initialGivens
         .forEach { given ->
           given.collectGivens(
             context = context,
             scope = this,
             trace = trace,
+            addImport = { importFqName, packageFqName ->
+              this.imports += ResolvedGivenImport(
+                null,
+                "${importFqName}.*",
+                packageFqName
+              )
+            },
             addGiven = { callable ->
               addGivenIfAbsentOrBetter(callable.copy(source = given))
               val typeWithFrameworkKey = callable.type
@@ -167,10 +173,16 @@ class ResolutionScope(
   }
 
   fun recordLookup(location: KotlinLookupLocation) {
+    if (isIde) return
     parent?.recordLookup(location)
     fun recordLookup(declaration: DeclarationDescriptor) {
       if (declaration is ConstructorDescriptor) {
         recordLookup(declaration.constructedClass)
+        return
+      }
+      if (declaration is ReceiverParameterDescriptor &&
+          declaration.value is ImplicitClassReceiver) {
+        recordLookup(declaration.value.cast<ImplicitClassReceiver>().classDescriptor)
         return
       }
       when (val containingDeclaration = declaration.containingDeclaration) {
@@ -179,15 +191,23 @@ class ResolutionScope(
         else -> null
       }?.recordLookup(declaration.name, location)
     }
-    givens.forEach { recordLookup(it.value.callable) }
-    constrainedGivens.forEach { recordLookup(it.callable.callable) }
-    imports
-      .filter { it.importPath != null }
-      .filter { it.importPath!!.endsWith(".*") }
-      .map { FqName(it.importPath!!.removeSuffix(".*")) }
-      .forEach { fqName ->
-        context.memberScopeForFqName(fqName)
-          ?.recordLookup("givens".asNameId(), location)
+    givens.forEach {
+      if (it.value.type.frameworkKey == 0)
+        recordLookup(it.value.callable)
+    }
+    constrainedGivens.forEach {
+      if (it.callable.type.frameworkKey == 0)
+        recordLookup(it.callable.callable)
+    }
+    imports.forEach { import ->
+        context.memberScopeForFqName(import.packageFqName)
+          ?.recordLookup(
+            givensLookupName(
+              FqName(import.importPath!!.removeSuffix(".*")),
+              import.packageFqName
+            ),
+            location
+          )
       }
   }
 
@@ -197,6 +217,8 @@ class ResolutionScope(
       request.type.classifier == context.setClassifier
     ) return null
     return givensForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
+      ?.filter { it -> it.isValidObjectRequest(request) }
+      ?.takeIf { it.isNotEmpty() }
   }
 
   private fun givensForType(key: CallableRequestKey): List<GivenNode>? {
@@ -378,6 +400,13 @@ class ResolutionScope(
       context = this.context,
       scope = this,
       trace = trace,
+      addImport = { importFqName, packageFqName ->
+        this.imports += ResolvedGivenImport(
+          null,
+          "${importFqName}.*",
+          packageFqName
+        )
+      },
       addGiven = { newInnerGiven ->
         val finalNewInnerGiven = newInnerGiven
           .copy(
@@ -422,7 +451,7 @@ class ResolutionScope(
    * of a given class but not in the scope.
    * without removing the property this would result in a divergent request
    */
-  private fun CallableRef.isApplicable(): Boolean {
+  private fun CallableRef.isNonRecursiveConstructorGivens(): Boolean {
     if (callable !is PropertyDescriptor ||
       callable.dispatchReceiverParameter == null
     ) return true
@@ -432,6 +461,24 @@ class ResolutionScope(
     if (callable.name !in containingClassifier.primaryConstructorPropertyParameters) return true
     return allScopes.any { it.ownerDescriptor == containing } ||
         !containingClassifier.descriptor!!.isGiven(context, trace)
+  }
+
+  /**
+   * We add implicit givens for objects under some circumstances to allow
+   * object callables to resolve their dispatch receiver parameter
+   *
+   * Here we ensure that the user cannot resolve such implicit object givens if they are not
+   * marked as given
+   */
+  private fun GivenNode.isValidObjectRequest(request: GivenRequest): Boolean {
+    if (!request.type.classifier.isObject) return true
+    return request.parameterName.asString() == DISPATCH_RECEIVER_NAME || (
+        this !is CallableGivenNode ||
+            callable.callable !is ReceiverParameterDescriptor ||
+            callable.callable.cast<ReceiverParameterDescriptor>()
+              .value !is ImplicitClassReceiver ||
+            request.type.classifier.descriptor!!.hasAnnotation(InjektFqNames.Given)
+        )
   }
 
   override fun toString(): String = "ResolutionScope($name)"

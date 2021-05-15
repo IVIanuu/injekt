@@ -35,7 +35,7 @@ data class CallableRef(
   val owner: ClassifierRef?,
   val overriddenDepth: Int,
   val doNotIncludeChildren: Boolean,
-  val import: GivenImport?
+  val import: ResolvedGivenImport?
 )
 
 fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {

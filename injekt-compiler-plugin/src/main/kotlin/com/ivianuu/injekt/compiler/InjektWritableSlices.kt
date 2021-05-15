@@ -32,6 +32,8 @@ object InjektWritableSlices {
     BasicWritableSlice<DeclarationDescriptor, ResolutionScope>(RewritePolicy.DO_NOTHING)
   val HIERARCHICAL_RESOLUTION_SCOPE =
     BasicWritableSlice<HierarchicalScope, ResolutionScope>(RewritePolicy.DO_NOTHING)
+  val TYPE_RESOLUTION_SCOPE =
+    BasicWritableSlice<TypeRef, ResolutionScope>(RewritePolicy.DO_NOTHING)
   val CALLABLE_REF_FOR_DESCRIPTOR =
     BasicWritableSlice<CallableDescriptor, CallableRef>(RewritePolicy.DO_NOTHING)
   val CLASSIFIER_REF_FOR_CLASSIFIER =

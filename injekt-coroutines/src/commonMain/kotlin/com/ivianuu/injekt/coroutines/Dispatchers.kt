@@ -21,19 +21,27 @@ import kotlinx.coroutines.*
 
 typealias DefaultDispatcher = CoroutineDispatcher
 
-@Given inline val defaultDispatcher: DefaultDispatcher
-  get() = Dispatchers.Default
+@Given object DefaultDispatcherGivens {
+  @Given inline val defaultDispatcher: DefaultDispatcher
+    get() = Dispatchers.Default
+}
 
 typealias MainDispatcher = CoroutineDispatcher
 
-@Given inline val mainDispatcher: MainDispatcher
-  get() = Dispatchers.Main
+@Given object MainDispatcherGivens {
+  @Given inline val mainDispatcher: MainDispatcher
+    get() = Dispatchers.Main
+}
 
 typealias ImmediateMainDispatcher = CoroutineDispatcher
 
-@Given inline val immediateMainDispatcher: ImmediateMainDispatcher
-  get() = Dispatchers.Main.immediate
+@Given object ImmediateMainDispatcherGivens {
+  @Given inline val immediateMainDispatcher: ImmediateMainDispatcher
+    get() = Dispatchers.Main.immediate
+}
 
 typealias IODispatcher = CoroutineDispatcher
 
-@Given expect val ioDispatcher: IODispatcher
+@Given expect object IODispatcherGivens {
+  @Given val ioDispatcher: IODispatcher
+}
