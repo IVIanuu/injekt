@@ -193,7 +193,8 @@ fun ParameterDescriptor.injektName(): String {
         (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_NAME
     original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_NAME
     else -> if (name.isSpecial)
-      type.constructor.declarationDescriptor!!.name
+      (type.getAbbreviation() ?: type)
+        .constructor.declarationDescriptor!!.name
         .asString().decapitalize()
     else name.asString()
   }
