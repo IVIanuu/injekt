@@ -139,8 +139,7 @@ class ProviderGivenNode(
 
 fun CallableRef.getGivenRequests(
   context: InjektContext,
-  trace: BindingTrace,
-  callableFqNameProvider: (CallableDescriptor) -> FqName = { it.containingDeclaration.fqNameSafe }
+  trace: BindingTrace
 ): List<GivenRequest> = callable.allParameters
   .asSequence()
   .filter {
@@ -160,7 +159,7 @@ fun CallableRef.getGivenRequests(
         if (name in defaultOnAllErrorParameters) GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
         else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
       } else GivenRequest.DefaultStrategy.NONE,
-      callableFqName = callableFqNameProvider(parameter),
+      callableFqName = parameter.containingDeclaration.fqNameSafe,
       parameterName = name.asNameId(),
       isInline = InlineUtil.isInlineParameter(parameter),
       isLazy = false

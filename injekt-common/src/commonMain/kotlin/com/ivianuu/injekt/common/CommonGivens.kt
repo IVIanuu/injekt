@@ -19,22 +19,19 @@ package com.ivianuu.injekt.common
 import com.ivianuu.injekt.*
 import kotlin.reflect.*
 
-/**
- * Allows to use a Map<K, V> for each Set<Pair<K, V>>
- */
-@Given inline fun <K, V> givenMap(@Given pairs: Set<Pair<K, V>>): Map<K, V> = pairs.toMap()
+@Given object CommonGivens {
+  /**
+   * Allows to use a Map<K, V> for each Set<Pair<K, V>>
+   */
+  @Given inline fun <K, V> givenMap(@Given pairs: Set<Pair<K, V>>): Map<K, V> = pairs.toMap()
 
-/**
- * Allows to use a [KClass] for [T]
- */
-@Given inline fun <reified T : Any> givenKClass(): KClass<T> = T::class
+  /**
+   * Allows to use a [KClass] for [T]
+   */
+  @Given inline fun <reified T : Any> givenKClass(): KClass<T> = T::class
 
-/**
- * Allows to use a [TypeKey] for [T]
- */
-@Given inline fun <@ForTypeKey T> givenTypeKey(): TypeKey<T> = typeKeyOf()
-
-/**
- * Allows to use a [Lazy] for [T]
- */
-@Given inline fun <T> givenLazy(@Given noinline init: () -> T): Lazy<T> = lazy(init)
+  /**
+   * Allows to use a [Lazy] for [T]
+   */
+  @Given inline fun <T> givenLazy(@Given noinline init: () -> T): Lazy<T> = lazy(init)
+}

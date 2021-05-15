@@ -183,12 +183,15 @@ fun checkCancelled() {
   }
 }
 
+const val DISPATCH_RECEIVER_NAME = "\$dispatchReceiver"
+const val EXTENSION_RECEIVER_NAME = "\$extensionReceiver"
+
 fun ParameterDescriptor.injektName(): String {
   val callable = containingDeclaration as? CallableDescriptor
   return when {
     original == callable?.dispatchReceiverParameter?.original ||
-        (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> "_dispatchReceiver"
-    original == callable?.extensionReceiverParameter?.original -> "_extensionReceiver"
+        (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_NAME
+    original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_NAME
     else -> if (name.isSpecial)
       type.constructor.declarationDescriptor!!.name
         .asString().decapitalize()

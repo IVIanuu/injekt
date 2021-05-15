@@ -331,10 +331,10 @@ class GivenResolveTest {
 
   @Test fun testCannotResolveObjectWithoutGiven() = singleAndMultiCodegen(
     """
-            object MyObject
+      object MyObject
     """,
     """
-        fun invoke() = given<MyObject>() 
+      fun invoke() = given<MyObject>() 
     """
   ) {
     compilationShouldHaveFailed("no given argument")

@@ -228,44 +228,71 @@ fun List<GivenImport>.collectImportGivens(
 ): List<CallableRef> =
   flatMap { import ->
     checkCancelled()
-    if (import.importPath!!.endsWith("*")) {
-      val packageFqName = FqName(import.importPath.removeSuffix(".*"))
-      (context.memberScopeForFqName(packageFqName)
-        ?.collectGivens(context, trace)
-        ?.map { it.copy(import = import) } ?: emptyList()) + listOfNotNull(
+    buildList<CallableRef> {
+      if (import.importPath!!.endsWith("*")) {
+        val packageFqName = FqName(import.importPath.removeSuffix(".*"))
+
+        // import all givens in the package
+        context.memberScopeForFqName(packageFqName)
+          ?.collectGivens(context, trace)
+          ?.map { it.copy(import = import) }
+          ?.let { this += it }
+
+        // additionally add the object if the package is a object
         context.classifierDescriptorForFqName(packageFqName)
           ?.safeAs<ClassDescriptor>()
           ?.takeIf { it.kind == ClassKind.OBJECT }
           ?.getGivenReceiver(context, trace)
           ?.copy(doNotIncludeChildren = true, import = import)
-      )
-    } else {
-      val fqName = FqName(import.importPath)
-      val parentFqName = fqName.parent()
-      val name = fqName.shortName()
-      (context.memberScopeForFqName(parentFqName)
-        ?.collectGivens(context, trace)
-        ?.filter {
-          it.callable.name == name ||
-              it.callable.safeAs<ClassConstructorDescriptor>()
-                ?.constructedClass
-                ?.name == name ||
-              it.callable.safeAs<ReceiverParameterDescriptor>()
-                ?.value
-                ?.type
-                ?.constructor
-                ?.declarationDescriptor
-                ?.safeAs<ClassDescriptor>()
-                ?.containingDeclaration
-                ?.name == name
-        }
-        ?.map { it.copy(import = import) } ?: emptyList()) + listOfNotNull(
+          ?.let { this += it }
+      } else {
+        val fqName = FqName(import.importPath)
+        val parentFqName = fqName.parent()
+        val name = fqName.shortName()
+
+        // import all givens with the specified name
+        context.memberScopeForFqName(parentFqName)
+          ?.collectGivens(context, trace)
+          ?.filter {
+            it.callable.name == name ||
+                it.callable.safeAs<ClassConstructorDescriptor>()
+                  ?.constructedClass
+                  ?.name == name ||
+                it.callable.safeAs<ReceiverParameterDescriptor>()
+                  ?.value
+                  ?.type
+                  ?.constructor
+                  ?.declarationDescriptor
+                  ?.safeAs<ClassDescriptor>()
+                  ?.containingDeclaration
+                  ?.name == name
+          }
+          ?.map { it.copy(import = import) }
+          ?.let { this += it }
+
+        // additionally add the object if the package is a object
         context.classifierDescriptorForFqName(parentFqName)
           ?.safeAs<ClassDescriptor>()
           ?.takeIf { it.kind == ClassKind.OBJECT }
           ?.getGivenReceiver(context, trace)
           ?.copy(doNotIncludeChildren = true, import = import)
-      )
+          ?.let { this += it }
+
+        // include givens from the givens object of the a type alias with the fq name
+        context.classifierDescriptorForFqName(fqName)
+          ?.safeAs<TypeAliasDescriptor>()
+          ?.let { typeAlias ->
+            context.classifierDescriptorForFqName(
+              typeAlias.fqNameSafe.parent()
+                .child("${typeAlias.fqNameSafe.shortName()}Givens".asNameId())
+            )
+              ?.safeAs<ClassDescriptor>()
+              ?.takeIf { it.kind == ClassKind.OBJECT }
+              ?.getGivenReceiver(context, trace)
+              ?.copy(import = import)
+          }
+          ?.let { this += it }
+      }
     }
   }
 

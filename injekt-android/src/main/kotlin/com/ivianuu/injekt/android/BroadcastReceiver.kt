@@ -34,8 +34,8 @@ fun BroadcastReceiver.createReceiverGivenScope(
 
 typealias ReceiverGivenScope = GivenScope
 
-@Given val receiverGivenScopeModule =
-  ChildScopeModule3<AppGivenScope, BroadcastReceiver, ReceiverContext, ReceiverIntent, ReceiverGivenScope>()
+@Given val receiverGivenScopeModule = ChildScopeModule3<AppGivenScope, BroadcastReceiver,
+    ReceiverContext, ReceiverIntent, ReceiverGivenScope>()
 
 typealias ReceiverContext = Context
 

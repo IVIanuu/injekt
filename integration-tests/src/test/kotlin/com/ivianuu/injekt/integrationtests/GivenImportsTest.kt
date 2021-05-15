@@ -25,9 +25,9 @@ import org.junit.*
 class GivenImportsTest {
   @Test fun testUnresolvedImport() = codegen(
     """
-            @GivenImports("a")
+      @GivenImports("a")
       fun invoke() {
-            }
+      }
     """
   ) {
     compilationShouldHaveFailed("Unresolved given import")
@@ -156,10 +156,10 @@ class GivenImportsTest {
 
   @Test fun testImportGivenSamePackage() = codegen(
     """
-            @Given val foo = Foo()
-            @GivenImports("com.ivianuu.injekt.integrationtests.foo")
+      @Given val foo = Foo()
+      @GivenImports("com.ivianuu.injekt.integrationtests.foo")
       fun invoke() {
-            }
+      }
     """
   ) {
     compilationShouldHaveFailed("Givens of the same package are automatically imported")
@@ -254,5 +254,32 @@ class GivenImportsTest {
     )
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.test.Foo"
+  }
+
+  @Test fun testImportingTypeAliasAlsoImportsItsGivensObject() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            typealias Dep = String
+            object DepGivens {
+              @Given val foo = Foo() 
+            }
+          """,
+          packageFqName = FqName("givens")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @GivenImports("givens.Dep")
+            fun invoke() = given<Foo>()
+          """,
+          name = "File.kt"
+        )
+      )
+    )
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 }

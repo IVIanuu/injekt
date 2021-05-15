@@ -42,5 +42,7 @@ typealias ServiceContext = Context
 
 typealias ServiceResources = Resources
 
-@Given inline val Service.serviceResources: ServiceResources
-  get() = resources
+@Given object ServiceResourcesGivens {
+  @Given inline val Service.serviceResources: ServiceResources
+    get() = resources
+}

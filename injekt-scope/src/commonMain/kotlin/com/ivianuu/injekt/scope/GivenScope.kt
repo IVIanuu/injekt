@@ -20,6 +20,7 @@ package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.*
+import com.ivianuu.injekt.scope.GivenScope.Companion.GivenScope
 
 /**
  * A hierarchical construct with a lifecycle which hosts a map of keys to elements
@@ -65,6 +66,29 @@ interface GivenScope : GivenScopeDisposable {
    */
   fun removeScopedValue(key: Any)
   fun removeScopedValue(key: TypeKey<*>) = removeScopedValue(key.value)
+
+  companion object {
+    @Qualifier private annotation class Parent
+
+    @Given inline fun <S : GivenScope> GivenScope(
+      @Given parent: @Parent GivenScope? = null,
+      @Given typeKey: TypeKey<S>,
+      @Given elements: (@Given S, @Given @Parent GivenScope?) -> Set<GivenScopeElement<S>> = { _, _ -> emptySet() },
+      @Given initializers: (@Given S, @Given @Parent GivenScope?) -> Set<GivenScopeInitializer<S>> = { _, _ -> emptySet() }
+    ): S {
+      val scope = GivenScopeImpl(typeKey, parent)
+      scope as S
+      val parentDisposable = parent?.invokeOnDispose { scope.dispose() }
+      scope.invokeOnDispose { parentDisposable?.dispose() }
+      val finalElements = elements(scope, scope)
+      scope.elements = if (finalElements.isEmpty()) emptyMap()
+      else HashMap<String, () -> Any>(finalElements.size).apply {
+        finalElements.forEach { this[it.key.value] = it.factory }
+      }
+      initializers(scope, scope).forEach { it() }
+      return scope
+    }
+  }
 }
 
 /**
@@ -139,27 +163,6 @@ inline fun <R> GivenScope.withLock(block: () -> R): R = synchronized(this, block
 private class InvokeOnDisposeKey
 
 private val NoOpScopeDisposable = GivenScopeDisposable { }
-
-@Qualifier private annotation class Parent
-
-@Given inline fun <S : GivenScope> GivenScope(
-  @Given parent: @Parent GivenScope? = null,
-  @Given typeKey: TypeKey<S>,
-  @Given elements: (@Given S, @Given @Parent GivenScope?) -> Set<GivenScopeElement<S>> = { _, _ -> emptySet() },
-  @Given initializers: (@Given S, @Given @Parent GivenScope?) -> Set<GivenScopeInitializer<S>> = { _, _ -> emptySet() }
-): S {
-  val scope = GivenScopeImpl(typeKey, parent)
-  scope as S
-  val parentDisposable = parent?.invokeOnDispose { scope.dispose() }
-  scope.invokeOnDispose { parentDisposable?.dispose() }
-  val finalElements = elements(scope, scope)
-  scope.elements = if (finalElements.isEmpty()) emptyMap()
-  else HashMap<String, () -> Any>(finalElements.size).apply {
-    finalElements.forEach { this[it.key.value] = it.factory }
-  }
-  initializers(scope, scope).forEach { it() }
-  return scope
-}
 
 class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: () -> Any)
 

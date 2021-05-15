@@ -91,9 +91,8 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
     if (requests.isEmpty()) return
 
     val scope = HierarchicalResolutionScope(this.context, context.scope, context.trace)
-    scope.recordLookup(KotlinLookupLocation(callExpression))
 
-    when (val graph = scope.resolveRequests(requests) { result ->
+    when (val graph = scope.resolveRequests(requests, KotlinLookupLocation(callExpression)) { result ->
       if (result.candidate is CallableGivenNode) {
         context.trace.record(
           InjektWritableSlices.USED_GIVEN,

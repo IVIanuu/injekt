@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
+import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
@@ -282,4 +283,60 @@ private fun CodeBlockResolutionScope(
     imports = emptyList(),
     typeParameters = emptyList()
   )
+}
+
+fun TypeResolutionScope(
+  context: InjektContext,
+  trace: BindingTrace,
+  type: TypeRef
+): ResolutionScope {
+  val finalType = type.withNullability(false)
+  trace[InjektWritableSlices.TYPE_RESOLUTION_SCOPE, finalType]?.let { return it }
+
+  return ResolutionScope(
+    name = "TYPE ${finalType.render()}",
+    parent = null,
+    context = context,
+    callContext = CallContext.DEFAULT,
+    ownerDescriptor = finalType.classifier.descriptor,
+    trace = trace,
+    initialGivens = {
+      val initialGivens = mutableListOf<CallableRef>()
+
+      finalType.visitRecursive { currentType ->
+        if (currentType.isStarProjection) return@visitRecursive
+
+        when {
+          currentType.classifier.isTypeAlias -> {
+            context.classifierDescriptorForFqName(
+              currentType.classifier.fqName.parent()
+                .child("${currentType.classifier.fqName.shortName()}Givens".asNameId())
+            )
+              ?.safeAs<ClassDescriptor>()
+              ?.takeIf { it.kind == ClassKind.OBJECT }
+              ?.getGivenReceiver(context, trace)
+              ?.let { initialGivens += it }
+          }
+          currentType.classifier.isObject -> {
+            initialGivens += currentType.classifier.descriptor!!
+              .cast<ClassDescriptor>()
+              .getGivenReceiver(context, trace)
+          }
+          else -> {
+            currentType.classifier.descriptor!!
+              .safeAs<ClassDescriptor>()
+              ?.companionObjectDescriptor
+              ?.getGivenReceiver(context, trace)
+              ?.let { initialGivens += it }
+          }
+        }
+      }
+
+      initialGivens
+    },
+    imports = emptyList(),
+    typeParameters = emptyList()
+  ).also {
+    trace.record(InjektWritableSlices.TYPE_RESOLUTION_SCOPE, finalType, it)
+  }
 }

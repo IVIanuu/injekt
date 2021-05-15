@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.resolve.calls.callUtil.*
 import org.jetbrains.kotlin.resolve.calls.model.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.scopes.*
+import org.jetbrains.kotlin.resolve.scopes.receivers.*
 import org.jetbrains.kotlin.resolve.scopes.utils.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
@@ -63,7 +64,7 @@ class ResolutionScope(
    * If there are duplicates we choose the best version
    */
   private fun addGivenIfAbsentOrBetter(callable: CallableRef) {
-    if (!callable.isApplicable()) return
+    if (!callable.isNonRecursiveConstructorGivens()) return
     val key = callable.givenKey
     val existing = givens[key]
     if (compareCallable(callable, existing) < 0)
@@ -197,6 +198,8 @@ class ResolutionScope(
       request.type.classifier == context.setClassifier
     ) return null
     return givensForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
+      ?.filter { it -> it.isValidObjectRequest(request) }
+      ?.takeIf { it.isNotEmpty() }
   }
 
   private fun givensForType(key: CallableRequestKey): List<GivenNode>? {
@@ -422,7 +425,7 @@ class ResolutionScope(
    * of a given class but not in the scope.
    * without removing the property this would result in a divergent request
    */
-  private fun CallableRef.isApplicable(): Boolean {
+  private fun CallableRef.isNonRecursiveConstructorGivens(): Boolean {
     if (callable !is PropertyDescriptor ||
       callable.dispatchReceiverParameter == null
     ) return true
@@ -432,6 +435,24 @@ class ResolutionScope(
     if (callable.name !in containingClassifier.primaryConstructorPropertyParameters) return true
     return allScopes.any { it.ownerDescriptor == containing } ||
         !containingClassifier.descriptor!!.isGiven(context, trace)
+  }
+
+  /**
+   * We add implicit givens for objects under some circumstances to allow
+   * object callables to resolve their dispatch receiver parameter
+   *
+   * Here we ensure that the user cannot resolve such implicit object givens if they are not
+   * marked as given
+   */
+  private fun GivenNode.isValidObjectRequest(request: GivenRequest): Boolean {
+    if (!request.type.classifier.isObject) return true
+    return request.parameterName.asString() == DISPATCH_RECEIVER_NAME || (
+        this !is CallableGivenNode ||
+            callable.callable !is ReceiverParameterDescriptor ||
+            callable.callable.cast<ReceiverParameterDescriptor>()
+              .value !is ImplicitClassReceiver ||
+            request.type.classifier.descriptor!!.hasAnnotation(InjektFqNames.Given)
+        )
   }
 
   override fun toString(): String = "ResolutionScope($name)"
