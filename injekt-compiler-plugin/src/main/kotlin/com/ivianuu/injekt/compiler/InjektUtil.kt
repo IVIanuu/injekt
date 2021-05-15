@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.com.intellij.openapi.progress.*
+import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.ir.declarations.*
@@ -34,6 +35,8 @@ import java.lang.reflect.*
 import java.util.concurrent.*
 import kotlin.collections.set
 import kotlin.reflect.*
+
+val isIde: Boolean get() = Project::class.java.name == "com.intellij.openapi.project.Project"
 
 fun KtAnnotated.hasAnnotation(fqName: FqName): Boolean = findAnnotation(fqName) != null
 

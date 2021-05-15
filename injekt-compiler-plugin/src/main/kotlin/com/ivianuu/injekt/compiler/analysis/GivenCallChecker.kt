@@ -111,7 +111,7 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
       }
     }) {
       is GivenGraph.Success -> {
-        if (filePath != null) {
+        if (filePath != null && !isIde) {
           context.trace.record(
             InjektWritableSlices.FILE_HAS_GIVEN_CALLS,
             filePath,

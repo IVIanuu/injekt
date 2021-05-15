@@ -173,6 +173,7 @@ class ResolutionScope(
   }
 
   fun recordLookup(location: KotlinLookupLocation) {
+    if (isIde) return
     parent?.recordLookup(location)
     fun recordLookup(declaration: DeclarationDescriptor) {
       if (declaration is ConstructorDescriptor) {
