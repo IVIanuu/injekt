@@ -24,7 +24,7 @@ import org.junit.*
 class TypeKeyTest {
   @Test fun testTypeKeyOf() = codegen(
     """
-        fun invoke() = typeKeyOf<String>() 
+      fun invoke() = typeKeyOf<String>() 
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.String"
@@ -32,7 +32,7 @@ class TypeKeyTest {
 
   @Test fun testNullableTypeKeyOf() = codegen(
     """
-        fun invoke() = typeKeyOf<String?>() 
+      fun invoke() = typeKeyOf<String?>() 
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.String?"
@@ -40,10 +40,10 @@ class TypeKeyTest {
 
   @Test fun testForTypeKeyTypeParameter() = singleAndMultiCodegen(
     """
-            inline fun <@ForTypeKey T> listTypeKeyOf() = typeKeyOf<List<T>>()
+      inline fun <@ForTypeKey T> listTypeKeyOf() = typeKeyOf<List<T>>()
     """,
     """
-        fun invoke() = listTypeKeyOf<String>()  
+      fun invoke() = listTypeKeyOf<String>()  
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.collections.List<kotlin.String>"
@@ -51,7 +51,7 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyOfWithTypeAliasWithNullableExpandedType() = codegen(
     """
-            typealias MyAlias = String?
+      typealias MyAlias = String?
       fun invoke() = typeKeyOf<MyAlias>() 
     """
   ) {
@@ -60,7 +60,7 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyOfWithTypeAlias() = codegen(
     """
-            typealias MyAlias = String
+      typealias MyAlias = String
       fun invoke() = typeKeyOf<MyAlias>() 
     """
   ) {
@@ -69,7 +69,7 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyOfWithNullableTypeAlias() = codegen(
     """
-            typealias MyAlias = String
+      typealias MyAlias = String
       fun invoke() = typeKeyOf<MyAlias?>()
     """
   ) {
@@ -86,7 +86,7 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyOfWithTypeAliasWithComposableExpandedType() = codegen(
     """
-            typealias MyAlias = @Composable () -> Unit
+      typealias MyAlias = @Composable () -> Unit
       fun invoke() = typeKeyOf<MyAlias>() 
     """
   ) {
@@ -103,7 +103,7 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyOfWithTypeAliasWithQualifiedExpandedType() = codegen(
     """
-            typealias MyAlias = @Qualifier2 String
+      typealias MyAlias = @Qualifier2 String
       fun invoke() = typeKeyOf<MyAlias>() 
     """
   ) {
@@ -112,8 +112,8 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyOfWithParameterizedQualifiers() = codegen(
     """
-            @Qualifier 
-            annotation class MyQualifier<T>
+      @Qualifier 
+      annotation class MyQualifier<T>
       fun invoke() = typeKeyOf<@MyQualifier<String> String>() 
     """
   ) {
@@ -122,12 +122,12 @@ class TypeKeyTest {
 
   @Test fun testForTypeKeyTypeParameterInInterface() = singleAndMultiCodegen(
     """
-            interface KeyFactory {
-                fun <@ForTypeKey T> listTypeKeyOf(): TypeKey<List<T>>
-                companion object : KeyFactory {
-                    override fun <@ForTypeKey T> listTypeKeyOf() = typeKeyOf<List<T>>()
-                }
-            }
+      interface KeyFactory {
+        fun <@ForTypeKey T> listTypeKeyOf(): TypeKey<List<T>>
+        companion object : KeyFactory {
+          override fun <@ForTypeKey T> listTypeKeyOf() = typeKeyOf<List<T>>()
+        }
+      }
     """,
     """
         fun invoke() = KeyFactory.listTypeKeyOf<String>()  
@@ -138,12 +138,12 @@ class TypeKeyTest {
 
   @Test fun testClassWithForTypeKeyParameterInInitializer() = singleAndMultiCodegen(
     """
-            class MyClass<@ForTypeKey T> {
-                val typeKey = typeKeyOf<T>()
-            }
+      class MyClass<@ForTypeKey T> {
+        val typeKey = typeKeyOf<T>()
+      }
     """,
     """
-        fun invoke() = MyClass<String>().typeKey 
+      fun invoke() = MyClass<String>().typeKey 
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.String"
@@ -151,9 +151,9 @@ class TypeKeyTest {
 
   @Test fun testClassWithForTypeKeyParameterInFunction() = singleAndMultiCodegen(
     """
-            class MyClass<@ForTypeKey T> {
-                fun typeKey() = typeKeyOf<T>()
-            }
+      class MyClass<@ForTypeKey T> {
+        fun typeKey() = typeKeyOf<T>()
+      }
     """,
     """
       fun invoke() = MyClass<String>().typeKey() 
@@ -191,13 +191,13 @@ class TypeKeyTest {
   @Test fun testNonForTypeKeyTypeParameterOverride() = singleAndMultiCodegen(
     """
       abstract class MySuperClass {
-          abstract fun <@ForTypeKey T> func()
+        abstract fun <@ForTypeKey T> func()
       }
     """,
     """
       class MySubClass : MySuperClass() {
-          override fun <T> func() {
-          }
+        override fun <T> func() {
+        }
       } 
     """
   ) {
@@ -209,7 +209,7 @@ class TypeKeyTest {
       val <@ForTypeKey T> T.typeKey: TypeKey<T> get() = typeKeyOf<T>()
     """,
     """
-     fun invoke() = "".typeKey 
+      fun invoke() = "".typeKey 
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.String"
@@ -240,7 +240,7 @@ class TypeKeyTest {
     """
       @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       val scope = given<(@Given @InstallElement<AppGivenScope> Map<*, *>) -> AppGivenScope>()
-          .invoke(emptyMap<Any?, Any?>())
+        .invoke(emptyMap<Any?, Any?>())
       fun invoke() = scope.element<Map<*, *>>()
     """
   ) {
