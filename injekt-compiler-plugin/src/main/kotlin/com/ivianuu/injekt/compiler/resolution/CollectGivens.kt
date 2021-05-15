@@ -229,6 +229,20 @@ fun List<GivenImport>.collectImportGivens(
   flatMap { import ->
     checkCancelled()
     buildList<CallableRef> {
+      fun importObjectIfExists(
+        fqName: FqName,
+        doNotIncludeChildren: Boolean
+      ) = context.classifierDescriptorForFqName(fqName)
+        ?.safeAs<ClassDescriptor>()
+        ?.takeIf { it.kind == ClassKind.OBJECT }
+        ?.let { clazz ->
+          this += clazz.getGivenReceiver(context, trace)
+            .copy(
+              doNotIncludeChildren = doNotIncludeChildren,
+              import = import
+            )
+        }
+
       if (import.importPath!!.endsWith("*")) {
         val packageFqName = FqName(import.importPath.removeSuffix(".*"))
 
@@ -239,12 +253,7 @@ fun List<GivenImport>.collectImportGivens(
           ?.let { this += it }
 
         // additionally add the object if the package is a object
-        context.classifierDescriptorForFqName(packageFqName)
-          ?.safeAs<ClassDescriptor>()
-          ?.takeIf { it.kind == ClassKind.OBJECT }
-          ?.getGivenReceiver(context, trace)
-          ?.copy(doNotIncludeChildren = true, import = import)
-          ?.let { this += it }
+        importObjectIfExists(packageFqName, true)
       } else {
         val fqName = FqName(import.importPath)
         val parentFqName = fqName.parent()
@@ -271,27 +280,18 @@ fun List<GivenImport>.collectImportGivens(
           ?.let { this += it }
 
         // additionally add the object if the package is a object
-        context.classifierDescriptorForFqName(parentFqName)
-          ?.safeAs<ClassDescriptor>()
-          ?.takeIf { it.kind == ClassKind.OBJECT }
-          ?.getGivenReceiver(context, trace)
-          ?.copy(doNotIncludeChildren = true, import = import)
-          ?.let { this += it }
+        importObjectIfExists(parentFqName, true)
 
-        // include givens from the givens object of the a type alias with the fq name
+        // include givens from the givens object of a type alias with the fq name
         context.classifierDescriptorForFqName(fqName)
           ?.safeAs<TypeAliasDescriptor>()
           ?.let { typeAlias ->
-            context.classifierDescriptorForFqName(
+            importObjectIfExists(
               typeAlias.fqNameSafe.parent()
-                .child("${typeAlias.fqNameSafe.shortName()}Givens".asNameId())
+                .child("${typeAlias.fqNameSafe.shortName()}Givens".asNameId()),
+              false
             )
-              ?.safeAs<ClassDescriptor>()
-              ?.takeIf { it.kind == ClassKind.OBJECT }
-              ?.getGivenReceiver(context, trace)
-              ?.copy(import = import)
           }
-          ?.let { this += it }
       }
     }
   }
