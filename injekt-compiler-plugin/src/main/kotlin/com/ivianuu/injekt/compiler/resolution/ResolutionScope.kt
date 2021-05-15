@@ -42,8 +42,8 @@ class ResolutionScope(
   val callContext: CallContext,
   val ownerDescriptor: DeclarationDescriptor?,
   val trace: BindingTrace,
-  initialGivens: () -> List<CallableRef>,
-  val imports: List<GivenImport>,
+  val initialGivens: List<CallableRef>,
+  imports: List<ResolvedGivenImport>,
   val typeParameters: List<ClassifierRef>
 ) {
   val chain: MutableList<Pair<GivenRequest, GivenNode>> = parent?.chain ?: mutableListOf()
@@ -70,6 +70,8 @@ class ResolutionScope(
     if (compareCallable(callable, existing) < 0)
       givens[key] = callable
   }
+
+  private val imports = imports.toMutableList()
 
   private val givens = mutableMapOf<GivenKey, CallableRef>()
 
@@ -117,18 +119,21 @@ class ResolutionScope(
   private val providerGivensByRequest = mutableMapOf<ProviderRequestKey, ProviderGivenNode>()
   private val setGivensByType = mutableMapOf<TypeRef, SetGivenNode?>()
 
-  val initialGivens: List<CallableRef> = measureTimeMillisWithResult(initialGivens).also {
-    println("$context computing initial givens for $name took ${it.first} ms")
-  }.second
-
   init {
     measureTimeMillisWithResult {
-      this.initialGivens
+      initialGivens
         .forEach { given ->
           given.collectGivens(
             context = context,
             scope = this,
             trace = trace,
+            addImport = { importFqName, packageFqName ->
+              this.imports += ResolvedGivenImport(
+                null,
+                "${importFqName}.*",
+                packageFqName
+              )
+            },
             addGiven = { callable ->
               addGivenIfAbsentOrBetter(callable.copy(source = given))
               val typeWithFrameworkKey = callable.type
@@ -174,21 +179,34 @@ class ResolutionScope(
         recordLookup(declaration.constructedClass)
         return
       }
+      if (declaration is ReceiverParameterDescriptor &&
+          declaration.value is ImplicitClassReceiver) {
+        recordLookup(declaration.value.cast<ImplicitClassReceiver>().classDescriptor)
+        return
+      }
       when (val containingDeclaration = declaration.containingDeclaration) {
         is ClassDescriptor -> containingDeclaration.unsubstitutedMemberScope
         is PackageFragmentDescriptor -> containingDeclaration.getMemberScope()
         else -> null
       }?.recordLookup(declaration.name, location)
     }
-    givens.forEach { recordLookup(it.value.callable) }
-    constrainedGivens.forEach { recordLookup(it.callable.callable) }
-    imports
-      .filter { it.importPath != null }
-      .filter { it.importPath!!.endsWith(".*") }
-      .map { FqName(it.importPath!!.removeSuffix(".*")) }
-      .forEach { fqName ->
-        context.memberScopeForFqName(fqName)
-          ?.recordLookup("givens".asNameId(), location)
+    givens.forEach {
+      if (it.value.type.frameworkKey == 0)
+        recordLookup(it.value.callable)
+    }
+    constrainedGivens.forEach {
+      if (it.callable.type.frameworkKey == 0)
+        recordLookup(it.callable.callable)
+    }
+    imports.forEach { import ->
+        context.memberScopeForFqName(import.packageFqName)
+          ?.recordLookup(
+            givensLookupName(
+              FqName(import.importPath!!.removeSuffix(".*")),
+              import.packageFqName
+            ),
+            location
+          )
       }
   }
 
@@ -381,6 +399,13 @@ class ResolutionScope(
       context = this.context,
       scope = this,
       trace = trace,
+      addImport = { importFqName, packageFqName ->
+        this.imports += ResolvedGivenImport(
+          null,
+          "${importFqName}.*",
+          packageFqName
+        )
+      },
       addGiven = { newInnerGiven ->
         val finalNewInnerGiven = newInnerGiven
           .copy(

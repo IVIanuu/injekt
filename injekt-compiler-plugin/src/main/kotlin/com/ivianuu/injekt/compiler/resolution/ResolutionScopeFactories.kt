@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
+import org.jetbrains.kotlin.backend.common.serialization.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.incremental.*
@@ -109,10 +110,7 @@ private fun ImportResolutionScope(
   context: InjektContext,
   trace: BindingTrace
 ): ResolutionScope {
-  val resolvedImports by unsafeLazy {
-    imports
-      .collectImportGivens(context, trace)
-  }
+  val resolvedImports = imports.collectImportGivens(context, trace)
   return ResolutionScope(
     name = "$namePrefix INTERNAL IMPORTS",
     context = context,
@@ -124,20 +122,16 @@ private fun ImportResolutionScope(
       parent = parent,
       ownerDescriptor = null,
       trace = trace,
-      initialGivens = {
-        resolvedImports
-          .filter { it.callable.isExternalDeclaration(context) }
-      },
+      initialGivens = resolvedImports
+          .filter { it.callable.isExternalDeclaration(context) },
       imports = emptyList(),
       typeParameters = emptyList()
     ),
     ownerDescriptor = null,
     trace = trace,
-    initialGivens = {
-      resolvedImports
-        .filterNot { it.callable.isExternalDeclaration(context) }
-    },
-    imports = imports,
+    initialGivens = resolvedImports
+        .filterNot { it.callable.isExternalDeclaration(context) },
+    imports = imports.map { it.resolve(context) },
     typeParameters = emptyList()
   )
 }
@@ -177,7 +171,7 @@ private fun ClassResolutionScope(
     parent = finalParent,
     ownerDescriptor = clazz,
     trace = trace,
-    initialGivens = { listOf(clazz.getGivenReceiver(context, trace)) },
+    initialGivens = listOf(clazz.getGivenReceiver(context, trace)),
     imports = emptyList(),
     typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(context, trace) }
   ).also { trace.record(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, clazz, it) }
@@ -205,13 +199,11 @@ private fun FunctionResolutionScope(
     parent = finalParent,
     ownerDescriptor = function,
     trace = trace,
-    initialGivens = {
-      function.allParameters
+    initialGivens = function.allParameters
         .asSequence()
         .filter { it.isGiven(context, trace) || it === function.extensionReceiverParameter }
         .map { it.toCallableRef(context, trace).makeGiven() }
-        .toList()
-    },
+        .toList(),
     imports = emptyList(),
     typeParameters = function.typeParameters.map { it.toClassifierRef(context, trace) }
   ).also { trace.record(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, function, it) }
@@ -239,13 +231,11 @@ private fun PropertyResolutionScope(
     parent = finalParent,
     ownerDescriptor = property,
     trace = trace,
-    initialGivens = {
-      listOfNotNull(
+    initialGivens = listOfNotNull(
         property.extensionReceiverParameter
           ?.toCallableRef(context, trace)
           ?.makeGiven()
-      )
-    },
+      ),
     imports = emptyList(),
     typeParameters = property.typeParameters.map { it.toClassifierRef(context, trace) }
   ).also { trace.record(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, property, it) }
@@ -281,7 +271,7 @@ private fun CodeBlockResolutionScope(
     parent = finalParent,
     ownerDescriptor = ownerDescriptor,
     trace = trace,
-    initialGivens = { scope.collectGivens(context, trace) },
+    initialGivens = scope.collectGivens(context, trace),
     imports = emptyList(),
     typeParameters = emptyList()
   )
@@ -296,6 +286,36 @@ fun TypeResolutionScope(
   val finalType = type.withNullability(false)
   trace[InjektWritableSlices.TYPE_RESOLUTION_SCOPE, finalType]?.let { return it }
 
+  val initialGivens = mutableListOf<CallableRef>()
+
+  finalType.visitRecursive { currentType ->
+    if (currentType.isStarProjection) return@visitRecursive
+
+    when {
+      currentType.classifier.isTypeAlias -> {
+        context.classifierDescriptorForFqName(
+          currentType.classifier.fqName.parent()
+            .child("${currentType.classifier.fqName.shortName()}Givens".asNameId()),
+          lookupLocation
+        )
+          ?.safeAs<ClassDescriptor>()
+          ?.takeIf { it.kind == ClassKind.OBJECT }
+          ?.let { initialGivens += it.getGivenReceiver(context, trace) }
+      }
+      currentType.classifier.isObject -> {
+        currentType.classifier.descriptor!!
+          .cast<ClassDescriptor>()
+          .let { initialGivens += it.getGivenReceiver(context, trace) }
+      }
+      else -> {
+        currentType.classifier.descriptor!!
+          .safeAs<ClassDescriptor>()
+          ?.companionObjectDescriptor
+          ?.let { initialGivens += it.getGivenReceiver(context, trace) }
+      }
+    }
+  }
+
   return ResolutionScope(
     name = "TYPE ${finalType.render()}",
     parent = null,
@@ -303,41 +323,7 @@ fun TypeResolutionScope(
     callContext = CallContext.DEFAULT,
     ownerDescriptor = finalType.classifier.descriptor,
     trace = trace,
-    initialGivens = {
-      val initialGivens = mutableListOf<CallableRef>()
-
-      finalType.visitRecursive { currentType ->
-        if (currentType.isStarProjection) return@visitRecursive
-
-        when {
-          currentType.classifier.isTypeAlias -> {
-            context.classifierDescriptorForFqName(
-              currentType.classifier.fqName.parent()
-                .child("${currentType.classifier.fqName.shortName()}Givens".asNameId()),
-              lookupLocation
-            )
-              ?.safeAs<ClassDescriptor>()
-              ?.takeIf { it.kind == ClassKind.OBJECT }
-              ?.getGivenReceiver(context, trace)
-              ?.let { initialGivens += it }
-          }
-          currentType.classifier.isObject -> {
-            initialGivens += currentType.classifier.descriptor!!
-              .cast<ClassDescriptor>()
-              .getGivenReceiver(context, trace)
-          }
-          else -> {
-            currentType.classifier.descriptor!!
-              .safeAs<ClassDescriptor>()
-              ?.companionObjectDescriptor
-              ?.getGivenReceiver(context, trace)
-              ?.let { initialGivens += it }
-          }
-        }
-      }
-
-      initialGivens
-    },
+    initialGivens = initialGivens,
     imports = emptyList(),
     typeParameters = emptyList()
   ).also {

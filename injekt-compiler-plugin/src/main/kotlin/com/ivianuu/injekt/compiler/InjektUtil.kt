@@ -232,3 +232,12 @@ fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transfo
   field.set(this, newValue)
   return newValue
 }
+
+fun givensLookupName(fqName: FqName, packageFqName: FqName): Name = fqName.asString()
+  .removePrefix(packageFqName.asString())
+  .replace(".", "_")
+  .removePrefix("_")
+  .takeIf { it.isNotEmpty() }
+  ?.plus("_givens")
+  ?.asNameId()
+  ?: "givens".asNameId()

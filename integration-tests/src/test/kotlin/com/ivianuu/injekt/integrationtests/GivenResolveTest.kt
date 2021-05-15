@@ -119,13 +119,13 @@ class GivenResolveTest {
 
   @Test fun testResolvesClassCompanionClassGivenFromOuterClass() = singleAndMultiCodegen(
     """
-            class MyClass {
-                companion object {
-                    @Given class MyModule {
-                        @Given val foo = Foo()
-                    }
-                }
-            }
+      class MyClass {
+        companion object {
+          @Given class MyModule {
+            @Given val foo = Foo()
+          }
+        }
+      }
     """,
     """
         fun invoke() = given<Foo>() 
@@ -136,12 +136,12 @@ class GivenResolveTest {
 
   @Test fun testResolvesClassConstructorGiven() = singleAndMultiCodegen(
     """
-            class MyClass(@Given val foo: Foo = Foo()) {
-                fun resolve() = given<Foo>()
-            }
+      class MyClass(@Given val foo: Foo = Foo()) {
+          fun resolve() = given<Foo>()
+      }
     """,
     """
-        fun invoke() = MyClass().resolve() 
+      fun invoke() = MyClass().resolve() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -149,13 +149,13 @@ class GivenResolveTest {
 
   @Test fun testResolvesClassGiven() = singleAndMultiCodegen(
     """
-            class MyClass {
-                @Given val foo = Foo()
-                fun resolve() = given<Foo>()
-            }
+      class MyClass {
+          @Given val foo = Foo()
+          fun resolve() = given<Foo>()
+      }
     """,
     """
-        fun invoke() = MyClass().resolve() 
+      fun invoke() = MyClass().resolve() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()

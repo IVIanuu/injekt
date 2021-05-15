@@ -110,22 +110,20 @@ class ProviderGivenNode(
     callContext = dependencyCallContext,
     ownerDescriptor = ownerScope.ownerDescriptor,
     trace = ownerScope.trace,
-    initialGivens = {
-      type
-        .toKotlinType(ownerScope.context)
-        .memberScope
-        .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
-        .first()
-        .valueParameters
-        .asSequence()
-        .onEach { parameterDescriptors += it }
-        .mapIndexed { index, parameter ->
-          parameter
-            .toCallableRef(ownerScope.context, ownerScope.trace)
-            .copy(isGiven = true, type = type.arguments[index])
-        }
-        .toList()
-    },
+    initialGivens = type
+      .toKotlinType(ownerScope.context)
+      .memberScope
+      .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
+      .first()
+      .valueParameters
+      .asSequence()
+      .onEach { parameterDescriptors += it }
+      .mapIndexed { index, parameter ->
+        parameter
+          .toCallableRef(ownerScope.context, ownerScope.trace)
+          .copy(isGiven = true, type = type.arguments[index])
+      }
+      .toList(),
     imports = emptyList(),
     typeParameters = emptyList()
   )

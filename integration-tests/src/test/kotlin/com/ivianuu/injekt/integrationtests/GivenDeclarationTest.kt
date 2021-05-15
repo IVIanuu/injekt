@@ -26,10 +26,10 @@ import org.junit.*
 class GivenDeclarationTest {
   @Test fun testGivenFunction() = singleAndMultiCodegen(
     """
-            @Given fun foo() = Foo()
+      @Given fun foo() = Foo()
     """,
     """
-        fun invoke() = given<Foo>() 
+      fun invoke() = given<Foo>() 
     """
   ) {
     invokeSingleFile()

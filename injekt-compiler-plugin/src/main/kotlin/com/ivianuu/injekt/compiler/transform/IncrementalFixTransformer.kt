@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.ir.symbols.impl.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.*
 import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
@@ -73,7 +74,10 @@ class IncrementalFixTransformer(
             override fun hasStableParameterNames(): Boolean = true
           }
         ),
-        "givens".asNameId(),
+        givensLookupName(
+          callable.callable.fqNameSafe.parent(),
+          declaration.fqName
+        ),
         DescriptorVisibilities.PUBLIC,
         Modality.FINAL,
         pluginContext.irBuiltIns.unitType,
@@ -94,10 +98,7 @@ class IncrementalFixTransformer(
         }
         val callableInfo = callable.callable
           .annotations
-          .let {
-            it.findAnnotation(InjektFqNames.CallableInfo)
-              ?: error("Wtf $callable")
-          }
+          .findAnnotation(InjektFqNames.CallableInfo)!!
           .allValueArguments
           .values
           .single()
