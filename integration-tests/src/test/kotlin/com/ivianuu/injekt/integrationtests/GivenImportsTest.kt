@@ -255,31 +255,4 @@ class GivenImportsTest {
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.test.Foo"
   }
-
-  @Test fun testImportingTypeAliasAlsoImportsItsGivensObject() = singleAndMultiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            typealias Dep = String
-            object DepGivens {
-              @Given val foo = Foo() 
-            }
-          """,
-          packageFqName = FqName("givens")
-        )
-      ),
-      listOf(
-        source(
-          """
-            @GivenImports("givens.Dep")
-            fun invoke() = given<Foo>()
-          """,
-          name = "File.kt"
-        )
-      )
-    )
-  ) {
-    invokeSingleFile().shouldBeTypeOf<Foo>()
-  }
 }
