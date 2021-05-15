@@ -55,7 +55,7 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   }
 
   fun classifierDescriptorForFqName(fqName: FqName): ClassifierDescriptor? {
-    return memberScopeForFqName(fqName.parent()) !!.getContributedClassifier(
+    return memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
       fqName.shortName(), NoLookupLocation.FROM_BACKEND
     )
   }

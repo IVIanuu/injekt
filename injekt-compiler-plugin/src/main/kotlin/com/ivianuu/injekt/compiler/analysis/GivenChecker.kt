@@ -249,7 +249,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     descriptor: MemberDescriptor,
     trace: BindingTrace
   ) {
-    if (! descriptor.isActual) return
+    if (!descriptor.isActual) return
     val isGiven = descriptor.hasAnnotation(InjektFqNames.Given)
     if (isGiven) return
     if (descriptor.findExpects().any { it.hasAnnotation(InjektFqNames.Given) }) {
@@ -273,7 +273,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         var hasDifferentTypeParameters = false
         descriptor.typeParameters.forEachWith(overriddenDescriptor.typeParameters) { a, b ->
           hasDifferentTypeParameters = hasDifferentTypeParameters || b.isGiven(context, trace) &&
-              ! a.isGiven(context, trace)
+              !a.isGiven(context, trace)
         }
         hasDifferentTypeParameters
       }
@@ -298,7 +298,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
       .forEach { typeParameter ->
         trace.report(
           InjektErrors.GIVEN_CONSTRAINT_ON_NON_GIVEN_DECLARATION
-            .on(typeParameter.findPsi() !!)
+            .on(typeParameter.findPsi()!!)
         )
       }
   }
@@ -310,7 +310,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     if (isEmpty()) return
     this
       .asSequence()
-      .filter { ! it.isGiven(context, trace) }
+      .filter { !it.isGiven(context, trace) }
       .forEach {
         trace.report(
           InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION

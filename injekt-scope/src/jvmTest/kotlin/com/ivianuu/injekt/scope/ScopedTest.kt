@@ -30,7 +30,7 @@ class ScopedTest {
     class Foo
 
     @Given fun scopedFoo(): @Scoped<TestGivenScope1> Foo {
-      callCount ++
+      callCount++
       return Foo()
     }
 

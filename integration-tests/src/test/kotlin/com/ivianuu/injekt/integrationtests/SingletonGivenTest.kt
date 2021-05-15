@@ -128,7 +128,7 @@ class SingletonGivenTest {
         fun invoke() = given<Foo>() 
     """
   ) {
-    irShouldContain(if (! it) 2 else 1, "INSTANCE")
+    irShouldContain(if (!it) 2 else 1, "INSTANCE")
     invokeSingleFile()
   }
 }

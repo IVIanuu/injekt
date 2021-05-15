@@ -115,13 +115,15 @@ class SubtypingTest {
     charSequenceTypeClass shouldBeAssignableTo stringTypeClass
   }
 
-  @Test fun testTypeAliasIsNotAssignableToOtherTypeAliasOfTheSameExpandedType() = withTypeCheckerContext {
-    typeAlias(stringType) shouldNotBeAssignableTo typeAlias(stringType)
-  }
+  @Test fun testTypeAliasIsNotAssignableToOtherTypeAliasOfTheSameExpandedType() =
+    withTypeCheckerContext {
+      typeAlias(stringType) shouldNotBeAssignableTo typeAlias(stringType)
+    }
 
-  @Test fun testTypeAliasIsAssignableToOtherTypeAliasOfTheSameExpandedType() = withTypeCheckerContext {
-    typeAlias(stringType) shouldNotBeAssignableTo typeAlias(stringType)
-  }
+  @Test fun testTypeAliasIsAssignableToOtherTypeAliasOfTheSameExpandedType() =
+    withTypeCheckerContext {
+      typeAlias(stringType) shouldNotBeAssignableTo typeAlias(stringType)
+    }
 
   @Test fun testTypeAliasIsSubTypeOfExpandedType() = withTypeCheckerContext {
     typeAlias(stringType) shouldBeSubTypeOf stringType
@@ -135,9 +137,10 @@ class SubtypingTest {
     composableFunction(0) shouldBeAssignableTo composableFunction(0)
   }
 
-  @Test fun testComposableTypeAliasIsSubTypeOfComposableFunctionUpperBound() = withTypeCheckerContext {
-    typeAlias(composableFunction(0)) shouldBeAssignableTo typeParameter(composableFunction(0))
-  }
+  @Test fun testComposableTypeAliasIsSubTypeOfComposableFunctionUpperBound() =
+    withTypeCheckerContext {
+      typeAlias(composableFunction(0)) shouldBeAssignableTo typeParameter(composableFunction(0))
+    }
 
   @Test fun testSameQualifiersIsAssignable() = withTypeCheckerContext {
     qualifier1.wrap(stringType) shouldBeAssignableTo qualifier1.wrap(stringType)
@@ -180,9 +183,10 @@ class SubtypingTest {
     )
   }
 
-  @Test fun testComposableSubTypeOfTypeParameterWithNullableAnyUpperBound() = withTypeCheckerContext {
-    composableFunction(0) shouldBeAssignableTo typeParameter()
-  }
+  @Test fun testComposableSubTypeOfTypeParameterWithNullableAnyUpperBound() =
+    withTypeCheckerContext {
+      composableFunction(0) shouldBeAssignableTo typeParameter()
+    }
 
   @Test fun testComposableIsNotSubTypeOfNonComposable() = withTypeCheckerContext {
     composableFunction(0) shouldNotBeAssignableTo typeParameter(function(0))
@@ -223,16 +227,18 @@ class SubtypingTest {
     typeAlias2 shouldBeSubTypeOf typeAlias1
   }
 
-  @Test fun testTypeAliasIsAssignableToTypeParameterWithTypeAliasUpperBound() = withTypeCheckerContext {
-    /*val superTypeAlias = typeAlias(function(0))
-    val typeParameterS = typeParameter(superTypeAlias)
-    val typeParameterT = typeParameter(typeParameterS.qualified(qualifier1))
-    val subTypeAlias = typeAlias(superTypeAlias)
-    subTypeAlias.qualified(qualifier1) shouldBeAssignableTo typeParameterT*/
-    // todo
-  }
+  @Test fun testTypeAliasIsAssignableToTypeParameterWithTypeAliasUpperBound() =
+    withTypeCheckerContext {
+      /*val superTypeAlias = typeAlias(function(0))
+      val typeParameterS = typeParameter(superTypeAlias)
+      val typeParameterT = typeParameter(typeParameterS.qualified(qualifier1))
+      val subTypeAlias = typeAlias(superTypeAlias)
+      subTypeAlias.qualified(qualifier1) shouldBeAssignableTo typeParameterT*/
+      // todo
+    }
 
-  @Test fun testSubTypeWithTypeParameterIsAssignableToSuperTypeWithOtherTypeParameterButSameSuperTypes() =
+  @Test
+  fun testSubTypeWithTypeParameterIsAssignableToSuperTypeWithOtherTypeParameterButSameSuperTypes() =
     withTypeCheckerContext {
       mutableListType.typeWith(typeParameter()) shouldBeAssignableTo listType.typeWith(typeParameter())
     }

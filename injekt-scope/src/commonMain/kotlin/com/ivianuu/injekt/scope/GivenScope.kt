@@ -245,8 +245,8 @@ typealias GivenScopeInitializer<S> = () -> Unit
   override fun dispose() {
     synchronizedWithDisposedCheck {
       _isDisposed = true
-      if (_scopedValues != null && _scopedValues !!.isNotEmpty()) {
-        _scopedValues !!.keys
+      if (_scopedValues != null && _scopedValues!!.isNotEmpty()) {
+        _scopedValues!!.keys
           .toList()
           .forEach { removeScopedValueImpl(it) }
       }

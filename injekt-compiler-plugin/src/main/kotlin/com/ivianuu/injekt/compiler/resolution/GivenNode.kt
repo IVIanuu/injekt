@@ -150,12 +150,12 @@ fun CallableRef.getGivenRequests(
     it === callable.dispatchReceiverParameter ||
         it === callable.extensionReceiverParameter ||
         it.isGiven(context, trace) ||
-        parameterTypes[it.injektName()] !!.isGiven
+        parameterTypes[it.injektName()]!!.isGiven
   }
   .map { parameter ->
     val name = parameter.injektName()
     GivenRequest(
-      type = parameterTypes[name] !!,
+      type = parameterTypes[name]!!,
       defaultStrategy = if (parameter is ValueParameterDescriptor && parameter.hasDefaultValueIgnoringGiven) {
         if (name in defaultOnAllErrorParameters) GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
         else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN

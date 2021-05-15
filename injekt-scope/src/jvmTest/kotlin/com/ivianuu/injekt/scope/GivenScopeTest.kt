@@ -97,9 +97,9 @@ class GivenScopeTest {
   @Test fun testGetOrCreateScopedValue() {
     val scope = given<TestGivenScope1>()
     var calls = 0
-    scope.getOrCreateScopedValue(0) { calls ++ }
-    scope.getOrCreateScopedValue(0) { calls ++ }
-    scope.getOrCreateScopedValue(1) { calls ++ }
+    scope.getOrCreateScopedValue(0) { calls++ }
+    scope.getOrCreateScopedValue(0) { calls++ }
+    scope.getOrCreateScopedValue(1) { calls++ }
     calls shouldBe 2
   }
 

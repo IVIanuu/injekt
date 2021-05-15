@@ -138,8 +138,9 @@ class ProviderTest {
     invokeSingleFile()
   }
 
-  @Test fun testMultipleProvidersInSetWithDependencyDerivedByProviderArgument() = singleAndMultiCodegen(
-    """
+  @Test fun testMultipleProvidersInSetWithDependencyDerivedByProviderArgument() =
+    singleAndMultiCodegen(
+      """
             typealias MyGivenScope = GivenScope
             @Given val MyGivenScope.key: String get() = ""
             @Given fun foo(@Given key: String) = Foo()
@@ -147,12 +148,12 @@ class ProviderTest {
             @Given class Dep(@Given key: String)
             @Given fun depIntoSet(@Given provider: (@Given MyGivenScope) -> Dep): (MyGivenScope) -> Any = provider as (MyGivenScope) -> Any
     """,
-    """
+      """
          fun invoke() {
                 given<Set<(MyGivenScope) -> Any>>()
             } 
     """
-  )
+    )
 
   @Test fun testProviderWhichReturnsItsParameter() = singleAndMultiCodegen(
     """

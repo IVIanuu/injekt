@@ -33,6 +33,6 @@ import kotlin.reflect.*
     @Given inline fun <T : Any> systemService(
       @Given context: AppContext,
       @Given serviceClass: KClass<T>
-    ): @SystemService T = ContextCompat.getSystemService(context, serviceClass.java) !!
+    ): @SystemService T = ContextCompat.getSystemService(context, serviceClass.java)!!
   }
 }

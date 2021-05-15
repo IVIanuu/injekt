@@ -81,7 +81,7 @@ fun List<TypeRef>.wrap(type: TypeRef): TypeRef = foldRight(type) { nextQualifier
   nextQualifier.wrap(acc)
 }
 
-fun TypeRef.unwrapQualifiers(): TypeRef = if (! classifier.isQualifier) this
+fun TypeRef.unwrapQualifiers(): TypeRef = if (!classifier.isQualifier) this
 else arguments.last().unwrapQualifiers()
 
 fun TypeRef.wrap(type: TypeRef): TypeRef {
@@ -106,7 +106,7 @@ fun ClassifierDescriptor.toClassifierRef(
   val isQualifier = hasAnnotation(InjektFqNames.Qualifier)
 
   if (isQualifier) {
-    typeParameters !! += ClassifierRef(
+    typeParameters!! += ClassifierRef(
       key = "${uniqueKey(context)}.\$QT",
       fqName = fqNameSafe.child("\$QT".asNameId()),
       isTypeParameter = true,
@@ -152,7 +152,7 @@ fun KotlinType.toTypeRef(
     } ?: return context.nullableAnyType
 
     val classifier = kotlinType
-      .constructor.declarationDescriptor !!.toClassifierRef(context, trace)
+      .constructor.declarationDescriptor!!.toClassifierRef(context, trace)
 
     val rawType = TypeRef(
       classifier = classifier,
@@ -399,7 +399,7 @@ fun TypeRef.render(depth: Int = 0): String {
         }
         append(">")
       }
-      if (isMarkedNullable && ! isStarProjection) append("?")
+      if (isMarkedNullable && !isStarProjection) append("?")
       if (frameworkKey != 0) append("[$frameworkKey]")
     }
     inner()
@@ -411,7 +411,7 @@ val TypeRef.typeSize: Int
     var typeSize = 0
     val seen = mutableSetOf<TypeRef>()
     fun visit(type: TypeRef) {
-      typeSize ++
+      typeSize++
       if (type in seen) return
       seen += type
       type.arguments.forEach { visit(it) }
@@ -475,9 +475,9 @@ val TypeRef.fullyExpandedType: TypeRef
 
 val TypeRef.isFunctionTypeWithOnlyGivenParameters: Boolean
   get() {
-    if (! isFunctionType) return false
+    if (!isFunctionType) return false
     for (i in arguments.indices) {
-      if (i < arguments.lastIndex && ! arguments[i].isGiven)
+      if (i < arguments.lastIndex && !arguments[i].isGiven)
         return false
     }
 

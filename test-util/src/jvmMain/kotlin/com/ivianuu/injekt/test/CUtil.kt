@@ -34,7 +34,7 @@ var fileIndex = 0
 
 fun source(
   @Language("kotlin") source: String,
-  name: String = "File${fileIndex ++}.kt",
+  name: String = "File${fileIndex++}.kt",
   injektImports: Boolean = true,
   packageFqName: FqName = FqName("com.ivianuu.injekt.integrationtests")
 ) = SourceFile.kotlin(
@@ -151,7 +151,7 @@ fun singleAndMultiCodegen(
 ) {
   codegen(sources.flatten(), {
     workingDir = Files.createTempDirectory("single-compilation").toFile()
-    config(- 1)
+    config(-1)
   }, { assertions(false) })
   multiCodegen(sources, {
     workingDir = Files.createTempDirectory("multi-compilation").toFile()

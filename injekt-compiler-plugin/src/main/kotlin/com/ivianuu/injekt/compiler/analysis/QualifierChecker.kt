@@ -42,7 +42,7 @@ class QualifierChecker : DeclarationChecker {
         context.trace.report(
           InjektErrors.QUALIFIER_ON_NON_CLASS_AND_NON_TYPE
             .on(
-              declaration.findAnnotation(qualifiers.first().fqName !!)
+              declaration.findAnnotation(qualifiers.first().fqName!!)
                 ?: declaration
             )
         )

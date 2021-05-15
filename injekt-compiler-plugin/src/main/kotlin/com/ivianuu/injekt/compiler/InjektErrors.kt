@@ -225,9 +225,9 @@ interface InjektErrors {
 private fun GivenGraph.Error.render(): String = buildString {
   var indent = 0
   fun withIndent(block: () -> Unit) {
-    indent ++
+    indent++
     block()
-    indent --
+    indent--
   }
 
   fun indent() = buildString {
@@ -322,7 +322,7 @@ private fun GivenGraph.Error.render(): String = buildString {
           appendLine("${indent()}/* ${callContext.name.toLowerCase()} call context */")
         }
         append(indent())
-        if (! isProvider) {
+        if (!isProvider) {
           append("${request.parameterName} = ")
         }
         if (failure is ResolutionResult.Failure.DependencyFailure) {

@@ -44,7 +44,7 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
   ) {
     val file = declaration.containingKtFile
     checkFile(file, context.trace)
-    if (! declaration.hasAnnotation(InjektFqNames.GivenImports)) return
+    if (!declaration.hasAnnotation(InjektFqNames.GivenImports)) return
     val outerImports = file.getGivenImports() + descriptor.parents
       .distinct()
       .flatMap { parent ->
@@ -69,7 +69,7 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
     ) return
     val file = context.scope
       .ownerDescriptor
-      .findPsi() !!
+      .findPsi()!!
       .cast<KtElement>()
       .containingKtFile
     val outerImports = file.getGivenImports() + context.scope.parentsWithSelf
@@ -116,7 +116,7 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
       .forEach { (element, _) ->
         trace.report(
           InjektErrors.DUPLICATED_GIVEN_IMPORT
-            .on(element !!)
+            .on(element!!)
         )
       }
 
@@ -128,7 +128,7 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
         imports.forEach {
           trace.report(
             InjektErrors.DUPLICATED_GIVEN_IMPORT
-              .on(it.element !!)
+              .on(it.element!!)
           )
         }
       }
@@ -137,7 +137,7 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
       val (element, importPath) = import
       if (importPath == null || importPath
           .any {
-            ! it.isLetter() &&
+            !it.isLetter() &&
                 it != '.' &&
                 it != '_' &&
                 it != '*'
@@ -145,7 +145,7 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
       ) {
         trace.report(
           InjektErrors.MALFORMED_GIVEN_IMPORT
-            .on(element !!)
+            .on(element!!)
         )
         return@forEach
       }
@@ -154,14 +154,14 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
         if (packageFqName == currentPackage) {
           trace.report(
             InjektErrors.DECLARATION_PACKAGE_GIVEN_IMPORT
-              .on(element !!)
+              .on(element!!)
           )
           return@forEach
         }
         if (context.memberScopeForFqName(packageFqName) == null) {
           trace.report(
             InjektErrors.UNRESOLVED_GIVEN_IMPORT
-              .on(element !!)
+              .on(element!!)
           )
           return@forEach
         }
@@ -171,7 +171,7 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
         if (parentFqName == currentPackage) {
           trace.report(
             InjektErrors.DECLARATION_PACKAGE_GIVEN_IMPORT
-              .on(element !!)
+              .on(element!!)
           )
           return@forEach
         }
@@ -187,7 +187,7 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
         if (importedDeclarations == null || importedDeclarations.isEmpty()) {
           trace.report(
             InjektErrors.UNRESOLVED_GIVEN_IMPORT
-              .on(element !!)
+              .on(element!!)
           )
           return@forEach
         }
@@ -195,7 +195,7 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
 
       trace.report(
         InjektErrors.UNUSED_GIVEN_IMPORT
-          .on(element !!)
+          .on(element!!)
       )
     }
   }

@@ -100,7 +100,7 @@ fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescri
 
 fun IrAnnotationContainer.getAnnotatedAnnotations(annotation: FqName): List<IrConstructorCall> =
   annotations.filter {
-    val inner = it.type.classOrNull !!.owner
+    val inner = it.type.classOrNull!!.owner
     inner.hasAnnotation(annotation)
   }
 
@@ -145,7 +145,7 @@ fun DeclarationDescriptor.uniqueKey(context: InjektContext): String {
     }"
     is TypeAliasDescriptor -> "typealias:$fqNameSafe"
     is TypeParameterDescriptor ->
-      "typeparameter:$fqNameSafe:${containingDeclaration !!.uniqueKey(context)}"
+      "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey(context)}"
     is ReceiverParameterDescriptor -> "receiver:$fqNameSafe"
     is ValueParameterDescriptor -> "value_parameter:$fqNameSafe"
     is VariableDescriptor -> "variable:${fqNameSafe}"
@@ -157,7 +157,7 @@ fun DeclarationDescriptor.uniqueKey(context: InjektContext): String {
 private fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
   if (depth > 15) return ""
   return buildString {
-    append(constructor.declarationDescriptor !!.fqNameSafe)
+    append(constructor.declarationDescriptor!!.fqNameSafe)
     arguments.forEachIndexed { index, typeArgument ->
       if (index == 0) append("<")
       append(typeArgument.type.uniqueTypeKey(depth + 1))
@@ -190,7 +190,7 @@ fun ParameterDescriptor.injektName(): String {
         (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> "_dispatchReceiver"
     original == callable?.extensionReceiverParameter?.original -> "_extensionReceiver"
     else -> if (name.isSpecial)
-      type.constructor.declarationDescriptor !!.name
+      type.constructor.declarationDescriptor!!.name
         .asString().decapitalize()
     else name.asString()
   }
@@ -214,7 +214,7 @@ fun <K, V> List<K>.toMap(values: List<V>): Map<K, V> {
 }
 
 private var currentFrameworkKey = 0
-fun generateFrameworkKey() = ++ currentFrameworkKey
+fun generateFrameworkKey() = ++currentFrameworkKey
 
 fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transform: T.() -> T): T {
   val field = clazz.java.declaredFields

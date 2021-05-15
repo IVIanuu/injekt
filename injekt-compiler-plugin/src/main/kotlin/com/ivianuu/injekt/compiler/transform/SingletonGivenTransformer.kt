@@ -47,7 +47,7 @@ class SingletonGivenTransformer(
     if (expression.type.classifierOrNull?.descriptor
         ?.classifierInfo(context, trace)?.isSingletonGiven == true
     ) {
-      val module = expression.type.classOrNull !!.owner
+      val module = expression.type.classOrNull!!.owner
       val instanceField = instanceFieldForDeclaration(module)
       return DeclarationIrBuilder(pluginContext, expression.symbol)
         .irGetField(null, instanceField)
@@ -68,7 +68,7 @@ class SingletonGivenTransformer(
         else IrDeclarationOrigin.DEFINED
     }.apply {
       parent = module
-      if (! module.descriptor.isDeserializedDeclaration()) {
+      if (!module.descriptor.isDeserializedDeclaration()) {
         initializer = DeclarationIrBuilder(pluginContext, symbol).run {
           irExprBody(
             irCall(module.constructors.single())

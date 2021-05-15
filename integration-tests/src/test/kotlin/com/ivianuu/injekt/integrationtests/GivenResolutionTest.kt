@@ -408,18 +408,19 @@ class GivenResolutionTest {
     compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
   }
 
-  @Test fun testDoesUseDefaultValueIfCandidateHasFailuresButHasUseDefaultValueOnAllError() = codegen(
-    """
+  @Test fun testDoesUseDefaultValueIfCandidateHasFailuresButHasUseDefaultValueOnAllError() =
+    codegen(
+      """
             @Given fun bar(@Given foo: Foo) = Bar(foo)
             fun invoke(foo: Foo): Foo {
                 fun inner(@Given @DefaultOnAllErrors bar: Bar = Bar(foo)) = bar
                 return inner().foo
             }
     """
-  ) {
-    val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
-  }
+    ) {
+      val foo = Foo()
+      foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    }
 
   @Test fun testConstrainedGivenWithTheSameOrigin() = singleAndMultiCodegen(
     """

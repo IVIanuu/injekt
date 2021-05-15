@@ -56,61 +56,66 @@ class CallContextTest {
     compilationShouldHaveFailed("given argument com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.given is a composable function but current call context is suspend")
   }
 
-  @Test fun testCanRequestSuspendDependencyFromNonSuspendFunctionInSuspendLambda() = singleAndMultiCodegen(
-    """
+  @Test fun testCanRequestSuspendDependencyFromNonSuspendFunctionInSuspendLambda() =
+    singleAndMultiCodegen(
+      """
       @Given suspend fun foo() = Foo()
       @Given fun lazyBar(): suspend () -> Bar = { Bar(given()) }
     """,
-    """
+      """
       fun invoke() {
         given<suspend () -> Bar>()
       }
     """
     )
 
-  @Test fun testSuspendProviderCanRequestSuspendDependencyInDefaultContext() = singleAndMultiCodegen(
-    """
+  @Test fun testSuspendProviderCanRequestSuspendDependencyInDefaultContext() =
+    singleAndMultiCodegen(
+      """
       @Given suspend fun foo() = Foo()
       @Given fun bar(@Given foo: Foo) = Bar(foo)
     """,
-    """
+      """
       fun invoke() = given<suspend () -> Bar>() 
     """
-  )
+    )
 
-  @Test fun testCanRequestSuspendDependencyFromNonSuspendFunctionInSuspendLambdaWithAlias() = singleAndMultiCodegen(
-    """
+  @Test fun testCanRequestSuspendDependencyFromNonSuspendFunctionInSuspendLambdaWithAlias() =
+    singleAndMultiCodegen(
+      """
       typealias SuspendFactory<T> = suspend () -> T
       @Given suspend fun foo() = Foo()
       @Given fun lazyBar(): SuspendFactory<Bar> = { Bar(given()) }
     """,
-    """
+      """
       fun invoke() {
         given<SuspendFactory<Bar>>()
       }
     """
-  )
+    )
 
-  @Test fun testCanRequestComposableDependencyFromNonComposableFunctionInComposableLambda() = singleAndMultiCodegen(
-    """
+  @Test fun testCanRequestComposableDependencyFromNonComposableFunctionInComposableLambda() =
+    singleAndMultiCodegen(
+      """
         @Given @Composable fun foo() = Foo()
         @Given fun lazyBar(): @Composable () -> Bar = { Bar(given()) }
     """,
-    """
+      """
         fun invoke() {
           given<@Composable () -> Bar>()
         }
     """
     )
 
-  @Test fun testCanRequestComposableDependencyFromNonComposableFunctionInComposableLambdaWithAlias() =
+  @Test
+  fun testCanRequestComposableDependencyFromNonComposableFunctionInComposableLambdaWithAlias() =
     singleAndMultiCodegen(
-    """
+      """
         typealias ComposableFactory<T> = @Composable () -> T
         @Given @Composable fun foo() = Foo()
         @Given fun lazyBar(): ComposableFactory<Bar> = { Bar(given()) }
     """,
-    """
+      """
         fun invoke() {
           given<ComposableFactory<Bar>>()
         }
@@ -132,11 +137,12 @@ class CallContextTest {
     """
   )
 
-  @Test fun testComposableCanBeRequestedFromInlineLambdaInComposableContext() = singleAndMultiCodegen(
-    """
+  @Test fun testComposableCanBeRequestedFromInlineLambdaInComposableContext() =
+    singleAndMultiCodegen(
+      """
       @Given @Composable fun composableFoo() = Foo()
     """,
-    """
+      """
       @Composable fun invoke() {
         run {
           run {
@@ -145,7 +151,7 @@ class CallContextTest {
         }
       } 
     """
-  )
+    )
 
   @Test fun testSuspendCanBeRequestFromInlineProviderInSuspendContext() = singleAndMultiCodegen(
     """
@@ -158,13 +164,14 @@ class CallContextTest {
     """
   )
 
-  @Test fun testCanRequestComposableDependencyInGetterOfComposableProperty() = singleAndMultiCodegen(
-    """
+  @Test fun testCanRequestComposableDependencyInGetterOfComposableProperty() =
+    singleAndMultiCodegen(
+      """
       @Given @Composable fun composableFoo() = Foo()
     """,
-    """
+      """
       val fooGetter: Foo
         @Composable get() = given()
     """
-  )
+    )
 }

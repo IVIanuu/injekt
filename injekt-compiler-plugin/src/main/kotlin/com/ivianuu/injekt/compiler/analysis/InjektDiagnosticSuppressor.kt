@@ -38,7 +38,7 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     )
       return diagnostic.psiElement.parent.parent.safeAs<KtNamedFunction>()
         ?.valueParameters
-        ?.count { ! it.hasAnnotation(InjektFqNames.Given) } == 1
+        ?.count { !it.hasAnnotation(InjektFqNames.Given) } == 1
 
     if (diagnostic.factory == Errors.UNUSED_TYPEALIAS_PARAMETER)
       return true

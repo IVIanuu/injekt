@@ -63,10 +63,10 @@ fun TypeRef.toIrType(
         )
       }
     classifier.isQualifier -> arguments.last().toIrType(pluginContext, localClasses, context)
-      .typeOrNull !!
+      .typeOrNull!!
       .cast<IrSimpleType>()
       .let { type ->
-        val qualifierConstructor = pluginContext.referenceClass(classifier.fqName) !!
+        val qualifierConstructor = pluginContext.referenceClass(classifier.fqName)!!
           .constructors.single()
         IrSimpleTypeImpl(
           type.originalKotlinType,
@@ -83,7 +83,7 @@ fun TypeRef.toIrType(
                     arguments.dropLast(1)
                       .map {
                         it.toIrType(pluginContext, localClasses, context)
-                          .typeOrNull !!
+                          .typeOrNull!!
                       }
                   )
               )
@@ -92,7 +92,7 @@ fun TypeRef.toIrType(
         )
       }
     else -> {
-      val key = classifier.descriptor !!.uniqueKey(context)
+      val key = classifier.descriptor!!.uniqueKey(context)
       val fqName = FqName(key.split(":")[1])
       val irClassifier = localClasses.singleOrNull { it.descriptor.fqNameSafe == fqName }
         ?.symbol
@@ -102,7 +102,7 @@ fun TypeRef.toIrType(
           .singleOrNull { it.descriptor.uniqueKey(context) == key }
           ?.symbol
         ?: pluginContext.referenceProperties(fqName.parent())
-          .flatMap { it.owner.getter !!.typeParameters }
+          .flatMap { it.owner.getter!!.typeParameters }
           .singleOrNull { it.descriptor.uniqueKey(context) == key }
           ?.symbol
         ?: (pluginContext.referenceClass(fqName.parent())
@@ -134,7 +134,7 @@ private fun TypeRef.toIrAbbreviation(
   localClasses: List<IrClass>,
   context: InjektContext
 ): IrTypeAbbreviation {
-  val typeAlias = pluginContext.referenceTypeAlias(classifier.fqName) !!
+  val typeAlias = pluginContext.referenceTypeAlias(classifier.fqName)!!
   return IrTypeAbbreviationImpl(
     typeAlias,
     isMarkedNullable,
@@ -150,7 +150,7 @@ fun TypeRef.toKotlinType(context: InjektContext): SimpleType {
       .withAbbreviation(toAbbreviation(context))
     // todo add this qualifier to type
     classifier.isQualifier -> arguments.last().toKotlinType(context)
-    else -> classifier.descriptor !!.original.defaultType
+    else -> classifier.descriptor!!.original.defaultType
       .replace(
         newArguments = arguments.map {
           TypeProjectionImpl(
@@ -162,7 +162,7 @@ fun TypeRef.toKotlinType(context: InjektContext): SimpleType {
           Annotations.create(
             listOf(
               AnnotationDescriptorImpl(
-                context.classifierDescriptorForFqName(InjektFqNames.Composable) !!.defaultType,
+                context.classifierDescriptorForFqName(InjektFqNames.Composable)!!.defaultType,
                 emptyMap(),
                 SourceElement.NO_SOURCE
               )
@@ -177,7 +177,7 @@ fun TypeRef.toKotlinType(context: InjektContext): SimpleType {
 }
 
 fun TypeRef.toAbbreviation(context: InjektContext): SimpleType {
-  val defaultType = classifier.descriptor !!.defaultType
+  val defaultType = classifier.descriptor!!.defaultType
   return defaultType
     .replace(newArguments = arguments.map {
       TypeProjectionImpl(
@@ -197,7 +197,7 @@ fun IrBuilderWithScope.irLambda(
   body: IrBuilderWithScope.(IrFunction) -> IrExpression,
 ): IrExpression {
   type as IrSimpleType
-  val returnType = type.arguments.last().typeOrNull !!
+  val returnType = type.arguments.last().typeOrNull!!
 
   val lambda = IrFactoryImpl.buildFun {
     origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
@@ -212,7 +212,7 @@ fun IrBuilderWithScope.irLambda(
       if (index < type.arguments.lastIndex) {
         addValueParameter(
           parameterNameProvider(index),
-          typeArgument.typeOrNull !!
+          typeArgument.typeOrNull!!
         )
       }
     }
@@ -222,7 +222,7 @@ fun IrBuilderWithScope.irLambda(
     this.body =
       DeclarationIrBuilder(context, symbol).run {
         irBlockBody {
-          + irReturn(body(this, this@apply))
+          +irReturn(body(this, this@apply))
         }
       }
   }
@@ -254,7 +254,7 @@ fun IrBuilderWithScope.jvmNameAnnotation(
   name: String,
   pluginContext: IrPluginContext
 ): IrConstructorCall {
-  val jvmName = pluginContext.referenceClass(DescriptorUtils.JVM_NAME) !!
+  val jvmName = pluginContext.referenceClass(DescriptorUtils.JVM_NAME)!!
   return irCall(jvmName.constructors.single()).apply {
     putValueArgument(0, irString(name))
   }

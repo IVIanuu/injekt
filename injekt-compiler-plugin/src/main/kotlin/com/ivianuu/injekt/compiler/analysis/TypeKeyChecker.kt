@@ -74,7 +74,7 @@ class TypeKeyChecker(private val context: InjektContext) : CallChecker, Declarat
 
   private fun KotlinType.checkAllForTypeKey(reportOn: PsiElement, trace: BindingTrace) {
     if (constructor.declarationDescriptor is TypeParameterDescriptor &&
-      ! constructor.declarationDescriptor.cast<TypeParameterDescriptor>()
+      !constructor.declarationDescriptor.cast<TypeParameterDescriptor>()
         .classifierInfo(context, trace)
         .isForTypeKey
     ) {

@@ -72,7 +72,7 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
       .filter { resolvedCall.valueArguments[it] is DefaultValueArgument }
       .map { parameter ->
         GivenRequest(
-          type = callable.parameterTypes[parameter.injektName()] !!,
+          type = callable.parameterTypes[parameter.injektName()]!!,
           defaultStrategy = if (parameter is ValueParameterDescriptor &&
             parameter.hasDefaultValueIgnoringGiven
           ) {

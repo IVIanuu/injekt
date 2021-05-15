@@ -33,7 +33,7 @@ fun TypeRef.collectGivens(
   // special case to support @Given () -> Foo
   if (isGiven && isFunctionTypeWithOnlyGivenParameters) {
     return listOf(
-      classifier.descriptor !!
+      classifier.descriptor!!
         .defaultType
         .memberScope
         .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
@@ -44,7 +44,7 @@ fun TypeRef.collectGivens(
             type = arguments.last(),
             isGiven = true,
             parameterTypes = callable.parameterTypes.toMutableMap()
-              .also { it[callable.callable.dispatchReceiverParameter !!.injektName()] = this }
+              .also { it[callable.callable.dispatchReceiverParameter!!.injektName()] = this }
           ).substitute(classifier.typeParameters.toMap(arguments))
         }
     )
@@ -57,7 +57,7 @@ fun TypeRef.collectGivens(
     if (type in seen) return
     seen += type
     val substitutionMap = type.classifier.typeParameters.toMap(type.arguments)
-    callables += type.classifier.descriptor !!
+    callables += type.classifier.descriptor!!
       .defaultType
       .memberScope
       .collectGivens(context, trace)
@@ -74,7 +74,7 @@ fun TypeRef.collectGivens(
           parameterTypes = if (callable.callable.dispatchReceiverParameter != null) {
             callable.parameterTypes.toMutableMap()
               .also {
-                it[callable.callable.dispatchReceiverParameter !!.injektName()] = this
+                it[callable.callable.dispatchReceiverParameter!!.injektName()] = this
               }
           } else callable.parameterTypes
         )
@@ -121,7 +121,7 @@ fun Annotated.isGiven(context: InjektContext, trace: BindingTrace): Boolean {
   val key = if (this is KotlinType) System.identityHashCode(this) else this
   trace.get(InjektWritableSlices.IS_GIVEN, key)?.let { return it }
   var isGiven = hasAnnotation(InjektFqNames.Given)
-  if (! isGiven && this is PropertyDescriptor) {
+  if (!isGiven && this is PropertyDescriptor) {
     isGiven = overriddenTreeUniqueAsSequence(false)
       .map { it.containingDeclaration }
       .filterIsInstance<ClassDescriptor>()
@@ -138,14 +138,14 @@ fun Annotated.isGiven(context: InjektContext, trace: BindingTrace): Boolean {
       }
       .any() == true
   }
-  if (! isGiven && this is ParameterDescriptor) {
+  if (!isGiven && this is ParameterDescriptor) {
     isGiven = type.isGiven(context, trace) ||
         containingDeclaration.safeAs<FunctionDescriptor>()
           ?.takeIf { it.isDeserializedDeclaration() }
           ?.callableInfo(context, trace)
           ?.let { name.asString() in it.givenParameters } == true
   }
-  if (! isGiven && this is ClassConstructorDescriptor && isPrimary) {
+  if (!isGiven && this is ClassConstructorDescriptor && isPrimary) {
     isGiven = constructedClass.isGiven(context, trace)
   }
   trace.record(InjektWritableSlices.IS_GIVEN, key, isGiven)
@@ -192,7 +192,7 @@ fun CallableRef.collectGivens(
   checkCancelled()
   if (this in seen) return
   seen += this
-  if (! scope.canSee(this)) return
+  if (!scope.canSee(this)) return
 
   if (source == null && typeParameters.any { it.isGivenConstraint }) {
     addConstrainedGiven(this)
@@ -228,7 +228,7 @@ fun List<GivenImport>.collectImportGivens(
 ): List<CallableRef> =
   flatMap { import ->
     checkCancelled()
-    if (import.importPath !!.endsWith("*")) {
+    if (import.importPath!!.endsWith("*")) {
       val packageFqName = FqName(import.importPath.removeSuffix(".*"))
       (context.memberScopeForFqName(packageFqName)
         ?.collectGivens(context, trace)
@@ -272,7 +272,7 @@ fun List<GivenImport>.collectImportGivens(
 private fun ResolutionScope.canSee(callable: CallableRef): Boolean =
   callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
       (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
-          ! callable.callable.isExternalDeclaration(context)) ||
+          !callable.callable.isExternalDeclaration(context)) ||
       callable.callable.visibility == DescriptorVisibilities.LOCAL ||
       (callable.callable is ClassConstructorDescriptor &&
           callable.type.unwrapQualifiers().classifier.isObject) ||

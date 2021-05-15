@@ -106,7 +106,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
 
   fun typeAlias(
     expandedType: TypeRef,
-    fqName: FqName = FqName("Alias${id ++}"),
+    fqName: FqName = FqName("Alias${id++}"),
   ) = ClassifierRef(
     key = fqName.asString(),
     fqName = fqName,
@@ -117,7 +117,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
   fun classType(
     vararg superTypes: TypeRef,
     typeParameters: List<ClassifierRef> = emptyList(),
-    fqName: FqName = FqName("ClassType${id ++}"),
+    fqName: FqName = FqName("ClassType${id++}"),
   ) = ClassifierRef(
     key = fqName.asString(),
     fqName = fqName,
@@ -128,7 +128,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
   ).defaultType
 
   fun typeParameter(
-    fqName: FqName = FqName("TypeParameter${id ++}"),
+    fqName: FqName = FqName("TypeParameter${id++}"),
     nullable: Boolean = true,
     variance: TypeVariance = TypeVariance.INV
   ): TypeRef =
@@ -143,7 +143,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     vararg upperBounds: TypeRef,
     nullable: Boolean = true,
     variance: TypeVariance = TypeVariance.INV,
-    fqName: FqName = FqName("TypeParameter${id ++}"),
+    fqName: FqName = FqName("TypeParameter${id++}"),
   ) = ClassifierRef(
     key = fqName.asString(),
     fqName = fqName,
@@ -167,7 +167,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     staticTypeParameters: List<ClassifierRef> = emptyList()
   ) {
     val context = buildContext(injektContext, staticTypeParameters, other)
-    if (! context.isOk) {
+    if (!context.isOk) {
       throw AssertionError("'$this' is not assignable to '$other'")
     }
   }
@@ -187,7 +187,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
   }
 
   infix fun TypeRef.shouldBeSubTypeOf(other: TypeRef) {
-    if (! isSubTypeOf(injektContext, other)) {
+    if (!isSubTypeOf(injektContext, other)) {
       throw AssertionError("'$this' is not sub type of '$other'")
     }
   }

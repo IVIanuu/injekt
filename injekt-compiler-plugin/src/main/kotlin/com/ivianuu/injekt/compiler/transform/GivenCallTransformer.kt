@@ -87,7 +87,7 @@ class GivenCallTransformer(
           if (this is ResolutionResult.Success.WithCandidate.Value) {
             allResults += this
             dependencyResults.forEach { (_, dependencyResult) ->
-              if (! isInBetweenCircularDependency &&
+              if (!isInBetweenCircularDependency &&
                 dependencyResult is ResolutionResult.Success.WithCandidate
               )
                 dependencyResult.visit()
@@ -95,7 +95,7 @@ class GivenCallTransformer(
           }
         }
         result.dependencyResults.forEach {
-          if (! isInBetweenCircularDependency)
+          if (!isInBetweenCircularDependency)
             it.value.safeAs<ResolutionResult.Success.WithCandidate>()?.visit()
         }
         isInBetweenCircularDependency
@@ -178,19 +178,19 @@ class GivenCallTransformer(
       if (initializing) {
         if (block == null) {
           val resultType = result.candidate.type.toIrType(pluginContext, localClasses, context)
-            .typeOrNull !!
+            .typeOrNull!!
           block = DeclarationIrBuilder(pluginContext, symbol)
             .irBlock(resultType = resultType) {
               tmpVariable = irTemporary(
                 value = irNull(),
                 isMutable = true,
                 irType = resultType.makeNullable(),
-                nameHint = "${graphContext.variableIndex ++}"
+                nameHint = "${graphContext.variableIndex++}"
               )
             } as IrBlock
         }
         return DeclarationIrBuilder(pluginContext, symbol)
-          .irGet(tmpVariable !!)
+          .irGet(tmpVariable!!)
       }
 
       result as ResolutionResult.Success.WithCandidate.Value
@@ -213,35 +213,35 @@ class GivenCallTransformer(
 
       finalExpression = if (block == null) rawExpression else {
         with(DeclarationIrBuilder(pluginContext, symbol)) {
-          block !!.statements += irSet(tmpVariable !!.symbol, rawExpression)
-          block !!.statements += irGet(tmpVariable !!)
+          block!!.statements += irSet(tmpVariable!!.symbol, rawExpression)
+          block!!.statements += irGet(tmpVariable!!)
         }
-        block !!
+        block!!
       }
 
-      return finalExpression !!
+      return finalExpression!!
     }
   }
 
   private fun ResolutionResult.Success.WithCandidate.Value.shouldWrap(
     context: GraphContext
-  ): Boolean = ! candidate.cacheExpressionResultIfPossible &&
+  ): Boolean = !candidate.cacheExpressionResultIfPossible &&
       dependencyResults.isNotEmpty() &&
-      context.graph.usages[this.usageKey] !!.size > 1 &&
-      ! context.isInBetweenCircularDependency(this)
+      context.graph.usages[this.usageKey]!!.size > 1 &&
+      !context.isInBetweenCircularDependency(this)
 
   private fun ScopeContext.wrapExpressionInFunctionIfNeeded(
     result: ResolutionResult.Success.WithCandidate.Value,
     rawExpressionProvider: () -> IrExpression
-  ): IrExpression = if (! result.shouldWrap(graphContext)) rawExpressionProvider()
+  ): IrExpression = if (!result.shouldWrap(graphContext)) rawExpressionProvider()
   else with(result.safeAs<ResolutionResult.Success.WithCandidate.Value>()
     ?.outerMostScope?.let { findScopeContext(it) } ?: this) {
     functionWrappedExpressions.getOrPut(result.candidate.type) {
       val function = IrFactoryImpl.buildFun {
         origin = IrDeclarationOrigin.DEFINED
-        name = "local${graphContext.variableIndex ++}".asNameId()
+        name = "local${graphContext.variableIndex++}".asNameId()
         returnType = result.candidate.type.toIrType(pluginContext, localClasses, context)
-          .typeOrNull !!
+          .typeOrNull!!
         visibility = DescriptorVisibilities.LOCAL
         isSuspend = scope.callContext == CallContext.SUSPEND
       }.apply {
@@ -256,7 +256,7 @@ class GivenCallTransformer(
         }
         this.body = DeclarationIrBuilder(pluginContext, symbol).run {
           irBlockBody {
-            + irReturn(rawExpressionProvider())
+            +irReturn(rawExpressionProvider())
           }
         }
         statements += this
@@ -273,19 +273,19 @@ class GivenCallTransformer(
   private fun ResolutionResult.Success.WithCandidate.Value.shouldCache(
     context: GraphContext
   ): Boolean = candidate.cacheExpressionResultIfPossible &&
-      context.graph.usages[this.usageKey] !!.count { ! it.isInline } > 1 &&
-      ! context.isInBetweenCircularDependency(this)
+      context.graph.usages[this.usageKey]!!.count { !it.isInline } > 1 &&
+      !context.isInBetweenCircularDependency(this)
 
   private fun ScopeContext.cacheExpressionIfNeeded(
     result: ResolutionResult.Success.WithCandidate.Value,
     rawExpressionProvider: () -> IrExpression
   ): IrExpression {
-    if (! result.shouldCache(graphContext)) return rawExpressionProvider()
+    if (!result.shouldCache(graphContext)) return rawExpressionProvider()
     return with(findScopeContext(result.outerMostScope)) {
       cachedExpressions.getOrPut(result.candidate.type) {
         val variable = irScope.createTemporaryVariable(
           rawExpressionProvider(),
-          nameHint = "${graphContext.variableIndex ++}"
+          nameHint = "${graphContext.variableIndex++}"
         )
         statements += variable
         val expression: ScopeContext.() -> IrExpression = {
@@ -299,15 +299,15 @@ class GivenCallTransformer(
 
   private fun ScopeContext.objectExpression(type: TypeRef): IrExpression =
     DeclarationIrBuilder(pluginContext, symbol)
-      .irGetObject(pluginContext.referenceClass(type.classifier.fqName) !!)
+      .irGetObject(pluginContext.referenceClass(type.classifier.fqName)!!)
 
   private fun ScopeContext.providerExpression(
     result: ResolutionResult.Success.WithCandidate.Value,
     given: ProviderGivenNode
   ): IrExpression = DeclarationIrBuilder(pluginContext, symbol)
     .irLambda(
-      given.type.toIrType(pluginContext, localClasses, context).typeOrNull !!,
-      parameterNameProvider = { "p${graphContext.variableIndex ++}" }
+      given.type.toIrType(pluginContext, localClasses, context).typeOrNull!!,
+      parameterNameProvider = { "p${graphContext.variableIndex++}" }
     ) { function ->
       when (val dependencyResult = result.dependencyResults.values.single()) {
         is ResolutionResult.Success.DefaultValue -> return@irLambda irNull()
@@ -328,8 +328,8 @@ class GivenCallTransformer(
           if (dependencyScopeContext.statements.isEmpty()) expression
           else {
             irBlock {
-              dependencyScopeContext.statements.forEach { + it }
-              + expression
+              dependencyScopeContext.statements.forEach { +it }
+              +expression
             }
           }
         }
@@ -340,12 +340,12 @@ class GivenCallTransformer(
     FqName("kotlin.collections.mutableSetOf")
   ).single { it.owner.valueParameters.isEmpty() }
   private val setAdd = mutableSetOf.owner.returnType
-    .classOrNull !!
+    .classOrNull!!
     .owner
     .functions
     .single { it.name.asString() == "add" }
   private val setAddAll = mutableSetOf.owner.returnType
-    .classOrNull !!
+    .classOrNull!!
     .owner
     .functions
     .single { it.name.asString() == "addAll" }
@@ -420,7 +420,7 @@ class GivenCallTransformer(
                 ).typeOrNull
               )
             },
-          nameHint = "${graphContext.variableIndex ++}"
+          nameHint = "${graphContext.variableIndex++}"
         )
 
         result.dependencyResults
@@ -430,19 +430,19 @@ class GivenCallTransformer(
             if (dependency.candidate.type
                 .isSubTypeOf(this@GivenCallTransformer.context, given.collectionElementType)
             ) {
-              + irCall(setAddAll).apply {
+              +irCall(setAddAll).apply {
                 dispatchReceiver = irGet(tmpSet)
                 putValueArgument(0, expressionFor(dependency))
               }
             } else {
-              + irCall(setAdd).apply {
+              +irCall(setAdd).apply {
                 dispatchReceiver = irGet(tmpSet)
                 putValueArgument(0, expressionFor(dependency))
               }
             }
           }
 
-        + irGet(tmpSet)
+        +irGet(tmpSet)
       }
     }
   }
@@ -480,7 +480,7 @@ class GivenCallTransformer(
     given: CallableGivenNode,
     descriptor: ClassConstructorDescriptor
   ): IrExpression = if (descriptor.constructedClass.kind == ClassKind.OBJECT) {
-    val clazz = pluginContext.referenceClass(descriptor.constructedClass.fqNameSafe) !!
+    val clazz = pluginContext.referenceClass(descriptor.constructedClass.fqNameSafe)!!
     DeclarationIrBuilder(pluginContext, symbol)
       .irGetObject(clazz)
   } else {
@@ -500,7 +500,7 @@ class GivenCallTransformer(
   ): IrExpression {
     val property = pluginContext.referenceProperties(descriptor.fqNameSafe)
       .single { it.descriptor.uniqueKey(context) == descriptor.uniqueKey(context) }
-    val getter = property.owner.getter !!
+    val getter = property.owner.getter!!
     return DeclarationIrBuilder(pluginContext, symbol)
       .irCall(getter.symbol)
       .apply {
@@ -602,7 +602,7 @@ class GivenCallTransformer(
     receiverAccessors.push(
       declaration to {
         DeclarationIrBuilder(pluginContext, declaration.symbol)
-          .irGet(declaration.thisReceiver !!)
+          .irGet(declaration.thisReceiver!!)
       }
     )
     if (declaration.isLocal) localClasses += declaration
@@ -617,7 +617,7 @@ class GivenCallTransformer(
       receiverAccessors.push(
         dispatchReceiver to {
           DeclarationIrBuilder(pluginContext, declaration.symbol)
-            .irGet(declaration.dispatchReceiverParameter !!)
+            .irGet(declaration.dispatchReceiverParameter!!)
         }
       )
     }
@@ -626,7 +626,7 @@ class GivenCallTransformer(
       receiverAccessors.push(
         extensionReceiver to {
           DeclarationIrBuilder(pluginContext, declaration.symbol)
-            .irGet(declaration.extensionReceiverParameter !!)
+            .irGet(declaration.extensionReceiverParameter!!)
         }
       )
     }
@@ -660,8 +660,8 @@ class GivenCallTransformer(
         } catch (e: Throwable) {
           throw RuntimeException("Wtf ${expression.dump()}", e)
         }
-        graphContext.statements.forEach { + it }
-        + result
+        graphContext.statements.forEach { +it }
+        +result
       }
   }
 }

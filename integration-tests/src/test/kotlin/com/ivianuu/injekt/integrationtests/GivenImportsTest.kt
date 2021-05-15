@@ -100,7 +100,7 @@ class GivenImportsTest {
     listOf(
       listOf(
         source(
-      """
+          """
                     @Given val foo = Foo()
             """,
           packageFqName = FqName("givens")
@@ -108,7 +108,7 @@ class GivenImportsTest {
       ),
       listOf(
         source(
-      """
+          """
                     @GivenImports("givens.foo")
               fun invoke() = given<Foo>()
                 """,
@@ -124,7 +124,7 @@ class GivenImportsTest {
     listOf(
       listOf(
         source(
-      """
+          """
                     @Given val foo = Foo()
             """,
           packageFqName = FqName("givens")
@@ -132,7 +132,7 @@ class GivenImportsTest {
       ),
       listOf(
         source(
-      """
+          """
                     @GivenImports("givens.*")
               fun invoke() = given<Foo>()
                 """,
@@ -169,7 +169,7 @@ class GivenImportsTest {
     listOf(
       listOf(
         source(
-      """
+          """
                     @Given val foo = Foo()
             """,
           packageFqName = FqName("givens")
@@ -177,7 +177,7 @@ class GivenImportsTest {
       ),
       listOf(
         source(
-      """
+          """
                     @GivenImports("givens.*")
                     class MyClass {
                   fun invoke() = given<Foo>()
@@ -196,7 +196,7 @@ class GivenImportsTest {
     listOf(
       listOf(
         source(
-      """
+          """
                     @Given val foo = Foo()
             """,
           packageFqName = FqName("givens")
@@ -204,7 +204,7 @@ class GivenImportsTest {
       ),
       listOf(
         source(
-      """
+          """
                     @GivenImports("givens.*")
               fun invoke() = given<Foo>()
                 """,
@@ -220,7 +220,7 @@ class GivenImportsTest {
     listOf(
       listOf(
         source(
-      """
+          """
                     @Given val foo = Foo()
             """,
           packageFqName = FqName("givens")
@@ -228,7 +228,7 @@ class GivenImportsTest {
       ),
       listOf(
         source(
-      """
+          """
                     @GivenImports("givens.*")
                     val givenFoo = given<Foo>()
               fun invoke() = givenFoo
@@ -244,7 +244,7 @@ class GivenImportsTest {
   @Test fun testWithGivenImports() = codegen(
     listOf(
       source(
-    """
+        """
               fun invoke() = withGivenImports("com.ivianuu.injekt.common.*") {
                         given<TypeKey<Foo>>().value
                     }

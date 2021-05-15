@@ -275,7 +275,7 @@ class GivenDeclarationTest {
     listOf(
       listOf(
         source(
-      """
+          """
                         class FooGivens {
                             companion object {
                                 @Given fun foo() = Foo()
@@ -287,7 +287,7 @@ class GivenDeclarationTest {
       ),
       listOf(
         invokableSource(
-      """
+          """
                         @GivenImports("givens.FooGivens")
                   fun invoke() = given<Foo>()
                 """

@@ -57,7 +57,7 @@ fun CallableDescriptor.callContext(
               canBeInlineArgument(node.functionLiteral) &&
               isInline(arg.containingDeclaration) &&
               isInlineParameter(arg)
-          if (! inlined)
+          if (!inlined)
             return descriptor.callContextOfThis
         }
         is KtFunction -> {

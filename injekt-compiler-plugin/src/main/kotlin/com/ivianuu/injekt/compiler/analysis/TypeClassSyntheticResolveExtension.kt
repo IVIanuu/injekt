@@ -74,7 +74,7 @@ class TypeClassFunctionDescriptor(
     function.annotations + AnnotationDescriptorImpl(
       function.module.findClassAcrossModuleDependencies(
         ClassId.topLevel(InjektFqNames.SyntheticExtensionCallable)
-      ) !!.defaultType,
+      )!!.defaultType,
       mapOf("value".asNameId() to StringValue(function.uniqueKey(context))),
       SourceElement.NO_SOURCE
     )
@@ -154,14 +154,14 @@ class TypeClassFunctionDescriptor(
             AnnotationDescriptorImpl(
               function.module.findClassAcrossModuleDependencies(
                 ClassId.topLevel(InjektFqNames.Given)
-              ) !!.defaultType,
+              )!!.defaultType,
               emptyMap(),
               SourceElement.NO_SOURCE
             )
           )
         ),
         "evidence".asNameId(),
-        substitutor.safeSubstitute(function.dispatchReceiverParameter !!.type, Variance.INVARIANT),
+        substitutor.safeSubstitute(function.dispatchReceiverParameter!!.type, Variance.INVARIANT),
         false,
         false,
         false,

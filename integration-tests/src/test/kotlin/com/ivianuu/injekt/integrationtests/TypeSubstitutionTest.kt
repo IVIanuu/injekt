@@ -77,7 +77,7 @@ class TypeSubstitutionTest {
 
   @Test fun testGetSubstitutionMapInScopedLikeScenario() = withTypeCheckerContext {
     val scoped = typeFor(FqName("com.ivianuu.injekt.scope.Scoped"))
-    val (scopedT, scopedU, scopedS) = injektContext.memberScopeForFqName(FqName("com.ivianuu.injekt.scope.Scoped.Companion")) !!
+    val (scopedT, scopedU, scopedS) = injektContext.memberScopeForFqName(FqName("com.ivianuu.injekt.scope.Scoped.Companion"))!!
       .getContributedFunctions("scopedValue".asNameId(), NoLookupLocation.FROM_BACKEND)
       .single()
       .typeParameters
@@ -103,14 +103,14 @@ class TypeSubstitutionTest {
       val (installElementModuleT, installElementModuleU, installElementModuleS) =
         injektContext.classifierDescriptorForFqName(
           FqName("com.ivianuu.injekt.scope.InstallElement.Companion.Module")
-        ) !!
+        )!!
           .cast<ClassDescriptor>()
-          .unsubstitutedPrimaryConstructor !!
+          .unsubstitutedPrimaryConstructor!!
           .toCallableRef(injektContext, injektContext.trace)
           .typeParameters
 
       val givenCoroutineScopeElementReturnType =
-        injektContext.memberScopeForFqName(FqName("com.ivianuu.injekt.coroutines")) !!
+        injektContext.memberScopeForFqName(FqName("com.ivianuu.injekt.coroutines"))!!
           .getContributedFunctions(
             "givenCoroutineScopeElement".asNameId(),
             NoLookupLocation.FROM_BACKEND

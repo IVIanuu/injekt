@@ -57,7 +57,8 @@ typealias ActivityLifecycleOwner = LifecycleOwner
 
 typealias ActivityOnBackPressedDispatcherOwner = OnBackPressedDispatcherOwner
 
-@Given inline val ComponentActivity.activityOnBackPressedDispatcherOwner: ActivityOnBackPressedDispatcherOwner
+@Given
+inline val ComponentActivity.activityOnBackPressedDispatcherOwner: ActivityOnBackPressedDispatcherOwner
   get() = this
 
 typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner

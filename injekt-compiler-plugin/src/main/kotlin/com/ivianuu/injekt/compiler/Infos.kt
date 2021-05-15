@@ -53,7 +53,7 @@ fun CallableDescriptor.callableInfo(
       getAnnotatedAnnotations(InjektFqNames.Qualifier)
         .map { it.type.toTypeRef(context, trace) }
     else emptyList()
-    qualifiers.wrap(returnType !!.toTypeRef(context, trace))
+    qualifiers.wrap(returnType!!.toTypeRef(context, trace))
   }
 
   val parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)

@@ -37,7 +37,7 @@ internal inline fun <T : GivenScope> Lifecycle.givenScope(init: () -> T): T {
           synchronized(givenScopesByLifecycle) {
             givenScopesByLifecycle
               .remove(this@givenScope)
-          } !!.dispose()
+          }!!.dispose()
         }
       }
     })

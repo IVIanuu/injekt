@@ -63,7 +63,7 @@ class ResolutionScope(
    * If there are duplicates we choose the best version
    */
   private fun addGivenIfAbsentOrBetter(callable: CallableRef) {
-    if (! callable.isApplicable()) return
+    if (!callable.isApplicable()) return
     val key = callable.givenKey
     val existing = givens[key]
     if (compareCallable(callable, existing) < 0)
@@ -183,8 +183,8 @@ class ResolutionScope(
     constrainedGivens.forEach { recordLookup(it.callable.callable) }
     imports
       .filter { it.importPath != null }
-      .filter { it.importPath !!.endsWith(".*") }
-      .map { FqName(it.importPath !!.removeSuffix(".*")) }
+      .filter { it.importPath!!.endsWith(".*") }
+      .map { FqName(it.importPath!!.removeSuffix(".*")) }
       .forEach { fqName ->
         context.memberScopeForFqName(fqName)
           ?.recordLookup("givens".asNameId(), location)
@@ -208,7 +208,7 @@ class ResolutionScope(
           if (candidate.type.frameworkKey != key.type.frameworkKey)
             return@mapNotNull null
           val context = candidate.type.buildContext(context, key.staticTypeParameters, key.type)
-          if (! context.isOk) return@mapNotNull null
+          if (!context.isOk) return@mapNotNull null
           val substitutionMap = context.fixedTypeVariables
           val finalCandidate = candidate.substitute(substitutionMap)
           CallableGivenNode(
@@ -311,14 +311,14 @@ class ResolutionScope(
             return@mapNotNull null
           var context =
             candidate.type.buildContext(context, key.staticTypeParameters, singleElementType)
-          if (! context.isOk) {
+          if (!context.isOk) {
             context = candidate.type.buildContext(
               this.context,
               key.staticTypeParameters,
               collectionElementType
             )
           }
-          if (! context.isOk) return@mapNotNull null
+          if (!context.isOk) return@mapNotNull null
           val substitutionMap = context.fixedTypeVariables
           candidate.substitute(substitutionMap)
         }
@@ -357,7 +357,7 @@ class ResolutionScope(
       candidate.type,
       allStaticTypeParameters
     )
-    if (! context.isOk) return
+    if (!context.isOk) return
 
     val newGivenType = constrainedGiven.callable.type
       .substitute(substitutionMap)
@@ -431,7 +431,7 @@ class ResolutionScope(
     val containingClassifier = containing.toClassifierRef(context, trace)
     if (callable.name !in containingClassifier.primaryConstructorPropertyParameters) return true
     return allScopes.any { it.ownerDescriptor == containing } ||
-        ! containingClassifier.descriptor !!.isGiven(context, trace)
+        !containingClassifier.descriptor!!.isGiven(context, trace)
   }
 
   override fun toString(): String = "ResolutionScope($name)"

@@ -85,7 +85,7 @@ class TypeKeyTransformer(
           field.type
         )
       }
-      (constructor.body !! as IrBlockBody).run {
+      (constructor.body!! as IrBlockBody).run {
         typeKeyParamsWithFields
           .toList()
           .forEachIndexed { index, (field, param) ->
@@ -93,7 +93,7 @@ class TypeKeyTransformer(
               index + 1,
               DeclarationIrBuilder(pluginContext, constructor.symbol).run {
                 irSetField(
-                  irGet(clazz.thisReceiver !!),
+                  irGet(clazz.thisReceiver!!),
                   field,
                   irGet(param)
                 )
@@ -117,7 +117,7 @@ class TypeKeyTransformer(
                   ?.cast<IrConstructor>()
                 if (constructor == null) {
                   irGetField(
-                    irGet(scopes.thisOfClass(clazz) !!),
+                    irGet(scopes.thisOfClass(clazz)!!),
                     field
                   )
                 } else {
@@ -137,7 +137,7 @@ class TypeKeyTransformer(
     if (function in transformedFunctions.values) return function
 
     if (function is IrConstructor) {
-      if (! function.descriptor.isDeserializedDeclaration()) {
+      if (!function.descriptor.isDeserializedDeclaration()) {
         transformClassIfNeeded(function.constructedClass)
         return function
       }
@@ -213,9 +213,9 @@ class TypeKeyTransformer(
     typeParameterKeyExpressions: Map<IrTypeParameter, (List<ScopeWithIr>) -> IrExpression>
   ): IrFunctionAccessExpression {
     if (expression.symbol.descriptor.fqNameSafe == InjektFqNames.typeKeyOf) {
-      val typeArgument = expression.getTypeArgument(0) !!
+      val typeArgument = expression.getTypeArgument(0)!!
       return DeclarationIrBuilder(pluginContext, expression.symbol).irCall(
-        pluginContext.referenceClass(InjektFqNames.TypeKey) !!
+        pluginContext.referenceClass(InjektFqNames.TypeKey)!!
           .constructors
           .single()
       ).apply {
@@ -260,11 +260,11 @@ class TypeKeyTransformer(
           var currentIndex = expression.valueArgumentsCount
           (0 until typeArgumentsCount)
             .asSequence()
-            .map { transformedCallee.typeParameters[it] to getTypeArgument(it) !! }
+            .map { transformedCallee.typeParameters[it] to getTypeArgument(it)!! }
             .filter { it.first.descriptor.classifierInfo(context, trace).isForTypeKey }
             .forEach { (_, typeArgument) ->
               putValueArgument(
-                currentIndex ++,
+                currentIndex++,
                 typeArgument.typeKeyStringExpression(
                   expression.symbol,
                   scopes,
@@ -291,12 +291,12 @@ class TypeKeyTransformer(
             .asSequence()
             .map {
               transformedCallee as IrConstructor
-              transformedCallee.constructedClass.typeParameters[it] to getTypeArgument(it) !!
+              transformedCallee.constructedClass.typeParameters[it] to getTypeArgument(it)!!
             }
             .filter { it.first.descriptor.classifierInfo(context, trace).isForTypeKey }
             .forEach { (_, typeArgument) ->
               putValueArgument(
-                currentIndex ++,
+                currentIndex++,
                 typeArgument.typeKeyStringExpression(
                   expression.symbol,
                   scopes,
@@ -325,12 +325,12 @@ class TypeKeyTransformer(
             .asSequence()
             .map {
               transformedCallee as IrConstructor
-              transformedCallee.constructedClass.typeParameters[it] to getTypeArgument(it) !!
+              transformedCallee.constructedClass.typeParameters[it] to getTypeArgument(it)!!
             }
             .filter { it.first.descriptor.classifierInfo(context, trace).isForTypeKey }
             .forEach { (_, typeArgument) ->
               putValueArgument(
-                currentIndex ++,
+                currentIndex++,
                 typeArgument.typeKeyStringExpression(
                   expression.symbol,
                   scopes,
@@ -392,9 +392,9 @@ class TypeKeyTransformer(
       }
 
       when {
-        abbreviation != null -> appendToCurrentString(abbreviation !!.typeAlias.descriptor.fqNameSafe.asString())
+        abbreviation != null -> appendToCurrentString(abbreviation!!.typeAlias.descriptor.fqNameSafe.asString())
         classifierOrFail is IrTypeParameterSymbol -> appendTypeParameterExpression(
-          typeParameterKeyExpressions[classifierOrFail.owner] !!(scopes)
+          typeParameterKeyExpressions[classifierOrFail.owner]!!(scopes)
         )
         else -> appendToCurrentString(classifierOrFail.descriptor.fqNameSafe.asString())
       }
@@ -412,7 +412,7 @@ class TypeKeyTransformer(
         appendToCurrentString(">")
       }
 
-      if ((abbreviation != null && abbreviation !!.hasQuestionMark) ||
+      if ((abbreviation != null && abbreviation!!.hasQuestionMark) ||
         (abbreviation == null && hasQuestionMark)
       ) appendToCurrentString("?")
     }

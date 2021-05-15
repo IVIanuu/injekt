@@ -37,7 +37,7 @@ class GivenResolveTest {
     listOf(
       listOf(
         source(
-      """
+          """
                     @Given val foo = Foo()
             """,
           packageFqName = FqName("givens")
@@ -45,7 +45,7 @@ class GivenResolveTest {
       ),
       listOf(
         source(
-      """
+          """
                     @GivenImports("givens.*")
               fun invoke() = given<Foo>()
                 """,
@@ -60,13 +60,13 @@ class GivenResolveTest {
   @Test fun testResolvesInternalGivenFromDifferentPackageWithAllUnderImport() = codegen(
     listOf(
       source(
-    """
+        """
                 @Given val foo = Foo()
         """,
         packageFqName = FqName("givens")
       ),
       source(
-    """
+        """
                     @GivenImports("givens.*")
               fun invoke() = given<Foo>()
                 """,
@@ -419,12 +419,12 @@ class GivenResolveTest {
 
   @Test fun testCannotResolvePropertyWithTheSameNameAsAnGivenPrimaryConstructorParameter() =
     singleAndMultiCodegen(
-    """
+      """
             @Given class MyClass(@Given foo: Foo) {
                 val foo = foo
             }
     """,
-    """
+      """
         fun invoke() = given<Foo>() 
     """
     ) {
@@ -433,10 +433,10 @@ class GivenResolveTest {
 
   @Test fun testCannotResolveGivenConstructorParameterOfGivenClassFromOutsideTheClass() =
     singleAndMultiCodegen(
-    """
+      """
             @Given class MyClass(@Given val foo: Foo)
     """,
-    """
+      """
         fun invoke() = given<Foo>() 
     """
     ) {
@@ -447,10 +447,10 @@ class GivenResolveTest {
 
   @Test fun testCanResolveGivenConstructorParameterOfNonGivenClassFromOutsideTheClass() =
     singleAndMultiCodegen(
-    """
+      """
             class MyClass(@Given val foo: Foo)
     """,
-    """
+      """
            fun invoke(@Given myClass: MyClass) = given<Foo>() 
     """
     )
@@ -525,14 +525,14 @@ class GivenResolveTest {
 
   @Test fun testCannotResolveUnparameterizedSubTypeOfParameterizedGivenWithQualifiers() =
     singleAndMultiCodegen(
-    """
+      """
             typealias TypedString<T> = String
 
             @Given val foo = Foo()
 
             @Given fun <T : Foo> typedString(@Given value: T): @TypedQualifier<T> TypedString<T> = ""
     """,
-    """
+      """
         fun invoke() = given<@TypedQualifier<Foo> String>() 
     """
     )

@@ -73,7 +73,7 @@ sealed class ResolutionResult {
                 .sortedBy { it.allParents.size }
                 .filter { outerMostScope ->
                   outerMostScope.allParents.size <
-                      candidate.dependencyScope !!.allParents.size
+                      candidate.dependencyScope!!.allParents.size
                 }
                 .lastOrNull {
                   it.callContext.canCall(candidate.callContext)
@@ -192,7 +192,7 @@ fun ResolutionScope.resolveRequests(
     usages
   )
     .also { it.postProcess(onEachResult, usages) }
-  else GivenGraph.Error(this, failureRequest !!, failure)
+  else GivenGraph.Error(this, failureRequest!!, failure)
 }.also {
   println("resolving requests $requests in $name took ${it.first} ms")
 }.second
@@ -233,7 +233,7 @@ private fun ResolutionScope.computeForCandidate(
       if (prev.second.callableFqName == candidate.callableFqName &&
         prev.second.type.coveringSet == candidate.type.coveringSet &&
         (prev.second.type.typeSize < candidate.type.typeSize ||
-            (prev.second.type == candidate.type && ! isLazy))
+            (prev.second.type == candidate.type && !isLazy))
       ) {
         val result = ResolutionResult.Failure.DivergentGiven(candidate)
         resultsByCandidate[candidate] = result
@@ -283,7 +283,7 @@ private fun ResolutionScope.resolveCandidates(
       is ResolutionResult.Success -> {
         val firstSuccessResult = successes.firstOrNull()
         when (compareResult(candidateResult, firstSuccessResult)) {
-          - 1 -> {
+          -1 -> {
             successes.clear()
             successes += candidateResult
           }
@@ -300,14 +300,14 @@ private fun ResolutionScope.resolveCandidates(
   return if (successes.isNotEmpty()) {
     successes.singleOrNull()
       ?: ResolutionResult.Failure.CandidateAmbiguity(successes.cast())
-  } else failure !!
+  } else failure!!
 }
 
 private fun ResolutionScope.resolveCandidate(
   request: GivenRequest,
   candidate: GivenNode
 ): ResolutionResult = computeForCandidate(request, candidate) {
-  if (! callContext.canCall(candidate.callContext)) {
+  if (!callContext.canCall(candidate.callContext)) {
     return@computeForCandidate ResolutionResult.Failure.CallContextMismatch(callContext, candidate)
   }
 
@@ -316,7 +316,7 @@ private fun ResolutionScope.resolveCandidate(
       val argumentDescriptor = typeArgument.classifier.descriptor as? TypeParameterDescriptor
         ?: continue
       val parameterDescriptor = typeParameter.descriptor as TypeParameterDescriptor
-      if (parameterDescriptor.isReified && ! argumentDescriptor.isReified) {
+      if (parameterDescriptor.isReified && !argumentDescriptor.isReified) {
         return@computeForCandidate ResolutionResult.Failure.TypeArgumentKindMismatch(
           ResolutionResult.Failure.TypeArgumentKindMismatch.TypeArgumentKind.REIFIED,
           typeParameter,
@@ -325,7 +325,7 @@ private fun ResolutionScope.resolveCandidate(
         )
       }
       if (parameterDescriptor.classifierInfo(context, trace).isForTypeKey &&
-        ! argumentDescriptor.classifierInfo(context, trace).isForTypeKey
+        !argumentDescriptor.classifierInfo(context, trace).isForTypeKey
       ) {
         return@computeForCandidate ResolutionResult.Failure.TypeArgumentKindMismatch(
           ResolutionResult.Failure.TypeArgumentKindMismatch.TypeArgumentKind.FOR_TYPE_KEY,
@@ -373,15 +373,15 @@ private fun ResolutionScope.resolveCandidate(
 
 private fun ResolutionScope.compareResult(a: ResolutionResult?, b: ResolutionResult?): Int {
   if (a === b) return 0
-  if (a != null && b == null) return - 1
+  if (a != null && b == null) return -1
   if (b != null && a == null) return 1
   if (a == null && b == null) return 0
-  a !!
-  b !!
+  a!!
+  b!!
 
   if (a is ResolutionResult.Success &&
     b !is ResolutionResult.Success
-  ) return - 1
+  ) return -1
   if (b is ResolutionResult.Success &&
     a !is ResolutionResult.Success
   ) return 1
@@ -391,7 +391,7 @@ private fun ResolutionScope.compareResult(a: ResolutionResult?, b: ResolutionRes
   ) {
     if (a !is ResolutionResult.Success.DefaultValue &&
       b is ResolutionResult.Success.DefaultValue
-    ) return - 1
+    ) return -1
     if (b !is ResolutionResult.Success.DefaultValue &&
       a is ResolutionResult.Success.DefaultValue
     ) return 1
@@ -420,15 +420,15 @@ private inline fun <T> ResolutionScope.compareCandidate(
   subClassNesting: (T) -> Int
 ): Int {
   if (a === b) return 0
-  if (a != null && b == null) return - 1
+  if (a != null && b == null) return -1
   if (b != null && a == null) return 1
   if (a == null && b == null) return 0
-  a !!
-  b !!
+  a!!
+  b!!
 
   val aScopeNesting = scopeNesting(a)
   val bScopeNesting = scopeNesting(b)
-  if (aScopeNesting > bScopeNesting) return - 1
+  if (aScopeNesting > bScopeNesting) return -1
   if (bScopeNesting > aScopeNesting) return 1
 
   val ownerA = owner(a)
@@ -437,12 +437,12 @@ private inline fun <T> ResolutionScope.compareCandidate(
     val aSubClassNesting = subClassNesting(a)
     val bSubClassNesting = subClassNesting(b)
 
-    if (aSubClassNesting < bSubClassNesting) return - 1
+    if (aSubClassNesting < bSubClassNesting) return -1
     if (bSubClassNesting < aSubClassNesting) return 1
   }
 
   val diff = compareType(type(a), type(b), requestedType)
-  if (diff < 0) return - 1
+  if (diff < 0) return -1
   if (diff > 0) return 1
 
   return 0
@@ -460,21 +460,21 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
 
 fun ResolutionScope.compareType(a: TypeRef, b: TypeRef, requestedType: TypeRef?): Int {
   if (a == b) return 0
-  if (! a.isStarProjection && b.isStarProjection) return - 1
-  if (a.isStarProjection && ! b.isStarProjection) return 1
+  if (!a.isStarProjection && b.isStarProjection) return -1
+  if (a.isStarProjection && !b.isStarProjection) return 1
 
-  if (! a.isMarkedNullable && b.isMarkedNullable) return - 1
-  if (! b.isMarkedNullable && a.isMarkedNullable) return 1
+  if (!a.isMarkedNullable && b.isMarkedNullable) return -1
+  if (!b.isMarkedNullable && a.isMarkedNullable) return 1
 
-  if (! a.classifier.isTypeParameter && b.classifier.isTypeParameter) return - 1
-  if (a.classifier.isTypeParameter && ! b.classifier.isTypeParameter) return 1
+  if (!a.classifier.isTypeParameter && b.classifier.isTypeParameter) return -1
+  if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
 
   fun compareSameClassifier(a: TypeRef, b: TypeRef): Int {
     var diff = 0
     a.arguments.forEachWith(b.arguments) { aTypeArgument, bTypeArgument ->
       diff += compareType(aTypeArgument, bTypeArgument, null)
     }
-    if (diff < 0) return - 1
+    if (diff < 0) return -1
     if (diff > 0) return 1
     return 0
   }
@@ -482,18 +482,18 @@ fun ResolutionScope.compareType(a: TypeRef, b: TypeRef, requestedType: TypeRef?)
   if (a.classifier != b.classifier) {
     val aSubTypeOfB = a.isSubTypeOf(context, b)
     val bSubTypeOfA = b.isSubTypeOf(context, a)
-    if (aSubTypeOfB && ! bSubTypeOfA) return - 1
-    if (bSubTypeOfA && ! aSubTypeOfB) return 1
+    if (aSubTypeOfB && !bSubTypeOfA) return -1
+    if (bSubTypeOfA && !aSubTypeOfB) return 1
     if (requestedType != null) {
-      val aSubTypeView = a.subtypeView(requestedType.classifier) !!
-      val bSubTypeView = b.subtypeView(requestedType.classifier) !!
+      val aSubTypeView = a.subtypeView(requestedType.classifier)!!
+      val bSubTypeView = b.subtypeView(requestedType.classifier)!!
       val diff = compareSameClassifier(aSubTypeView, bSubTypeView)
-      if (diff < 0) return - 1
+      if (diff < 0) return -1
       if (diff > 0) return 1
     }
   } else {
     val diff = compareSameClassifier(a, b)
-    if (diff < 0) return - 1
+    if (diff < 0) return -1
     if (diff > 0) return 1
   }
 
@@ -506,18 +506,18 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     b = b,
     requestedType = null,
     type = { it.originalType },
-    scopeNesting = { - 1 },
+    scopeNesting = { -1 },
     owner = { it.owner },
     subClassNesting = { it.overriddenDepth }
   )
-  if (diff < 0) return - 1
+  if (diff < 0) return -1
   if (diff > 0) return 1
 
   if (a == null || b == null) return 0
 
   val aDependencies = a.parameterTypes.values
   val bDependencies = b.parameterTypes.values
-  if (aDependencies.size < bDependencies.size) return - 1
+  if (aDependencies.size < bDependencies.size) return -1
   if (bDependencies.size < aDependencies.size) return 1
 
   diff = 0
@@ -526,7 +526,7 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
       diff += compareType(aDependency, bDependency, null)
     }
   }
-  if (diff < 0) return - 1
+  if (diff < 0) return -1
   if (diff > 0) return 1
 
   return 0
