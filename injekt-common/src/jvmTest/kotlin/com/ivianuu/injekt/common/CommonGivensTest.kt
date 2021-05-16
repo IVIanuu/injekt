@@ -22,6 +22,7 @@ import io.kotest.matchers.nulls.*
 import org.junit.*
 import kotlin.reflect.*
 
+@GivenImports("com.ivianuu.injekt.common.CommonGivens.*")
 class CommonGivensTest {
   @Test fun testCanUseMapForSetOfPairs() {
     @Given val elementsA = setOf("a" to "a")
