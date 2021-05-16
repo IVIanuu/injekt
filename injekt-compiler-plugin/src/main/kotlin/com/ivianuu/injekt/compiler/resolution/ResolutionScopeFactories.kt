@@ -18,13 +18,10 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
-import org.jetbrains.kotlin.backend.common.serialization.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
-import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
-import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
@@ -286,38 +283,7 @@ fun TypeResolutionScope(
   val finalType = type.withNullability(false)
   trace[InjektWritableSlices.TYPE_RESOLUTION_SCOPE, finalType]?.let { return it }
 
-  val initialGivens = mutableListOf<CallableRef>()
-
-  finalType.visitRecursive { currentType ->
-    if (currentType.isStarProjection) return@visitRecursive
-
-    when {
-      currentType.classifier.isTypeAlias -> {
-        context.classifierDescriptorForFqName(
-          currentType.classifier.fqName.parent()
-            .child("${currentType.classifier.fqName.shortName()}Givens".asNameId()),
-          lookupLocation
-        )
-          ?.safeAs<ClassDescriptor>()
-          ?.takeIf { it.kind == ClassKind.OBJECT }
-          ?.let { initialGivens += it.getGivenReceiver(context, trace) }
-      }
-      currentType.classifier.isObject -> {
-        currentType.classifier.descriptor!!
-          .cast<ClassDescriptor>()
-          .let { initialGivens += it.getGivenReceiver(context, trace) }
-      }
-      else -> {
-        currentType.classifier.descriptor!!
-          .safeAs<ClassDescriptor>()
-          ?.let { clazz ->
-            initialGivens += clazz.getGivenConstructors(context, trace)
-            clazz.companionObjectDescriptor
-              ?.let { initialGivens += it.getGivenReceiver(context, trace) }
-          }
-      }
-    }
-  }
+  val initialGivens = finalType.collectTypeScopeGivens(context, trace, lookupLocation)
 
   return ResolutionScope(
     name = "TYPE ${finalType.render()}",

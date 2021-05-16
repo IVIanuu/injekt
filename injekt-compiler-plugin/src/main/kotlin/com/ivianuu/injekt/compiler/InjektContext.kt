@@ -60,11 +60,8 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   ): ClassifierDescriptor? = memberScopeForFqName(fqName.parent(), lookupLocation)!!
     .getContributedClassifier(fqName.shortName(), lookupLocation)
 
-  fun classifierDescriptorForKey(
-    key: String,
-    trace: BindingTrace?
-  ): ClassifierDescriptor {
-    trace?.get(InjektWritableSlices.CLASSIFIER_FOR_KEY, key)?.let { return it }
+  fun classifierDescriptorForKey(key: String, trace: BindingTrace): ClassifierDescriptor {
+    trace.get(InjektWritableSlices.CLASSIFIER_FOR_KEY, key)?.let { return it }
     val fqName = FqName(key.split(":")[1])
     val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedClassifier(
       fqName.shortName(), NoLookupLocation.FROM_BACKEND
@@ -84,7 +81,7 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
         ?.declaredTypeParameters
         ?.firstOrNull { it.uniqueKey(this) == key }
       ?: error("Could not get for $fqName $key")
-    trace?.record(InjektWritableSlices.CLASSIFIER_FOR_KEY, key, classifier)
+    trace.record(InjektWritableSlices.CLASSIFIER_FOR_KEY, key, classifier)
     return classifier
   }
 

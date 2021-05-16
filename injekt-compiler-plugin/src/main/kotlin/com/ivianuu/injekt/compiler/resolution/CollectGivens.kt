@@ -299,6 +299,43 @@ fun List<GivenImport>.collectImportGivens(
   }
 }
 
+fun TypeRef.collectTypeScopeGivens(
+  context: InjektContext,
+  trace: BindingTrace,
+  lookupLocation: LookupLocation
+): List<CallableRef> {
+  val givens = mutableListOf<CallableRef>()
+  visitRecursive { currentType ->
+    when {
+      currentType.classifier.isTypeAlias -> {
+        context.classifierDescriptorForFqName(
+          currentType.classifier.fqName.parent()
+            .child("${currentType.classifier.fqName.shortName()}Givens".asNameId()),
+          lookupLocation
+        )
+          ?.safeAs<ClassDescriptor>()
+          ?.takeIf { it.kind == ClassKind.OBJECT }
+          ?.let { givens += it.getGivenReceiver(context, trace) }
+      }
+      currentType.classifier.isObject -> {
+        currentType.classifier.descriptor!!
+          .cast<ClassDescriptor>()
+          .let { givens += it.getGivenReceiver(context, trace) }
+      }
+      else -> {
+        currentType.classifier.descriptor!!
+          .safeAs<ClassDescriptor>()
+          ?.let { clazz ->
+            givens += clazz.getGivenConstructors(context, trace)
+            clazz.companionObjectDescriptor
+              ?.let { givens += it.getGivenReceiver(context, trace) }
+          }
+      }
+    }
+  }
+  return givens
+}
+
 private fun ResolutionScope.canSee(callable: CallableRef): Boolean =
   callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
       (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
