@@ -35,9 +35,7 @@ object InjektFqNames {
   val TypeParameterInfos = InternalPackage.child("TypeParameterInfos".asNameId())
 
   val CommonPackage = InjektPackage.child("common".asNameId())
-  val Extension = CommonPackage.child("Extension".asNameId())
   val ForTypeKey = CommonPackage.child("ForTypeKey".asNameId())
-  val SyntheticExtensionCallable = CommonPackage.child("SyntheticExtensionCallable".asNameId())
   val TypeKey = CommonPackage.child("TypeKey".asNameId())
   val typeKeyOf = CommonPackage.child("typeKeyOf".asNameId())
 
