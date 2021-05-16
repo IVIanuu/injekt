@@ -28,9 +28,9 @@ import com.ivianuu.injekt.samples.android.domain.*
 import com.ivianuu.injekt.scope.*
 import kotlinx.coroutines.*
 
-typealias SampleAppUi = @Composable () -> Unit
+typealias AppUi = @Composable () -> Unit
 
-@Given fun sampleUi(@Given viewModel: CounterViewModel): SampleAppUi = {
+@Given fun appUi(@Given viewModel: CounterViewModel): AppUi = {
   Scaffold(
     topBar = {
       TopAppBar(

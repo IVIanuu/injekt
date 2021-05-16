@@ -42,6 +42,6 @@ class MainActivity : ComponentActivity() {
 @Given
 @InstallElement<ActivityGivenScope>
 class MainActivityDependencies(
-  @Given val theme: SampleTheme,
-  @Given val appUi: SampleAppUi
+  @Given val theme: AppTheme,
+  @Given val appUi: AppUi
 )

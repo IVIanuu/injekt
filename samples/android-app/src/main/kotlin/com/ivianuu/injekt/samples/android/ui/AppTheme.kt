@@ -20,9 +20,9 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import com.ivianuu.injekt.*
 
-typealias SampleTheme = @Composable (@Composable () -> Unit) -> Unit
+typealias AppTheme = @Composable (@Composable () -> Unit) -> Unit
 
-@Given val sampleTheme: SampleTheme = { content ->
+@Given val appTheme: AppTheme = { content ->
   MaterialTheme(colors = darkColors()) {
     Surface(content = content)
   }
