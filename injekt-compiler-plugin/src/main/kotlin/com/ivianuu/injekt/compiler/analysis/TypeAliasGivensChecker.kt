@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.checkers.*
+import org.jetbrains.kotlin.resolve.multiplatform.*
 
 class TypeAliasGivensChecker : DeclarationChecker {
   override fun check(
@@ -33,8 +34,12 @@ class TypeAliasGivensChecker : DeclarationChecker {
       )
     }
 
-    if (descriptor.findPsi()
-        ?.containingFile != correspondingTypeAlias.findPsi()?.containingFile) {
+    val classFile = descriptor.findPsi()?.containingFile
+    val typeAliasFile = correspondingTypeAlias.findPsi()?.containingFile
+    val expectClassFile = descriptor.findExpects()
+      .singleOrNull()?.findPsi()?.containingFile
+
+    if (classFile != typeAliasFile && expectClassFile != typeAliasFile) {
       context.trace.report(
         InjektErrors.TYPE_ALIAS_GIVENS_NOT_DECLARED_IN_SAME_FILE
           .on(declaration)

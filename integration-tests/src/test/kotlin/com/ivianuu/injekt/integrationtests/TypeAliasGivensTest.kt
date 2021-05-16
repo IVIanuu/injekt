@@ -59,4 +59,15 @@ class TypeAliasGivensTest {
   ) {
     compilationShouldHaveFailed("typealias givens must be declared in the same file")
   }
+
+  @Test fun actualTypeAliasGivensInDifferentFile() = multiPlatformCodegen(
+    """
+      typealias MyAlias = String
+      
+      expect object MyAliasGivens
+    """,
+    """
+      actual object MyAliasGivens
+    """
+  )
 }
