@@ -310,8 +310,11 @@ fun TypeResolutionScope(
       else -> {
         currentType.classifier.descriptor!!
           .safeAs<ClassDescriptor>()
-          ?.companionObjectDescriptor
-          ?.let { initialGivens += it.getGivenReceiver(context, trace) }
+          ?.let { clazz ->
+            initialGivens += clazz.getGivenConstructors(context, trace)
+            clazz.companionObjectDescriptor
+              ?.let { initialGivens += it.getGivenReceiver(context, trace) }
+          }
       }
     }
   }

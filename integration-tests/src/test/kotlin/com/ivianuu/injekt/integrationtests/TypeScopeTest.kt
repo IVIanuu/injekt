@@ -10,6 +10,26 @@ class TypeScopeTest {
       listOf(
         source(
           """
+            @Given class Dep
+          """,
+          packageFqName = FqName("givens")
+        )
+      ),
+      listOf(
+        source(
+          """
+            fun invoke() = given<givens.Dep>()
+          """
+        )
+      )
+    )
+  )
+
+  @Test fun testClassCompanionTypeScope() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
             class Dep {
               companion object {
                 @Given val dep = Dep()
