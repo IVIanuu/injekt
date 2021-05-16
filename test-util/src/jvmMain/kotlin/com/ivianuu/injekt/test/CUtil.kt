@@ -241,7 +241,6 @@ fun multiPlatformCodegen(
       }
       .forEach { kotlincArguments += "-Xcommon-sources=$it" }
     this.sources = platformSources + commonSources
-    this.compile()
     config(this)
   }
   assertions(
