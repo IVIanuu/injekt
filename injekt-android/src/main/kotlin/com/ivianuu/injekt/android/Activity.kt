@@ -42,28 +42,28 @@ typealias ActivityGivenScope = GivenScope
 
 typealias ActivityContext = Context
 
-@Given object ActivityContextGivens {
+object ActivityContextGivens {
   @Given inline val ComponentActivity.activityContext: ActivityContext
     get() = this
 }
 
 typealias ActivityResources = Resources
 
-@Given object ActivityResourcesGivens {
+object ActivityResourcesGivens {
   @Given inline val ComponentActivity.activityResources: ActivityResources
     get() = resources
 }
 
 typealias ActivityLifecycleOwner = LifecycleOwner
 
-@Given object ActivityLifecycleOwnerGivens {
+object ActivityLifecycleOwnerGivens {
   @Given inline val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
     get() = this
 }
 
 typealias ActivityOnBackPressedDispatcherOwner = OnBackPressedDispatcherOwner
 
-@Given object ActivityOnBackPressedDispatcherOwnerGivens {
+object ActivityOnBackPressedDispatcherOwnerGivens {
   @Given
   inline val ComponentActivity.activityOnBackPressedDispatcherOwner: ActivityOnBackPressedDispatcherOwner
     get() = this
@@ -71,21 +71,21 @@ typealias ActivityOnBackPressedDispatcherOwner = OnBackPressedDispatcherOwner
 
 typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
 
-@Given object ActivitySavedStateRegistryOwnerGivens {
+object ActivitySavedStateRegistryOwnerGivens {
   @Given inline val ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
     get() = this
 }
 
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
-@Given object ActivityViewModelStoreOwnerGivens {
+object ActivityViewModelStoreOwnerGivens {
   @Given inline val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
     get() = this
 }
 
 typealias ActivityCoroutineScope = LifecycleCoroutineScope
 
-@Given object ActivityCoroutineScopeGivens {
+object ActivityCoroutineScopeGivens {
   @Given inline val ComponentActivity.activityCoroutineScope: ActivityCoroutineScope
     get() = lifecycleScope
 }

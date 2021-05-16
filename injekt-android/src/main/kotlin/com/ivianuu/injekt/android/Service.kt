@@ -37,12 +37,14 @@ typealias ServiceGivenScope = GivenScope
 
 typealias ServiceContext = Context
 
-@Given inline val Service.serviceContext: ServiceContext
-  get() = this
+object ServiceContextGivens {
+  @Given inline val Service.serviceContext: ServiceContext
+    get() = this
+}
 
 typealias ServiceResources = Resources
 
-@Given object ServiceResourcesGivens {
+object ServiceResourcesGivens {
   @Given inline val Service.serviceResources: ServiceResources
     get() = resources
 }

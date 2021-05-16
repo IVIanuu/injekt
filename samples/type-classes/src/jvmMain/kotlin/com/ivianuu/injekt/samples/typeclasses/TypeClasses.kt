@@ -23,7 +23,7 @@ import com.ivianuu.injekt.samples.typeclasses.Ord.Companion.compareWith
 @Extension fun interface Ord<in T> {
   infix fun T.compareWith(other: T): Int
   companion object {
-    @Given val IntOrd = Ord<Int> { compareTo(it) }
+    @Given val int = Ord<Int> { compareTo(it) }
   }
 }
 

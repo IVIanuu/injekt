@@ -19,7 +19,7 @@ package com.ivianuu.injekt.common
 import com.ivianuu.injekt.*
 import kotlin.reflect.*
 
-@Given object CommonGivens {
+object CommonGivens {
   /**
    * Allows to use a Map<K, V> for each Set<Pair<K, V>>
    */

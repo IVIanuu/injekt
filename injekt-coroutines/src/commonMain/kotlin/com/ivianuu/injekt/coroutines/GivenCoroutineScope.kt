@@ -59,7 +59,7 @@ val GivenScope.coroutineScope: CoroutineScope get() = element()
  */
 typealias GivenCoroutineContext<S> = CoroutineContext
 
-@Given object GivenCoroutineContextGivens {
+object GivenCoroutineContextGivens {
   /**
    * The default [GivenCoroutineContext] for type [S]
    */
