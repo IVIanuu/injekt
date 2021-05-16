@@ -78,7 +78,7 @@ internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
   /**
    * Defines the worker configuration which is used by [workerScopeInitializer] to initialize the [WorkManager]
    */
-  @Given fun workerConfiguration(
+  @Given fun defaultWorkerConfiguration(
     @Given workerFactory: WorkerFactory
   ): @Default Configuration = Configuration.Builder()
     .setWorkerFactory(workerFactory)
