@@ -28,7 +28,7 @@ class CounterStorage {
   val counterState: Flow<Int> by this::_counterState
   private val counterMutex = Mutex()
 
-  suspend fun updateCounter(value: Int) = counterMutex.withLock {
-    _counterState.value = value
+  suspend fun updateCounter(transform: Int.() -> Int) = counterMutex.withLock {
+    _counterState.value = transform(_counterState.value)
   }
 }

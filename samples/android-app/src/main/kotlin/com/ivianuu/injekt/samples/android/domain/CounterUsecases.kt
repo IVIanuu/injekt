@@ -18,20 +18,20 @@ package com.ivianuu.injekt.samples.android.domain
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.samples.android.data.*
-import com.ivianuu.injekt.scope.*
 import kotlinx.coroutines.flow.*
 
-@Given
-@Scoped<AppGivenScope>
-class CounterRepo(@Given private val storage: CounterStorage) {
-  val counterState: Flow<Int>
-    get() = storage.counterState
+typealias CounterFlow = Flow<Int>
 
-  suspend fun inc() {
-    storage.updateCounter(counterState.first() + 1)
-  }
+@Given fun counterFlow(@Given storage: CounterStorage): CounterFlow = storage.counterState
 
-  suspend fun dec() {
-    storage.updateCounter(counterState.first() - 1)
-  }
+typealias IncCounterUseCase = suspend () -> Unit
+
+@Given fun incCounterUseCase(@Given storage: CounterStorage): IncCounterUseCase = {
+  storage.updateCounter { this + 1 }
+}
+
+typealias DecCounterUseCase = suspend () -> Unit
+
+@Given fun decCounterUseCase(@Given storage: CounterStorage): DecCounterUseCase = {
+  storage.updateCounter { this - 1 }
 }

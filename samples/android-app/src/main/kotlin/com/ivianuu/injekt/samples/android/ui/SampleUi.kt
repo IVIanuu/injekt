@@ -27,7 +27,6 @@ import com.ivianuu.injekt.coroutines.*
 import com.ivianuu.injekt.samples.android.domain.*
 import com.ivianuu.injekt.scope.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
 
 typealias SampleAppUi = @Composable () -> Unit
 
@@ -62,20 +61,16 @@ typealias SampleAppUi = @Composable () -> Unit
 @Given
 @Scoped<ActivityRetainedGivenScope>
 class CounterViewModel(
-  @Given private val repo: CounterRepo,
+  @Given private val incCounter: IncCounterUseCase,
+  @Given private val decCounter: DecCounterUseCase,
+  @Given val state: CounterFlow,
   @Given private val scope: GivenCoroutineScope<ActivityRetainedGivenScope>
 ) {
-  val state: Flow<Int> get() = repo.counterState
-
   fun inc() {
-    scope.launch {
-      repo.inc()
-    }
+    scope.launch { incCounter() }
   }
 
   fun dec() {
-    scope.launch {
-      repo.dec()
-    }
+    scope.launch { decCounter() }
   }
 }
